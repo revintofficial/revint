@@ -2,7 +2,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: InstanceType<typeof PrismaClient>;
+  prisma: InstanceType<typeof PrismaClient> | undefined;
 };
 
 function needsSsl(url: string): boolean {
@@ -16,7 +16,10 @@ function needsSsl(url: string): boolean {
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error("DATABASE_URL environment variable is not set");
+    throw new Error(
+      "DATABASE_URL environment variable is not set. " +
+        "Set it in AWS Amplify Console > App settings > Environment variables."
+    );
   }
 
   const adapter = new PrismaPg({
@@ -30,6 +33,15 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
-export const prisma = globalForPrisma.prisma || createPrismaClient();
+export function getPrisma() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const prisma = new Proxy({} as InstanceType<typeof PrismaClient>, {
+  get(_target, prop) {
+    return (getPrisma() as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
