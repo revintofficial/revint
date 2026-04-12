@@ -204,7 +204,7 @@ export default function LeadDetailPage({
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 w-64 bg-zinc-200 rounded" />
           <div className="h-64 bg-zinc-200 rounded-lg" />
@@ -215,7 +215,7 @@ export default function LeadDetailPage({
 
   if (!lead) {
     return (
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <p className="text-zinc-500">Lead bulunamadi.</p>
       </div>
     );
@@ -225,8 +225,8 @@ export default function LeadDetailPage({
   const audit = lead.websiteAudit;
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="p-4 md:p-8 space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <a
             href="/leads"
@@ -234,19 +234,19 @@ export default function LeadDetailPage({
           >
             &larr; Leads
           </a>
-          <h2 className="text-3xl font-bold tracking-tight mt-2">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight mt-2">
             {lead.businessName}
           </h2>
-          <p className="text-zinc-500 mt-1">{lead.formattedAddress}</p>
+          <p className="text-zinc-500 mt-1 text-sm">{lead.formattedAddress}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {lead.hasWebsite && lead.crawlStatus !== "CRAWLED" && (
-            <Button variant="outline" onClick={runCrawl}>
+            <Button size="sm" variant="outline" onClick={runCrawl}>
               Crawl
             </Button>
           )}
           {lead.analyzeStatus !== "ANALYZED" && (
-            <Button onClick={runAnalyze}>AI Analiz</Button>
+            <Button size="sm" onClick={runAnalyze}>AI Analiz</Button>
           )}
           {lead.googleMapsUri && (
             <a
@@ -254,7 +254,7 @@ export default function LeadDetailPage({
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button variant="outline">Google Maps</Button>
+              <Button size="sm" variant="outline">Google Maps</Button>
             </a>
           )}
         </div>
@@ -607,8 +607,8 @@ export default function LeadDetailPage({
 
               {opp.personalizedFirstMessage && (
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                    <CardTitle className="text-lg">
+                  <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between space-y-0 pb-3">
+                    <CardTitle className="text-base sm:text-lg">
                       Kisisellesmis Mesaj
                     </CardTitle>
                     <Button
@@ -888,7 +888,7 @@ function WebsitePlanSection({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between space-y-0">
         <div>
           <CardTitle className="text-lg">AI Website Plan</CardTitle>
           {auditSummary && (
@@ -897,7 +897,7 @@ function WebsitePlanSection({
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {plan && (
             <>
               <Button

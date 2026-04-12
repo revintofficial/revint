@@ -28,10 +28,10 @@ export default function CampaignsPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 w-48 bg-zinc-200 rounded" />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-40 bg-zinc-200 rounded-lg" />
             ))}
@@ -56,10 +56,10 @@ export default function CampaignsPage() {
   };
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 md:p-8 space-y-4 md:space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Kampanyalar</h2>
-        <p className="text-zinc-500 mt-1">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Kampanyalar</h2>
+        <p className="text-zinc-500 mt-1 text-sm md:text-base">
           Lead&apos;leri segmentlere ayirarak hedefli satis kampanyalari
         </p>
       </div>

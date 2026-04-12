@@ -511,11 +511,11 @@ export default function WatchlistPage() {
   ];
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="p-4 md:p-8 space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Watchlist</h2>
-          <p className="text-zinc-500 mt-1">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Watchlist</h2>
+          <p className="text-zinc-500 mt-1 text-sm">
             {loading
               ? "Yukleniyor..."
               : `${items.length} lead takip ediliyor`}
@@ -540,7 +540,7 @@ export default function WatchlistPage() {
         </div>
 
         {!loading && items.length > 0 && (
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-2 text-sm">
               <div className="h-8 w-8 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xs font-bold">
                 {totalScore}
@@ -603,7 +603,7 @@ export default function WatchlistPage() {
       </div>
 
       {!loading && items.length > 0 && (
-        <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg w-fit">
+        <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg w-fit max-w-full overflow-x-auto">
           {FILTER_TABS.map((tab) => (
             <button
               key={tab.value}
@@ -1033,14 +1033,14 @@ function WebsitePlanPanel({
 
   return (
     <div className="border-t border-zinc-100 pt-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
           </svg>
-          <h4 className="font-semibold text-zinc-800">AI Website Plan Ajani</h4>
+          <h4 className="font-semibold text-zinc-800 text-sm sm:text-base">AI Website Plan Ajani</h4>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {item.websitePlan && (
             <>
               <Button
@@ -1273,10 +1273,10 @@ function MeetingResultSelector({
           <span className="text-[10px] text-zinc-400 animate-pulse">kaydediliyor...</span>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => handleSelect("POSITIVE")}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs sm:text-sm font-medium transition-all ${
             meetingResult === "POSITIVE"
               ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-500/20"
               : "border-zinc-200 bg-white text-zinc-600 hover:border-emerald-300 hover:bg-emerald-50/50"
@@ -1294,7 +1294,7 @@ function MeetingResultSelector({
         </button>
         <button
           onClick={() => handleSelect("IN_PROGRESS")}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs sm:text-sm font-medium transition-all ${
             meetingResult === "IN_PROGRESS"
               ? "border-amber-500 bg-amber-50 text-amber-700 ring-2 ring-amber-500/20"
               : "border-zinc-200 bg-white text-zinc-600 hover:border-amber-300 hover:bg-amber-50/50"
@@ -1312,7 +1312,7 @@ function MeetingResultSelector({
         </button>
         <button
           onClick={() => handleSelect("NEGATIVE")}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs sm:text-sm font-medium transition-all ${
             meetingResult === "NEGATIVE"
               ? "border-red-500 bg-red-50 text-red-700 ring-2 ring-red-500/20"
               : "border-zinc-200 bg-white text-zinc-600 hover:border-red-300 hover:bg-red-50/50"
@@ -1455,9 +1455,9 @@ function WatchlistCard({
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-lg">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <CardTitle className="text-base sm:text-lg">
               <a
                 href={`/leads/${item.lead.id}`}
                 className="hover:underline"
@@ -1465,11 +1465,11 @@ function WatchlistCard({
                 {item.lead.businessName}
               </a>
             </CardTitle>
-            <p className="text-sm text-zinc-500 mt-1">
+            <p className="text-sm text-zinc-500 mt-1 truncate">
               {item.lead.formattedAddress}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">
             {saveStatus === "saving" && (
               <span className="text-xs text-zinc-400">Kaydediliyor...</span>
             )}

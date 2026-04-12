@@ -229,17 +229,19 @@ export default function LeadsPage() {
   };
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-8 space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Leads</h2>
-          <p className="text-zinc-500 mt-1">
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Leads</h2>
+          <p className="text-zinc-500 mt-1 text-sm">
             {pagination.total} lead bulundu
           </p>
         </div>
         <div className="flex gap-2">
           <Button
+            size="sm"
             variant="outline"
+            className="flex-1 sm:flex-initial"
             onClick={() => {
               fetch("/api/crawl", {
                 method: "POST",
@@ -251,6 +253,8 @@ export default function LeadsPage() {
             Crawl Baslat
           </Button>
           <Button
+            size="sm"
+            className="flex-1 sm:flex-initial"
             onClick={() => {
               fetch("/api/analyze", {
                 method: "POST",
@@ -269,8 +273,8 @@ export default function LeadsPage() {
           <CardTitle className="text-base">Filtreler</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="w-48">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
               <input
                 type="text"
                 placeholder="Isletme ara..."
@@ -279,7 +283,7 @@ export default function LeadsPage() {
                 className="w-full h-10 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-950"
               />
             </div>
-            <div className="w-48">
+            <div>
               <Select value={borough} onValueChange={setBorough}>
                 <SelectTrigger>
                   <SelectValue placeholder="Borough" />
@@ -294,7 +298,7 @@ export default function LeadsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-48">
+            <div>
               <Select value={hasWebsite} onValueChange={setHasWebsite}>
                 <SelectTrigger>
                   <SelectValue placeholder="Website" />
@@ -306,7 +310,7 @@ export default function LeadsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-48">
+            <div>
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger>
                   <SelectValue placeholder="Sirala" />
@@ -481,11 +485,11 @@ export default function LeadsPage() {
         </div>
 
         {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 border-t border-zinc-200">
-            <p className="text-sm text-zinc-500">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t border-zinc-200">
+            <p className="text-sm text-zinc-500 text-center sm:text-left">
               Sayfa {pagination.page} / {pagination.totalPages}
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 justify-center sm:justify-end">
               <Button
                 size="sm"
                 variant="outline"

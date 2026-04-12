@@ -91,16 +91,16 @@ export default function PipelinePage() {
   ];
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 md:p-8 space-y-4 md:space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Sales Pipeline</h2>
-        <p className="text-zinc-500 mt-1">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Sales Pipeline</h2>
+        <p className="text-zinc-500 mt-1 text-sm">
           {loading ? "Yukleniyor..." : `${items.length} dukkan pipeline'da`}
         </p>
       </div>
 
       {!loading && items.length > 0 && (
-        <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg w-fit">
+        <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg w-fit max-w-full overflow-x-auto">
           {STAGE_TABS.map((tab) => (
             <button
               key={tab.value}
@@ -207,43 +207,41 @@ function PipelineCard({ item }: { item: WatchlistItem }) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div>
-              <CardTitle className="text-lg">
-                <a href={`/leads/${item.lead.id}`} className="hover:underline">
-                  {item.lead.businessName}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <CardTitle className="text-base sm:text-lg">
+              <a href={`/leads/${item.lead.id}`} className="hover:underline">
+                {item.lead.businessName}
+              </a>
+            </CardTitle>
+            <p className="text-sm text-zinc-500 mt-0.5 truncate">{item.lead.formattedAddress}</p>
+            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+              {item.lead.phone && (
+                <span className="text-xs text-zinc-500">{item.lead.phone}</span>
+              )}
+              {item.lead.websiteUrl && (
+                <a
+                  href={item.lead.websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-indigo-600 hover:underline truncate max-w-[200px]"
+                >
+                  {item.lead.websiteUrl}
                 </a>
-              </CardTitle>
-              <p className="text-sm text-zinc-500 mt-0.5">{item.lead.formattedAddress}</p>
-              <div className="flex items-center gap-2 mt-1.5">
-                {item.lead.phone && (
-                  <span className="text-xs text-zinc-500">{item.lead.phone}</span>
-                )}
-                {item.lead.websiteUrl && (
-                  <a
-                    href={item.lead.websiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-indigo-600 hover:underline truncate max-w-[200px]"
-                  >
-                    {item.lead.websiteUrl}
-                  </a>
-                )}
-                {item.siteUrl && (
-                  <a
-                    href={item.siteUrl.startsWith("http") ? item.siteUrl : `https://${item.siteUrl}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-emerald-600 hover:underline"
-                  >
-                    Yapilan Site
-                  </a>
-                )}
-              </div>
+              )}
+              {item.siteUrl && (
+                <a
+                  href={item.siteUrl.startsWith("http") ? item.siteUrl : `https://${item.siteUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-emerald-600 hover:underline"
+                >
+                  Yapilan Site
+                </a>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">
             {saving && <span className="text-xs text-zinc-400 animate-pulse">Kaydediliyor...</span>}
             {!saving && lastSaved && <span className="text-xs text-emerald-500">Kaydedildi {lastSaved}</span>}
             {meetingBadge && <Badge className={meetingBadge.cls}>{meetingBadge.label}</Badge>}

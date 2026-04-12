@@ -19,6 +19,15 @@
   }
 }
 
+/* Hide scrollbar on horizontally scrollable containers */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 0;
+}
+.overflow-x-auto {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* TipTap Editor Styles */
 .tiptap {
   outline: none;

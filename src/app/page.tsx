@@ -51,10 +51,10 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <div className="animate-pulse space-y-6">
           <div className="h-8 w-48 bg-zinc-200 rounded" />
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-32 bg-zinc-200 rounded-lg" />
             ))}
@@ -66,7 +66,7 @@ export default function DashboardPage() {
 
   if (!stats) {
     return (
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         <p className="text-zinc-500">
           Henuz veri yok. Discovery baslatarak lead toplamaya baslayin.
         </p>
@@ -75,10 +75,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <p className="text-zinc-500 mt-1">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Dashboard</h2>
+        <p className="text-zinc-500 mt-1 text-sm md:text-base">
           Telefon tamircisi lead&apos;lerinin genel gorunumu
         </p>
       </div>
@@ -225,10 +225,10 @@ function StatCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold">
+        <div className="text-2xl md:text-3xl font-bold">
           {value}
           {suffix && (
-            <span className="text-lg font-normal text-zinc-400">{suffix}</span>
+            <span className="text-base md:text-lg font-normal text-zinc-400">{suffix}</span>
           )}
         </div>
         {subtitle && (

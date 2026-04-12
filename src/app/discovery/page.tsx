@@ -91,10 +91,10 @@ export default function DiscoveryPage() {
   };
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 md:p-8 space-y-4 md:space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Discovery</h2>
-        <p className="text-zinc-500 mt-1">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Discovery</h2>
+        <p className="text-zinc-500 mt-1 text-sm md:text-base">
           Google Places API ile yeni telefon tamircisi lead&apos;leri kesfet
         </p>
       </div>
@@ -260,9 +260,10 @@ export default function DiscoveryPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <Button
               variant="outline"
+              className="w-full sm:w-auto"
               onClick={async () => {
                 const res = await fetch("/api/crawl", {
                   method: "POST",
@@ -278,6 +279,7 @@ export default function DiscoveryPage() {
               Tum Pending Crawl
             </Button>
             <Button
+              className="w-full sm:w-auto"
               onClick={async () => {
                 const res = await fetch("/api/analyze", {
                   method: "POST",
