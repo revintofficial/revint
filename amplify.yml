@@ -9,7 +9,9 @@ frontend:
     build:
       commands:
         - npx prisma generate
-        - env | grep -e DATABASE_URL -e GEMINI_API_KEY -e GOOGLE_PLACES_API_KEY | head -c 100 || true
+        - echo "DATABASE_URL=$DATABASE_URL" >> .env.production
+        - echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> .env.production
+        - echo "GOOGLE_PLACES_API_KEY=$GOOGLE_PLACES_API_KEY" >> .env.production
         - npm run build
   artifacts:
     baseDirectory: .next
