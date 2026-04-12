@@ -1,12 +1,34 @@
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
-const globalForPrisma = globalThis as unknown as { prisma: InstanceType<typeof PrismaClient> };
+const globalForPrisma = globalThis as unknown as {
+  prisma: InstanceType<typeof PrismaClient>;
+};
+
+function needsSsl(url: string): boolean {
+  const isLocal =
+    url.includes("localhost") ||
+    url.includes("127.0.0.1") ||
+    url.includes("host.docker.internal");
+  return !isLocal;
+}
 
 function createPrismaClient() {
-  const adapter = new PrismaPg({
-    connectionString: process.env.DATABASE_URL!,
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+
+  const pool = new pg.Pool({
+    connectionString,
+    ssl: needsSsl(connectionString)
+      ? { rejectUnauthorized: false }
+      : undefined,
+    max: 5,
   });
+
+  const adapter = new PrismaPg({ pool });
   return new PrismaClient({ adapter });
 }
 

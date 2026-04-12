@@ -20,6 +20,29 @@ import {
 } from "@/components/ui/dialog";
 import { LONDON_BOROUGHS } from "@/types";
 
+interface ContentCheckSignal {
+  label: string;
+  status: "good" | "bad" | "warning";
+  detail: string;
+}
+
+interface ContentCheckResult {
+  url: string;
+  reachable: boolean;
+  verdict: "placeholder" | "basic" | "developed" | "unreachable";
+  score: number;
+  signals: ContentCheckSignal[];
+  summary: string;
+  htmlSize: number;
+  wordCount: number;
+  imageCount: number;
+  internalLinkCount: number;
+  hasCustomContent: boolean;
+  isParked: boolean;
+  isComingSoon: boolean;
+  builderDetected: string | null;
+}
+
 interface Lead {
   id: string;
   businessName: string;
@@ -67,6 +90,9 @@ export default function LeadsPage() {
   const [watchlistSiteUrl, setWatchlistSiteUrl] = useState("");
   const [watchlistNotes, setWatchlistNotes] = useState("");
   const [watchlistSaving, setWatchlistSaving] = useState(false);
+  const [contentCheckLeadId, setContentCheckLeadId] = useState<string | null>(null);
+  const [contentCheckResult, setContentCheckResult] = useState<ContentCheckResult | null>(null);
+  const [contentCheckLoading, setContentCheckLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchWatchlistIds = useCallback(async () => {
@@ -149,6 +175,27 @@ export default function LeadsPage() {
       body: JSON.stringify({ status }),
     });
     fetchLeads();
+  };
+
+  const runContentCheck = async (lead: Lead) => {
+    if (!lead.websiteUrl) return;
+    setContentCheckLeadId(lead.id);
+    setContentCheckLoading(true);
+    setContentCheckResult(null);
+    try {
+      const res = await fetch("/api/website-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: lead.websiteUrl }),
+      });
+      if (res.ok) {
+        setContentCheckResult(await res.json());
+      }
+    } catch (err) {
+      console.error("Content check failed:", err);
+    } finally {
+      setContentCheckLoading(false);
+    }
   };
 
   const openWatchlistDialog = (lead: Lead) => {
@@ -338,7 +385,22 @@ export default function LeadsPage() {
                     </td>
                     <td className="p-3">
                       {lead.hasWebsite ? (
-                        <Badge variant="success">Var</Badge>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="success">Var</Badge>
+                          <button
+                            onClick={(e) => { e.preventDefault(); runContentCheck(lead); }}
+                            disabled={contentCheckLoading && contentCheckLeadId === lead.id}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                            title="Website icerik kontrolu"
+                          >
+                            {contentCheckLoading && contentCheckLeadId === lead.id ? (
+                              <div className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-indigo-300 border-t-indigo-600" />
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+                            )}
+                            Kontrol
+                          </button>
+                        </div>
                       ) : (
                         <Badge variant="destructive">Yok</Badge>
                       )}
@@ -450,6 +512,36 @@ export default function LeadsPage() {
       </div>
 
       <Dialog
+        open={!!(contentCheckLeadId && (contentCheckLoading || contentCheckResult))}
+        onOpenChange={(open) => {
+          if (!open) {
+            setContentCheckLeadId(null);
+            setContentCheckResult(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z"/></svg>
+              Icerik Kontrol Sonucu
+            </DialogTitle>
+            <DialogDescription>
+              {contentCheckResult?.url || "Website analiz ediliyor..."}
+            </DialogDescription>
+          </DialogHeader>
+          {contentCheckLoading ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-3 border-indigo-200 border-t-indigo-600" />
+              <p className="text-sm text-zinc-400 mt-3">Website analiz ediliyor...</p>
+            </div>
+          ) : contentCheckResult ? (
+            <ContentCheckPanel result={contentCheckResult} />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
         open={!!watchlistDialogLead}
         onOpenChange={(open) => !open && setWatchlistDialogLead(null)}
       >
@@ -496,6 +588,74 @@ export default function LeadsPage() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
+  const verdictConfig: Record<string, { label: string; color: string; bg: string }> = {
+    placeholder: { label: "Placeholder / Bos Site", color: "text-red-600", bg: "bg-red-50 border-red-200" },
+    basic: { label: "Temel Duzey Site", color: "text-amber-600", bg: "bg-amber-50 border-amber-200" },
+    developed: { label: "Gelistirilmis Site", color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
+    unreachable: { label: "Erisilemedi", color: "text-zinc-600", bg: "bg-zinc-50 border-zinc-200" },
+  };
+
+  const config = verdictConfig[result.verdict] || verdictConfig.unreachable;
+
+  return (
+    <div className="space-y-4 pt-2">
+      <div className={`rounded-lg border p-4 ${config.bg}`}>
+        <div className="flex items-center justify-between mb-2">
+          <p className={`font-semibold text-lg ${config.color}`}>{config.label}</p>
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm text-zinc-500">Skor:</span>
+            <span className={`text-lg font-bold ${result.score >= 65 ? "text-emerald-600" : result.score >= 35 ? "text-amber-600" : "text-red-600"}`}>
+              {result.score}
+            </span>
+            <span className="text-xs text-zinc-400">/100</span>
+          </div>
+        </div>
+        <p className="text-sm text-zinc-700 leading-relaxed">{result.summary}</p>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2">
+        <div className="rounded-md bg-zinc-50 p-2 text-center">
+          <p className="text-sm font-bold text-zinc-800">{result.wordCount}</p>
+          <p className="text-[10px] text-zinc-500">Kelime</p>
+        </div>
+        <div className="rounded-md bg-zinc-50 p-2 text-center">
+          <p className="text-sm font-bold text-zinc-800">{result.imageCount}</p>
+          <p className="text-[10px] text-zinc-500">Gorsel</p>
+        </div>
+        <div className="rounded-md bg-zinc-50 p-2 text-center">
+          <p className="text-sm font-bold text-zinc-800">{result.internalLinkCount}</p>
+          <p className="text-[10px] text-zinc-500">Link</p>
+        </div>
+        <div className="rounded-md bg-zinc-50 p-2 text-center">
+          <p className="text-sm font-bold text-zinc-800">{(result.htmlSize / 1024).toFixed(0)}</p>
+          <p className="text-[10px] text-zinc-500">KB</p>
+        </div>
+      </div>
+
+      {result.builderDetected && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 border border-blue-200">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <span className="text-sm text-blue-700"><strong>{result.builderDetected}</strong> ile olusturulmus</span>
+        </div>
+      )}
+
+      <div className="space-y-1.5 max-h-60 overflow-y-auto">
+        <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">Detayli Analiz</p>
+        {result.signals.map((signal, i) => (
+          <div key={i} className="flex items-center justify-between py-1 border-b border-zinc-100 last:border-0">
+            <div className="flex items-center gap-1.5">
+              <div className={`w-1.5 h-1.5 rounded-full ${signal.status === "good" ? "bg-emerald-500" : signal.status === "warning" ? "bg-amber-500" : "bg-red-500"}`} />
+              <span className="text-xs font-medium text-zinc-700">{signal.label}</span>
+            </div>
+            <span className="text-xs text-zinc-500 text-right max-w-[55%] truncate">{signal.detail}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -40,6 +40,7 @@ enum OutreachStatus {
 enum MeetingResult {
   POSITIVE
   NEGATIVE
+  IN_PROGRESS
 }
 
 model Lead {
@@ -126,6 +127,7 @@ model WatchlistItem {
   siteUrl       String?         @map("site_url")
   notes         String?
   websitePlan   String?         @map("website_plan") @db.Text
+  pipelineNotes String?         @map("pipeline_notes") @db.Text
   selectedOffer SuggestedOffer? @map("selected_offer")
   meetingResult MeetingResult?  @map("meeting_result")
   createdAt     DateTime        @default(now()) @map("created_at")

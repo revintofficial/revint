@@ -8,7 +8,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { siteUrl, notes, selectedOffer, meetingResult } = body;
+    const { siteUrl, notes, selectedOffer, meetingResult, pipelineNotes } = body;
 
     const validOffers = ["STARTER", "GROWTH", "SALES"];
     const offerValue =
@@ -18,7 +18,7 @@ export async function PATCH(
           ? selectedOffer
           : undefined;
 
-    const validResults = ["POSITIVE", "NEGATIVE"];
+    const validResults = ["POSITIVE", "NEGATIVE", "IN_PROGRESS"];
     const resultValue =
       meetingResult === null
         ? null
@@ -33,6 +33,7 @@ export async function PATCH(
         ...(notes !== undefined && { notes }),
         ...(offerValue !== undefined && { selectedOffer: offerValue }),
         ...(resultValue !== undefined && { meetingResult: resultValue }),
+        ...(pipelineNotes !== undefined && { pipelineNotes }),
       },
       include: {
         lead: true,

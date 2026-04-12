@@ -5,6 +5,29 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+interface ContentCheckSignal {
+  label: string;
+  status: "good" | "bad" | "warning";
+  detail: string;
+}
+
+interface ContentCheckResult {
+  url: string;
+  reachable: boolean;
+  verdict: "placeholder" | "basic" | "developed" | "unreachable";
+  score: number;
+  signals: ContentCheckSignal[];
+  summary: string;
+  htmlSize: number;
+  wordCount: number;
+  imageCount: number;
+  internalLinkCount: number;
+  hasCustomContent: boolean;
+  isParked: boolean;
+  isComingSoon: boolean;
+  builderDetected: string | null;
+}
+
 interface SecurityHeaders {
   hasCSP: boolean;
   hasXFrameOptions: boolean;
@@ -92,6 +115,9 @@ export default function LeadDetailPage({
   const [plan, setPlan] = useState<string | null>(null);
   const [showPlan, setShowPlan] = useState(false);
   const [auditSummary, setAuditSummary] = useState<{ totalChecks: number; passed: number; failed: number; scorePercent: number } | null>(null);
+  const [contentCheck, setContentCheck] = useState<ContentCheckResult | null>(null);
+  const [contentCheckLoading, setContentCheckLoading] = useState(false);
+  const [showContentCheck, setShowContentCheck] = useState(false);
 
   useEffect(() => {
     fetch(`/api/leads/${id}`)
@@ -152,6 +178,27 @@ export default function LeadDetailPage({
       console.error("Plan generation failed:", err);
     } finally {
       setPlanGenerating(false);
+    }
+  };
+
+  const runContentCheck = async () => {
+    if (!lead?.websiteUrl) return;
+    setContentCheckLoading(true);
+    try {
+      const res = await fetch("/api/website-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: lead.websiteUrl }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setContentCheck(data);
+        setShowContentCheck(true);
+      }
+    } catch (err) {
+      console.error("Content check failed:", err);
+    } finally {
+      setContentCheckLoading(false);
     }
   };
 
@@ -223,23 +270,42 @@ export default function LeadDetailPage({
             <CardContent className="space-y-3">
               <InfoRow label="Borough" value={lead.borough || "Bilinmiyor"} />
               <InfoRow label="Telefon" value={lead.phone || "Yok"} />
-              <InfoRow
-                label="Website"
-                value={
-                  lead.websiteUrl ? (
-                    <a
-                      href={lead.websiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {lead.websiteUrl}
-                    </a>
+              <div className="flex items-start justify-between">
+                <span className="text-sm text-zinc-500">Website</span>
+                <div className="flex items-center gap-2 max-w-[60%]">
+                  {lead.websiteUrl ? (
+                    <>
+                      <a
+                        href={lead.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-blue-600 hover:underline truncate"
+                      >
+                        {lead.websiteUrl}
+                      </a>
+                      <button
+                        onClick={runContentCheck}
+                        disabled={contentCheckLoading}
+                        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                      >
+                        {contentCheckLoading ? (
+                          <>
+                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-indigo-300 border-t-indigo-600" />
+                            Kontrol...
+                          </>
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z"/></svg>
+                            Icerik Kontrol
+                          </>
+                        )}
+                      </button>
+                    </>
                   ) : (
-                    "Yok"
-                  )
-                }
-              />
+                    <span className="text-sm font-medium">Yok</span>
+                  )}
+                </div>
+              </div>
               <InfoRow
                 label="Rating"
                 value={
@@ -257,6 +323,13 @@ export default function LeadDetailPage({
               <InfoRow label="Analiz" value={lead.analyzeStatus} />
             </CardContent>
           </Card>
+
+          {showContentCheck && contentCheck && (
+            <ContentCheckCard
+              result={contentCheck}
+              onClose={() => setShowContentCheck(false)}
+            />
+          )}
 
           {audit && (
             <Card>
@@ -620,6 +693,153 @@ export default function LeadDetailPage({
         </div>
       </div>
     </div>
+  );
+}
+
+function ContentCheckCard({
+  result,
+  onClose,
+}: {
+  result: ContentCheckResult;
+  onClose: () => void;
+}) {
+  const verdictConfig = {
+    placeholder: {
+      label: "Placeholder / Bos Site",
+      color: "text-red-600",
+      bg: "bg-red-50 border-red-200",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+      ),
+    },
+    basic: {
+      label: "Temel Duzey Site",
+      color: "text-amber-600",
+      bg: "bg-amber-50 border-amber-200",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+      ),
+    },
+    developed: {
+      label: "Gelistirilmis Site",
+      color: "text-emerald-600",
+      bg: "bg-emerald-50 border-emerald-200",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+      ),
+    },
+    unreachable: {
+      label: "Erisilemedi",
+      color: "text-zinc-600",
+      bg: "bg-zinc-50 border-zinc-200",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400"><circle cx="12" cy="12" r="10"/><line x1="4.93" x2="19.07" y1="4.93" y2="19.07"/></svg>
+      ),
+    },
+  };
+
+  const config = verdictConfig[result.verdict];
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z"/></svg>
+          Icerik Kontrol Sonucu
+        </CardTitle>
+        <button
+          onClick={onClose}
+          className="text-zinc-400 hover:text-zinc-600 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className={`rounded-lg border p-4 ${config.bg}`}>
+          <div className="flex items-center gap-3 mb-2">
+            {config.icon}
+            <div>
+              <p className={`font-semibold ${config.color}`}>{config.label}</p>
+              <p className="text-xs text-zinc-500">Skor: {result.score}/100</p>
+            </div>
+            <div className="ml-auto">
+              <div className="relative w-14 h-14">
+                <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
+                  <circle cx="28" cy="28" r="24" fill="none" stroke="#e4e4e7" strokeWidth="4" />
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="24"
+                    fill="none"
+                    stroke={result.score >= 65 ? "#10b981" : result.score >= 35 ? "#f59e0b" : "#ef4444"}
+                    strokeWidth="4"
+                    strokeDasharray={`${(result.score / 100) * 150.8} 150.8`}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                  {result.score}
+                </span>
+              </div>
+            </div>
+          </div>
+          <p className="text-sm text-zinc-700 leading-relaxed">{result.summary}</p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-lg bg-zinc-50 p-3 text-center">
+            <p className="text-lg font-bold text-zinc-800">{result.wordCount}</p>
+            <p className="text-xs text-zinc-500">Kelime</p>
+          </div>
+          <div className="rounded-lg bg-zinc-50 p-3 text-center">
+            <p className="text-lg font-bold text-zinc-800">{result.imageCount}</p>
+            <p className="text-xs text-zinc-500">Gorsel</p>
+          </div>
+          <div className="rounded-lg bg-zinc-50 p-3 text-center">
+            <p className="text-lg font-bold text-zinc-800">{result.internalLinkCount}</p>
+            <p className="text-xs text-zinc-500">Link</p>
+          </div>
+          <div className="rounded-lg bg-zinc-50 p-3 text-center">
+            <p className="text-lg font-bold text-zinc-800">{(result.htmlSize / 1024).toFixed(0)}</p>
+            <p className="text-xs text-zinc-500">KB HTML</p>
+          </div>
+        </div>
+
+        {result.builderDetected && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 border border-blue-200">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <span className="text-sm text-blue-700">
+              <strong>{result.builderDetected}</strong> ile olusturulmus
+            </span>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+            Detayli Analiz
+          </p>
+          {result.signals.map((signal, i) => (
+            <div key={i} className="flex items-center justify-between py-1.5 border-b border-zinc-100 last:border-0">
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    signal.status === "good"
+                      ? "bg-emerald-500"
+                      : signal.status === "warning"
+                      ? "bg-amber-500"
+                      : "bg-red-500"
+                  }`}
+                />
+                <span className="text-sm font-medium text-zinc-700">{signal.label}</span>
+              </div>
+              <span className="text-sm text-zinc-500 text-right max-w-[55%] truncate">
+                {signal.detail}
+              </span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

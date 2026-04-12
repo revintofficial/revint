@@ -34,7 +34,7 @@ interface WatchlistItem {
   notes: string | null;
   websitePlan: string | null;
   selectedOffer: "STARTER" | "GROWTH" | "SALES" | null;
-  meetingResult: "POSITIVE" | "NEGATIVE" | null;
+  meetingResult: "POSITIVE" | "NEGATIVE" | "IN_PROGRESS" | null;
   createdAt: string;
   updatedAt: string;
   lead: {
@@ -50,14 +50,92 @@ interface WatchlistItem {
   };
 }
 
-type MeetingFilter = "ALL" | "POSITIVE" | "NEGATIVE" | "PENDING";
+type MeetingFilter = "ALL" | "POSITIVE" | "NEGATIVE" | "IN_PROGRESS" | "PENDING";
 
 export default function WatchlistPage() {
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzingAll, setAnalyzingAll] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [meetingFilter, setMeetingFilter] = useState<MeetingFilter>("ALL");
+
+  const handleExportExcel = async () => {
+    if (items.length === 0) return;
+    setExportingExcel(true);
+    try {
+      const XLSX = await import("xlsx");
+
+      const businessNames = items.map((item) => item.lead.businessName);
+
+      const fieldRows: { label: string; values: (string | number)[] }[] = [
+        { label: "Adres", values: items.map((i) => i.lead.formattedAddress) },
+        { label: "İlçe", values: items.map((i) => i.lead.borough || "") },
+        { label: "Telefon", values: items.map((i) => i.lead.phone || "") },
+        { label: "Mevcut Website", values: items.map((i) => i.lead.websiteUrl || "") },
+        { label: "Yapılan Site", values: items.map((i) => i.siteUrl || "") },
+        { label: "Notlar", values: items.map((i) => i.notes || "") },
+        { label: "Seçilen Paket", values: items.map((i) => i.selectedOffer || "") },
+        {
+          label: "Görüşme Sonucu",
+          values: items.map((i) =>
+            i.meetingResult === "POSITIVE" ? "Olumlu" : i.meetingResult === "NEGATIVE" ? "Olumsuz" : i.meetingResult === "IN_PROGRESS" ? "Devam Ediyor" : "Bekleyen"
+          ),
+        },
+        { label: "Fırsat Skoru", values: items.map((i) => i.lead.salesOpportunity?.opportunityScore ?? "") },
+        { label: "Önerilen Paket", values: items.map((i) => i.lead.salesOpportunity?.suggestedOffer || "") },
+        { label: "Fiyat Aralığı", values: items.map((i) => i.lead.salesOpportunity?.expectedPriceBand || "") },
+        { label: "Durum", values: items.map((i) => i.lead.salesOpportunity?.status || "") },
+        { label: "Neden İyi Hedef", values: items.map((i) => i.lead.salesOpportunity?.whyGoodTarget || "") },
+        {
+          label: "Sorunlar",
+          values: items.map((i) =>
+            ((i.lead.salesOpportunity?.reasonCodes || []) as string[]).map((c) => REASON_LABELS[c] || c).join(", ")
+          ),
+        },
+        {
+          label: "Acı Noktaları",
+          values: items.map((i) =>
+            ((i.lead.salesOpportunity?.likelyPainPoints || []) as string[]).map((p) => REASON_LABELS[p] || p).join(", ")
+          ),
+        },
+        { label: "Satış Açısı", values: items.map((i) => i.lead.salesOpportunity?.bestSalesAngle || "") },
+        { label: "Kişiselleştirilmiş Mesaj", values: items.map((i) => i.lead.salesOpportunity?.personalizedFirstMessage || "") },
+        {
+          label: "Google Yorum Sayısı",
+          values: items.map((i) => (i.lead.googleReviews || []).length),
+        },
+        {
+          label: "Ortalama Puan",
+          values: items.map((i) => {
+            const r = i.lead.googleReviews || [];
+            return r.length > 0 ? (r.reduce((s, rv) => s + rv.rating, 0) / r.length).toFixed(1) : "";
+          }),
+        },
+        { label: "Eklenme Tarihi", values: items.map((i) => new Date(i.createdAt).toLocaleDateString("tr-TR")) },
+      ];
+
+      const header: (string | number)[] = ["", ...businessNames];
+      const dataRows = fieldRows.map((f) => [f.label, ...f.values]);
+      const sheetData = [header, ...dataRows];
+
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+      const colWidths = [
+        { wch: 25 },
+        ...businessNames.map((name) => ({ wch: Math.max(name.length + 2, 20) })),
+      ];
+      ws["!cols"] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Watchlist");
+      XLSX.writeFile(wb, `watchlist_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (err) {
+      console.error("Excel export failed:", err);
+    } finally {
+      setExportingExcel(false);
+    }
+  };
 
   const handleExportPDF = async () => {
     if (items.length === 0) return;
@@ -368,7 +446,7 @@ export default function WatchlistPage() {
     );
   };
 
-  const handleMeetingResultChange = (itemId: string, result: "POSITIVE" | "NEGATIVE" | null) => {
+  const handleMeetingResultChange = (itemId: string, result: "POSITIVE" | "NEGATIVE" | "IN_PROGRESS" | null) => {
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId ? { ...item, meetingResult: result } : item
@@ -412,12 +490,14 @@ export default function WatchlistPage() {
 
   const positiveCount = items.filter((i) => i.meetingResult === "POSITIVE").length;
   const negativeCount = items.filter((i) => i.meetingResult === "NEGATIVE").length;
+  const inProgressCount = items.filter((i) => i.meetingResult === "IN_PROGRESS").length;
   const pendingCount = items.filter((i) => !i.meetingResult).length;
 
   const filteredItems = items.filter((item) => {
     if (meetingFilter === "ALL") return true;
     if (meetingFilter === "POSITIVE") return item.meetingResult === "POSITIVE";
     if (meetingFilter === "NEGATIVE") return item.meetingResult === "NEGATIVE";
+    if (meetingFilter === "IN_PROGRESS") return item.meetingResult === "IN_PROGRESS";
     if (meetingFilter === "PENDING") return !item.meetingResult;
     return true;
   });
@@ -425,6 +505,7 @@ export default function WatchlistPage() {
   const FILTER_TABS: { value: MeetingFilter; label: string; count: number; color: string; activeColor: string }[] = [
     { value: "ALL", label: "Tumunu", count: items.length, color: "text-zinc-600", activeColor: "bg-zinc-900 text-white" },
     { value: "POSITIVE", label: "Olumlu", count: positiveCount, color: "text-emerald-600", activeColor: "bg-emerald-600 text-white" },
+    { value: "IN_PROGRESS", label: "Devam Ediyor", count: inProgressCount, color: "text-amber-600", activeColor: "bg-amber-600 text-white" },
     { value: "NEGATIVE", label: "Olumsuz", count: negativeCount, color: "text-red-600", activeColor: "bg-red-600 text-white" },
     { value: "PENDING", label: "Bekleyen", count: pendingCount, color: "text-zinc-500", activeColor: "bg-zinc-600 text-white" },
   ];
@@ -480,6 +561,26 @@ export default function WatchlistPage() {
             <Button
               size="sm"
               variant="outline"
+              onClick={handleExportExcel}
+              disabled={exportingExcel}
+            >
+              {exportingExcel ? (
+                <>
+                  <div className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600 mr-1.5" />
+                  Hazirlaniyor...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Excel
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={handleExportPDF}
               disabled={exporting}
             >
@@ -516,6 +617,11 @@ export default function WatchlistPage() {
               {tab.value === "POSITIVE" && (
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              {tab.value === "IN_PROGRESS" && (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               )}
               {tab.value === "NEGATIVE" && (
@@ -1135,12 +1241,12 @@ function MeetingResultSelector({
   onMeetingResultChange,
 }: {
   itemId: string;
-  meetingResult: "POSITIVE" | "NEGATIVE" | null;
-  onMeetingResultChange: (itemId: string, result: "POSITIVE" | "NEGATIVE" | null) => void;
+  meetingResult: "POSITIVE" | "NEGATIVE" | "IN_PROGRESS" | null;
+  onMeetingResultChange: (itemId: string, result: "POSITIVE" | "NEGATIVE" | "IN_PROGRESS" | null) => void;
 }) {
   const [saving, setSaving] = useState(false);
 
-  const handleSelect = async (result: "POSITIVE" | "NEGATIVE") => {
+  const handleSelect = async (result: "POSITIVE" | "NEGATIVE" | "IN_PROGRESS") => {
     const newValue = meetingResult === result ? null : result;
     onMeetingResultChange(itemId, newValue);
     setSaving(true);
@@ -1187,6 +1293,24 @@ function MeetingResultSelector({
           )}
         </button>
         <button
+          onClick={() => handleSelect("IN_PROGRESS")}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+            meetingResult === "IN_PROGRESS"
+              ? "border-amber-500 bg-amber-50 text-amber-700 ring-2 ring-amber-500/20"
+              : "border-zinc-200 bg-white text-zinc-600 hover:border-amber-300 hover:bg-amber-50/50"
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Devam Ediyor
+          {meetingResult === "IN_PROGRESS" && (
+            <svg className="w-3.5 h-3.5 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          )}
+        </button>
+        <button
           onClick={() => handleSelect("NEGATIVE")}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
             meetingResult === "NEGATIVE"
@@ -1223,7 +1347,7 @@ function WatchlistCard({
   onReviewsUpdate: (leadId: string, reviews: GoogleReviewData[]) => void;
   onPlanUpdate: (itemId: string, plan: string) => void;
   onOfferChange: (itemId: string, offer: "STARTER" | "GROWTH" | "SALES" | null) => void;
-  onMeetingResultChange: (itemId: string, result: "POSITIVE" | "NEGATIVE" | null) => void;
+  onMeetingResultChange: (itemId: string, result: "POSITIVE" | "NEGATIVE" | "IN_PROGRESS" | null) => void;
   onRefresh: () => void;
 }) {
   const [siteUrl, setSiteUrl] = useState(item.siteUrl || "");
@@ -1355,6 +1479,11 @@ function WatchlistCard({
             {item.meetingResult === "POSITIVE" && (
               <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
                 Olumlu
+              </Badge>
+            )}
+            {item.meetingResult === "IN_PROGRESS" && (
+              <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                Devam Ediyor
               </Badge>
             )}
             {item.meetingResult === "NEGATIVE" && (

@@ -8,9 +8,11 @@ frontend:
         - npm ci
     build:
       commands:
+        - echo "=== Environment Check ==="
         - echo "DATABASE_URL set = $(if [ -n \"$DATABASE_URL\" ]; then echo YES; else echo NO; fi)"
         - echo "GEMINI_API_KEY set = $(if [ -n \"$GEMINI_API_KEY\" ]; then echo YES; else echo NO; fi)"
         - echo "GOOGLE_PLACES_API_KEY set = $(if [ -n \"$GOOGLE_PLACES_API_KEY\" ]; then echo YES; else echo NO; fi)"
+        - echo "NODE_ENV = $NODE_ENV"
         - npm run build
   artifacts:
     baseDirectory: .next

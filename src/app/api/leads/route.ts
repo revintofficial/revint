@@ -78,9 +78,16 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Leads fetch error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Leads fetch error:", message);
     return NextResponse.json(
-      { error: "Failed to fetch leads" },
+      {
+        error: "Failed to fetch leads",
+        detail: process.env.NODE_ENV !== "production" ? message : undefined,
+        hint: !process.env.DATABASE_URL
+          ? "DATABASE_URL is not set"
+          : "Database query failed",
+      },
       { status: 500 }
     );
   }

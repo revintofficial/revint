@@ -36,7 +36,7 @@ export default function RootLayout({
 
 function Sidebar() {
   return (
-    <aside className="w-64 bg-zinc-900 text-zinc-100 flex flex-col shrink-0">
+    <aside className="w-64 bg-zinc-900 text-zinc-100 flex flex-col shrink-0 sticky top-0 h-screen overflow-y-auto">
       <div className="p-6 border-b border-zinc-800">
         <h1 className="text-xl font-bold tracking-tight">Lead Engine</h1>
         <p className="text-xs text-zinc-400 mt-1">Phone Repair Sales</p>
@@ -46,6 +46,7 @@ function Sidebar() {
         <SidebarLink href="/leads" label="Leads" />
         <SidebarLink href="/campaigns" label="Campaigns" />
         <SidebarLink href="/watchlist" label="Watchlist" />
+        <SidebarLink href="/pipeline" label="Sales Pipeline" />
         <SidebarLink href="/discovery" label="Discovery" />
       </nav>
       <div className="p-4 border-t border-zinc-800 text-xs text-zinc-500">

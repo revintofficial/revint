@@ -71,10 +71,17 @@ export async function GET() {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error("Stats error:", message, error);
+    console.error("Stats error:", message);
     console.error("DATABASE_URL set:", !!process.env.DATABASE_URL);
+    console.error("NODE_ENV:", process.env.NODE_ENV);
     return NextResponse.json(
-      { error: "Failed to fetch stats", detail: message },
+      {
+        error: "Failed to fetch stats",
+        detail: process.env.NODE_ENV !== "production" ? message : undefined,
+        hint: !process.env.DATABASE_URL
+          ? "DATABASE_URL is not set"
+          : "Database connection failed",
+      },
       { status: 500 }
     );
   }
