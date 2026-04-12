@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CrawlStatus {
+  PENDING
+  CRAWLING
+  CRAWLED
+  FAILED
+  NO_WEBSITE
+}
+
+enum AnalyzeStatus {
+  PENDING
+  ANALYZING
+  ANALYZED
+  FAILED
+}
+
+enum SuggestedOffer {
+  STARTER
+  GROWTH
+  SALES
+}
+
+enum OutreachStatus {
+  NEW
+  CONTACTED
+  INTERESTED
+  MEETING
+  WON
+  LOST
+}
+
+model Lead {
+  id               String   @id @default(cuid())
+  placeId          String   @unique @map("place_id")
+  businessName     String   @map("business_name")
+  formattedAddress String   @map("formatted_address")
+  borough          String?
+  phone            String?
+  websiteUrl       String?  @map("website_url")
+  hasWebsite       Boolean  @default(false) @map("has_website")
+  googleMapsUri    String?  @map("google_maps_uri")
+  rating           Float?
+  reviewCount      Int?     @map("review_count")
+  businessStatus   String?  @map("business_status")
+  primaryType      String?  @map("primary_type")
+  sourceQuery      String?  @map("source_query")
+  sourceLat        Float?   @map("source_lat")
+  sourceLng        Float?   @map("source_lng")
+  crawlStatus      CrawlStatus   @default(PENDING) @map("crawl_status")
+  analyzeStatus    AnalyzeStatus @default(PENDING) @map("analyze_status")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  websiteAudit     WebsiteAudit?
+  salesOpportunity SalesOpportunity?
+  watchlistItem    WatchlistItem?
+  googleReviews    GoogleReview[]
+
+  @@map("leads")
+}
+
+model WebsiteAudit {
+  id                    String   @id @default(cuid())
+  leadId                String   @unique @map("lead_id")
+  url                   String
+  reachable             Boolean  @default(false)
+  loadTimeMs            Int?     @map("load_time_ms")
+  https                 Boolean  @default(false)
+  mobileFriendlyGuess   Boolean  @default(false) @map("mobile_friendly_guess")
+  title                 String?
+  metaDescription       String?  @map("meta_description")
+  h1                    String?
+  hasContactForm        Boolean  @default(false) @map("has_contact_form")
+  hasWhatsappLink       Boolean  @default(false) @map("has_whatsapp_link")
+  hasBookingSystem      Boolean  @default(false) @map("has_booking_system")
+  hasEcommerce          Boolean  @default(false) @map("has_ecommerce")
+  servicesDetected      Json     @default("[]") @map("services_detected")
+  navItems              Json     @default("[]") @map("nav_items")
+  ctaLinks              Json     @default("[]") @map("cta_links")
+  brokenLinksCount      Int      @default(0) @map("broken_links_count")
+  structuredDataPresent Boolean  @default(false) @map("structured_data_present")
+  rawFeaturesJson       Json?    @map("raw_features_json")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("website_audits")
+}
+
+model SalesOpportunity {
+  id                      String         @id @default(cuid())
+  leadId                  String         @unique @map("lead_id")
+  opportunityScore        Int            @default(0) @map("opportunity_score")
+  reasonCodes             Json           @default("[]") @map("reason_codes")
+  whyGoodTarget           String?        @map("why_good_target")
+  likelyPainPoints        Json           @default("[]") @map("likely_pain_points")
+  bestSalesAngle          String?        @map("best_sales_angle")
+  suggestedOffer          SuggestedOffer @default(STARTER) @map("suggested_offer")
+  personalizedFirstMessage String?       @map("personalized_first_message")
+  expectedPriceBand       String?        @map("expected_price_band")
+  status                  OutreachStatus @default(NEW)
+  createdAt               DateTime       @default(now()) @map("created_at")
+  updatedAt               DateTime       @updatedAt @map("updated_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("sales_opportunities")
+}
+
+model WatchlistItem {
+  id          String   @id @default(cuid())
+  leadId      String   @unique @map("lead_id")
+  siteUrl     String?  @map("site_url")
+  notes       String?
+  websitePlan String?  @map("website_plan") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("watchlist_items")
+}
+
+model GoogleReview {
+  id           String   @id @default(cuid())
+  leadId       String   @map("lead_id")
+  authorName   String   @map("author_name")
+  authorPhoto  String?  @map("author_photo")
+  rating       Int
+  text         String?
+  relativeTime String   @map("relative_time")
+  publishTime  DateTime @map("publish_time")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("google_reviews")
+}
