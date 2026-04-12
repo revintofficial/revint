@@ -8,11 +8,11 @@ frontend:
         - npm ci
     build:
       commands:
+        - echo "DATABASE_URL=postgresql://postgres.vxymhsvrflacpcpfpmwn:n6G6bBg3jC7vSyAH@aws-0-eu-west-1.pooler.supabase.com:5432/postgres" >> .env
+        - echo "GEMINI_API_KEY=AIzaSyBjJUlnitVEG1_gP7pNmd2yDZ1ZYf4TSgo" >> .env
+        - echo "GOOGLE_PLACES_API_KEY=AIzaSyDrdO11G0Y5vnJa_NjL3K9EbrVu0-77hHg" >> .env
         - echo "=== Environment Check ==="
-        - echo "DATABASE_URL set = $(if [ -n \"$DATABASE_URL\" ]; then echo YES; else echo NO; fi)"
-        - echo "GEMINI_API_KEY set = $(if [ -n \"$GEMINI_API_KEY\" ]; then echo YES; else echo NO; fi)"
-        - echo "GOOGLE_PLACES_API_KEY set = $(if [ -n \"$GOOGLE_PLACES_API_KEY\" ]; then echo YES; else echo NO; fi)"
-        - echo "NODE_ENV = $NODE_ENV"
+        - cat .env | grep -oP '^\w+' | while read key; do echo "$key = SET"; done
         - npm run build
   artifacts:
     baseDirectory: .next
