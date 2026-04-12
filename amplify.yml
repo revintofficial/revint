@@ -9,6 +9,7 @@ frontend:
     build:
       commands:
         - npx prisma generate
+        - env | grep -e DATABASE_URL -e GEMINI_API_KEY -e GOOGLE_PLACES_API_KEY | head -c 100 || true
         - npm run build
   artifacts:
     baseDirectory: .next
