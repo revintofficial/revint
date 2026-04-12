@@ -20,8 +20,13 @@ export default function CampaignsPage() {
 
   useEffect(() => {
     fetch("/api/campaigns")
-      .then((r) => r.json())
-      .then(setCampaigns)
+      .then((r) => {
+        if (!r.ok) throw new Error(`API ${r.status}`);
+        return r.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) setCampaigns(data);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
