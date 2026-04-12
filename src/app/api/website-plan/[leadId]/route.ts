@@ -15,7 +15,7 @@ export async function POST(
       include: {
         websiteAudit: true,
         salesOpportunity: true,
-        googleReviews: { orderBy: { publishTime: "desc" }, take: 30 },
+        googleReviews: { orderBy: { publishTime: "desc" } },
         watchlistItem: true,
       },
     });

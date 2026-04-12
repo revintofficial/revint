@@ -5,7 +5,6 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
 }
 
 enum CrawlStatus {
@@ -117,13 +116,14 @@ model SalesOpportunity {
 }
 
 model WatchlistItem {
-  id          String   @id @default(cuid())
-  leadId      String   @unique @map("lead_id")
-  siteUrl     String?  @map("site_url")
-  notes       String?
-  websitePlan String?  @map("website_plan") @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id            String          @id @default(cuid())
+  leadId        String          @unique @map("lead_id")
+  siteUrl       String?         @map("site_url")
+  notes         String?
+  websitePlan   String?         @map("website_plan") @db.Text
+  selectedOffer SuggestedOffer? @map("selected_offer")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 

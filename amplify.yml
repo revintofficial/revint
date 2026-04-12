@@ -8,8 +8,9 @@ frontend:
         - npm ci
     build:
       commands:
-        - npx prisma generate
-        - echo "DATABASE_URL is set = $(if [ -n \"$DATABASE_URL\" ]; then echo YES; else echo NO; fi)"
+        - echo "DATABASE_URL set = $(if [ -n \"$DATABASE_URL\" ]; then echo YES; else echo NO; fi)"
+        - echo "GEMINI_API_KEY set = $(if [ -n \"$GEMINI_API_KEY\" ]; then echo YES; else echo NO; fi)"
+        - echo "GOOGLE_PLACES_API_KEY set = $(if [ -n \"$GOOGLE_PLACES_API_KEY\" ]; then echo YES; else echo NO; fi)"
         - npm run build
   artifacts:
     baseDirectory: .next

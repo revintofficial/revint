@@ -8,13 +8,22 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { siteUrl, notes } = body;
+    const { siteUrl, notes, selectedOffer } = body;
+
+    const validOffers = ["STARTER", "GROWTH", "SALES"];
+    const offerValue =
+      selectedOffer === null
+        ? null
+        : validOffers.includes(selectedOffer)
+          ? selectedOffer
+          : undefined;
 
     const item = await prisma.watchlistItem.update({
       where: { id },
       data: {
         ...(siteUrl !== undefined && { siteUrl }),
         ...(notes !== undefined && { notes }),
+        ...(offerValue !== undefined && { selectedOffer: offerValue }),
       },
       include: {
         lead: true,

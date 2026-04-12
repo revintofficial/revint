@@ -100,7 +100,7 @@ export default function CampaignsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="border border-zinc-200 rounded-lg p-4">
               <h3 className="font-bold text-lg">Starter</h3>
               <p className="text-2xl font-bold text-zinc-900 mt-1">
@@ -124,19 +124,7 @@ export default function CampaignsPage() {
                 <li>&bull; WhatsApp entegrasyonu</li>
                 <li>&bull; Local SEO optimizasyonu</li>
                 <li>&bull; Google yorumlari widget</li>
-              </ul>
-            </div>
-            <div className="border border-zinc-200 rounded-lg p-4">
-              <h3 className="font-bold text-lg">Sales</h3>
-              <p className="text-2xl font-bold text-zinc-900 mt-1">
-                &pound;1500-3000
-              </p>
-              <ul className="mt-3 space-y-1 text-sm text-zinc-600">
-                <li>&bull; Growth paketi + envanter showcase</li>
                 <li>&bull; Online satis altyapisi</li>
-                <li>&bull; Yorum embedding</li>
-                <li>&bull; Lead capture formlari</li>
-                <li>&bull; CRM entegrasyonu</li>
               </ul>
             </div>
           </div>

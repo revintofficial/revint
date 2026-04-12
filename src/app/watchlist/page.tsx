@@ -33,6 +33,7 @@ interface WatchlistItem {
   siteUrl: string | null;
   notes: string | null;
   websitePlan: string | null;
+  selectedOffer: "STARTER" | "GROWTH" | "SALES" | null;
   createdAt: string;
   updatedAt: string;
   lead: {
@@ -52,6 +53,262 @@ export default function WatchlistPage() {
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzingAll, setAnalyzingAll] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPDF = async () => {
+    if (items.length === 0) return;
+    setExporting(true);
+    try {
+      const { default: jsPDF } = await import("jspdf");
+
+      const toBase64 = async (url: string) => {
+        const res = await fetch(url);
+        const buf = await res.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        const chunks: string[] = [];
+        for (let i = 0; i < bytes.length; i += 8192) {
+          chunks.push(String.fromCharCode(...bytes.slice(i, i + 8192)));
+        }
+        return btoa(chunks.join(""));
+      };
+
+      const [regularB64, boldB64] = await Promise.all([
+        toBase64("/fonts/Roboto-Regular.ttf"),
+        toBase64("/fonts/Roboto-Bold.ttf"),
+      ]);
+
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      pdf.addFileToVFS("Roboto-Regular.ttf", regularB64);
+      pdf.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+      pdf.addFileToVFS("Roboto-Bold.ttf", boldB64);
+      pdf.addFont("Roboto-Bold.ttf", "Roboto", "bold");
+      pdf.setFont("Roboto", "normal");
+
+      const pageW = 210;
+      const pageH = 297;
+      const margin = 15;
+      const contentW = pageW - margin * 2;
+      let y = margin;
+
+      const checkPage = (needed: number) => {
+        if (y + needed > pageH - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+      };
+
+      const addTitle = (_text: string, size: number, color: [number, number, number] = [24, 24, 27]) => {
+        pdf.setFontSize(size);
+        pdf.setTextColor(...color);
+        pdf.setFont("Roboto", "bold");
+      };
+
+      const addBody = (size = 10, color: [number, number, number] = [63, 63, 70]) => {
+        pdf.setFontSize(size);
+        pdf.setTextColor(...color);
+        pdf.setFont("Roboto", "normal");
+      };
+
+      const writeWrapped = (text: string, indent = 0) => {
+        const lines = pdf.splitTextToSize(text, contentW - indent);
+        for (const line of lines) {
+          checkPage(5);
+          pdf.text(line, margin + indent, y);
+          y += 5;
+        }
+      };
+
+      addTitle("Watchlist Raporu", 20);
+      pdf.text("Watchlist Raporu", margin, y);
+      y += 8;
+      addBody(10, [113, 113, 122]);
+      pdf.text(`${items.length} lead | ${new Date().toLocaleDateString("tr-TR")}`, margin, y);
+      y += 4;
+
+      const analyzed = items.filter((i) => i.lead.salesOpportunity);
+      if (analyzed.length > 0) {
+        const avg = Math.round(
+          analyzed.reduce((s, i) => s + (i.lead.salesOpportunity?.opportunityScore || 0), 0) / analyzed.length
+        );
+        pdf.text(`Ortalama Fırsat Skoru: ${avg}/100`, margin, y);
+      }
+      y += 8;
+      pdf.setDrawColor(228, 228, 231);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 8;
+
+      for (let idx = 0; idx < items.length; idx++) {
+        const item = items[idx];
+        const opp = item.lead.salesOpportunity;
+        const reviews = item.lead.googleReviews || [];
+
+        checkPage(30);
+
+        addTitle(`${idx + 1}. ${item.lead.businessName}`, 14);
+        pdf.text(`${idx + 1}. ${item.lead.businessName}`, margin, y);
+        y += 6;
+
+        if (opp) {
+          const scoreColor: [number, number, number] =
+            opp.opportunityScore >= 60 ? [5, 150, 105] : opp.opportunityScore >= 35 ? [217, 119, 6] : [113, 113, 122];
+          pdf.setFontSize(10);
+          pdf.setFont("Roboto", "bold");
+          pdf.setTextColor(...scoreColor);
+          pdf.text(`Skor: ${opp.opportunityScore}/100`, pageW - margin - 25, y - 6);
+        }
+
+        addBody(9, [113, 113, 122]);
+        pdf.text(item.lead.formattedAddress, margin, y);
+        y += 5;
+
+        if (item.lead.borough) {
+          pdf.text(`İlçe: ${item.lead.borough}`, margin, y);
+          y += 5;
+        }
+
+        if (item.lead.phone) {
+          pdf.text(`Tel: ${item.lead.phone}`, margin, y);
+          y += 5;
+        }
+
+        if (item.lead.websiteUrl) {
+          pdf.setTextColor(79, 70, 229);
+          pdf.text(`Web: ${item.lead.websiteUrl}`, margin, y);
+          y += 5;
+        }
+
+        if (item.siteUrl) {
+          pdf.setTextColor(79, 70, 229);
+          pdf.text(`Yapılan Site: ${item.siteUrl}`, margin, y);
+          y += 5;
+        }
+
+        if (item.notes) {
+          y += 2;
+          addBody(9, [63, 63, 70]);
+          addTitle("Notlar:", 9);
+          pdf.text("Notlar:", margin, y);
+          y += 4;
+          addBody(9);
+          writeWrapped(item.notes, 2);
+        }
+
+        if (opp) {
+          y += 3;
+          checkPage(25);
+          addTitle("AI Analiz", 11, [24, 24, 27]);
+          pdf.text("AI Analiz", margin, y);
+          y += 5;
+          addBody(9);
+
+          pdf.text(`Önerilen Paket: ${opp.suggestedOffer}`, margin + 2, y);
+          y += 5;
+          if (opp.expectedPriceBand) {
+            pdf.text(`Fiyat Aralığı: ${opp.expectedPriceBand}`, margin + 2, y);
+            y += 5;
+          }
+          if (opp.status) {
+            pdf.text(`Durum: ${opp.status}`, margin + 2, y);
+            y += 5;
+          }
+
+          if (opp.whyGoodTarget) {
+            checkPage(10);
+            addTitle("Neden İyi Hedef:", 9, [63, 63, 70]);
+            pdf.text("Neden İyi Hedef:", margin + 2, y);
+            y += 4;
+            addBody(9);
+            writeWrapped(opp.whyGoodTarget, 4);
+          }
+
+          const reasonCodes = opp.reasonCodes || [];
+          if (reasonCodes.length > 0) {
+            checkPage(8);
+            addTitle("Sorunlar:", 9, [63, 63, 70]);
+            pdf.text("Sorunlar:", margin + 2, y);
+            y += 4;
+            addBody(9);
+            const labels = reasonCodes.map((c) => REASON_LABELS[c] || c).join(", ");
+            writeWrapped(labels, 4);
+          }
+
+          const painPoints = opp.likelyPainPoints || [];
+          if (painPoints.length > 0) {
+            checkPage(8);
+            addTitle("Acı Noktaları:", 9, [63, 63, 70]);
+            pdf.text("Acı Noktaları:", margin + 2, y);
+            y += 4;
+            addBody(9);
+            for (const p of painPoints) {
+              checkPage(5);
+              pdf.text(`• ${REASON_LABELS[p] || p}`, margin + 4, y);
+              y += 4.5;
+            }
+          }
+
+          if (opp.bestSalesAngle) {
+            checkPage(8);
+            addTitle("Satış Açısı:", 9, [63, 63, 70]);
+            pdf.text("Satış Açısı:", margin + 2, y);
+            y += 4;
+            addBody(9);
+            writeWrapped(opp.bestSalesAngle, 4);
+          }
+
+          if (opp.personalizedFirstMessage) {
+            checkPage(10);
+            addTitle("Kişiselleştirilmiş Mesaj:", 9, [5, 150, 105]);
+            pdf.text("Kişiselleştirilmiş Mesaj:", margin + 2, y);
+            y += 4;
+            addBody(9, [6, 95, 70]);
+            writeWrapped(opp.personalizedFirstMessage, 4);
+          }
+        }
+
+        if (reviews.length > 0) {
+          y += 3;
+          checkPage(15);
+          const avgR = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
+          addTitle(`Google Yorumları (${reviews.length} yorum, ort: ${avgR})`, 9, [113, 113, 122]);
+          pdf.text(`Google Yorumları (${reviews.length} yorum, ort: ${avgR})`, margin, y);
+          y += 5;
+
+          const maxReviews = Math.min(reviews.length, 5);
+          for (let ri = 0; ri < maxReviews; ri++) {
+            const r = reviews[ri];
+            checkPage(12);
+            addBody(8, [113, 113, 122]);
+            const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
+            pdf.text(`${r.authorName}  ${stars}  ${r.relativeTime}`, margin + 2, y);
+            y += 4;
+            if (r.text) {
+              addBody(8, [82, 82, 91]);
+              const trimmed = r.text.length > 200 ? r.text.slice(0, 200) + "..." : r.text;
+              writeWrapped(trimmed, 4);
+            }
+            y += 2;
+          }
+          if (reviews.length > 5) {
+            addBody(8, [161, 161, 170]);
+            pdf.text(`... ve ${reviews.length - 5} yorum daha`, margin + 2, y);
+            y += 5;
+          }
+        }
+
+        y += 4;
+        pdf.setDrawColor(228, 228, 231);
+        pdf.line(margin, y, pageW - margin, y);
+        y += 8;
+      }
+
+      pdf.save(`watchlist_raporu_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const fetchWatchlist = useCallback(async () => {
     setLoading(true);
@@ -95,6 +352,14 @@ export default function WatchlistPage() {
     setItems((prev) =>
       prev.map((item) =>
         item.id === itemId ? { ...item, websitePlan: plan } : item
+      )
+    );
+  };
+
+  const handleOfferChange = (itemId: string, offer: "STARTER" | "GROWTH" | "SALES" | null) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, selectedOffer: offer } : item
       )
     );
   };
@@ -143,6 +408,23 @@ export default function WatchlistPage() {
               ? "Yukleniyor..."
               : `${items.length} lead takip ediliyor`}
           </p>
+          {!loading && items.filter((i) => i.selectedOffer).length > 0 && (
+            <div className="flex items-center gap-2 mt-1.5">
+              {(["STARTER", "GROWTH"] as const).map((offer) => {
+                const count = items.filter((i) => i.selectedOffer === offer).length;
+                if (count === 0) return null;
+                const colors = {
+                  STARTER: "bg-emerald-100 text-emerald-700",
+                  GROWTH: "bg-blue-100 text-blue-700",
+                };
+                return (
+                  <span key={offer} className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${colors[offer]}`}>
+                    {offer} <span className="font-bold">{count}</span>
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {!loading && items.length > 0 && (
@@ -164,6 +446,26 @@ export default function WatchlistPage() {
                   : `Tumunu Analiz Et (${unanalyzedCount})`}
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleExportPDF}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <>
+                  <div className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600 mr-1.5" />
+                  Hazirlaniyor...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  PDF Raporu
+                </>
+              )}
+            </Button>
           </div>
         )}
       </div>
@@ -191,6 +493,7 @@ export default function WatchlistPage() {
             onRemove={handleRemove}
             onReviewsUpdate={handleReviewsUpdate}
             onPlanUpdate={handlePlanUpdate}
+            onOfferChange={handleOfferChange}
             onRefresh={fetchWatchlist}
           />
         ))}
@@ -611,17 +914,145 @@ function WebsitePlanPanel({
   );
 }
 
+const OFFER_PACKAGES = [
+  {
+    value: "STARTER" as const,
+    label: "Starter",
+    price: "£500–800",
+    color: "emerald",
+    description: "Tek sayfa, mobil uyumlu site",
+  },
+  {
+    value: "GROWTH" as const,
+    label: "Growth",
+    price: "£800–1500",
+    color: "blue",
+    description: "Cok sayfa, SEO, online satis",
+  },
+] as const;
+
+function OfferSelector({
+  itemId,
+  selectedOffer,
+  suggestedOffer,
+  onOfferChange,
+}: {
+  itemId: string;
+  selectedOffer: "STARTER" | "GROWTH" | "SALES" | null;
+  suggestedOffer?: string | null;
+  onOfferChange: (itemId: string, offer: "STARTER" | "GROWTH" | "SALES" | null) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  const handleSelect = async (offer: "STARTER" | "GROWTH" | "SALES") => {
+    const newValue = selectedOffer === offer ? null : offer;
+    onOfferChange(itemId, newValue);
+    setSaving(true);
+    try {
+      await fetch(`/api/watchlist/${itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selectedOffer: newValue }),
+      });
+    } catch {
+      onOfferChange(itemId, selectedOffer);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+          Teklif Paketi
+        </label>
+        {saving && (
+          <span className="text-[10px] text-zinc-400 animate-pulse">kaydediliyor...</span>
+        )}
+        {suggestedOffer && !selectedOffer && (
+          <span className="text-[10px] text-zinc-400">
+            AI onerisi: {suggestedOffer}
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {OFFER_PACKAGES.map((pkg) => {
+          const isSelected = selectedOffer === pkg.value;
+          const isSuggested = suggestedOffer === pkg.value;
+          const colorMap = {
+            emerald: {
+              selected: "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20",
+              hover: "hover:border-emerald-300 hover:bg-emerald-50/50",
+              dot: "bg-emerald-500",
+              label: "text-emerald-700",
+              price: "text-emerald-600",
+            },
+            blue: {
+              selected: "border-blue-500 bg-blue-50 ring-2 ring-blue-500/20",
+              hover: "hover:border-blue-300 hover:bg-blue-50/50",
+              dot: "bg-blue-500",
+              label: "text-blue-700",
+              price: "text-blue-600",
+            },
+          };
+          const colors = colorMap[pkg.color];
+
+          return (
+            <button
+              key={pkg.value}
+              onClick={() => handleSelect(pkg.value)}
+              className={`relative rounded-lg border p-2.5 text-left transition-all ${
+                isSelected
+                  ? colors.selected
+                  : `border-zinc-200 bg-white ${colors.hover}`
+              }`}
+            >
+              {isSelected && (
+                <div className="absolute top-1.5 right-1.5">
+                  <svg className={`w-4 h-4 ${colors.label}`} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+              {isSuggested && !isSelected && (
+                <div className="absolute top-1.5 right-1.5">
+                  <span className="text-[9px] font-medium text-zinc-400 bg-zinc-100 px-1 rounded">AI</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1.5 mb-1">
+                <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
+                <span className={`text-sm font-semibold ${isSelected ? colors.label : "text-zinc-700"}`}>
+                  {pkg.label}
+                </span>
+              </div>
+              <div className={`text-xs font-medium ${isSelected ? colors.price : "text-zinc-500"}`}>
+                {pkg.price}
+              </div>
+              <div className="text-[10px] text-zinc-400 mt-0.5 leading-tight">
+                {pkg.description}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function WatchlistCard({
   item,
   onRemove,
   onReviewsUpdate,
   onPlanUpdate,
+  onOfferChange,
   onRefresh,
 }: {
   item: WatchlistItem;
   onRemove: (id: string) => void;
   onReviewsUpdate: (leadId: string, reviews: GoogleReviewData[]) => void;
   onPlanUpdate: (itemId: string, plan: string) => void;
+  onOfferChange: (itemId: string, offer: "STARTER" | "GROWTH" | "SALES" | null) => void;
   onRefresh: () => void;
 }) {
   const [siteUrl, setSiteUrl] = useState(item.siteUrl || "");
@@ -790,13 +1221,28 @@ function WatchlistCard({
             <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
               Yapilan Site URL
             </label>
-            <input
-              type="url"
-              value={siteUrl}
-              onChange={(e) => handleSiteUrlChange(e.target.value)}
-              placeholder="https://example.com"
-              className="w-full mt-1 h-9 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:bg-white transition-colors"
-            />
+            <div className="flex items-center gap-2 mt-1">
+              <input
+                type="url"
+                value={siteUrl}
+                onChange={(e) => handleSiteUrlChange(e.target.value)}
+                placeholder="https://example.com"
+                className="flex-1 h-9 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:bg-white transition-colors"
+              />
+              {siteUrl && (
+                <a
+                  href={siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 h-9 w-9 rounded-md border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                  title="Siteyi ac"
+                >
+                  <svg className="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              )}
+            </div>
           </div>
           <div>
             <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
@@ -829,6 +1275,13 @@ function WatchlistCard({
             className="w-full mt-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:bg-white resize-none transition-colors"
           />
         </div>
+
+        <OfferSelector
+          itemId={item.id}
+          selectedOffer={item.selectedOffer}
+          suggestedOffer={opp?.suggestedOffer}
+          onOfferChange={onOfferChange}
+        />
 
         {item.lead.phone && (
           <div>
