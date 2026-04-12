@@ -31,8 +31,20 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetch("/api/stats")
-      .then((r) => r.json())
-      .then(setStats)
+      .then((r) => {
+        if (!r.ok) throw new Error(`API ${r.status}`);
+        return r.json();
+      })
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setStats({
+          ...data,
+          boroughDistribution: data.boroughDistribution ?? [],
+          outreachStatus: data.outreachStatus ?? [],
+          crawlStatus: data.crawlStatus ?? [],
+          analyzeStatus: data.analyzeStatus ?? [],
+        });
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);

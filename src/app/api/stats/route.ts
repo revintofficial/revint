@@ -70,9 +70,11 @@ export async function GET() {
       })),
     });
   } catch (error) {
-    console.error("Stats error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Stats error:", message, error);
+    console.error("DATABASE_URL set:", !!process.env.DATABASE_URL);
     return NextResponse.json(
-      { error: "Failed to fetch stats" },
+      { error: "Failed to fetch stats", detail: message },
       { status: 500 }
     );
   }
