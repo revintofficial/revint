@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { GeminiAnalysis, WebsiteFeatures } from "@/types";
+import type { GeminiAnalysis, WebsiteFeatures, AuditChecklistResult } from "@/types";
+import { WEBSITE_PLAN_SYSTEM_CONTEXT, WEBSITE_PLAN_TEMPLATE } from "./prompts/website-plan-prompt";
+import { formatChecklistForPrompt } from "./audit-checklist";
 
 function getClient() {
   const key = process.env.GEMINI_API_KEY;
@@ -7,7 +9,7 @@ function getClient() {
   return new GoogleGenerativeAI(key);
 }
 
-interface WebsitePlanInput {
+export interface WebsitePlanInput {
   businessName: string;
   address: string;
   phone: string | null;
@@ -24,6 +26,7 @@ interface WebsitePlanInput {
     suggestedOffer: string;
     bestSalesAngle: string | null;
   } | null;
+  auditChecklist: AuditChecklistResult | null;
 }
 
 const ANALYSIS_PROMPT = `You are a lead analyst for a web design agency that sells websites to phone repair shops.
@@ -90,97 +93,49 @@ export async function analyzeLeadWithGemini(
   return analysis;
 }
 
-const WEBSITE_PLAN_PROMPT = `Sen deneyimli bir web tasarım ajansının stratejistisin. Aşağıda sana bir işletme hakkında tüm bilgiler verilecek: 
-işletme bilgileri, Google yorumları, mevcut website analizi ve satış fırsat analizi.
-
-Bu bilgileri kullanarak, bu işletme için yapılabilecek DETAYLI bir web sitesi planı yaz. Plan Markdown formatında olmalı.
-
-## İşletme Bilgileri
-- Ad: {business_name}
-- Adres: {address}
-- Telefon: {phone}
-- Puan: {rating} ({review_count} yorum)
-- Mevcut Website: {website_url}
-
-## Mevcut Website Analizi
-{website_analysis}
-
-## Satış Fırsat Analizi
-{sales_analysis}
-
-## Google Yorumları (Müşteri Geri Bildirimleri)
-{reviews}
-
----
-
-Yukarıdaki tüm bilgileri analiz ederek aşağıdaki yapıda DETAYLI bir web sitesi planı oluştur:
-
-# 🌐 {business_name} - Web Sitesi Tasarım Planı
-
-## 📊 İşletme Analizi Özeti
-(Yorumlardan ve verilerden çıkarılan işletme profili, güçlü/zayıf yönler)
-
-## 🎯 Hedef Kitle
-(Yorumlardan analiz edilen müşteri profili, demografik bilgiler)
-
-## 🏗️ Site Yapısı (Sayfa Haritası)
-(Her sayfa için detaylı içerik planı - Ana Sayfa, Hakkımızda, Hizmetler, Galeri, İletişim vb.)
-
-## 🎨 Tasarım Önerileri
-(Renk paleti, font önerileri, görsel stil, UX/UI önerileri)
-
-## ✨ Öne Çıkan Özellikler
-(Online randevu, WhatsApp entegrasyonu, Google Reviews widget, galeri, fiyat listesi vb.)
-
-## 📱 Mobil Uyumluluk Planı
-(Responsive tasarım detayları)
-
-## 🔍 SEO Stratejisi
-(Anahtar kelimeler, yerel SEO, Google My Business optimizasyonu)
-
-## 💰 Fiyatlandırma ve Paket Önerisi
-(Önerilen paket, fiyat aralığı, dahil olan özellikler)
-
-## 📅 Tahmini Zaman Çizelgesi
-(Haftalık iş planı)
-
-## 🚀 Sonraki Adımlar
-(Müşteriye önerilen aksiyon planı)
-
-IMPORTANT: Yanıtını SADECE Markdown formatında yaz. Hiçbir ek açıklama veya sarmalayıcı ekleme.
-Yorumlardaki müşteri geri bildirimlerini dikkatli analiz et - hangi hizmetlerden memnunlar, nelerden şikayet ediyorlar, bu bilgileri siteye nasıl yansıtılmalı detaylıca yaz.`;
-
 export async function generateWebsitePlan(input: WebsitePlanInput): Promise<string> {
   const client = getClient();
-  const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const model = client.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    generationConfig: {
+      maxOutputTokens: 16384,
+      temperature: 0.7,
+    },
+  });
 
   const reviewsText = input.reviews.length > 0
-    ? input.reviews.map((r, i) => 
-        `${i + 1}. ${r.authorName} (${r.rating}⭐): ${r.text || "Yorum metni yok"}`
+    ? input.reviews.map((r, i) =>
+        `${i + 1}. ${r.authorName} (${r.rating}/5): ${r.text || "Yorum metni yok"}`
       ).join("\n")
-    : "Henüz Google yorumu bulunamadı.";
+    : "Henuz Google yorumu bulunamadi.";
 
   const websiteAnalysisText = input.features
     ? JSON.stringify(input.features, null, 2)
-    : "Mevcut web sitesi yok veya analiz yapılmamış.";
+    : "Mevcut web sitesi yok veya analiz yapilmamis.";
 
   const salesAnalysisText = input.salesOpportunity
-    ? `- Fırsat Skoru: ${input.salesOpportunity.opportunityScore}/100
-- Neden Kodları: ${(input.salesOpportunity.reasonCodes as string[]).join(", ")}
-- Neden İyi Hedef: ${input.salesOpportunity.whyGoodTarget || "N/A"}
-- Acı Noktaları: ${(input.salesOpportunity.likelyPainPoints as string[]).join(", ")}
-- Önerilen Paket: ${input.salesOpportunity.suggestedOffer}
-- Satış Açısı: ${input.salesOpportunity.bestSalesAngle || "N/A"}`
-    : "Henüz satış fırsat analizi yapılmamış.";
+    ? `- Firsat Skoru: ${input.salesOpportunity.opportunityScore}/100
+- Neden Kodlari: ${(input.salesOpportunity.reasonCodes as string[]).join(", ")}
+- Neden Iyi Hedef: ${input.salesOpportunity.whyGoodTarget || "N/A"}
+- Aci Noktalari: ${(input.salesOpportunity.likelyPainPoints as string[]).join(", ")}
+- Onerilen Paket: ${input.salesOpportunity.suggestedOffer}
+- Satis Acisi: ${input.salesOpportunity.bestSalesAngle || "N/A"}`
+    : "Henuz satis firsat analizi yapilmamis.";
 
-  const prompt = WEBSITE_PLAN_PROMPT
+  const auditChecklistText = input.auditChecklist
+    ? formatChecklistForPrompt(input.auditChecklist)
+    : "Otomatik audit yapilmamis - mevcut website yok veya taranmamis.";
+
+  const prompt = WEBSITE_PLAN_TEMPLATE
+    .replace("{system_context}", WEBSITE_PLAN_SYSTEM_CONTEXT)
     .replace("{business_name}", input.businessName)
     .replace("{business_name}", input.businessName)
     .replace("{address}", input.address)
-    .replace("{phone}", input.phone || "Belirtilmemiş")
+    .replace("{phone}", input.phone || "Belirtilmemis")
     .replace("{rating}", input.rating?.toString() ?? "N/A")
     .replace("{review_count}", input.reviewCount?.toString() ?? "0")
     .replace("{website_url}", input.websiteUrl ?? "Mevcut website yok")
+    .replace("{audit_checklist}", auditChecklistText)
     .replace("{website_analysis}", websiteAnalysisText)
     .replace("{sales_analysis}", salesAnalysisText)
     .replace("{reviews}", reviewsText);

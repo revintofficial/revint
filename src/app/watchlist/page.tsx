@@ -34,6 +34,7 @@ interface WatchlistItem {
   notes: string | null;
   websitePlan: string | null;
   selectedOffer: "STARTER" | "GROWTH" | "SALES" | null;
+  meetingResult: "POSITIVE" | "NEGATIVE" | null;
   createdAt: string;
   updatedAt: string;
   lead: {
@@ -49,11 +50,14 @@ interface WatchlistItem {
   };
 }
 
+type MeetingFilter = "ALL" | "POSITIVE" | "NEGATIVE" | "PENDING";
+
 export default function WatchlistPage() {
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzingAll, setAnalyzingAll] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [meetingFilter, setMeetingFilter] = useState<MeetingFilter>("ALL");
 
   const handleExportPDF = async () => {
     if (items.length === 0) return;
@@ -364,6 +368,14 @@ export default function WatchlistPage() {
     );
   };
 
+  const handleMeetingResultChange = (itemId: string, result: "POSITIVE" | "NEGATIVE" | null) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, meetingResult: result } : item
+      )
+    );
+  };
+
   const handleAnalyzeAll = async () => {
     setAnalyzingAll(true);
     const unanalyzed = items.filter(
@@ -397,6 +409,25 @@ export default function WatchlistPage() {
   const unanalyzedCount = items.filter(
     (i) => !i.lead.salesOpportunity
   ).length;
+
+  const positiveCount = items.filter((i) => i.meetingResult === "POSITIVE").length;
+  const negativeCount = items.filter((i) => i.meetingResult === "NEGATIVE").length;
+  const pendingCount = items.filter((i) => !i.meetingResult).length;
+
+  const filteredItems = items.filter((item) => {
+    if (meetingFilter === "ALL") return true;
+    if (meetingFilter === "POSITIVE") return item.meetingResult === "POSITIVE";
+    if (meetingFilter === "NEGATIVE") return item.meetingResult === "NEGATIVE";
+    if (meetingFilter === "PENDING") return !item.meetingResult;
+    return true;
+  });
+
+  const FILTER_TABS: { value: MeetingFilter; label: string; count: number; color: string; activeColor: string }[] = [
+    { value: "ALL", label: "Tumunu", count: items.length, color: "text-zinc-600", activeColor: "bg-zinc-900 text-white" },
+    { value: "POSITIVE", label: "Olumlu", count: positiveCount, color: "text-emerald-600", activeColor: "bg-emerald-600 text-white" },
+    { value: "NEGATIVE", label: "Olumsuz", count: negativeCount, color: "text-red-600", activeColor: "bg-red-600 text-white" },
+    { value: "PENDING", label: "Bekleyen", count: pendingCount, color: "text-zinc-500", activeColor: "bg-zinc-600 text-white" },
+  ];
 
   return (
     <div className="p-8 space-y-6">
@@ -470,6 +501,41 @@ export default function WatchlistPage() {
         )}
       </div>
 
+      {!loading && items.length > 0 && (
+        <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg w-fit">
+          {FILTER_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setMeetingFilter(tab.value)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                meetingFilter === tab.value
+                  ? tab.activeColor + " shadow-sm"
+                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50"
+              }`}
+            >
+              {tab.value === "POSITIVE" && (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              {tab.value === "NEGATIVE" && (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              {tab.label}
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+                meetingFilter === tab.value
+                  ? "bg-white/20"
+                  : "bg-zinc-200 text-zinc-500"
+              }`}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {!loading && items.length === 0 && (
         <Card>
           <CardContent className="py-12">
@@ -485,8 +551,23 @@ export default function WatchlistPage() {
         </Card>
       )}
 
+      {!loading && items.length > 0 && filteredItems.length === 0 && (
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center text-zinc-400">
+              <p className="text-lg font-medium">
+                Bu filtreye uygun lead bulunamadi
+              </p>
+              <p className="text-sm mt-1">
+                Farkli bir filtre secmeyi deneyin.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4">
-        {items.map((item) => (
+        {filteredItems.map((item) => (
           <WatchlistCard
             key={item.id}
             item={item}
@@ -494,6 +575,7 @@ export default function WatchlistPage() {
             onReviewsUpdate={handleReviewsUpdate}
             onPlanUpdate={handlePlanUpdate}
             onOfferChange={handleOfferChange}
+            onMeetingResultChange={handleMeetingResultChange}
             onRefresh={fetchWatchlist}
           />
         ))}
@@ -533,6 +615,13 @@ const REASON_LABELS: Record<string, string> = {
   site_unreachable: "Site Erisim Disi",
   services_unclear: "Hizmetler Belirsiz",
   uncrawled_website: "Site Taranmadi",
+  no_contact_form: "Iletisim Formu Yok",
+  no_analytics: "Analytics Yok",
+  weak_security_headers: "Zayif Guvenlik",
+  no_open_graph: "Open Graph Yok",
+  no_structured_data: "Structured Data Yok",
+  accessibility_issues: "Erisilebilirlik Sorunlari",
+  no_pwa: "PWA Yok",
 };
 
 function SimpleMarkdown({ content }: { content: string }) {
@@ -1040,12 +1129,93 @@ function OfferSelector({
   );
 }
 
+function MeetingResultSelector({
+  itemId,
+  meetingResult,
+  onMeetingResultChange,
+}: {
+  itemId: string;
+  meetingResult: "POSITIVE" | "NEGATIVE" | null;
+  onMeetingResultChange: (itemId: string, result: "POSITIVE" | "NEGATIVE" | null) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+
+  const handleSelect = async (result: "POSITIVE" | "NEGATIVE") => {
+    const newValue = meetingResult === result ? null : result;
+    onMeetingResultChange(itemId, newValue);
+    setSaving(true);
+    try {
+      await fetch(`/api/watchlist/${itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meetingResult: newValue }),
+      });
+    } catch {
+      onMeetingResultChange(itemId, meetingResult);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+          Gorusme Sonucu
+        </label>
+        {saving && (
+          <span className="text-[10px] text-zinc-400 animate-pulse">kaydediliyor...</span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => handleSelect("POSITIVE")}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+            meetingResult === "POSITIVE"
+              ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-500/20"
+              : "border-zinc-200 bg-white text-zinc-600 hover:border-emerald-300 hover:bg-emerald-50/50"
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Olumlu Bitti
+          {meetingResult === "POSITIVE" && (
+            <svg className="w-3.5 h-3.5 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          )}
+        </button>
+        <button
+          onClick={() => handleSelect("NEGATIVE")}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+            meetingResult === "NEGATIVE"
+              ? "border-red-500 bg-red-50 text-red-700 ring-2 ring-red-500/20"
+              : "border-zinc-200 bg-white text-zinc-600 hover:border-red-300 hover:bg-red-50/50"
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Olumsuz Bitti
+          {meetingResult === "NEGATIVE" && (
+            <svg className="w-3.5 h-3.5 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function WatchlistCard({
   item,
   onRemove,
   onReviewsUpdate,
   onPlanUpdate,
   onOfferChange,
+  onMeetingResultChange,
   onRefresh,
 }: {
   item: WatchlistItem;
@@ -1053,6 +1223,7 @@ function WatchlistCard({
   onReviewsUpdate: (leadId: string, reviews: GoogleReviewData[]) => void;
   onPlanUpdate: (itemId: string, plan: string) => void;
   onOfferChange: (itemId: string, offer: "STARTER" | "GROWTH" | "SALES" | null) => void;
+  onMeetingResultChange: (itemId: string, result: "POSITIVE" | "NEGATIVE" | null) => void;
   onRefresh: () => void;
 }) {
   const [siteUrl, setSiteUrl] = useState(item.siteUrl || "");
@@ -1181,6 +1352,16 @@ function WatchlistCard({
             {saveStatus === "saved" && (
               <span className="text-xs text-green-500">Kaydedildi</span>
             )}
+            {item.meetingResult === "POSITIVE" && (
+              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                Olumlu
+              </Badge>
+            )}
+            {item.meetingResult === "NEGATIVE" && (
+              <Badge className="bg-red-100 text-red-700 border-red-200">
+                Olumsuz
+              </Badge>
+            )}
             {item.lead.borough && (
               <Badge variant="outline">{item.lead.borough}</Badge>
             )}
@@ -1195,6 +1376,11 @@ function WatchlistCard({
                 }
               >
                 Skor: {opp.opportunityScore}
+              </Badge>
+            )}
+            {item.websitePlan && (
+              <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">
+                Plan Hazir
               </Badge>
             )}
             {isAnalyzing && (
@@ -1281,6 +1467,12 @@ function WatchlistCard({
           selectedOffer={item.selectedOffer}
           suggestedOffer={opp?.suggestedOffer}
           onOfferChange={onOfferChange}
+        />
+
+        <MeetingResultSelector
+          itemId={item.id}
+          meetingResult={item.meetingResult}
+          onMeetingResultChange={onMeetingResultChange}
         />
 
         {item.lead.phone && (

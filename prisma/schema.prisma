@@ -37,6 +37,11 @@ enum OutreachStatus {
   LOST
 }
 
+enum MeetingResult {
+  POSITIVE
+  NEGATIVE
+}
+
 model Lead {
   id               String   @id @default(cuid())
   placeId          String   @unique @map("place_id")
@@ -122,6 +127,7 @@ model WatchlistItem {
   notes         String?
   websitePlan   String?         @map("website_plan") @db.Text
   selectedOffer SuggestedOffer? @map("selected_offer")
+  meetingResult MeetingResult?  @map("meeting_result")
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
 

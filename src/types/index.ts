@@ -45,6 +45,60 @@ export interface WebsiteFeatures {
   ctaLinks: { text: string; href: string }[];
   brokenLinksCount: number;
   structuredDataPresent: boolean;
+
+  // Extended audit fields (El Kitabi compliant)
+  hasOpenGraph: boolean;
+  hasTwitterCards: boolean;
+  hasFavicon: boolean;
+  hasManifest: boolean;
+  hasServiceWorker: boolean;
+  hasGoogleAnalytics: boolean;
+  hasCookieConsent: boolean;
+  hasResponsiveImages: boolean;
+  hasFontDisplay: boolean;
+  securityHeaders: SecurityHeadersResult;
+  schemaTypes: string[];
+  accessibilityIssues: string[];
+  fontsDetected: string[];
+  performanceHints: string[];
+  cssFramework: string | null;
+  pageCount: number;
+  consoleErrors: string[];
+}
+
+export interface SecurityHeadersResult {
+  hasCSP: boolean;
+  hasXFrameOptions: boolean;
+  hasXContentTypeOptions: boolean;
+  hasReferrerPolicy: boolean;
+  hasHSTS: boolean;
+  hasXXSSProtection: boolean;
+  hasPermissionsPolicy: boolean;
+}
+
+export interface CheckResult {
+  category: "seo" | "performance" | "security" | "accessibility" | "ux" | "pwa" | "form";
+  item: string;
+  status: "pass" | "fail" | "unknown";
+  priority: "critical" | "important" | "nice_to_have";
+  recommendation: string;
+}
+
+export interface AuditChecklistResult {
+  seo: CheckResult[];
+  performance: CheckResult[];
+  security: CheckResult[];
+  accessibility: CheckResult[];
+  ux: CheckResult[];
+  pwa: CheckResult[];
+  form: CheckResult[];
+  summary: {
+    totalChecks: number;
+    passed: number;
+    failed: number;
+    unknown: number;
+    scorePercent: number;
+  };
 }
 
 export interface GeminiAnalysis {

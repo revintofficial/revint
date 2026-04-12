@@ -1,9 +1,19 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+interface SecurityHeaders {
+  hasCSP: boolean;
+  hasXFrameOptions: boolean;
+  hasXContentTypeOptions: boolean;
+  hasReferrerPolicy: boolean;
+  hasHSTS: boolean;
+  hasXXSSProtection: boolean;
+  hasPermissionsPolicy: boolean;
+}
 
 interface LeadDetail {
   id: string;
@@ -35,6 +45,22 @@ interface LeadDetail {
     servicesDetected: string[];
     navItems: { text: string; href: string }[];
     ctaLinks: { text: string; href: string }[];
+    hasOpenGraph?: boolean;
+    hasTwitterCards?: boolean;
+    hasFavicon?: boolean;
+    hasManifest?: boolean;
+    hasServiceWorker?: boolean;
+    hasGoogleAnalytics?: boolean;
+    hasCookieConsent?: boolean;
+    hasResponsiveImages?: boolean;
+    hasFontDisplay?: boolean;
+    securityHeaders?: SecurityHeaders;
+    schemaTypes?: string[];
+    accessibilityIssues?: string[];
+    fontsDetected?: string[];
+    performanceHints?: string[];
+    cssFramework?: string | null;
+    pageCount?: number;
   } | null;
   salesOpportunity: {
     opportunityScore: number;
@@ -47,6 +73,10 @@ interface LeadDetail {
     expectedPriceBand: string | null;
     status: string;
   } | null;
+  watchlistItem?: {
+    id: string;
+    websitePlan: string | null;
+  } | null;
 }
 
 export default function LeadDetailPage({
@@ -58,11 +88,20 @@ export default function LeadDetailPage({
   const [lead, setLead] = useState<LeadDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [planGenerating, setPlanGenerating] = useState(false);
+  const [plan, setPlan] = useState<string | null>(null);
+  const [showPlan, setShowPlan] = useState(false);
+  const [auditSummary, setAuditSummary] = useState<{ totalChecks: number; passed: number; failed: number; scorePercent: number } | null>(null);
 
   useEffect(() => {
     fetch(`/api/leads/${id}`)
       .then((r) => r.json())
-      .then(setLead)
+      .then((data) => {
+        setLead(data);
+        if (data.watchlistItem?.websitePlan) {
+          setPlan(data.watchlistItem.websitePlan);
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [id]);
@@ -95,6 +134,25 @@ export default function LeadDetailPage({
     });
     const res = await fetch(`/api/leads/${id}`);
     setLead(await res.json());
+  };
+
+  const generatePlan = async () => {
+    setPlanGenerating(true);
+    try {
+      const res = await fetch(`/api/website-plan/${id}`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setPlan(data.plan);
+        setShowPlan(true);
+        if (data.auditSummary) {
+          setAuditSummary(data.auditSummary);
+        }
+      }
+    } catch (err) {
+      console.error("Plan generation failed:", err);
+    } finally {
+      setPlanGenerating(false);
+    }
   };
 
   if (loading) {
@@ -261,6 +319,90 @@ export default function LeadDetailPage({
                   label="E-commerce"
                   value={audit.hasEcommerce ? "Var" : "Yok"}
                 />
+
+                {/* Extended audit fields */}
+                <div className="border-t border-zinc-100 pt-3 mt-3">
+                  <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
+                    Genisletilmis Audit
+                  </p>
+                  <div className="space-y-2">
+                    <AuditBadgeRow label="Open Graph" value={audit.hasOpenGraph} />
+                    <AuditBadgeRow label="Twitter Cards" value={audit.hasTwitterCards} />
+                    <AuditBadgeRow label="Favicon" value={audit.hasFavicon} />
+                    <AuditBadgeRow label="PWA Manifest" value={audit.hasManifest} />
+                    <AuditBadgeRow label="Service Worker" value={audit.hasServiceWorker} />
+                    <AuditBadgeRow label="Google Analytics" value={audit.hasGoogleAnalytics} />
+                    <AuditBadgeRow label="Cookie Consent" value={audit.hasCookieConsent} />
+                    <AuditBadgeRow label="Responsive Gorseller" value={audit.hasResponsiveImages} />
+                    <AuditBadgeRow label="Font Display Swap" value={audit.hasFontDisplay} />
+                  </div>
+                </div>
+
+                {/* Security headers */}
+                {audit.securityHeaders && (
+                  <div className="border-t border-zinc-100 pt-3 mt-3">
+                    <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
+                      Guvenlik Header&apos;lari
+                    </p>
+                    <div className="space-y-2">
+                      <AuditBadgeRow label="CSP" value={audit.securityHeaders.hasCSP} />
+                      <AuditBadgeRow label="X-Frame-Options" value={audit.securityHeaders.hasXFrameOptions} />
+                      <AuditBadgeRow label="X-Content-Type" value={audit.securityHeaders.hasXContentTypeOptions} />
+                      <AuditBadgeRow label="Referrer-Policy" value={audit.securityHeaders.hasReferrerPolicy} />
+                      <AuditBadgeRow label="HSTS" value={audit.securityHeaders.hasHSTS} />
+                      <AuditBadgeRow label="Permissions-Policy" value={audit.securityHeaders.hasPermissionsPolicy} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Schema types */}
+                {audit.schemaTypes && audit.schemaTypes.length > 0 && (
+                  <div className="border-t border-zinc-100 pt-3 mt-3">
+                    <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
+                      Schema.org Tipleri
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {audit.schemaTypes.map((t) => (
+                        <Badge key={t} variant="outline">{t}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Accessibility issues */}
+                {audit.accessibilityIssues && audit.accessibilityIssues.length > 0 && (
+                  <div className="border-t border-zinc-100 pt-3 mt-3">
+                    <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
+                      Erisilebilirlik Sorunlari
+                    </p>
+                    <ul className="space-y-1">
+                      {audit.accessibilityIssues.map((issue, i) => (
+                        <li key={i} className="text-sm text-red-600 flex items-start gap-1.5">
+                          <span className="mt-0.5">&#x2022;</span>
+                          {issue}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Performance hints */}
+                {audit.performanceHints && audit.performanceHints.length > 0 && (
+                  <div className="border-t border-zinc-100 pt-3 mt-3">
+                    <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
+                      Performans Ipuclari
+                    </p>
+                    <ul className="space-y-1">
+                      {audit.performanceHints.map((hint, i) => (
+                        <li key={i} className="text-sm text-amber-600 flex items-start gap-1.5">
+                          <span className="mt-0.5">&#x2022;</span>
+                          {hint}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {audit.servicesDetected.length > 0 && (
                   <div>
                     <p className="text-sm font-medium text-zinc-500">
@@ -275,12 +417,19 @@ export default function LeadDetailPage({
                     </div>
                   </div>
                 )}
+
+                {audit.cssFramework && (
+                  <InfoRow label="CSS Framework" value={audit.cssFramework} />
+                )}
+                {typeof audit.pageCount === "number" && audit.pageCount > 0 && (
+                  <InfoRow label="Tespit Edilen Sayfa Sayisi" value={String(audit.pageCount)} />
+                )}
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Right Column: AI Analysis */}
+        {/* Right Column: AI Analysis + Plan */}
         <div className="space-y-6">
           {opp ? (
             <>
@@ -456,10 +605,276 @@ export default function LeadDetailPage({
               </CardContent>
             </Card>
           )}
+
+          {/* Website Plan Section */}
+          <WebsitePlanSection
+            leadId={id}
+            plan={plan}
+            showPlan={showPlan}
+            setShowPlan={setShowPlan}
+            generating={planGenerating}
+            onGenerate={generatePlan}
+            auditSummary={auditSummary}
+            businessName={lead.businessName}
+          />
         </div>
       </div>
     </div>
   );
+}
+
+function AuditBadgeRow({ label, value }: { label: string; value?: boolean }) {
+  if (value === undefined) return null;
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-zinc-500">{label}</span>
+      <Badge variant={value ? "success" : "destructive"} className="text-xs">
+        {value ? "Var" : "Yok"}
+      </Badge>
+    </div>
+  );
+}
+
+function WebsitePlanSection({
+  leadId,
+  plan,
+  showPlan,
+  setShowPlan,
+  generating,
+  onGenerate,
+  auditSummary,
+  businessName,
+}: {
+  leadId: string;
+  plan: string | null;
+  showPlan: boolean;
+  setShowPlan: (v: boolean) => void;
+  generating: boolean;
+  onGenerate: () => void;
+  auditSummary: { totalChecks: number; passed: number; failed: number; scorePercent: number } | null;
+  businessName: string;
+}) {
+  const planRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadMD = () => {
+    if (!plan) return;
+    const blob = new Blob([plan], { type: "text/markdown" });
+    const link = document.createElement("a");
+    link.download = `${businessName.replace(/\s+/g, "_")}_website_plan.md`;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle className="text-lg">AI Website Plan</CardTitle>
+          {auditSummary && (
+            <p className="text-xs text-zinc-400 mt-1">
+              Audit Skoru: {auditSummary.scorePercent}% ({auditSummary.passed}/{auditSummary.totalChecks - (auditSummary.totalChecks - auditSummary.passed - auditSummary.failed)} basarili)
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {plan && (
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs"
+                onClick={() => setShowPlan(!showPlan)}
+              >
+                {showPlan ? "Gizle" : "Goster"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs"
+                onClick={handleDownloadMD}
+              >
+                MD Indir
+              </Button>
+            </>
+          )}
+          <Button
+            size="sm"
+            onClick={onGenerate}
+            disabled={generating}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
+            {generating ? (
+              <>
+                <div className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white mr-1.5" />
+                Plan Olusturuluyor...
+              </>
+            ) : plan ? (
+              "Yeniden Olustur"
+            ) : (
+              "Website Plani Olustur"
+            )}
+          </Button>
+        </div>
+      </CardHeader>
+      {showPlan && plan && (
+        <CardContent>
+          <div
+            ref={planRef}
+            className="rounded-lg border border-zinc-200 bg-white p-6 max-h-[700px] overflow-y-auto"
+          >
+            <PlanMarkdownRenderer content={plan} />
+          </div>
+        </CardContent>
+      )}
+      {!plan && !generating && (
+        <CardContent>
+          <p className="text-sm text-zinc-400 text-center py-6">
+            El Kitabi standartlarinda detayli website plani olusturmak icin butona tiklayin.
+          </p>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+function PlanMarkdownRenderer({ content }: { content: string }) {
+  const lines = content.split("\n");
+  const elements: React.ReactNode[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (line.startsWith("# ")) {
+      elements.push(
+        <h1 key={i} className="text-2xl font-bold mt-6 mb-3 text-zinc-900">
+          {line.slice(2)}
+        </h1>
+      );
+    } else if (line.startsWith("## ")) {
+      elements.push(
+        <h2
+          key={i}
+          className="text-xl font-semibold mt-5 mb-2 text-zinc-800 border-b border-zinc-200 pb-1"
+        >
+          {line.slice(3)}
+        </h2>
+      );
+    } else if (line.startsWith("### ")) {
+      elements.push(
+        <h3 key={i} className="text-lg font-semibold mt-4 mb-1.5 text-zinc-700">
+          {line.slice(4)}
+        </h3>
+      );
+    } else if (line.startsWith("#### ")) {
+      elements.push(
+        <h4 key={i} className="text-base font-semibold mt-3 mb-1 text-zinc-600">
+          {line.slice(5)}
+        </h4>
+      );
+    } else if (line.startsWith("- ") || line.startsWith("* ")) {
+      elements.push(
+        <li
+          key={i}
+          className="ml-4 text-sm text-zinc-600 leading-relaxed list-disc"
+        >
+          {formatInline(line.slice(2))}
+        </li>
+      );
+    } else if (/^\d+\.\s/.test(line)) {
+      const text = line.replace(/^\d+\.\s/, "");
+      elements.push(
+        <li
+          key={i}
+          className="ml-4 text-sm text-zinc-600 leading-relaxed list-decimal"
+        >
+          {formatInline(text)}
+        </li>
+      );
+    } else if (line.startsWith("---")) {
+      elements.push(<hr key={i} className="my-4 border-zinc-200" />);
+    } else if (line.startsWith("> ")) {
+      elements.push(
+        <blockquote
+          key={i}
+          className="border-l-4 border-indigo-300 pl-3 py-1 my-2 text-sm text-zinc-600 bg-indigo-50/50 rounded-r"
+        >
+          {formatInline(line.slice(2))}
+        </blockquote>
+      );
+    } else if (line.startsWith("```")) {
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      elements.push(
+        <pre
+          key={`code-${i}`}
+          className="bg-zinc-900 text-zinc-100 rounded-md p-4 my-2 text-xs overflow-x-auto"
+        >
+          {codeLines.join("\n")}
+        </pre>
+      );
+    } else if (line.trim() === "") {
+      elements.push(<div key={i} className="h-2" />);
+    } else {
+      elements.push(
+        <p key={i} className="text-sm text-zinc-600 leading-relaxed">
+          {formatInline(line)}
+        </p>
+      );
+    }
+  }
+
+  return <div className="space-y-0.5">{elements}</div>;
+}
+
+function formatInline(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let remaining = text;
+  let key = 0;
+
+  while (remaining.length > 0) {
+    const codeMatch = remaining.match(/`([^`]+)`/);
+    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
+
+    let firstMatch: { index: number; length: number; node: React.ReactNode; type: string } | null = null;
+
+    if (boldMatch && boldMatch.index !== undefined) {
+      firstMatch = {
+        index: boldMatch.index,
+        length: boldMatch[0].length,
+        node: <strong key={key++} className="font-semibold text-zinc-800">{boldMatch[1]}</strong>,
+        type: "bold",
+      };
+    }
+
+    if (codeMatch && codeMatch.index !== undefined) {
+      if (!firstMatch || codeMatch.index < firstMatch.index) {
+        firstMatch = {
+          index: codeMatch.index,
+          length: codeMatch[0].length,
+          node: <code key={key++} className="bg-zinc-100 text-zinc-800 px-1 py-0.5 rounded text-xs font-mono">{codeMatch[1]}</code>,
+          type: "code",
+        };
+      }
+    }
+
+    if (firstMatch) {
+      if (firstMatch.index > 0) {
+        parts.push(remaining.slice(0, firstMatch.index));
+      }
+      parts.push(firstMatch.node);
+      remaining = remaining.slice(firstMatch.index + firstMatch.length);
+    } else {
+      parts.push(remaining);
+      break;
+    }
+  }
+
+  return parts.length === 1 ? parts[0] : <>{parts}</>;
 }
 
 function InfoRow({

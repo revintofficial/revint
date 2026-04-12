@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateWebsitePlan } from "@/lib/gemini";
+import { runAuditChecklist } from "@/lib/audit-checklist";
 import type { WebsiteFeatures } from "@/types";
 
 export async function POST(
@@ -29,6 +30,8 @@ export async function POST(
 
     const features = lead.websiteAudit?.rawFeaturesJson as unknown as WebsiteFeatures | null;
 
+    const auditChecklist = runAuditChecklist(features, !!lead.websiteUrl);
+
     const plan = await generateWebsitePlan({
       businessName: lead.businessName,
       address: lead.formattedAddress,
@@ -52,6 +55,7 @@ export async function POST(
             bestSalesAngle: lead.salesOpportunity.bestSalesAngle,
           }
         : null,
+      auditChecklist,
     });
 
     try {
@@ -63,7 +67,11 @@ export async function POST(
       console.error("Failed to save plan to DB, returning anyway:", saveErr);
     }
 
-    return NextResponse.json({ success: true, plan });
+    return NextResponse.json({
+      success: true,
+      plan,
+      auditSummary: auditChecklist.summary,
+    });
   } catch (error) {
     console.error("Website plan generation error:", error);
     return NextResponse.json(
