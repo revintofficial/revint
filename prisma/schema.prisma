@@ -153,3 +153,15 @@ model GoogleReview {
 
   @@map("google_reviews")
 }
+
+model TeamTodo {
+  id        String   @id @default(cuid())
+  column    String
+  text      String
+  done      Boolean  @default(false)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("team_todos")
+}
