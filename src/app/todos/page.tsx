@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -14,16 +14,61 @@ const COLUMNS: { id: ColumnId; title: string }[] = [
   { id: "kaan", title: "Kaan" },
 ];
 
+const STORAGE_KEY = "lead-engine-team-todos";
+
+const EMPTY_COLUMNS: Record<ColumnId, Todo[]> = {
+  cinar: [],
+  mert: [],
+  kaan: [],
+};
+
+function parseStoredTodos(raw: string | null): Record<ColumnId, Todo[]> | null {
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw) as unknown;
+    if (!data || typeof data !== "object") return null;
+    const o = data as Record<string, unknown>;
+    const out: Record<ColumnId, Todo[]> = { ...EMPTY_COLUMNS };
+    for (const col of ["cinar", "mert", "kaan"] as const) {
+      const arr = o[col];
+      if (!Array.isArray(arr)) continue;
+      out[col] = arr.filter(
+        (item): item is Todo =>
+          !!item &&
+          typeof item === "object" &&
+          typeof (item as Todo).id === "string" &&
+          typeof (item as Todo).text === "string" &&
+          typeof (item as Todo).done === "boolean"
+      );
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 export default function TodosPage() {
-  const [byColumn, setByColumn] = useState<Record<ColumnId, Todo[]>>({
-    cinar: [],
-    mert: [],
-    kaan: [],
-  });
+  const [byColumn, setByColumn] = useState<Record<ColumnId, Todo[]>>(EMPTY_COLUMNS);
+  const [storageReady, setStorageReady] = useState(false);
+
+  useEffect(() => {
+    const loaded = parseStoredTodos(localStorage.getItem(STORAGE_KEY));
+    if (loaded) setByColumn(loaded);
+    setStorageReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(byColumn));
+    } catch {
+      // quota or private mode — ignore
+    }
+  }, [byColumn, storageReady]);
   const [drafts, setDrafts] = useState<Record<ColumnId, string>>({
     cinar: "",
     mert: "",
