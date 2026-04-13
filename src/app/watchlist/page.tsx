@@ -1484,8 +1484,19 @@ function WatchlistCard({
   const isAnalyzing =
     analyzing || item.lead.analyzeStatus === "ANALYZING";
 
+  const hasValidSiteUrl = (() => {
+    if (!siteUrl || !siteUrl.trim()) return false;
+    try {
+      const urlStr = siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`;
+      const parsed = new URL(urlStr);
+      return parsed.hostname.includes(".");
+    } catch {
+      return false;
+    }
+  })();
+
   return (
-    <Card className="overflow-hidden">
+    <Card className={`overflow-hidden${hasValidSiteUrl ? " bg-emerald-50/70 border-emerald-200" : ""}`}>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
