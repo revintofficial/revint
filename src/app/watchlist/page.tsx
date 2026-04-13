@@ -959,7 +959,28 @@ function WebsitePlanPanel({
 }) {
   const [generating, setGenerating] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
+  const [copied, setCopied] = useState(false);
   const planRef = useRef<HTMLDivElement>(null);
+
+  const handleCopy = async () => {
+    if (!item.websitePlan) return;
+    try {
+      await navigator.clipboard.writeText(item.websitePlan);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = item.websitePlan;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -1055,6 +1076,17 @@ function WebsitePlanPanel({
                 size="sm"
                 variant="ghost"
                 className="text-xs"
+                onClick={handleCopy}
+              >
+                <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                {copied ? "Kopyalandi!" : "Kopyala"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs"
                 onClick={handleDownloadMD}
               >
                 <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1099,7 +1131,7 @@ function WebsitePlanPanel({
         <div className="mt-3">
           <div
             ref={planRef}
-            className="rounded-lg border border-zinc-200 bg-white p-6 max-h-[600px] overflow-y-auto"
+            className="rounded-lg border border-zinc-200 bg-white p-6 max-h-[600px] overflow-y-auto select-text"
           >
             <SimpleMarkdown content={item.websitePlan} />
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,20 +72,49 @@ interface Pagination {
   totalPages: number;
 }
 
+const STORAGE_KEY = "leads-filters";
+
+function getSavedFilters() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function LeadsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const saved = useRef(getSavedFilters()).current;
+  const urlBorough = searchParams.get("borough");
+  const urlHasWebsite = searchParams.get("hasWebsite");
+  const urlSearch = searchParams.get("search");
+  const urlSortBy = searchParams.get("sortBy");
+  const urlPage = searchParams.get("page");
+  const hasUrlParams = !!(urlBorough || urlHasWebsite || urlSearch || urlSortBy || urlPage);
+
+  const initBorough = hasUrlParams ? (urlBorough || "all") : (saved?.borough || "all");
+  const initHasWebsite = hasUrlParams ? (urlHasWebsite || "all") : (saved?.hasWebsite || "all");
+  const initSearch = hasUrlParams ? (urlSearch || "") : (saved?.search || "");
+  const initSortBy = hasUrlParams ? (urlSortBy || "createdAt") : (saved?.sortBy || "createdAt");
+  const initPage = hasUrlParams ? parseInt(urlPage || "1") : (saved?.page || 1);
+
   const [leads, setLeads] = useState<Lead[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
-    page: 1,
+    page: initPage,
     limit: 20,
     total: 0,
     totalPages: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [borough, setBorough] = useState("all");
-  const [hasWebsite, setHasWebsite] = useState("all");
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [sortBy, setSortBy] = useState("createdAt");
+  const [borough, setBorough] = useState(initBorough);
+  const [hasWebsite, setHasWebsite] = useState(initHasWebsite);
+  const [search, setSearch] = useState(initSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(initSearch);
+  const [sortBy, setSortBy] = useState(initSortBy);
   const [watchlistLeadIds, setWatchlistLeadIds] = useState<Set<string>>(new Set());
   const [watchlistDialogLead, setWatchlistDialogLead] = useState<Lead | null>(null);
   const [watchlistSiteUrl, setWatchlistSiteUrl] = useState("");
@@ -121,6 +151,26 @@ export default function LeadsPage() {
   useEffect(() => {
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, [debouncedSearch, borough, hasWebsite, sortBy]);
+
+  useEffect(() => {
+    const state = {
+      borough,
+      hasWebsite,
+      search: debouncedSearch,
+      sortBy,
+      page: pagination.page,
+    };
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+
+    const params = new URLSearchParams();
+    if (borough !== "all") params.set("borough", borough);
+    if (hasWebsite !== "all") params.set("hasWebsite", hasWebsite);
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (sortBy !== "createdAt") params.set("sortBy", sortBy);
+    if (pagination.page > 1) params.set("page", pagination.page.toString());
+    const qs = params.toString();
+    router.replace(qs ? `/leads?${qs}` : "/leads", { scroll: false });
+  }, [debouncedSearch, borough, hasWebsite, sortBy, pagination.page, router]);
 
   const fetchLeads = useCallback(async () => {
     if (abortControllerRef.current) {

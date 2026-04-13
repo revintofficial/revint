@@ -89,7 +89,8 @@ async function analyzeSingleLead(leadId: string) {
         lead.websiteUrl,
         features
       );
-    } catch {
+    } catch (aiError) {
+      console.error(`[Analyze] Gemini failed for ${leadId}:`, aiError);
       const offer = suggestOffer(deterministicScore, reasons);
       analysis = {
         opportunity_score: deterministicScore,

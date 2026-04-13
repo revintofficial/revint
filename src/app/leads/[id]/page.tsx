@@ -118,6 +118,7 @@ export default function LeadDetailPage({
   const [contentCheck, setContentCheck] = useState<ContentCheckResult | null>(null);
   const [contentCheckLoading, setContentCheckLoading] = useState(false);
   const [showContentCheck, setShowContentCheck] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
     fetch(`/api/leads/${id}`)
@@ -153,13 +154,20 @@ export default function LeadDetailPage({
   };
 
   const runAnalyze = async () => {
-    await fetch("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ leadId: id }),
-    });
-    const res = await fetch(`/api/leads/${id}`);
-    setLead(await res.json());
+    setAnalyzing(true);
+    try {
+      await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadId: id }),
+      });
+      const res = await fetch(`/api/leads/${id}`);
+      setLead(await res.json());
+    } catch (err) {
+      console.error("Analyze failed:", err);
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const generatePlan = async () => {
@@ -246,7 +254,16 @@ export default function LeadDetailPage({
             </Button>
           )}
           {lead.analyzeStatus !== "ANALYZED" && (
-            <Button size="sm" onClick={runAnalyze}>AI Analiz</Button>
+            <Button size="sm" onClick={runAnalyze} disabled={analyzing}>
+              {analyzing ? (
+                <>
+                  <div className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white mr-1.5" />
+                  Analiz Ediliyor...
+                </>
+              ) : (
+                "AI Analiz"
+              )}
+            </Button>
           )}
           {lead.googleMapsUri && (
             <a
@@ -507,10 +524,29 @@ export default function LeadDetailPage({
           {opp ? (
             <>
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="text-lg">
                     AI Analiz Sonuclari
                   </CardTitle>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={runAnalyze}
+                    disabled={analyzing}
+                    className="h-8 gap-1.5 text-xs"
+                  >
+                    {analyzing ? (
+                      <>
+                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600" />
+                        Analiz Ediliyor...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+                        Yeniden Analiz Et
+                      </>
+                    )}
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center gap-4">
@@ -672,8 +708,15 @@ export default function LeadDetailPage({
                 <p className="text-zinc-400">
                   Henuz AI analizi yapilmamis.
                 </p>
-                <Button className="mt-4" onClick={runAnalyze}>
-                  Simdi Analiz Et
+                <Button className="mt-4" onClick={runAnalyze} disabled={analyzing}>
+                  {analyzing ? (
+                    <>
+                      <div className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white mr-1.5" />
+                      Analiz Ediliyor...
+                    </>
+                  ) : (
+                    "Simdi Analiz Et"
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -875,6 +918,27 @@ function WebsitePlanSection({
   businessName: string;
 }) {
   const planRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!plan) return;
+    try {
+      await navigator.clipboard.writeText(plan);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = plan;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const handleDownloadMD = () => {
     if (!plan) return;
@@ -912,6 +976,14 @@ function WebsitePlanSection({
                 size="sm"
                 variant="ghost"
                 className="text-xs"
+                onClick={handleCopy}
+              >
+                {copied ? "Kopyalandi!" : "Kopyala"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs"
                 onClick={handleDownloadMD}
               >
                 MD Indir
@@ -941,7 +1013,7 @@ function WebsitePlanSection({
         <CardContent>
           <div
             ref={planRef}
-            className="rounded-lg border border-zinc-200 bg-white p-6 max-h-[700px] overflow-y-auto"
+            className="rounded-lg border border-zinc-200 bg-white p-6 max-h-[700px] overflow-y-auto select-text"
           >
             <PlanMarkdownRenderer content={plan} />
           </div>
