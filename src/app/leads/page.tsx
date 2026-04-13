@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,6 +85,14 @@ function getSavedFilters() {
 }
 
 export default function LeadsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-zinc-400">Yukleniyor...</div>}>
+      <LeadsPageContent />
+    </Suspense>
+  );
+}
+
+function LeadsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
