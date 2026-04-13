@@ -28,6 +28,20 @@ interface ContentCheckResult {
   builderDetected: string | null;
 }
 
+interface WebsiteSearchFoundItem {
+  url: string;
+  title: string | null;
+  source: "domain_guess" | "google_search";
+  reachable: boolean;
+}
+
+interface WebsiteSearchResult {
+  businessName: string;
+  found: boolean;
+  websites: WebsiteSearchFoundItem[];
+  searchedCount: number;
+}
+
 interface SecurityHeaders {
   hasCSP: boolean;
   hasXFrameOptions: boolean;
@@ -119,6 +133,9 @@ export default function LeadDetailPage({
   const [contentCheckLoading, setContentCheckLoading] = useState(false);
   const [showContentCheck, setShowContentCheck] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [websiteSearchResult, setWebsiteSearchResult] = useState<WebsiteSearchResult | null>(null);
+  const [websiteSearchLoading, setWebsiteSearchLoading] = useState(false);
+  const [showWebsiteSearch, setShowWebsiteSearch] = useState(false);
 
   useEffect(() => {
     fetch(`/api/leads/${id}`)
@@ -207,6 +224,36 @@ export default function LeadDetailPage({
       console.error("Content check failed:", err);
     } finally {
       setContentCheckLoading(false);
+    }
+  };
+
+  const runWebsiteSearch = async () => {
+    if (!lead) return;
+    setWebsiteSearchLoading(true);
+    setWebsiteSearchResult(null);
+    try {
+      const res = await fetch("/api/website-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessName: lead.businessName,
+          address: lead.formattedAddress,
+          leadId: lead.id,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWebsiteSearchResult(data);
+        setShowWebsiteSearch(true);
+        if (data.found) {
+          const refreshRes = await fetch(`/api/leads/${id}`);
+          setLead(await refreshRes.json());
+        }
+      }
+    } catch (err) {
+      console.error("Website search failed:", err);
+    } finally {
+      setWebsiteSearchLoading(false);
     }
   };
 
@@ -319,7 +366,27 @@ export default function LeadDetailPage({
                       </button>
                     </>
                   ) : (
-                    <span className="text-sm font-medium">Yok</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-red-500">Yok</span>
+                      <button
+                        onClick={runWebsiteSearch}
+                        disabled={websiteSearchLoading}
+                        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors disabled:opacity-50"
+                        title="Internette website ara"
+                      >
+                        {websiteSearchLoading ? (
+                          <>
+                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-orange-300 border-t-orange-600" />
+                            Araniyor...
+                          </>
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                            Web&apos;de Ara
+                          </>
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -345,6 +412,13 @@ export default function LeadDetailPage({
             <ContentCheckCard
               result={contentCheck}
               onClose={() => setShowContentCheck(false)}
+            />
+          )}
+
+          {showWebsiteSearch && websiteSearchResult && (
+            <WebsiteSearchCard
+              result={websiteSearchResult}
+              onClose={() => setShowWebsiteSearch(false)}
             />
           )}
 
@@ -881,6 +955,98 @@ function ContentCheckCard({
             </div>
           ))}
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function WebsiteSearchCard({
+  result,
+  onClose,
+}: {
+  result: WebsiteSearchResult;
+  onClose: () => void;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          Website Arama Sonucu
+        </CardTitle>
+        <button
+          onClick={onClose}
+          className="text-zinc-400 hover:text-zinc-600 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {result.found ? (
+          <>
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+                <p className="font-semibold text-emerald-700">
+                  {result.websites.length} website bulundu!
+                </p>
+              </div>
+              <p className="text-sm text-emerald-600">
+                Google Places API&apos;da kayitli olmayan ama internette bulunan website(ler) tespit edildi.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              {result.websites.map((website, i) => (
+                <div key={i} className="rounded-lg border border-zinc-200 p-3 hover:bg-zinc-50 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <a
+                        href={website.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-blue-600 hover:underline break-all"
+                      >
+                        {website.url}
+                      </a>
+                      {website.title && (
+                        <p className="text-xs text-zinc-500 mt-0.5 truncate">{website.title}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                        website.source === "google_search"
+                          ? "bg-blue-50 text-blue-700 border border-blue-200"
+                          : "bg-purple-50 text-purple-700 border border-purple-200"
+                      }`}>
+                        {website.source === "google_search" ? "Google" : "Domain"}
+                      </span>
+                      {i === 0 && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Kaydedildi
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400"><circle cx="12" cy="12" r="10"/><line x1="4.93" x2="19.07" y1="4.93" y2="19.07"/></svg>
+              <p className="font-semibold text-zinc-600">Website bulunamadi</p>
+            </div>
+            <p className="text-sm text-zinc-500">
+              {result.searchedCount} adres tarandi ancak bu isletme icin aktif bir website tespit edilemedi.
+            </p>
+          </div>
+        )}
+
+        <p className="text-xs text-zinc-400 text-center">
+          {result.searchedCount} adres tarandi (Domain tahmini + Google arama)
+        </p>
       </CardContent>
     </Card>
   );

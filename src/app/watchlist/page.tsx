@@ -4,6 +4,13 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface GoogleReviewData {
   id: string;
@@ -1391,6 +1398,7 @@ function WatchlistCard({
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reviews = item.lead.googleReviews || [];
@@ -1496,6 +1504,7 @@ function WatchlistCard({
   })();
 
   return (
+    <>
     <Card className={`overflow-hidden${hasValidSiteUrl ? " bg-emerald-50/70 border-emerald-200" : ""}`}>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -1818,12 +1827,40 @@ function WatchlistCard({
             size="sm"
             variant="ghost"
             className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-auto"
-            onClick={() => onRemove(item.id)}
+            onClick={() => setRemoveDialogOpen(true)}
           >
             Kaldir
           </Button>
         </div>
       </CardContent>
     </Card>
+
+    <Dialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Emin misiniz?</DialogTitle>
+          <DialogDescription className="text-left pt-1">
+            <span className="font-medium text-zinc-700">{item.lead.businessName}</span>{" "}
+            isletmesini watchlist&apos;ten kaldirmak uzeresiniz. Bu islemi onayliyor musunuz?
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-2 pt-2">
+          <Button type="button" variant="outline" onClick={() => setRemoveDialogOpen(false)}>
+            Iptal
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => {
+              onRemove(item.id);
+              setRemoveDialogOpen(false);
+            }}
+          >
+            Evet, kaldir
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

@@ -44,6 +44,20 @@ interface ContentCheckResult {
   builderDetected: string | null;
 }
 
+interface WebsiteSearchFoundItem {
+  url: string;
+  title: string | null;
+  source: "domain_guess" | "google_search";
+  reachable: boolean;
+}
+
+interface WebsiteSearchResult {
+  businessName: string;
+  found: boolean;
+  websites: WebsiteSearchFoundItem[];
+  searchedCount: number;
+}
+
 interface Lead {
   id: string;
   businessName: string;
@@ -131,6 +145,9 @@ function LeadsPageContent() {
   const [contentCheckLeadId, setContentCheckLeadId] = useState<string | null>(null);
   const [contentCheckResult, setContentCheckResult] = useState<ContentCheckResult | null>(null);
   const [contentCheckLoading, setContentCheckLoading] = useState(false);
+  const [websiteSearchLeadId, setWebsiteSearchLeadId] = useState<string | null>(null);
+  const [websiteSearchResult, setWebsiteSearchResult] = useState<WebsiteSearchResult | null>(null);
+  const [websiteSearchLoading, setWebsiteSearchLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchWatchlistIds = useCallback(async () => {
@@ -253,6 +270,34 @@ function LeadsPageContent() {
       console.error("Content check failed:", err);
     } finally {
       setContentCheckLoading(false);
+    }
+  };
+
+  const runWebsiteSearch = async (lead: Lead) => {
+    setWebsiteSearchLeadId(lead.id);
+    setWebsiteSearchLoading(true);
+    setWebsiteSearchResult(null);
+    try {
+      const res = await fetch("/api/website-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessName: lead.businessName,
+          address: lead.formattedAddress,
+          leadId: lead.id,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWebsiteSearchResult(data);
+        if (data.found) {
+          fetchLeads();
+        }
+      }
+    } catch (err) {
+      console.error("Website search failed:", err);
+    } finally {
+      setWebsiteSearchLoading(false);
     }
   };
 
@@ -464,7 +509,22 @@ function LeadsPageContent() {
                           </button>
                         </div>
                       ) : (
-                        <Badge variant="destructive">Yok</Badge>
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="destructive">Yok</Badge>
+                          <button
+                            onClick={(e) => { e.preventDefault(); runWebsiteSearch(lead); }}
+                            disabled={websiteSearchLoading && websiteSearchLeadId === lead.id}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors disabled:opacity-50"
+                            title="Internette website ara"
+                          >
+                            {websiteSearchLoading && websiteSearchLeadId === lead.id ? (
+                              <div className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-orange-300 border-t-orange-600" />
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                            )}
+                            Ara
+                          </button>
+                        </div>
                       )}
                     </td>
                     <td className="p-3">
@@ -604,6 +664,39 @@ function LeadsPageContent() {
       </Dialog>
 
       <Dialog
+        open={!!(websiteSearchLeadId && (websiteSearchLoading || websiteSearchResult))}
+        onOpenChange={(open) => {
+          if (!open) {
+            setWebsiteSearchLeadId(null);
+            setWebsiteSearchResult(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              Website Arama Sonucu
+            </DialogTitle>
+            <DialogDescription>
+              {websiteSearchResult?.businessName
+                ? `"${websiteSearchResult.businessName}" icin internet taramasi`
+                : "Internette website araniyor..."}
+            </DialogDescription>
+          </DialogHeader>
+          {websiteSearchLoading ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-3 border-orange-200 border-t-orange-600" />
+              <p className="text-sm text-zinc-400 mt-3">Internette website araniyor...</p>
+              <p className="text-xs text-zinc-300 mt-1">Domain tahmini + Google arama yapiliyor</p>
+            </div>
+          ) : websiteSearchResult ? (
+            <WebsiteSearchPanel result={websiteSearchResult} />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
         open={!!watchlistDialogLead}
         onOpenChange={(open) => !open && setWatchlistDialogLead(null)}
       >
@@ -717,6 +810,83 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
             <span className="text-xs text-zinc-500 text-right max-w-[55%] truncate">{signal.detail}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
+  return (
+    <div className="space-y-4 pt-2">
+      {result.found ? (
+        <>
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+              <p className="font-semibold text-emerald-700">
+                {result.websites.length} website bulundu!
+              </p>
+            </div>
+            <p className="text-sm text-emerald-600">
+              Google Places API&apos;da kayitli olmayan ama internette bulunan website(ler) tespit edildi. Ilk bulunan site lead&apos;e otomatik kaydedildi.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            {result.websites.map((website, i) => (
+              <div key={i} className="rounded-lg border border-zinc-200 p-3 hover:bg-zinc-50 transition-colors">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <a
+                      href={website.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-blue-600 hover:underline break-all"
+                    >
+                      {website.url}
+                    </a>
+                    {website.title && (
+                      <p className="text-xs text-zinc-500 mt-0.5 truncate">{website.title}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                      website.source === "google_search"
+                        ? "bg-blue-50 text-blue-700 border border-blue-200"
+                        : "bg-purple-50 text-purple-700 border border-purple-200"
+                    }`}>
+                      {website.source === "google_search" ? "Google" : "Domain"}
+                    </span>
+                    {i === 0 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Kaydedildi
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400"><circle cx="12" cy="12" r="10"/><line x1="4.93" x2="19.07" y1="4.93" y2="19.07"/></svg>
+            <p className="font-semibold text-zinc-600">Website bulunamadi</p>
+          </div>
+          <p className="text-sm text-zinc-500">
+            {result.searchedCount} adres tarandi ancak bu isletme icin aktif bir website tespit edilemedi. Isletmenin gercekten websitesi olmayabilir - bu yeni site teklifi icin ideal bir firsat.
+          </p>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between px-1">
+        <p className="text-xs text-zinc-400">
+          {result.searchedCount} adres tarandi
+        </p>
+        <p className="text-xs text-zinc-400">
+          Domain tahmini + Google arama
+        </p>
       </div>
     </div>
   );

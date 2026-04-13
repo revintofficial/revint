@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/watchlist", label: "Watchlist", icon: WatchlistIcon },
   { href: "/pipeline", label: "Sales Pipeline", icon: PipelineIcon },
   { href: "/discovery", label: "Discovery", icon: DiscoveryIcon },
+  { href: "/todos", label: "Todos", icon: TodosIcon },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -171,6 +172,15 @@ function DiscoveryIcon({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function TodosIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
     </svg>
   );
 }
