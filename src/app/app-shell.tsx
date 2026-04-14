@@ -2,19 +2,36 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
+import {
+  LayoutDashboard,
+  Users,
+  Megaphone,
+  Bookmark,
+  GitBranch,
+  Search,
+  CheckSquare,
+  PanelLeftClose,
+  PanelLeft,
+  Menu,
+  X,
+  MapPin,
+  Zap,
+} from "lucide-react";
 
 const NAV_LINKS = [
-  { href: "/", label: "Dashboard", icon: DashboardIcon },
-  { href: "/leads", label: "Leads", icon: LeadsIcon },
-  { href: "/campaigns", label: "Campaigns", icon: CampaignsIcon },
-  { href: "/watchlist", label: "Watchlist", icon: WatchlistIcon },
-  { href: "/pipeline", label: "Sales Pipeline", icon: PipelineIcon },
-  { href: "/discovery", label: "Discovery", icon: DiscoveryIcon },
-  { href: "/todos", label: "Todos", icon: TodosIcon },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/leads", label: "Leads", icon: Users },
+  { href: "/campaigns", label: "Campaigns", icon: Megaphone },
+  { href: "/watchlist", label: "Watchlist", icon: Bookmark },
+  { href: "/pipeline", label: "Sales Pipeline", icon: GitBranch },
+  { href: "/discovery", label: "Discovery", icon: Search },
+  { href: "/todos", label: "Todos", icon: CheckSquare },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -37,150 +54,113 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       {/* Mobile top bar */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 bg-zinc-900 px-4 py-3 md:hidden">
+      <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 bg-slate-900/80 backdrop-blur-xl px-4 py-3 md:hidden border-b border-white/5">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="rounded-md p-1.5 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
-          aria-label="Menuyu ac"
+          className="rounded-lg p-1.5 text-slate-300 hover:bg-white/10 hover:text-white transition-all"
+          aria-label="Menüyü aç"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
+          <Menu className="w-5 h-5" />
         </button>
-        <h1 className="text-base font-bold text-white tracking-tight">Lead Engine</h1>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center">
+            <Zap className="w-4 h-4 text-white" />
+          </div>
+          <h1 className="text-base font-semibold text-white tracking-tight">Lead Engine</h1>
+        </div>
       </div>
 
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden transition-opacity"
           onClick={closeSidebar}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-zinc-900 text-zinc-100 flex flex-col shrink-0 overflow-y-auto transition-transform duration-200 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col shrink-0 overflow-y-auto transition-all duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 bg-slate-900/95 backdrop-blur-2xl text-slate-100 border-r border-white/5 ${
+          collapsed ? "md:w-[68px]" : "md:w-64"
+        } ${sidebarOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">Lead Engine</h1>
-            <p className="text-xs text-zinc-400 mt-1">Phone Repair Sales</p>
+        {/* Logo area */}
+        <div className={`flex items-center justify-between p-4 border-b border-white/5 ${collapsed ? "md:justify-center md:px-2" : ""}`}>
+          <div className={`flex items-center gap-3 ${collapsed ? "md:gap-0" : ""}`}>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shrink-0">
+              <Zap className="w-4.5 h-4.5 text-white" />
+            </div>
+            <div className={`${collapsed ? "md:hidden" : ""}`}>
+              <h1 className="text-base font-semibold tracking-tight">Lead Engine</h1>
+              <p className="text-[11px] text-slate-400">Phone Repair Sales</p>
+            </div>
           </div>
           <button
             onClick={closeSidebar}
-            className="rounded-md p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors md:hidden"
-            aria-label="Menuyu kapat"
+            className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white transition-all md:hidden"
+            aria-label="Menüyü kapat"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <X className="w-5 h-5" />
           </button>
         </div>
-        <nav className="flex-1 p-4 space-y-1">
+
+        {/* Navigation */}
+        <nav className="flex-1 p-3 space-y-0.5">
           {NAV_LINKS.map((link) => {
             const isActive =
               link.href === "/"
                 ? pathname === "/"
                 : pathname.startsWith(link.href);
             return (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative ${
+                  collapsed ? "md:justify-center md:px-2" : ""
+                } ${
                   isActive
-                    ? "bg-zinc-800 text-white"
-                    : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                    ? "bg-white/10 text-white"
+                    : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
                 }`}
               >
-                <link.icon className="w-4 h-4 shrink-0" />
-                {link.label}
-              </a>
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-gradient-to-b from-indigo-400 to-violet-400" />
+                )}
+                <link.icon className="w-[18px] h-[18px] shrink-0" />
+                <span className={`${collapsed ? "md:hidden" : ""}`}>{link.label}</span>
+              </Link>
             );
           })}
         </nav>
-        <div className="p-4 border-t border-zinc-800 text-xs text-zinc-500">
-          Greenwich, London
+
+        {/* Collapse toggle (desktop only) */}
+        <div className={`hidden md:flex p-3 border-t border-white/5 ${collapsed ? "justify-center" : ""}`}>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-all w-full"
+          >
+            {collapsed ? (
+              <PanelLeft className="w-4 h-4 shrink-0 mx-auto" />
+            ) : (
+              <>
+                <PanelLeftClose className="w-4 h-4 shrink-0" />
+                <span>Daralt</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div className={`p-4 border-t border-white/5 ${collapsed ? "md:hidden" : ""}`}>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <MapPin className="w-3.5 h-3.5" />
+            <span>Greenwich, London</span>
+          </div>
         </div>
       </aside>
 
       {/* Main content */}
       <main className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
     </div>
-  );
-}
-
-function DashboardIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1" />
-      <rect x="14" y="3" width="7" height="7" rx="1" />
-      <rect x="3" y="14" width="7" height="7" rx="1" />
-      <rect x="14" y="14" width="7" height="7" rx="1" />
-    </svg>
-  );
-}
-
-function LeadsIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-
-function CampaignsIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m3 11 18-5v12L3 13v-2z" />
-      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
-    </svg>
-  );
-}
-
-function WatchlistIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
-
-function PipelineIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="8" y1="6" x2="21" y2="6" />
-      <line x1="8" y1="12" x2="21" y2="12" />
-      <line x1="8" y1="18" x2="21" y2="18" />
-      <line x1="3" y1="6" x2="3.01" y2="6" />
-      <line x1="3" y1="12" x2="3.01" y2="12" />
-      <line x1="3" y1="18" x2="3.01" y2="18" />
-    </svg>
-  );
-}
-
-function DiscoveryIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}
-
-function TodosIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 11l3 3L22 4" />
-      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-    </svg>
   );
 }

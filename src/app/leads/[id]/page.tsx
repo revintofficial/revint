@@ -1,9 +1,42 @@
 "use client";
 
 import { useEffect, useState, use, useRef } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CircularProgress } from "@/components/ui/progress";
+import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
+import {
+  ArrowLeft,
+  Globe,
+  MapPin,
+  Phone,
+  Star,
+  ExternalLink,
+  Bot,
+  RefreshCw,
+  Copy,
+  Check,
+  Download,
+  Eye,
+  EyeOff,
+  Loader2,
+  ScanSearch,
+  Search,
+  CircleCheck,
+  CircleX,
+  AlertTriangle,
+  Info,
+  Shield,
+  Zap,
+  Sparkles,
+  FileText,
+  ChevronRight,
+  X,
+} from "lucide-react";
 
 interface ContentCheckSignal {
   label: string;
@@ -195,9 +228,7 @@ export default function LeadDetailPage({
         const data = await res.json();
         setPlan(data.plan);
         setShowPlan(true);
-        if (data.auditSummary) {
-          setAuditSummary(data.auditSummary);
-        }
+        if (data.auditSummary) setAuditSummary(data.auditSummary);
       }
     } catch (err) {
       console.error("Plan generation failed:", err);
@@ -216,8 +247,7 @@ export default function LeadDetailPage({
         body: JSON.stringify({ url: lead.websiteUrl }),
       });
       if (res.ok) {
-        const data = await res.json();
-        setContentCheck(data);
+        setContentCheck(await res.json());
         setShowContentCheck(true);
       }
     } catch (err) {
@@ -235,11 +265,7 @@ export default function LeadDetailPage({
       const res = await fetch("/api/website-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          businessName: lead.businessName,
-          address: lead.formattedAddress,
-          leadId: lead.id,
-        }),
+        body: JSON.stringify({ businessName: lead.businessName, address: lead.formattedAddress, leadId: lead.id }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -259,10 +285,12 @@ export default function LeadDetailPage({
 
   if (loading) {
     return (
-      <div className="p-4 md:p-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-64 bg-zinc-200 rounded" />
-          <div className="h-64 bg-zinc-200 rounded-lg" />
+      <div className="p-6 md:p-8 lg:p-10 space-y-6">
+        <Skeleton className="h-6 w-16" />
+        <Skeleton className="h-10 w-64" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-96 rounded-xl" />
+          <Skeleton className="h-96 rounded-xl" />
         </div>
       </div>
     );
@@ -270,8 +298,12 @@ export default function LeadDetailPage({
 
   if (!lead) {
     return (
-      <div className="p-4 md:p-8">
-        <p className="text-zinc-500">Lead bulunamadi.</p>
+      <div className="p-6 md:p-8 lg:p-10">
+        <Card className="p-12 text-center">
+          <Search className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500">Lead bulunamadı.</p>
+          <Link href="/leads"><Button variant="outline" className="mt-4">Lead&apos;lere Dön</Button></Link>
+        </Card>
       </div>
     );
   }
@@ -280,215 +312,116 @@ export default function LeadDetailPage({
   const audit = lead.websiteAudit;
 
   return (
-    <div className="p-4 md:p-8 space-y-4 md:space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <a
-            href="/leads"
-            className="text-sm text-zinc-400 hover:text-zinc-600"
-          >
-            &larr; Leads
-          </a>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight mt-2">
-            {lead.businessName}
-          </h2>
-          <p className="text-zinc-500 mt-1 text-sm">{lead.formattedAddress}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {lead.hasWebsite && lead.crawlStatus !== "CRAWLED" && (
-            <Button size="sm" variant="outline" onClick={runCrawl}>
-              Crawl
-            </Button>
-          )}
-          {lead.analyzeStatus !== "ANALYZED" && (
-            <Button size="sm" onClick={runAnalyze} disabled={analyzing}>
-              {analyzing ? (
-                <>
-                  <div className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white mr-1.5" />
-                  Analiz Ediliyor...
-                </>
-              ) : (
-                "AI Analiz"
-              )}
-            </Button>
-          )}
-          {lead.googleMapsUri && (
-            <a
-              href={lead.googleMapsUri}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button size="sm" variant="outline">Google Maps</Button>
-            </a>
-          )}
-        </div>
-      </div>
+    <div className="p-6 md:p-8 lg:p-10 space-y-6">
+      <PageHeader
+        title={lead.businessName}
+        subtitle={lead.formattedAddress}
+        breadcrumb={
+          <Link href="/leads" className="inline-flex items-center gap-1 text-sm text-slate-400 hover:text-indigo-500 transition-colors">
+            <ArrowLeft className="w-4 h-4" />
+            Leads
+          </Link>
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
+            {lead.hasWebsite && lead.crawlStatus !== "CRAWLED" && (
+              <Button size="sm" variant="outline" onClick={runCrawl}>
+                <Globe className="w-4 h-4" />
+                Crawl
+              </Button>
+            )}
+            {lead.analyzeStatus !== "ANALYZED" && (
+              <Button size="sm" variant="gradient" onClick={runAnalyze} disabled={analyzing}>
+                {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
+                {analyzing ? "Analiz Ediliyor..." : "AI Analiz"}
+              </Button>
+            )}
+            {lead.googleMapsUri && (
+              <a href={lead.googleMapsUri} target="_blank" rel="noopener noreferrer">
+                <Button size="sm" variant="outline">
+                  <ExternalLink className="w-4 h-4" />
+                  Google Maps
+                </Button>
+              </a>
+            )}
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column: Business Info */}
+        {/* Left Column */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Isletme Bilgileri</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-indigo-500" />
+                İşletme Bilgileri
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <InfoRow label="Borough" value={lead.borough || "Bilinmiyor"} />
+              <InfoRow label="Borough" value={<Badge variant="outline">{lead.borough || "Bilinmiyor"}</Badge>} />
               <InfoRow label="Telefon" value={lead.phone || "Yok"} />
               <div className="flex items-start justify-between">
-                <span className="text-sm text-zinc-500">Website</span>
+                <span className="text-sm text-slate-500">Website</span>
                 <div className="flex items-center gap-2 max-w-[60%]">
                   {lead.websiteUrl ? (
                     <>
-                      <a
-                        href={lead.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-medium text-blue-600 hover:underline truncate"
-                      >
+                      <a href={lead.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-indigo-600 hover:text-indigo-700 truncate transition-colors">
                         {lead.websiteUrl}
                       </a>
-                      <button
-                        onClick={runContentCheck}
-                        disabled={contentCheckLoading}
-                        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors disabled:opacity-50"
-                      >
-                        {contentCheckLoading ? (
-                          <>
-                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-indigo-300 border-t-indigo-600" />
-                            Kontrol...
-                          </>
-                        ) : (
-                          <>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z"/></svg>
-                            Icerik Kontrol
-                          </>
-                        )}
-                      </button>
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs shrink-0" onClick={runContentCheck} disabled={contentCheckLoading}>
+                        {contentCheckLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ScanSearch className="w-3 h-3" />}
+                      </Button>
                     </>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-red-500">Yok</span>
-                      <button
-                        onClick={runWebsiteSearch}
-                        disabled={websiteSearchLoading}
-                        className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors disabled:opacity-50"
-                        title="Internette website ara"
-                      >
-                        {websiteSearchLoading ? (
-                          <>
-                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-orange-300 border-t-orange-600" />
-                            Araniyor...
-                          </>
-                        ) : (
-                          <>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                            Web&apos;de Ara
-                          </>
-                        )}
-                      </button>
+                      <span className="text-sm font-medium text-rose-500">Yok</span>
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs shrink-0" onClick={runWebsiteSearch} disabled={websiteSearchLoading}>
+                        {websiteSearchLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Globe className="w-3 h-3" />}
+                        Ara
+                      </Button>
                     </div>
                   )}
                 </div>
               </div>
-              <InfoRow
-                label="Rating"
-                value={
-                  lead.rating
-                    ? `${lead.rating.toFixed(1)} (${lead.reviewCount} yorum)`
-                    : "Yok"
-                }
-              />
-              <InfoRow
-                label="Durum"
-                value={lead.businessStatus || "Bilinmiyor"}
-              />
-              <InfoRow label="Tur" value={lead.primaryType || "Bilinmiyor"} />
-              <InfoRow label="Crawl" value={lead.crawlStatus} />
-              <InfoRow label="Analiz" value={lead.analyzeStatus} />
+              <InfoRow label="Rating" value={lead.rating ? `${lead.rating.toFixed(1)} (${lead.reviewCount} yorum)` : "Yok"} />
+              <InfoRow label="Durum" value={lead.businessStatus || "Bilinmiyor"} />
+              <InfoRow label="Tür" value={lead.primaryType || "Bilinmiyor"} />
+              <InfoRow label="Crawl" value={<Badge variant={lead.crawlStatus === "CRAWLED" ? "success" : "secondary"}>{lead.crawlStatus}</Badge>} />
+              <InfoRow label="Analiz" value={<Badge variant={lead.analyzeStatus === "ANALYZED" ? "success" : "secondary"}>{lead.analyzeStatus}</Badge>} />
             </CardContent>
           </Card>
 
           {showContentCheck && contentCheck && (
-            <ContentCheckCard
-              result={contentCheck}
-              onClose={() => setShowContentCheck(false)}
-            />
+            <ContentCheckCard result={contentCheck} onClose={() => setShowContentCheck(false)} />
           )}
 
           {showWebsiteSearch && websiteSearchResult && (
-            <WebsiteSearchCard
-              result={websiteSearchResult}
-              onClose={() => setShowWebsiteSearch(false)}
-            />
+            <WebsiteSearchCard result={websiteSearchResult} onClose={() => setShowWebsiteSearch(false)} />
           )}
 
           {audit && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Website Audit</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-indigo-500" />
+                  Website Audit
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <InfoRow
-                  label="Ulasilabilir"
-                  value={
-                    <Badge variant={audit.reachable ? "success" : "destructive"}>
-                      {audit.reachable ? "Evet" : "Hayir"}
-                    </Badge>
-                  }
-                />
-                <InfoRow
-                  label="Yuklenme"
-                  value={
-                    audit.loadTimeMs ? `${audit.loadTimeMs}ms` : "Bilinmiyor"
-                  }
-                />
-                <InfoRow
-                  label="HTTPS"
-                  value={
-                    <Badge variant={audit.https ? "success" : "destructive"}>
-                      {audit.https ? "Evet" : "Hayir"}
-                    </Badge>
-                  }
-                />
-                <InfoRow
-                  label="Mobil Uyumlu"
-                  value={
-                    <Badge
-                      variant={
-                        audit.mobileFriendlyGuess ? "success" : "destructive"
-                      }
-                    >
-                      {audit.mobileFriendlyGuess ? "Evet" : "Hayir"}
-                    </Badge>
-                  }
-                />
+                <InfoRow label="Ulaşılabilir" value={<Badge variant={audit.reachable ? "success" : "destructive"}>{audit.reachable ? "Evet" : "Hayır"}</Badge>} />
+                <InfoRow label="Yüklenme" value={audit.loadTimeMs ? `${audit.loadTimeMs}ms` : "Bilinmiyor"} />
+                <InfoRow label="HTTPS" value={<Badge variant={audit.https ? "success" : "destructive"}>{audit.https ? "Evet" : "Hayır"}</Badge>} />
+                <InfoRow label="Mobil Uyumlu" value={<Badge variant={audit.mobileFriendlyGuess ? "success" : "destructive"}>{audit.mobileFriendlyGuess ? "Evet" : "Hayır"}</Badge>} />
                 <InfoRow label="Title" value={audit.title || "Yok"} />
-                <InfoRow
-                  label="Meta Desc."
-                  value={audit.metaDescription || "Yok"}
-                />
-                <InfoRow
-                  label="Contact Form"
-                  value={audit.hasContactForm ? "Var" : "Yok"}
-                />
-                <InfoRow
-                  label="WhatsApp"
-                  value={audit.hasWhatsappLink ? "Var" : "Yok"}
-                />
-                <InfoRow
-                  label="Booking"
-                  value={audit.hasBookingSystem ? "Var" : "Yok"}
-                />
-                <InfoRow
-                  label="E-commerce"
-                  value={audit.hasEcommerce ? "Var" : "Yok"}
-                />
+                <InfoRow label="Meta Desc." value={audit.metaDescription || "Yok"} />
+                <InfoRow label="Contact Form" value={audit.hasContactForm ? "Var" : "Yok"} />
+                <InfoRow label="WhatsApp" value={audit.hasWhatsappLink ? "Var" : "Yok"} />
+                <InfoRow label="Booking" value={audit.hasBookingSystem ? "Var" : "Yok"} />
+                <InfoRow label="E-commerce" value={audit.hasEcommerce ? "Var" : "Yok"} />
 
-                {/* Extended audit fields */}
-                <div className="border-t border-zinc-100 pt-3 mt-3">
-                  <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
-                    Genisletilmis Audit
-                  </p>
+                <div className="border-t border-slate-200/60 pt-3 mt-3">
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Genişletilmiş Audit</p>
                   <div className="space-y-2">
                     <AuditBadgeRow label="Open Graph" value={audit.hasOpenGraph} />
                     <AuditBadgeRow label="Twitter Cards" value={audit.hasTwitterCards} />
@@ -497,17 +430,14 @@ export default function LeadDetailPage({
                     <AuditBadgeRow label="Service Worker" value={audit.hasServiceWorker} />
                     <AuditBadgeRow label="Google Analytics" value={audit.hasGoogleAnalytics} />
                     <AuditBadgeRow label="Cookie Consent" value={audit.hasCookieConsent} />
-                    <AuditBadgeRow label="Responsive Gorseller" value={audit.hasResponsiveImages} />
+                    <AuditBadgeRow label="Responsive Görseller" value={audit.hasResponsiveImages} />
                     <AuditBadgeRow label="Font Display Swap" value={audit.hasFontDisplay} />
                   </div>
                 </div>
 
-                {/* Security headers */}
                 {audit.securityHeaders && (
-                  <div className="border-t border-zinc-100 pt-3 mt-3">
-                    <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
-                      Guvenlik Header&apos;lari
-                    </p>
+                  <div className="border-t border-slate-200/60 pt-3 mt-3">
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Güvenlik Header&apos;ları</p>
                     <div className="space-y-2">
                       <AuditBadgeRow label="CSP" value={audit.securityHeaders.hasCSP} />
                       <AuditBadgeRow label="X-Frame-Options" value={audit.securityHeaders.hasXFrameOptions} />
@@ -519,197 +449,97 @@ export default function LeadDetailPage({
                   </div>
                 )}
 
-                {/* Schema types */}
                 {audit.schemaTypes && audit.schemaTypes.length > 0 && (
-                  <div className="border-t border-zinc-100 pt-3 mt-3">
-                    <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
-                      Schema.org Tipleri
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {audit.schemaTypes.map((t) => (
-                        <Badge key={t} variant="outline">{t}</Badge>
-                      ))}
-                    </div>
+                  <div className="border-t border-slate-200/60 pt-3 mt-3">
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Schema.org Tipleri</p>
+                    <div className="flex flex-wrap gap-1">{audit.schemaTypes.map((t) => <Badge key={t} variant="outline">{t}</Badge>)}</div>
                   </div>
                 )}
 
-                {/* Accessibility issues */}
                 {audit.accessibilityIssues && audit.accessibilityIssues.length > 0 && (
-                  <div className="border-t border-zinc-100 pt-3 mt-3">
-                    <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
-                      Erisilebilirlik Sorunlari
-                    </p>
-                    <ul className="space-y-1">
-                      {audit.accessibilityIssues.map((issue, i) => (
-                        <li key={i} className="text-sm text-red-600 flex items-start gap-1.5">
-                          <span className="mt-0.5">&#x2022;</span>
-                          {issue}
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="border-t border-slate-200/60 pt-3 mt-3">
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Erişilebilirlik Sorunları</p>
+                    <ul className="space-y-1">{audit.accessibilityIssues.map((issue, i) => <li key={i} className="text-sm text-rose-600 flex items-start gap-1.5"><AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />{issue}</li>)}</ul>
                   </div>
                 )}
 
-                {/* Performance hints */}
                 {audit.performanceHints && audit.performanceHints.length > 0 && (
-                  <div className="border-t border-zinc-100 pt-3 mt-3">
-                    <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">
-                      Performans Ipuclari
-                    </p>
-                    <ul className="space-y-1">
-                      {audit.performanceHints.map((hint, i) => (
-                        <li key={i} className="text-sm text-amber-600 flex items-start gap-1.5">
-                          <span className="mt-0.5">&#x2022;</span>
-                          {hint}
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="border-t border-slate-200/60 pt-3 mt-3">
+                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">Performans İpuçları</p>
+                    <ul className="space-y-1">{audit.performanceHints.map((hint, i) => <li key={i} className="text-sm text-amber-600 flex items-start gap-1.5"><Zap className="w-3.5 h-3.5 mt-0.5 shrink-0" />{hint}</li>)}</ul>
                   </div>
                 )}
 
                 {audit.servicesDetected.length > 0 && (
                   <div>
-                    <p className="text-sm font-medium text-zinc-500">
-                      Tespit Edilen Hizmetler
-                    </p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {audit.servicesDetected.map((s: string) => (
-                        <Badge key={s} variant="outline">
-                          {s}
-                        </Badge>
-                      ))}
-                    </div>
+                    <p className="text-sm font-medium text-slate-500">Tespit Edilen Hizmetler</p>
+                    <div className="flex flex-wrap gap-1 mt-1">{audit.servicesDetected.map((s) => <Badge key={s} variant="outline">{s}</Badge>)}</div>
                   </div>
                 )}
 
-                {audit.cssFramework && (
-                  <InfoRow label="CSS Framework" value={audit.cssFramework} />
-                )}
-                {typeof audit.pageCount === "number" && audit.pageCount > 0 && (
-                  <InfoRow label="Tespit Edilen Sayfa Sayisi" value={String(audit.pageCount)} />
-                )}
+                {audit.cssFramework && <InfoRow label="CSS Framework" value={audit.cssFramework} />}
+                {typeof audit.pageCount === "number" && audit.pageCount > 0 && <InfoRow label="Sayfa Sayısı" value={String(audit.pageCount)} />}
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Right Column: AI Analysis + Plan */}
+        {/* Right Column */}
         <div className="space-y-6">
           {opp ? (
             <>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                  <CardTitle className="text-lg">
-                    AI Analiz Sonuclari
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-indigo-500" />
+                    AI Analiz Sonuçları
                   </CardTitle>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={runAnalyze}
-                    disabled={analyzing}
-                    className="h-8 gap-1.5 text-xs"
-                  >
-                    {analyzing ? (
-                      <>
-                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600" />
-                        Analiz Ediliyor...
-                      </>
-                    ) : (
-                      <>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-                        Yeniden Analiz Et
-                      </>
-                    )}
+                  <Button size="sm" variant="outline" onClick={runAnalyze} disabled={analyzing} className="h-8 gap-1.5 text-xs">
+                    {analyzing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                    {analyzing ? "Analiz Ediliyor..." : "Yeniden Analiz"}
                   </Button>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
                   <div className="flex items-center gap-4">
-                    <div
-                      className={`text-5xl font-bold ${
-                        opp.opportunityScore >= 60
-                          ? "text-emerald-500"
-                          : opp.opportunityScore >= 35
-                          ? "text-amber-500"
-                          : "text-zinc-400"
-                      }`}
-                    >
-                      {opp.opportunityScore}
-                    </div>
+                    <CircularProgress value={opp.opportunityScore} size={64} strokeWidth={5} />
                     <div>
-                      <p className="text-sm font-medium">Opportunity Score</p>
-                      <p className="text-xs text-zinc-400">
-                        {opp.opportunityScore >= 60
-                          ? "Yuksek Potansiyel"
-                          : opp.opportunityScore >= 35
-                          ? "Orta Potansiyel"
-                          : "Dusuk Potansiyel"}
+                      <p className="text-sm font-medium text-slate-700">Opportunity Score</p>
+                      <p className="text-xs text-slate-400">
+                        {opp.opportunityScore >= 60 ? "Yüksek Potansiyel" : opp.opportunityScore >= 35 ? "Orta Potansiyel" : "Düşük Potansiyel"}
                       </p>
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium text-zinc-500 mb-1">
-                      Neden Iyi Hedef?
-                    </p>
-                    <p className="text-sm">{opp.whyGoodTarget}</p>
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">Neden İyi Hedef?</p>
+                    <p className="text-sm text-slate-600 leading-relaxed">{opp.whyGoodTarget}</p>
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium text-zinc-500 mb-1">
-                      Satis Acisi
-                    </p>
-                    <p className="text-sm">{opp.bestSalesAngle}</p>
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">Satış Açısı</p>
+                    <p className="text-sm text-slate-600 leading-relaxed">{opp.bestSalesAngle}</p>
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium text-zinc-500 mb-2">
-                      Problem Noktalari
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {opp.reasonCodes.map((code: string) => (
-                        <Badge key={code} variant="destructive">
-                          {code}
-                        </Badge>
-                      ))}
-                    </div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-2">Problem Noktaları</p>
+                    <div className="flex flex-wrap gap-1">{opp.reasonCodes.map((code) => <Badge key={code} variant="destructive">{code}</Badge>)}</div>
                   </div>
 
                   {opp.likelyPainPoints.length > 0 && (
                     <div>
-                      <p className="text-sm font-medium text-zinc-500 mb-1">
-                        Muhtemel Sikinti Noktalari
-                      </p>
-                      <ul className="text-sm space-y-1">
-                        {opp.likelyPainPoints.map(
-                          (point: string, i: number) => (
-                            <li key={i} className="flex items-start gap-2">
-                              <span className="text-zinc-400 mt-0.5">
-                                &bull;
-                              </span>
-                              {point}
-                            </li>
-                          )
-                        )}
-                      </ul>
+                      <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">Muhtemel Sıkıntı Noktaları</p>
+                      <ul className="text-sm space-y-1">{opp.likelyPainPoints.map((point, i) => <li key={i} className="flex items-start gap-2 text-slate-600"><ChevronRight className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-400" />{point}</li>)}</ul>
                     </div>
                   )}
 
-                  <div className="flex gap-4">
+                  <div className="flex gap-6">
                     <div>
-                      <p className="text-sm font-medium text-zinc-500">
-                        Onerilen Paket
-                      </p>
-                      <Badge variant="default" className="mt-1">
-                        {opp.suggestedOffer}
-                      </Badge>
+                      <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Önerilen Paket</p>
+                      <Badge variant="gradient" className="mt-1.5">{opp.suggestedOffer}</Badge>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-zinc-500">
-                        Fiyat Bandi
-                      </p>
-                      <p className="text-sm font-bold mt-1">
-                        {opp.expectedPriceBand}
-                      </p>
+                      <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Fiyat Bandı</p>
+                      <p className="text-sm font-semibold mt-1.5 text-slate-900">{opp.expectedPriceBand}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -718,36 +548,22 @@ export default function LeadDetailPage({
               {opp.personalizedFirstMessage && (
                 <Card>
                   <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between space-y-0 pb-3">
-                    <CardTitle className="text-base sm:text-lg">
-                      Kisisellesmis Mesaj
-                    </CardTitle>
+                    <CardTitle>Kişiselleşmiş Mesaj</CardTitle>
                     <Button
                       size="sm"
-                      variant={copied ? "default" : "outline"}
+                      variant={copied ? "gradient" : "outline"}
                       className="h-8 gap-1.5 text-xs"
                       onClick={() => {
-                        navigator.clipboard.writeText(
-                          opp.personalizedFirstMessage || ""
-                        );
+                        navigator.clipboard.writeText(opp.personalizedFirstMessage || "");
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
                       }}
                     >
-                      {copied ? (
-                        <>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                          Kopyalandi
-                        </>
-                      ) : (
-                        <>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                          Kopyala
-                        </>
-                      )}
+                      {copied ? <><Check className="w-3.5 h-3.5" />Kopyalandı</> : <><Copy className="w-3.5 h-3.5" />Kopyala</>}
                     </Button>
                   </CardHeader>
                   <CardContent>
-                    <div className="bg-zinc-50 rounded-lg p-4 text-sm leading-relaxed">
+                    <div className="bg-slate-50/80 rounded-xl p-4 text-sm leading-relaxed text-slate-700 border border-slate-200/60">
                       {opp.personalizedFirstMessage}
                     </div>
                   </CardContent>
@@ -756,47 +572,29 @@ export default function LeadDetailPage({
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Outreach Durumu</CardTitle>
+                  <CardTitle>Outreach Durumu</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {["NEW", "CONTACTED", "INTERESTED", "MEETING", "WON", "LOST"].map(
-                      (s) => (
-                        <Button
-                          key={s}
-                          size="sm"
-                          variant={opp.status === s ? "default" : "outline"}
-                          onClick={() => updateStatus(s)}
-                        >
-                          {s}
-                        </Button>
-                      )
-                    )}
+                    {["NEW", "CONTACTED", "INTERESTED", "MEETING", "WON", "LOST"].map((s) => (
+                      <Button key={s} size="sm" variant={opp.status === s ? "gradient" : "outline"} onClick={() => updateStatus(s)}>{s}</Button>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
             </>
           ) : (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-zinc-400">
-                  Henuz AI analizi yapilmamis.
-                </p>
-                <Button className="mt-4" onClick={runAnalyze} disabled={analyzing}>
-                  {analyzing ? (
-                    <>
-                      <div className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white mr-1.5" />
-                      Analiz Ediliyor...
-                    </>
-                  ) : (
-                    "Simdi Analiz Et"
-                  )}
+            <Card className="text-center">
+              <CardContent className="py-12">
+                <Bot className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 mb-4">Henüz AI analizi yapılmamış.</p>
+                <Button variant="gradient" onClick={runAnalyze} disabled={analyzing}>
+                  {analyzing ? <><Loader2 className="w-4 h-4 animate-spin" />Analiz Ediliyor...</> : <><Sparkles className="w-4 h-4" />Şimdi Analiz Et</>}
                 </Button>
               </CardContent>
             </Card>
           )}
 
-          {/* Website Plan Section */}
           <WebsitePlanSection
             leadId={id}
             plan={plan}
@@ -813,145 +611,70 @@ export default function LeadDetailPage({
   );
 }
 
-function ContentCheckCard({
-  result,
-  onClose,
-}: {
-  result: ContentCheckResult;
-  onClose: () => void;
-}) {
-  const verdictConfig = {
-    placeholder: {
-      label: "Placeholder / Bos Site",
-      color: "text-red-600",
-      bg: "bg-red-50 border-red-200",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
-      ),
-    },
-    basic: {
-      label: "Temel Duzey Site",
-      color: "text-amber-600",
-      bg: "bg-amber-50 border-amber-200",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-500"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-      ),
-    },
-    developed: {
-      label: "Gelistirilmis Site",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50 border-emerald-200",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
-      ),
-    },
-    unreachable: {
-      label: "Erisilemedi",
-      color: "text-zinc-600",
-      bg: "bg-zinc-50 border-zinc-200",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400"><circle cx="12" cy="12" r="10"/><line x1="4.93" x2="19.07" y1="4.93" y2="19.07"/></svg>
-      ),
-    },
+function ContentCheckCard({ result, onClose }: { result: ContentCheckResult; onClose: () => void }) {
+  const verdictConfig: Record<string, { label: string; color: string; bg: string; Icon: typeof CircleX }> = {
+    placeholder: { label: "Placeholder / Boş Site", color: "text-rose-600", bg: "bg-rose-50/80 border-rose-200/60", Icon: CircleX },
+    basic: { label: "Temel Düzey Site", color: "text-amber-600", bg: "bg-amber-50/80 border-amber-200/60", Icon: AlertTriangle },
+    developed: { label: "Geliştirilmiş Site", color: "text-emerald-600", bg: "bg-emerald-50/80 border-emerald-200/60", Icon: CircleCheck },
+    unreachable: { label: "Erişilemedi", color: "text-slate-600", bg: "bg-slate-50/80 border-slate-200/60", Icon: CircleX },
   };
 
-  const config = verdictConfig[result.verdict];
+  const config = verdictConfig[result.verdict] || verdictConfig.unreachable;
 
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z"/></svg>
-          Icerik Kontrol Sonucu
+        <CardTitle className="flex items-center gap-2">
+          <ScanSearch className="w-5 h-5 text-indigo-500" />
+          İçerik Kontrol Sonucu
         </CardTitle>
-        <button
-          onClick={onClose}
-          className="text-zinc-400 hover:text-zinc-600 transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors rounded-lg p-1 hover:bg-slate-100/80">
+          <X className="w-4 h-4" />
         </button>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className={`rounded-lg border p-4 ${config.bg}`}>
+        <div className={`rounded-xl border p-4 ${config.bg}`}>
           <div className="flex items-center gap-3 mb-2">
-            {config.icon}
-            <div>
+            <config.Icon className={`w-5 h-5 ${config.color}`} />
+            <div className="flex-1">
               <p className={`font-semibold ${config.color}`}>{config.label}</p>
-              <p className="text-xs text-zinc-500">Skor: {result.score}/100</p>
+              <p className="text-xs text-slate-500">Skor: {result.score}/100</p>
             </div>
-            <div className="ml-auto">
-              <div className="relative w-14 h-14">
-                <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-                  <circle cx="28" cy="28" r="24" fill="none" stroke="#e4e4e7" strokeWidth="4" />
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="24"
-                    fill="none"
-                    stroke={result.score >= 65 ? "#10b981" : result.score >= 35 ? "#f59e0b" : "#ef4444"}
-                    strokeWidth="4"
-                    strokeDasharray={`${(result.score / 100) * 150.8} 150.8`}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">
-                  {result.score}
-                </span>
-              </div>
-            </div>
+            <CircularProgress value={result.score} size={48} strokeWidth={4} />
           </div>
-          <p className="text-sm text-zinc-700 leading-relaxed">{result.summary}</p>
+          <p className="text-sm text-slate-600 leading-relaxed">{result.summary}</p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="rounded-lg bg-zinc-50 p-3 text-center">
-            <p className="text-lg font-bold text-zinc-800">{result.wordCount}</p>
-            <p className="text-xs text-zinc-500">Kelime</p>
-          </div>
-          <div className="rounded-lg bg-zinc-50 p-3 text-center">
-            <p className="text-lg font-bold text-zinc-800">{result.imageCount}</p>
-            <p className="text-xs text-zinc-500">Gorsel</p>
-          </div>
-          <div className="rounded-lg bg-zinc-50 p-3 text-center">
-            <p className="text-lg font-bold text-zinc-800">{result.internalLinkCount}</p>
-            <p className="text-xs text-zinc-500">Link</p>
-          </div>
-          <div className="rounded-lg bg-zinc-50 p-3 text-center">
-            <p className="text-lg font-bold text-zinc-800">{(result.htmlSize / 1024).toFixed(0)}</p>
-            <p className="text-xs text-zinc-500">KB HTML</p>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { value: result.wordCount, label: "Kelime" },
+            { value: result.imageCount, label: "Görsel" },
+            { value: result.internalLinkCount, label: "Link" },
+            { value: `${(result.htmlSize / 1024).toFixed(0)}`, label: "KB" },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded-xl bg-slate-50/80 p-3 text-center">
+              <p className="text-lg font-semibold text-slate-800">{stat.value}</p>
+              <p className="text-xs text-slate-400">{stat.label}</p>
+            </div>
+          ))}
         </div>
 
         {result.builderDetected && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 border border-blue-200">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-            <span className="text-sm text-blue-700">
-              <strong>{result.builderDetected}</strong> ile olusturulmus
-            </span>
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-50/80 border border-indigo-200/60">
+            <Info className="w-4 h-4 text-indigo-500 shrink-0" />
+            <span className="text-sm text-indigo-700"><strong>{result.builderDetected}</strong> ile oluşturulmuş</span>
           </div>
         )}
 
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-            Detayli Analiz
-          </p>
+        <div className="space-y-1.5 max-h-60 overflow-y-auto">
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Detaylı Analiz</p>
           {result.signals.map((signal, i) => (
-            <div key={i} className="flex items-center justify-between py-1.5 border-b border-zinc-100 last:border-0">
+            <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-100/60 last:border-0">
               <div className="flex items-center gap-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    signal.status === "good"
-                      ? "bg-emerald-500"
-                      : signal.status === "warning"
-                      ? "bg-amber-500"
-                      : "bg-red-500"
-                  }`}
-                />
-                <span className="text-sm font-medium text-zinc-700">{signal.label}</span>
+                <div className={`w-2 h-2 rounded-full ${signal.status === "good" ? "bg-emerald-500" : signal.status === "warning" ? "bg-amber-500" : "bg-rose-500"}`} />
+                <span className="text-sm font-medium text-slate-700">{signal.label}</span>
               </div>
-              <span className="text-sm text-zinc-500 text-right max-w-[55%] truncate">
-                {signal.detail}
-              </span>
+              <span className="text-sm text-slate-500 text-right max-w-[55%] truncate">{signal.detail}</span>
             </div>
           ))}
         </div>
@@ -960,72 +683,39 @@ function ContentCheckCard({
   );
 }
 
-function WebsiteSearchCard({
-  result,
-  onClose,
-}: {
-  result: WebsiteSearchResult;
-  onClose: () => void;
-}) {
+function WebsiteSearchCard({ result, onClose }: { result: WebsiteSearchResult; onClose: () => void }) {
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <CardTitle className="flex items-center gap-2">
+          <Globe className="w-5 h-5 text-amber-500" />
           Website Arama Sonucu
         </CardTitle>
-        <button
-          onClick={onClose}
-          className="text-zinc-400 hover:text-zinc-600 transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors rounded-lg p-1 hover:bg-slate-100/80">
+          <X className="w-4 h-4" />
         </button>
       </CardHeader>
       <CardContent className="space-y-4">
         {result.found ? (
           <>
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+            <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/80 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
-                <p className="font-semibold text-emerald-700">
-                  {result.websites.length} website bulundu!
-                </p>
+                <CircleCheck className="w-5 h-5 text-emerald-600" />
+                <p className="font-semibold text-emerald-700">{result.websites.length} website bulundu!</p>
               </div>
-              <p className="text-sm text-emerald-600">
-                Google Places API&apos;da kayitli olmayan ama internette bulunan website(ler) tespit edildi.
-              </p>
+              <p className="text-sm text-emerald-600">İlk bulunan site lead&apos;e otomatik kaydedildi.</p>
             </div>
-
             <div className="space-y-2">
               {result.websites.map((website, i) => (
-                <div key={i} className="rounded-lg border border-zinc-200 p-3 hover:bg-zinc-50 transition-colors">
+                <div key={i} className="rounded-xl border border-slate-200/60 p-3 hover:bg-slate-50/50 transition-all">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <a
-                        href={website.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-medium text-blue-600 hover:underline break-all"
-                      >
-                        {website.url}
-                      </a>
-                      {website.title && (
-                        <p className="text-xs text-zinc-500 mt-0.5 truncate">{website.title}</p>
-                      )}
+                      <a href={website.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors break-all">{website.url}</a>
+                      {website.title && <p className="text-xs text-slate-500 mt-0.5 truncate">{website.title}</p>}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded ${
-                        website.source === "google_search"
-                          ? "bg-blue-50 text-blue-700 border border-blue-200"
-                          : "bg-purple-50 text-purple-700 border border-purple-200"
-                      }`}>
-                        {website.source === "google_search" ? "Google" : "Domain"}
-                      </span>
-                      {i === 0 && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          Kaydedildi
-                        </span>
-                      )}
+                      <Badge variant={website.source === "google_search" ? "secondary" : "outline"}>{website.source === "google_search" ? "Google" : "Domain"}</Badge>
+                      {i === 0 && <Badge variant="success">Kaydedildi</Badge>}
                     </div>
                   </div>
                 </div>
@@ -1033,20 +723,15 @@ function WebsiteSearchCard({
             </div>
           </>
         ) : (
-          <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+          <div className="rounded-xl border border-slate-200/60 bg-slate-50/80 p-4">
             <div className="flex items-center gap-2 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400"><circle cx="12" cy="12" r="10"/><line x1="4.93" x2="19.07" y1="4.93" y2="19.07"/></svg>
-              <p className="font-semibold text-zinc-600">Website bulunamadi</p>
+              <CircleX className="w-5 h-5 text-slate-400" />
+              <p className="font-semibold text-slate-600">Website bulunamadı</p>
             </div>
-            <p className="text-sm text-zinc-500">
-              {result.searchedCount} adres tarandi ancak bu isletme icin aktif bir website tespit edilemedi.
-            </p>
+            <p className="text-sm text-slate-500">{result.searchedCount} adres tarandı ancak aktif bir website tespit edilemedi.</p>
           </div>
         )}
-
-        <p className="text-xs text-zinc-400 text-center">
-          {result.searchedCount} adres tarandi (Domain tahmini + Google arama)
-        </p>
+        <p className="text-xs text-slate-400 text-center">{result.searchedCount} adres tarandı</p>
       </CardContent>
     </Card>
   );
@@ -1056,10 +741,8 @@ function AuditBadgeRow({ label, value }: { label: string; value?: boolean }) {
   if (value === undefined) return null;
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-zinc-500">{label}</span>
-      <Badge variant={value ? "success" : "destructive"} className="text-xs">
-        {value ? "Var" : "Yok"}
-      </Badge>
+      <span className="text-sm text-slate-500">{label}</span>
+      <Badge variant={value ? "success" : "destructive"} className="text-xs">{value ? "Var" : "Yok"}</Badge>
     </div>
   );
 }
@@ -1120,234 +803,62 @@ function WebsitePlanSection({
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between space-y-0">
         <div>
-          <CardTitle className="text-lg">AI Website Plan</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-indigo-500" />
+            AI Website Plan
+          </CardTitle>
           {auditSummary && (
-            <p className="text-xs text-zinc-400 mt-1">
-              Audit Skoru: {auditSummary.scorePercent}% ({auditSummary.passed}/{auditSummary.totalChecks - (auditSummary.totalChecks - auditSummary.passed - auditSummary.failed)} basarili)
+            <p className="text-xs text-slate-400 mt-1">
+              Audit Skoru: {auditSummary.scorePercent}% ({auditSummary.passed}/{auditSummary.totalChecks - (auditSummary.totalChecks - auditSummary.passed - auditSummary.failed)} başarılı)
             </p>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {plan && (
             <>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-xs"
-                onClick={() => setShowPlan(!showPlan)}
-              >
-                {showPlan ? "Gizle" : "Goster"}
+              <Button size="sm" variant="ghost" className="text-xs gap-1.5" onClick={() => setShowPlan(!showPlan)}>
+                {showPlan ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                {showPlan ? "Gizle" : "Göster"}
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-xs"
-                onClick={handleCopy}
-              >
-                {copied ? "Kopyalandi!" : "Kopyala"}
+              <Button size="sm" variant="ghost" className="text-xs gap-1.5" onClick={handleCopy}>
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? "Kopyalandı!" : "Kopyala"}
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-xs"
-                onClick={handleDownloadMD}
-              >
-                MD Indir
+              <Button size="sm" variant="ghost" className="text-xs gap-1.5" onClick={handleDownloadMD}>
+                <Download className="w-3.5 h-3.5" />
+                MD İndir
               </Button>
             </>
           )}
-          <Button
-            size="sm"
-            onClick={onGenerate}
-            disabled={generating}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
-          >
-            {generating ? (
-              <>
-                <div className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white mr-1.5" />
-                Plan Olusturuluyor...
-              </>
-            ) : plan ? (
-              "Yeniden Olustur"
-            ) : (
-              "Website Plani Olustur"
-            )}
+          <Button size="sm" variant="gradient" onClick={onGenerate} disabled={generating}>
+            {generating ? <><Loader2 className="w-4 h-4 animate-spin" />Plan Oluşturuluyor...</> : plan ? <><RefreshCw className="w-4 h-4" />Yeniden Oluştur</> : <><Sparkles className="w-4 h-4" />Website Planı Oluştur</>}
           </Button>
         </div>
       </CardHeader>
       {showPlan && plan && (
         <CardContent>
-          <div
-            ref={planRef}
-            className="rounded-lg border border-zinc-200 bg-white p-6 max-h-[700px] overflow-y-auto select-text"
-          >
-            <PlanMarkdownRenderer content={plan} />
+          <div ref={planRef} className="rounded-xl border border-slate-200/60 bg-white/80 p-6 max-h-[700px] overflow-y-auto select-text">
+            <MarkdownRenderer content={plan} />
           </div>
         </CardContent>
       )}
       {!plan && !generating && (
         <CardContent>
-          <p className="text-sm text-zinc-400 text-center py-6">
-            El Kitabi standartlarinda detayli website plani olusturmak icin butona tiklayin.
-          </p>
+          <div className="text-center py-8">
+            <FileText className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+            <p className="text-sm text-slate-400">Detaylı website planı oluşturmak için butona tıklayın.</p>
+          </div>
         </CardContent>
       )}
     </Card>
   );
 }
 
-function PlanMarkdownRenderer({ content }: { content: string }) {
-  const lines = content.split("\n");
-  const elements: React.ReactNode[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (line.startsWith("# ")) {
-      elements.push(
-        <h1 key={i} className="text-2xl font-bold mt-6 mb-3 text-zinc-900">
-          {line.slice(2)}
-        </h1>
-      );
-    } else if (line.startsWith("## ")) {
-      elements.push(
-        <h2
-          key={i}
-          className="text-xl font-semibold mt-5 mb-2 text-zinc-800 border-b border-zinc-200 pb-1"
-        >
-          {line.slice(3)}
-        </h2>
-      );
-    } else if (line.startsWith("### ")) {
-      elements.push(
-        <h3 key={i} className="text-lg font-semibold mt-4 mb-1.5 text-zinc-700">
-          {line.slice(4)}
-        </h3>
-      );
-    } else if (line.startsWith("#### ")) {
-      elements.push(
-        <h4 key={i} className="text-base font-semibold mt-3 mb-1 text-zinc-600">
-          {line.slice(5)}
-        </h4>
-      );
-    } else if (line.startsWith("- ") || line.startsWith("* ")) {
-      elements.push(
-        <li
-          key={i}
-          className="ml-4 text-sm text-zinc-600 leading-relaxed list-disc"
-        >
-          {formatInline(line.slice(2))}
-        </li>
-      );
-    } else if (/^\d+\.\s/.test(line)) {
-      const text = line.replace(/^\d+\.\s/, "");
-      elements.push(
-        <li
-          key={i}
-          className="ml-4 text-sm text-zinc-600 leading-relaxed list-decimal"
-        >
-          {formatInline(text)}
-        </li>
-      );
-    } else if (line.startsWith("---")) {
-      elements.push(<hr key={i} className="my-4 border-zinc-200" />);
-    } else if (line.startsWith("> ")) {
-      elements.push(
-        <blockquote
-          key={i}
-          className="border-l-4 border-indigo-300 pl-3 py-1 my-2 text-sm text-zinc-600 bg-indigo-50/50 rounded-r"
-        >
-          {formatInline(line.slice(2))}
-        </blockquote>
-      );
-    } else if (line.startsWith("```")) {
-      const codeLines: string[] = [];
-      i++;
-      while (i < lines.length && !lines[i].startsWith("```")) {
-        codeLines.push(lines[i]);
-        i++;
-      }
-      elements.push(
-        <pre
-          key={`code-${i}`}
-          className="bg-zinc-900 text-zinc-100 rounded-md p-4 my-2 text-xs overflow-x-auto"
-        >
-          {codeLines.join("\n")}
-        </pre>
-      );
-    } else if (line.trim() === "") {
-      elements.push(<div key={i} className="h-2" />);
-    } else {
-      elements.push(
-        <p key={i} className="text-sm text-zinc-600 leading-relaxed">
-          {formatInline(line)}
-        </p>
-      );
-    }
-  }
-
-  return <div className="space-y-0.5">{elements}</div>;
-}
-
-function formatInline(text: string): React.ReactNode {
-  const parts: React.ReactNode[] = [];
-  let remaining = text;
-  let key = 0;
-
-  while (remaining.length > 0) {
-    const codeMatch = remaining.match(/`([^`]+)`/);
-    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
-
-    let firstMatch: { index: number; length: number; node: React.ReactNode; type: string } | null = null;
-
-    if (boldMatch && boldMatch.index !== undefined) {
-      firstMatch = {
-        index: boldMatch.index,
-        length: boldMatch[0].length,
-        node: <strong key={key++} className="font-semibold text-zinc-800">{boldMatch[1]}</strong>,
-        type: "bold",
-      };
-    }
-
-    if (codeMatch && codeMatch.index !== undefined) {
-      if (!firstMatch || codeMatch.index < firstMatch.index) {
-        firstMatch = {
-          index: codeMatch.index,
-          length: codeMatch[0].length,
-          node: <code key={key++} className="bg-zinc-100 text-zinc-800 px-1 py-0.5 rounded text-xs font-mono">{codeMatch[1]}</code>,
-          type: "code",
-        };
-      }
-    }
-
-    if (firstMatch) {
-      if (firstMatch.index > 0) {
-        parts.push(remaining.slice(0, firstMatch.index));
-      }
-      parts.push(firstMatch.node);
-      remaining = remaining.slice(firstMatch.index + firstMatch.length);
-    } else {
-      parts.push(remaining);
-      break;
-    }
-  }
-
-  return parts.length === 1 ? parts[0] : <>{parts}</>;
-}
-
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between">
-      <span className="text-sm text-zinc-500">{label}</span>
-      <span className="text-sm font-medium text-right max-w-[60%]">
-        {value}
-      </span>
+      <span className="text-sm text-slate-500">{label}</span>
+      <span className="text-sm font-medium text-right max-w-[60%]">{value}</span>
     </div>
   );
 }

@@ -1,8 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  /* Glass tokens */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-bg-heavy: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-border-light: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+  --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.08);
+
+  /* Gradient tokens */
+  --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --gradient-primary-hover: linear-gradient(135deg, #4f46e5, #7c3aed);
+  --gradient-bg: linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%);
+  --gradient-sidebar: linear-gradient(180deg, rgba(15, 23, 42, 0.97), rgba(15, 23, 42, 0.92));
+
+  /* Accent */
+  --accent-indigo: #6366f1;
+  --accent-violet: #8b5cf6;
+  --accent-blue: #3b82f6;
 }
 
 @theme inline {
@@ -12,11 +31,74 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Gradient background for the main content area */
+body {
+  background: var(--gradient-bg);
+  background-attachment: fixed;
+}
+
+/* Glass card utility */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-heavy {
+  background: var(--glass-bg-heavy);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border-light);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Glass shimmer skeleton */
+@keyframes glass-shimmer {
+  0% {
+    background-position: -200% 0;
   }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-glass {
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.3) 25%,
+    rgba(226, 232, 240, 0.6) 50%,
+    rgba(226, 232, 240, 0.3) 75%
+  );
+  background-size: 200% 100%;
+  animation: glass-shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+/* Staggered fade-in for lists */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out forwards;
+  opacity: 0;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 /* Hide scrollbar on horizontally scrollable containers */
@@ -45,7 +127,7 @@
   font-weight: 700;
   margin-top: 1rem;
   margin-bottom: 0.5rem;
-  color: #18181b;
+  color: #0f172a;
 }
 
 .tiptap h2 {
@@ -53,7 +135,7 @@
   font-weight: 600;
   margin-top: 0.75rem;
   margin-bottom: 0.375rem;
-  color: #27272a;
+  color: #1e293b;
 }
 
 .tiptap h3 {
@@ -61,7 +143,7 @@
   font-weight: 600;
   margin-top: 0.5rem;
   margin-bottom: 0.25rem;
-  color: #3f3f46;
+  color: #334155;
 }
 
 .tiptap p {
@@ -86,17 +168,17 @@
 }
 
 .tiptap blockquote {
-  border-left: 3px solid #d4d4d8;
+  border-left: 3px solid #cbd5e1;
   padding-left: 1rem;
   margin-left: 0;
   margin-bottom: 0.5rem;
-  color: #71717a;
+  color: #64748b;
   font-style: italic;
 }
 
 .tiptap hr {
   border: none;
-  border-top: 1px solid #e4e4e7;
+  border-top: 1px solid #e2e8f0;
   margin: 1rem 0;
 }
 
@@ -106,12 +188,12 @@
   margin: 0.75rem 0;
   overflow: hidden;
   border-radius: 0.375rem;
-  border: 1px solid #e4e4e7;
+  border: 1px solid #e2e8f0;
 }
 
 .tiptap table td,
 .tiptap table th {
-  border: 1px solid #e4e4e7;
+  border: 1px solid #e2e8f0;
   padding: 0.5rem 0.75rem;
   min-width: 100px;
   vertical-align: top;
@@ -120,15 +202,15 @@
 }
 
 .tiptap table th {
-  background-color: #f4f4f5;
+  background-color: #f1f5f9;
   font-weight: 600;
-  color: #18181b;
+  color: #0f172a;
   font-size: 0.875rem;
 }
 
 .tiptap table td {
   font-size: 0.875rem;
-  color: #3f3f46;
+  color: #334155;
 }
 
 .tiptap table .selectedCell {
@@ -141,7 +223,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background-color: #3b82f6;
+  background-color: #6366f1;
   cursor: col-resize;
   z-index: 10;
 }

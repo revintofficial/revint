@@ -2,9 +2,14 @@
 
 import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Select,
   SelectContent,
@@ -20,6 +25,24 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { LONDON_BOROUGHS } from "@/types";
+import {
+  Search,
+  Globe,
+  Bookmark,
+  BookmarkCheck,
+  ExternalLink,
+  Phone,
+  Bot,
+  Loader2,
+  ScanSearch,
+  CircleCheck,
+  CircleX,
+  Info,
+  ChevronLeft,
+  ChevronRight,
+  Zap,
+  Users,
+} from "lucide-react";
 
 interface ContentCheckSignal {
   label: string;
@@ -100,7 +123,15 @@ function getSavedFilters() {
 
 export default function LeadsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-zinc-400">Yukleniyor...</div>}>
+    <Suspense
+      fallback={
+        <div className="p-6 md:p-8 lg:p-10 space-y-6">
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-16 rounded-xl" />
+          <Skeleton className="h-96 rounded-xl" />
+        </div>
+      }
+    >
       <LeadsPageContent />
     </Suspense>
   );
@@ -332,146 +363,150 @@ function LeadsPageContent() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-4 md:space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Leads</h2>
-          <p className="text-zinc-500 mt-1 text-sm">
-            {pagination.total} lead bulundu
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1 sm:flex-initial"
-            onClick={() => {
-              fetch("/api/crawl", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ crawlAll: true }),
-              }).then(() => fetchLeads());
-            }}
-          >
-            Crawl Baslat
-          </Button>
-          <Button
-            size="sm"
-            className="flex-1 sm:flex-initial"
-            onClick={() => {
-              fetch("/api/analyze", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ analyzeAll: true }),
-              }).then(() => fetchLeads());
-            }}
-          >
-            AI Analiz
-          </Button>
-        </div>
-      </div>
+    <div className="p-6 md:p-8 lg:p-10 space-y-6">
+      <PageHeader
+        title="Leads"
+        subtitle={`${pagination.total} lead bulundu`}
+        actions={
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                fetch("/api/crawl", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ crawlAll: true }),
+                }).then(() => fetchLeads());
+              }}
+            >
+              <Globe className="w-4 h-4" />
+              Crawl Başlat
+            </Button>
+            <Button
+              size="sm"
+              variant="gradient"
+              onClick={() => {
+                fetch("/api/analyze", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ analyzeAll: true }),
+                }).then(() => fetchLeads());
+              }}
+            >
+              <Bot className="w-4 h-4" />
+              AI Analiz
+            </Button>
+          </div>
+        }
+      />
 
+      {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Filtreler</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div>
-              <input
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
                 type="text"
-                placeholder="Isletme ara..."
+                placeholder="İşletme ara..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-10 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-950"
+                className="pl-9"
               />
             </div>
-            <div>
-              <Select value={borough} onValueChange={setBorough}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Borough" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tum Borough&apos;lar</SelectItem>
-                  {LONDON_BOROUGHS.map((b) => (
-                    <SelectItem key={b.name} value={b.name}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Select value={hasWebsite} onValueChange={setHasWebsite}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Website" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tumu</SelectItem>
-                  <SelectItem value="true">Website Var</SelectItem>
-                  <SelectItem value="false">Website Yok</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sirala" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="createdAt">Tarih</SelectItem>
-                  <SelectItem value="rating">Rating</SelectItem>
-                  <SelectItem value="reviewCount">Yorum Sayisi</SelectItem>
-                  <SelectItem value="businessName">Isim</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={borough} onValueChange={setBorough}>
+              <SelectTrigger>
+                <SelectValue placeholder="Borough" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tüm Borough&apos;lar</SelectItem>
+                {LONDON_BOROUGHS.map((b) => (
+                  <SelectItem key={b.name} value={b.name}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={hasWebsite} onValueChange={setHasWebsite}>
+              <SelectTrigger>
+                <SelectValue placeholder="Website" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tümü</SelectItem>
+                <SelectItem value="true">Website Var</SelectItem>
+                <SelectItem value="false">Website Yok</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sırala" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt">Tarih</SelectItem>
+                <SelectItem value="rating">Rating</SelectItem>
+                <SelectItem value="reviewCount">Yorum Sayısı</SelectItem>
+                <SelectItem value="businessName">İsim</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
 
-      <div className="bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden">
+      {/* Table */}
+      <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 bg-zinc-50">
-                <th className="text-left p-3 font-medium">Isletme</th>
-                <th className="text-left p-3 font-medium">Borough</th>
-                <th className="text-left p-3 font-medium">Rating</th>
-                <th className="text-left p-3 font-medium">Website</th>
-                <th className="text-left p-3 font-medium">Skor</th>
-                <th className="text-left p-3 font-medium">Teklif</th>
-                <th className="text-left p-3 font-medium">Durum</th>
-                <th className="text-left p-3 font-medium">Islem</th>
+              <tr className="border-b border-slate-200/60 bg-slate-50/50">
+                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">İşletme</th>
+                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Borough</th>
+                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Rating</th>
+                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Website</th>
+                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Skor</th>
+                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Teklif</th>
+                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Durum</th>
+                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">İşlem</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-zinc-400">
-                    Yukleniyor...
+                  <td colSpan={8} className="p-8">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                      <p className="text-sm text-slate-400">Yükleniyor...</p>
+                    </div>
                   </td>
                 </tr>
               ) : leads.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-zinc-400">
-                    Henuz lead yok. Discovery sayfasindan baslayin.
+                  <td colSpan={8} className="p-12">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <Users className="w-10 h-10 text-slate-300" />
+                      <p className="text-sm font-medium text-slate-500">Henüz lead yok</p>
+                      <p className="text-xs text-slate-400">Discovery sayfasından başlayın.</p>
+                      <Link href="/discovery">
+                        <Button variant="gradient" size="sm">Discovery&apos;ye Git</Button>
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                leads.map((lead) => (
+                leads.map((lead, index) => (
                   <tr
                     key={lead.id}
-                    className="border-b border-zinc-100 hover:bg-zinc-50 transition-colors"
+                    className="border-b border-slate-100/60 hover:bg-slate-50/50 transition-colors animate-fade-in-up"
+                    style={{ animationDelay: `${index * 30}ms` }}
                   >
                     <td className="p-3">
-                      <a
+                      <Link
                         href={`/leads/${lead.id}`}
-                        className="font-medium text-zinc-900 hover:underline"
+                        className="font-medium text-slate-900 hover:text-indigo-600 transition-colors"
                       >
                         {lead.businessName}
-                      </a>
-                      <p className="text-xs text-zinc-400 mt-0.5 truncate max-w-xs">
+                      </Link>
+                      <p className="text-xs text-slate-400 mt-0.5 truncate max-w-xs">
                         {lead.formattedAddress}
                       </p>
                     </td>
@@ -480,14 +515,12 @@ function LeadsPageContent() {
                     </td>
                     <td className="p-3">
                       {lead.rating ? (
-                        <span>
+                        <span className="text-slate-700">
                           {lead.rating.toFixed(1)}{" "}
-                          <span className="text-zinc-400">
-                            ({lead.reviewCount})
-                          </span>
+                          <span className="text-slate-400">({lead.reviewCount})</span>
                         </span>
                       ) : (
-                        <span className="text-zinc-300">-</span>
+                        <span className="text-slate-300">-</span>
                       )}
                     </td>
                     <td className="p-3">
@@ -497,13 +530,12 @@ function LeadsPageContent() {
                           <button
                             onClick={(e) => { e.preventDefault(); runContentCheck(lead); }}
                             disabled={contentCheckLoading && contentCheckLeadId === lead.id}
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors disabled:opacity-50"
-                            title="Website icerik kontrolu"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-indigo-200/60 bg-indigo-50/80 text-indigo-600 hover:bg-indigo-100 transition-all disabled:opacity-50"
                           >
                             {contentCheckLoading && contentCheckLeadId === lead.id ? (
-                              <div className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-indigo-300 border-t-indigo-600" />
+                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
                             ) : (
-                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+                              <ScanSearch className="w-2.5 h-2.5" />
                             )}
                             Kontrol
                           </button>
@@ -514,13 +546,12 @@ function LeadsPageContent() {
                           <button
                             onClick={(e) => { e.preventDefault(); runWebsiteSearch(lead); }}
                             disabled={websiteSearchLoading && websiteSearchLeadId === lead.id}
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors disabled:opacity-50"
-                            title="Internette website ara"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-amber-200/60 bg-amber-50/80 text-amber-600 hover:bg-amber-100 transition-all disabled:opacity-50"
                           >
                             {websiteSearchLoading && websiteSearchLeadId === lead.id ? (
-                              <div className="h-2.5 w-2.5 animate-spin rounded-full border-[1.5px] border-orange-300 border-t-orange-600" />
+                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
                             ) : (
-                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                              <Globe className="w-2.5 h-2.5" />
                             )}
                             Ara
                           </button>
@@ -529,27 +560,21 @@ function LeadsPageContent() {
                     </td>
                     <td className="p-3">
                       {lead.salesOpportunity ? (
-                        <ScoreBadge
-                          score={lead.salesOpportunity.opportunityScore}
-                        />
+                        <ScoreBadge score={lead.salesOpportunity.opportunityScore} />
                       ) : (
-                        <span className="text-zinc-300">-</span>
+                        <span className="text-slate-300">-</span>
                       )}
                     </td>
                     <td className="p-3">
                       {lead.salesOpportunity ? (
-                        <Badge variant="secondary">
-                          {lead.salesOpportunity.suggestedOffer}
-                        </Badge>
+                        <Badge variant="secondary">{lead.salesOpportunity.suggestedOffer}</Badge>
                       ) : (
-                        <span className="text-zinc-300">-</span>
+                        <span className="text-slate-300">-</span>
                       )}
                     </td>
                     <td className="p-3">
                       {lead.salesOpportunity ? (
-                        <StatusBadge
-                          status={lead.salesOpportunity.status}
-                        />
+                        <StatusBadge status={lead.salesOpportunity.status} />
                       ) : (
                         <Badge variant="outline">Bekliyor</Badge>
                       )}
@@ -557,39 +582,33 @@ function LeadsPageContent() {
                     <td className="p-3">
                       <div className="flex gap-1">
                         {watchlistLeadIds.has(lead.id) ? (
-                          <a href="/watchlist">
-                            <Button size="sm" variant="secondary" className="text-amber-600">
-                              ★ Listede
+                          <Link href="/watchlist">
+                            <Button size="sm" variant="ghost" className="text-amber-600 hover:text-amber-700">
+                              <BookmarkCheck className="w-4 h-4" />
                             </Button>
-                          </a>
+                          </Link>
                         ) : (
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
                             onClick={() => openWatchlistDialog(lead)}
                           >
-                            ☆ Watchlist
+                            <Bookmark className="w-4 h-4" />
                           </Button>
                         )}
                         {lead.salesOpportunity?.status === "NEW" && (
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              updateStatus(lead.id, "CONTACTED")
-                            }
+                            variant="ghost"
+                            onClick={() => updateStatus(lead.id, "CONTACTED")}
                           >
-                            Iletisim
+                            <Phone className="w-4 h-4" />
                           </Button>
                         )}
                         {lead.googleMapsUri && (
-                          <a
-                            href={lead.googleMapsUri}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
+                          <a href={lead.googleMapsUri} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" variant="ghost">
-                              Maps
+                              <ExternalLink className="w-4 h-4" />
                             </Button>
                           </a>
                         )}
@@ -603,36 +622,36 @@ function LeadsPageContent() {
         </div>
 
         {pagination.totalPages > 1 && (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t border-zinc-200">
-            <p className="text-sm text-zinc-500 text-center sm:text-left">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t border-slate-200/60">
+            <p className="text-sm text-slate-500 text-center sm:text-left">
               Sayfa {pagination.page} / {pagination.totalPages}
+              <span className="text-slate-400 ml-2">({pagination.total} sonuç)</span>
             </p>
-            <div className="flex gap-2 justify-center sm:justify-end">
+            <div className="flex gap-1 justify-center sm:justify-end">
               <Button
                 size="sm"
                 variant="outline"
                 disabled={pagination.page <= 1}
-                onClick={() =>
-                  setPagination((p) => ({ ...p, page: p.page - 1 }))
-                }
+                onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
               >
-                Onceki
+                <ChevronLeft className="w-4 h-4" />
+                Önceki
               </Button>
               <Button
                 size="sm"
                 variant="outline"
                 disabled={pagination.page >= pagination.totalPages}
-                onClick={() =>
-                  setPagination((p) => ({ ...p, page: p.page + 1 }))
-                }
+                onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
               >
                 Sonraki
+                <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
+      {/* Content Check Dialog */}
       <Dialog
         open={!!(contentCheckLeadId && (contentCheckLoading || contentCheckResult))}
         onOpenChange={(open) => {
@@ -645,8 +664,8 @@ function LeadsPageContent() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.855z"/></svg>
-              Icerik Kontrol Sonucu
+              <ScanSearch className="w-5 h-5 text-indigo-500" />
+              İçerik Kontrol Sonucu
             </DialogTitle>
             <DialogDescription>
               {contentCheckResult?.url || "Website analiz ediliyor..."}
@@ -654,8 +673,8 @@ function LeadsPageContent() {
           </DialogHeader>
           {contentCheckLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-3 border-indigo-200 border-t-indigo-600" />
-              <p className="text-sm text-zinc-400 mt-3">Website analiz ediliyor...</p>
+              <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+              <p className="text-sm text-slate-400 mt-3">Website analiz ediliyor...</p>
             </div>
           ) : contentCheckResult ? (
             <ContentCheckPanel result={contentCheckResult} />
@@ -663,6 +682,7 @@ function LeadsPageContent() {
         </DialogContent>
       </Dialog>
 
+      {/* Website Search Dialog */}
       <Dialog
         open={!!(websiteSearchLeadId && (websiteSearchLoading || websiteSearchResult))}
         onOpenChange={(open) => {
@@ -675,20 +695,20 @@ function LeadsPageContent() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <Globe className="w-5 h-5 text-amber-500" />
               Website Arama Sonucu
             </DialogTitle>
             <DialogDescription>
               {websiteSearchResult?.businessName
-                ? `"${websiteSearchResult.businessName}" icin internet taramasi`
-                : "Internette website araniyor..."}
+                ? `"${websiteSearchResult.businessName}" için internet taraması`
+                : "İnternette website aranıyor..."}
             </DialogDescription>
           </DialogHeader>
           {websiteSearchLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-3 border-orange-200 border-t-orange-600" />
-              <p className="text-sm text-zinc-400 mt-3">Internette website araniyor...</p>
-              <p className="text-xs text-zinc-300 mt-1">Domain tahmini + Google arama yapiliyor</p>
+              <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+              <p className="text-sm text-slate-400 mt-3">İnternette website aranıyor...</p>
+              <p className="text-xs text-slate-300 mt-1">Domain tahmini + Google arama yapılıyor</p>
             </div>
           ) : websiteSearchResult ? (
             <WebsiteSearchPanel result={websiteSearchResult} />
@@ -696,48 +716,57 @@ function LeadsPageContent() {
         </DialogContent>
       </Dialog>
 
+      {/* Watchlist Dialog */}
       <Dialog
         open={!!watchlistDialogLead}
         onOpenChange={(open) => !open && setWatchlistDialogLead(null)}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Watchlist&apos;e Ekle</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Bookmark className="w-5 h-5 text-indigo-500" />
+              Watchlist&apos;e Ekle
+            </DialogTitle>
             <DialogDescription>
-              {watchlistDialogLead?.businessName} icin bilgileri girin.
+              {watchlistDialogLead?.businessName} için bilgileri girin.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">
-                Yapilan Site URL
+              <label className="block text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5">
+                Yapılan Site URL
               </label>
-              <input
+              <Input
                 type="url"
                 value={watchlistSiteUrl}
                 onChange={(e) => setWatchlistSiteUrl(e.target.value)}
                 placeholder="https://example.com"
-                className="w-full h-10 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-950"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">
+              <label className="block text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5">
                 Notlar
               </label>
-              <textarea
+              <Textarea
                 value={watchlistNotes}
                 onChange={(e) => setWatchlistNotes(e.target.value)}
-                placeholder="Notlarinizi yazin..."
+                placeholder="Notlarınızı yazın..."
                 rows={3}
-                className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-950 resize-none"
               />
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setWatchlistDialogLead(null)}>
-                Iptal
+                İptal
               </Button>
-              <Button onClick={handleAddToWatchlist} disabled={watchlistSaving}>
-                {watchlistSaving ? "Ekleniyor..." : "Ekle"}
+              <Button variant="gradient" onClick={handleAddToWatchlist} disabled={watchlistSaving}>
+                {watchlistSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Ekleniyor...
+                  </>
+                ) : (
+                  "Ekle"
+                )}
               </Button>
             </div>
           </div>
@@ -749,65 +778,60 @@ function LeadsPageContent() {
 
 function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
   const verdictConfig: Record<string, { label: string; color: string; bg: string }> = {
-    placeholder: { label: "Placeholder / Bos Site", color: "text-red-600", bg: "bg-red-50 border-red-200" },
-    basic: { label: "Temel Duzey Site", color: "text-amber-600", bg: "bg-amber-50 border-amber-200" },
-    developed: { label: "Gelistirilmis Site", color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200" },
-    unreachable: { label: "Erisilemedi", color: "text-zinc-600", bg: "bg-zinc-50 border-zinc-200" },
+    placeholder: { label: "Placeholder / Boş Site", color: "text-rose-600", bg: "bg-rose-50/80 border-rose-200/60" },
+    basic: { label: "Temel Düzey Site", color: "text-amber-600", bg: "bg-amber-50/80 border-amber-200/60" },
+    developed: { label: "Geliştirilmiş Site", color: "text-emerald-600", bg: "bg-emerald-50/80 border-emerald-200/60" },
+    unreachable: { label: "Erişilemedi", color: "text-slate-600", bg: "bg-slate-50/80 border-slate-200/60" },
   };
 
   const config = verdictConfig[result.verdict] || verdictConfig.unreachable;
 
   return (
     <div className="space-y-4 pt-2">
-      <div className={`rounded-lg border p-4 ${config.bg}`}>
+      <div className={`rounded-xl border p-4 ${config.bg}`}>
         <div className="flex items-center justify-between mb-2">
           <p className={`font-semibold text-lg ${config.color}`}>{config.label}</p>
           <div className="flex items-center gap-1.5">
-            <span className="text-sm text-zinc-500">Skor:</span>
-            <span className={`text-lg font-bold ${result.score >= 65 ? "text-emerald-600" : result.score >= 35 ? "text-amber-600" : "text-red-600"}`}>
+            <span className="text-sm text-slate-500">Skor:</span>
+            <span className={`text-lg font-bold ${result.score >= 65 ? "text-emerald-600" : result.score >= 35 ? "text-amber-600" : "text-rose-600"}`}>
               {result.score}
             </span>
-            <span className="text-xs text-zinc-400">/100</span>
+            <span className="text-xs text-slate-400">/100</span>
           </div>
         </div>
-        <p className="text-sm text-zinc-700 leading-relaxed">{result.summary}</p>
+        <p className="text-sm text-slate-600 leading-relaxed">{result.summary}</p>
       </div>
 
       <div className="grid grid-cols-4 gap-2">
-        <div className="rounded-md bg-zinc-50 p-2 text-center">
-          <p className="text-sm font-bold text-zinc-800">{result.wordCount}</p>
-          <p className="text-[10px] text-zinc-500">Kelime</p>
-        </div>
-        <div className="rounded-md bg-zinc-50 p-2 text-center">
-          <p className="text-sm font-bold text-zinc-800">{result.imageCount}</p>
-          <p className="text-[10px] text-zinc-500">Gorsel</p>
-        </div>
-        <div className="rounded-md bg-zinc-50 p-2 text-center">
-          <p className="text-sm font-bold text-zinc-800">{result.internalLinkCount}</p>
-          <p className="text-[10px] text-zinc-500">Link</p>
-        </div>
-        <div className="rounded-md bg-zinc-50 p-2 text-center">
-          <p className="text-sm font-bold text-zinc-800">{(result.htmlSize / 1024).toFixed(0)}</p>
-          <p className="text-[10px] text-zinc-500">KB</p>
-        </div>
+        {[
+          { value: result.wordCount, label: "Kelime" },
+          { value: result.imageCount, label: "Görsel" },
+          { value: result.internalLinkCount, label: "Link" },
+          { value: `${(result.htmlSize / 1024).toFixed(0)}`, label: "KB" },
+        ].map((stat) => (
+          <div key={stat.label} className="rounded-xl bg-slate-50/80 p-2.5 text-center">
+            <p className="text-sm font-semibold text-slate-800">{stat.value}</p>
+            <p className="text-[10px] text-slate-400">{stat.label}</p>
+          </div>
+        ))}
       </div>
 
       {result.builderDetected && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-blue-50 border border-blue-200">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-          <span className="text-sm text-blue-700"><strong>{result.builderDetected}</strong> ile olusturulmus</span>
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-50/80 border border-indigo-200/60">
+          <Info className="w-4 h-4 text-indigo-500 shrink-0" />
+          <span className="text-sm text-indigo-700"><strong>{result.builderDetected}</strong> ile oluşturulmuş</span>
         </div>
       )}
 
       <div className="space-y-1.5 max-h-60 overflow-y-auto">
-        <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">Detayli Analiz</p>
+        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Detaylı Analiz</p>
         {result.signals.map((signal, i) => (
-          <div key={i} className="flex items-center justify-between py-1 border-b border-zinc-100 last:border-0">
+          <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-100/60 last:border-0">
             <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${signal.status === "good" ? "bg-emerald-500" : signal.status === "warning" ? "bg-amber-500" : "bg-red-500"}`} />
-              <span className="text-xs font-medium text-zinc-700">{signal.label}</span>
+              <div className={`w-1.5 h-1.5 rounded-full ${signal.status === "good" ? "bg-emerald-500" : signal.status === "warning" ? "bg-amber-500" : "bg-rose-500"}`} />
+              <span className="text-xs font-medium text-slate-700">{signal.label}</span>
             </div>
-            <span className="text-xs text-zinc-500 text-right max-w-[55%] truncate">{signal.detail}</span>
+            <span className="text-xs text-slate-500 text-right max-w-[55%] truncate">{signal.detail}</span>
           </div>
         ))}
       </div>
@@ -820,48 +844,40 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
     <div className="space-y-4 pt-2">
       {result.found ? (
         <>
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+          <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/80 p-4">
             <div className="flex items-center gap-2 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+              <CircleCheck className="w-5 h-5 text-emerald-600" />
               <p className="font-semibold text-emerald-700">
                 {result.websites.length} website bulundu!
               </p>
             </div>
             <p className="text-sm text-emerald-600">
-              Google Places API&apos;da kayitli olmayan ama internette bulunan website(ler) tespit edildi. Ilk bulunan site lead&apos;e otomatik kaydedildi.
+              Google Places API&apos;da kayıtlı olmayan ama internette bulunan website(ler) tespit edildi. İlk bulunan site lead&apos;e otomatik kaydedildi.
             </p>
           </div>
 
           <div className="space-y-2">
             {result.websites.map((website, i) => (
-              <div key={i} className="rounded-lg border border-zinc-200 p-3 hover:bg-zinc-50 transition-colors">
+              <div key={i} className="rounded-xl border border-slate-200/60 p-3 hover:bg-slate-50/50 transition-all">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <a
                       href={website.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm font-medium text-blue-600 hover:underline break-all"
+                      className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors break-all"
                     >
                       {website.url}
                     </a>
                     {website.title && (
-                      <p className="text-xs text-zinc-500 mt-0.5 truncate">{website.title}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 truncate">{website.title}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded ${
-                      website.source === "google_search"
-                        ? "bg-blue-50 text-blue-700 border border-blue-200"
-                        : "bg-purple-50 text-purple-700 border border-purple-200"
-                    }`}>
+                    <Badge variant={website.source === "google_search" ? "secondary" : "outline"}>
                       {website.source === "google_search" ? "Google" : "Domain"}
-                    </span>
-                    {i === 0 && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Kaydedildi
-                      </span>
-                    )}
+                    </Badge>
+                    {i === 0 && <Badge variant="success">Kaydedildi</Badge>}
                   </div>
                 </div>
               </div>
@@ -869,32 +885,27 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
           </div>
         </>
       ) : (
-        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+        <div className="rounded-xl border border-slate-200/60 bg-slate-50/80 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400"><circle cx="12" cy="12" r="10"/><line x1="4.93" x2="19.07" y1="4.93" y2="19.07"/></svg>
-            <p className="font-semibold text-zinc-600">Website bulunamadi</p>
+            <CircleX className="w-5 h-5 text-slate-400" />
+            <p className="font-semibold text-slate-600">Website bulunamadı</p>
           </div>
-          <p className="text-sm text-zinc-500">
-            {result.searchedCount} adres tarandi ancak bu isletme icin aktif bir website tespit edilemedi. Isletmenin gercekten websitesi olmayabilir - bu yeni site teklifi icin ideal bir firsat.
+          <p className="text-sm text-slate-500">
+            {result.searchedCount} adres tarandı ancak bu işletme için aktif bir website tespit edilemedi. İşletmenin gerçekten websitesi olmayabilir — bu yeni site teklifi için ideal bir fırsat.
           </p>
         </div>
       )}
 
       <div className="flex items-center justify-between px-1">
-        <p className="text-xs text-zinc-400">
-          {result.searchedCount} adres tarandi
-        </p>
-        <p className="text-xs text-zinc-400">
-          Domain tahmini + Google arama
-        </p>
+        <p className="text-xs text-slate-400">{result.searchedCount} adres tarandı</p>
+        <p className="text-xs text-slate-400">Domain tahmini + Google arama</p>
       </div>
     </div>
   );
 }
 
 function ScoreBadge({ score }: { score: number }) {
-  const variant =
-    score >= 60 ? "success" : score >= 35 ? "warning" : "secondary";
+  const variant = score >= 60 ? "success" : score >= 35 ? "warning" : "secondary";
   return <Badge variant={variant}>{score}</Badge>;
 }
 

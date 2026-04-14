@@ -1,9 +1,15 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/ui/page-header";
+import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +17,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Loader2,
+  Star,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+  RefreshCw,
+  Sparkles,
+  Globe,
+  Bot,
+  BookmarkX,
+} from "lucide-react";
+import { toast } from "sonner";
 
 interface GoogleReviewData {
   id: string;
@@ -509,138 +535,120 @@ export default function WatchlistPage() {
     return true;
   });
 
-  const FILTER_TABS: { value: MeetingFilter; label: string; count: number; color: string; activeColor: string }[] = [
-    { value: "ALL", label: "Tumunu", count: items.length, color: "text-zinc-600", activeColor: "bg-zinc-900 text-white" },
-    { value: "POSITIVE", label: "Olumlu", count: positiveCount, color: "text-emerald-600", activeColor: "bg-emerald-600 text-white" },
-    { value: "IN_PROGRESS", label: "Devam Ediyor", count: inProgressCount, color: "text-amber-600", activeColor: "bg-amber-600 text-white" },
-    { value: "NEGATIVE", label: "Olumsuz", count: negativeCount, color: "text-red-600", activeColor: "bg-red-600 text-white" },
-    { value: "PENDING", label: "Bekleyen", count: pendingCount, color: "text-zinc-500", activeColor: "bg-zinc-600 text-white" },
+  const FILTER_TABS: { value: MeetingFilter; label: string; count: number }[] = [
+    { value: "ALL", label: "Tumunu", count: items.length },
+    { value: "POSITIVE", label: "Olumlu", count: positiveCount },
+    { value: "IN_PROGRESS", label: "Devam Ediyor", count: inProgressCount },
+    { value: "NEGATIVE", label: "Olumsuz", count: negativeCount },
+    { value: "PENDING", label: "Bekleyen", count: pendingCount },
   ];
 
   return (
-    <div className="p-4 md:p-8 space-y-4 md:space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Watchlist</h2>
-          <p className="text-zinc-500 mt-1 text-sm">
-            {loading
-              ? "Yukleniyor..."
-              : `${items.length} lead takip ediliyor`}
-          </p>
-          {!loading && items.filter((i) => i.selectedOffer).length > 0 && (
-            <div className="flex items-center gap-2 mt-1.5">
-              {(["STARTER", "GROWTH"] as const).map((offer) => {
-                const count = items.filter((i) => i.selectedOffer === offer).length;
-                if (count === 0) return null;
-                const colors = {
-                  STARTER: "bg-emerald-100 text-emerald-700",
-                  GROWTH: "bg-blue-100 text-blue-700",
-                };
-                return (
-                  <span key={offer} className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${colors[offer]}`}>
-                    {offer} <span className="font-bold">{count}</span>
-                  </span>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {!loading && items.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="h-8 w-8 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xs font-bold">
-                {totalScore}
+    <div className="p-6 md:p-8 lg:p-10 space-y-6">
+      <PageHeader
+        title="Watchlist"
+        subtitle={loading ? "Yukleniyor..." : `${items.length} lead takip ediliyor`}
+        actions={
+          !loading && items.length > 0 ? (
+            <>
+              <div className="flex items-center gap-2 text-sm">
+                <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold">
+                  {totalScore}
+                </div>
+                <span className="text-slate-500">Ort. Skor</span>
               </div>
-              <span className="text-zinc-500">Ort. Skor</span>
-            </div>
-            {unanalyzedCount > 0 && (
+              {unanalyzedCount > 0 && (
+                <Button
+                  size="sm"
+                  onClick={handleAnalyzeAll}
+                  disabled={analyzingAll}
+                >
+                  {analyzingAll ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                      Analiz Ediliyor...
+                    </>
+                  ) : (
+                    `Tumunu Analiz Et (${unanalyzedCount})`
+                  )}
+                </Button>
+              )}
               <Button
                 size="sm"
-                onClick={handleAnalyzeAll}
-                disabled={analyzingAll}
+                variant="outline"
+                onClick={handleExportExcel}
+                disabled={exportingExcel}
               >
-                {analyzingAll
-                  ? "Analiz Ediliyor..."
-                  : `Tumunu Analiz Et (${unanalyzedCount})`}
+                {exportingExcel ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    Hazirlaniyor...
+                  </>
+                ) : (
+                  <>
+                    <FileSpreadsheet className="w-4 h-4 mr-1.5" />
+                    Excel
+                  </>
+                )}
               </Button>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleExportExcel}
-              disabled={exportingExcel}
-            >
-              {exportingExcel ? (
-                <>
-                  <div className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600 mr-1.5" />
-                  Hazirlaniyor...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Excel
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleExportPDF}
-              disabled={exporting}
-            >
-              {exporting ? (
-                <>
-                  <div className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600 mr-1.5" />
-                  Hazirlaniyor...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  PDF Raporu
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-      </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleExportPDF}
+                disabled={exporting}
+              >
+                {exporting ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                    Hazirlaniyor...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4 mr-1.5" />
+                    PDF Raporu
+                  </>
+                )}
+              </Button>
+            </>
+          ) : undefined
+        }
+      />
+
+      {!loading && items.filter((i) => i.selectedOffer).length > 0 && (
+        <div className="flex items-center gap-2">
+          {(["STARTER", "GROWTH"] as const).map((offer) => {
+            const count = items.filter((i) => i.selectedOffer === offer).length;
+            if (count === 0) return null;
+            const colors = {
+              STARTER: "bg-emerald-100 text-emerald-700",
+              GROWTH: "bg-blue-100 text-blue-700",
+            };
+            return (
+              <span key={offer} className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${colors[offer]}`}>
+                {offer} <span className="font-bold">{count}</span>
+              </span>
+            );
+          })}
+        </div>
+      )}
 
       {!loading && items.length > 0 && (
-        <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-lg w-fit max-w-full overflow-x-auto">
+        <div className="flex items-center gap-1 bg-slate-100/80 backdrop-blur-sm rounded-xl p-1 w-fit max-w-full overflow-x-auto">
           {FILTER_TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setMeetingFilter(tab.value)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
                 meetingFilter === tab.value
-                  ? tab.activeColor + " shadow-sm"
-                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50"
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
               }`}
             >
-              {tab.value === "POSITIVE" && (
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              )}
-              {tab.value === "IN_PROGRESS" && (
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              )}
-              {tab.value === "NEGATIVE" && (
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              )}
               {tab.label}
               <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                 meetingFilter === tab.value
-                  ? "bg-white/20"
-                  : "bg-zinc-200 text-zinc-500"
+                  ? "bg-slate-100/80"
+                  : "bg-slate-200 text-slate-500"
               }`}>
                 {tab.count}
               </span>
@@ -649,10 +657,33 @@ export default function WatchlistPage() {
         </div>
       )}
 
+      {loading && (
+        <div className="grid gap-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-xl border border-slate-200/60 p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-48" />
+                  <Skeleton className="h-4 w-72" />
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-8 w-32" />
+            </div>
+          ))}
+        </div>
+      )}
+
       {!loading && items.length === 0 && (
-        <Card>
+        <Card className="rounded-xl">
           <CardContent className="py-12">
-            <div className="text-center text-zinc-400">
+            <div className="text-center text-slate-400">
+              <BookmarkX className="w-12 h-12 mx-auto mb-3 text-slate-300" />
               <p className="text-lg font-medium">
                 Henuz watchlist&apos;te lead yok
               </p>
@@ -665,9 +696,9 @@ export default function WatchlistPage() {
       )}
 
       {!loading && items.length > 0 && filteredItems.length === 0 && (
-        <Card>
+        <Card className="rounded-xl">
           <CardContent className="py-12">
-            <div className="text-center text-zinc-400">
+            <div className="text-center text-slate-400">
               <p className="text-lg font-medium">
                 Bu filtreye uygun lead bulunamadi
               </p>
@@ -701,14 +732,10 @@ function StarRating({ rating }: { rating: number }) {
   return (
     <span className="inline-flex gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
-        <svg
+        <Star
           key={star}
-          className={`w-3.5 h-3.5 ${star <= rating ? "text-amber-400" : "text-zinc-200"}`}
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>
+          className={`w-3.5 h-3.5 ${star <= rating ? "text-amber-400 fill-amber-400" : "text-slate-200"}`}
+        />
       ))}
     </span>
   );
@@ -737,167 +764,52 @@ const REASON_LABELS: Record<string, string> = {
   no_pwa: "PWA Yok",
 };
 
-function SimpleMarkdown({ content }: { content: string }) {
-  const lines = content.split("\n");
-  const elements: React.ReactNode[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (line.startsWith("# ")) {
-      elements.push(
-        <h1 key={i} className="text-2xl font-bold mt-6 mb-3 text-zinc-900">
-          {line.slice(2)}
-        </h1>
-      );
-    } else if (line.startsWith("## ")) {
-      elements.push(
-        <h2
-          key={i}
-          className="text-xl font-semibold mt-5 mb-2 text-zinc-800 border-b border-zinc-200 pb-1"
-        >
-          {line.slice(3)}
-        </h2>
-      );
-    } else if (line.startsWith("### ")) {
-      elements.push(
-        <h3 key={i} className="text-lg font-semibold mt-4 mb-1.5 text-zinc-700">
-          {line.slice(4)}
-        </h3>
-      );
-    } else if (line.startsWith("- ") || line.startsWith("* ")) {
-      elements.push(
-        <li
-          key={i}
-          className="ml-4 text-sm text-zinc-600 leading-relaxed list-disc"
-        >
-          {formatInline(line.slice(2))}
-        </li>
-      );
-    } else if (/^\d+\.\s/.test(line)) {
-      const text = line.replace(/^\d+\.\s/, "");
-      elements.push(
-        <li
-          key={i}
-          className="ml-4 text-sm text-zinc-600 leading-relaxed list-decimal"
-        >
-          {formatInline(text)}
-        </li>
-      );
-    } else if (line.startsWith("---")) {
-      elements.push(<hr key={i} className="my-4 border-zinc-200" />);
-    } else if (line.startsWith("> ")) {
-      elements.push(
-        <blockquote
-          key={i}
-          className="border-l-4 border-zinc-300 pl-3 py-1 my-2 text-sm text-zinc-500 italic"
-        >
-          {formatInline(line.slice(2))}
-        </blockquote>
-      );
-    } else if (line.startsWith("```")) {
-      const codeLines: string[] = [];
-      i++;
-      while (i < lines.length && !lines[i].startsWith("```")) {
-        codeLines.push(lines[i]);
-        i++;
-      }
-      elements.push(
-        <pre
-          key={`code-${i}`}
-          className="bg-zinc-100 rounded-md p-3 my-2 text-xs text-zinc-700 overflow-x-auto"
-        >
-          {codeLines.join("\n")}
-        </pre>
-      );
-    } else if (line.trim() === "") {
-      elements.push(<div key={i} className="h-2" />);
-    } else {
-      elements.push(
-        <p key={i} className="text-sm text-zinc-600 leading-relaxed">
-          {formatInline(line)}
-        </p>
-      );
-    }
-  }
-
-  return <div className="space-y-0.5">{elements}</div>;
-}
-
-function formatInline(text: string): React.ReactNode {
-  const parts: React.ReactNode[] = [];
-  let remaining = text;
-  let key = 0;
-
-  while (remaining.length > 0) {
-    const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
-    if (boldMatch && boldMatch.index !== undefined) {
-      if (boldMatch.index > 0) {
-        parts.push(remaining.slice(0, boldMatch.index));
-      }
-      parts.push(
-        <strong key={key++} className="font-semibold text-zinc-800">
-          {boldMatch[1]}
-        </strong>
-      );
-      remaining = remaining.slice(boldMatch.index + boldMatch[0].length);
-    } else {
-      parts.push(remaining);
-      break;
-    }
-  }
-
-  return parts.length === 1 ? parts[0] : <>{parts}</>;
-}
-
 function AnalysisPanel({ opp }: { opp: SalesOpportunityData }) {
   const reasonCodes = (opp.reasonCodes || []) as string[];
   const painPoints = (opp.likelyPainPoints || []) as string[];
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-gradient-to-br from-zinc-50 to-white p-4 space-y-4">
+    <div className="rounded-xl border border-slate-200/60 bg-gradient-to-br from-slate-50 to-white p-4 space-y-4">
       <div className="flex items-center gap-2">
-        <svg className="w-5 h-5 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-        </svg>
-        <h4 className="font-semibold text-zinc-800">AI Analiz Sonuclari</h4>
+        <Sparkles className="w-5 h-5 text-slate-700" />
+        <h4 className="font-semibold text-slate-800">AI Analiz Sonuclari</h4>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="rounded-md bg-white border border-zinc-100 p-3 text-center">
+        <div className="rounded-md bg-white border border-slate-200/60 p-3 text-center">
           <div
             className={`text-2xl font-bold ${
               opp.opportunityScore >= 60
                 ? "text-emerald-600"
                 : opp.opportunityScore >= 35
                   ? "text-amber-600"
-                  : "text-zinc-500"
+                  : "text-slate-500"
             }`}
           >
             {opp.opportunityScore}
           </div>
-          <div className="text-xs text-zinc-400 mt-0.5">Firsat Skoru</div>
+          <div className="text-xs font-medium uppercase tracking-wider text-slate-400 mt-0.5">Firsat Skoru</div>
         </div>
-        <div className="rounded-md bg-white border border-zinc-100 p-3 text-center">
-          <div className="text-lg font-bold text-zinc-800">
+        <div className="rounded-md bg-white border border-slate-200/60 p-3 text-center">
+          <div className="text-lg font-bold text-slate-800">
             {opp.suggestedOffer}
           </div>
-          <div className="text-xs text-zinc-400 mt-0.5">Onerilen Paket</div>
+          <div className="text-xs font-medium uppercase tracking-wider text-slate-400 mt-0.5">Onerilen Paket</div>
         </div>
-        <div className="rounded-md bg-white border border-zinc-100 p-3 text-center">
-          <div className="text-lg font-bold text-zinc-800">
+        <div className="rounded-md bg-white border border-slate-200/60 p-3 text-center">
+          <div className="text-lg font-bold text-slate-800">
             {opp.expectedPriceBand || "N/A"}
           </div>
-          <div className="text-xs text-zinc-400 mt-0.5">Fiyat Araligi</div>
+          <div className="text-xs font-medium uppercase tracking-wider text-slate-400 mt-0.5">Fiyat Araligi</div>
         </div>
       </div>
 
       {opp.whyGoodTarget && (
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">
             Neden Iyi Hedef
           </p>
-          <p className="text-sm text-zinc-700 leading-relaxed">
+          <p className="text-sm text-slate-700 leading-relaxed">
             {opp.whyGoodTarget}
           </p>
         </div>
@@ -905,7 +817,7 @@ function AnalysisPanel({ opp }: { opp: SalesOpportunityData }) {
 
       {reasonCodes.length > 0 && (
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1.5">
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5">
             Tespit Edilen Sorunlar
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -920,13 +832,13 @@ function AnalysisPanel({ opp }: { opp: SalesOpportunityData }) {
 
       {painPoints.length > 0 && (
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">
             Aci Noktalari
           </p>
           <ul className="space-y-1">
             {painPoints.map((point, idx) => (
-              <li key={idx} className="text-sm text-zinc-600 flex items-start gap-1.5">
-                <span className="text-red-400 mt-0.5">&#x2022;</span>
+              <li key={idx} className="text-sm text-slate-600 flex items-start gap-1.5">
+                <span className="text-rose-400 mt-0.5">&#x2022;</span>
                 {REASON_LABELS[point] || point}
               </li>
             ))}
@@ -936,10 +848,10 @@ function AnalysisPanel({ opp }: { opp: SalesOpportunityData }) {
 
       {opp.bestSalesAngle && (
         <div>
-          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-1">
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">
             Satis Acisi
           </p>
-          <p className="text-sm text-zinc-700 italic">{opp.bestSalesAngle}</p>
+          <p className="text-sm text-slate-700 italic">{opp.bestSalesAngle}</p>
         </div>
       )}
 
@@ -1060,13 +972,11 @@ function WebsitePlanPanel({
   };
 
   return (
-    <div className="border-t border-zinc-100 pt-3">
+    <div className="border-t border-slate-200/60 pt-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <svg className="w-5 h-5 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-          </svg>
-          <h4 className="font-semibold text-zinc-800 text-sm sm:text-base">AI Website Plan Ajani</h4>
+          <Bot className="w-5 h-5 text-indigo-600 shrink-0" />
+          <h4 className="font-semibold text-slate-800 text-sm sm:text-base">AI Website Plan Ajani</h4>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {item.websitePlan && (
@@ -1077,6 +987,7 @@ function WebsitePlanPanel({
                 className="text-xs"
                 onClick={() => setShowPlan(!showPlan)}
               >
+                {showPlan ? <EyeOff className="w-3.5 h-3.5 mr-1" /> : <Eye className="w-3.5 h-3.5 mr-1" />}
                 {showPlan ? "Gizle" : "Goster"}
               </Button>
               <Button
@@ -1085,9 +996,7 @@ function WebsitePlanPanel({
                 className="text-xs"
                 onClick={handleCopy}
               >
-                <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
+                {copied ? <Check className="w-3.5 h-3.5 mr-1" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
                 {copied ? "Kopyalandi!" : "Kopyala"}
               </Button>
               <Button
@@ -1096,9 +1005,7 @@ function WebsitePlanPanel({
                 className="text-xs"
                 onClick={handleDownloadMD}
               >
-                <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+                <Download className="w-3.5 h-3.5 mr-1" />
                 MD
               </Button>
               <Button
@@ -1107,9 +1014,7 @@ function WebsitePlanPanel({
                 className="text-xs"
                 onClick={handleDownloadPDF}
               >
-                <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
+                <FileText className="w-3.5 h-3.5 mr-1" />
                 PDF
               </Button>
             </>
@@ -1122,7 +1027,7 @@ function WebsitePlanPanel({
           >
             {generating ? (
               <>
-                <div className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white mr-1.5" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
                 Plan Olusturuluyor...
               </>
             ) : item.websitePlan ? (
@@ -1138,9 +1043,9 @@ function WebsitePlanPanel({
         <div className="mt-3">
           <div
             ref={planRef}
-            className="rounded-lg border border-zinc-200 bg-white p-6 max-h-[600px] overflow-y-auto select-text"
+            className="rounded-xl border border-slate-200/60 bg-white p-6 max-h-[600px] overflow-y-auto select-text"
           >
-            <SimpleMarkdown content={item.websitePlan} />
+            <MarkdownRenderer content={item.websitePlan} />
           </div>
         </div>
       )}
@@ -1198,14 +1103,14 @@ function OfferSelector({
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+        <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
           Teklif Paketi
         </label>
         {saving && (
-          <span className="text-[10px] text-zinc-400 animate-pulse">kaydediliyor...</span>
+          <span className="text-[10px] text-slate-400 animate-pulse">kaydediliyor...</span>
         )}
         {suggestedOffer && !selectedOffer && (
-          <span className="text-[10px] text-zinc-400">
+          <span className="text-[10px] text-slate-400">
             AI onerisi: {suggestedOffer}
           </span>
         )}
@@ -1236,34 +1141,32 @@ function OfferSelector({
             <button
               key={pkg.value}
               onClick={() => handleSelect(pkg.value)}
-              className={`relative rounded-lg border p-2.5 text-left transition-all ${
+              className={`relative rounded-xl border p-2.5 text-left transition-all ${
                 isSelected
                   ? colors.selected
-                  : `border-zinc-200 bg-white ${colors.hover}`
+                  : `border-slate-200/60 bg-white ${colors.hover}`
               }`}
             >
               {isSelected && (
                 <div className="absolute top-1.5 right-1.5">
-                  <svg className={`w-4 h-4 ${colors.label}`} fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
+                  <Check className={`w-4 h-4 ${colors.label}`} />
                 </div>
               )}
               {isSuggested && !isSelected && (
                 <div className="absolute top-1.5 right-1.5">
-                  <span className="text-[9px] font-medium text-zinc-400 bg-zinc-100 px-1 rounded">AI</span>
+                  <span className="text-[9px] font-medium text-slate-400 bg-slate-100/80 px-1 rounded">AI</span>
                 </div>
               )}
               <div className="flex items-center gap-1.5 mb-1">
                 <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
-                <span className={`text-sm font-semibold ${isSelected ? colors.label : "text-zinc-700"}`}>
+                <span className={`text-sm font-semibold ${isSelected ? colors.label : "text-slate-700"}`}>
                   {pkg.label}
                 </span>
               </div>
-              <div className={`text-xs font-medium ${isSelected ? colors.price : "text-zinc-500"}`}>
+              <div className={`text-xs font-medium ${isSelected ? colors.price : "text-slate-500"}`}>
                 {pkg.price}
               </div>
-              <div className="text-[10px] text-zinc-400 mt-0.5 leading-tight">
+              <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
                 {pkg.description}
               </div>
             </button>
@@ -1305,11 +1208,11 @@ function MeetingResultSelector({
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+        <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
           Gorusme Sonucu
         </label>
         {saving && (
-          <span className="text-[10px] text-zinc-400 animate-pulse">kaydediliyor...</span>
+          <span className="text-[10px] text-slate-400 animate-pulse">kaydediliyor...</span>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -1318,7 +1221,7 @@ function MeetingResultSelector({
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs sm:text-sm font-medium transition-all ${
             meetingResult === "POSITIVE"
               ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-500/20"
-              : "border-zinc-200 bg-white text-zinc-600 hover:border-emerald-300 hover:bg-emerald-50/50"
+              : "border-slate-200/60 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/50"
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1326,9 +1229,7 @@ function MeetingResultSelector({
           </svg>
           Olumlu Bitti
           {meetingResult === "POSITIVE" && (
-            <svg className="w-3.5 h-3.5 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
+            <Check className="w-3.5 h-3.5 ml-0.5" />
           )}
         </button>
         <button
@@ -1336,7 +1237,7 @@ function MeetingResultSelector({
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs sm:text-sm font-medium transition-all ${
             meetingResult === "IN_PROGRESS"
               ? "border-amber-500 bg-amber-50 text-amber-700 ring-2 ring-amber-500/20"
-              : "border-zinc-200 bg-white text-zinc-600 hover:border-amber-300 hover:bg-amber-50/50"
+              : "border-slate-200/60 bg-white text-slate-600 hover:border-amber-300 hover:bg-amber-50/50"
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1344,17 +1245,15 @@ function MeetingResultSelector({
           </svg>
           Devam Ediyor
           {meetingResult === "IN_PROGRESS" && (
-            <svg className="w-3.5 h-3.5 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
+            <Check className="w-3.5 h-3.5 ml-0.5" />
           )}
         </button>
         <button
           onClick={() => handleSelect("NEGATIVE")}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs sm:text-sm font-medium transition-all ${
             meetingResult === "NEGATIVE"
-              ? "border-red-500 bg-red-50 text-red-700 ring-2 ring-red-500/20"
-              : "border-zinc-200 bg-white text-zinc-600 hover:border-red-300 hover:bg-red-50/50"
+              ? "border-rose-500 bg-rose-50 text-rose-700 ring-2 ring-rose-500/20"
+              : "border-slate-200/60 bg-white text-slate-600 hover:border-rose-300 hover:bg-rose-50/50"
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1362,9 +1261,7 @@ function MeetingResultSelector({
           </svg>
           Olumsuz Bitti
           {meetingResult === "NEGATIVE" && (
-            <svg className="w-3.5 h-3.5 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
+            <Check className="w-3.5 h-3.5 ml-0.5" />
           )}
         </button>
       </div>
@@ -1505,25 +1402,25 @@ function WatchlistCard({
 
   return (
     <>
-    <Card className={`overflow-hidden${hasValidSiteUrl ? " bg-emerald-50/70 border-emerald-200" : ""}`}>
+    <Card className={`overflow-hidden rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300${hasValidSiteUrl ? " bg-emerald-50/70 border-emerald-200" : ""}`}>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <CardTitle className="text-base sm:text-lg">
-              <a
+              <Link
                 href={`/leads/${item.lead.id}`}
                 className="hover:underline"
               >
                 {item.lead.businessName}
-              </a>
+              </Link>
             </CardTitle>
-            <p className="text-sm text-zinc-500 mt-1 truncate">
+            <p className="text-sm text-slate-500 mt-1 truncate">
               {item.lead.formattedAddress}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">
             {saveStatus === "saving" && (
-              <span className="text-xs text-zinc-400">Kaydediliyor...</span>
+              <span className="text-xs text-slate-400">Kaydediliyor...</span>
             )}
             {saveStatus === "saved" && (
               <span className="text-xs text-green-500">Kaydedildi</span>
@@ -1539,7 +1436,7 @@ function WatchlistCard({
               </Badge>
             )}
             {item.meetingResult === "NEGATIVE" && (
-              <Badge className="bg-red-100 text-red-700 border-red-200">
+              <Badge className="bg-rose-100 text-rose-700 border-rose-200">
                 Olumsuz
               </Badge>
             )}
@@ -1585,34 +1482,32 @@ function WatchlistCard({
       <CardContent className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+            <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
               Yapilan Site URL
             </label>
             <div className="flex items-center gap-2 mt-1">
-              <input
+              <Input
                 type="url"
                 value={siteUrl}
                 onChange={(e) => handleSiteUrlChange(e.target.value)}
                 placeholder="https://example.com"
-                className="flex-1 h-9 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:bg-white transition-colors"
+                className="flex-1 h-9"
               />
               {siteUrl && (
                 <a
                   href={siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-shrink-0 h-9 w-9 rounded-md border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 flex items-center justify-center transition-colors"
+                  className="flex-shrink-0 h-9 w-9 rounded-md border border-slate-200/60 bg-slate-50/80 hover:bg-slate-100/80 flex items-center justify-center transition-colors"
                   title="Siteyi ac"
                 >
-                  <svg className="w-4 h-4 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
+                  <Globe className="w-4 h-4 text-slate-600" />
                 </a>
               )}
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+            <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
               Mevcut Website
             </label>
             {item.lead.websiteUrl ? (
@@ -1620,26 +1515,26 @@ function WatchlistCard({
                 href={item.lead.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-sm text-zinc-600 hover:underline mt-2 truncate"
+                className="block text-sm text-slate-600 hover:underline mt-2 truncate"
               >
                 {item.lead.websiteUrl}
               </a>
             ) : (
-              <p className="text-sm text-zinc-300 mt-2">Yok</p>
+              <p className="text-sm text-slate-300 mt-2">Yok</p>
             )}
           </div>
         </div>
 
         <div>
-          <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+          <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
             Notlar
           </label>
-          <textarea
+          <Textarea
             value={notes}
             onChange={(e) => handleNotesChange(e.target.value)}
             placeholder="Notlarinizi yazin..."
             rows={3}
-            className="w-full mt-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:bg-white resize-none transition-colors"
+            className="w-full mt-1 resize-none"
           />
         </div>
 
@@ -1658,33 +1553,20 @@ function WatchlistCard({
 
         {item.lead.phone && (
           <div>
-            <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+            <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
               Telefon
             </label>
-            <p className="text-sm text-zinc-700 mt-1">{item.lead.phone}</p>
+            <p className="text-sm text-slate-700 mt-1">{item.lead.phone}</p>
           </div>
         )}
 
-        {/* AI Analysis Section */}
         {opp && (
-          <div className="border-t border-zinc-100 pt-3">
+          <div className="border-t border-slate-200/60 pt-3">
             <button
               onClick={() => setAnalysisOpen(!analysisOpen)}
-              className="flex items-center gap-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 transition-colors w-full"
+              className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors w-full"
             >
-              <svg
-                className={`w-4 h-4 transition-transform ${analysisOpen ? "rotate-90" : ""}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+              {analysisOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               AI Analiz Sonuclari
               <Badge
                 variant={
@@ -1707,29 +1589,16 @@ function WatchlistCard({
           </div>
         )}
 
-        {/* Google Reviews Section */}
-        <div className="border-t border-zinc-100 pt-3">
+        <div className="border-t border-slate-200/60 pt-3">
           <div className="flex items-center justify-between">
             <button
               onClick={handleToggleReviews}
-              className="flex items-center gap-2 text-sm font-medium text-zinc-700 hover:text-zinc-900 transition-colors"
+              className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
             >
-              <svg
-                className={`w-4 h-4 transition-transform ${reviewsOpen ? "rotate-90" : ""}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+              {reviewsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               Google Yorumlari
               {reviews.length > 0 && (
-                <span className="text-xs text-zinc-400">
+                <span className="text-xs text-slate-400">
                   ({reviews.length} yorum
                   {avgRating && ` · ${avgRating}`})
                 </span>
@@ -1743,7 +1612,17 @@ function WatchlistCard({
                 onClick={() => fetchReviews(true)}
                 disabled={reviewsLoading}
               >
-                {reviewsLoading ? "Yukleniyor..." : "Yenile"}
+                {reviewsLoading ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                    Yukleniyor...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                    Yenile
+                  </>
+                )}
               </Button>
             )}
           </div>
@@ -1752,15 +1631,15 @@ function WatchlistCard({
             <div className="mt-3 space-y-3">
               {reviewsLoading && reviews.length === 0 && (
                 <div className="text-center py-4">
-                  <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600" />
-                  <p className="text-xs text-zinc-400 mt-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-slate-500 mx-auto" />
+                  <p className="text-xs text-slate-400 mt-2">
                     Yorumlar yukleniyor...
                   </p>
                 </div>
               )}
 
               {!reviewsLoading && reviews.length === 0 && (
-                <p className="text-sm text-zinc-400 text-center py-3">
+                <p className="text-sm text-slate-400 text-center py-3">
                   Bu isletme icin Google yorumu bulunamadi.
                 </p>
               )}
@@ -1768,7 +1647,7 @@ function WatchlistCard({
               {reviews.map((review) => (
                 <div
                   key={review.id}
-                  className="rounded-lg border border-zinc-100 bg-zinc-50/50 p-3 space-y-1.5"
+                  className="rounded-xl border border-slate-200/60 bg-slate-50/80 p-3 space-y-1.5"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -1779,21 +1658,21 @@ function WatchlistCard({
                           className="w-6 h-6 rounded-full"
                         />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-zinc-200 flex items-center justify-center text-[10px] font-medium text-zinc-500">
+                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-500">
                           {review.authorName.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="text-sm font-medium text-zinc-700">
+                      <span className="text-sm font-medium text-slate-700">
                         {review.authorName}
                       </span>
                     </div>
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-xs text-slate-400">
                       {review.relativeTime}
                     </span>
                   </div>
                   <StarRating rating={review.rating} />
                   {review.text && (
-                    <p className="text-sm text-zinc-600 leading-relaxed">
+                    <p className="text-sm text-slate-600 leading-relaxed">
                       {review.text}
                     </p>
                   )}
@@ -1803,15 +1682,14 @@ function WatchlistCard({
           )}
         </div>
 
-        {/* Website Plan Section */}
         <WebsitePlanPanel item={item} onPlanUpdate={onPlanUpdate} />
 
-        <div className="flex items-center gap-2 pt-2 border-t border-zinc-100">
-          <a href={`/leads/${item.lead.id}`}>
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-200/60">
+          <Link href={`/leads/${item.lead.id}`}>
             <Button size="sm" variant="ghost">
               Detay
             </Button>
-          </a>
+          </Link>
           {opp && (
             <Button
               size="sm"
@@ -1820,15 +1698,23 @@ function WatchlistCard({
               onClick={handleAnalyze}
               disabled={isAnalyzing}
             >
-              {isAnalyzing ? "Analiz Ediliyor..." : "Yeniden Analiz Et"}
+              {isAnalyzing ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                  Analiz Ediliyor...
+                </>
+              ) : (
+                "Yeniden Analiz Et"
+              )}
             </Button>
           )}
           <Button
             size="sm"
             variant="ghost"
-            className="text-red-500 hover:text-red-700 hover:bg-red-50 ml-auto"
+            className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 ml-auto"
             onClick={() => setRemoveDialogOpen(true)}
           >
+            <Trash2 className="w-3.5 h-3.5 mr-1" />
             Kaldir
           </Button>
         </div>
@@ -1840,7 +1726,7 @@ function WatchlistCard({
         <DialogHeader>
           <DialogTitle>Emin misiniz?</DialogTitle>
           <DialogDescription className="text-left pt-1">
-            <span className="font-medium text-zinc-700">{item.lead.businessName}</span>{" "}
+            <span className="font-medium text-slate-700">{item.lead.businessName}</span>{" "}
             isletmesini watchlist&apos;ten kaldirmak uzeresiniz. Bu islemi onayliyor musunuz?
           </DialogDescription>
         </DialogHeader>

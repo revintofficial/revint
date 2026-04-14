@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   Select,
   SelectContent,
@@ -12,6 +14,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LONDON_BOROUGHS, SEARCH_QUERIES } from "@/types";
+import { toast } from "sonner";
+import {
+  Search,
+  Globe,
+  Loader2,
+  Zap,
+  MapPin,
+  AlertCircle,
+  CheckCircle2,
+  Layers,
+} from "lucide-react";
 
 interface DiscoveryResult {
   borough: string;
@@ -32,7 +45,6 @@ export default function DiscoveryPage() {
     skipped: number;
     total: number;
   } | null>(null);
-
   const [error, setError] = useState<string | null>(null);
 
   const runDiscovery = async () => {
@@ -50,7 +62,7 @@ export default function DiscoveryPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || `API hatasi: ${res.status}`);
+        setError(data.error || `API hatası: ${res.status}`);
         return;
       }
       if (!data.success) {
@@ -58,9 +70,10 @@ export default function DiscoveryPage() {
         return;
       }
       setSingleResult(data);
+      toast.success(`${data.created} yeni lead eklendi!`);
     } catch (err) {
       console.error("Discovery failed:", err);
-      setError("Baglanti hatasi. Sunucu calisiyor mu?");
+      setError("Bağlantı hatası. Sunucu çalışıyor mu?");
     } finally {
       setRunning(false);
     }
@@ -78,173 +91,167 @@ export default function DiscoveryPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || `API hatasi: ${res.status}`);
+        setError(data.error || `API hatası: ${res.status}`);
         return;
       }
       setResults(data.results || []);
+      const totalCreated = (data.results || []).reduce((s: number, r: DiscoveryResult) => s + r.created, 0);
+      toast.success(`Toplu tarama tamamlandı: ${totalCreated} yeni lead!`);
     } catch (err) {
       console.error("Bulk discovery failed:", err);
-      setError("Baglanti hatasi. Sunucu calisiyor mu?");
+      setError("Bağlantı hatası. Sunucu çalışıyor mu?");
     } finally {
       setRunningAll(false);
     }
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-4 md:space-y-6">
-      <div>
-        <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Discovery</h2>
-        <p className="text-zinc-500 mt-1 text-sm md:text-base">
-          Google Places API ile yeni telefon tamircisi lead&apos;leri kesfet
-        </p>
-      </div>
+    <div className="p-6 md:p-8 lg:p-10 space-y-6">
+      <PageHeader
+        title="Discovery"
+        subtitle="Google Places API ile yeni telefon tamircisi lead'leri keşfet"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="group hover:shadow-lg transition-all duration-300">
           <CardHeader>
-            <CardTitle className="text-lg">Tekli Arama</CardTitle>
-            <CardDescription>
-              Belirli bir borough ve sorgu ile lead ara
-            </CardDescription>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center">
+                <Search className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <CardTitle>Tekli Arama</CardTitle>
+                <CardDescription>Belirli bir borough ve sorgu ile lead ara</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-zinc-700 mb-1 block">
-                Borough
-              </label>
-              <Select
-                value={selectedBorough}
-                onValueChange={setSelectedBorough}
-              >
+              <label className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5 block">Borough</label>
+              <Select value={selectedBorough} onValueChange={setSelectedBorough}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {LONDON_BOROUGHS.map((b) => (
-                    <SelectItem key={b.name} value={b.name}>
-                      {b.name}
-                    </SelectItem>
+                    <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-zinc-700 mb-1 block">
-                Arama Sorgusu
-              </label>
+              <label className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5 block">Arama Sorgusu</label>
               <Select value={selectedQuery} onValueChange={setSelectedQuery}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {SEARCH_QUERIES.map((q) => (
-                    <SelectItem key={q} value={q}>
-                      {q}
-                    </SelectItem>
+                    <SelectItem key={q} value={q}>{q}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-zinc-700 mb-1 block">
-                veya Ozel Sorgu
-              </label>
-              <input
+              <label className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5 block">veya Özel Sorgu</label>
+              <Input
                 type="text"
-                placeholder="ornek: samsung repair shop"
+                placeholder="örnek: samsung repair shop"
                 value={customQuery}
                 onChange={(e) => setCustomQuery(e.target.value)}
-                className="w-full h-10 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-950"
               />
             </div>
 
-            <Button
-              className="w-full"
-              onClick={runDiscovery}
-              disabled={running}
-            >
-              {running ? "Araniyor..." : "Discovery Baslat"}
+            <Button variant="gradient" className="w-full" onClick={runDiscovery} disabled={running}>
+              {running ? <><Loader2 className="w-4 h-4 animate-spin" />Aranıyor...</> : <><Search className="w-4 h-4" />Discovery Başlat</>}
             </Button>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">
-                <strong>Hata:</strong> {error}
+              <div className="rounded-xl bg-rose-50/80 border border-rose-200/60 p-4 text-sm text-rose-700 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <div><strong>Hata:</strong> {error}</div>
               </div>
             )}
 
             {singleResult && (
-              <div className="bg-zinc-50 rounded-lg p-4 text-sm space-y-1">
-                <p>
-                  <strong>Toplam:</strong> {singleResult.total} sonuc
-                </p>
-                <p>
-                  <strong>Yeni:</strong> {singleResult.created} lead eklendi
-                </p>
-                <p>
-                  <strong>Duplike:</strong> {singleResult.skipped} atildi
-                </p>
+              <div className="rounded-xl bg-emerald-50/80 border border-emerald-200/60 p-4 text-sm space-y-1.5">
+                <div className="flex items-center gap-2 text-emerald-700 font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Arama tamamlandı!
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-slate-800">{singleResult.total}</p>
+                    <p className="text-[10px] text-slate-400">Toplam</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-emerald-600">{singleResult.created}</p>
+                    <p className="text-[10px] text-slate-400">Yeni</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-slate-400">{singleResult.skipped}</p>
+                    <p className="text-[10px] text-slate-400">Duplike</p>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="group hover:shadow-lg transition-all duration-300">
           <CardHeader>
-            <CardTitle className="text-lg">Toplu Discovery</CardTitle>
-            <CardDescription>
-              Ilk 5 borough x ilk 3 sorgu = otomatik toplu tarama
-            </CardDescription>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                <Layers className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <CardTitle>Toplu Discovery</CardTitle>
+                <CardDescription>İlk 5 borough x ilk 3 sorgu = otomatik toplu tarama</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-sm text-zinc-500 space-y-2">
-              <p>Bu islem asagidaki borough&apos;lari tarayacak:</p>
-              <div className="flex flex-wrap gap-1">
-                {LONDON_BOROUGHS.slice(0, 5).map((b) => (
-                  <Badge key={b.name} variant="outline">
-                    {b.name}
-                  </Badge>
-                ))}
+            <div className="text-sm text-slate-500 space-y-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5">Borough&apos;lar:</p>
+                <div className="flex flex-wrap gap-1">
+                  {LONDON_BOROUGHS.slice(0, 5).map((b) => (
+                    <Badge key={b.name} variant="outline">
+                      <MapPin className="w-3 h-3 mr-1" />
+                      {b.name}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-              <p className="mt-2">Sorgular:</p>
-              <div className="flex flex-wrap gap-1">
-                {SEARCH_QUERIES.slice(0, 3).map((q) => (
-                  <Badge key={q} variant="secondary">
-                    {q}
-                  </Badge>
-                ))}
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5">Sorgular:</p>
+                <div className="flex flex-wrap gap-1">
+                  {SEARCH_QUERIES.slice(0, 3).map((q) => (
+                    <Badge key={q} variant="secondary">{q}</Badge>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={runAllDiscovery}
-              disabled={runningAll}
-            >
-              {runningAll ? "Toplu tarama devam ediyor..." : "Toplu Discovery Baslat"}
+            <Button variant="outline" className="w-full" onClick={runAllDiscovery} disabled={runningAll}>
+              {runningAll ? <><Loader2 className="w-4 h-4 animate-spin" />Toplu tarama devam ediyor...</> : <><Zap className="w-4 h-4" />Toplu Discovery Başlat</>}
             </Button>
 
             {results && (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {results.map((r, i) => (
-                  <div
-                    key={i}
-                    className="bg-zinc-50 rounded p-2 text-sm flex justify-between"
-                  >
-                    <span>
-                      {r.borough} - {r.query}
-                    </span>
-                    <span>
-                      <Badge variant="success">{r.created}</Badge>{" "}
+                  <div key={i} className="rounded-xl bg-slate-50/80 p-2.5 text-sm flex justify-between items-center">
+                    <span className="text-slate-600">{r.borough} — {r.query}</span>
+                    <div className="flex gap-1">
+                      <Badge variant="success">{r.created}</Badge>
                       <Badge variant="secondary">{r.skipped} dup</Badge>
-                    </span>
+                    </div>
                   </div>
                 ))}
-                <div className="border-t pt-2 text-sm font-medium">
-                  Toplam:{" "}
-                  {results.reduce((s, r) => s + r.created, 0)} yeni lead
+                <div className="border-t border-slate-200/60 pt-2 text-sm font-medium text-slate-700">
+                  Toplam: {results.reduce((s, r) => s + r.created, 0)} yeni lead
                 </div>
               </div>
             )}
@@ -254,16 +261,21 @@ export default function DiscoveryPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Pipeline</CardTitle>
-          <CardDescription>
-            Discovery sonrasi crawl ve analiz islemleri
-          </CardDescription>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+              <Globe className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <CardTitle>Pipeline</CardTitle>
+              <CardDescription>Discovery sonrası crawl ve analiz işlemleri</CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Button
               variant="outline"
-              className="w-full sm:w-auto"
+              className="flex-1"
               onClick={async () => {
                 const res = await fetch("/api/crawl", {
                   method: "POST",
@@ -271,15 +283,15 @@ export default function DiscoveryPage() {
                   body: JSON.stringify({ crawlAll: true }),
                 });
                 const data = await res.json();
-                alert(
-                  `Crawl tamamlandi: ${data.crawled} basarili, ${data.failed} basarisiz`
-                );
+                toast.success(`Crawl tamamlandı: ${data.crawled} başarılı, ${data.failed} başarısız`);
               }}
             >
-              Tum Pending Crawl
+              <Globe className="w-4 h-4" />
+              Tüm Pending Crawl
             </Button>
             <Button
-              className="w-full sm:w-auto"
+              variant="gradient"
+              className="flex-1"
               onClick={async () => {
                 const res = await fetch("/api/analyze", {
                   method: "POST",
@@ -287,12 +299,11 @@ export default function DiscoveryPage() {
                   body: JSON.stringify({ analyzeAll: true }),
                 });
                 const data = await res.json();
-                alert(
-                  `Analiz tamamlandi: ${data.analyzed} basarili, ${data.failed} basarisiz`
-                );
+                toast.success(`Analiz tamamlandı: ${data.analyzed} başarılı, ${data.failed} başarısız`);
               }}
             >
-              Tum Pending AI Analiz
+              <Zap className="w-4 h-4" />
+              Tüm Pending AI Analiz
             </Button>
           </div>
         </CardContent>
