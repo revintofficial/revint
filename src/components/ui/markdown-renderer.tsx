@@ -31,7 +31,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
           )}
         >
           {listItems.map((item, i) => (
-            <li key={i} className="text-sm text-slate-600 leading-relaxed">
+            <li key={i} className="text-sm text-white/60 leading-relaxed">
               {renderInline(item)}
             </li>
           ))}
@@ -45,13 +45,13 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
   function flushTable() {
     if (tableHeader.length > 0 || tableRows.length > 0) {
       elements.push(
-        <div key={`table-${elements.length}`} className="overflow-x-auto mb-3 rounded-lg border border-slate-200/60">
+        <div key={`table-${elements.length}`} className="overflow-x-auto mb-3 rounded-lg border border-white/10">
           <table className="w-full text-sm">
             {tableHeader.length > 0 && (
               <thead>
-                <tr className="bg-slate-50/80">
+                <tr className="bg-white/5">
                   {tableHeader.map((cell, i) => (
-                    <th key={i} className="px-3 py-2 text-left font-medium text-slate-700 border-b border-slate-200/60">
+                    <th key={i} className="px-3 py-2 text-left font-medium text-white/70 border-b border-white/10">
                       {renderInline(cell.trim())}
                     </th>
                   ))}
@@ -60,9 +60,9 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             )}
             <tbody>
               {tableRows.map((row, ri) => (
-                <tr key={ri} className="border-b border-slate-100 last:border-0">
+                <tr key={ri} className="border-b border-white/5 last:border-0">
                   {row.map((cell, ci) => (
-                    <td key={ci} className="px-3 py-2 text-slate-600">
+                    <td key={ci} className="px-3 py-2 text-white/60">
                       {renderInline(cell.trim())}
                     </td>
                   ))}
@@ -110,14 +110,14 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
 
       if (earliest.type === "bold") {
         parts.push(
-          <strong key={key++} className="font-semibold text-slate-800">
+          <strong key={key++} className="font-semibold text-white">
             {earliest.match[1]}
           </strong>
         );
         remaining = remaining.slice(earliestIdx + earliest.match[0].length);
       } else if (earliest.type === "code") {
         parts.push(
-          <code key={key++} className="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-mono">
+          <code key={key++} className="px-1.5 py-0.5 rounded-md bg-white/10 text-white/70 text-xs font-mono">
             {earliest.match[1]}
           </code>
         );
@@ -155,10 +155,10 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
       const Tag = level === 1 ? "h2" : level === 2 ? "h3" : "h4";
       const sizeClass =
         level === 1
-          ? "text-base font-semibold text-slate-900 mt-4 mb-2"
+          ? "text-base font-semibold text-white mt-4 mb-2"
           : level === 2
-          ? "text-sm font-semibold text-slate-800 mt-3 mb-1.5"
-          : "text-sm font-medium text-slate-700 mt-2 mb-1";
+          ? "text-sm font-semibold text-white mt-3 mb-1.5"
+          : "text-sm font-medium text-white/70 mt-2 mb-1";
       elements.push(
         <Tag key={`h-${i}`} className={sizeClass}>
           {renderInline(text)}
@@ -189,7 +189,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
       elements.push(
         <blockquote
           key={`bq-${i}`}
-          className="border-l-3 border-indigo-300 pl-3 my-2 text-sm text-slate-500 italic"
+          className="border-l-3 border-[#0A84FF]/30 pl-3 my-2 text-sm text-white/50 italic"
         >
           {renderInline(text)}
         </blockquote>
@@ -198,12 +198,12 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
     }
 
     if (line.startsWith("---") || line.startsWith("***")) {
-      elements.push(<hr key={`hr-${i}`} className="my-3 border-slate-200/60" />);
+      elements.push(<hr key={`hr-${i}`} className="my-3 border-white/10" />);
       continue;
     }
 
     elements.push(
-      <p key={`p-${i}`} className="text-sm text-slate-600 leading-relaxed mb-1.5">
+      <p key={`p-${i}`} className="text-sm text-white/60 leading-relaxed mb-1.5">
         {renderInline(line)}
       </p>
     );

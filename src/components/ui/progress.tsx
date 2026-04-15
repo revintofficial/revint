@@ -8,7 +8,7 @@ interface ProgressProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const Progress = forwardRef<HTMLDivElement, ProgressProps>(
-  ({ className, value = 0, max = 100, variant = "default", ...props }, ref) => {
+  ({ className, value = 0, max = 100, ...props }, ref) => {
     const percentage = Math.min(100, Math.max(0, (value / max) * 100));
     return (
       <div
@@ -17,16 +17,12 @@ const Progress = forwardRef<HTMLDivElement, ProgressProps>(
         aria-valuenow={value}
         aria-valuemin={0}
         aria-valuemax={max}
-        className={cn("relative h-2 w-full overflow-hidden rounded-full bg-slate-100", className)}
+        className={cn("relative h-2 w-full overflow-hidden rounded-full", className)}
+        style={{ backgroundColor: "rgba(235, 235, 245, 0.1)" }}
         {...props}
       >
         <div
-          className={cn(
-            "h-full rounded-full transition-all duration-500 ease-out",
-            variant === "gradient"
-              ? "bg-gradient-to-r from-indigo-500 to-violet-500"
-              : "bg-slate-900"
-          )}
+          className="h-full rounded-full transition-all duration-500 ease-out bg-[#0A84FF]"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -48,7 +44,6 @@ function CircularProgress({
   max = 100,
   size = 48,
   strokeWidth = 4,
-  gradient = true,
   className,
   ...props
 }: CircularProgressProps) {
@@ -65,36 +60,8 @@ function CircularProgress({
       className={cn("transform -rotate-90", className)}
       {...props}
     >
-      {gradient && (
-        <defs>
-          <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#6366f1" />
-            <stop offset="100%" stopColor="#8b5cf6" />
-          </linearGradient>
-        </defs>
-      )}
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={strokeWidth}
-        className="text-slate-100"
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke={gradient ? "url(#progress-gradient)" : "currentColor"}
-        strokeWidth={strokeWidth}
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        className={cn(!gradient && "text-indigo-500")}
-        style={{ transition: "stroke-dashoffset 0.5s ease-out" }}
-      />
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(235, 235, 245, 0.1)" strokeWidth={strokeWidth} />
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#0A84FF" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.5s ease-out" }} />
     </svg>
   );
 }

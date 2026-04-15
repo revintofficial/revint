@@ -2,12 +2,11 @@ import { cn } from "@/lib/utils";
 import { forwardRef, type HTMLAttributes } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
-const cardVariants = cva("rounded-xl text-slate-950 transition-all duration-200", {
+const cardVariants = cva("rounded-2xl text-white transition-all duration-200", {
   variants: {
     variant: {
-      default:
-        "bg-white/70 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.06)]",
-      solid: "bg-white border border-slate-200 shadow-sm",
+      default: "glass-card",
+      solid: "glass-strong",
       ghost: "bg-transparent border-0 shadow-none",
     },
   },
@@ -40,14 +39,14 @@ CardHeader.displayName = "CardHeader";
 
 const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props} />
+    <h3 ref={ref} className={cn("text-lg font-semibold leading-none tracking-tight text-white", className)} {...props} />
   )
 );
 CardTitle.displayName = "CardTitle";
 
 const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn("text-sm text-slate-500", className)} {...props} />
+    <p ref={ref} className={cn("text-sm", className)} style={{ color: "rgba(235, 235, 245, 0.6)" }} {...props} />
   )
 );
 CardDescription.displayName = "CardDescription";

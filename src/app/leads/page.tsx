@@ -24,13 +24,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { LONDON_BOROUGHS } from "@/types";
+import { DEFAULT_LOCATIONS } from "@/lib/constants";
+import { OUTREACH_LABELS, CRAWL_LABELS } from "@/lib/labels";
 import {
   Search,
   Globe,
   Bookmark,
   BookmarkCheck,
-  ExternalLink,
   Phone,
   Bot,
   Loader2,
@@ -40,8 +40,8 @@ import {
   Info,
   ChevronLeft,
   ChevronRight,
-  Zap,
   Users,
+  MapPin,
 } from "lucide-react";
 
 interface ContentCheckSignal {
@@ -127,8 +127,8 @@ export default function LeadsPage() {
       fallback={
         <div className="p-6 md:p-8 lg:p-10 space-y-6">
           <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-16 rounded-xl" />
-          <Skeleton className="h-96 rounded-xl" />
+          <Skeleton className="h-16 rounded-2xl" />
+          <Skeleton className="h-96 rounded-2xl" />
         </div>
       }
     >
@@ -366,7 +366,7 @@ function LeadsPageContent() {
     <div className="p-6 md:p-8 lg:p-10 space-y-6">
       <PageHeader
         title="Leads"
-        subtitle={`${pagination.total} lead bulundu`}
+        subtitle={`${pagination.total} leads found`}
         actions={
           <div className="flex gap-2">
             <Button
@@ -381,11 +381,10 @@ function LeadsPageContent() {
               }}
             >
               <Globe className="w-4 h-4" />
-              Crawl Başlat
+              Scan Websites
             </Button>
             <Button
               size="sm"
-              variant="gradient"
               onClick={() => {
                 fetch("/api/analyze", {
                   method: "POST",
@@ -395,7 +394,7 @@ function LeadsPageContent() {
               }}
             >
               <Bot className="w-4 h-4" />
-              AI Analiz
+              AI Analysis
             </Button>
           </div>
         }
@@ -406,10 +405,10 @@ function LeadsPageContent() {
         <CardContent className="p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
               <Input
                 type="text"
-                placeholder="İşletme ara..."
+                placeholder="Search businesses..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -417,13 +416,13 @@ function LeadsPageContent() {
             </div>
             <Select value={borough} onValueChange={setBorough}>
               <SelectTrigger>
-                <SelectValue placeholder="Borough" />
+                <SelectValue placeholder="Location" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tüm Borough&apos;lar</SelectItem>
-                {LONDON_BOROUGHS.map((b) => (
-                  <SelectItem key={b.name} value={b.name}>
-                    {b.name}
+                <SelectItem value="all">All Locations</SelectItem>
+                {DEFAULT_LOCATIONS.map((loc) => (
+                  <SelectItem key={loc.name} value={loc.name}>
+                    {loc.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -433,20 +432,20 @@ function LeadsPageContent() {
                 <SelectValue placeholder="Website" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tümü</SelectItem>
-                <SelectItem value="true">Website Var</SelectItem>
-                <SelectItem value="false">Website Yok</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="true">Has Website</SelectItem>
+                <SelectItem value="false">No Website</SelectItem>
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger>
-                <SelectValue placeholder="Sırala" />
+                <SelectValue placeholder="Sort" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="createdAt">Tarih</SelectItem>
+                <SelectItem value="createdAt">Date</SelectItem>
                 <SelectItem value="rating">Rating</SelectItem>
-                <SelectItem value="reviewCount">Yorum Sayısı</SelectItem>
-                <SelectItem value="businessName">İsim</SelectItem>
+                <SelectItem value="reviewCount">Reviews</SelectItem>
+                <SelectItem value="businessName">Name</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -458,36 +457,33 @@ function LeadsPageContent() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200/60 bg-slate-50/50">
-                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">İşletme</th>
-                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Borough</th>
-                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Rating</th>
-                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Website</th>
-                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Skor</th>
-                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Teklif</th>
-                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">Durum</th>
-                <th className="text-left p-3 text-xs font-medium uppercase tracking-wider text-slate-400">İşlem</th>
+              <tr className="border-b border-white/5 bg-white/5">
+                <th className="text-left p-3 text-[13px] font-medium text-white/50">Business</th>
+                <th className="text-left p-3 text-[13px] font-medium text-white/50">Website</th>
+                <th className="text-left p-3 text-[13px] font-medium text-white/50">Score</th>
+                <th className="text-left p-3 text-[13px] font-medium text-white/50">Status</th>
+                <th className="text-left p-3 text-[13px] font-medium text-white/50">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-8">
+                  <td colSpan={5} className="p-8">
                     <div className="flex flex-col items-center justify-center gap-3">
-                      <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
-                      <p className="text-sm text-slate-400">Yükleniyor...</p>
+                      <Loader2 className="w-6 h-6 text-[#0A84FF] animate-spin" />
+                      <p className="text-sm text-white/30">Loading...</p>
                     </div>
                   </td>
                 </tr>
               ) : leads.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-12">
+                  <td colSpan={5} className="p-12">
                     <div className="flex flex-col items-center justify-center gap-3">
-                      <Users className="w-10 h-10 text-slate-300" />
-                      <p className="text-sm font-medium text-slate-500">Henüz lead yok</p>
-                      <p className="text-xs text-slate-400">Discovery sayfasından başlayın.</p>
+                      <Users className="w-10 h-10 text-white/20" />
+                      <p className="text-sm font-medium text-white/50">No leads yet</p>
+                      <p className="text-xs text-white/30">Start by discovering businesses.</p>
                       <Link href="/discovery">
-                        <Button variant="gradient" size="sm">Discovery&apos;ye Git</Button>
+                        <Button size="sm">Go to Discovery</Button>
                       </Link>
                     </div>
                   </td>
@@ -496,64 +492,57 @@ function LeadsPageContent() {
                 leads.map((lead, index) => (
                   <tr
                     key={lead.id}
-                    className="border-b border-slate-100/60 hover:bg-slate-50/50 transition-colors animate-fade-in-up"
+                    className="border-b border-white/5 hover:bg-white/5 transition-colors animate-fade-in-up"
                     style={{ animationDelay: `${index * 30}ms` }}
                   >
                     <td className="p-3">
                       <Link
                         href={`/leads/${lead.id}`}
-                        className="font-medium text-slate-900 hover:text-indigo-600 transition-colors"
+                        className="font-medium text-white hover:text-[#0A84FF] transition-colors"
                       >
                         {lead.businessName}
                       </Link>
-                      <p className="text-xs text-slate-400 mt-0.5 truncate max-w-xs">
+                      <p className="text-xs text-white/30 mt-0.5 truncate max-w-xs">
                         {lead.formattedAddress}
                       </p>
                     </td>
                     <td className="p-3">
-                      <Badge variant="outline">{lead.borough || "?"}</Badge>
-                    </td>
-                    <td className="p-3">
-                      {lead.rating ? (
-                        <span className="text-slate-700">
-                          {lead.rating.toFixed(1)}{" "}
-                          <span className="text-slate-400">({lead.reviewCount})</span>
-                        </span>
-                      ) : (
-                        <span className="text-slate-300">-</span>
-                      )}
-                    </td>
-                    <td className="p-3">
                       {lead.hasWebsite ? (
-                        <div className="flex items-center gap-1.5">
-                          <Badge variant="success">Var</Badge>
+                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+                          <div className="flex items-center gap-1.5" title="Has website">
+                            <CircleCheck className="w-4 h-4 shrink-0 text-[#30D158]" aria-hidden />
+                            <Badge variant="success">Yes</Badge>
+                          </div>
                           <button
                             onClick={(e) => { e.preventDefault(); runContentCheck(lead); }}
                             disabled={contentCheckLoading && contentCheckLeadId === lead.id}
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-indigo-200/60 bg-indigo-50/80 text-indigo-600 hover:bg-indigo-100 transition-all disabled:opacity-50"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-[#007AFF]/20 bg-[#0A84FF]/[0.06] text-[#0A84FF] hover:bg-[#0A84FF]/10 transition-colors disabled:opacity-50 w-fit"
                           >
                             {contentCheckLoading && contentCheckLeadId === lead.id ? (
                               <Loader2 className="w-2.5 h-2.5 animate-spin" />
                             ) : (
                               <ScanSearch className="w-2.5 h-2.5" />
                             )}
-                            Kontrol
+                            Check
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1.5">
-                          <Badge variant="destructive">Yok</Badge>
+                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+                          <div className="flex items-center gap-1.5" title="No website">
+                            <CircleX className="w-4 h-4 shrink-0 text-[#FF453A]" aria-hidden />
+                            <Badge variant="destructive">No</Badge>
+                          </div>
                           <button
                             onClick={(e) => { e.preventDefault(); runWebsiteSearch(lead); }}
                             disabled={websiteSearchLoading && websiteSearchLeadId === lead.id}
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-amber-200/60 bg-amber-50/80 text-amber-600 hover:bg-amber-100 transition-all disabled:opacity-50"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-[#FF9F0A]/20 bg-[#FF9500]/[0.06] text-[#FF9F0A] hover:bg-[#FF9500]/10 transition-colors disabled:opacity-50 w-fit"
                           >
                             {websiteSearchLoading && websiteSearchLeadId === lead.id ? (
                               <Loader2 className="w-2.5 h-2.5 animate-spin" />
                             ) : (
                               <Globe className="w-2.5 h-2.5" />
                             )}
-                            Ara
+                            Search
                           </button>
                         </div>
                       )}
@@ -562,53 +551,55 @@ function LeadsPageContent() {
                       {lead.salesOpportunity ? (
                         <ScoreBadge score={lead.salesOpportunity.opportunityScore} />
                       ) : (
-                        <span className="text-slate-300">-</span>
+                        <span className="text-white/20">-</span>
                       )}
                     </td>
-                    <td className="p-3">
-                      {lead.salesOpportunity ? (
-                        <Badge variant="secondary">{lead.salesOpportunity.suggestedOffer}</Badge>
-                      ) : (
-                        <span className="text-slate-300">-</span>
-                      )}
-                    </td>
-                    <td className="p-3">
+                    <td
+                      className="p-3"
+                      title={`Website scan: ${CRAWL_LABELS[lead.crawlStatus] ?? lead.crawlStatus}`}
+                    >
                       {lead.salesOpportunity ? (
                         <StatusBadge status={lead.salesOpportunity.status} />
                       ) : (
-                        <Badge variant="outline">Bekliyor</Badge>
+                        <Badge variant="outline">Queued</Badge>
                       )}
                     </td>
                     <td className="p-3">
-                      <div className="flex gap-1">
+                      <div className="flex flex-wrap gap-1">
                         {watchlistLeadIds.has(lead.id) ? (
                           <Link href="/watchlist">
-                            <Button size="sm" variant="ghost" className="text-amber-600 hover:text-amber-700">
-                              <BookmarkCheck className="w-4 h-4" />
+                            <Button size="sm" variant="ghost" className="text-[#FF9F0A] hover:text-[#FF9F0A] h-8 px-2 gap-1">
+                              <BookmarkCheck className="w-4 h-4 shrink-0" />
+                              Shortlist
                             </Button>
                           </Link>
                         ) : (
                           <Button
                             size="sm"
                             variant="ghost"
+                            className="h-8 px-2 gap-1"
                             onClick={() => openWatchlistDialog(lead)}
                           >
-                            <Bookmark className="w-4 h-4" />
+                            <Bookmark className="w-4 h-4 shrink-0" />
+                            Shortlist
                           </Button>
                         )}
                         {lead.salesOpportunity?.status === "NEW" && (
                           <Button
                             size="sm"
                             variant="ghost"
+                            className="h-8 px-2 gap-1"
                             onClick={() => updateStatus(lead.id, "CONTACTED")}
                           >
-                            <Phone className="w-4 h-4" />
+                            <Phone className="w-4 h-4 shrink-0" />
+                            Call
                           </Button>
                         )}
                         {lead.googleMapsUri && (
                           <a href={lead.googleMapsUri} target="_blank" rel="noopener noreferrer">
-                            <Button size="sm" variant="ghost">
-                              <ExternalLink className="w-4 h-4" />
+                            <Button size="sm" variant="ghost" className="h-8 px-2 gap-1">
+                              <MapPin className="w-4 h-4 shrink-0" />
+                              View
                             </Button>
                           </a>
                         )}
@@ -622,10 +613,10 @@ function LeadsPageContent() {
         </div>
 
         {pagination.totalPages > 1 && (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t border-slate-200/60">
-            <p className="text-sm text-slate-500 text-center sm:text-left">
-              Sayfa {pagination.page} / {pagination.totalPages}
-              <span className="text-slate-400 ml-2">({pagination.total} sonuç)</span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t border-white/5">
+            <p className="text-sm text-white/50 text-center sm:text-left">
+              Page {pagination.page} of {pagination.totalPages}
+              <span className="text-white/30 ml-2">({pagination.total} results)</span>
             </p>
             <div className="flex gap-1 justify-center sm:justify-end">
               <Button
@@ -635,7 +626,7 @@ function LeadsPageContent() {
                 onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
               >
                 <ChevronLeft className="w-4 h-4" />
-                Önceki
+                Previous
               </Button>
               <Button
                 size="sm"
@@ -643,7 +634,7 @@ function LeadsPageContent() {
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
               >
-                Sonraki
+                Next
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
@@ -664,17 +655,17 @@ function LeadsPageContent() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ScanSearch className="w-5 h-5 text-indigo-500" />
-              İçerik Kontrol Sonucu
+              <ScanSearch className="w-5 h-5 text-[#0A84FF]" />
+              Content Check Result
             </DialogTitle>
             <DialogDescription>
-              {contentCheckResult?.url || "Website analiz ediliyor..."}
+              {contentCheckResult?.url || "Analyzing website..."}
             </DialogDescription>
           </DialogHeader>
           {contentCheckLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-              <p className="text-sm text-slate-400 mt-3">Website analiz ediliyor...</p>
+              <Loader2 className="w-8 h-8 text-[#0A84FF] animate-spin" />
+              <p className="text-sm text-white/30 mt-3">Analyzing website...</p>
             </div>
           ) : contentCheckResult ? (
             <ContentCheckPanel result={contentCheckResult} />
@@ -695,20 +686,20 @@ function LeadsPageContent() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Globe className="w-5 h-5 text-amber-500" />
-              Website Arama Sonucu
+              <Globe className="w-5 h-5 text-[#FF9F0A]" />
+              Website Search Result
             </DialogTitle>
             <DialogDescription>
               {websiteSearchResult?.businessName
-                ? `"${websiteSearchResult.businessName}" için internet taraması`
-                : "İnternette website aranıyor..."}
+                ? `Web search for "${websiteSearchResult.businessName}"`
+                : "Searching for website..."}
             </DialogDescription>
           </DialogHeader>
           {websiteSearchLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-              <p className="text-sm text-slate-400 mt-3">İnternette website aranıyor...</p>
-              <p className="text-xs text-slate-300 mt-1">Domain tahmini + Google arama yapılıyor</p>
+              <Loader2 className="w-8 h-8 text-[#FF9F0A] animate-spin" />
+              <p className="text-sm text-white/30 mt-3">Searching for website...</p>
+              <p className="text-xs text-white/20 mt-1">Running domain guess and Google search...</p>
             </div>
           ) : websiteSearchResult ? (
             <WebsiteSearchPanel result={websiteSearchResult} />
@@ -724,17 +715,17 @@ function LeadsPageContent() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Bookmark className="w-5 h-5 text-indigo-500" />
-              Watchlist&apos;e Ekle
+              <Bookmark className="w-5 h-5 text-[#0A84FF]" />
+              Add to Shortlist
             </DialogTitle>
             <DialogDescription>
-              {watchlistDialogLead?.businessName} için bilgileri girin.
+              Enter details for {watchlistDialogLead?.businessName}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5">
-                Yapılan Site URL
+              <label className="block text-[13px] font-medium text-white/50 mb-1.5">
+                Built Website URL
               </label>
               <Input
                 type="url"
@@ -744,28 +735,28 @@ function LeadsPageContent() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5">
-                Notlar
+              <label className="block text-[13px] font-medium text-white/50 mb-1.5">
+                Notes
               </label>
               <Textarea
                 value={watchlistNotes}
                 onChange={(e) => setWatchlistNotes(e.target.value)}
-                placeholder="Notlarınızı yazın..."
+                placeholder="Add your notes..."
                 rows={3}
               />
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setWatchlistDialogLead(null)}>
-                İptal
+                Cancel
               </Button>
-              <Button variant="gradient" onClick={handleAddToWatchlist} disabled={watchlistSaving}>
+              <Button onClick={handleAddToWatchlist} disabled={watchlistSaving}>
                 {watchlistSaving ? (
-                  <>
+                  <span className="inline-flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Ekleniyor...
-                  </>
+                    Adding...
+                  </span>
                 ) : (
-                  "Ekle"
+                  "Add"
                 )}
               </Button>
             </div>
@@ -778,10 +769,10 @@ function LeadsPageContent() {
 
 function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
   const verdictConfig: Record<string, { label: string; color: string; bg: string }> = {
-    placeholder: { label: "Placeholder / Boş Site", color: "text-rose-600", bg: "bg-rose-50/80 border-rose-200/60" },
-    basic: { label: "Temel Düzey Site", color: "text-amber-600", bg: "bg-amber-50/80 border-amber-200/60" },
-    developed: { label: "Geliştirilmiş Site", color: "text-emerald-600", bg: "bg-emerald-50/80 border-emerald-200/60" },
-    unreachable: { label: "Erişilemedi", color: "text-slate-600", bg: "bg-slate-50/80 border-slate-200/60" },
+    placeholder: { label: "Placeholder / Empty Site", color: "text-[#FF453A]", bg: "bg-[#FF453A]/[0.06] border-[#FF453A]/20" },
+    basic: { label: "Basic Website", color: "text-[#FF9F0A]", bg: "bg-[#FF9500]/[0.06] border-[#FF9F0A]/20" },
+    developed: { label: "Developed Website", color: "text-[#30D158]", bg: "bg-[#30D158]/[0.06] border-[#30D158]/20" },
+    unreachable: { label: "Unreachable", color: "text-white/60", bg: "bg-white/5 border-white/10" },
   };
 
   const config = verdictConfig[result.verdict] || verdictConfig.unreachable;
@@ -792,46 +783,46 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
         <div className="flex items-center justify-between mb-2">
           <p className={`font-semibold text-lg ${config.color}`}>{config.label}</p>
           <div className="flex items-center gap-1.5">
-            <span className="text-sm text-slate-500">Skor:</span>
-            <span className={`text-lg font-bold ${result.score >= 65 ? "text-emerald-600" : result.score >= 35 ? "text-amber-600" : "text-rose-600"}`}>
+            <span className="text-sm text-white/50">Score:</span>
+            <span className={`text-lg font-bold ${result.score >= 65 ? "text-[#30D158]" : result.score >= 35 ? "text-[#FF9F0A]" : "text-[#FF453A]"}`}>
               {result.score}
             </span>
-            <span className="text-xs text-slate-400">/100</span>
+            <span className="text-xs text-white/30">/100</span>
           </div>
         </div>
-        <p className="text-sm text-slate-600 leading-relaxed">{result.summary}</p>
+        <p className="text-sm text-white/60 leading-relaxed">{result.summary}</p>
       </div>
 
       <div className="grid grid-cols-4 gap-2">
         {[
-          { value: result.wordCount, label: "Kelime" },
-          { value: result.imageCount, label: "Görsel" },
-          { value: result.internalLinkCount, label: "Link" },
+          { value: result.wordCount, label: "Words" },
+          { value: result.imageCount, label: "Images" },
+          { value: result.internalLinkCount, label: "Links" },
           { value: `${(result.htmlSize / 1024).toFixed(0)}`, label: "KB" },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-xl bg-slate-50/80 p-2.5 text-center">
-            <p className="text-sm font-semibold text-slate-800">{stat.value}</p>
-            <p className="text-[10px] text-slate-400">{stat.label}</p>
+          <div key={stat.label} className="rounded-xl bg-white/5 p-2.5 text-center">
+            <p className="text-sm font-semibold text-white">{stat.value}</p>
+            <p className="text-[10px] text-white/30">{stat.label}</p>
           </div>
         ))}
       </div>
 
       {result.builderDetected && (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-50/80 border border-indigo-200/60">
-          <Info className="w-4 h-4 text-indigo-500 shrink-0" />
-          <span className="text-sm text-indigo-700"><strong>{result.builderDetected}</strong> ile oluşturulmuş</span>
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#0A84FF]/[0.06] border border-[#007AFF]/20">
+          <Info className="w-4 h-4 text-[#0A84FF] shrink-0" />
+          <span className="text-sm text-[#0A84FF]">Built with <strong>{result.builderDetected}</strong></span>
         </div>
       )}
 
       <div className="space-y-1.5 max-h-60 overflow-y-auto">
-        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Detaylı Analiz</p>
+        <p className="text-[11px] font-medium text-white/30">Detailed Analysis</p>
         {result.signals.map((signal, i) => (
-          <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-100/60 last:border-0">
+          <div key={i} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
             <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${signal.status === "good" ? "bg-emerald-500" : signal.status === "warning" ? "bg-amber-500" : "bg-rose-500"}`} />
-              <span className="text-xs font-medium text-slate-700">{signal.label}</span>
+              <div className={`w-1.5 h-1.5 rounded-full ${signal.status === "good" ? "bg-[#30D158]" : signal.status === "warning" ? "bg-[#FF9500]" : "bg-[#FF453A]"}`} />
+              <span className="text-xs font-medium text-white/70">{signal.label}</span>
             </div>
-            <span className="text-xs text-slate-500 text-right max-w-[55%] truncate">{signal.detail}</span>
+            <span className="text-xs text-white/50 text-right max-w-[55%] truncate">{signal.detail}</span>
           </div>
         ))}
       </div>
@@ -844,40 +835,40 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
     <div className="space-y-4 pt-2">
       {result.found ? (
         <>
-          <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/80 p-4">
+          <div className="rounded-xl border border-[#30D158]/20 bg-[#30D158]/[0.06] p-4">
             <div className="flex items-center gap-2 mb-2">
-              <CircleCheck className="w-5 h-5 text-emerald-600" />
-              <p className="font-semibold text-emerald-700">
-                {result.websites.length} website bulundu!
+              <CircleCheck className="w-5 h-5 text-[#30D158]" />
+              <p className="font-semibold text-[#30D158]">
+                {result.websites.length} website(s) found!
               </p>
             </div>
-            <p className="text-sm text-emerald-600">
-              Google Places API&apos;da kayıtlı olmayan ama internette bulunan website(ler) tespit edildi. İlk bulunan site lead&apos;e otomatik kaydedildi.
+            <p className="text-sm text-[#30D158]">
+              Website(s) found online that were not listed in Google Places. The first match was saved to the lead automatically.
             </p>
           </div>
 
           <div className="space-y-2">
             {result.websites.map((website, i) => (
-              <div key={i} className="rounded-xl border border-slate-200/60 p-3 hover:bg-slate-50/50 transition-all">
+              <div key={i} className="rounded-xl border border-white/10 p-3 hover:bg-white/5 transition-colors">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <a
                       href={website.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors break-all"
+                      className="text-sm font-medium text-[#0A84FF] hover:underline break-all"
                     >
                       {website.url}
                     </a>
                     {website.title && (
-                      <p className="text-xs text-slate-500 mt-0.5 truncate">{website.title}</p>
+                      <p className="text-xs text-white/50 mt-0.5 truncate">{website.title}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Badge variant={website.source === "google_search" ? "secondary" : "outline"}>
                       {website.source === "google_search" ? "Google" : "Domain"}
                     </Badge>
-                    {i === 0 && <Badge variant="success">Kaydedildi</Badge>}
+                    {i === 0 && <Badge variant="success">Saved</Badge>}
                   </div>
                 </div>
               </div>
@@ -885,20 +876,20 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
           </div>
         </>
       ) : (
-        <div className="rounded-xl border border-slate-200/60 bg-slate-50/80 p-4">
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <CircleX className="w-5 h-5 text-slate-400" />
-            <p className="font-semibold text-slate-600">Website bulunamadı</p>
+            <CircleX className="w-5 h-5 text-white/30" />
+            <p className="font-semibold text-white/60">No website found</p>
           </div>
-          <p className="text-sm text-slate-500">
-            {result.searchedCount} adres tarandı ancak bu işletme için aktif bir website tespit edilemedi. İşletmenin gerçekten websitesi olmayabilir — bu yeni site teklifi için ideal bir fırsat.
+          <p className="text-sm text-white/50">
+            Searched {result.searchedCount} URLs but could not find an active website for this business. The business may truly have no site — a strong opportunity for a new website pitch.
           </p>
         </div>
       )}
 
       <div className="flex items-center justify-between px-1">
-        <p className="text-xs text-slate-400">{result.searchedCount} adres tarandı</p>
-        <p className="text-xs text-slate-400">Domain tahmini + Google arama</p>
+        <p className="text-xs text-white/30">{result.searchedCount} URLs searched</p>
+        <p className="text-xs text-white/30">Domain guess + Google search</p>
       </div>
     </div>
   );
@@ -918,5 +909,6 @@ function StatusBadge({ status }: { status: string }) {
     WON: "success",
     LOST: "destructive",
   };
-  return <Badge variant={variantMap[status] || "secondary"}>{status}</Badge>;
+  const label = OUTREACH_LABELS[status] ?? status;
+  return <Badge variant={variantMap[status] || "secondary"}>{label}</Badge>;
 }

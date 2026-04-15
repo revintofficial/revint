@@ -118,37 +118,37 @@ export default function PipelinePage() {
     return true;
   });
 
-  const STAGE_TABS: { value: StageFilter; label: string; count: number; activeColor: string }[] = [
-    { value: "ALL", label: "Tumu", count: items.length, activeColor: "bg-white text-slate-900 shadow-sm" },
-    { value: "PENDING", label: "Bekleyen", count: pendingCount, activeColor: "bg-white text-slate-900 shadow-sm" },
-    { value: "IN_PROGRESS", label: "Devam Ediyor", count: inProgressCount, activeColor: "bg-white text-slate-900 shadow-sm" },
-    { value: "POSITIVE", label: "Olumlu", count: positiveCount, activeColor: "bg-white text-slate-900 shadow-sm" },
-    { value: "NEGATIVE", label: "Olumsuz", count: negativeCount, activeColor: "bg-white text-slate-900 shadow-sm" },
+  const STAGE_TABS: { value: StageFilter; label: string; count: number }[] = [
+    { value: "ALL", label: "All", count: items.length },
+    { value: "PENDING", label: "Pending", count: pendingCount },
+    { value: "IN_PROGRESS", label: "In Progress", count: inProgressCount },
+    { value: "POSITIVE", label: "Positive", count: positiveCount },
+    { value: "NEGATIVE", label: "Negative", count: negativeCount },
   ];
 
   return (
     <div className="p-6 md:p-8 lg:p-10 space-y-6">
       <PageHeader
-        title="Sales Pipeline"
-        subtitle={loading ? "Yukleniyor..." : `${items.length} dukkan pipeline'da`}
+        title="Pipeline"
+        subtitle={loading ? "Loading..." : `${items.length} leads in pipeline`}
       />
 
       {!loading && items.length > 0 && (
-        <div className="flex items-center gap-1 p-1 bg-slate-100/80 backdrop-blur-sm rounded-xl w-fit max-w-full overflow-x-auto">
+        <div className="flex items-center gap-0.5 p-0.5 bg-white/10 rounded-[10px] w-fit max-w-full overflow-x-auto">
           {STAGE_TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setStageFilter(tab.value)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 rounded-[8px] px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
                 stageFilter === tab.value
-                  ? tab.activeColor
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+                  ? "bg-white/10 text-white shadow-sm"
+                  : "text-white/50 hover:text-white"
               }`}
             >
               {tab.label}
               <span
                 className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
-                  stageFilter === tab.value ? "bg-slate-100/80" : "bg-slate-200 text-slate-500"
+                  stageFilter === tab.value ? "bg-white/10" : "bg-white/15 text-white/50"
                 }`}
               >
                 {tab.count}
@@ -161,7 +161,7 @@ export default function PipelinePage() {
       {loading && (
         <div className="space-y-6">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="rounded-xl">
+            <Card key={i}>
               <CardHeader className="pb-3">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-2 flex-1">
@@ -173,8 +173,8 @@ export default function PipelinePage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Skeleton className="h-6 w-16 rounded-full" />
-                    <Skeleton className="h-6 w-20 rounded-full" />
+                    <Skeleton className="h-6 w-16 rounded-md" />
+                    <Skeleton className="h-6 w-20 rounded-md" />
                   </div>
                 </div>
               </CardHeader>
@@ -187,12 +187,12 @@ export default function PipelinePage() {
       )}
 
       {!loading && items.length === 0 && (
-        <Card className="rounded-xl">
+        <Card>
           <CardContent className="py-12">
-            <div className="text-center text-slate-400">
-              <p className="text-lg font-medium">Pipeline bos</p>
+            <div className="text-center text-white/30">
+              <p className="text-lg font-medium">Pipeline is empty</p>
               <p className="text-sm mt-1">
-                Watchlist&apos;e lead ekleyerek pipeline&apos;a dukkan ekleyebilirsiniz.
+                Add leads to your shortlist to start building your pipeline.
               </p>
             </div>
           </CardContent>
@@ -200,10 +200,10 @@ export default function PipelinePage() {
       )}
 
       {!loading && items.length > 0 && filteredItems.length === 0 && (
-        <Card className="rounded-xl">
+        <Card>
           <CardContent className="py-12">
-            <div className="text-center text-slate-400">
-              <p className="text-lg font-medium">Bu filtreye uygun dukkan bulunamadi</p>
+            <div className="text-center text-white/30">
+              <p className="text-lg font-medium">No leads match this filter</p>
             </div>
           </CardContent>
         </Card>
@@ -232,7 +232,7 @@ function PipelineCard({ item }: { item: WatchlistItem }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ pipelineNotes: html }),
         });
-        setLastSaved(new Date().toLocaleTimeString("tr-TR"));
+        setLastSaved(new Date().toLocaleTimeString("en-US"));
       } catch (err) {
         console.error("Failed to save pipeline notes:", err);
       } finally {
@@ -253,15 +253,15 @@ function PipelineCard({ item }: { item: WatchlistItem }) {
   const opp = item.lead.salesOpportunity;
 
   const meetingBadge = item.meetingResult === "POSITIVE"
-    ? { label: "Olumlu", cls: "bg-emerald-100 text-emerald-700 border-emerald-200" }
+    ? { label: "Positive", cls: "bg-[#30D158]/10 text-[#30D158] border-[#30D158]/20" }
     : item.meetingResult === "IN_PROGRESS"
-      ? { label: "Devam Ediyor", cls: "bg-amber-100 text-amber-700 border-amber-200" }
+      ? { label: "In Progress", cls: "bg-[#FF9500]/10 text-[#FF9F0A] border-[#FF9F0A]/20" }
       : item.meetingResult === "NEGATIVE"
-        ? { label: "Olumsuz", cls: "bg-rose-100 text-rose-700 border-rose-200" }
+        ? { label: "Negative", cls: "bg-[#FF453A]/10 text-[#FF453A] border-[#FF453A]/20" }
         : null;
 
   return (
-    <Card className="rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+    <Card className="hover:shadow-md transition-shadow duration-200">
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -270,17 +270,17 @@ function PipelineCard({ item }: { item: WatchlistItem }) {
                 {item.lead.businessName}
               </Link>
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-0.5 truncate">{item.lead.formattedAddress}</p>
+            <p className="text-sm text-white/50 mt-0.5 truncate">{item.lead.formattedAddress}</p>
             <div className="flex flex-wrap items-center gap-2 mt-1.5">
               {item.lead.phone && (
-                <span className="text-xs text-slate-500">{item.lead.phone}</span>
+                <span className="text-xs text-white/50">{item.lead.phone}</span>
               )}
               {item.lead.websiteUrl && (
                 <Link
                   href={item.lead.websiteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-indigo-600 hover:underline truncate max-w-[200px]"
+                  className="text-xs text-[#0A84FF] hover:underline truncate max-w-[200px]"
                 >
                   {item.lead.websiteUrl}
                 </Link>
@@ -290,16 +290,16 @@ function PipelineCard({ item }: { item: WatchlistItem }) {
                   href={item.siteUrl.startsWith("http") ? item.siteUrl : `https://${item.siteUrl}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-emerald-600 hover:underline"
+                  className="text-xs text-[#30D158] hover:underline"
                 >
-                  Yapilan Site
+                  Built Site
                 </Link>
               )}
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">
-            {saving && <span className="text-xs text-slate-400 animate-pulse">Kaydediliyor...</span>}
-            {!saving && lastSaved && <span className="text-xs text-emerald-500">Kaydedildi {lastSaved}</span>}
+            {saving && <span className="text-xs text-white/30 animate-pulse">Saving...</span>}
+            {!saving && lastSaved && <span className="text-xs text-[#30D158]">Saved {lastSaved}</span>}
             {meetingBadge && <Badge className={meetingBadge.cls}>{meetingBadge.label}</Badge>}
             {item.lead.borough && <Badge variant="outline">{item.lead.borough}</Badge>}
             {opp && (
@@ -312,17 +312,17 @@ function PipelineCard({ item }: { item: WatchlistItem }) {
                       : "secondary"
                 }
               >
-                Skor: {opp.opportunityScore}
+                Score: {opp.opportunityScore}
               </Badge>
             )}
             {item.selectedOffer && (
               <Badge
                 className={
                   item.selectedOffer === "STARTER"
-                    ? "bg-emerald-100 text-emerald-700"
+                    ? "bg-[#30D158]/10 text-[#30D158]"
                     : item.selectedOffer === "GROWTH"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-purple-100 text-purple-700"
+                      ? "bg-[#0A84FF]/10 text-[#0A84FF]"
+                      : "bg-[#AF52DE]/10 text-[#AF52DE]"
                 }
               >
                 {item.selectedOffer}
@@ -378,7 +378,7 @@ function RichTextEditor({
   if (!editor) return null;
 
   return (
-    <div className="border border-slate-200/60 rounded-xl overflow-hidden bg-white">
+    <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
       <Toolbar editor={editor} />
       <EditorContent editor={editor} />
     </div>
@@ -390,132 +390,127 @@ function Toolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
 
   const btnClass = (active: boolean) =>
     `p-1.5 rounded-lg transition-colors ${
-      active ? "bg-indigo-50 text-indigo-600" : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-700"
+      active ? "bg-[#0A84FF]/10 text-[#0A84FF]" : "text-white/50 hover:bg-white/10 hover:text-white/70"
     }`;
 
-  const divider = <div className="w-px h-6 bg-slate-200/60 mx-1" />;
+  const divider = <div className="w-px h-6 bg-white/15 mx-1" />;
 
   return (
-    <div className="flex flex-wrap items-center gap-1 p-2 rounded-xl bg-white/70 backdrop-blur-sm border border-slate-200/60 mb-3">
-      {/* Text formatting */}
+    <div className="flex flex-wrap items-center gap-1 p-2 bg-white/5 border-b border-white/10 mb-0">
       <button
         onClick={() => editor.chain().focus().toggleBold().run()}
         className={btnClass(editor.isActive("bold"))}
-        title="Kalin"
+        title="Bold"
       >
         <Bold className="w-4 h-4" />
       </button>
       <button
         onClick={() => editor.chain().focus().toggleItalic().run()}
         className={btnClass(editor.isActive("italic"))}
-        title="Italik"
+        title="Italic"
       >
         <Italic className="w-4 h-4" />
       </button>
       <button
         onClick={() => editor.chain().focus().toggleUnderline().run()}
         className={btnClass(editor.isActive("underline"))}
-        title="Alti Cizili"
+        title="Underline"
       >
         <UnderlineIcon className="w-4 h-4" />
       </button>
       <button
         onClick={() => editor.chain().focus().toggleStrike().run()}
         className={btnClass(editor.isActive("strike"))}
-        title="Ustu Cizili"
+        title="Strikethrough"
       >
         <Strikethrough className="w-4 h-4" />
       </button>
       <button
         onClick={() => editor.chain().focus().toggleHighlight({ color: "#fef08a" }).run()}
         className={btnClass(editor.isActive("highlight"))}
-        title="Vurgula"
+        title="Highlight"
       >
         <Highlighter className="w-4 h-4" />
       </button>
 
       {divider}
 
-      {/* Headings */}
       <button
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
         className={btnClass(editor.isActive("heading", { level: 1 }))}
-        title="Baslik 1"
+        title="Heading 1"
       >
         <span className="text-xs font-bold w-4 h-4 flex items-center justify-center">H1</span>
       </button>
       <button
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
         className={btnClass(editor.isActive("heading", { level: 2 }))}
-        title="Baslik 2"
+        title="Heading 2"
       >
         <span className="text-xs font-bold w-4 h-4 flex items-center justify-center">H2</span>
       </button>
       <button
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
         className={btnClass(editor.isActive("heading", { level: 3 }))}
-        title="Baslik 3"
+        title="Heading 3"
       >
         <span className="text-xs font-bold w-4 h-4 flex items-center justify-center">H3</span>
       </button>
 
       {divider}
 
-      {/* Lists */}
       <button
         onClick={() => editor.chain().focus().toggleBulletList().run()}
         className={btnClass(editor.isActive("bulletList"))}
-        title="Madde Listesi"
+        title="Bullet List"
       >
         <List className="w-4 h-4" />
       </button>
       <button
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
         className={btnClass(editor.isActive("orderedList"))}
-        title="Numarali Liste"
+        title="Numbered List"
       >
         <ListOrdered className="w-4 h-4" />
       </button>
       <button
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
         className={btnClass(editor.isActive("blockquote"))}
-        title="Alinti"
+        title="Quote"
       >
         <Quote className="w-4 h-4" />
       </button>
 
       {divider}
 
-      {/* Text alignment */}
       <button
         onClick={() => editor.chain().focus().setTextAlign("left").run()}
         className={btnClass(editor.isActive({ textAlign: "left" }))}
-        title="Sola Hizala"
+        title="Align Left"
       >
         <AlignLeft className="w-4 h-4" />
       </button>
       <button
         onClick={() => editor.chain().focus().setTextAlign("center").run()}
         className={btnClass(editor.isActive({ textAlign: "center" }))}
-        title="Ortala"
+        title="Center"
       >
         <AlignCenter className="w-4 h-4" />
       </button>
       <button
         onClick={() => editor.chain().focus().setTextAlign("right").run()}
         className={btnClass(editor.isActive({ textAlign: "right" }))}
-        title="Saga Hizala"
+        title="Align Right"
       >
         <AlignRight className="w-4 h-4" />
       </button>
 
       {divider}
 
-      {/* Table */}
       <button
         onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
         className={btnClass(false)}
-        title="Tablo Ekle"
+        title="Insert Table"
       >
         <TableIcon className="w-4 h-4" />
       </button>
@@ -525,35 +520,35 @@ function Toolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
           <button
             onClick={() => editor.chain().focus().addColumnAfter().run()}
             className={btnClass(false)}
-            title="Sutun Ekle"
+            title="Add Column"
           >
             <Columns className="w-4 h-4" />
           </button>
           <button
             onClick={() => editor.chain().focus().addRowAfter().run()}
             className={btnClass(false)}
-            title="Satir Ekle"
+            title="Add Row"
           >
             <Rows className="w-4 h-4" />
           </button>
           <button
             onClick={() => editor.chain().focus().deleteColumn().run()}
-            className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-            title="Sutun Sil"
+            className="p-1.5 rounded-lg text-[#FF453A]/60 hover:bg-[#FF453A]/10 hover:text-[#FF453A] transition-colors"
+            title="Delete Column"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => editor.chain().focus().deleteRow().run()}
-            className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-            title="Satir Sil"
+            className="p-1.5 rounded-lg text-[#FF453A]/60 hover:bg-[#FF453A]/10 hover:text-[#FF453A] transition-colors"
+            title="Delete Row"
           >
             <ArrowUp className="w-4 h-4" />
           </button>
           <button
             onClick={() => editor.chain().focus().deleteTable().run()}
-            className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-            title="Tabloyu Sil"
+            className="p-1.5 rounded-lg text-[#FF453A]/60 hover:bg-[#FF453A]/10 hover:text-[#FF453A] transition-colors"
+            title="Delete Table"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -562,23 +557,21 @@ function Toolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
 
       {divider}
 
-      {/* Horizontal rule */}
       <button
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
         className={btnClass(false)}
-        title="Yatay Cizgi"
+        title="Horizontal Rule"
       >
         <Minus className="w-4 h-4" />
       </button>
 
-      {/* Undo / Redo */}
       <button
         onClick={() => editor.chain().focus().undo().run()}
         disabled={!editor.can().undo()}
         className={`p-1.5 rounded-lg transition-colors ${
-          editor.can().undo() ? "text-slate-500 hover:bg-slate-100/80 hover:text-slate-700" : "text-slate-300"
+          editor.can().undo() ? "text-white/50 hover:bg-white/10 hover:text-white/70" : "text-white/20"
         }`}
-        title="Geri Al"
+        title="Undo"
       >
         <Undo2 className="w-4 h-4" />
       </button>
@@ -586,9 +579,9 @@ function Toolbar({ editor }: { editor: ReturnType<typeof useEditor> }) {
         onClick={() => editor.chain().focus().redo().run()}
         disabled={!editor.can().redo()}
         className={`p-1.5 rounded-lg transition-colors ${
-          editor.can().redo() ? "text-slate-500 hover:bg-slate-100/80 hover:text-slate-700" : "text-slate-300"
+          editor.can().redo() ? "text-white/50 hover:bg-white/10 hover:text-white/70" : "text-white/20"
         }`}
-        title="Ileri Al"
+        title="Redo"
       >
         <Redo2 className="w-4 h-4" />
       </button>

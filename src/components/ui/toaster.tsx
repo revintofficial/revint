@@ -8,14 +8,19 @@ export function Toaster() {
       position="bottom-right"
       toastOptions={{
         classNames: {
-          toast:
-            "bg-white/90 backdrop-blur-2xl border border-white/30 shadow-[0_16px_48px_rgba(0,0,0,0.12)] rounded-xl text-slate-900",
+          toast: "rounded-xl text-white",
           title: "text-sm font-semibold",
-          description: "text-sm text-slate-500",
-          actionButton:
-            "bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-lg text-xs font-medium",
-          cancelButton: "bg-slate-100 text-slate-600 rounded-lg text-xs font-medium",
-          closeButton: "text-slate-400 hover:text-slate-600",
+          description: "text-sm",
+          actionButton: "bg-gradient-to-r from-[#0A84FF] to-[#007AFF] text-white rounded-lg text-xs font-medium",
+          cancelButton: "rounded-lg text-xs font-medium",
+          closeButton: "hover:opacity-100",
+        },
+        style: {
+          background: "rgba(28, 28, 30, 0.95)",
+          backdropFilter: "saturate(180%) blur(20px)",
+          border: "0.5px solid rgba(255, 255, 255, 0.12)",
+          boxShadow: "0 16px 48px rgba(0, 0, 0, 0.35)",
+          color: "#FFFFFF",
         },
       }}
     />

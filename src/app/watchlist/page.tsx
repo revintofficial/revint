@@ -37,6 +37,8 @@ import {
   BookmarkX,
 } from "lucide-react";
 import { toast } from "sonner";
+import { exportToExcel, exportToPDF } from "@/lib/watchlist-export";
+import { REASON_LABELS } from "@/lib/labels";
 
 interface GoogleReviewData {
   id: string;
@@ -84,6 +86,7 @@ interface WatchlistItem {
 }
 
 type MeetingFilter = "ALL" | "POSITIVE" | "NEGATIVE" | "IN_PROGRESS" | "PENDING";
+type ActiveTab = "leads" | "meetings" | "export";
 
 export default function WatchlistPage() {
   const [items, setItems] = useState<WatchlistItem[]>([]);
@@ -92,77 +95,13 @@ export default function WatchlistPage() {
   const [exporting, setExporting] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [meetingFilter, setMeetingFilter] = useState<MeetingFilter>("ALL");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("leads");
 
   const handleExportExcel = async () => {
     if (items.length === 0) return;
     setExportingExcel(true);
     try {
-      const XLSX = await import("xlsx");
-
-      const businessNames = items.map((item) => item.lead.businessName);
-
-      const fieldRows: { label: string; values: (string | number)[] }[] = [
-        { label: "Adres", values: items.map((i) => i.lead.formattedAddress) },
-        { label: "İlçe", values: items.map((i) => i.lead.borough || "") },
-        { label: "Telefon", values: items.map((i) => i.lead.phone || "") },
-        { label: "Mevcut Website", values: items.map((i) => i.lead.websiteUrl || "") },
-        { label: "Yapılan Site", values: items.map((i) => i.siteUrl || "") },
-        { label: "Notlar", values: items.map((i) => i.notes || "") },
-        { label: "Seçilen Paket", values: items.map((i) => i.selectedOffer || "") },
-        {
-          label: "Görüşme Sonucu",
-          values: items.map((i) =>
-            i.meetingResult === "POSITIVE" ? "Olumlu" : i.meetingResult === "NEGATIVE" ? "Olumsuz" : i.meetingResult === "IN_PROGRESS" ? "Devam Ediyor" : "Bekleyen"
-          ),
-        },
-        { label: "Fırsat Skoru", values: items.map((i) => i.lead.salesOpportunity?.opportunityScore ?? "") },
-        { label: "Önerilen Paket", values: items.map((i) => i.lead.salesOpportunity?.suggestedOffer || "") },
-        { label: "Fiyat Aralığı", values: items.map((i) => i.lead.salesOpportunity?.expectedPriceBand || "") },
-        { label: "Durum", values: items.map((i) => i.lead.salesOpportunity?.status || "") },
-        { label: "Neden İyi Hedef", values: items.map((i) => i.lead.salesOpportunity?.whyGoodTarget || "") },
-        {
-          label: "Sorunlar",
-          values: items.map((i) =>
-            ((i.lead.salesOpportunity?.reasonCodes || []) as string[]).map((c) => REASON_LABELS[c] || c).join(", ")
-          ),
-        },
-        {
-          label: "Acı Noktaları",
-          values: items.map((i) =>
-            ((i.lead.salesOpportunity?.likelyPainPoints || []) as string[]).map((p) => REASON_LABELS[p] || p).join(", ")
-          ),
-        },
-        { label: "Satış Açısı", values: items.map((i) => i.lead.salesOpportunity?.bestSalesAngle || "") },
-        { label: "Kişiselleştirilmiş Mesaj", values: items.map((i) => i.lead.salesOpportunity?.personalizedFirstMessage || "") },
-        {
-          label: "Google Yorum Sayısı",
-          values: items.map((i) => (i.lead.googleReviews || []).length),
-        },
-        {
-          label: "Ortalama Puan",
-          values: items.map((i) => {
-            const r = i.lead.googleReviews || [];
-            return r.length > 0 ? (r.reduce((s, rv) => s + rv.rating, 0) / r.length).toFixed(1) : "";
-          }),
-        },
-        { label: "Eklenme Tarihi", values: items.map((i) => new Date(i.createdAt).toLocaleDateString("tr-TR")) },
-      ];
-
-      const header: (string | number)[] = ["", ...businessNames];
-      const dataRows = fieldRows.map((f) => [f.label, ...f.values]);
-      const sheetData = [header, ...dataRows];
-
-      const ws = XLSX.utils.aoa_to_sheet(sheetData);
-
-      const colWidths = [
-        { wch: 25 },
-        ...businessNames.map((name) => ({ wch: Math.max(name.length + 2, 20) })),
-      ];
-      ws["!cols"] = colWidths;
-
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Watchlist");
-      XLSX.writeFile(wb, `watchlist_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      await exportToExcel(items);
     } catch (err) {
       console.error("Excel export failed:", err);
     } finally {
@@ -174,250 +113,7 @@ export default function WatchlistPage() {
     if (items.length === 0) return;
     setExporting(true);
     try {
-      const { default: jsPDF } = await import("jspdf");
-
-      const toBase64 = async (url: string) => {
-        const res = await fetch(url);
-        const buf = await res.arrayBuffer();
-        const bytes = new Uint8Array(buf);
-        const chunks: string[] = [];
-        for (let i = 0; i < bytes.length; i += 8192) {
-          chunks.push(String.fromCharCode(...bytes.slice(i, i + 8192)));
-        }
-        return btoa(chunks.join(""));
-      };
-
-      const [regularB64, boldB64] = await Promise.all([
-        toBase64("/fonts/Roboto-Regular.ttf"),
-        toBase64("/fonts/Roboto-Bold.ttf"),
-      ]);
-
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      pdf.addFileToVFS("Roboto-Regular.ttf", regularB64);
-      pdf.addFont("Roboto-Regular.ttf", "Roboto", "normal");
-      pdf.addFileToVFS("Roboto-Bold.ttf", boldB64);
-      pdf.addFont("Roboto-Bold.ttf", "Roboto", "bold");
-      pdf.setFont("Roboto", "normal");
-
-      const pageW = 210;
-      const pageH = 297;
-      const margin = 15;
-      const contentW = pageW - margin * 2;
-      let y = margin;
-
-      const checkPage = (needed: number) => {
-        if (y + needed > pageH - margin) {
-          pdf.addPage();
-          y = margin;
-        }
-      };
-
-      const addTitle = (_text: string, size: number, color: [number, number, number] = [24, 24, 27]) => {
-        pdf.setFontSize(size);
-        pdf.setTextColor(...color);
-        pdf.setFont("Roboto", "bold");
-      };
-
-      const addBody = (size = 10, color: [number, number, number] = [63, 63, 70]) => {
-        pdf.setFontSize(size);
-        pdf.setTextColor(...color);
-        pdf.setFont("Roboto", "normal");
-      };
-
-      const writeWrapped = (text: string, indent = 0) => {
-        const lines = pdf.splitTextToSize(text, contentW - indent);
-        for (const line of lines) {
-          checkPage(5);
-          pdf.text(line, margin + indent, y);
-          y += 5;
-        }
-      };
-
-      addTitle("Watchlist Raporu", 20);
-      pdf.text("Watchlist Raporu", margin, y);
-      y += 8;
-      addBody(10, [113, 113, 122]);
-      pdf.text(`${items.length} lead | ${new Date().toLocaleDateString("tr-TR")}`, margin, y);
-      y += 4;
-
-      const analyzed = items.filter((i) => i.lead.salesOpportunity);
-      if (analyzed.length > 0) {
-        const avg = Math.round(
-          analyzed.reduce((s, i) => s + (i.lead.salesOpportunity?.opportunityScore || 0), 0) / analyzed.length
-        );
-        pdf.text(`Ortalama Fırsat Skoru: ${avg}/100`, margin, y);
-      }
-      y += 8;
-      pdf.setDrawColor(228, 228, 231);
-      pdf.line(margin, y, pageW - margin, y);
-      y += 8;
-
-      for (let idx = 0; idx < items.length; idx++) {
-        const item = items[idx];
-        const opp = item.lead.salesOpportunity;
-        const reviews = item.lead.googleReviews || [];
-
-        checkPage(30);
-
-        addTitle(`${idx + 1}. ${item.lead.businessName}`, 14);
-        pdf.text(`${idx + 1}. ${item.lead.businessName}`, margin, y);
-        y += 6;
-
-        if (opp) {
-          const scoreColor: [number, number, number] =
-            opp.opportunityScore >= 60 ? [5, 150, 105] : opp.opportunityScore >= 35 ? [217, 119, 6] : [113, 113, 122];
-          pdf.setFontSize(10);
-          pdf.setFont("Roboto", "bold");
-          pdf.setTextColor(...scoreColor);
-          pdf.text(`Skor: ${opp.opportunityScore}/100`, pageW - margin - 25, y - 6);
-        }
-
-        addBody(9, [113, 113, 122]);
-        pdf.text(item.lead.formattedAddress, margin, y);
-        y += 5;
-
-        if (item.lead.borough) {
-          pdf.text(`İlçe: ${item.lead.borough}`, margin, y);
-          y += 5;
-        }
-
-        if (item.lead.phone) {
-          pdf.text(`Tel: ${item.lead.phone}`, margin, y);
-          y += 5;
-        }
-
-        if (item.lead.websiteUrl) {
-          pdf.setTextColor(79, 70, 229);
-          pdf.text(`Web: ${item.lead.websiteUrl}`, margin, y);
-          y += 5;
-        }
-
-        if (item.siteUrl) {
-          pdf.setTextColor(79, 70, 229);
-          pdf.text(`Yapılan Site: ${item.siteUrl}`, margin, y);
-          y += 5;
-        }
-
-        if (item.notes) {
-          y += 2;
-          addBody(9, [63, 63, 70]);
-          addTitle("Notlar:", 9);
-          pdf.text("Notlar:", margin, y);
-          y += 4;
-          addBody(9);
-          writeWrapped(item.notes, 2);
-        }
-
-        if (opp) {
-          y += 3;
-          checkPage(25);
-          addTitle("AI Analiz", 11, [24, 24, 27]);
-          pdf.text("AI Analiz", margin, y);
-          y += 5;
-          addBody(9);
-
-          pdf.text(`Önerilen Paket: ${opp.suggestedOffer}`, margin + 2, y);
-          y += 5;
-          if (opp.expectedPriceBand) {
-            pdf.text(`Fiyat Aralığı: ${opp.expectedPriceBand}`, margin + 2, y);
-            y += 5;
-          }
-          if (opp.status) {
-            pdf.text(`Durum: ${opp.status}`, margin + 2, y);
-            y += 5;
-          }
-
-          if (opp.whyGoodTarget) {
-            checkPage(10);
-            addTitle("Neden İyi Hedef:", 9, [63, 63, 70]);
-            pdf.text("Neden İyi Hedef:", margin + 2, y);
-            y += 4;
-            addBody(9);
-            writeWrapped(opp.whyGoodTarget, 4);
-          }
-
-          const reasonCodes = opp.reasonCodes || [];
-          if (reasonCodes.length > 0) {
-            checkPage(8);
-            addTitle("Sorunlar:", 9, [63, 63, 70]);
-            pdf.text("Sorunlar:", margin + 2, y);
-            y += 4;
-            addBody(9);
-            const labels = reasonCodes.map((c) => REASON_LABELS[c] || c).join(", ");
-            writeWrapped(labels, 4);
-          }
-
-          const painPoints = opp.likelyPainPoints || [];
-          if (painPoints.length > 0) {
-            checkPage(8);
-            addTitle("Acı Noktaları:", 9, [63, 63, 70]);
-            pdf.text("Acı Noktaları:", margin + 2, y);
-            y += 4;
-            addBody(9);
-            for (const p of painPoints) {
-              checkPage(5);
-              pdf.text(`• ${REASON_LABELS[p] || p}`, margin + 4, y);
-              y += 4.5;
-            }
-          }
-
-          if (opp.bestSalesAngle) {
-            checkPage(8);
-            addTitle("Satış Açısı:", 9, [63, 63, 70]);
-            pdf.text("Satış Açısı:", margin + 2, y);
-            y += 4;
-            addBody(9);
-            writeWrapped(opp.bestSalesAngle, 4);
-          }
-
-          if (opp.personalizedFirstMessage) {
-            checkPage(10);
-            addTitle("Kişiselleştirilmiş Mesaj:", 9, [5, 150, 105]);
-            pdf.text("Kişiselleştirilmiş Mesaj:", margin + 2, y);
-            y += 4;
-            addBody(9, [6, 95, 70]);
-            writeWrapped(opp.personalizedFirstMessage, 4);
-          }
-        }
-
-        if (reviews.length > 0) {
-          y += 3;
-          checkPage(15);
-          const avgR = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
-          addTitle(`Google Yorumları (${reviews.length} yorum, ort: ${avgR})`, 9, [113, 113, 122]);
-          pdf.text(`Google Yorumları (${reviews.length} yorum, ort: ${avgR})`, margin, y);
-          y += 5;
-
-          const maxReviews = Math.min(reviews.length, 5);
-          for (let ri = 0; ri < maxReviews; ri++) {
-            const r = reviews[ri];
-            checkPage(12);
-            addBody(8, [113, 113, 122]);
-            const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
-            pdf.text(`${r.authorName}  ${stars}  ${r.relativeTime}`, margin + 2, y);
-            y += 4;
-            if (r.text) {
-              addBody(8, [82, 82, 91]);
-              const trimmed = r.text.length > 200 ? r.text.slice(0, 200) + "..." : r.text;
-              writeWrapped(trimmed, 4);
-            }
-            y += 2;
-          }
-          if (reviews.length > 5) {
-            addBody(8, [161, 161, 170]);
-            pdf.text(`... ve ${reviews.length - 5} yorum daha`, margin + 2, y);
-            y += 5;
-          }
-        }
-
-        y += 4;
-        pdf.setDrawColor(228, 228, 231);
-        pdf.line(margin, y, pageW - margin, y);
-        y += 8;
-      }
-
-      pdf.save(`watchlist_raporu_${new Date().toISOString().slice(0, 10)}.pdf`);
+      await exportToPDF(items);
     } catch (err) {
       console.error("PDF export failed:", err);
     } finally {
@@ -536,26 +232,32 @@ export default function WatchlistPage() {
   });
 
   const FILTER_TABS: { value: MeetingFilter; label: string; count: number }[] = [
-    { value: "ALL", label: "Tumunu", count: items.length },
-    { value: "POSITIVE", label: "Olumlu", count: positiveCount },
-    { value: "IN_PROGRESS", label: "Devam Ediyor", count: inProgressCount },
-    { value: "NEGATIVE", label: "Olumsuz", count: negativeCount },
-    { value: "PENDING", label: "Bekleyen", count: pendingCount },
+    { value: "ALL", label: "All", count: items.length },
+    { value: "POSITIVE", label: "Positive", count: positiveCount },
+    { value: "IN_PROGRESS", label: "In Progress", count: inProgressCount },
+    { value: "NEGATIVE", label: "Negative", count: negativeCount },
+    { value: "PENDING", label: "Pending", count: pendingCount },
+  ];
+
+  const TAB_ITEMS: { value: ActiveTab; label: string }[] = [
+    { value: "leads", label: "Leads" },
+    { value: "meetings", label: "Meetings" },
+    { value: "export", label: "Export" },
   ];
 
   return (
     <div className="p-6 md:p-8 lg:p-10 space-y-6">
       <PageHeader
-        title="Watchlist"
-        subtitle={loading ? "Yukleniyor..." : `${items.length} lead takip ediliyor`}
+        title="Shortlist"
+        subtitle={loading ? "Loading..." : `${items.length} leads on your shortlist`}
         actions={
           !loading && items.length > 0 ? (
             <>
               <div className="flex items-center gap-2 text-sm">
-                <div className="h-8 w-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold">
+                <div className="h-8 w-8 rounded-full bg-[#0A84FF] text-white flex items-center justify-center text-xs font-bold">
                   {totalScore}
                 </div>
-                <span className="text-slate-500">Ort. Skor</span>
+                <span className="text-white/50">Avg. Score</span>
               </div>
               {unanalyzedCount > 0 && (
                 <Button
@@ -566,62 +268,80 @@ export default function WatchlistPage() {
                   {analyzingAll ? (
                     <>
                       <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                      Analiz Ediliyor...
+                      Analyzing...
                     </>
                   ) : (
-                    `Tumunu Analiz Et (${unanalyzedCount})`
+                    `Analyze All (${unanalyzedCount})`
                   )}
                 </Button>
               )}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleExportExcel}
-                disabled={exportingExcel}
-              >
-                {exportingExcel ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                    Hazirlaniyor...
-                  </>
-                ) : (
-                  <>
-                    <FileSpreadsheet className="w-4 h-4 mr-1.5" />
-                    Excel
-                  </>
-                )}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleExportPDF}
-                disabled={exporting}
-              >
-                {exporting ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                    Hazirlaniyor...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-4 h-4 mr-1.5" />
-                    PDF Raporu
-                  </>
-                )}
-              </Button>
             </>
           ) : undefined
         }
       />
 
-      {!loading && items.filter((i) => i.selectedOffer).length > 0 && (
+      {/* Tabs */}
+      {!loading && items.length > 0 && (
+        <div className="flex items-center gap-1 bg-white/10 rounded-[10px] p-0.5 w-fit">
+          {TAB_ITEMS.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={`px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
+                activeTab === tab.value
+                  ? "bg-white/10 text-white shadow-sm rounded-[8px]"
+                  : "text-white/50 hover:text-white rounded-[8px]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Export Tab */}
+      {activeTab === "export" && !loading && items.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Export Shortlist</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={handleExportExcel}
+              disabled={exportingExcel}
+            >
+              {exportingExcel ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" />Preparing...</>
+              ) : (
+                <><FileSpreadsheet className="w-4 h-4 mr-2" />Export as Excel</>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={handleExportPDF}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" />Preparing...</>
+              ) : (
+                <><FileText className="w-4 h-4 mr-2" />Export as PDF Report</>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab !== "export" && !loading && items.filter((i) => i.selectedOffer).length > 0 && (
         <div className="flex items-center gap-2">
           {(["STARTER", "GROWTH"] as const).map((offer) => {
             const count = items.filter((i) => i.selectedOffer === offer).length;
             if (count === 0) return null;
             const colors = {
-              STARTER: "bg-emerald-100 text-emerald-700",
-              GROWTH: "bg-blue-100 text-blue-700",
+              STARTER: "bg-[#30D158]/10 text-[#30D158]",
+              GROWTH: "bg-[#0A84FF]/10 text-[#0A84FF]",
             };
             return (
               <span key={offer} className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${colors[offer]}`}>
@@ -632,23 +352,23 @@ export default function WatchlistPage() {
         </div>
       )}
 
-      {!loading && items.length > 0 && (
-        <div className="flex items-center gap-1 bg-slate-100/80 backdrop-blur-sm rounded-xl p-1 w-fit max-w-full overflow-x-auto">
+      {activeTab !== "export" && !loading && items.length > 0 && (
+        <div className="flex items-center gap-1 bg-white/10 rounded-[10px] p-0.5 w-fit max-w-full overflow-x-auto">
           {FILTER_TABS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setMeetingFilter(tab.value)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
                 meetingFilter === tab.value
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
+                  ? "bg-white/10 text-white shadow-sm rounded-[8px]"
+                  : "text-white/50 hover:text-white rounded-[8px]"
               }`}
             >
               {tab.label}
               <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
                 meetingFilter === tab.value
-                  ? "bg-slate-100/80"
-                  : "bg-slate-200 text-slate-500"
+                  ? "bg-white/10"
+                  : "bg-white/15 text-white/50"
               }`}>
                 {tab.count}
               </span>
@@ -660,7 +380,7 @@ export default function WatchlistPage() {
       {loading && (
         <div className="grid gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-xl border border-slate-200/60 p-6 space-y-4">
+            <div key={i} className="rounded-2xl border border-white/10 p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-2">
                   <Skeleton className="h-5 w-48" />
@@ -680,15 +400,15 @@ export default function WatchlistPage() {
       )}
 
       {!loading && items.length === 0 && (
-        <Card className="rounded-xl">
+        <Card>
           <CardContent className="py-12">
-            <div className="text-center text-slate-400">
-              <BookmarkX className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+            <div className="text-center text-white/30">
+              <BookmarkX className="w-12 h-12 mx-auto mb-3 text-white/20" />
               <p className="text-lg font-medium">
-                Henuz watchlist&apos;te lead yok
+                No leads on your shortlist yet
               </p>
               <p className="text-sm mt-1">
-                Leads sayfasindan leadleri watchlist&apos;e ekleyebilirsiniz.
+                Add leads from the Leads page to build your shortlist.
               </p>
             </div>
           </CardContent>
@@ -696,14 +416,14 @@ export default function WatchlistPage() {
       )}
 
       {!loading && items.length > 0 && filteredItems.length === 0 && (
-        <Card className="rounded-xl">
+        <Card>
           <CardContent className="py-12">
-            <div className="text-center text-slate-400">
+            <div className="text-center text-white/30">
               <p className="text-lg font-medium">
-                Bu filtreye uygun lead bulunamadi
+                No leads match this filter
               </p>
               <p className="text-sm mt-1">
-                Farkli bir filtre secmeyi deneyin.
+                Try a different filter.
               </p>
             </div>
           </CardContent>
@@ -734,82 +454,61 @@ function StarRating({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          className={`w-3.5 h-3.5 ${star <= rating ? "text-amber-400 fill-amber-400" : "text-slate-200"}`}
+          className={`w-3.5 h-3.5 ${star <= rating ? "text-[#FF9F0A] fill-[#FF9500]" : "text-white/20"}`}
         />
       ))}
     </span>
   );
 }
 
-const REASON_LABELS: Record<string, string> = {
-  no_website: "Web Sitesi Yok",
-  poor_mobile: "Mobil Uyumsuz",
-  no_booking: "Randevu Sistemi Yok",
-  no_whatsapp: "WhatsApp Yok",
-  no_https: "HTTPS Yok",
-  weak_seo: "Zayif SEO",
-  slow_site: "Yavas Site",
-  no_ecommerce: "E-Ticaret Yok",
-  high_rating_weak_site: "Yuksek Puan, Zayif Site",
-  good_rating: "Iyi Puan",
-  site_unreachable: "Site Erisim Disi",
-  services_unclear: "Hizmetler Belirsiz",
-  uncrawled_website: "Site Taranmadi",
-  no_contact_form: "Iletisim Formu Yok",
-  no_analytics: "Analytics Yok",
-  weak_security_headers: "Zayif Guvenlik",
-  no_open_graph: "Open Graph Yok",
-  no_structured_data: "Structured Data Yok",
-  accessibility_issues: "Erisilebilirlik Sorunlari",
-  no_pwa: "PWA Yok",
-};
+// REASON_LABELS imported from @/lib/labels
 
 function AnalysisPanel({ opp }: { opp: SalesOpportunityData }) {
   const reasonCodes = (opp.reasonCodes || []) as string[];
   const painPoints = (opp.likelyPainPoints || []) as string[];
 
   return (
-    <div className="rounded-xl border border-slate-200/60 bg-gradient-to-br from-slate-50 to-white p-4 space-y-4">
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-4">
       <div className="flex items-center gap-2">
-        <Sparkles className="w-5 h-5 text-slate-700" />
-        <h4 className="font-semibold text-slate-800">AI Analiz Sonuclari</h4>
+        <Sparkles className="w-5 h-5 text-white/70" />
+        <h4 className="font-semibold text-white">AI Analysis Results</h4>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="rounded-md bg-white border border-slate-200/60 p-3 text-center">
+        <div className="rounded-md bg-white/5 border border-white/10 p-3 text-center">
           <div
             className={`text-2xl font-bold ${
               opp.opportunityScore >= 60
-                ? "text-emerald-600"
+                ? "text-[#30D158]"
                 : opp.opportunityScore >= 35
-                  ? "text-amber-600"
-                  : "text-slate-500"
+                  ? "text-[#FF9F0A]"
+                  : "text-white/50"
             }`}
           >
             {opp.opportunityScore}
           </div>
-          <div className="text-xs font-medium uppercase tracking-wider text-slate-400 mt-0.5">Firsat Skoru</div>
+          <div className="text-[13px] font-medium text-white/50 mt-0.5">Opportunity Score</div>
         </div>
-        <div className="rounded-md bg-white border border-slate-200/60 p-3 text-center">
-          <div className="text-lg font-bold text-slate-800">
+        <div className="rounded-md bg-white/5 border border-white/10 p-3 text-center">
+          <div className="text-lg font-bold text-white">
             {opp.suggestedOffer}
           </div>
-          <div className="text-xs font-medium uppercase tracking-wider text-slate-400 mt-0.5">Onerilen Paket</div>
+          <div className="text-[13px] font-medium text-white/50 mt-0.5">Suggested Package</div>
         </div>
-        <div className="rounded-md bg-white border border-slate-200/60 p-3 text-center">
-          <div className="text-lg font-bold text-slate-800">
+        <div className="rounded-md bg-white/5 border border-white/10 p-3 text-center">
+          <div className="text-lg font-bold text-white">
             {opp.expectedPriceBand || "N/A"}
           </div>
-          <div className="text-xs font-medium uppercase tracking-wider text-slate-400 mt-0.5">Fiyat Araligi</div>
+          <div className="text-[13px] font-medium text-white/50 mt-0.5">Price Range</div>
         </div>
       </div>
 
       {opp.whyGoodTarget && (
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">
-            Neden Iyi Hedef
+          <p className="text-[13px] font-medium text-white/50 mb-1">
+            Why Good Target
           </p>
-          <p className="text-sm text-slate-700 leading-relaxed">
+          <p className="text-sm text-white/70 leading-relaxed">
             {opp.whyGoodTarget}
           </p>
         </div>
@@ -817,8 +516,8 @@ function AnalysisPanel({ opp }: { opp: SalesOpportunityData }) {
 
       {reasonCodes.length > 0 && (
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1.5">
-            Tespit Edilen Sorunlar
+          <p className="text-[13px] font-medium text-white/50 mb-1.5">
+            Issues Found
           </p>
           <div className="flex flex-wrap gap-1.5">
             {reasonCodes.map((code) => (
@@ -832,13 +531,13 @@ function AnalysisPanel({ opp }: { opp: SalesOpportunityData }) {
 
       {painPoints.length > 0 && (
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">
-            Aci Noktalari
+          <p className="text-[13px] font-medium text-white/50 mb-1">
+            Pain Points
           </p>
           <ul className="space-y-1">
             {painPoints.map((point, idx) => (
-              <li key={idx} className="text-sm text-slate-600 flex items-start gap-1.5">
-                <span className="text-rose-400 mt-0.5">&#x2022;</span>
+              <li key={idx} className="text-sm text-white/60 flex items-start gap-1.5">
+                <span className="text-[#FF453A] mt-0.5">&#x2022;</span>
                 {REASON_LABELS[point] || point}
               </li>
             ))}
@@ -848,19 +547,19 @@ function AnalysisPanel({ opp }: { opp: SalesOpportunityData }) {
 
       {opp.bestSalesAngle && (
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">
-            Satis Acisi
+          <p className="text-[13px] font-medium text-white/50 mb-1">
+            Sales Angle
           </p>
-          <p className="text-sm text-slate-700 italic">{opp.bestSalesAngle}</p>
+          <p className="text-sm text-white/70 italic">{opp.bestSalesAngle}</p>
         </div>
       )}
 
       {opp.personalizedFirstMessage && (
-        <div className="rounded-md bg-emerald-50 border border-emerald-200 p-3">
-          <p className="text-xs font-medium text-emerald-700 uppercase tracking-wider mb-1">
-            Kisisellestirilmis Mesaj
+        <div className="rounded-md bg-[#30D158]/10 border border-[#30D158]/20 p-3">
+          <p className="text-[13px] font-medium text-[#30D158] mb-1">
+            Personalized Message
           </p>
-          <p className="text-sm text-emerald-800 leading-relaxed">
+          <p className="text-sm text-[#30D158] leading-relaxed">
             {opp.personalizedFirstMessage}
           </p>
         </div>
@@ -972,11 +671,11 @@ function WebsitePlanPanel({
   };
 
   return (
-    <div className="border-t border-slate-200/60 pt-3">
+    <div className="border-t border-white/10 pt-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5 text-indigo-600 shrink-0" />
-          <h4 className="font-semibold text-slate-800 text-sm sm:text-base">AI Website Plan Ajani</h4>
+          <Bot className="w-5 h-5 text-[#0A84FF] shrink-0" />
+          <h4 className="font-semibold text-white text-sm sm:text-base">AI Website Plan</h4>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {item.websitePlan && (
@@ -988,7 +687,7 @@ function WebsitePlanPanel({
                 onClick={() => setShowPlan(!showPlan)}
               >
                 {showPlan ? <EyeOff className="w-3.5 h-3.5 mr-1" /> : <Eye className="w-3.5 h-3.5 mr-1" />}
-                {showPlan ? "Gizle" : "Goster"}
+                {showPlan ? "Hide" : "Show"}
               </Button>
               <Button
                 size="sm"
@@ -997,7 +696,7 @@ function WebsitePlanPanel({
                 onClick={handleCopy}
               >
                 {copied ? <Check className="w-3.5 h-3.5 mr-1" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
-                {copied ? "Kopyalandi!" : "Kopyala"}
+                {copied ? "Copied!" : "Copy"}
               </Button>
               <Button
                 size="sm"
@@ -1023,17 +722,17 @@ function WebsitePlanPanel({
             size="sm"
             onClick={handleGenerate}
             disabled={generating}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="bg-[#0A84FF] hover:bg-[#0063D1] text-white"
           >
             {generating ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                Plan Olusturuluyor...
+                Generating Plan...
               </>
             ) : item.websitePlan ? (
-              "Yeniden Olustur"
+              "Regenerate"
             ) : (
-              "Website Plani Olustur"
+              "Generate Website Plan"
             )}
           </Button>
         </div>
@@ -1043,7 +742,7 @@ function WebsitePlanPanel({
         <div className="mt-3">
           <div
             ref={planRef}
-            className="rounded-xl border border-slate-200/60 bg-white p-6 max-h-[600px] overflow-y-auto select-text"
+            className="rounded-2xl border border-white/10 bg-white/5 p-6 max-h-[600px] overflow-y-auto select-text"
           >
             <MarkdownRenderer content={item.websitePlan} />
           </div>
@@ -1059,14 +758,14 @@ const OFFER_PACKAGES = [
     label: "Starter",
     price: "£500–800",
     color: "emerald",
-    description: "Tek sayfa, mobil uyumlu site",
+    description: "Single page, mobile-friendly",
   },
   {
     value: "GROWTH" as const,
     label: "Growth",
     price: "£800–1500",
     color: "blue",
-    description: "Cok sayfa, SEO, online satis",
+    description: "Multi-page, SEO, online sales",
   },
 ] as const;
 
@@ -1103,15 +802,15 @@ function OfferSelector({
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-          Teklif Paketi
+        <label className="text-[13px] font-medium text-white/50">
+          Offer Package
         </label>
         {saving && (
-          <span className="text-[10px] text-slate-400 animate-pulse">kaydediliyor...</span>
+          <span className="text-[10px] text-white/30 animate-pulse">saving...</span>
         )}
         {suggestedOffer && !selectedOffer && (
-          <span className="text-[10px] text-slate-400">
-            AI onerisi: {suggestedOffer}
+          <span className="text-[10px] text-white/30">
+            AI suggests: {suggestedOffer}
           </span>
         )}
       </div>
@@ -1121,18 +820,18 @@ function OfferSelector({
           const isSuggested = suggestedOffer === pkg.value;
           const colorMap = {
             emerald: {
-              selected: "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20",
-              hover: "hover:border-emerald-300 hover:bg-emerald-50/50",
-              dot: "bg-emerald-500",
-              label: "text-emerald-700",
-              price: "text-emerald-600",
+              selected: "border-[#30D158] bg-[#30D158]/10 ring-2 ring-[#30D158]/20",
+              hover: "hover:border-[#30D158]/40 hover:bg-[#30D158]/5",
+              dot: "bg-[#30D158]",
+              label: "text-[#30D158]",
+              price: "text-[#30D158]",
             },
             blue: {
-              selected: "border-blue-500 bg-blue-50 ring-2 ring-blue-500/20",
-              hover: "hover:border-blue-300 hover:bg-blue-50/50",
-              dot: "bg-blue-500",
-              label: "text-blue-700",
-              price: "text-blue-600",
+              selected: "border-[#007AFF] bg-[#0A84FF]/10 ring-2 ring-[#0A84FF]/20",
+              hover: "hover:border-[#007AFF]/40 hover:bg-[#0A84FF]/5",
+              dot: "bg-[#0A84FF]",
+              label: "text-[#0A84FF]",
+              price: "text-[#0A84FF]",
             },
           };
           const colors = colorMap[pkg.color];
@@ -1144,7 +843,7 @@ function OfferSelector({
               className={`relative rounded-xl border p-2.5 text-left transition-all ${
                 isSelected
                   ? colors.selected
-                  : `border-slate-200/60 bg-white ${colors.hover}`
+                  : `border-white/10 bg-white/5 ${colors.hover}`
               }`}
             >
               {isSelected && (
@@ -1154,19 +853,19 @@ function OfferSelector({
               )}
               {isSuggested && !isSelected && (
                 <div className="absolute top-1.5 right-1.5">
-                  <span className="text-[9px] font-medium text-slate-400 bg-slate-100/80 px-1 rounded">AI</span>
+                  <span className="text-[9px] font-medium text-white/30 bg-white/10 px-1 rounded">AI</span>
                 </div>
               )}
               <div className="flex items-center gap-1.5 mb-1">
                 <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
-                <span className={`text-sm font-semibold ${isSelected ? colors.label : "text-slate-700"}`}>
+                <span className={`text-sm font-semibold ${isSelected ? colors.label : "text-white/70"}`}>
                   {pkg.label}
                 </span>
               </div>
-              <div className={`text-xs font-medium ${isSelected ? colors.price : "text-slate-500"}`}>
+              <div className={`text-xs font-medium ${isSelected ? colors.price : "text-white/50"}`}>
                 {pkg.price}
               </div>
-              <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+              <div className="text-[10px] text-white/30 mt-0.5 leading-tight">
                 {pkg.description}
               </div>
             </button>
@@ -1208,11 +907,11 @@ function MeetingResultSelector({
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
-        <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-          Gorusme Sonucu
+        <label className="text-[13px] font-medium text-white/50">
+          Meeting Result
         </label>
         {saving && (
-          <span className="text-[10px] text-slate-400 animate-pulse">kaydediliyor...</span>
+          <span className="text-[10px] text-white/30 animate-pulse">saving...</span>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -1220,14 +919,14 @@ function MeetingResultSelector({
           onClick={() => handleSelect("POSITIVE")}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs sm:text-sm font-medium transition-all ${
             meetingResult === "POSITIVE"
-              ? "border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-500/20"
-              : "border-slate-200/60 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/50"
+              ? "border-[#30D158] bg-[#30D158]/10 text-[#30D158] ring-2 ring-[#30D158]/20"
+              : "border-white/10 bg-white/5 text-white/60 hover:border-[#30D158]/40 hover:bg-[#30D158]/5"
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Olumlu Bitti
+          Positive Outcome
           {meetingResult === "POSITIVE" && (
             <Check className="w-3.5 h-3.5 ml-0.5" />
           )}
@@ -1236,14 +935,14 @@ function MeetingResultSelector({
           onClick={() => handleSelect("IN_PROGRESS")}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs sm:text-sm font-medium transition-all ${
             meetingResult === "IN_PROGRESS"
-              ? "border-amber-500 bg-amber-50 text-amber-700 ring-2 ring-amber-500/20"
-              : "border-slate-200/60 bg-white text-slate-600 hover:border-amber-300 hover:bg-amber-50/50"
+              ? "border-[#FF9F0A] bg-[#FF9500]/10 text-[#FF9F0A] ring-2 ring-[#FF9F0A]/20"
+              : "border-white/10 bg-white/5 text-white/60 hover:border-[#FF9F0A]/40 hover:bg-[#FF9500]/5"
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Devam Ediyor
+          In Progress
           {meetingResult === "IN_PROGRESS" && (
             <Check className="w-3.5 h-3.5 ml-0.5" />
           )}
@@ -1252,14 +951,14 @@ function MeetingResultSelector({
           onClick={() => handleSelect("NEGATIVE")}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs sm:text-sm font-medium transition-all ${
             meetingResult === "NEGATIVE"
-              ? "border-rose-500 bg-rose-50 text-rose-700 ring-2 ring-rose-500/20"
-              : "border-slate-200/60 bg-white text-slate-600 hover:border-rose-300 hover:bg-rose-50/50"
+              ? "border-[#FF453A] bg-[#FF453A]/10 text-[#FF453A] ring-2 ring-[#FF453A]/20"
+              : "border-white/10 bg-white/5 text-white/60 hover:border-[#FF453A]/40 hover:bg-[#FF453A]/5"
           }`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Olumsuz Bitti
+          Negative Outcome
           {meetingResult === "NEGATIVE" && (
             <Check className="w-3.5 h-3.5 ml-0.5" />
           )}
@@ -1402,7 +1101,7 @@ function WatchlistCard({
 
   return (
     <>
-    <Card className={`overflow-hidden rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300${hasValidSiteUrl ? " bg-emerald-50/70 border-emerald-200" : ""}`}>
+    <Card className={`overflow-hidden hover:shadow-md transition-all duration-300${hasValidSiteUrl ? " bg-[#30D158]/10 border-[#30D158]/30" : ""}`}>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -1414,30 +1113,30 @@ function WatchlistCard({
                 {item.lead.businessName}
               </Link>
             </CardTitle>
-            <p className="text-sm text-slate-500 mt-1 truncate">
+            <p className="text-sm text-white/50 mt-1 truncate">
               {item.lead.formattedAddress}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 shrink-0">
             {saveStatus === "saving" && (
-              <span className="text-xs text-slate-400">Kaydediliyor...</span>
+              <span className="text-xs text-white/30">Saving...</span>
             )}
             {saveStatus === "saved" && (
-              <span className="text-xs text-green-500">Kaydedildi</span>
+              <span className="text-xs text-[#30D158]">Saved</span>
             )}
             {item.meetingResult === "POSITIVE" && (
-              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
-                Olumlu
+              <Badge className="bg-[#30D158]/10 text-[#30D158] border-[#30D158]/20">
+                Positive
               </Badge>
             )}
             {item.meetingResult === "IN_PROGRESS" && (
-              <Badge className="bg-amber-100 text-amber-700 border-amber-200">
-                Devam Ediyor
+              <Badge className="bg-[#FF9500]/10 text-[#FF9F0A] border-[#FF9F0A]/20">
+                In Progress
               </Badge>
             )}
             {item.meetingResult === "NEGATIVE" && (
-              <Badge className="bg-rose-100 text-rose-700 border-rose-200">
-                Olumsuz
+              <Badge className="bg-[#FF453A]/10 text-[#FF453A] border-[#FF453A]/20">
+                Negative
               </Badge>
             )}
             {item.lead.borough && (
@@ -1457,23 +1156,23 @@ function WatchlistCard({
               </Badge>
             )}
             {item.websitePlan && (
-              <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">
-                Plan Hazir
+              <Badge className="bg-[#0A84FF]/10 text-[#0A84FF] border-[#007AFF]/20">
+                Plan Ready
               </Badge>
             )}
             {isAnalyzing && (
               <Badge variant="outline" className="animate-pulse">
-                Analiz Ediliyor...
+                Analyzing...
               </Badge>
             )}
             {!opp && !isAnalyzing && (
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-xs text-indigo-600"
+                className="text-xs text-[#0A84FF]"
                 onClick={handleAnalyze}
               >
-                Analiz Et
+                Analyze
               </Button>
             )}
           </div>
@@ -1482,8 +1181,8 @@ function WatchlistCard({
       <CardContent className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-              Yapilan Site URL
+            <label className="text-[13px] font-medium text-white/50">
+              Built Website URL
             </label>
             <div className="flex items-center gap-2 mt-1">
               <Input
@@ -1498,41 +1197,41 @@ function WatchlistCard({
                   href={siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-shrink-0 h-9 w-9 rounded-md border border-slate-200/60 bg-slate-50/80 hover:bg-slate-100/80 flex items-center justify-center transition-colors"
-                  title="Siteyi ac"
+                  className="shrink-0 h-9 w-9 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                  title="Open site"
                 >
-                  <Globe className="w-4 h-4 text-slate-600" />
+                  <Globe className="w-4 h-4 text-white/60" />
                 </a>
               )}
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-              Mevcut Website
+            <label className="text-[13px] font-medium text-white/50">
+              Current Website
             </label>
             {item.lead.websiteUrl ? (
               <a
                 href={item.lead.websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-sm text-slate-600 hover:underline mt-2 truncate"
+                className="block text-sm text-white/60 hover:underline mt-2 truncate"
               >
                 {item.lead.websiteUrl}
               </a>
             ) : (
-              <p className="text-sm text-slate-300 mt-2">Yok</p>
+              <p className="text-sm text-white/20 mt-2">None</p>
             )}
           </div>
         </div>
 
         <div>
-          <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-            Notlar
+          <label className="text-[13px] font-medium text-white/50">
+            Notes
           </label>
           <Textarea
             value={notes}
             onChange={(e) => handleNotesChange(e.target.value)}
-            placeholder="Notlarinizi yazin..."
+            placeholder="Add your notes..."
             rows={3}
             className="w-full mt-1 resize-none"
           />
@@ -1553,21 +1252,21 @@ function WatchlistCard({
 
         {item.lead.phone && (
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-slate-400">
-              Telefon
+            <label className="text-[13px] font-medium text-white/50">
+              Phone
             </label>
-            <p className="text-sm text-slate-700 mt-1">{item.lead.phone}</p>
+            <p className="text-sm text-white/70 mt-1">{item.lead.phone}</p>
           </div>
         )}
 
         {opp && (
-          <div className="border-t border-slate-200/60 pt-3">
+          <div className="border-t border-white/10 pt-3">
             <button
               onClick={() => setAnalysisOpen(!analysisOpen)}
-              className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors w-full"
+              className="flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white transition-colors w-full"
             >
               {analysisOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              AI Analiz Sonuclari
+              AI Analysis Results
               <Badge
                 variant={
                   opp.opportunityScore >= 60
@@ -1589,17 +1288,17 @@ function WatchlistCard({
           </div>
         )}
 
-        <div className="border-t border-slate-200/60 pt-3">
+        <div className="border-t border-white/10 pt-3">
           <div className="flex items-center justify-between">
             <button
               onClick={handleToggleReviews}
-              className="flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors"
+              className="flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white transition-colors"
             >
               {reviewsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              Google Yorumlari
+              Google Reviews
               {reviews.length > 0 && (
-                <span className="text-xs text-slate-400">
-                  ({reviews.length} yorum
+                <span className="text-xs text-white/30">
+                  ({reviews.length} reviews
                   {avgRating && ` · ${avgRating}`})
                 </span>
               )}
@@ -1615,12 +1314,12 @@ function WatchlistCard({
                 {reviewsLoading ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                    Yukleniyor...
+                    Loading...
                   </>
                 ) : (
                   <>
                     <RefreshCw className="h-3.5 w-3.5 mr-1" />
-                    Yenile
+                    Refresh
                   </>
                 )}
               </Button>
@@ -1631,23 +1330,23 @@ function WatchlistCard({
             <div className="mt-3 space-y-3">
               {reviewsLoading && reviews.length === 0 && (
                 <div className="text-center py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-slate-500 mx-auto" />
-                  <p className="text-xs text-slate-400 mt-2">
-                    Yorumlar yukleniyor...
+                  <Loader2 className="h-5 w-5 animate-spin text-white/50 mx-auto" />
+                  <p className="text-xs text-white/30 mt-2">
+                    Loading reviews...
                   </p>
                 </div>
               )}
 
               {!reviewsLoading && reviews.length === 0 && (
-                <p className="text-sm text-slate-400 text-center py-3">
-                  Bu isletme icin Google yorumu bulunamadi.
+                <p className="text-sm text-white/30 text-center py-3">
+                  No Google reviews found for this business.
                 </p>
               )}
 
               {reviews.map((review) => (
                 <div
                   key={review.id}
-                  className="rounded-xl border border-slate-200/60 bg-slate-50/80 p-3 space-y-1.5"
+                  className="rounded-2xl border border-white/10 bg-white/5 p-3 space-y-1.5"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -1658,21 +1357,21 @@ function WatchlistCard({
                           className="w-6 h-6 rounded-full"
                         />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-500">
+                        <div className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center text-[10px] font-medium text-white/50">
                           {review.authorName.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="text-sm font-medium text-slate-700">
+                      <span className="text-sm font-medium text-white/70">
                         {review.authorName}
                       </span>
                     </div>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-white/30">
                       {review.relativeTime}
                     </span>
                   </div>
                   <StarRating rating={review.rating} />
                   {review.text && (
-                    <p className="text-sm text-slate-600 leading-relaxed">
+                    <p className="text-sm text-white/60 leading-relaxed">
                       {review.text}
                     </p>
                   )}
@@ -1684,10 +1383,10 @@ function WatchlistCard({
 
         <WebsitePlanPanel item={item} onPlanUpdate={onPlanUpdate} />
 
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-200/60">
+        <div className="flex items-center gap-2 pt-2 border-t border-white/10">
           <Link href={`/leads/${item.lead.id}`}>
             <Button size="sm" variant="ghost">
-              Detay
+              Details
             </Button>
           </Link>
           {opp && (
@@ -1701,21 +1400,21 @@ function WatchlistCard({
               {isAnalyzing ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                  Analiz Ediliyor...
+                  Analyzing...
                 </>
               ) : (
-                "Yeniden Analiz Et"
+                "Re-analyze"
               )}
             </Button>
           )}
           <Button
             size="sm"
             variant="ghost"
-            className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 ml-auto"
+            className="text-[#FF453A] hover:text-[#FF453A] hover:bg-[#FF453A]/10 ml-auto"
             onClick={() => setRemoveDialogOpen(true)}
           >
             <Trash2 className="w-3.5 h-3.5 mr-1" />
-            Kaldir
+            Remove
           </Button>
         </div>
       </CardContent>
@@ -1724,15 +1423,15 @@ function WatchlistCard({
     <Dialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Emin misiniz?</DialogTitle>
+          <DialogTitle>Are you sure?</DialogTitle>
           <DialogDescription className="text-left pt-1">
-            <span className="font-medium text-slate-700">{item.lead.businessName}</span>{" "}
-            isletmesini watchlist&apos;ten kaldirmak uzeresiniz. Bu islemi onayliyor musunuz?
+            You are about to remove <span className="font-medium text-white/70">{item.lead.businessName}</span>{" "}
+            from your shortlist. This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-2 pt-2">
           <Button type="button" variant="outline" onClick={() => setRemoveDialogOpen(false)}>
-            Iptal
+            Cancel
           </Button>
           <Button
             type="button"
@@ -1742,7 +1441,7 @@ function WatchlistCard({
               setRemoveDialogOpen(false);
             }}
           >
-            Evet, kaldir
+            Yes, remove
           </Button>
         </div>
       </DialogContent>

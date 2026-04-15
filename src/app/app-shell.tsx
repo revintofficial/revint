@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   Users,
   Megaphone,
-  Bookmark,
+  Star,
   GitBranch,
   Search,
   CheckSquare,
@@ -15,19 +15,31 @@ import {
   PanelLeft,
   Menu,
   X,
-  MapPin,
   Zap,
+  Calendar,
 } from "lucide-react";
 
 const NAV_LINKS = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/", label: "Overview", icon: LayoutDashboard },
+  { href: "/discovery", label: "Discover", icon: Search },
   { href: "/leads", label: "Leads", icon: Users },
+  { href: "/watchlist", label: "Shortlist", icon: Star },
+  { href: "/pipeline", label: "Pipeline", icon: GitBranch },
   { href: "/campaigns", label: "Campaigns", icon: Megaphone },
-  { href: "/watchlist", label: "Watchlist", icon: Bookmark },
-  { href: "/pipeline", label: "Sales Pipeline", icon: GitBranch },
-  { href: "/discovery", label: "Discovery", icon: Search },
-  { href: "/todos", label: "Todos", icon: CheckSquare },
+  { href: "/todos", label: "Tasks", icon: CheckSquare },
 ];
+
+function DateDisplay() {
+  const [date, setDate] = useState("");
+  useEffect(() => {
+    setDate(new Date().toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }));
+  }, []);
+  return (
+    <span className="text-xs font-medium" style={{ color: "rgba(235, 235, 245, 0.7)" }}>
+      {date}
+    </span>
+  );
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -51,116 +63,210 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [sidebarOpen]);
 
+  const currentPageName =
+    NAV_LINKS.find((link) =>
+      link.href === "/" ? pathname === "/" : pathname.startsWith(link.href)
+    )?.label || "Lead Engine";
+
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden relative">
+      {/* Background layer */}
+      <div className="fixed inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-black" />
+      </div>
+
       {/* Mobile top bar */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 bg-slate-900/80 backdrop-blur-xl px-4 py-3 md:hidden border-b border-white/5">
+      <div
+        className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-4 py-3 md:hidden"
+        style={{
+          background: "rgba(28, 28, 30, 0.85)",
+          backdropFilter: "saturate(180%) blur(30px)",
+          WebkitBackdropFilter: "saturate(180%) blur(30px)",
+          borderBottom: "0.5px solid rgba(255, 255, 255, 0.08)",
+        }}
+      >
         <button
           onClick={() => setSidebarOpen(true)}
-          className="rounded-lg p-1.5 text-slate-300 hover:bg-white/10 hover:text-white transition-all"
-          aria-label="Menüyü aç"
+          className="rounded-lg p-1.5 hover:bg-white/5 transition-colors"
+          style={{ color: "rgba(235, 235, 245, 0.6)" }}
+          aria-label="Open menu"
         >
           <Menu className="w-5 h-5" />
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center">
-            <Zap className="w-4 h-4 text-white" />
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center"
+            style={{
+              background: "rgba(10, 132, 255, 0.12)",
+              border: "0.5px solid rgba(10, 132, 255, 0.2)",
+            }}
+          >
+            <Zap className="w-4 h-4 text-[#0A84FF]" />
           </div>
-          <h1 className="text-base font-semibold text-white tracking-tight">Lead Engine</h1>
+          <h1 className="text-base font-semibold tracking-tight text-white">
+            Lead Engine
+          </h1>
         </div>
       </div>
 
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden transition-opacity"
           onClick={closeSidebar}
         />
       )}
 
       {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col shrink-0 overflow-y-auto transition-all duration-300 ease-in-out md:sticky md:top-0 md:h-screen md:translate-x-0 bg-slate-900/95 backdrop-blur-2xl text-slate-100 border-r border-white/5 ${
-          collapsed ? "md:w-[68px]" : "md:w-64"
-        } ${sidebarOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"}`}
+      <div
+        className={`fixed md:relative z-50 md:z-10 h-full transition-transform duration-300 ease-in-out ${
+          collapsed ? "md:w-[80px]" : "md:w-72"
+        } ${sidebarOpen ? "translate-x-0 w-72" : "-translate-x-full w-72 md:translate-x-0"}`}
       >
-        {/* Logo area */}
-        <div className={`flex items-center justify-between p-4 border-b border-white/5 ${collapsed ? "md:justify-center md:px-2" : ""}`}>
-          <div className={`flex items-center gap-3 ${collapsed ? "md:gap-0" : ""}`}>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shrink-0">
-              <Zap className="w-4.5 h-4.5 text-white" />
-            </div>
-            <div className={`${collapsed ? "md:hidden" : ""}`}>
-              <h1 className="text-base font-semibold tracking-tight">Lead Engine</h1>
-              <p className="text-[11px] text-slate-400">Phone Repair Sales</p>
-            </div>
-          </div>
-          <button
-            onClick={closeSidebar}
-            className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white transition-all md:hidden"
-            aria-label="Menüyü kapat"
+        <div className="h-full p-3">
+          <div
+            className="h-full flex flex-col overflow-hidden rounded-2xl"
+            style={{
+              background: "rgba(28, 28, 30, 0.75)",
+              backdropFilter: "saturate(180%) blur(30px)",
+              WebkitBackdropFilter: "saturate(180%) blur(30px)",
+              border: "0.5px solid rgba(255, 255, 255, 0.08)",
+            }}
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            {/* Logo area */}
+            <div className="px-5 pt-6 pb-5" style={{ borderBottom: "0.5px solid rgba(255, 255, 255, 0.05)" }}>
+              <div className={`flex items-center ${collapsed ? "md:justify-center" : "gap-3"}`}>
+                <div
+                  className="relative flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
+                  style={{
+                    background: "rgba(10, 132, 255, 0.12)",
+                    border: "0.5px solid rgba(10, 132, 255, 0.2)",
+                  }}
+                >
+                  <Zap className="w-5 h-5 text-[#0A84FF]" />
+                </div>
+                <div className={`flex-1 min-w-0 ${collapsed ? "md:hidden" : ""}`}>
+                  <h1 className="text-lg font-semibold truncate text-white" style={{ letterSpacing: "-0.01em" }}>
+                    Lead Engine
+                  </h1>
+                  <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(235, 235, 245, 0.5)" }}>
+                    Sales Automation
+                  </p>
+                </div>
+                <button
+                  onClick={closeSidebar}
+                  className="rounded-lg p-1 hover:bg-white/10 transition-colors md:hidden"
+                  style={{ color: "rgba(235, 235, 245, 0.6)" }}
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-0.5">
-          {NAV_LINKS.map((link) => {
-            const isActive =
-              link.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative ${
-                  collapsed ? "md:justify-center md:px-2" : ""
-                } ${
-                  isActive
-                    ? "bg-white/10 text-white"
-                    : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+            {/* Navigation */}
+            <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto scrollbar-hide">
+              {NAV_LINKS.map((link) => {
+                const isActive =
+                  link.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 ${
+                      collapsed ? "md:justify-center md:px-2" : ""
+                    }`}
+                    style={isActive ? { background: "rgba(10, 132, 255, 0.15)" } : {}}
+                  >
+                    <div
+                      className="relative flex items-center justify-center w-8 h-8 rounded-lg shrink-0"
+                      style={isActive ? { background: "rgba(10, 132, 255, 0.2)" } : {}}
+                    >
+                      <link.icon
+                        className="w-4 h-4 transition-colors"
+                        style={{
+                          color: isActive ? "#0A84FF" : "rgba(235, 235, 245, 0.6)",
+                          strokeWidth: 2,
+                        }}
+                      />
+                    </div>
+                    <span
+                      className={`text-sm transition-colors flex-1 ${collapsed ? "md:hidden" : ""}`}
+                      style={{
+                        color: isActive ? "#FFFFFF" : "rgba(235, 235, 245, 0.7)",
+                        fontWeight: isActive ? 600 : 400,
+                      }}
+                    >
+                      {link.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Collapse toggle */}
+            <div className="hidden md:block px-4 py-4" style={{ borderTop: "0.5px solid rgba(255, 255, 255, 0.05)" }}>
+              <button
+                onClick={() => setCollapsed(!collapsed)}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs hover:bg-white/5 transition-colors w-full ${
+                  collapsed ? "justify-center" : ""
                 }`}
+                style={{ color: "rgba(235, 235, 245, 0.4)" }}
               >
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-gradient-to-b from-indigo-400 to-violet-400" />
+                {collapsed ? (
+                  <PanelLeft className="w-4 h-4 shrink-0" />
+                ) : (
+                  <>
+                    <PanelLeftClose className="w-4 h-4 shrink-0" />
+                    <span>Collapse</span>
+                  </>
                 )}
-                <link.icon className="w-[18px] h-[18px] shrink-0" />
-                <span className={`${collapsed ? "md:hidden" : ""}`}>{link.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Collapse toggle (desktop only) */}
-        <div className={`hidden md:flex p-3 border-t border-white/5 ${collapsed ? "justify-center" : ""}`}>
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-all w-full"
-          >
-            {collapsed ? (
-              <PanelLeft className="w-4 h-4 shrink-0 mx-auto" />
-            ) : (
-              <>
-                <PanelLeftClose className="w-4 h-4 shrink-0" />
-                <span>Daralt</span>
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Footer */}
-        <div className={`p-4 border-t border-white/5 ${collapsed ? "md:hidden" : ""}`}>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <MapPin className="w-3.5 h-3.5" />
-            <span>Greenwich, London</span>
+              </button>
+            </div>
           </div>
         </div>
-      </aside>
+      </div>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
+        {/* Glass Header */}
+        <header
+          className="mx-3 sm:mx-4 mt-3 sm:mt-4 rounded-xl overflow-hidden relative hidden md:block"
+          style={{
+            background: "rgba(28, 28, 30, 0.75)",
+            backdropFilter: "saturate(180%) blur(30px)",
+            WebkitBackdropFilter: "saturate(180%) blur(30px)",
+            border: "0.5px solid rgba(255, 255, 255, 0.08)",
+          }}
+        >
+          <div className="h-14 sm:h-16 flex items-center px-4 sm:px-5">
+            <div className="flex-1">
+              <h2 className="text-base sm:text-lg font-semibold tracking-tight truncate text-white" style={{ letterSpacing: "-0.01em" }}>
+                {currentPageName}
+              </h2>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg"
+                style={{
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "0.5px solid rgba(255, 255, 255, 0.08)",
+                }}
+              >
+                <Calendar className="w-3.5 h-3.5" style={{ color: "rgba(235, 235, 245, 0.6)" }} />
+                <DateDisplay />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 pt-14 md:pt-3">
+          <div className="animate-fade-in">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }
