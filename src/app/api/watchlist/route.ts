@@ -33,7 +33,7 @@ export async function GET() {
   } catch (error) {
     console.error("Watchlist fetch error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch watchlist" },
+      { error: "Failed to fetch watchlist", detail: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

@@ -47,30 +47,27 @@ export default function TodosPage() {
       const res = await fetch("/api/todos");
       if (!res.ok) return;
       const data = await res.json();
-      const todos = data.todos || {};
-      const result: Record<string, Todo[]> = {};
-      for (const col of columns) {
-        const key = col.toLowerCase();
-        result[key] = todos[key] || [];
-      }
-      for (const [key, items] of Object.entries(todos)) {
-        if (!result[key]) {
-          result[key] = items as Todo[];
-          if (!columns.find((c) => c.toLowerCase() === key)) {
-            setColumns((prev) => {
-              const updated = [...prev, key.charAt(0).toUpperCase() + key.slice(1)];
-              return updated;
-            });
+      const todos: Record<string, Todo[]> = data.todos || {};
+
+      setColumns((prev) => {
+        const existing = new Set(prev.map((c) => c.toLowerCase()));
+        const newCols = [...prev];
+        for (const key of Object.keys(todos)) {
+          if (!existing.has(key)) {
+            existing.add(key);
+            newCols.push(key.charAt(0).toUpperCase() + key.slice(1));
           }
         }
-      }
-      setByColumn(result);
+        return newCols;
+      });
+
+      setByColumn(todos);
     } catch (err) {
       console.error("Failed to fetch todos:", err);
     } finally {
       setLoading(false);
     }
-  }, [columns]);
+  }, []);
 
   useEffect(() => {
     fetchTodos();

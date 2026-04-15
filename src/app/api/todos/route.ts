@@ -17,7 +17,7 @@ export async function GET() {
   } catch (error) {
     console.error("Todos fetch error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch todos", details: String(error) },
+      { error: "Failed to fetch todos", detail: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
