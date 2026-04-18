@@ -1,0 +1,81 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { createSupabaseAdmin } from "@/lib/supabase/server";
+
+export async function POST(request: Request) {
+  try {
+    const session = await requireUser();
+    if (session.role !== "OWNER" && session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
+    }
+    const { email } = await request.json();
+    if (!email?.trim()) {
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+
+    // If the user already exists in our DB, attach them directly.
+    let existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
+
+    if (!existing) {
+      try {
+        const admin = createSupabaseAdmin();
+        const origin = new URL(request.url).origin;
+        const { data, error } = await admin.auth.admin.inviteUserByEmail(cleanEmail, {
+          redirectTo: `${origin}/auth/callback?next=/app/dashboard`,
+          data: { invited_to_workspace: session.workspaceId },
+        });
+        if (error) throw error;
+        if (data.user) {
+          existing = await prisma.user.upsert({
+            where: { id: data.user.id },
+            update: { email: cleanEmail },
+            create: { id: data.user.id, email: cleanEmail },
+          });
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        // Fall back: if Supabase admin/invite isn't configured, still create a placeholder
+        console.warn("Supabase invite failed:", msg);
+        return NextResponse.json(
+          {
+            error:
+              "Could not send invite email. Set SUPABASE_SERVICE_ROLE_KEY or have the user sign up first.",
+            detail: msg,
+          },
+          { status: 503 }
+        );
+      }
+    }
+
+    if (!existing) {
+      return NextResponse.json({ error: "Could not resolve invited user" }, { status: 500 });
+    }
+
+    const already = await prisma.workspaceMember.findFirst({
+      where: { workspaceId: session.workspaceId, userId: existing.id },
+    });
+    if (already) {
+      return NextResponse.json({ error: "Already a member" }, { status: 409 });
+    }
+
+    await prisma.workspaceMember.create({
+      data: {
+        workspaceId: session.workspaceId,
+        userId: existing.id,
+        role: "MEMBER",
+      },
+    });
+
+    return NextResponse.json({
+      message: `Invitation sent to ${cleanEmail}`,
+    });
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    console.error("Invite error:", error);
+    return NextResponse.json({ error: "Failed to invite", detail: String(error) }, { status: 500 });
+  }
+}

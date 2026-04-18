@@ -8,13 +8,17 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
 interface DiscoveryJobData {
+  workspaceId: string;
   searchQuery: string;
   borough: { name: string; lat: number; lng: number };
   radiusMeters?: number;
 }
 
 async function processDiscovery(job: Job<DiscoveryJobData>) {
-  const { searchQuery, borough, radiusMeters } = job.data;
+  const { workspaceId, searchQuery, borough, radiusMeters } = job.data;
+  if (!workspaceId) {
+    throw new Error("Discovery job missing workspaceId");
+  }
 
   console.log(`[Discovery] Starting: "${searchQuery}" in ${borough.name}`);
 
@@ -30,7 +34,7 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
     if (!placeId) continue;
 
     const existing = await prisma.lead.findUnique({
-      where: { placeId },
+      where: { workspaceId_placeId: { workspaceId, placeId } },
     });
 
     if (existing) {
@@ -44,6 +48,7 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
 
     await prisma.lead.create({
       data: {
+        workspaceId,
         placeId,
         businessName: place.displayName?.text || "Unknown",
         formattedAddress: address,

@@ -7,15 +7,23 @@ import {
   estimatePriceBand,
 } from "@/lib/scoring";
 import type { WebsiteFeatures } from "@/types";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
+import {
+  assertCanUseAi,
+  recordAiUsed,
+  QuotaExceededError,
+} from "@/lib/quotas";
 
 export async function POST(request: Request) {
   try {
+    const { workspaceId } = await requireUser();
     const body = await request.json();
     const { leadId, analyzeAll = false } = body;
 
     if (analyzeAll) {
       const pendingLeads = await prisma.lead.findMany({
         where: {
+          workspaceId,
           analyzeStatus: "PENDING",
           OR: [
             { crawlStatus: "CRAWLED" },
@@ -29,10 +37,21 @@ export async function POST(request: Request) {
 
       let analyzed = 0;
       let failed = 0;
+      let quotaHit: string | null = null;
 
       for (const lead of pendingLeads) {
         try {
+          await assertCanUseAi(workspaceId, 1);
+        } catch (e) {
+          if (e instanceof QuotaExceededError) {
+            quotaHit = e.message;
+            break;
+          }
+          throw e;
+        }
+        try {
           await analyzeSingleLead(lead.id);
+          await recordAiUsed(workspaceId, 1);
           analyzed++;
         } catch (err) {
           console.error(`Analyze failed for ${lead.businessName}:`, err);
@@ -40,16 +59,39 @@ export async function POST(request: Request) {
         }
       }
 
-      return NextResponse.json({ success: true, analyzed, failed, total: pendingLeads.length });
+      return NextResponse.json({
+        success: true,
+        analyzed,
+        failed,
+        total: pendingLeads.length,
+        ...(quotaHit ? { quota: quotaHit } : {}),
+      });
     }
 
     if (!leadId) {
       return NextResponse.json({ error: "leadId is required" }, { status: 400 });
     }
 
+    // Verify lead belongs to workspace
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, workspaceId },
+      select: { id: true },
+    });
+    if (!lead) {
+      return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+    }
+
+    await assertCanUseAi(workspaceId, 1);
     const result = await analyzeSingleLead(leadId);
+    await recordAiUsed(workspaceId, 1);
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (error instanceof QuotaExceededError) {
+      return error.toResponse();
+    }
     console.error("Analyze error:", error);
     return NextResponse.json(
       { error: "Analysis failed", details: String(error) },
@@ -95,11 +137,11 @@ async function analyzeSingleLead(leadId: string) {
       analysis = {
         opportunity_score: deterministicScore,
         reason_codes: reasons,
-        why_good_target: "AI analiz yapilamadi. Deterministik skor kullanildi.",
+        why_good_target: "AI analysis unavailable. Falling back to deterministic score.",
         likely_pain_points: reasons,
-        best_sales_angle: "Dijital varliklarini guclendirebilecekleri bir teklif sunun.",
+        best_sales_angle: "Pitch a focused upgrade that closes their biggest gap.",
         suggested_offer: offer,
-        personalized_first_message: `Merhaba, ${lead.businessName} icin profesyonel bir web sitesi olusturmak ister misiniz?`,
+        personalized_first_message: `Hi, would ${lead.businessName} be interested in a quick chat about a faster, more conversion-focused website?`,
         expected_price_band: estimatePriceBand(offer),
       };
     }

@@ -46,9 +46,75 @@ enum MeetingResult {
   IN_PROGRESS
 }
 
+enum Plan {
+  FREE
+  PRO
+  AGENCY
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+// Mirrors Supabase auth.users.id (uuid). A trigger keeps these in sync.
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique
+  fullName      String?  @map("full_name")
+  avatarUrl     String?  @map("avatar_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  ownedWorkspaces Workspace[]       @relation("WorkspaceOwner")
+  memberships     WorkspaceMember[]
+
+  @@map("users")
+}
+
+model Workspace {
+  id                     String    @id @default(cuid())
+  name                   String
+  slug                   String    @unique
+  ownerId                String    @map("owner_id") @db.Uuid
+  plan                   Plan      @default(FREE)
+  stripeCustomerId       String?   @unique @map("stripe_customer_id")
+  stripeSubscriptionId   String?   @unique @map("stripe_subscription_id")
+  currentPeriodEnd       DateTime? @map("current_period_end")
+  leadsCreatedThisCycle  Int       @default(0) @map("leads_this_cycle")
+  aiCreditsUsedThisCycle Int       @default(0) @map("ai_credits_this_cycle")
+  cycleResetAt           DateTime  @default(now()) @map("cycle_reset_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  owner   User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members WorkspaceMember[]
+  leads   Lead[]
+  todos   TeamTodo[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  userId      String   @map("user_id") @db.Uuid
+  role        Role     @default(MEMBER)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@map("workspace_members")
+}
+
 model Lead {
   id               String   @id @default(cuid())
-  placeId          String   @unique @map("place_id")
+  workspaceId      String   @map("workspace_id")
+  placeId          String   @map("place_id")
   businessName     String   @map("business_name")
   formattedAddress String   @map("formatted_address")
   borough          String?
@@ -68,11 +134,17 @@ model Lead {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
+  workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   websiteAudit     WebsiteAudit?
   salesOpportunity SalesOpportunity?
   watchlistItem    WatchlistItem?
   googleReviews    GoogleReview[]
 
+  // placeId scoped per workspace so two workspaces can independently track the same business
+  @@unique([workspaceId, placeId])
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, hasWebsite])
+  @@index([workspaceId, borough])
   @@map("leads")
 }
 
@@ -105,19 +177,19 @@ model WebsiteAudit {
 }
 
 model SalesOpportunity {
-  id                      String         @id @default(cuid())
-  leadId                  String         @unique @map("lead_id")
-  opportunityScore        Int            @default(0) @map("opportunity_score")
-  reasonCodes             Json           @default("[]") @map("reason_codes")
-  whyGoodTarget           String?        @map("why_good_target")
-  likelyPainPoints        Json           @default("[]") @map("likely_pain_points")
-  bestSalesAngle          String?        @map("best_sales_angle")
-  suggestedOffer          SuggestedOffer @default(STARTER) @map("suggested_offer")
-  personalizedFirstMessage String?       @map("personalized_first_message")
-  expectedPriceBand       String?        @map("expected_price_band")
-  status                  OutreachStatus @default(NEW)
-  createdAt               DateTime       @default(now()) @map("created_at")
-  updatedAt               DateTime       @updatedAt @map("updated_at")
+  id                       String         @id @default(cuid())
+  leadId                   String         @unique @map("lead_id")
+  opportunityScore         Int            @default(0) @map("opportunity_score")
+  reasonCodes              Json           @default("[]") @map("reason_codes")
+  whyGoodTarget            String?        @map("why_good_target")
+  likelyPainPoints         Json           @default("[]") @map("likely_pain_points")
+  bestSalesAngle           String?        @map("best_sales_angle")
+  suggestedOffer           SuggestedOffer @default(STARTER) @map("suggested_offer")
+  personalizedFirstMessage String?        @map("personalized_first_message")
+  expectedPriceBand        String?        @map("expected_price_band")
+  status                   OutreachStatus @default(NEW)
+  createdAt                DateTime       @default(now()) @map("created_at")
+  updatedAt                DateTime       @updatedAt @map("updated_at")
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
@@ -158,13 +230,17 @@ model GoogleReview {
 }
 
 model TeamTodo {
-  id        String   @id @default(cuid())
-  column    String
-  text      String
-  done      Boolean  @default(false)
-  sortOrder Int      @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  column      String
+  text        String
+  done        Boolean  @default(false)
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, column])
   @@map("team_todos")
 }

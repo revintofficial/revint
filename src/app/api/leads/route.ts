@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
 
 export async function GET(request: Request) {
   try {
+    const { workspaceId } = await requireUser();
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
@@ -15,12 +17,9 @@ export async function GET(request: Request) {
     const sortOrder = searchParams.get("sortOrder") || "desc";
     const search = searchParams.get("search");
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { workspaceId };
 
-    if (borough && borough !== "all") {
-      where.borough = borough;
-    }
-
+    if (borough && borough !== "all") where.borough = borough;
     if (hasWebsite === "true") where.hasWebsite = true;
     if (hasWebsite === "false") where.hasWebsite = false;
 
@@ -48,7 +47,6 @@ export async function GET(request: Request) {
 
     const orderBy: Record<string, string> = {};
     if (sortBy === "score") {
-      // Cannot directly sort by relation field easily, use default
       orderBy.createdAt = sortOrder;
     } else {
       orderBy[sortBy] = sortOrder;
@@ -57,10 +55,7 @@ export async function GET(request: Request) {
     const [leads, total] = await Promise.all([
       prisma.lead.findMany({
         where,
-        include: {
-          websiteAudit: true,
-          salesOpportunity: true,
-        },
+        include: { websiteAudit: true, salesOpportunity: true },
         orderBy,
         skip: (page - 1) * limit,
         take: limit,
@@ -70,25 +65,14 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       leads,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const message = error instanceof Error ? error.message : String(error);
     console.error("Leads fetch error:", message);
-    return NextResponse.json(
-      {
-        error: "Failed to fetch leads",
-        detail: process.env.NODE_ENV !== "production" ? message : undefined,
-        hint: !process.env.DATABASE_URL
-          ? "DATABASE_URL is not set"
-          : "Database query failed",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch leads", detail: message }, { status: 500 });
   }
 }

@@ -3,16 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { generateWebsitePlan } from "@/lib/gemini";
 import { runAuditChecklist } from "@/lib/audit-checklist";
 import type { WebsiteFeatures } from "@/types";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { assertCanUseAi, recordAiUsed, QuotaExceededError } from "@/lib/quotas";
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ leadId: string }> }
 ) {
   try {
+    const { workspaceId } = await requireUser();
     const { leadId } = await params;
 
-    const lead = await prisma.lead.findUniqueOrThrow({
-      where: { id: leadId },
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, workspaceId },
       include: {
         websiteAudit: true,
         salesOpportunity: true,
@@ -21,6 +24,10 @@ export async function POST(
       },
     });
 
+    if (!lead) {
+      return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+    }
+
     if (!lead.watchlistItem) {
       return NextResponse.json(
         { error: "Lead is not in watchlist" },
@@ -28,8 +35,9 @@ export async function POST(
       );
     }
 
-    const features = lead.websiteAudit?.rawFeaturesJson as unknown as WebsiteFeatures | null;
+    await assertCanUseAi(workspaceId, 2);
 
+    const features = lead.websiteAudit?.rawFeaturesJson as unknown as WebsiteFeatures | null;
     const auditChecklist = runAuditChecklist(features, !!lead.websiteUrl);
 
     const plan = await generateWebsitePlan({
@@ -67,12 +75,20 @@ export async function POST(
       console.error("Failed to save plan to DB, returning anyway:", saveErr);
     }
 
+    await recordAiUsed(workspaceId, 2);
+
     return NextResponse.json({
       success: true,
       plan,
       auditSummary: auditChecklist.summary,
     });
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (error instanceof QuotaExceededError) {
+      return error.toResponse();
+    }
     console.error("Website plan generation error:", error);
     return NextResponse.json(
       { error: "Failed to generate website plan", details: String(error) },

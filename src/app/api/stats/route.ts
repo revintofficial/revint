@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
 
 export async function GET() {
   try {
+    const { workspaceId } = await requireUser();
+
     const [
       totalLeads,
       withWebsite,
@@ -14,34 +17,38 @@ export async function GET() {
       crawlStatusCounts,
       analyzeStatusCounts,
     ] = await Promise.all([
-      prisma.lead.count(),
-      prisma.lead.count({ where: { hasWebsite: true } }),
-      prisma.lead.count({ where: { hasWebsite: false } }),
+      prisma.lead.count({ where: { workspaceId } }),
+      prisma.lead.count({ where: { workspaceId, hasWebsite: true } }),
+      prisma.lead.count({ where: { workspaceId, hasWebsite: false } }),
       prisma.salesOpportunity.aggregate({
+        where: { lead: { workspaceId } },
         _avg: { opportunityScore: true },
       }),
       prisma.lead.groupBy({
         by: ["borough"],
+        where: { workspaceId },
         _count: { borough: true },
         orderBy: { _count: { borough: "desc" } },
       }),
       prisma.lead.count({
         where: {
-          createdAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          },
+          workspaceId,
+          createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
         },
       }),
       prisma.salesOpportunity.groupBy({
         by: ["status"],
+        where: { lead: { workspaceId } },
         _count: { status: true },
       }),
       prisma.lead.groupBy({
         by: ["crawlStatus"],
+        where: { workspaceId },
         _count: { crawlStatus: true },
       }),
       prisma.lead.groupBy({
         by: ["analyzeStatus"],
+        where: { workspaceId },
         _count: { analyzeStatus: true },
       }),
     ]);
@@ -70,19 +77,11 @@ export async function GET() {
       })),
     });
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const message = error instanceof Error ? error.message : String(error);
     console.error("Stats error:", message);
-    console.error("DATABASE_URL set:", !!process.env.DATABASE_URL);
-    console.error("NODE_ENV:", process.env.NODE_ENV);
-    return NextResponse.json(
-      {
-        error: "Failed to fetch stats",
-        detail: process.env.NODE_ENV !== "production" ? message : undefined,
-        hint: !process.env.DATABASE_URL
-          ? "DATABASE_URL is not set"
-          : "Database connection failed",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch stats", detail: message }, { status: 500 });
   }
 }

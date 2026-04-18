@@ -14,6 +14,7 @@
     "db:push": "npx prisma db push",
     "db:migrate": "npx prisma migrate dev",
     "db:studio": "npx prisma studio",
+    "db:multitenant": "tsx prisma/migrations/apply.ts bootstrap_multitenant.sql",
     "postinstall": "npx prisma generate"
   },
   "dependencies": {
@@ -30,6 +31,8 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.103.3",
     "@tiptap/extension-color": "^3.22.3",
     "@tiptap/extension-highlight": "^3.22.3",
     "@tiptap/extension-table": "^3.22.3",
@@ -60,6 +63,7 @@
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
     "sonner": "^2.0.7",
+    "stripe": "^22.0.2",
     "tailwind-merge": "^3.5.0",
     "xlsx": "^0.18.5"
   },
@@ -72,6 +76,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.1",
+    "csv-parse": "^6.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.3",
     "jsdom": "^29.0.2",

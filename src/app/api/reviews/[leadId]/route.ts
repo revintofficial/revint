@@ -2,14 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPlaceReviews } from "@/lib/google-places";
 import type { PlaceReview } from "@/types";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
 
 async function fetchAndStoreReviews(leadId: string, placeId: string) {
   const apiReviews: PlaceReview[] = await getPlaceReviews(placeId);
-
   if (apiReviews.length === 0) return [];
-
   await prisma.googleReview.deleteMany({ where: { leadId } });
-
   const created = await Promise.all(
     apiReviews.map((r) =>
       prisma.googleReview.create({
@@ -20,14 +18,11 @@ async function fetchAndStoreReviews(leadId: string, placeId: string) {
           rating: r.rating,
           text: r.text?.text || null,
           relativeTime: r.relativePublishTimeDescription || "",
-          publishTime: r.publishTime
-            ? new Date(r.publishTime)
-            : new Date(),
+          publishTime: r.publishTime ? new Date(r.publishTime) : new Date(),
         },
       })
     )
   );
-
   return created;
 }
 
@@ -36,12 +31,13 @@ export async function GET(
   { params }: { params: Promise<{ leadId: string }> }
 ) {
   try {
+    const { workspaceId } = await requireUser();
     const { leadId } = await params;
     const url = new URL(request.url);
     const refresh = url.searchParams.get("refresh") === "true";
 
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, workspaceId },
       select: { id: true, placeId: true },
     });
 
@@ -58,18 +54,16 @@ export async function GET(
       where: { leadId },
       orderBy: { publishTime: "desc" },
     });
-
     if (existing.length > 0) {
       return NextResponse.json({ reviews: existing });
     }
-
     const reviews = await fetchAndStoreReviews(lead.id, lead.placeId);
     return NextResponse.json({ reviews });
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("Reviews fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch reviews" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
   }
 }

@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { crawlWebsite } from "@/lib/crawler";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
+    const { workspaceId } = await requireUser();
     const body = await request.json();
     const { leadId, crawlAll = false } = body;
 
     if (crawlAll) {
       const pendingLeads = await prisma.lead.findMany({
         where: {
+          workspaceId,
           crawlStatus: "PENDING",
           hasWebsite: true,
           websiteUrl: { not: null },
@@ -22,59 +25,21 @@ export async function POST(request: Request) {
 
       for (const lead of pendingLeads) {
         if (!lead.websiteUrl) continue;
-
         try {
           await prisma.lead.update({
             where: { id: lead.id },
             data: { crawlStatus: "CRAWLING" },
           });
-
           const features = await crawlWebsite(lead.websiteUrl);
-
           await prisma.websiteAudit.upsert({
             where: { leadId: lead.id },
             create: {
               leadId: lead.id,
               url: lead.websiteUrl,
-              reachable: features.reachable,
-              loadTimeMs: features.loadTimeMs,
-              https: features.https,
-              mobileFriendlyGuess: features.mobileFriendlyGuess,
-              title: features.title,
-              metaDescription: features.metaDescription,
-              h1: features.h1,
-              hasContactForm: features.hasContactForm,
-              hasWhatsappLink: features.hasWhatsappLink,
-              hasBookingSystem: features.hasBookingSystem,
-              hasEcommerce: features.hasEcommerce,
-              servicesDetected: features.servicesDetected,
-              navItems: features.navItems,
-              ctaLinks: features.ctaLinks,
-              brokenLinksCount: features.brokenLinksCount,
-              structuredDataPresent: features.structuredDataPresent,
-              rawFeaturesJson: JSON.parse(JSON.stringify(features)),
+              ...auditPayload(features),
             },
-            update: {
-              reachable: features.reachable,
-              loadTimeMs: features.loadTimeMs,
-              https: features.https,
-              mobileFriendlyGuess: features.mobileFriendlyGuess,
-              title: features.title,
-              metaDescription: features.metaDescription,
-              h1: features.h1,
-              hasContactForm: features.hasContactForm,
-              hasWhatsappLink: features.hasWhatsappLink,
-              hasBookingSystem: features.hasBookingSystem,
-              hasEcommerce: features.hasEcommerce,
-              servicesDetected: features.servicesDetected,
-              navItems: features.navItems,
-              ctaLinks: features.ctaLinks,
-              brokenLinksCount: features.brokenLinksCount,
-              structuredDataPresent: features.structuredDataPresent,
-              rawFeaturesJson: JSON.parse(JSON.stringify(features)),
-            },
+            update: auditPayload(features),
           });
-
           await prisma.lead.update({
             where: { id: lead.id },
             data: { crawlStatus: "CRAWLED" },
@@ -90,22 +55,14 @@ export async function POST(request: Request) {
         }
       }
 
-      return NextResponse.json({
-        success: true,
-        crawled,
-        failed,
-        total: pendingLeads.length,
-      });
+      return NextResponse.json({ success: true, crawled, failed, total: pendingLeads.length });
     }
 
     if (!leadId) {
-      return NextResponse.json(
-        { error: "leadId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "leadId is required" }, { status: 400 });
     }
 
-    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+    const lead = await prisma.lead.findFirst({ where: { id: leadId, workspaceId } });
     if (!lead || !lead.websiteUrl) {
       return NextResponse.json(
         { error: "Lead not found or has no website" },
@@ -122,46 +79,8 @@ export async function POST(request: Request) {
 
     await prisma.websiteAudit.upsert({
       where: { leadId },
-      create: {
-        leadId,
-        url: lead.websiteUrl,
-        reachable: features.reachable,
-        loadTimeMs: features.loadTimeMs,
-        https: features.https,
-        mobileFriendlyGuess: features.mobileFriendlyGuess,
-        title: features.title,
-        metaDescription: features.metaDescription,
-        h1: features.h1,
-        hasContactForm: features.hasContactForm,
-        hasWhatsappLink: features.hasWhatsappLink,
-        hasBookingSystem: features.hasBookingSystem,
-        hasEcommerce: features.hasEcommerce,
-        servicesDetected: features.servicesDetected,
-        navItems: features.navItems,
-        ctaLinks: features.ctaLinks,
-        brokenLinksCount: features.brokenLinksCount,
-        structuredDataPresent: features.structuredDataPresent,
-        rawFeaturesJson: JSON.parse(JSON.stringify(features)),
-      },
-      update: {
-        reachable: features.reachable,
-        loadTimeMs: features.loadTimeMs,
-        https: features.https,
-        mobileFriendlyGuess: features.mobileFriendlyGuess,
-        title: features.title,
-        metaDescription: features.metaDescription,
-        h1: features.h1,
-        hasContactForm: features.hasContactForm,
-        hasWhatsappLink: features.hasWhatsappLink,
-        hasBookingSystem: features.hasBookingSystem,
-        hasEcommerce: features.hasEcommerce,
-        servicesDetected: features.servicesDetected,
-        navItems: features.navItems,
-        ctaLinks: features.ctaLinks,
-        brokenLinksCount: features.brokenLinksCount,
-        structuredDataPresent: features.structuredDataPresent,
-        rawFeaturesJson: JSON.parse(JSON.stringify(features)),
-      },
+      create: { leadId, url: lead.websiteUrl, ...auditPayload(features) },
+      update: auditPayload(features),
     });
 
     await prisma.lead.update({
@@ -171,10 +90,35 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, features });
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("Crawl error:", error);
     return NextResponse.json(
       { error: "Crawl failed", details: String(error) },
       { status: 500 }
     );
   }
+}
+
+function auditPayload(features: Awaited<ReturnType<typeof crawlWebsite>>) {
+  return {
+    reachable: features.reachable,
+    loadTimeMs: features.loadTimeMs,
+    https: features.https,
+    mobileFriendlyGuess: features.mobileFriendlyGuess,
+    title: features.title,
+    metaDescription: features.metaDescription,
+    h1: features.h1,
+    hasContactForm: features.hasContactForm,
+    hasWhatsappLink: features.hasWhatsappLink,
+    hasBookingSystem: features.hasBookingSystem,
+    hasEcommerce: features.hasEcommerce,
+    servicesDetected: features.servicesDetected,
+    navItems: features.navItems,
+    ctaLinks: features.ctaLinks,
+    brokenLinksCount: features.brokenLinksCount,
+    structuredDataPresent: features.structuredDataPresent,
+    rawFeaturesJson: JSON.parse(JSON.stringify(features)),
+  };
 }

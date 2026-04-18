@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
 
 interface ContentAnalysis {
   url: string;
@@ -311,6 +312,7 @@ function analyzeHtml(html: string, url: string): ContentAnalysis {
 
 export async function POST(request: Request) {
   try {
+    await requireUser();
     const body = await request.json();
     const { url } = body;
 
@@ -384,6 +386,9 @@ export async function POST(request: Request) {
       });
     }
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("Website check error:", error);
     return NextResponse.json(
       { error: "Website check failed", details: String(error) },

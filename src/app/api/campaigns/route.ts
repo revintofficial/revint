@@ -1,59 +1,59 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
 
 export async function GET() {
   try {
-    const [noWebsite, poorWebsite, noBooking, highPotential] =
-      await Promise.all([
-        prisma.lead.count({ where: { hasWebsite: false } }),
-        prisma.websiteAudit.count({
-          where: {
-            OR: [
-              { mobileFriendlyGuess: false },
-              { reachable: false },
-              { https: false },
-            ],
-          },
-        }),
-        prisma.websiteAudit.count({
-          where: { hasBookingSystem: false },
-        }),
-        prisma.salesOpportunity.count({
-          where: { opportunityScore: { gte: 60 } },
-        }),
-      ]);
+    const { workspaceId } = await requireUser();
+    const [noWebsite, poorWebsite, noBooking, highPotential] = await Promise.all([
+      prisma.lead.count({ where: { workspaceId, hasWebsite: false } }),
+      prisma.websiteAudit.count({
+        where: {
+          lead: { workspaceId },
+          OR: [
+            { mobileFriendlyGuess: false },
+            { reachable: false },
+            { https: false },
+          ],
+        },
+      }),
+      prisma.websiteAudit.count({
+        where: { lead: { workspaceId }, hasBookingSystem: false },
+      }),
+      prisma.salesOpportunity.count({
+        where: { lead: { workspaceId }, opportunityScore: { gte: 60 } },
+      }),
+    ]);
 
     const campaigns = [
       {
         id: "no-website",
-        name: "Website Yok",
-        description: "Web sitesi olmayan isletmeler - en kolay satis firsati",
+        name: "No website",
+        description: "Businesses with no website at all — easiest pitch.",
         leadCount: noWebsite,
         filter: { hasWebsite: "false" },
         color: "red",
       },
       {
         id: "poor-website",
-        name: "Eski/Kotu Website",
-        description:
-          "Mobilde kotu, HTTPS yok veya ulasılamayan siteler",
+        name: "Weak website",
+        description: "Bad on mobile, no HTTPS, or unreachable.",
         leadCount: poorWebsite,
         filter: { poorWebsite: "true" },
         color: "orange",
       },
       {
         id: "no-booking",
-        name: "Booking Yok",
-        description:
-          "Online randevu/booking sistemi olmayan isletmeler",
+        name: "No booking system",
+        description: "Businesses without an online booking flow.",
         leadCount: noBooking,
         filter: { noBooking: "true" },
         color: "yellow",
       },
       {
         id: "high-potential",
-        name: "Yuksek Potansiyel",
-        description: "Skor 60+ olan en sicak lead'ler",
+        name: "High potential",
+        description: "Score 60+ — your hottest leads.",
         leadCount: highPotential,
         filter: { minScore: "60" },
         color: "green",
@@ -62,10 +62,10 @@ export async function GET() {
 
     return NextResponse.json(campaigns);
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("Campaigns error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch campaigns" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch campaigns" }, { status: 500 });
   }
 }

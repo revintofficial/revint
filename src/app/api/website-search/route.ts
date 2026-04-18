@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
 
 interface FoundWebsite {
   url: string;
@@ -177,6 +178,7 @@ async function searchGoogle(businessName: string, address: string): Promise<stri
 
 export async function POST(request: Request) {
   try {
+    const { workspaceId } = await requireUser();
     const body = await request.json();
     const { businessName, address, leadId } = body;
 
@@ -225,8 +227,8 @@ export async function POST(request: Request) {
 
     if (leadId && uniqueWebsites.length > 0) {
       try {
-        await prisma.lead.update({
-          where: { id: leadId },
+        await prisma.lead.updateMany({
+          where: { id: leadId, workspaceId },
           data: {
             websiteUrl: uniqueWebsites[0].url,
             hasWebsite: true,
@@ -246,6 +248,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("Website search error:", error);
     return NextResponse.json(
       { error: "Website search failed", details: String(error) },

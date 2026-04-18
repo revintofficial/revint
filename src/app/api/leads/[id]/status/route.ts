@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
 
 const VALID_STATUSES = ["NEW", "CONTACTED", "INTERESTED", "MEETING", "WON", "LOST"];
 
@@ -8,6 +9,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { workspaceId } = await requireUser();
     const { id } = await params;
     const body = await request.json();
     const { status } = body;
@@ -19,11 +21,11 @@ export async function PATCH(
       );
     }
 
-    const opportunity = await prisma.salesOpportunity.findUnique({
-      where: { leadId: id },
+    const lead = await prisma.lead.findFirst({
+      where: { id, workspaceId },
+      select: { salesOpportunity: { select: { id: true } } },
     });
-
-    if (!opportunity) {
+    if (!lead?.salesOpportunity) {
       return NextResponse.json(
         { error: "No sales opportunity found for this lead" },
         { status: 404 }
@@ -37,10 +39,10 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.error("Status update error:", error);
-    return NextResponse.json(
-      { error: "Failed to update status" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update status" }, { status: 500 });
   }
 }
