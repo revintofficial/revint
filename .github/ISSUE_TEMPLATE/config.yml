@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Sorular / Genel destek
+    url: https://github.com/cinargnaydin/hustle-tracker/discussions
+    about: Hata değil de bir soru veya tartışma açmak istiyorsan buradan başla.

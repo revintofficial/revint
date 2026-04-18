@@ -1,0 +1,61 @@
+name: Hata bildirimi
+description: Karşılaştığın bir hatayı/sorunu bildir
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hata bildirimini doldurduğun için teşekkürler. Lütfen aşağıdaki alanları olabildiğince eksiksiz doldur.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Ne oldu?
+      description: Hatayı kısaca anlat. Beklediğin davranış ne, gerçekte ne oldu?
+      placeholder: Örn. "Anasayfada Start for free butonuna tıkladığımda 500 hatası alıyorum."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Adım adım nasıl tekrarlanır?
+      description: Hatanın oluşması için izlenen adımlar.
+      placeholder: |
+        1. /pricing sayfasına git
+        2. "Start free" butonuna tıkla
+        3. Hata görünür
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Hatanın oluştuğu URL (varsa)
+      placeholder: https://...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Tarayıcı
+      options:
+        - Chrome
+        - Safari
+        - Firefox
+        - Edge
+        - Mobil (iOS Safari)
+        - Mobil (Android Chrome)
+        - Diğer
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Ekran görüntüsü / log (varsa)
+      description: Görseli buraya sürükleyip bırakabilirsin. Konsol hatası varsa yapıştır.
+    validations:
+      required: false
