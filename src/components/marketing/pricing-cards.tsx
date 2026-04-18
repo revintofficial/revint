@@ -30,9 +30,9 @@ export function PricingCards({ ctaHref = "/signup" }: { ctaHref?: string }) {
               <span
                 className="absolute -top-2.5 left-6 px-2 py-0.5 rounded-md text-[10.5px] font-semibold"
                 style={{
-                  background: "linear-gradient(180deg, #6E7AE0, #4C5BC1)",
+                  background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
                   color: "white",
-                  boxShadow: "0 4px 12px rgba(67,56,202,0.35)",
+                  boxShadow: "0 4px 12px rgba(49,46,129,0.45)",
                 }}
               >
                 Most popular
@@ -59,10 +59,10 @@ export function PricingCards({ ctaHref = "/signup" }: { ctaHref?: string }) {
               style={
                 isHighlight
                   ? {
-                      background: "linear-gradient(180deg, #6E7AE0, #4C5BC1)",
+                      background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
                       color: "white",
                       boxShadow:
-                        "0 1px 0 rgba(255,255,255,0.22) inset, 0 0 0 0.5px rgba(94,106,210,0.55), 0 8px 24px rgba(67,56,202,0.32)",
+                        "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 8px 24px rgba(49,46,129,0.45)",
                     }
                   : {
                       background: "rgba(255,255,255,0.05)",

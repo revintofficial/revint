@@ -60,9 +60,9 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
               href="/app/dashboard"
               className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium text-white"
               style={{
-                background: "linear-gradient(180deg, #6E7AE0, #4C5BC1)",
+                background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
                 boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.22) inset, 0 0 0 0.5px rgba(94,106,210,0.55), 0 6px 20px rgba(67,56,202,0.3)",
+                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 6px 18px rgba(49,46,129,0.4)",
               }}
             >
               Open app →
@@ -79,9 +79,9 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
                 href="/signup"
                 className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium text-white"
                 style={{
-                  background: "linear-gradient(180deg, #6E7AE0, #4C5BC1)",
+                  background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
                   boxShadow:
-                    "0 1px 0 rgba(255,255,255,0.22) inset, 0 0 0 0.5px rgba(94,106,210,0.55), 0 6px 20px rgba(67,56,202,0.3)",
+                    "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 6px 18px rgba(49,46,129,0.4)",
                 }}
               >
                 Start free

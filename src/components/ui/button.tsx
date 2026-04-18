@@ -9,9 +9,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "text-white shadow-[0_1px_0_rgba(255,255,255,0.18)_inset,0_8px_24px_rgba(67,56,202,0.32)] hover:shadow-[0_1px_0_rgba(255,255,255,0.22)_inset,0_10px_28px_rgba(67,56,202,0.42)] hover:-translate-y-0.5 bg-gradient-to-b from-[#6E7AE0] to-[#4C5BC1]",
+          "text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_8px_24px_rgba(49,46,129,0.45)] hover:shadow-[0_1px_0_rgba(255,255,255,0.18)_inset,0_10px_28px_rgba(49,46,129,0.55)] hover:-translate-y-0.5 bg-gradient-to-b from-[#4F5BD6] to-[#3730A3]",
         gradient:
-          "text-white shadow-[0_1px_0_rgba(255,255,255,0.18)_inset,0_8px_24px_rgba(67,56,202,0.32)] hover:shadow-[0_1px_0_rgba(255,255,255,0.22)_inset,0_10px_28px_rgba(67,56,202,0.42)] hover:-translate-y-0.5 bg-gradient-to-b from-[#6E7AE0] to-[#4C5BC1]",
+          "text-white shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_8px_24px_rgba(49,46,129,0.45)] hover:shadow-[0_1px_0_rgba(255,255,255,0.18)_inset,0_10px_28px_rgba(49,46,129,0.55)] hover:-translate-y-0.5 bg-gradient-to-b from-[#4F5BD6] to-[#3730A3]",
         destructive:
           "text-white shadow-[0_4px_14px_0_rgba(248,113,113,0.4)] hover:shadow-[0_6px_20px_0_rgba(248,113,113,0.5)] hover:-translate-y-0.5 bg-gradient-to-br from-[#F87171] to-[#EF4444]",
         outline: "text-white border hover:bg-white/5",

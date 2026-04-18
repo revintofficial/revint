@@ -130,9 +130,9 @@ export function ProductPreview() {
                 <div
                   className="px-2.5 py-1 rounded-md text-[11px] font-medium text-white"
                   style={{
-                    background: "linear-gradient(180deg, #6E7AE0, #4C5BC1)",
+                    background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
                     boxShadow:
-                      "0 1px 0 rgba(255,255,255,0.18) inset, 0 0 0 0.5px rgba(94,106,210,0.5)",
+                      "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.6)",
                   }}
                 >
                   + New search

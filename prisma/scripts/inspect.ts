@@ -8,21 +8,20 @@ async function main() {
   });
   await c.connect();
   try {
-    const counts = await c.query(`
-      select 'leads' as t, count(*)::int as c, workspace_id from leads group by workspace_id
-      union all
-      select 'todos', count(*)::int, workspace_id from team_todos group by workspace_id
-    `);
-    console.log("BY WORKSPACE:", counts.rows);
+    const cons = await c.query(
+      `select conname, pg_get_constraintdef(oid) as def
+       from pg_constraint
+       where conrelid = 'public.leads'::regclass
+       order by conname`
+    );
+    console.log("LEAD CONSTRAINTS:");
+    for (const r of cons.rows) console.log(`  ${r.conname} :: ${r.def}`);
 
-    const auditCount = await c.query(`select count(*)::int as c from website_audits`);
-    const oppCount = await c.query(`select count(*)::int as c from sales_opportunities`);
-    const wlCount = await c.query(`select count(*)::int as c from watchlist_items`);
-    const revCount = await c.query(`select count(*)::int as c from google_reviews`);
-    console.log("audits:", auditCount.rows[0].c);
-    console.log("opportunities:", oppCount.rows[0].c);
-    console.log("watchlist:", wlCount.rows[0].c);
-    console.log("reviews:", revCount.rows[0].c);
+    const idx = await c.query(
+      `select indexname, indexdef from pg_indexes where tablename = 'leads' order by indexname`
+    );
+    console.log("\nLEAD INDEXES:");
+    for (const r of idx.rows) console.log(`  ${r.indexname} :: ${r.indexdef}`);
   } finally {
     await c.end();
   }

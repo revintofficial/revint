@@ -132,6 +132,9 @@ CREATE INDEX IF NOT EXISTS "team_todos_workspace_id_column_idx" ON "team_todos" 
 DO $$ BEGIN
   ALTER TABLE "leads" DROP CONSTRAINT IF EXISTS "leads_place_id_key";
 EXCEPTION WHEN undefined_object THEN NULL; END $$;
+-- Some Prisma versions create a bare unique INDEX (not a constraint) for @unique
+-- columns, so DROP CONSTRAINT alone is not enough.
+DROP INDEX IF EXISTS "leads_place_id_key";
 
 DO $$ BEGIN
   ALTER TABLE "leads" ADD CONSTRAINT "leads_workspace_id_place_id_key"

@@ -157,9 +157,9 @@ export default function LandingPage() {
               href="/signup"
               className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
               style={{
-                background: "linear-gradient(180deg, #6E7AE0, #4C5BC1)",
+                background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
                 boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.22) inset, 0 0 0 0.5px rgba(94,106,210,0.6), 0 12px 32px rgba(67,56,202,0.35)",
+                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
               }}
             >
               Start for free
@@ -379,9 +379,9 @@ export default function LandingPage() {
             href="/signup"
             className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
             style={{
-              background: "linear-gradient(180deg, #6E7AE0, #4C5BC1)",
+              background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
               boxShadow:
-                "0 1px 0 rgba(255,255,255,0.22) inset, 0 0 0 0.5px rgba(94,106,210,0.6), 0 12px 32px rgba(67,56,202,0.35)",
+                "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
             }}
           >
             Start for free
