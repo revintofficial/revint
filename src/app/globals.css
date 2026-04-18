@@ -256,9 +256,11 @@ button, a, .cursor-pointer {
   opacity: 1;
 }
 
-/* Link colors - use :where() so specificity is 0 and Tailwind text-* utilities win */
-:where(a) { color: #0A84FF; }
-:where(a):hover { color: #64D2FF; }
+/* Link colors - placed in @layer base so Tailwind's utilities layer (text-*, etc.) wins */
+@layer base {
+  a { color: #0A84FF; }
+  a:hover { color: #64D2FF; }
+}
 
 /* Recharts tooltip */
 .recharts-tooltip-wrapper { z-index: 1000; }
