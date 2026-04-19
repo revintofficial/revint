@@ -64,6 +64,10 @@ export interface WebsiteFeatures {
   cssFramework: string | null;
   pageCount: number;
   consoleErrors: string[];
+
+  // Extracted contact + integrations (used for outreach export and segmentation)
+  contactEmails: string[];
+  bookingProvider: string | null;
 }
 
 export interface SecurityHeadersResult {

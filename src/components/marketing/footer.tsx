@@ -38,6 +38,16 @@ export function MarketingFooter() {
           </div>
 
           <div>
+            <p className="text-[11px] uppercase tracking-wider font-semibold text-white/35 mb-3">For</p>
+            <ul className="space-y-2 text-[12.5px]">
+              <li><Link href="/for/agencies" className="text-white/65 hover:text-white">Outbound agencies</Link></li>
+              <li><Link href="/for/specialists" className="text-white/65 hover:text-white">Vertical specialists</Link></li>
+              <li><Link href="/for/smma" className="text-white/65 hover:text-white">New SMMA owners</Link></li>
+              <li><Link href="/partners" className="text-white/65 hover:text-white">Partner program</Link></li>
+            </ul>
+          </div>
+
+          <div>
             <p className="text-[11px] uppercase tracking-wider font-semibold text-white/35 mb-3">Company</p>
             <ul className="space-y-2 text-[12.5px]">
               <li><Link href="/#faq" className="text-white/65 hover:text-white">FAQ</Link></li>

@@ -51,7 +51,33 @@ export default function OnboardingPage() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        toast.success(`Found ${data.created} new leads!`);
+        const found = data.created ?? 0;
+        if (found === 0) {
+          toast.warning("No new leads found for that combination. Try another niche or location.");
+          router.push("/app/leads");
+          return;
+        }
+
+        toast.success(`Found ${found} new leads. Starting audits in the background.`);
+
+        // Kick off audit for the new batch so the user lands on populated rows
+        // instead of empty placeholders. Fire-and-forget; the workers handle
+        // the heavy lifting and the leads page polls for status.
+        Promise.allSettled([
+          fetch("/api/crawl", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ crawlAll: true }),
+          }),
+          fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ analyzeAll: true }),
+          }),
+        ]).catch(() => {
+          // Silent: leads page will let the user retry per-lead.
+        });
+
         router.push("/app/leads");
       } else {
         toast.error(data.error || "Discovery failed. Please try again.");
@@ -72,7 +98,7 @@ export default function OnboardingPage() {
             <Zap className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-semibold text-white">Welcome to Lead Engine</h1>
-          <p className="text-sm text-white/50 mt-1">Let&apos;s find your first clients in 3 steps</p>
+          <p className="text-sm text-white/50 mt-1">Pick a niche and a city. We&apos;ll bring back 50 audited leads.</p>
         </div>
 
         {/* Progress */}

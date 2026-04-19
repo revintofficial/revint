@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     const session = await requireUser();
     const body = await request.json();
     const plan = body.plan as Plan;
+    const referralId = typeof body.referralId === "string" ? body.referralId : null;
 
     if (plan !== "PRO" && plan !== "AGENCY") {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
@@ -55,6 +56,10 @@ export async function POST(request: Request) {
       success_url: `${origin}/app/settings/billing?success=1`,
       cancel_url: `${origin}/app/settings/billing?canceled=1`,
       allow_promotion_codes: true,
+      // Rewardful attribution: when a referral cookie is present we forward
+      // the ID as `client_reference_id` so the standard Stripe + Rewardful
+      // integration can credit the partner.
+      ...(referralId ? { client_reference_id: referralId } : {}),
       metadata: { workspaceId: workspace.id, plan },
       subscription_data: { metadata: { workspaceId: workspace.id, plan } },
     });

@@ -3,6 +3,7 @@
 import { useEffect, useState, use, useRef, useMemo } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -223,6 +224,7 @@ export default function LeadDetailPage({
         setLead(data);
         if (data.watchlistItem?.websitePlan) {
           setPlan(data.watchlistItem.websitePlan);
+          setPlanSectionOpen(true);
         }
       })
       .catch(console.error)
@@ -270,15 +272,25 @@ export default function LeadDetailPage({
     setPlanGenerating(true);
     try {
       const res = await fetch(`/api/website-plan/${id}`, { method: "POST" });
-      if (res.ok) {
-        const data = await res.json();
-        setPlan(data.plan);
-        setShowPlan(true);
-        setPlanSectionOpen(true);
-        if (data.auditSummary) setAuditSummary(data.auditSummary);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (res.status === 402) {
+          toast.error(err.message || "AI credit quota reached. Upgrade your plan to continue.");
+        } else if (res.status === 401) {
+          toast.error("Session expired. Please sign in again.");
+        } else {
+          toast.error(err.error || `Failed to generate plan (${res.status})`);
+        }
+        return;
       }
+      const data = await res.json();
+      setPlan(data.plan);
+      setShowPlan(true);
+      setPlanSectionOpen(true);
+      if (data.auditSummary) setAuditSummary(data.auditSummary);
     } catch (err) {
       console.error("Plan generation failed:", err);
+      toast.error("Plan generation failed. Check your connection and retry.");
     } finally {
       setPlanGenerating(false);
     }
@@ -1011,7 +1023,16 @@ function WebsitePlanSection({
         <div className="flex flex-wrap items-center gap-2 justify-end pt-1 border-t border-white/5">
           {plan && (
             <>
-              <Button size="sm" variant="ghost" className="text-xs gap-1.5" onClick={() => setShowPlan(!showPlan)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs gap-1.5"
+                onClick={() => {
+                  const next = !showPlan;
+                  setShowPlan(next);
+                  if (next) setSectionOpen(true);
+                }}
+              >
                 {showPlan ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 {showPlan ? "Hide" : "Show"}
               </Button>

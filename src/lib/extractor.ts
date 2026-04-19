@@ -1,5 +1,6 @@
 import type { WebsiteFeatures } from "@/types";
 import * as cheerio from "cheerio";
+import { detectBookingProvider, extractContactEmails } from "@/lib/audit/booking-detection";
 
 const SERVICE_KEYWORDS = [
   "repair", "fix", "screen", "battery", "unlock", "accessories",
@@ -288,6 +289,15 @@ export function extractFeatures(html: string, url: string): WebsiteFeatures {
     }
   });
 
+  // Booking provider + contact emails (used for outreach + segmentation)
+  const linksForDetection = allLinks.map((l) => ({ href: l.href }));
+  const bookingProvider = detectBookingProvider({ html, links: linksForDetection });
+  const contactEmails = extractContactEmails({ html, links: linksForDetection });
+
+  // Strengthen the boolean: keyword-based detection misses iframes, provider
+  // detection catches them. If either says yes, we say yes.
+  const hasBookingSystemFinal = hasBookingSystem || bookingProvider !== null;
+
   return {
     url,
     reachable: true,
@@ -299,13 +309,15 @@ export function extractFeatures(html: string, url: string): WebsiteFeatures {
     h1,
     hasContactForm,
     hasWhatsappLink,
-    hasBookingSystem,
+    hasBookingSystem: hasBookingSystemFinal,
     hasEcommerce,
     servicesDetected,
     navItems: navItems.slice(0, 20),
     ctaLinks: ctaLinks.slice(0, 10),
     brokenLinksCount: 0,
     structuredDataPresent,
+    contactEmails,
+    bookingProvider,
 
     hasOpenGraph,
     hasTwitterCards,

@@ -5,32 +5,40 @@ import { ChevronDown } from "lucide-react";
 
 const QUESTIONS = [
   {
+    q: "How is this different from Apollo or Clay?",
+    a: "Apollo and Clay sell the same 50M B2B contacts to thousands of agencies, so the same prospects get hit by 10 different pitches a month. Lead Engine pulls live from Google Maps every time you search, so the data is fresh and the businesses self-update it. We're built around local service verticals (plumbers, HVAC, dental, repair shops, etc.) where Apollo's coverage is thin anyway.",
+  },
+  {
+    q: "Does it integrate with Smartlead, Instantly, or my existing sender?",
+    a: "Yes — Pro and Agency plans include native CSV export in Smartlead and Instantly format, with custom variables for the mockup URL and audit signals. Drop the file in your sender and the personalization fields wire up automatically. We don't replace your sender; we feed it.",
+  },
+  {
+    q: "Is the AI sending emails for me?",
+    a: "No. Auto-send is intentionally off. Lead Engine generates the audit, mockup, and first-draft opener — you review and ship from your own inbox or sender. AI cold outreach with no human in the loop hurts brand and deliverability; we won't ship that.",
+  },
+  {
     q: "Where do the leads come from?",
-    a: "Lead Engine pulls real local businesses from Google Places — name, address, phone number, website, rating, review count. You search by niche and location, and we hit Google's Places API to surface every match.",
+    a: "Live from Google Maps via the Places API — name, address, phone, website, rating, review count, business hours. Searched fresh for every query. Businesses self-maintain their Google profile, so the data is far more current than scraped lists.",
+  },
+  {
+    q: "What's the website mockup for?",
+    a: "For each shortlisted lead, Lead Engine generates a custom one-page mockup (hero, services, CTA) populated with the business's real info. You attach the mockup link to your cold email, so the message goes from 'hi, I might be useful' to 'I built you a draft, link below.' That's the difference between 1% and 4% reply rates.",
   },
   {
     q: "How accurate is the AI scoring?",
-    a: "We combine deterministic signals (no HTTPS, no mobile site, no booking, broken links, slow load) with Gemini's qualitative analysis (business size, pain points, addressable market). The score is a 0-100 number, and we always show you the reasons behind it so you can sanity-check.",
+    a: "We combine hard signals (no HTTPS, no mobile fit, no booking system, slow load, missing meta) with Gemini's qualitative read on business size and pain points. Scores are 0-100 with the reasons listed, so you can sanity-check before pitching.",
   },
   {
-    q: "Can I export my leads?",
-    a: "Yes — Excel and PDF export are built in for any list or shortlist. Your data is yours.",
-  },
-  {
-    q: "Do I need technical skills to use it?",
-    a: "No. If you can search Google Maps, you can use Lead Engine. The whole flow is point-and-click: pick a niche, pick an area, hit Discover.",
-  },
-  {
-    q: "What counts as one 'lead'?",
-    a: "One lead = one business pulled from Google. The Free plan gets 50 leads/month, Pro gets 1,000, and Agency gets 10,000. Re-running the same search doesn't double-count — duplicates are filtered automatically.",
+    q: "What counts as one lead?",
+    a: "One lead = one business pulled from Google. Free gets 50/month, Pro gets 1,000, Agency gets 10,000. Re-running the same search doesn't double-count — duplicates are filtered per workspace automatically.",
   },
   {
     q: "Can I cancel anytime?",
-    a: "Yes. You can cancel from Settings → Billing. You'll keep access until the end of your billing cycle, and your data is preserved for 30 days in case you come back.",
+    a: "Yes, from Settings → Billing. You keep access through the end of your billing cycle. Data is preserved for 30 days if you come back. Free plan never charges, so there's nothing to cancel.",
   },
   {
     q: "Is my data private?",
-    a: "Your discovered leads, notes, pipeline, and shortlists are isolated to your workspace. Only members you invite can see them. We don't share or sell data, full stop.",
+    a: "Your leads, notes, pipeline, and shortlists are isolated to your workspace. Only invited members see them. We don't share, sell, or use your data to train anything. Full stop.",
   },
 ];
 

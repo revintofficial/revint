@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { parseBranding, planAllowsWhiteLabel } from "@/lib/branding";
+
+interface PatchBody {
+  name?: string;
+  slug?: string;
+  branding?: unknown;
+  publicProfilesEnabled?: boolean;
+}
 
 export async function PATCH(request: Request) {
   try {
@@ -8,22 +16,53 @@ export async function PATCH(request: Request) {
     if (session.role !== "OWNER" && session.role !== "ADMIN") {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
-    const { name, slug } = await request.json();
-    if (!name?.trim() || !slug?.trim()) {
-      return NextResponse.json({ error: "Name and slug are required" }, { status: 400 });
-    }
-    const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 32);
+    const body = (await request.json()) as PatchBody;
 
-    if (cleanSlug !== session.workspace.slug) {
-      const exists = await prisma.workspace.findUnique({ where: { slug: cleanSlug } });
-      if (exists) {
-        return NextResponse.json({ error: "Slug is taken" }, { status: 409 });
+    const updates: Record<string, unknown> = {};
+
+    if (body.name !== undefined || body.slug !== undefined) {
+      if (!body.name?.trim() || !body.slug?.trim()) {
+        return NextResponse.json({ error: "Name and slug are required" }, { status: 400 });
       }
+      const cleanSlug = body.slug.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 32);
+
+      if (cleanSlug !== session.workspace.slug) {
+        const exists = await prisma.workspace.findUnique({ where: { slug: cleanSlug } });
+        if (exists) {
+          return NextResponse.json({ error: "Slug is taken" }, { status: 409 });
+        }
+      }
+
+      updates.name = body.name.trim();
+      updates.slug = cleanSlug;
+    }
+
+    if (body.branding !== undefined) {
+      // Branding writes only honored on Agency tier; lower plans get a 402.
+      if (!planAllowsWhiteLabel(session.workspace.plan)) {
+        return NextResponse.json(
+          {
+            error: "white_label_requires_agency",
+            message: "White label branding is only available on the Agency plan.",
+            upgradeUrl: "/app/settings/billing",
+          },
+          { status: 402 }
+        );
+      }
+      updates.branding = parseBranding(body.branding);
+    }
+
+    if (body.publicProfilesEnabled !== undefined) {
+      updates.publicProfilesEnabled = !!body.publicProfilesEnabled;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
     const updated = await prisma.workspace.update({
       where: { id: session.workspaceId },
-      data: { name: name.trim(), slug: cleanSlug },
+      data: updates,
     });
     return NextResponse.json(updated);
   } catch (error) {

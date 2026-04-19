@@ -1,18 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Zap, Menu, X } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Zap, Menu, X, ChevronDown } from "lucide-react";
+
+const FOR_LINKS = [
+  { href: "/for/agencies", label: "B2B outbound agencies", desc: "Fresh leads, no Apollo" },
+  { href: "/for/specialists", label: "Vertical specialists", desc: "Klaviyo, Webflow, GHL" },
+  { href: "/for/smma", label: "New SMMA owners", desc: "Your first 5 clients" },
+];
 
 export function MarketingNav({ signedIn }: { signedIn: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [forOpen, setForOpen] = useState(false);
+  const forRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (forRef.current && !forRef.current.contains(e.target as Node)) {
+        setForOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
   return (
@@ -40,6 +58,46 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-[13px]" aria-label="Marketing navigation">
+          <div className="relative" ref={forRef}>
+            <button
+              onClick={() => setForOpen(!forOpen)}
+              className="flex items-center gap-1 text-white/60 hover:text-white transition-colors"
+              aria-expanded={forOpen}
+              aria-haspopup="menu"
+            >
+              For
+              <ChevronDown
+                className="w-3.5 h-3.5 transition-transform"
+                style={{ transform: forOpen ? "rotate(180deg)" : "rotate(0)" }}
+              />
+            </button>
+            {forOpen && (
+              <div
+                role="menu"
+                className="absolute top-full left-0 mt-2 w-[280px] rounded-xl py-2"
+                style={{
+                  background: "rgba(20, 20, 22, 0.95)",
+                  backdropFilter: "saturate(180%) blur(20px)",
+                  WebkitBackdropFilter: "saturate(180%) blur(20px)",
+                  border: "0.5px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 24px 48px rgba(0,0,0,0.45)",
+                }}
+              >
+                {FOR_LINKS.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setForOpen(false)}
+                    className="block px-4 py-2.5 hover:bg-white/[0.04] transition-colors"
+                    role="menuitem"
+                  >
+                    <div className="text-[13.5px] font-medium text-white">{link.label}</div>
+                    <div className="text-[11.5px] text-white/45 mt-0.5">{link.desc}</div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
           <Link href="/#how" className="text-white/60 hover:text-white transition-colors">
             How it works
           </Link>
@@ -107,6 +165,21 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
           }}
         >
           <nav className="px-5 py-4 flex flex-col gap-3 text-[14px]">
+            <div className="border-b border-white/5 pb-3 mb-1">
+              <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-white/35 mb-2">
+                For
+              </p>
+              {FOR_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="block py-1.5 text-white/70 hover:text-white"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
             <Link href="/#how" onClick={() => setMobileOpen(false)} className="text-white/70 hover:text-white">
               How it works
             </Link>

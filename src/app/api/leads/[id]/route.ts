@@ -11,7 +11,12 @@ export async function GET(
     const { id } = await params;
     const lead = await prisma.lead.findFirst({
       where: { id, workspaceId },
-      include: { websiteAudit: true, salesOpportunity: true },
+      include: {
+        websiteAudit: true,
+        salesOpportunity: true,
+        watchlistItem: true,
+        googleReviews: { orderBy: { publishTime: "desc" } },
+      },
     });
 
     if (!lead) {

@@ -17,28 +17,28 @@ import { Faq } from "@/components/marketing/faq";
 import { ProductPreview } from "@/components/marketing/product-preview";
 
 export const metadata = {
-  title: "Lead Engine — Find local businesses that need a new website",
+  title: "Lead Engine — Predictable client pipeline for outbound agencies",
   description:
-    "Discover local businesses with weak or missing websites. Get an AI-built audit, score, and pitch in minutes. Close more web design deals.",
+    "Pull fresh local leads from Google Maps, audit their sites, generate a custom mockup, and write the opener. Half the price of a Clay setup, with mockups included.",
 };
 
 const HOW: { num: string; title: string; body: string; icon: LucideIcon }[] = [
   {
     num: "01",
     title: "Discover",
-    body: "Search any niche in any city. Lead Engine pulls every matching local business from Google Places — name, address, phone, website, rating.",
+    body: "Pick a postcode and a niche. Lead Engine pulls every matching local business straight from Google Maps — fresh data, never the recycled Apollo dump.",
     icon: Search,
   },
   {
     num: "02",
     title: "Audit & Score",
-    body: "We scan each website for the things that matter: SSL, mobile-friendly, contact form, booking, load time. Then Gemini scores the opportunity 0-100.",
+    body: "We scan each site for the things that matter: load time, mobile fit, booking system, security headers. Gemini scores the opportunity 0-100 with reasons.",
     icon: Sparkles,
   },
   {
     num: "03",
-    title: "Pitch & Close",
-    body: "For your shortlist, generate a personalized first message and a complete website plan you can hand to your client. Track everything in a built-in pipeline.",
+    title: "Pitch with a mockup",
+    body: "One click generates a custom one-page mockup for each lead, plus a first-draft opener referencing their actual site. Ship it from your inbox or push to Smartlead.",
     icon: Target,
   },
 ];
@@ -123,16 +123,14 @@ export default function LandingPage() {
             }}
           >
             <Sparkles className="w-3 h-3" />
-            <span>AI-powered lead engine for web designers</span>
+            <span>Built for B2B outbound agencies</span>
           </div>
 
           <h1
             className="text-[44px] sm:text-[64px] md:text-[76px] font-semibold tracking-tight leading-[1.02] mb-6"
             style={{ letterSpacing: "-0.035em" }}
           >
-            Find local businesses
-            <br />
-            that need a new website.
+            Your service isn&apos;t the problem.
             <br />
             <span
               className="bg-clip-text text-transparent"
@@ -141,18 +139,17 @@ export default function LandingPage() {
                   "linear-gradient(120deg, #FFFFFF 0%, #C7CCFF 45%, #5E6AD2 100%)",
               }}
             >
-              In minutes.
+              Your client pipeline is.
             </span>
           </h1>
 
           <p className="text-[16px] sm:text-[18px] text-white/55 max-w-2xl mx-auto mb-9 leading-relaxed">
-            Lead Engine searches Google for local businesses, audits their
-            websites, scores the opportunity with AI, and writes you a
-            personalized first message. So you stop prospecting and start
-            closing.
+            47 audited local leads, ready-to-pitch mockups, and a first-draft
+            opener referencing each prospect&apos;s actual site. In 5 minutes.
+            From a postcode and a niche.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-9">
             <Link
               href="/signup"
               className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
@@ -162,7 +159,7 @@ export default function LandingPage() {
                   "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
               }}
             >
-              Start for free
+              Start free, no card
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link
@@ -177,9 +174,28 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <p className="text-[12px] text-white/35">
-            Free plan · no credit card required · 50 leads to start
+          <p className="text-[12px] text-white/35 mb-12">
+            50 free leads · no credit card · cancel any time
           </p>
+
+          {/* Validated by the community band */}
+          <div
+            className="max-w-2xl mx-auto px-5 py-3.5 rounded-xl text-left"
+            style={{
+              background: "rgba(255,255,255,0.025)",
+              border: "0.5px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#A5B4FC] mb-1.5">
+              From r/SMMA, 11 days ago
+            </p>
+            <p className="text-[13px] text-white/65 leading-relaxed">
+              &ldquo;The reason your SMMA isn&apos;t growing isn&apos;t your
+              service. It&apos;s that you have no predictable way to get
+              clients. Referrals, posting on social, and hoping &mdash;
+              that&apos;s not a strategy, that&apos;s a prayer.&rdquo;
+            </p>
+          </div>
         </div>
 
         {/* Product preview */}
@@ -319,8 +335,13 @@ export default function LandingPage() {
             >
               Simple, fair pricing.
             </h2>
-            <p className="text-[15px] text-white/55 max-w-xl mx-auto">
+            <p className="text-[15px] text-white/55 max-w-xl mx-auto mb-3">
               Start free. Upgrade when you start closing. Cancel anytime.
+            </p>
+            <p className="text-[12.5px] text-white/40 max-w-xl mx-auto">
+              For reference: a typical Clay + cold email setup runs around
+              $475/mo. Lead Engine includes the audit, mockup, and personalized
+              opener for less.
             </p>
           </div>
           <PricingCards />

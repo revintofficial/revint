@@ -5,9 +5,11 @@ import { runAuditChecklist } from "@/lib/audit-checklist";
 import type { WebsiteFeatures } from "@/types";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { assertCanUseAi, recordAiUsed, QuotaExceededError } from "@/lib/quotas";
+import { generateMockupSlug } from "@/lib/mockup";
+import { getNicheByQuery } from "@/lib/niches";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ leadId: string }> }
 ) {
   try {
@@ -28,11 +30,14 @@ export async function POST(
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
-    if (!lead.watchlistItem) {
-      return NextResponse.json(
-        { error: "Lead is not in watchlist" },
-        { status: 400 }
-      );
+    // Auto-add to watchlist if missing. The plan is persisted on
+    // WatchlistItem.websitePlan, and forcing the user to add the lead
+    // manually before generating a plan was a silent UX dead-end.
+    let watchlistItem = lead.watchlistItem;
+    if (!watchlistItem) {
+      watchlistItem = await prisma.watchlistItem.create({
+        data: { leadId: lead.id },
+      });
     }
 
     await assertCanUseAi(workspaceId, 2);
@@ -66,10 +71,44 @@ export async function POST(
       auditChecklist,
     });
 
+    // Create a public mockup so we can hand the prospect a clickable link
+    // in the cold email. Default expiry: 30 days. Workspaces can republish or
+    // disable later via the settings UI.
+    let mockupUrl: string | null = null;
+    try {
+      const slug = generateMockupSlug();
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      const niche = lead.sourceQuery ? getNicheByQuery(lead.sourceQuery.split(" in ")[0]) : undefined;
+      const mockup = await prisma.mockup.create({
+        data: {
+          slug,
+          leadId,
+          workspaceId,
+          htmlContent: plan,
+          templateId: niche?.mockupTemplateId ?? null,
+          expiresAt,
+          isPublic: true,
+        },
+      });
+      const proto = request.headers.get("x-forwarded-proto") || "https";
+      const host = request.headers.get("host") || "leadengine.app";
+      mockupUrl = `${proto}://${host}/m/${mockup.slug}`;
+    } catch (mockupErr) {
+      console.error("Failed to create mockup; plan saved without public URL:", mockupErr);
+    }
+
+    // Persist plan to watchlist, with the public mockup link appended as a
+    // footer so the user can grab it alongside the plan when copying the
+    // opener. The mockup itself doesn't include this footer (would be
+    // recursive); only the watchlist copy does.
+    const planWithLink = mockupUrl
+      ? `${plan}\n\n---\n\n**Share this draft:** [${mockupUrl}](${mockupUrl})`
+      : plan;
+
     try {
       await prisma.watchlistItem.update({
-        where: { id: lead.watchlistItem.id },
-        data: { websitePlan: plan },
+        where: { id: watchlistItem.id },
+        data: { websitePlan: planWithLink },
       });
     } catch (saveErr) {
       console.error("Failed to save plan to DB, returning anyway:", saveErr);
@@ -79,7 +118,8 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      plan,
+      plan: planWithLink,
+      mockupUrl,
       auditSummary: auditChecklist.summary,
     });
   } catch (error) {

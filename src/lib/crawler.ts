@@ -155,5 +155,7 @@ function createUnreachableResult(url: string): WebsiteFeatures {
     cssFramework: null,
     pageCount: 0,
     consoleErrors: [],
+    contactEmails: [],
+    bookingProvider: null,
   };
 }

@@ -94,6 +94,7 @@ export default function WatchlistPage() {
   const [analyzingAll, setAnalyzingAll] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
+  const [exportingSender, setExportingSender] = useState<"smartlead" | "instantly" | null>(null);
   const [meetingFilter, setMeetingFilter] = useState<MeetingFilter>("ALL");
   const [activeTab, setActiveTab] = useState<ActiveTab>("leads");
 
@@ -118,6 +119,47 @@ export default function WatchlistPage() {
       console.error("PDF export failed:", err);
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleExportSender = async (format: "smartlead" | "instantly") => {
+    if (items.length === 0) return;
+    setExportingSender(format);
+    try {
+      const leadIds = items.map((i) => i.lead.id);
+      const res = await fetch("/api/leads/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadIds, format }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || "Export failed");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `leadengine-${format}-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      const missingEmails = parseInt(res.headers.get("X-Leads-Without-Email") || "0", 10);
+      if (missingEmails > 0) {
+        toast.warning(
+          `${missingEmails} lead${missingEmails === 1 ? "" : "s"} exported without an email. Add emails manually before sending.`
+        );
+      } else {
+        toast.success(`Exported ${items.length} leads for ${format === "smartlead" ? "Smartlead" : "Instantly"}.`);
+      }
+    } catch (err) {
+      console.error("Sender export failed:", err);
+      toast.error("Export failed");
+    } finally {
+      setExportingSender(null);
     }
   };
 
@@ -306,30 +348,70 @@ export default function WatchlistPage() {
             <CardTitle>Export Shortlist</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={handleExportExcel}
-              disabled={exportingExcel}
-            >
-              {exportingExcel ? (
-                <><Loader2 className="h-4 w-4 animate-spin mr-2" />Preparing...</>
-              ) : (
-                <><FileSpreadsheet className="w-4 h-4 mr-2" />Export as Excel</>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={handleExportPDF}
-              disabled={exporting}
-            >
-              {exporting ? (
-                <><Loader2 className="h-4 w-4 animate-spin mr-2" />Preparing...</>
-              ) : (
-                <><FileText className="w-4 h-4 mr-2" />Export as PDF Report</>
-              )}
-            </Button>
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                Push to your sender
+              </p>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => handleExportSender("smartlead")}
+                disabled={exportingSender !== null}
+              >
+                {exportingSender === "smartlead" ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Preparing Smartlead CSV...</>
+                ) : (
+                  <><Download className="w-4 h-4 mr-2" />Export to Smartlead</>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => handleExportSender("instantly")}
+                disabled={exportingSender !== null}
+              >
+                {exportingSender === "instantly" ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Preparing Instantly CSV...</>
+                ) : (
+                  <><Download className="w-4 h-4 mr-2" />Export to Instantly</>
+                )}
+              </Button>
+              <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                Includes mockup URL, audit summary, and personalized opener as
+                custom variables. Where we couldn&apos;t find an email on the
+                site, the row is exported with email blank so you can fill in.
+              </p>
+            </div>
+
+            <div className="border-t pt-3 space-y-2">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                Reports
+              </p>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={handleExportExcel}
+                disabled={exportingExcel}
+              >
+                {exportingExcel ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Preparing...</>
+                ) : (
+                  <><FileSpreadsheet className="w-4 h-4 mr-2" />Export as Excel</>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={handleExportPDF}
+                disabled={exporting}
+              >
+                {exporting ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Preparing...</>
+                ) : (
+                  <><FileText className="w-4 h-4 mr-2" />Export as PDF Report</>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

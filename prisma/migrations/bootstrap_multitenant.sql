@@ -142,6 +142,15 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- 7. Sync Supabase auth.users into public.users automatically -----------------
+-- IMPORTANT: created_at / updated_at are explicitly set in the INSERT path.
+-- Prisma's `@updatedAt` is a client-side concept and `prisma db push` will
+-- DROP DEFAULT on updated_at, so relying on a column default here would
+-- silently break sign-in (auth.users UPDATE -> trigger fires -> NOT NULL
+-- violation -> Supabase Auth returns "Database error granting user").
+-- Belt + suspenders: we also re-assert the column defaults below.
+ALTER TABLE public.users ALTER COLUMN created_at SET DEFAULT now();
+ALTER TABLE public.users ALTER COLUMN updated_at SET DEFAULT now();
+
 CREATE OR REPLACE FUNCTION public.handle_new_auth_user()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -149,12 +158,14 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  INSERT INTO public.users ("id", "email", "full_name", "avatar_url")
+  INSERT INTO public.users ("id", "email", "full_name", "avatar_url", "created_at", "updated_at")
   VALUES (
     NEW.id,
     COALESCE(NEW.email, NEW.id::text || '@user.local'),
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
-    NEW.raw_user_meta_data->>'avatar_url'
+    NEW.raw_user_meta_data->>'avatar_url',
+    now(),
+    now()
   )
   ON CONFLICT (id) DO UPDATE SET
     email      = EXCLUDED.email,

@@ -85,6 +85,15 @@ model Workspace {
   leadsCreatedThisCycle  Int       @default(0) @map("leads_this_cycle")
   aiCreditsUsedThisCycle Int       @default(0) @map("ai_credits_this_cycle")
   cycleResetAt           DateTime  @default(now()) @map("cycle_reset_at")
+
+  // White-label branding (Agency+ tier). Mockup pages, exports, and partner
+  // collateral pick this up to render workspace-specific styling.
+  branding               Json?
+
+  // Public lead profile gate. When true, indexable /[country]/[city]/[niche]/[business]
+  // pages are rendered for this workspace's leads. Workspaces opt in.
+  publicProfilesEnabled  Boolean   @default(false) @map("public_profiles_enabled")
+
   createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt              DateTime  @updatedAt @map("updated_at")
 
@@ -139,6 +148,7 @@ model Lead {
   salesOpportunity SalesOpportunity?
   watchlistItem    WatchlistItem?
   googleReviews    GoogleReview[]
+  mockups          Mockup[]
 
   // placeId scoped per workspace so two workspaces can independently track the same business
   @@unique([workspaceId, placeId])
@@ -146,6 +156,30 @@ model Lead {
   @@index([workspaceId, hasWebsite])
   @@index([workspaceId, borough])
   @@map("leads")
+}
+
+// A public, shareable mockup of what the prospect's site COULD look like.
+// Used as a "value upfront" hook in cold outreach: the mockup URL gets
+// embedded in the first-draft opener so the email lands as a free deliverable
+// rather than a pitch.
+model Mockup {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  leadId      String    @map("lead_id")
+  workspaceId String    @map("workspace_id")
+  htmlContent String    @map("html_content") @db.Text
+  templateId  String?   @map("template_id")
+  isPublic    Boolean   @default(true) @map("is_public")
+  expiresAt   DateTime? @map("expires_at")
+  viewCount   Int       @default(0) @map("view_count")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([workspaceId])
+  @@map("mockups")
 }
 
 model WebsiteAudit {
@@ -162,10 +196,12 @@ model WebsiteAudit {
   hasContactForm        Boolean  @default(false) @map("has_contact_form")
   hasWhatsappLink       Boolean  @default(false) @map("has_whatsapp_link")
   hasBookingSystem      Boolean  @default(false) @map("has_booking_system")
+  bookingProvider       String?  @map("booking_provider")
   hasEcommerce          Boolean  @default(false) @map("has_ecommerce")
   servicesDetected      Json     @default("[]") @map("services_detected")
   navItems              Json     @default("[]") @map("nav_items")
   ctaLinks              Json     @default("[]") @map("cta_links")
+  contactEmails         Json     @default("[]") @map("contact_emails")
   brokenLinksCount      Int      @default(0) @map("broken_links_count")
   structuredDataPresent Boolean  @default(false) @map("structured_data_present")
   rawFeaturesJson       Json?    @map("raw_features_json")
@@ -173,6 +209,7 @@ model WebsiteAudit {
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
+  @@index([bookingProvider])
   @@map("website_audits")
 }
 

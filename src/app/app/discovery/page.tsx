@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DEFAULT_LOCATIONS, DEFAULT_SEARCH_QUERIES } from "@/lib/constants";
+import { NICHES } from "@/lib/niches";
 import { toast } from "sonner";
 import {
   Search,
@@ -131,10 +132,36 @@ export default function DiscoveryPage() {
             </div>
 
             <div>
-              <label className="text-[13px] font-medium text-white/50 mb-1.5 block">Business Type</label>
-              <Select value={selectedQuery} onValueChange={(v) => { setSelectedQuery(v); setCustomQuery(""); }}>
+              <label className="text-[13px] font-medium text-white/50 mb-1.5 block">Niche pack (recommended)</label>
+              <Select
+                value={selectedQuery && NICHES.some((n) => n.searchQueries[0] === selectedQuery) ? selectedQuery : ""}
+                onValueChange={(v) => { setSelectedQuery(v); setCustomQuery(""); }}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose a category..." />
+                  <SelectValue placeholder="Pick a vertical with tuned audit signals..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {NICHES.map((niche) => (
+                    <SelectItem key={niche.slug} value={niche.searchQueries[0]}>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">{niche.label}</span>
+                        <span className="text-[11px] text-white/45">{niche.tagline}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-white/35 mt-1.5">
+                Niche packs come with vertical-specific audit signals and mockup templates.
+              </p>
+
+              <label className="text-[13px] font-medium text-white/50 mt-3 mb-1.5 block">Or pick a generic category</label>
+              <Select
+                value={selectedQuery && !NICHES.some((n) => n.searchQueries[0] === selectedQuery) ? selectedQuery : ""}
+                onValueChange={(v) => { setSelectedQuery(v); setCustomQuery(""); }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Generic category..." />
                 </SelectTrigger>
                 <SelectContent>
                   {DEFAULT_SEARCH_QUERIES.map((q) => (
