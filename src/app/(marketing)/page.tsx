@@ -1,20 +1,30 @@
 import Link from "next/link";
 import {
   ArrowRight,
+  Sparkles,
   Search,
   Globe,
-  Sparkles,
-  Target,
-  GitBranch,
-  FileText,
-  Star,
-  Check,
+  Wand2,
   Zap,
+  GitBranch,
   type LucideIcon,
 } from "lucide-react";
 import { PricingCards } from "@/components/marketing/pricing-cards";
 import { Faq } from "@/components/marketing/faq";
-import { ProductPreview } from "@/components/marketing/product-preview";
+import {
+  DiscoveryDemo,
+  LeadCardLive,
+  MockupGeneratorDemo,
+  OpenerComposer,
+  PipelineBoard,
+  ScrollStage,
+  RevealOnScroll,
+  ValidationQuote,
+  MetricCounter,
+  MarketingBackdrop,
+  type ScrollScene,
+} from "@/components/marketing/interactive";
+import { HOME_LEADS, HOME_CITIES, HOME_NICHES } from "@/components/marketing/interactive/demo-data";
 
 export const metadata = {
   title: "Lead Engine — Predictable client pipeline for outbound agencies",
@@ -22,96 +32,95 @@ export const metadata = {
     "Pull fresh local leads from Google Maps, audit their sites, generate a custom mockup, and write the opener. Half the price of a Clay setup, with mockups included.",
 };
 
-const HOW: { num: string; title: string; body: string; icon: LucideIcon }[] = [
-  {
-    num: "01",
-    title: "Discover",
-    body: "Pick a postcode and a niche. Lead Engine pulls every matching local business straight from Google Maps. The data is live, not a recycled Apollo export.",
-    icon: Search,
-  },
-  {
-    num: "02",
-    title: "Audit & Score",
-    body: "We scan each site for things like load time, whether the booking button works, whether HTTPS is on. Gemini then scores the opportunity 0-100 and tells you why.",
-    icon: Sparkles,
-  },
-  {
-    num: "03",
-    title: "Pitch with a mockup",
-    body: "One click generates a custom one-page mockup for each lead, plus a draft opener that references their actual site. Send it from your inbox or push to Smartlead.",
-    icon: Target,
-  },
-];
-
 const FEATURES: { title: string; body: string; icon: LucideIcon; color: string }[] = [
   {
-    title: "Google Places discovery",
-    body: "Pull thousands of leads in seconds. Filter by niche, neighborhood, and review count.",
+    title: "Live Google Places discovery",
+    body: "Pull thousands of leads in seconds. Filter by niche, neighborhood, and review count. The data is fresh, not a recycled Apollo export.",
     icon: Search,
     color: "#5E6AD2",
   },
   {
-    title: "Automated website audit",
-    body: "We crawl every site and check 20+ signals: broken links, missing meta, no HTTPS, no booking flow.",
+    title: "Audits that read like a senior consultant wrote them",
+    body: "Every site gets crawled for 20+ signals: HTTPS, mobile fit, booking flow, page speed, last-touched year. Gemini turns that into a one-paragraph diagnosis.",
     icon: Globe,
     color: "#34D399",
   },
   {
-    title: "AI opportunity scoring",
-    body: "Gemini ranks every lead 0-100 based on website quality and how big the business actually is.",
-    icon: Sparkles,
-    color: "#8B5CF6",
+    title: "Per-lead mockup, not a generic deck",
+    body: "One click generates a one-page site for the prospect with their reviews, services, and address pulled in. The opener attaches the link.",
+    icon: Wand2,
+    color: "#A5B4FC",
   },
   {
-    title: "Personalized first message",
-    body: "A custom outreach message for every shortlisted lead, written against their actual site, not a template.",
-    icon: FileText,
-    color: "#F59E0B",
-  },
-  {
-    title: "Built-in pipeline",
-    body: "Track leads from New → Contacted → Meeting → Won. Notes and outcomes live with the lead, not in a spreadsheet.",
+    title: "Pipeline that lives with the lead",
+    body: "Notes, statuses, meeting outcomes all attached to the business, not floating in a spreadsheet you forget to open.",
     icon: GitBranch,
     color: "#F87171",
-  },
-  {
-    title: "Website plan generator",
-    body: "One click drafts a full website proposal with pages, sections, copy direction, and a suggested price.",
-    icon: Star,
-    color: "#A5B4FC",
   },
 ];
 
 export default function LandingPage() {
+  const sampleLead = HOME_LEADS[0];
+
+  const SCENES: ScrollScene[] = [
+    {
+      id: "discover",
+      eyebrow: "Step one",
+      title: "Type a postcode. Get the list.",
+      body: "Pick a city and a niche. Lead Engine queries Google Places live and returns every matching business with phone, rating, address, and website status. No re-using last quarter's Apollo dump.",
+      visual: (
+        <DiscoveryDemo
+          cities={HOME_CITIES}
+          niches={HOME_NICHES}
+          leads={HOME_LEADS}
+          caption="Click any lead to see the full audit, then generate a custom mockup."
+        />
+      ),
+    },
+    {
+      id: "audit",
+      eyebrow: "Step two",
+      title: "Open a lead. See exactly what's broken.",
+      body: "Each lead unfolds into a real audit: HTTPS, mobile viewport, booking flow, page speed, last update. Five signals, with details, scored 0 to 100. That score is the conversation starter you used to write yourself.",
+      visual: (
+        <div
+          className="rounded-2xl p-5"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(32,32,36,0.92) 0%, rgba(22,22,26,0.96) 100%)",
+            border: "0.5px solid rgba(255,255,255,0.09)",
+            boxShadow:
+              "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(49,46,129,0.25)",
+          }}
+        >
+          <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-[#A5B4FC] mb-3">
+            Lead detail · expanded
+          </p>
+          <LeadCardLive lead={sampleLead} defaultExpanded />
+        </div>
+      ),
+    },
+    {
+      id: "mockup",
+      eyebrow: "Step three",
+      title: "Hand them a draft, not a deck.",
+      body: "One click composes a one-page site for the prospect. Their reviews, services, and address baked in. Three colour variants if you want to A/B which one lands. Attach the link to the cold email and watch the conversation shift.",
+      visual: <MockupGeneratorDemo lead={sampleLead} />,
+    },
+    {
+      id: "opener",
+      eyebrow: "Step four",
+      title: "The opener writes itself. You ship it.",
+      body: "The draft references the actual issues the audit found. Edit the parts that need your voice, then push the file straight into Smartlead or Instantly. Auto-send stays off — the human ships, the AI doesn't.",
+      visual: <OpenerComposer lead={sampleLead} />,
+    },
+  ];
+
   return (
     <>
       {/* HERO */}
-      <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-28 overflow-hidden">
-        {/* Background gradients */}
-        <div className="absolute inset-0 -z-10">
-          <div
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[640px] rounded-full opacity-30 blur-3xl"
-            style={{
-              background:
-                "radial-gradient(closest-side, rgba(94,106,210,0.55), transparent)",
-            }}
-          />
-          <div
-            className="absolute top-40 left-1/3 w-[600px] h-[400px] rounded-full opacity-20 blur-3xl"
-            style={{
-              background:
-                "radial-gradient(closest-side, rgba(139,92,246,0.4), transparent)",
-            }}
-          />
-          <div
-            className="absolute inset-0 opacity-[0.05]"
-            style={{
-              backgroundImage:
-                "radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px)",
-              backgroundSize: "32px 32px",
-            }}
-          />
-        </div>
+      <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-24 overflow-hidden">
+        <MarketingBackdrop variant="hero" />
 
         <div className="max-w-5xl mx-auto px-5 sm:px-6 text-center">
           <div
@@ -127,8 +136,8 @@ export default function LandingPage() {
           </div>
 
           <h1
-            className="text-[44px] sm:text-[64px] md:text-[76px] font-semibold tracking-tight leading-[1.02] mb-6"
-            style={{ letterSpacing: "-0.035em" }}
+            className="text-[44px] sm:text-[68px] md:text-[84px] font-semibold tracking-tight leading-none mb-6"
+            style={{ letterSpacing: "-0.04em" }}
           >
             Your service isn&apos;t the problem.
             <br />
@@ -163,159 +172,226 @@ export default function LandingPage() {
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link
-              href="#how"
+              href="#tour"
               className="px-5 py-3 rounded-xl text-[14.5px] font-medium text-white/85 hover:text-white"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: "0.5px solid rgba(255,255,255,0.1)",
               }}
             >
-              See how it works
+              Watch the 60-second tour
             </Link>
           </div>
 
-          <p className="text-[12px] text-white/35 mb-12">
+          <p className="text-[12px] text-white/35">
             50 free leads · no credit card · cancel any time
           </p>
-
-          {/* Validated by the community band */}
-          <div
-            className="max-w-2xl mx-auto px-5 py-3.5 rounded-xl text-left"
-            style={{
-              background: "rgba(255,255,255,0.025)",
-              border: "0.5px solid rgba(255,255,255,0.06)",
-            }}
-          >
-            <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#A5B4FC] mb-1.5">
-              From r/SMMA, 11 days ago
-            </p>
-            <p className="text-[13px] text-white/65 leading-relaxed">
-              &ldquo;The reason your SMMA isn&apos;t growing isn&apos;t your
-              service. It&apos;s that you have no predictable way to get
-              clients. Referrals, posting on social, and hoping &mdash;
-              that&apos;s not a strategy, that&apos;s a prayer.&rdquo;
-            </p>
-          </div>
         </div>
 
-        {/* Product preview */}
-        <div className="max-w-6xl mx-auto px-5 sm:px-6 mt-16">
-          <ProductPreview />
+        {/* Live discovery below the fold */}
+        <div className="max-w-5xl mx-auto px-5 sm:px-6 mt-16">
+          <RevealOnScroll>
+            <div className="text-center mb-5">
+              <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC] mb-1.5">
+                Try it now
+              </p>
+              <p className="text-[13px] text-white/45">
+                Pick a city and a niche. The leads are real businesses, the
+                signals are what we&apos;d score.
+              </p>
+            </div>
+            <DiscoveryDemo
+              cities={HOME_CITIES}
+              niches={HOME_NICHES}
+              leads={HOME_LEADS}
+              caption="Click any lead to see the audit, then keep scrolling for what happens next."
+            />
+          </RevealOnScroll>
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section id="how" className="py-24 sm:py-32 relative">
-        <div className="max-w-6xl mx-auto px-5 sm:px-6">
-          <div className="text-center mb-16">
+      {/* SCROLLYTELLING TOUR */}
+      <section id="tour" className="relative py-24 sm:py-32">
+        <MarketingBackdrop variant="muted" />
+        <div className="max-w-7xl mx-auto px-5 sm:px-6">
+          <RevealOnScroll>
+            <div className="text-center mb-16 sm:mb-20 max-w-3xl mx-auto">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+                The four screens
+              </p>
+              <h2
+                className="text-[34px] sm:text-[56px] font-semibold tracking-tight leading-[1.05]"
+                style={{ letterSpacing: "-0.03em" }}
+              >
+                Scroll the product.
+                <br />
+                <span className="text-white/55">
+                  Not a tour video, the actual UI.
+                </span>
+              </h2>
+            </div>
+          </RevealOnScroll>
+
+          <ScrollStage scenes={SCENES} />
+        </div>
+      </section>
+
+      {/* PIPELINE */}
+      <section className="relative py-24 sm:py-32">
+        <MarketingBackdrop variant="muted" />
+        <div className="max-w-6xl mx-auto px-5 sm:px-6 grid lg:grid-cols-2 gap-12 items-center">
+          <RevealOnScroll>
             <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
-              How it works
+              After the send
             </p>
             <h2
-              className="text-[34px] sm:text-[44px] font-semibold tracking-tight"
+              className="text-[32px] sm:text-[44px] font-semibold tracking-tight leading-[1.05] mb-4"
               style={{ letterSpacing: "-0.025em" }}
             >
-              Three steps from
-              <br />
-              <span className="text-white/55">cold list to signed deal.</span>
+              The pipeline lives with the lead.
             </h2>
+            <p className="text-[15px] text-white/60 leading-relaxed mb-6">
+              Notes, statuses, meeting outcomes attach to the business itself.
+              When the deal closes, it closes against the same record you
+              opened on Monday. No CRM duct tape, no copying rows between
+              tools.
+            </p>
+            <ul className="space-y-2.5 text-[13.5px] text-white/70">
+              <li className="flex items-start gap-2.5">
+                <span className="w-1 h-1 rounded-full bg-[#A5B4FC] mt-2 shrink-0" />
+                Auto-status updates when you push to Smartlead or log a reply.
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="w-1 h-1 rounded-full bg-[#A5B4FC] mt-2 shrink-0" />
+                Meeting outcomes ship with notes, not just a checkbox.
+              </li>
+              <li className="flex items-start gap-2.5">
+                <span className="w-1 h-1 rounded-full bg-[#A5B4FC] mt-2 shrink-0" />
+                Won deals stay attached, so case studies write themselves.
+              </li>
+            </ul>
+          </RevealOnScroll>
+          <RevealOnScroll delay={0.1}>
+            <PipelineBoard />
+          </RevealOnScroll>
+        </div>
+      </section>
+
+      {/* PROOF */}
+      <section className="relative py-24 sm:py-32">
+        <MarketingBackdrop variant="muted" />
+        <div className="max-w-6xl mx-auto px-5 sm:px-6">
+          <RevealOnScroll>
+            <div className="text-center mb-12">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+                The thesis, in numbers
+              </p>
+              <h2
+                className="text-[30px] sm:text-[44px] font-semibold tracking-tight leading-[1.1]"
+                style={{ letterSpacing: "-0.025em" }}
+              >
+                Apollo sells the same list to everyone.
+                <br />
+                <span className="text-white/55">
+                  Yours is fresh on every search.
+                </span>
+              </h2>
+            </div>
+          </RevealOnScroll>
+
+          <div className="grid sm:grid-cols-3 gap-4 mb-12">
+            <RevealOnScroll>
+              <MetricCounter
+                value={50}
+                suffix="M"
+                label="Apollo contacts shared across thousands of agencies. Same inbox, ten pitches a week."
+                accent="#F87171"
+              />
+            </RevealOnScroll>
+            <RevealOnScroll delay={0.1}>
+              <MetricCounter
+                value={47}
+                label="Audited local leads in five minutes. Pick a city, pick a niche, walk to the kitchen."
+                accent="#A5B4FC"
+              />
+            </RevealOnScroll>
+            <RevealOnScroll delay={0.2}>
+              <MetricCounter
+                value={4}
+                suffix="×"
+                label="Reply lift our pilot users see when the cold email arrives with a mockup attached."
+                accent="#34D399"
+              />
+            </RevealOnScroll>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-5">
-            {HOW.map((s) => {
-              const Icon = s.icon;
-              return (
-                <div
-                  key={s.num}
-                  className="relative p-6 rounded-2xl"
-                  style={{
-                    background:
-                      "linear-gradient(180deg, rgba(28,28,30,0.6), rgba(20,20,22,0.4))",
-                    border: "0.5px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  <div className="flex items-start justify-between mb-6">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{
-                        background: "rgba(94, 106, 210, 0.12)",
-                        border: "0.5px solid rgba(94, 106, 210, 0.28)",
-                      }}
-                    >
-                      <Icon className="w-5 h-5" style={{ color: "#A5B4FC" }} />
-                    </div>
-                    <span
-                      className="text-[11px] font-mono font-semibold tracking-wider"
-                      style={{ color: "rgba(235, 235, 245, 0.3)" }}
-                    >
-                      {s.num}
-                    </span>
-                  </div>
-                  <h3 className="text-[18px] font-semibold mb-2 tracking-tight">
-                    {s.title}
-                  </h3>
-                  <p className="text-[13.5px] text-white/55 leading-relaxed">
-                    {s.body}
-                  </p>
-                </div>
-              );
-            })}
+          <div className="grid md:grid-cols-2 gap-4">
+            <ValidationQuote
+              source="11 days ago"
+              subreddit="SMMA"
+              upvotes={42}
+              comments={61}
+              text="The reason your SMMA isn't growing isn't your service. It's that you have no predictable way to get clients. Referrals, posting on social, and hoping — that's not a strategy, that's a prayer."
+            />
+            <ValidationQuote
+              source="5 days ago · $140k/mo agency stack"
+              subreddit="coldemail"
+              upvotes={39}
+              comments={47}
+              text="Everyone's fighting over the same Apollo and Clay exports. Same 50 million contacts, same crawls, same emails that have been cold emailed by ten other people this month."
+            />
           </div>
         </div>
       </section>
 
       {/* FEATURES */}
-      <section id="features" className="py-24 sm:py-32 relative">
-        <div
-          className="absolute inset-0 -z-10 opacity-25"
-          style={{
-            background:
-              "radial-gradient(circle at 70% 50%, rgba(94,106,210,0.18), transparent 60%)",
-          }}
-        />
+      <section id="features" className="relative py-24 sm:py-32">
+        <MarketingBackdrop variant="muted" />
         <div className="max-w-6xl mx-auto px-5 sm:px-6">
-          <div className="text-center mb-16">
-            <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
-              Features
-            </p>
-            <h2
-              className="text-[34px] sm:text-[44px] font-semibold tracking-tight"
-              style={{ letterSpacing: "-0.025em" }}
-            >
-              Everything you need
-              <br />
-              <span className="text-white/55">to fill your pipeline.</span>
-            </h2>
-          </div>
+          <RevealOnScroll>
+            <div className="text-center mb-16">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+                Inside the box
+              </p>
+              <h2
+                className="text-[34px] sm:text-[44px] font-semibold tracking-tight leading-[1.1]"
+                style={{ letterSpacing: "-0.025em" }}
+              >
+                Four pieces, one workflow.
+              </h2>
+            </div>
+          </RevealOnScroll>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FEATURES.map((f) => {
+          <div className="grid md:grid-cols-2 gap-4">
+            {FEATURES.map((f, i) => {
               const Icon = f.icon;
               return (
-                <div
-                  key={f.title}
-                  className="p-5 rounded-2xl group transition-all duration-200 hover:scale-[1.01]"
-                  style={{
-                    background: "rgba(28,28,30,0.5)",
-                    border: "0.5px solid rgba(255,255,255,0.07)",
-                  }}
-                >
+                <RevealOnScroll key={f.title} delay={i * 0.06}>
                   <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center mb-4"
+                    className="p-6 rounded-2xl group transition-all duration-300 hover:-translate-y-0.5 h-full"
                     style={{
-                      background: `${f.color}1a`,
-                      border: `0.5px solid ${f.color}30`,
+                      background:
+                        "linear-gradient(180deg, rgba(28,28,30,0.55), rgba(20,20,22,0.45))",
+                      border: "0.5px solid rgba(255,255,255,0.07)",
                     }}
                   >
-                    <Icon className="w-4 h-4" style={{ color: f.color }} />
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
+                      style={{
+                        background: `${f.color}1a`,
+                        border: `0.5px solid ${f.color}30`,
+                      }}
+                    >
+                      <Icon className="w-5 h-5" style={{ color: f.color }} />
+                    </div>
+                    <h3 className="text-[16px] font-semibold mb-1.5 tracking-tight">
+                      {f.title}
+                    </h3>
+                    <p className="text-[13.5px] text-white/55 leading-relaxed">
+                      {f.body}
+                    </p>
                   </div>
-                  <h3 className="text-[14.5px] font-semibold mb-1.5 tracking-tight">
-                    {f.title}
-                  </h3>
-                  <p className="text-[12.5px] text-white/55 leading-relaxed">
-                    {f.body}
-                  </p>
-                </div>
+                </RevealOnScroll>
               );
             })}
           </div>
@@ -323,45 +399,55 @@ export default function LandingPage() {
       </section>
 
       {/* PRICING */}
-      <section id="pricing" className="py-24 sm:py-32 relative">
+      <section id="pricing" className="relative py-24 sm:py-32">
+        <MarketingBackdrop variant="muted" />
         <div className="max-w-6xl mx-auto px-5 sm:px-6">
-          <div className="text-center mb-14">
-            <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
-              Pricing
-            </p>
-            <h2
-              className="text-[34px] sm:text-[44px] font-semibold tracking-tight mb-3"
-              style={{ letterSpacing: "-0.025em" }}
-            >
-              Simple, fair pricing.
-            </h2>
-            <p className="text-[15px] text-white/55 max-w-xl mx-auto mb-3">
-              Start free. Upgrade when you start closing. Cancel anytime.
-            </p>
-            <p className="text-[12.5px] text-white/40 max-w-xl mx-auto">
-              For reference: a typical Clay + cold email stack runs around
-              $475/mo. Lead Engine includes the audit and the mockup for less.
-            </p>
-          </div>
-          <PricingCards />
+          <RevealOnScroll>
+            <div className="text-center mb-14">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+                Pricing
+              </p>
+              <h2
+                className="text-[34px] sm:text-[44px] font-semibold tracking-tight mb-3"
+                style={{ letterSpacing: "-0.025em" }}
+              >
+                Half the price of a Clay setup.
+              </h2>
+              <p className="text-[15px] text-white/55 max-w-xl mx-auto mb-3">
+                Start free. Upgrade when you start closing. Cancel anytime.
+              </p>
+              <p className="text-[12.5px] text-white/40 max-w-xl mx-auto">
+                For reference: a typical Clay + cold email stack runs around
+                $475/mo. Lead Engine includes the audit and the mockup for
+                less.
+              </p>
+            </div>
+          </RevealOnScroll>
+          <RevealOnScroll delay={0.1}>
+            <PricingCards />
+          </RevealOnScroll>
         </div>
       </section>
 
       {/* FAQ */}
       <section id="faq" className="py-24 sm:py-32">
         <div className="max-w-3xl mx-auto px-5 sm:px-6">
-          <div className="text-center mb-14">
-            <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
-              FAQ
-            </p>
-            <h2
-              className="text-[34px] sm:text-[44px] font-semibold tracking-tight"
-              style={{ letterSpacing: "-0.025em" }}
-            >
-              Quick answers.
-            </h2>
-          </div>
-          <Faq />
+          <RevealOnScroll>
+            <div className="text-center mb-14">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+                FAQ
+              </p>
+              <h2
+                className="text-[34px] sm:text-[44px] font-semibold tracking-tight"
+                style={{ letterSpacing: "-0.025em" }}
+              >
+                Quick answers.
+              </h2>
+            </div>
+          </RevealOnScroll>
+          <RevealOnScroll delay={0.1}>
+            <Faq />
+          </RevealOnScroll>
         </div>
       </section>
 
@@ -375,38 +461,41 @@ export default function LandingPage() {
           }}
         />
         <div className="max-w-3xl mx-auto px-5 sm:px-6 text-center">
-          <div
-            className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-6"
-            style={{
-              background: "rgba(94, 106, 210, 0.14)",
-              border: "0.5px solid rgba(94, 106, 210, 0.32)",
-            }}
-          >
-            <Zap className="w-5 h-5" style={{ color: "#A5B4FC" }} />
-          </div>
-          <h2
-            className="text-[36px] sm:text-[52px] font-semibold tracking-tight mb-4"
-            style={{ letterSpacing: "-0.03em" }}
-          >
-            Stop prospecting.
-            <br />
-            <span className="text-white/55">Start closing.</span>
-          </h2>
-          <p className="text-[15px] text-white/55 mb-8 max-w-lg mx-auto">
-            Discover your first 50 leads in the next 5 minutes. No credit card.
-          </p>
-          <Link
-            href="/signup"
-            className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
-            style={{
-              background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
-              boxShadow:
-                "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
-            }}
-          >
-            Start for free
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          <RevealOnScroll>
+            <div
+              className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-6"
+              style={{
+                background: "rgba(94, 106, 210, 0.14)",
+                border: "0.5px solid rgba(94, 106, 210, 0.32)",
+              }}
+            >
+              <Zap className="w-5 h-5" style={{ color: "#A5B4FC" }} />
+            </div>
+            <h2
+              className="text-[36px] sm:text-[56px] font-semibold tracking-tight mb-4 leading-[1.05]"
+              style={{ letterSpacing: "-0.03em" }}
+            >
+              Your first 50 leads
+              <br />
+              <span className="text-white/55">are five minutes away.</span>
+            </h2>
+            <p className="text-[15px] text-white/55 mb-8 max-w-lg mx-auto">
+              No credit card. If the discovery doesn&apos;t pull anything you
+              can pitch, walk away.
+            </p>
+            <Link
+              href="/signup"
+              className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
+              style={{
+                background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                boxShadow:
+                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
+              }}
+            >
+              Start for free
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </RevealOnScroll>
         </div>
       </section>
     </>

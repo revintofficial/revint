@@ -1,5 +1,10 @@
 import { Rocket, Eye, Handshake } from "lucide-react";
 import { VerticalLanding, type VerticalCopy } from "@/components/marketing/vertical-landing";
+import {
+  SMMA_LEADS,
+  SMMA_CITIES,
+  SMMA_NICHES,
+} from "@/components/marketing/interactive/demo-data";
 
 const COPY: VerticalCopy = {
   metaTitle: "Lead Engine for new SMMA owners — start with leads, not theory",
@@ -11,7 +16,10 @@ const COPY: VerticalCopy = {
   sub: "You know the playbook. The bottleneck is finding 50 prospects, researching each one, and writing a message that doesn't sound like a template. Lead Engine handles the prospecting so finding clients stops being the thing that breaks you.",
   primaryCta: "Get 50 leads in 5 minutes",
   validationQuote: {
-    source: "From r/SMMA, 6 days ago",
+    source: "6 days ago",
+    subreddit: "SMMA",
+    upvotes: 11,
+    comments: 9,
     text: "Got on a call with this guy last year. Mid 30s. First thing he says is 'how old are you?' I tell him 16. He laughs. I pulled up my audit on his site and showed him 3 things he was missing. He signed a €2k/month contract 40 minutes later.",
   },
   painsHeading: "Why most new agencies stall in the first 90 days.",
@@ -33,10 +41,11 @@ const COPY: VerticalCopy = {
     },
   ],
   proofHeading: "What you actually get.",
+  proofTourTitle: "Pick a city. Send your first 10 emails today.",
   proofPoints: [
-    "Pick a city and a niche. Phone repair, dental, gyms, whatever you want to specialize in. Lead Engine pulls 50 real local businesses from Google Maps in 30 seconds.",
+    "Pick a city and a niche. Lead Engine pulls 50 real local businesses from Google Maps in 30 seconds.",
     "Each lead arrives with a website audit telling you what's broken. That's the conversation starter you didn't have to invent.",
-    "One click generates a custom one-page mockup for each prospect. Show it on the call. Different conversation.",
+    "One click generates a custom one-page mockup for each prospect. Show it on the call and watch the conversation shift.",
     "First-draft opener written for you, referencing their actual site. Edit, hit send. Your first 10 emails take 15 minutes, not 8 hours.",
     "Free plan covers your first 50 prospects. Your first signed deal pays for Pro for a year.",
     "No credit card to start. If you cancel, you keep the audit data.",
@@ -44,6 +53,13 @@ const COPY: VerticalCopy = {
   closingHeading: "Stop reading playbooks.",
   closingHeadingHighlight: "Send your first 50 emails today.",
   closingBody: "Start free with 50 leads. Your first close pays for everything.",
+  demoCities: SMMA_CITIES,
+  demoNiches: SMMA_NICHES,
+  demoLeads: SMMA_LEADS,
+  beforeAfter: {
+    beforeLabel: "8-hour manual prospecting day",
+    afterLabel: "15-minute audited list with mockups",
+  },
 };
 
 export const metadata = {

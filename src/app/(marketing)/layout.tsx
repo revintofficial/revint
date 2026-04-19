@@ -11,7 +11,7 @@ export default async function MarketingLayout({
   const session = await getOptionalUser();
   const rewardfulKey = process.env.NEXT_PUBLIC_REWARDFUL_API_KEY;
   return (
-    <div className="min-h-screen flex flex-col bg-black text-white relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-black text-white relative overflow-x-clip">
       {rewardfulKey && (
         <>
           <Script id="rewardful-init" strategy="beforeInteractive">

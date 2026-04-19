@@ -1,0 +1,13 @@
+export { RevealOnScroll } from "./reveal-on-scroll";
+export { MarketingBackdrop } from "./marketing-backdrop";
+export { MetricCounter } from "./metric-counter";
+export { ValidationQuote } from "./validation-quote";
+export { LeadCardLive } from "./lead-card-live";
+export { DiscoveryDemo } from "./discovery-demo";
+export { MockupGeneratorDemo } from "./mockup-generator-demo";
+export { OpenerComposer } from "./opener-composer";
+export { PipelineBoard } from "./pipeline-board";
+export { ScrollStage, type ScrollScene } from "./scroll-stage";
+export { BeforeAfterSplit } from "./before-after-split";
+export { scoreColor, type DemoLead, type DemoAuditSignal } from "./types";
+export * as DemoData from "./demo-data";

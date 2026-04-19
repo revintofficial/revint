@@ -1,5 +1,10 @@
 import { Compass, Send, Briefcase } from "lucide-react";
 import { VerticalLanding, type VerticalCopy } from "@/components/marketing/vertical-landing";
+import {
+  SPECIALIST_LEADS,
+  SPECIALIST_CITIES,
+  SPECIALIST_NICHES,
+} from "@/components/marketing/interactive/demo-data";
 
 const COPY: VerticalCopy = {
   metaTitle: "Lead Engine for vertical specialists — Klaviyo, Webflow, GoHighLevel agencies",
@@ -11,7 +16,10 @@ const COPY: VerticalCopy = {
   sub: "If you ship Klaviyo flows or Webflow builds for a living, you've got the deliverable nailed. Lead Engine hands you a list of local prospects with a custom mockup attached to each one, so client acquisition stops being the part that breaks you.",
   primaryCta: "Get my first 50 leads free",
   validationQuote: {
-    source: "From r/agency, 1 day ago",
+    source: "1 day ago",
+    subreddit: "agency",
+    upvotes: 24,
+    comments: 18,
     text: "I've worked as an executor in 3 Klaviyo agencies. Brands generate 7-8 figure/year, I have case studies — but I worked as an executor and don't know how agencies acquire clients.",
   },
   painsHeading: "Three things between you and your first 5 clients.",
@@ -33,9 +41,10 @@ const COPY: VerticalCopy = {
     },
   ],
   proofHeading: "What changes for you.",
+  proofTourTitle: "Pick a specialty. The pipeline shows up.",
   proofPoints: [
-    "Pick your specialty (e-commerce brands for Klaviyo, local services for Webflow, etc.) and Lead Engine pulls a fresh prospect list from Google Maps in 30 seconds.",
-    "Each lead comes with a website audit pinpointing exactly what's broken. That's the conversation starter you couldn't write yourself.",
+    "Pick your specialty. Lead Engine pulls a fresh prospect list from Google Maps in 30 seconds.",
+    "Each lead arrives with a website audit pinpointing what's broken. That's the conversation starter you couldn't write yourself.",
     "Generate a one-page custom mockup for each shortlisted prospect. Attach it to the cold email. Replies start with pricing questions instead of 'who are you'.",
     "First-draft opener references their actual site, written in plain language. You edit the parts that need your voice and ship.",
     "Track every conversation in a built-in pipeline. Notes, status, and meeting outcomes live with the lead, so you don't need a separate CRM.",
@@ -43,6 +52,13 @@ const COPY: VerticalCopy = {
   closingHeading: "Stop guessing how to sell.",
   closingHeadingHighlight: "Start with 50 ready-to-pitch leads.",
   closingBody: "Free to start. Your first deal pays for the year.",
+  demoCities: SPECIALIST_CITIES,
+  demoNiches: SPECIALIST_NICHES,
+  demoLeads: SPECIALIST_LEADS,
+  beforeAfter: {
+    beforeLabel: "Generic 'I do Klaviyo' DMs",
+    afterLabel: "Audited brand + per-store mockup",
+  },
 };
 
 export const metadata = {

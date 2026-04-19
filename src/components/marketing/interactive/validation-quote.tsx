@@ -24,20 +24,6 @@ export function ValidationQuote({
 }: ValidationQuoteProps) {
   const reduce = useReducedMotion();
 
-  const Wrapper = ({ children }: { children: React.ReactNode }) =>
-    reduce ? (
-      <div>{children}</div>
-    ) : (
-      <motion.div
-        initial={{ opacity: 0, y: 18 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ type: "spring", stiffness: 220, damping: 28 }}
-      >
-        {children}
-      </motion.div>
-    );
-
   const inner = (
     <div
       className="relative px-5 py-5 rounded-2xl text-left h-full"
@@ -71,7 +57,7 @@ export function ValidationQuote({
               >
                 r/{subreddit}
               </span>
-              {(upvotes || comments) && (
+              {(upvotes !== undefined || comments !== undefined) && (
                 <div className="flex items-center gap-3 text-[11px] text-white/40">
                   {upvotes !== undefined && (
                     <span className="flex items-center gap-1">
@@ -89,7 +75,8 @@ export function ValidationQuote({
               )}
             </div>
           )}
-          <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold mb-1.5"
+          <p
+            className="text-[10.5px] uppercase tracking-[0.12em] font-semibold mb-1.5"
             style={{ color: accent }}
           >
             {source}
@@ -102,15 +89,26 @@ export function ValidationQuote({
     </div>
   );
 
+  const wrapped = href ? (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="block">
+      {inner}
+    </a>
+  ) : (
+    inner
+  );
+
+  if (reduce) {
+    return <div>{wrapped}</div>;
+  }
+
   return (
-    <Wrapper>
-      {href ? (
-        <a href={href} target="_blank" rel="noopener noreferrer" className="block">
-          {inner}
-        </a>
-      ) : (
-        inner
-      )}
-    </Wrapper>
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ type: "spring", stiffness: 220, damping: 28 }}
+    >
+      {wrapped}
+    </motion.div>
   );
 }
