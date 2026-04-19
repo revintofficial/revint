@@ -87,7 +87,9 @@ Son 30 gündeki tool comparison thread'lerinden çıkan gerçek rakip görünüm
 
 **Apollo'nun kendi Maps özelliği.** 2025'te eklendi. Veriyi çekiyor, ama audit yok, scoring yok, mockup yok. Bizim 4 katman daha derin olduğumuzun kanıtı.
 
-**r/SaaS'taki yarı-rakip post.** Yukarıda detaylandırdım. Ürünün yarısını yapıyor, henüz traction yok. Window açık ama kapanmaya başladığını hissetmek için bu postu pin'liyoruz. Bir sonraki yenilemede "ne kadar büyüdü, başka kim girdi" diye bakacağız.
+**Mapileads (mapileads.com).** Yarı-rakibimiz, [REDDIT-MAPILEADS.md](REDDIT-MAPILEADS.md) tam thread'i tutuyor. Aynı tezi paylaşıyor (Google Maps + AI personalization), ama bizde olmayan iki katmanı var: review intelligence aggregation (KPI bar, sentiment, switch sinyali) ve "my offer" workspace context. Bizde olmayan: mockup. Bu plan'ın çıkış noktası bu thread oldu. Mapileads özelliklerinin önemli kısmı [`mapileads-ozellik-entegrasyonu`](.cursor/plans/mapileads_özellik_entegrasyonu_6df8b996.plan.md) planı altında bizim ürünümüze entegre edildi: Review Intelligence v1 (P0.1), My Offer context (P0.2), Mockup × RI sinerjisi (P0.3 - bu Mapileads'in yapamadığı, bizim moat'ımız), email verification (P0.4), social profile scraping (P0.5), direct send (P1.1), AI co-pilot (P1.2), calendar sync (P1.3), reply attribution (P1.4). [`DECISIONS.md`](DECISIONS.md) implementation snapshot'ı tutuyor.
+
+**r/SaaS'taki yarı-rakip post.** [r/SaaS, 31 Mart](https://www.reddit.com/r/SaaS/comments/1s8wwhn/i_built_a_tool_that_lets_you_find_local/) - Mapileads'in OP postu. Hâlâ pin'imizde. Window açık ama kapanmaya başladığını hissetmek için bu postu izlemeye devam. Çınar haftalık `/last30days mapileads` çalıştıracak, yeni özellik shipped'a göre Plan revize.
 
 **Durable, Framer AI, Wix AI.** AI website builder'lar. [r/smallbusinesssupport, 26 Mart](https://www.reddit.com/r/smallbusinesssupport/comments/1s498i6/durable_vs_framer_for_local_business_websites_seo/) "Durable vs Framer for Local Business Websites" tartışması açık. Lead Engine onların rakibi değil. Biz site barındırmıyoruz, biz site mockup'ı satış aracı olarak üretiyoruz. Eğer ajans kapanan müşteriyle gerçek site yapacaksa Framer'a, Webflow'a veya kendi tasarım stack'ine gidiyor. Hosting katmanına asla girmiyoruz; "Webflow killer" değiliz.
 
@@ -99,15 +101,17 @@ Son 30 gündeki tool comparison thread'lerinden çıkan gerçek rakip görünüm
 
 ---
 
-## 6. ICP - üç katman, tek ürün, üç kapı
+## 6. ICP - dört core katman, tek ürün, dört kapı
 
-**Birincil: Josh.** İsim Reddit'te 8 Nisan'da [AMA açan "Built for B2B" kurucusundan](https://www.reddit.com/r/coldemail/comments/1sfxygz/ama_i_run_a_b2b_outbound_agency_booking/) geliyor, ama profil tek bir kişi değil. 27-32 yaş arası, çoğu erkek, ABD/UK/AB. Aylık 15-60 bin USD MRR'li bir cold email ya da B2B outbound ajansı yönetiyor. Ekibi 2-4 kişi, müşteri sayısı 4-12. Stack'inde Apollo veya Clay var, yanına Instantly ya da Smartlead, Maildoso, Notion, ChatGPT Plus. Aylık tool faturası 800-1500 USD. Lead Engine'in 249 USD Agency planı bütçesinin %15'ini bile geçmiyor. Apollo'yu replace ediyorsa tasarruf çıkıyor. Çıkış noktası: r/coldemail, r/agency, r/SMMA. Karar 48 saat içinde verilir, demo iyi geçmediyse geri dönmez.
+**Birincil: Josh.** İsim Reddit'te 8 Nisan'da [AMA açan "Built for B2B" kurucusundan](https://www.reddit.com/r/coldemail/comments/1sfxygz/ama_i_run_a_b2b_outbound_agency_booking/) geliyor, ama profil tek bir kişi değil. 27-32 yaş arası, çoğu erkek, ABD/UK/AB. Aylık 15-60 bin USD MRR'li bir cold email ya da B2B outbound ajansı yönetiyor. Ekibi 2-4 kişi, müşteri sayısı 4-12. Stack'inde Apollo veya Clay var, yanına Instantly ya da Smartlead, Maildoso, Notion, ChatGPT Plus. Aylık tool faturası 800-1500 USD. Lead Engine'in 249 USD Agency planı bütçesinin %15'ini bile geçmiyor. Apollo'yu replace ediyorsa tasarruf çıkıyor. Çıkış noktası: r/coldemail, r/agency, r/SMMA. Karar 48 saat içinde verilir, demo iyi geçmediyse geri dönmez. Plan tier: **Agency $249/5 seat**. Landing: `/for/agencies`.
 
-**İkincil: Vertical specialist.** [r/agency, 18 Nisan](https://www.reddit.com/r/agency/comments/1sp9a02/after_working_on_3_klaviyo_agencies_im_ready_to/), "After working on 3 Klaviyo agencies, I'm ready to start my own agency." Klaviyo, Webflow, GoHighLevel, Shopify Plus, AI workflow consultant veya Notion expert. Becerisi gerçek, deneyimi var, tek tıkanma noktası client acquisition. 26-35 yaş, eski ajans çalışanı veya senior freelancer. Ayda 0-15 bin USD gelir, tool bütçesi 100-400 USD, ROI gösterilebilirse 800'e açılır. Pro planın asıl hedefi (79 USD). Bu segmente vertical-spesifik landing page'ler kazandırıyor: `/for/specialists` zaten yayında, vertical pack ekledikçe `/for/klaviyo`, `/for/webflow` vb. açılır.
+**İkincil: Vertical specialist.** [r/agency, 18 Nisan](https://www.reddit.com/r/agency/comments/1sp9a02/after_working_on_3_klaviyo_agencies_im_ready_to/), "After working on 3 Klaviyo agencies, I'm ready to start my own agency." Klaviyo, Webflow, GoHighLevel, Shopify Plus, AI workflow consultant veya Notion expert. Becerisi gerçek, deneyimi var, tek tıkanma noktası client acquisition. 26-35 yaş, eski ajans çalışanı veya senior freelancer. Ayda 0-15 bin USD gelir, tool bütçesi 100-400 USD, ROI gösterilebilirse 800'e açılır. Plan tier: solo başlıyorsa **Pro Solo $79/1 seat**, 2-3 kişiye büyüdüyse **Pro Team $149/3 seat**. Landing: `/for/specialists`. Vertical pack ekledikçe `/for/klaviyo`, `/for/webflow` vb. açılır.
 
-**Üçüncül: Genç SMMA.** [r/SMMA, 13 Nisan](https://www.reddit.com/r/SMMA/comments/1skdex7/a_client_told_me_i_was_too_young_to_know_what_im/), 16 yaşında çocuk 40 dakikada 2k EUR/ay kontrat imzalıyor. Iman Gadzhi, Charlie Morgan kursunu yeni bitirmiş 16-25 yaş aralığı. Free trial'da kayıp yüksek (~%60), kart genelde aile kartı, LTV 4-9 ay. Bu segmente direkt cold outreach satılmaz; doğal kanal influencer-mediated. Brand awareness ve içerik dağıtımı için faydalı, MRR'in onda birinden fazlasını beklemiyoruz. `/for/smma` sayfası bu segmente.
+**Üçüncül: Genç SMMA.** [r/SMMA, 13 Nisan](https://www.reddit.com/r/SMMA/comments/1skdex7/a_client_told_me_i_was_too_young_to_know_what_im/), 16 yaşında çocuk 40 dakikada 2k EUR/ay kontrat imzalıyor. Iman Gadzhi, Charlie Morgan kursunu yeni bitirmiş 16-25 yaş aralığı. Free trial'da kayıp yüksek (~%60), kart genelde aile kartı, LTV 4-9 ay. Bu segmente direkt cold outreach satılmaz; doğal kanal influencer-mediated. Brand awareness ve içerik dağıtımı için faydalı, MRR'in onda birinden fazlasını beklemiyoruz. Plan tier: **Free + Pro Solo $79**. Landing: `/for/smma`.
 
-**Türkiye katmanı.** TR Josh'u 35-45 yaş, English'tan biraz daha geç başlıyor. Avukat-pazarlama ajansı, e-ticaret danışmanı, Webflow specialist, Shopify development ajansı. LinkedIn'de görünüyor, Reddit'te değil. Aylık 100-500 bin TL gelir, tool bütçesi 5-15 bin TL/ay. TR'de yerel hizmet vertical olarak en parlak olanlar: oto bakım, klima servisi, halı yıkama, fizik tedavi merkezi, butik diş hekimi. Phone repair Londra'dan çok daha küçük niche TR'de. Türkiye için önce halı yıkama İstanbul ya da klima servis Ankara açıyoruz; phone repair'e ikinci dalgada bakıyoruz.
+**Dördüncül (yeni): Walk-in web agency starter.** Londra'da sahada gezip yerel işletmelere site satmaya çalışan 22 yaşında 3 kişilik grup. Sabah Camden ya da Hackney'de o gün ziyaret edecekleri 8-12 işletmeyi tabletten görüyor. Müşterinin önünde mevcut sitelerini açıyor, "bak yavaş, bak booking yok, bak son güncelleme 2019" diyor. Lead Engine'in mockup'ını tek tıkla 20 saniyede üretip tableti uzatıyor. £800'den başlayan paketle 2 hafta sonra Webflow'da gerçek site teslim ediyor. Akşam dönüşte hangi prospect ne dedi diye 30 saniye ses notu ile lead'e tag atıyor. Bu segment için ürün **face-to-face konversiyon makinesi**: tablet açıp "size yaptığımız taslak" gösterimi yüz yüze ikna sürecinin altın artifact'ı. Plan tier: **Pro Team $149/3 seat**. Landing: `/for/walk-in-web-agencies` (EN), TR versiyonu `/for/saha-satiscilari` ileride. Mobile responsive PWA + voice notes + GPS lead sıralaması bu segment için kritik (planda P0.6, P0.7, P1.5 olarak sıraya alındı).
+
+**Türkiye katmanı.** TR Josh'u 35-45 yaş, English'tan biraz daha geç başlıyor. Avukat-pazarlama ajansı, e-ticaret danışmanı, Webflow specialist, Shopify development ajansı. LinkedIn'de görünüyor, Reddit'te değil. Aylık 100-500 bin TL gelir, tool bütçesi 5-15 bin TL/ay. TR'de yerel hizmet vertical olarak en parlak olanlar: oto bakım, klima servisi, halı yıkama, fizik tedavi merkezi, butik diş hekimi. Phone repair Londra'dan çok daha küçük niche TR'de. Türkiye için önce halı yıkama İstanbul ya da klima servis Ankara açıyoruz; phone repair'e ikinci dalgada bakıyoruz. Plan tier: **Pro Solo ₺2.500** ya da **Pro Team ₺4.700** geliri ve ekibe göre.
 
 ---
 
@@ -267,22 +271,27 @@ Mert
 
 ## 10. Fiyat
 
-| Plan | Aylık | Ne içinde | Hedef |
-|---|---|---|---|
-| Free trial | $0 / ₺0 | 50 lead, 1 niche, 1 postcode, 3 mockup, no team | Top-of-funnel |
-| Pro | $79 / ₺2.500 | 1.000 lead/ay, tüm niche, 1 seat, opener generator, 50 mockup/ay, exports | Solo founder, vertical specialist |
-| Agency | $249 / ₺7.900 | 5.000 lead/ay, multi-tenant, 5 seat, watchlist, priority crawl, 300 mockup/ay + landing-page mockup beta | Ajanslar (ana hedef) |
-| Custom | Görüşme | Sınırsız + dedicated crawl + white-label, sınırsız mockup | 10+ seat ajanslar |
+| Plan | Aylık | Seat | Lead/ay | Mockup/ay | Hedef |
+|---|---|---|---|---|---|
+| Free trial | $0 / ₺0 | 1 | 50 | 3 | Top-of-funnel, demo |
+| Pro Solo | $79 / ₺2.500 | 1 | 1.000 | 50 | Vertical specialist solo, founder |
+| **Pro Team** *(yeni)* | **$149 / ₺4.700** | **3** | **2.500** | **150** | **Walk-in web agency starter (4. ICP), küçük vertical specialist ekibi** |
+| Agency | $249 / ₺7.900 | 5 | 5.000 | 300 | Josh ICP, 5+ kişilik cold email ajansı, watchlist, priority crawl |
+| Custom | Görüşme | Sınırsız | Sınırsız | Sınırsız | 10+ seat, white-label sonra |
 
-**Üç fiyat prensibi:**
+**Pro Team neden eklendi (last30days kanıtı):** [r/SaaS "Per-User seat tax is killing lean teams"](https://www.reddit.com/r/SaaS/comments/1sabc1l/the_peruser_seat_tax_is_killing_lean_teams_so/) (2 Nisan, 29 score), 3 kişilik ekibe 5-seat Agency dayatmak "%400 existence tax" hissi yaratıyor. [r/B2BSaaS tier list](https://www.reddit.com/r/B2BSaaS/comments/1sl9y7g/best_outbound_sales_tools_for_startups_in_2026/) SalesTarget.ai $149 flat'i Tier 1'e koyuyor; bizim de aynı anchor'a oturmamız lazım. [r/SaaS "Is per seat SaaS pricing dead"](https://www.reddit.com/r/SaaS/comments/1sbbsn9/is_per_seat_saas_pricing_dead_or_is_the_market/) (3 Nisan, 36 score) - SaaSpocalypse, AI agent'lar seat azaltıyor, lean team friendly tier'lar yükseliyor.
 
-1. **Anchor: bir kapatılmış call.** Yerel hizmet pazarında bir booked call $100-$500 değer. Lead Engine ayda bir ekstra booking üretirse Pro 1-5x amortise. Bu cümle pricing sayfasında, yatırımcı slayt'ında ve cold email'de tekrarlanıyor.
+**Dört fiyat prensibi:**
+
+1. **Anchor: bir kapatılmış call.** Yerel hizmet pazarında bir booked call $100-$500 değer. Lead Engine ayda bir ekstra booking üretirse Pro Solo 1-5x, Pro Team 3-15x amortise. Bu cümle pricing sayfasında, yatırımcı slayt'ında ve cold email'de tekrarlanıyor.
 
 2. **Agency'yi underprice etme.** Multi-tenant, role-based access, watchlist, priority crawl - bunlar ciddi engineering. Ajans 249 USD'ye tereddütsüz öder, indirme baskısına kapılma. Yarı fiyat ($475 → $249) Apollo + Clay setup'ına karşı zaten önemli bir avantaj.
 
-3. **Mockup'ı meterle.** Generation Gemini API maliyeti taşıyor (uzun handbook prompt + 14 bölüm output). Quotas `src/lib/quotas.ts`'de hazır, kullan.
+3. **Pro Team'i 3 seat'te tut, 4 değil 5 değil.** SaaS pazarında "small team" sweet spot 3 seat'te (founder + 1-2 yardımcı). 5 seat'i Agency'ye, 1 seat'i Pro Solo'ya bırak. Bu segmentasyon decision'ı netleştirir.
 
-**Türkiye fiyatlama notu:** $1=₺40 hesabıyla mekanik çevirme yapma. ₺2.500 ve ₺7.900 algı çıpasına oturuyor. Pro = 3 booked call. Agency = 1 retainer müşteri. Stripe slot'ları çoklu para birimi destekliyor, checkout'ta lokasyona göre default seçer.
+4. **Mockup'ı meterle.** Generation Gemini API maliyeti taşıyor (uzun handbook prompt + 14 bölüm output). Quotas `src/lib/quotas.ts`'de hazır, kullan. Pro Team 150/ay = 3 kişi × 50, Agency 300/ay = 5 kişi × 60 (multi-tenant priority bonusu).
+
+**Türkiye fiyatlama notu:** $1=₺40 hesabıyla mekanik çevirme yapma. ₺2.500, ₺4.700, ₺7.900 algı çıpasına oturuyor. Pro Solo = 3 booked call. Pro Team = 1 retainer müşteri ya da 3 kişilik ajans bilet. Agency = 1 büyük retainer müşteri. Stripe slot'ları çoklu para birimi destekliyor, checkout'ta lokasyona göre default seçer.
 
 ---
 
@@ -361,18 +370,21 @@ YouTube short serisi: "5 dakikada İstanbul'daki tüm halı yıkamacıları" tar
 
 | Hafta | Aksiyon | Sahip | Çıktı |
 |---|---|---|---|
-| 1 | `/for/phone-repair` ve `/for/halı-yıkama` landing page'leri canlı, schema markup + 1 embedded sample mockup | Çınar + Mert | 2 indexable sayfa |
+| 1 | `/for/phone-repair`, `/for/halı-yıkama` ve `/for/walk-in-web-agencies` (4. ICP) landing page'leri canlı, schema markup + 1 embedded sample mockup | Çınar + Mert | 3 indexable sayfa |
 | 1 | Mockup HTML/Tailwind preview shipping (screenshot grade) | Mert | Lead detail sayfasında "screenshot this" butonu |
 | 1 | [r/coldemail "Google Maps undervalued"](https://www.reddit.com/r/coldemail/comments/1sl3go9/google_maps_is_the_most_underrated_lead_database/) thread'ine değerli yorum (link drop yok) | Çınar | 1 thread, organik backlink |
 | 1 | İlk 50 cold email send (§9.1 + §9.2 şablonları, top r/coldemail commenter'lara) | Mert | 50 send, hedef 5-7 reply |
+| 1-2 | **Pro Team $149/3 seat tier shipping:** Stripe price ID + workspace seat enforcement + pricing sayfası 4 kart + Pro Solo rebrand | Mert | Yeni tier canlı, mevcut Pro grandfather |
+| 2 | **Mobile-responsive PWA pass + manifest.json + service worker** (4. ICP için kritik) | Mert | Tablet/telefon UI optimize, "Add to home screen" çalışıyor |
 | 2 | "Londra'daki tüm phone repair shop'larını crawl ettik" blog postu + r/coldemail share | Çınar | 1 viral-shape post |
 | 2 | Native CSV export Smartlead + Instantly formatına | Mert | Feature ship |
-| 2 | 30 saniyelik demo video: "Plumber için 20 saniyede mockup" | Kaan | 1 short-form asset |
+| 2 | 30 saniyelik demo video: "Plumber için 20 saniyede mockup" + ek video "Londra'da bir günde 3 mahalleye gittik" (4. ICP showcase) | Kaan | 2 short-form asset |
+| 3 | **Voice notes light:** MediaRecorder + Whisper transcription + lead detail "30sn ses notu" butonu | Mert | Saha satışçısı ziyaret sonrası ses notu workflow'u canlı |
 | 3 | 90 saniyelik demo Loom (§9.4 akışı), landing page'e embed | Kaan + Çınar (script) | 1 video, 1 conversion lift |
 | 3 | Mockup QA dashboard v0 (read-only sample viewer + 1-5 score field) | Mert (build) + Çınar (rubric + ilk 20 review) | İlk 20 mockup scored |
-| 4 | İlk paying customer case study (reply rate öncesi/sonrası) | Çınar (write) + Kaan (video) | 1 case study + 3 testimonial |
+| 4 | İlk paying customer case study (reply rate öncesi/sonrası) + 4. ICP'den ilk Londra walk-in case study (mockup'la kapatılmış £800 deal) | Çınar (write) + Kaan (video) | 2 case study + 3 testimonial |
 
-**Faz 1 sonu kararı:** En az 5 ödeyen müşteri ve 1 yayınlanmış case study var mı? Evet → Faz 2. Hayır → mesaj-pazar uyumunu sorgula, demo akışını yeniden çek, hatta pivot et.
+**Faz 1 sonu kararı:** En az 5 ödeyen müşteri (en az 1 Pro Team tier) ve 2 yayınlanmış case study var mı? Evet → Faz 2. Hayır → mesaj-pazar uyumunu sorgula, demo akışını yeniden çek, hatta pivot et.
 
 ### Hafta 5-8: Faz "Distribute"
 
@@ -381,7 +393,8 @@ YouTube short serisi: "5 dakikada İstanbul'daki tüm halı yıkamacıları" tar
 - Türkiye dalga 1: Kaan'ın ilk üç YouTube short + Mert'in 5 TR ajans demo'su.
 - Product Hunt launch hazırlığı (Show HN ile aynı haftaya koyma; 7-10 gün arayla).
 - İkinci vertical pack: HVAC ya da klima (TR'de). Vertical-spesifik landing page açılır.
-- Reply-rate attribution v0: Gmail/Outlook geri okuma, müşteri opt-in'le çalışır.
+- Reply-rate attribution v0: Gmail/Outlook geri okuma, müşteri opt-in'le çalışır. **Implementation hazır** (P1.4, [`/api/email-accounts/{id}/sync`](src/app/api/email-accounts/[id]/sync/route.ts)); OAuth credentials .env'de tanımlandığı an aktif.
+- AI co-pilot, calendar sync, GPS sıralama, map view shipping. Müşteri demolarına ekle.
 
 **Faz 2 sonu kararı:** MRR $5k+ mı? CAC < $300 mı? Channel mix sağlıklı mı (3+ aktif kanal)? İki "evet" ise Faz 3, hiçbiri değilse soğuk reset.
 

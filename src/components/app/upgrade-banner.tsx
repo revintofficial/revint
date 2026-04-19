@@ -5,7 +5,7 @@ import { Sparkles, ArrowRight } from "lucide-react";
 
 export interface UpgradeBannerProps {
   usage: {
-    plan: "FREE" | "PRO" | "AGENCY";
+    plan: "FREE" | "PRO" | "PRO_TEAM" | "AGENCY";
     planName: string;
     leadsUsed: number;
     leadsLimit: number;

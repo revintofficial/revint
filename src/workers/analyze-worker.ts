@@ -30,7 +30,11 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
   try {
     const lead = await prisma.lead.findUniqueOrThrow({
       where: { id: leadId },
-      include: { websiteAudit: true },
+      include: {
+        websiteAudit: true,
+        // P2.3 - read workspace.language so AI analysis answers in the right language.
+        workspace: { select: { language: true } },
+      },
     });
 
     const features = lead.websiteAudit?.rawFeaturesJson as unknown as WebsiteFeatures | null;
@@ -50,7 +54,8 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
         lead.rating,
         lead.reviewCount,
         lead.websiteUrl,
-        features
+        features,
+        lead.workspace.language ?? "tr",
       );
     } catch (aiError) {
       console.warn(`[Analyze] Gemini failed for ${leadId}, using deterministic only:`, aiError);

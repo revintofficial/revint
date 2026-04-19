@@ -51,7 +51,7 @@ export default function CampaignsPage() {
 
   if (loading) {
     return (
-      <div className="p-6 md:p-8 lg:p-10 space-y-6">
+      <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-40 rounded-2xl" />)}
@@ -61,7 +61,7 @@ export default function CampaignsPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 lg:p-10 space-y-6">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
       <PageHeader
         title="Campaigns"
         subtitle="Segment leads into targeted sales campaigns"

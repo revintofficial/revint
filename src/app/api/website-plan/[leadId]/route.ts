@@ -23,6 +23,24 @@ export async function POST(
         salesOpportunity: true,
         googleReviews: { orderBy: { publishTime: "desc" } },
         watchlistItem: true,
+        // P0.3 - Mockup × Review Intelligence sinerjisi: review KPI verisi
+        // mockup hero/services/CTA shape eder.
+        reviewAnalysis: true,
+        // P0.2 - Workspace "My Offer" context inject.
+        workspace: {
+          select: {
+            offerName: true,
+            valueProposition: true,
+            socialProof: true,
+            offerHook: true,
+            objective: true,
+            tone: true,
+            length: true,
+            language: true,
+            senderName: true,
+            conversionLink: true,
+          },
+        },
       },
     });
 
@@ -69,6 +87,37 @@ export async function POST(
           }
         : null,
       auditChecklist,
+      // P0.3 - feed Review Intelligence into the mockup prompt
+      reviewIntelligence: lead.reviewAnalysis
+        ? {
+            weaknessKpis: lead.reviewAnalysis.weaknessKpis as Array<{
+              label: string;
+              percent: number;
+              examples: string[];
+            }>,
+            strengthKpis: lead.reviewAnalysis.strengthKpis as Array<{
+              label: string;
+              percent: number;
+              examples: string[];
+            }>,
+            painPhrases: lead.reviewAnalysis.painPhrases as string[],
+            strengthPhrases: lead.reviewAnalysis.strengthPhrases as string[],
+            switchSignals: lead.reviewAnalysis.switchSignals as Array<{
+              from: string;
+              to: string;
+              reason: string;
+            }>,
+            sentimentBreakdown: lead.reviewAnalysis.sentimentBreakdown as {
+              positive: number;
+              neutral: number;
+              negative: number;
+            },
+            leadScore: lead.reviewAnalysis.leadScore,
+            summary: lead.reviewAnalysis.summary ?? "",
+          }
+        : null,
+      // P0.2 - workspace "My Offer" context
+      offer: lead.workspace,
     });
 
     // Create a public mockup so we can hand the prospect a clickable link

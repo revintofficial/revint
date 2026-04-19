@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
+import { PLANS, planAllowsAdditionalSeat } from "@/lib/plans";
 
 export async function POST(request: Request) {
   try {
@@ -9,6 +10,26 @@ export async function POST(request: Request) {
     if (session.role !== "OWNER" && session.role !== "ADMIN") {
       return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
     }
+
+    // P0.8 - seat enforcement. Pro Solo 1, Pro Team 3, Agency 5.
+    const currentSeats = await prisma.workspaceMember.count({
+      where: { workspaceId: session.workspaceId },
+    });
+    const plan = PLANS[session.workspace.plan];
+    if (!planAllowsAdditionalSeat(session.workspace.plan, currentSeats)) {
+      return NextResponse.json(
+        {
+          error: "seat_limit_reached",
+          message: `${plan.name} planı ${plan.maxSeats} seat'e sınırlı (şu an ${currentSeats} kullanılıyor). Pro Team ya da Agency'ye yükseltin.`,
+          currentSeats,
+          maxSeats: plan.maxSeats,
+          planName: plan.name,
+          upgradeUrl: "/app/settings/billing",
+        },
+        { status: 402 },
+      );
+    }
+
     const { email } = await request.json();
     if (!email?.trim()) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });

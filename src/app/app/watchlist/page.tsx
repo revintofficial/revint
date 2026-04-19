@@ -288,7 +288,7 @@ export default function WatchlistPage() {
   ];
 
   return (
-    <div className="p-6 md:p-8 lg:p-10 space-y-6">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
       <PageHeader
         title="Shortlist"
         subtitle={loading ? "Loading..." : `${items.length} leads on your shortlist`}
@@ -324,12 +324,12 @@ export default function WatchlistPage() {
 
       {/* Tabs */}
       {!loading && items.length > 0 && (
-        <div className="flex items-center gap-1 bg-white/10 rounded-[10px] p-0.5 w-fit">
+        <div className="flex items-center gap-1 bg-white/10 rounded-[10px] p-0.5 w-fit max-w-full overflow-x-auto scrollbar-hide">
           {TAB_ITEMS.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className={`px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
+              className={`shrink-0 px-3 sm:px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
                 activeTab === tab.value
                   ? "bg-white/10 text-white shadow-sm rounded-[8px]"
                   : "text-white/50 hover:text-white rounded-[8px]"

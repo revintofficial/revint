@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const plan = body.plan as Plan;
     const referralId = typeof body.referralId === "string" ? body.referralId : null;
 
-    if (plan !== "PRO" && plan !== "AGENCY") {
+    if (plan !== "PRO" && plan !== "PRO_TEAM" && plan !== "AGENCY") {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
     const planDef = PLANS[plan];

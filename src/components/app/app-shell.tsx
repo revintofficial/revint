@@ -22,6 +22,7 @@ import { UserMenu } from "@/components/app/user-menu";
 import { CommandPalette } from "@/components/app/command-palette";
 import { UsageBadge } from "@/components/app/usage-badge";
 import { UpgradeBanner } from "@/components/app/upgrade-banner";
+import { CopilotDrawer } from "@/components/app/copilot-drawer";
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 type NavGroup = { label: string; items: NavItem[] };
@@ -65,11 +66,11 @@ export interface AppShellProps {
     id: string;
     name: string;
     slug: string;
-    plan: "FREE" | "PRO" | "AGENCY";
+    plan: "FREE" | "PRO" | "PRO_TEAM" | "AGENCY";
   };
   role: "OWNER" | "ADMIN" | "MEMBER";
   usage: {
-    plan: "FREE" | "PRO" | "AGENCY";
+    plan: "FREE" | "PRO" | "PRO_TEAM" | "AGENCY";
     planName: string;
     leadsUsed: number;
     leadsLimit: number;
@@ -137,9 +138,12 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
         navItems={ALL_LINKS}
       />
 
+      {/* P1.2 - AI sales co-pilot floating drawer */}
+      <CopilotDrawer />
+
       {/* Mobile top bar */}
       <div
-        className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-4 py-3 md:hidden"
+        className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-4 py-3 md:hidden safe-pt"
         style={{
           background: "rgba(28, 28, 30, 0.85)",
           backdropFilter: "saturate(180%) blur(30px)",
@@ -386,14 +390,14 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
         </header>
 
         {usage && (usage.leadsUsed / usage.leadsLimit > 0.8 || usage.aiUsed / usage.aiLimit > 0.8) && (
-          <div className="mx-3 sm:mx-4 mt-3">
+          <div className="mx-4 sm:mx-4 mt-3">
             <UpgradeBanner usage={usage} />
           </div>
         )}
 
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 pt-14 md:pt-3"
+          className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+56px)] md:pt-0 safe-pb"
         >
           <div className="animate-fade-in">{children}</div>
         </main>

@@ -1,0 +1,40 @@
+{
+  "name": "Lead Engine",
+  "short_name": "Lead Engine",
+  "description": "Walk in. Open the tablet. Close the deal. Your tablet, their site, your close.",
+  "start_url": "/app/leads",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A0A0A",
+  "theme_color": "#5E6AD2",
+  "categories": ["business", "productivity", "sales"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Discovery",
+      "short_name": "Find leads",
+      "url": "/app/discovery",
+      "description": "Pull fresh local leads from Google Places"
+    },
+    {
+      "name": "Leads",
+      "short_name": "Leads",
+      "url": "/app/leads",
+      "description": "Open your lead pipeline"
+    }
+  ]
+}

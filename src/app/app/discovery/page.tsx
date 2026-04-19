@@ -84,7 +84,7 @@ export default function DiscoveryPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 lg:p-10 space-y-6">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
       <PageHeader
         title="Discover"
         subtitle="Find local businesses that need your web design services"

@@ -16,6 +16,8 @@ export async function GET(
         salesOpportunity: true,
         watchlistItem: true,
         googleReviews: { orderBy: { publishTime: "desc" } },
+        reviewAnalysis: true,
+        voiceNotes: { orderBy: { createdAt: "desc" }, take: 50 },
       },
     });
 

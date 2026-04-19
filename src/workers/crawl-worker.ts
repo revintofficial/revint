@@ -2,6 +2,8 @@ import { Worker, type Job } from "bullmq";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { crawlWebsite, closeBrowser } from "../lib/crawler";
+import { getEmailVerificationQueue } from "../lib/queues";
+import { isVerificationConfigured } from "../lib/email-verification";
 import IORedis from "ioredis";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
@@ -25,6 +27,14 @@ async function processCrawl(job: Job<CrawlJobData>) {
   try {
     const features = await crawlWebsite(websiteUrl);
 
+    const featuresWithExtras = features as typeof features & {
+      contactEmails?: string[];
+      socialProfiles?: Record<string, string | null>;
+    };
+
+    const contactEmails = featuresWithExtras.contactEmails ?? [];
+    const socialProfiles = featuresWithExtras.socialProfiles ?? {};
+
     await prisma.websiteAudit.upsert({
       where: { leadId },
       create: {
@@ -47,6 +57,8 @@ async function processCrawl(job: Job<CrawlJobData>) {
         brokenLinksCount: features.brokenLinksCount,
         structuredDataPresent: features.structuredDataPresent,
         rawFeaturesJson: JSON.parse(JSON.stringify(features)),
+        contactEmails,
+        socialProfiles,
       },
       update: {
         reachable: features.reachable,
@@ -66,6 +78,8 @@ async function processCrawl(job: Job<CrawlJobData>) {
         brokenLinksCount: features.brokenLinksCount,
         structuredDataPresent: features.structuredDataPresent,
         rawFeaturesJson: JSON.parse(JSON.stringify(features)),
+        contactEmails,
+        socialProfiles,
       },
     });
 
@@ -73,6 +87,19 @@ async function processCrawl(job: Job<CrawlJobData>) {
       where: { id: leadId },
       data: { crawlStatus: "CRAWLED" },
     });
+
+    // P0.4 - auto-enqueue email verification when ZeroBounce is configured.
+    if (contactEmails.length > 0 && isVerificationConfigured()) {
+      try {
+        await getEmailVerificationQueue().add(
+          "verify",
+          { leadId },
+          { removeOnComplete: 100, removeOnFail: 50 },
+        );
+      } catch (verifyErr) {
+        console.warn(`[Crawl] Email verification enqueue failed for ${leadId}:`, verifyErr);
+      }
+    }
 
     console.log(`[Crawl] Done: ${websiteUrl} (reachable: ${features.reachable})`);
     return { reachable: features.reachable, url: websiteUrl };

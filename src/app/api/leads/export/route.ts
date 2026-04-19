@@ -7,6 +7,31 @@ type ExportFormat = "smartlead" | "instantly" | "csv";
 interface ExportBody {
   leadIds?: string[];
   format?: ExportFormat;
+  // P0.4 - Email verification: by default we only export emails that ZeroBounce
+  // verified as "valid". Pro Team / Agency users can opt in to "rawEmails" to
+  // get unknowns + catch-alls too (useful when verification is unconfigured).
+  rawEmails?: boolean;
+}
+
+interface VerificationEntry {
+  email: string;
+  verified: boolean;
+  status: string;
+}
+
+function pickEmail(
+  emails: string[],
+  verifications: VerificationEntry[],
+  rawEmails: boolean,
+): string {
+  if (rawEmails || verifications.length === 0) {
+    return emails[0] || "";
+  }
+  const verifiedSet = new Set(
+    verifications.filter((v) => v.verified && v.status === "valid").map((v) => v.email),
+  );
+  const validEmail = emails.find((e) => verifiedSet.has(e));
+  return validEmail || "";
 }
 
 const SMARTLEAD_HEADERS = [
@@ -86,6 +111,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as ExportBody;
     const format: ExportFormat = body.format || "csv";
     const leadIds = body.leadIds;
+    const rawEmails = body.rawEmails === true;
 
     if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
       return NextResponse.json(
@@ -142,7 +168,8 @@ export async function POST(request: Request) {
       const opp = lead.salesOpportunity;
       const mockup = lead.mockups[0];
       const emails = (audit?.contactEmails as string[] | undefined) || [];
-      const email = emails[0] || "";
+      const verifications = (audit?.contactEmailsVerified as VerificationEntry[] | undefined) || [];
+      const email = pickEmail(emails, verifications, rawEmails);
       if (!email) leadsWithoutEmail++;
 
       const { first, last } = splitName(lead.businessName);

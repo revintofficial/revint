@@ -13,6 +13,10 @@ import { CircularProgress } from "@/components/ui/progress";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { OutreachStepper } from "@/components/ui/outreach-stepper";
 import { CRAWL_LABELS, ANALYZE_LABELS, OUTREACH_LABELS } from "@/lib/labels";
+import { ReviewIntelligencePanel } from "@/components/app/review-intelligence-panel";
+import { VoiceNotesPanel } from "@/components/app/voice-notes-panel";
+import { SocialProfileIcons } from "@/components/app/social-profile-icons";
+import { LeadMapView } from "@/components/app/lead-map-view";
 import {
   ArrowLeft,
   Globe,
@@ -151,6 +155,15 @@ interface LeadDetail {
     id: string;
     websitePlan: string | null;
   } | null;
+  reviewAnalysisStatus?: string;
+  reviewAnalysis?: {
+    leadScore: number;
+    summary: string | null;
+    weaknessKpis: { label: string; percent: number }[];
+  } | null;
+  googleReviews?: { id: string }[];
+  sourceLat?: number | null;
+  sourceLng?: number | null;
 }
 
 function countAuditPassTotal(audit: NonNullable<LeadDetail["websiteAudit"]>): { passed: number; total: number } {
@@ -376,7 +389,7 @@ export default function LeadDetailPage({
 
   if (loading) {
     return (
-      <div className="p-6 md:p-8 lg:p-10 space-y-6">
+      <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
         <Skeleton className="h-6 w-16" />
         <Skeleton className="h-10 w-64" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -389,7 +402,7 @@ export default function LeadDetailPage({
 
   if (!lead) {
     return (
-      <div className="p-6 md:p-8 lg:p-10">
+      <div className="p-4 sm:p-6 md:p-8 lg:p-10">
         <Card className="p-12 text-center">
           <Search className="w-10 h-10 text-white/20 mx-auto mb-3" />
           <p className="text-white/50">Lead not found.</p>
@@ -452,7 +465,7 @@ export default function LeadDetailPage({
   };
 
   return (
-    <div className="p-6 md:p-8 lg:p-10 space-y-6">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
       <PageHeader
         title={lead.businessName}
         subtitle={lead.formattedAddress}
@@ -798,6 +811,28 @@ export default function LeadDetailPage({
             auditSummary={auditSummary}
             businessName={lead.businessName}
           />
+
+          {/* P0.1 Review Intelligence v1 — KPI bar view of review corpus */}
+          <ReviewIntelligencePanel
+            leadId={lead.id}
+            hasReviews={(lead.googleReviews?.length ?? 0) > 0}
+          />
+
+          {/* P0.7 Voice Notes light — saha satışçısı ICP4 için */}
+          <VoiceNotesPanel leadId={lead.id} />
+
+          {/* P0.5 Social profiles — extended scraping */}
+          <SocialProfileIcons leadId={lead.id} />
+
+          {/* P1.6 Map view — lead pin (lightweight) */}
+          {lead.sourceLat != null && lead.sourceLng != null && (
+            <LeadMapView
+              lat={lead.sourceLat}
+              lng={lead.sourceLng}
+              title={lead.businessName}
+              address={lead.formattedAddress}
+            />
+          )}
         </div>
       </div>
     </div>

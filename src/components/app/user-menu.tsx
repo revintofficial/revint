@@ -16,14 +16,15 @@ import { toast } from "sonner";
 
 export interface UserMenuProps {
   user: { email: string; fullName: string | null; avatarUrl: string | null };
-  workspace: { name: string; plan: "FREE" | "PRO" | "AGENCY" };
+  workspace: { name: string; plan: "FREE" | "PRO" | "PRO_TEAM" | "AGENCY" };
   role: "OWNER" | "ADMIN" | "MEMBER";
   collapsed?: boolean;
 }
 
 const PLAN_BADGE: Record<UserMenuProps["workspace"]["plan"], { label: string; color: string }> = {
   FREE: { label: "Free", color: "rgba(235, 235, 245, 0.55)" },
-  PRO: { label: "Pro", color: "#0A84FF" },
+  PRO: { label: "Pro Solo", color: "#0A84FF" },
+  PRO_TEAM: { label: "Pro Team", color: "#5E6AD2" },
   AGENCY: { label: "Agency", color: "#BF5AF2" },
 };
 

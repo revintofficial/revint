@@ -107,7 +107,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="p-6 md:p-8 lg:p-10">
+      <div className="p-4 sm:p-6 md:p-8 lg:p-10">
         <div className="space-y-6">
           <Skeleton className="h-8 w-48" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -126,7 +126,7 @@ export default function DashboardPage() {
 
   if (!stats) {
     return (
-      <div className="p-6 md:p-8 lg:p-10">
+      <div className="p-4 sm:p-6 md:p-8 lg:p-10">
         <Card className="p-12 text-center">
           <Search className="w-12 h-12 mx-auto mb-4" style={{ color: "rgba(235, 235, 245, 0.3)" }} />
           <h3 className="text-lg font-semibold text-white mb-2">No data yet</h3>
@@ -161,7 +161,7 @@ export default function DashboardPage() {
   const nextAction = getNextAction(stats);
 
   return (
-    <div className="p-6 md:p-8 lg:p-10 space-y-6">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
       <PageHeader
         title="Overview"
         subtitle="Your sales pipeline at a glance"

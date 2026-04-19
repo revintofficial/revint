@@ -1,6 +1,7 @@
 import type { WebsiteFeatures } from "@/types";
 import * as cheerio from "cheerio";
 import { detectBookingProvider, extractContactEmails } from "@/lib/audit/booking-detection";
+import { extractSocialProfiles } from "@/lib/audit/social-scraper";
 
 const SERVICE_KEYWORDS = [
   "repair", "fix", "screen", "battery", "unlock", "accessories",
@@ -294,6 +295,9 @@ export function extractFeatures(html: string, url: string): WebsiteFeatures {
   const bookingProvider = detectBookingProvider({ html, links: linksForDetection });
   const contactEmails = extractContactEmails({ html, links: linksForDetection });
 
+  // P0.5 - extended social profile scraping (IG, FB, LinkedIn, TikTok, YouTube, Twitter/X, WhatsApp, Pinterest)
+  const socialProfiles = extractSocialProfiles({ html, links: linksForDetection });
+
   // Strengthen the boolean: keyword-based detection misses iframes, provider
   // detection catches them. If either says yes, we say yes.
   const hasBookingSystemFinal = hasBookingSystem || bookingProvider !== null;
@@ -318,6 +322,7 @@ export function extractFeatures(html: string, url: string): WebsiteFeatures {
     structuredDataPresent,
     contactEmails,
     bookingProvider,
+    socialProfiles,
 
     hasOpenGraph,
     hasTwitterCards,

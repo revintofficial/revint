@@ -48,6 +48,17 @@ Bu bilgileri kullanarak, bu isletme icin EL KITABI STANDARTLARINA UYGUN, PROFESY
 ## Google Yorumlari (Musteri Geri Bildirimleri)
 {reviews}
 
+## Review Intelligence Analizi (P0.1 - KPI bar formatinda musteri sesi)
+Bu bolum cok onemli. Hero sloganini, Services bolumunu ve CTA'yi bu KPI'lara gore sekillendir.
+Ornek: en yuksek %'li weakness "wait time" ise hero "10 dakikada randevu, sira beklemeden" gibi olmali. En yuksek strength "friendly staff" ise About bolumu bunu vurgulamali.
+
+{review_intelligence}
+
+## Workspace "My Offer" Context (P0.2 - Ne sattigimiz)
+Mockup CTA'si ve fiyat anchor'i bu teklife gore yazilmali. Donusum linki varsa CTA o linke gitmeli.
+
+{my_offer}
+
 ---
 
 Yukaridaki TUM bilgileri analiz ederek asagidaki yapida DETAYLI bir web sitesi plani olustur. Her bolum icin somut, aksiyona donuk oneriler ver. Audit sonuclarinda BASARISIZ olan maddeler icin ozel cozum onerileri sun.

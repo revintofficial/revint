@@ -28,7 +28,7 @@ export interface AuthedSession {
     id: string;
     name: string;
     slug: string;
-    plan: "FREE" | "PRO" | "AGENCY";
+    plan: "FREE" | "PRO" | "PRO_TEAM" | "AGENCY";
   };
   role: "OWNER" | "ADMIN" | "MEMBER";
 }

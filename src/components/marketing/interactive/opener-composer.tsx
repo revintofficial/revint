@@ -9,12 +9,19 @@ interface OpenerComposerProps {
   lead: DemoLead;
   recipient?: string;
   cps?: number;
+  /**
+   * Strip the outer rounded card chrome (border, shadow, background gradient).
+   * Useful when this composer is nested inside a device frame that already
+   * provides the surface (e.g. PhoneFrame on the walk-in landing page).
+   */
+  chromeless?: boolean;
 }
 
 export function OpenerComposer({
   lead,
   recipient,
   cps = 60,
+  chromeless = false,
 }: OpenerComposerProps) {
   const reduce = useReducedMotion();
   const [typed, setTyped] = useState("");
@@ -84,14 +91,18 @@ export function OpenerComposer({
   return (
     <div
       ref={containerRef}
-      className="rounded-2xl overflow-hidden"
-      style={{
-        background:
-          "linear-gradient(180deg, rgba(32,32,36,0.92) 0%, rgba(22,22,26,0.96) 100%)",
-        border: "0.5px solid rgba(255,255,255,0.09)",
-        boxShadow:
-          "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(49,46,129,0.25)",
-      }}
+      className={chromeless ? "" : "rounded-2xl overflow-hidden"}
+      style={
+        chromeless
+          ? undefined
+          : {
+              background:
+                "linear-gradient(180deg, rgba(32,32,36,0.92) 0%, rgba(22,22,26,0.96) 100%)",
+              border: "0.5px solid rgba(255,255,255,0.09)",
+              boxShadow:
+                "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(49,46,129,0.25)",
+            }
+      }
     >
       {/* Header */}
       <div

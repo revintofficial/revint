@@ -10,6 +10,7 @@ export const runtime = "nodejs";
 function detectPlanFromPriceId(priceId: string | null | undefined): Plan {
   if (!priceId) return "FREE";
   if (priceId === PLANS.PRO.priceId) return "PRO";
+  if (priceId === PLANS.PRO_TEAM.priceId) return "PRO_TEAM";
   if (priceId === PLANS.AGENCY.priceId) return "AGENCY";
   return "FREE";
 }

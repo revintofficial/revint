@@ -125,7 +125,7 @@ export default function LeadsPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-6 md:p-8 lg:p-10 space-y-6">
+        <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
           <Skeleton className="h-8 w-32" />
           <Skeleton className="h-16 rounded-2xl" />
           <Skeleton className="h-96 rounded-2xl" />
@@ -363,7 +363,7 @@ function LeadsPageContent() {
   };
 
   return (
-    <div className="p-6 md:p-8 lg:p-10 space-y-6">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
       <PageHeader
         title="Leads"
         subtitle={`${pagination.total} leads found`}
@@ -452,8 +452,173 @@ function LeadsPageContent() {
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <Card className="overflow-hidden">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <Card>
+            <CardContent className="p-8 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-6 h-6 text-[#0A84FF] animate-spin" />
+              <p className="text-sm text-white/30">Loading...</p>
+            </CardContent>
+          </Card>
+        ) : leads.length === 0 ? (
+          <Card>
+            <CardContent className="p-10 flex flex-col items-center justify-center gap-3 text-center">
+              <Users className="w-10 h-10 text-white/20" />
+              <p className="text-sm font-medium text-white/50">No leads yet</p>
+              <p className="text-xs text-white/30">Start by discovering businesses.</p>
+              <Link href="/app/discovery">
+                <Button size="sm">Go to Discovery</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : (
+          leads.map((lead, index) => (
+            <Card
+              key={lead.id}
+              className="animate-fade-in-up"
+              style={{ animationDelay: `${index * 30}ms` }}
+            >
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/app/leads/${lead.id}`}
+                      className="font-medium text-white hover:text-[#0A84FF] transition-colors text-[15px] leading-snug break-words"
+                    >
+                      {lead.businessName}
+                    </Link>
+                    <p className="text-xs text-white/30 mt-0.5 line-clamp-2">
+                      {lead.formattedAddress}
+                    </p>
+                  </div>
+                  {lead.salesOpportunity && (
+                    <ScoreBadge score={lead.salesOpportunity.opportunityScore} />
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {lead.hasWebsite ? (
+                    <Badge variant="success" className="text-[10px]">Has site</Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-[10px]">No site</Badge>
+                  )}
+                  {lead.salesOpportunity ? (
+                    <StatusBadge status={lead.salesOpportunity.status} />
+                  ) : (
+                    <Badge variant="outline" className="text-[10px]">Queued</Badge>
+                  )}
+                  {lead.borough && (
+                    <Badge variant="outline" className="text-[10px]">{lead.borough}</Badge>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 pt-1 border-t border-white/5">
+                  {lead.hasWebsite ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 gap-1 text-[11px]"
+                      onClick={() => runContentCheck(lead)}
+                      disabled={contentCheckLoading && contentCheckLeadId === lead.id}
+                    >
+                      {contentCheckLoading && contentCheckLeadId === lead.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <ScanSearch className="w-3 h-3" />
+                      )}
+                      Check
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 gap-1 text-[11px]"
+                      onClick={() => runWebsiteSearch(lead)}
+                      disabled={websiteSearchLoading && websiteSearchLeadId === lead.id}
+                    >
+                      {websiteSearchLoading && websiteSearchLeadId === lead.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Globe className="w-3 h-3" />
+                      )}
+                      Find site
+                    </Button>
+                  )}
+                  {watchlistLeadIds.has(lead.id) ? (
+                    <Link href="/app/watchlist">
+                      <Button size="sm" variant="ghost" className="h-8 px-2 gap-1 text-[11px] text-[#FF9F0A] hover:text-[#FF9F0A]">
+                        <BookmarkCheck className="w-3 h-3" />
+                        Saved
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 gap-1 text-[11px]"
+                      onClick={() => openWatchlistDialog(lead)}
+                    >
+                      <Bookmark className="w-3 h-3" />
+                      Shortlist
+                    </Button>
+                  )}
+                  {lead.phone && (
+                    <a href={`tel:${lead.phone}`}>
+                      <Button size="sm" variant="ghost" className="h-8 px-2 gap-1 text-[11px]">
+                        <Phone className="w-3 h-3" />
+                        Call
+                      </Button>
+                    </a>
+                  )}
+                  {lead.googleMapsUri && (
+                    <a href={lead.googleMapsUri} target="_blank" rel="noopener noreferrer">
+                      <Button size="sm" variant="ghost" className="h-8 px-2 gap-1 text-[11px]">
+                        <MapPin className="w-3 h-3" />
+                        Map
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+
+        {pagination.totalPages > 1 && !loading && leads.length > 0 && (
+          <div className="flex flex-col gap-2 pt-2">
+            <p className="text-xs text-white/50 text-center">
+              Page {pagination.page} of {pagination.totalPages}
+              <span className="text-white/30 ml-2">({pagination.total} results)</span>
+            </p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                disabled={pagination.page <= 1}
+                onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <Card className="overflow-hidden hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

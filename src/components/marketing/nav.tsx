@@ -8,6 +8,7 @@ const FOR_LINKS = [
   { href: "/for/agencies", label: "B2B outbound agencies", desc: "Fresh leads, no Apollo" },
   { href: "/for/specialists", label: "Vertical specialists", desc: "Klaviyo, Webflow, GHL" },
   { href: "/for/smma", label: "New SMMA owners", desc: "Your first 5 clients" },
+  { href: "/for/walk-in-web-agencies", label: "Walk-in web agencies", desc: "Tablet, mockup, close" },
 ];
 
 export function MarketingNav({ signedIn }: { signedIn: boolean }) {

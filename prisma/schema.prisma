@@ -25,6 +25,14 @@ enum AnalyzeStatus {
   FAILED
 }
 
+enum ReviewAnalysisStatus {
+  PENDING
+  ANALYZING
+  ANALYZED
+  FAILED
+  NO_REVIEWS
+}
+
 enum SuggestedOffer {
   STARTER
   GROWTH
@@ -49,7 +57,18 @@ enum MeetingResult {
 enum Plan {
   FREE
   PRO
+  PRO_TEAM
   AGENCY
+}
+
+enum EmailProvider {
+  GMAIL
+  OUTLOOK
+}
+
+enum CopilotRole {
+  USER
+  ASSISTANT
 }
 
 enum Role {
@@ -94,13 +113,30 @@ model Workspace {
   // pages are rendered for this workspace's leads. Workspaces opt in.
   publicProfilesEnabled  Boolean   @default(false) @map("public_profiles_enabled")
 
+  // P0.2 "My offer" workspace context. These fields feed both the SalesOpportunity
+  // prompt (offer ↔ pain matching) and the website-plan prompt (mockup CTA + hero).
+  // Without them every email and mockup is generic; with them they are tailored
+  // to what THIS workspace actually sells. See plan.md §4 P0.2.
+  offerName          String? @map("offer_name")
+  valueProposition   String? @map("value_proposition") @db.Text
+  socialProof        String? @map("social_proof") @db.Text
+  offerHook          String? @map("offer_hook") @db.Text
+  objective          String? @map("objective")
+  tone               String? @map("tone")
+  length             String? @map("length")
+  language           String  @default("tr") @map("language")
+  senderName         String? @map("sender_name")
+  conversionLink     String? @map("conversion_link")
+
   createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt              DateTime  @updatedAt @map("updated_at")
 
-  owner   User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members WorkspaceMember[]
-  leads   Lead[]
-  todos   TeamTodo[]
+  owner          User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members        WorkspaceMember[]
+  leads          Lead[]
+  todos          TeamTodo[]
+  emailAccounts  EmailAccount[]
+  copilotMessages CopilotMessage[]
 
   @@map("workspaces")
 }
@@ -138,10 +174,11 @@ model Lead {
   sourceQuery      String?  @map("source_query")
   sourceLat        Float?   @map("source_lat")
   sourceLng        Float?   @map("source_lng")
-  crawlStatus      CrawlStatus   @default(PENDING) @map("crawl_status")
-  analyzeStatus    AnalyzeStatus @default(PENDING) @map("analyze_status")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  crawlStatus           CrawlStatus          @default(PENDING) @map("crawl_status")
+  analyzeStatus         AnalyzeStatus        @default(PENDING) @map("analyze_status")
+  reviewAnalysisStatus  ReviewAnalysisStatus @default(PENDING) @map("review_analysis_status")
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @updatedAt @map("updated_at")
 
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   websiteAudit     WebsiteAudit?
@@ -149,6 +186,8 @@ model Lead {
   watchlistItem    WatchlistItem?
   googleReviews    GoogleReview[]
   mockups          Mockup[]
+  reviewAnalysis   ReviewAnalysis?
+  voiceNotes       VoiceNote[]
 
   // placeId scoped per workspace so two workspaces can independently track the same business
   @@unique([workspaceId, placeId])
@@ -202,6 +241,12 @@ model WebsiteAudit {
   navItems              Json     @default("[]") @map("nav_items")
   ctaLinks              Json     @default("[]") @map("cta_links")
   contactEmails         Json     @default("[]") @map("contact_emails")
+  // P0.4: per-email verification status. Shape: [{ email, verified, verifiedAt, status }]
+  // where status is the raw provider response ("valid"/"invalid"/"catch-all"/"unknown").
+  // CSV export filters by verified=true unless user opts in to raw mode.
+  contactEmailsVerified Json     @default("[]") @map("contact_emails_verified")
+  // P0.5: extended social profile scraping. Shape: { instagram, facebook, linkedin, tiktok, youtube, twitter, whatsapp }
+  socialProfiles        Json     @default("{}") @map("social_profiles")
   brokenLinksCount      Int      @default(0) @map("broken_links_count")
   structuredDataPresent Boolean  @default(false) @map("structured_data_present")
   rawFeaturesJson       Json?    @map("raw_features_json")
@@ -234,16 +279,20 @@ model SalesOpportunity {
 }
 
 model WatchlistItem {
-  id            String          @id @default(cuid())
-  leadId        String          @unique @map("lead_id")
-  siteUrl       String?         @map("site_url")
-  notes         String?
-  websitePlan   String?         @map("website_plan") @db.Text
-  pipelineNotes String?         @map("pipeline_notes") @db.Text
-  selectedOffer SuggestedOffer? @map("selected_offer")
-  meetingResult MeetingResult?  @map("meeting_result")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
+  id              String          @id @default(cuid())
+  leadId          String          @unique @map("lead_id")
+  siteUrl         String?         @map("site_url")
+  notes           String?
+  websitePlan     String?         @map("website_plan") @db.Text
+  pipelineNotes   String?         @map("pipeline_notes") @db.Text
+  selectedOffer   SuggestedOffer? @map("selected_offer")
+  meetingResult   MeetingResult?  @map("meeting_result")
+  // P1.3 calendar sync: next scheduled meeting with this lead (Google Cal / Outlook).
+  nextMeetingAt   DateTime?       @map("next_meeting_at")
+  meetingProvider String?         @map("meeting_provider")
+  meetingEventId  String?         @map("meeting_event_id")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
@@ -280,4 +329,108 @@ model TeamTodo {
 
   @@index([workspaceId, column])
   @@map("team_todos")
+}
+
+// P0.1 - Review Intelligence v1.
+// Aggregated KPI analysis derived from up to 50 GoogleReview rows for a lead.
+// Mapileads-style weakness/strength bars, sentiment breakdown, lead score.
+// Generated by `analyze-reviews` worker via Gemini 2.5 Flash JSON mode.
+model ReviewAnalysis {
+  id                  String   @id @default(cuid())
+  leadId              String   @unique @map("lead_id")
+  reviewsAnalyzedCount Int     @default(0) @map("reviews_analyzed_count")
+  // [{ label: "wait time", percent: 90 }, ...]
+  weaknessKpis        Json     @default("[]") @map("weakness_kpis")
+  strengthKpis        Json     @default("[]") @map("strength_kpis")
+  // { positive: 0.65, neutral: 0.20, negative: 0.15 }
+  sentimentBreakdown  Json     @default("{}") @map("sentiment_breakdown")
+  painPhrases         Json     @default("[]") @map("pain_phrases")
+  strengthPhrases     Json     @default("[]") @map("strength_phrases")
+  // Pattern: "X yıllarca kullandık ama Y, Z'ye geçtik" extracted from positive reviews.
+  switchSignals       Json     @default("[]") @map("switch_signals")
+  // 0-100 hot prospect score for what your offer fixes (higher = better fit).
+  leadScore           Int      @default(0) @map("lead_score")
+  // Free-text 1-2 sentence narrative summarizing what reviewers care about.
+  summary             String?  @db.Text
+  analyzedAt          DateTime @default(now()) @map("analyzed_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("review_analyses")
+}
+
+// P0.7 - Voice notes light.
+// 30-second voice memo recorded from the lead detail page (saha satışçısı ICP4).
+// Transcribed via Whisper / Gemini, attached to the lead, optionally appended to
+// WatchlistItem.pipelineNotes for pipeline visibility.
+model VoiceNote {
+  id           String   @id @default(cuid())
+  leadId       String   @map("lead_id")
+  workspaceId  String   @map("workspace_id")
+  audioUrl     String?  @map("audio_url")
+  durationSec  Int      @default(0) @map("duration_sec")
+  transcript   String?  @db.Text
+  language     String?
+  source       String   @default("web") @map("source")
+  createdBy    String?  @map("created_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt])
+  @@index([workspaceId])
+  @@map("voice_notes")
+}
+
+// P1.1 - Direct email send.
+// Connected Gmail / Outlook OAuth account used to send openers + mockup links
+// from inside the platform. CSV export to Smartlead/Instantly stays as the
+// alternative path for users who already live in those senders.
+model EmailAccount {
+  id            String        @id @default(cuid())
+  workspaceId   String        @map("workspace_id")
+  userId        String        @map("user_id") @db.Uuid
+  provider      EmailProvider
+  email         String
+  accessToken   String        @map("access_token") @db.Text
+  refreshToken  String        @map("refresh_token") @db.Text
+  expiresAt     DateTime?     @map("expires_at")
+  dailyLimit    Int           @default(500) @map("daily_limit")
+  sentToday     Int           @default(0) @map("sent_today")
+  resetAt       DateTime      @default(now()) @map("reset_at")
+  // P1.4 reply attribution opt-in. When true, the worker reads inbox replies
+  // and updates SalesOpportunity.status accordingly.
+  replyAttributionEnabled Boolean @default(false) @map("reply_attribution_enabled")
+  lastInboxSyncAt DateTime?   @map("last_inbox_sync_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email])
+  @@index([userId])
+  @@map("email_accounts")
+}
+
+// P1.2 - AI sales co-pilot chat.
+// Workspace-wide chat history. Each message references which leadIds the
+// assistant pulled context from, so the user can audit "where did this
+// recommendation come from."
+model CopilotMessage {
+  id          String      @id @default(cuid())
+  workspaceId String      @map("workspace_id")
+  userId      String      @map("user_id") @db.Uuid
+  role        CopilotRole
+  content     String      @db.Text
+  // [leadId, leadId, ...] - which leads the assistant pulled context from.
+  leadIds     Json        @default("[]") @map("lead_ids")
+  // Token cost tracking for tier quota enforcement.
+  tokensIn    Int         @default(0) @map("tokens_in")
+  tokensOut   Int         @default(0) @map("tokens_out")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@map("copilot_messages")
 }

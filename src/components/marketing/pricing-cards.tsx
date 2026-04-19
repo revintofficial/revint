@@ -6,7 +6,7 @@ import { PLANS, PLAN_ORDER } from "@/lib/plans";
 
 export function PricingCards({ ctaHref = "/signup" }: { ctaHref?: string }) {
   return (
-    <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
       {PLAN_ORDER.map((id) => {
         const plan = PLANS[id];
         const isHighlight = plan.highlight;

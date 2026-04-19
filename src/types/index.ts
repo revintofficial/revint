@@ -68,6 +68,17 @@ export interface WebsiteFeatures {
   // Extracted contact + integrations (used for outreach export and segmentation)
   contactEmails: string[];
   bookingProvider: string | null;
+  // P0.5 - genişletilmiş social profile scraping
+  socialProfiles?: {
+    instagram: string | null;
+    facebook: string | null;
+    linkedin: string | null;
+    tiktok: string | null;
+    youtube: string | null;
+    twitter: string | null;
+    whatsapp: string | null;
+    pinterest: string | null;
+  };
 }
 
 export interface SecurityHeadersResult {
