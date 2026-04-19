@@ -11,6 +11,8 @@ export { ScrollStage, type ScrollScene } from "./scroll-stage";
 export { BeforeAfterSplit } from "./before-after-split";
 export { TabletFrame } from "./tablet-frame";
 export { PhoneFrame } from "./phone-frame";
+export { MacBookFrame } from "./macbook-frame";
+export { SdrPodFrame } from "./sdr-pod-frame";
 export { VoiceMemoCard } from "./voice-memo-card";
 export { WalkRouteCard } from "./walk-route-card";
 export { scoreColor, type DemoLead, type DemoAuditSignal } from "./types";
