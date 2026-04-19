@@ -8,7 +8,7 @@ const COPY: VerticalCopy = {
   eyebrow: "For SMMA owners landing their first clients",
   h1: "First clients are the hardest.",
   h1Highlight: "Skip the manual prospecting.",
-  sub: "You know the playbook. The bottleneck is finding 50 prospects, researching each one, and writing a message that doesn't sound like a template. Lead Engine handles the prospecting so your first 5 clients ship this month, not next quarter.",
+  sub: "You know the playbook. The bottleneck is finding 50 prospects, researching each one, and writing a message that doesn't sound like a template. Lead Engine handles the prospecting so finding clients stops being the thing that breaks you.",
   primaryCta: "Get 50 leads in 5 minutes",
   validationQuote: {
     source: "From r/SMMA, 6 days ago",
@@ -24,26 +24,26 @@ const COPY: VerticalCopy = {
     {
       icon: Eye,
       title: "Generic outreach gets ignored",
-      body: "Mass-blasting templates burns your domain. Writing each message by hand takes an hour each. Either way you ship 10 emails and stall.",
+      body: "Blast templates and your domain burns. Hand-write every email and you ship ten before you give up. The middle path doesn't exist without tools.",
     },
     {
       icon: Handshake,
       title: "First call is a disaster without proof",
-      body: "Without a portfolio or case study, prospects don't take you seriously. You need something concrete to show before the call — an audit, a mockup, a number — that justifies the meeting.",
+      body: "Without a portfolio or case study, prospects don't take you seriously. You need something concrete to show before the call. An audit and a mockup do the job; without them, the call is you talking about yourself.",
     },
   ],
   proofHeading: "What you actually get.",
   proofPoints: [
-    "Pick a city, pick a niche (phone repair, dental, gym, anything). Lead Engine pulls 50 real local businesses from Google Maps in 30 seconds.",
-    "Each lead has a website audit telling you what's broken — the conversation starter you didn't have to invent.",
+    "Pick a city and a niche. Phone repair, dental, gyms, whatever you want to specialize in. Lead Engine pulls 50 real local businesses from Google Maps in 30 seconds.",
+    "Each lead arrives with a website audit telling you what's broken. That's the conversation starter you didn't have to invent.",
     "One click generates a custom one-page mockup for each prospect. Show it on the call. Different conversation.",
     "First-draft opener written for you, referencing their actual site. Edit, hit send. Your first 10 emails take 15 minutes, not 8 hours.",
     "Free plan covers your first 50 prospects. Your first signed deal pays for Pro for a year.",
-    "No credit card to start. No surprise renewal. If it doesn't work for you, you keep the audit data either way.",
+    "No credit card to start. If you cancel, you keep the audit data.",
   ],
   closingHeading: "Stop reading playbooks.",
   closingHeadingHighlight: "Send your first 50 emails today.",
-  closingBody: "Start free with 50 leads. No card. Your first close pays for everything.",
+  closingBody: "Start free with 50 leads. Your first close pays for everything.",
 };
 
 export const metadata = {

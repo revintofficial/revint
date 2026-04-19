@@ -23,7 +23,7 @@ export function MarketingFooter() {
               <span className="text-[14px] font-semibold tracking-tight">Lead Engine</span>
             </Link>
             <p className="text-[12.5px] text-white/45 leading-relaxed max-w-xs">
-              Find local businesses that need a new website, get an AI-built pitch, and close deals faster.
+              Local businesses that need a new website, found and pitched in one tool.
             </p>
           </div>
 

@@ -243,7 +243,7 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
               className="text-[34px] sm:text-[44px] font-semibold tracking-tight mb-3"
               style={{ letterSpacing: "-0.025em" }}
             >
-              Same plans for everyone.
+              Simple, fair pricing.
             </h2>
             <p className="text-[15px] text-white/55 max-w-xl mx-auto">
               Start free. Upgrade when you start closing.

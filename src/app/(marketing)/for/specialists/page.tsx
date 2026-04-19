@@ -8,7 +8,7 @@ const COPY: VerticalCopy = {
   eyebrow: "For vertical specialists starting their own agency",
   h1: "You know the work.",
   h1Highlight: "We'll handle the pipeline.",
-  sub: "Klaviyo, Webflow, GoHighLevel, Shopify Plus, Notion — you've got the deliverable nailed. Lead Engine gives you a ready-to-pitch list of local prospects, each with a custom mockup, so client acquisition stops being your bottleneck.",
+  sub: "If you ship Klaviyo flows or Webflow builds for a living, you've got the deliverable nailed. Lead Engine hands you a list of local prospects with a custom mockup attached to each one, so client acquisition stops being the part that breaks you.",
   primaryCta: "Get my first 50 leads free",
   validationQuote: {
     source: "From r/agency, 1 day ago",
@@ -19,7 +19,7 @@ const COPY: VerticalCopy = {
     {
       icon: Briefcase,
       title: "You know the deliverable",
-      body: "Klaviyo flows, Webflow builds, GoHighLevel automations — you've shipped them dozens of times. You're not the bottleneck.",
+      body: "Klaviyo flows or Webflow builds, you've shipped them dozens of times. The deliverable isn't the bottleneck.",
     },
     {
       icon: Compass,
@@ -29,21 +29,20 @@ const COPY: VerticalCopy = {
     {
       icon: Send,
       title: "You can't show value upfront",
-      body: "A generic 'I do Klaviyo' email gets ignored. You need something specific, fast, and free to send before they trust you.",
+      body: "A generic 'I do Klaviyo' email gets ignored. You need something concrete to send before the first call. An audit they didn't ask for is a good start.",
     },
   ],
   proofHeading: "What changes for you.",
   proofPoints: [
     "Pick your specialty (e-commerce brands for Klaviyo, local services for Webflow, etc.) and Lead Engine pulls a fresh prospect list from Google Maps in 30 seconds.",
-    "Each lead comes with a website audit pinpointing exactly what's broken — the conversation starter you couldn't write yourself.",
-    "Generate a one-page custom mockup for each shortlisted prospect. Attach it to your cold email. The reply isn't 'who are you', it's 'how much.'",
+    "Each lead comes with a website audit pinpointing exactly what's broken. That's the conversation starter you couldn't write yourself.",
+    "Generate a one-page custom mockup for each shortlisted prospect. Attach it to the cold email. Replies start with pricing questions instead of 'who are you'.",
     "First-draft opener references their actual site, written in plain language. You edit the parts that need your voice and ship.",
-    "Track every conversation in a built-in pipeline. Notes, status, meeting outcomes — no GoHighLevel CRM setup needed.",
-    "Skip the cold email guru courses. The system is the product, not the playbook.",
+    "Track every conversation in a built-in pipeline. Notes, status, and meeting outcomes live with the lead, so you don't need a separate CRM.",
   ],
   closingHeading: "Stop guessing how to sell.",
   closingHeadingHighlight: "Start with 50 ready-to-pitch leads.",
-  closingBody: "Free to start. No credit card. Your first deal pays for the year.",
+  closingBody: "Free to start. Your first deal pays for the year.",
 };
 
 export const metadata = {

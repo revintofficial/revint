@@ -49,7 +49,7 @@ export const PLANS: Record<Plan, PlanDefinition> = {
   AGENCY: {
     id: "AGENCY",
     name: "Agency",
-    tagline: "For B2B outbound agencies.",
+    tagline: "For agencies running outbound for clients.",
     monthlyPrice: 99,
     priceId: process.env.STRIPE_PRICE_AGENCY || null,
     leadsPerCycle: 10_000,

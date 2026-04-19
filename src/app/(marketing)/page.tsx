@@ -26,19 +26,19 @@ const HOW: { num: string; title: string; body: string; icon: LucideIcon }[] = [
   {
     num: "01",
     title: "Discover",
-    body: "Pick a postcode and a niche. Lead Engine pulls every matching local business straight from Google Maps — fresh data, never the recycled Apollo dump.",
+    body: "Pick a postcode and a niche. Lead Engine pulls every matching local business straight from Google Maps. The data is live, not a recycled Apollo export.",
     icon: Search,
   },
   {
     num: "02",
     title: "Audit & Score",
-    body: "We scan each site for the things that matter: load time, mobile fit, booking system, security headers. Gemini scores the opportunity 0-100 with reasons.",
+    body: "We scan each site for things like load time, whether the booking button works, whether HTTPS is on. Gemini then scores the opportunity 0-100 and tells you why.",
     icon: Sparkles,
   },
   {
     num: "03",
     title: "Pitch with a mockup",
-    body: "One click generates a custom one-page mockup for each lead, plus a first-draft opener referencing their actual site. Ship it from your inbox or push to Smartlead.",
+    body: "One click generates a custom one-page mockup for each lead, plus a draft opener that references their actual site. Send it from your inbox or push to Smartlead.",
     icon: Target,
   },
 ];
@@ -46,37 +46,37 @@ const HOW: { num: string; title: string; body: string; icon: LucideIcon }[] = [
 const FEATURES: { title: string; body: string; icon: LucideIcon; color: string }[] = [
   {
     title: "Google Places discovery",
-    body: "Pull thousands of leads in seconds. Filter by niche, neighborhood, rating, and review count.",
+    body: "Pull thousands of leads in seconds. Filter by niche, neighborhood, and review count.",
     icon: Search,
     color: "#5E6AD2",
   },
   {
     title: "Automated website audit",
-    body: "We crawl every site and detect 20+ signals — broken links, missing meta tags, no HTTPS, no booking system.",
+    body: "We crawl every site and check 20+ signals: broken links, missing meta, no HTTPS, no booking flow.",
     icon: Globe,
     color: "#34D399",
   },
   {
     title: "AI opportunity scoring",
-    body: "Gemini ranks every lead 0-100 based on website quality, business size, and pain points.",
+    body: "Gemini ranks every lead 0-100 based on website quality and how big the business actually is.",
     icon: Sparkles,
     color: "#8B5CF6",
   },
   {
     title: "Personalized first message",
-    body: "Get a custom outreach message for every shortlisted lead — references their actual business and weaknesses.",
+    body: "A custom outreach message for every shortlisted lead, written against their actual site, not a template.",
     icon: FileText,
     color: "#F59E0B",
   },
   {
     title: "Built-in pipeline",
-    body: "Track leads from New → Contacted → Meeting → Won. Notes, results, and outcomes all in one place.",
+    body: "Track leads from New → Contacted → Meeting → Won. Notes and outcomes live with the lead, not in a spreadsheet.",
     icon: GitBranch,
     color: "#F87171",
   },
   {
     title: "Website plan generator",
-    body: "One click generates a complete website proposal: pages, sections, copy direction, suggested price.",
+    body: "One click drafts a full website proposal with pages, sections, copy direction, and a suggested price.",
     icon: Star,
     color: "#A5B4FC",
   },
@@ -144,9 +144,9 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-[16px] sm:text-[18px] text-white/55 max-w-2xl mx-auto mb-9 leading-relaxed">
-            47 audited local leads, ready-to-pitch mockups, and a first-draft
-            opener referencing each prospect&apos;s actual site. In 5 minutes.
-            From a postcode and a niche.
+            Type a postcode and a niche. Five minutes later you have 47 audited
+            local leads, a custom mockup for each one, and a draft opener that
+            actually references their site.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-9">
@@ -339,9 +339,8 @@ export default function LandingPage() {
               Start free. Upgrade when you start closing. Cancel anytime.
             </p>
             <p className="text-[12.5px] text-white/40 max-w-xl mx-auto">
-              For reference: a typical Clay + cold email setup runs around
-              $475/mo. Lead Engine includes the audit, mockup, and personalized
-              opener for less.
+              For reference: a typical Clay + cold email stack runs around
+              $475/mo. Lead Engine includes the audit and the mockup for less.
             </p>
           </div>
           <PricingCards />

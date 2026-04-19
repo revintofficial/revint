@@ -30,7 +30,7 @@ const SAMPLE_LEADS = [
     score: 94,
     issues: ["No website", "No online ordering"],
     pitch:
-      "5★ café with no website. They're getting 200+ Instagram DMs/week asking for a menu. Slam-dunk pitch.",
+      "5★ café with no website. They're getting 200+ Instagram DMs/week asking for a menu. An easy first call.",
   },
   {
     name: "Nova Dental Studio",
@@ -52,19 +52,87 @@ function scoreColor(s: number) {
 
 export function ProductPreview() {
   return (
-    <div className="relative">
+    <div className="relative" style={{ perspective: "2400px" }}>
+      {/* Soft overhead light (key light) */}
       <div
-        className="rounded-2xl overflow-hidden"
+        aria-hidden
+        className="absolute left-1/2 -translate-x-1/2 -top-32 w-[120%] h-[420px] -z-10 pointer-events-none blur-3xl opacity-70"
         style={{
-          background: "linear-gradient(180deg, rgba(28,28,30,0.7), rgba(20,20,22,0.9))",
-          border: "0.5px solid rgba(255,255,255,0.1)",
-          boxShadow: "0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset",
+          background:
+            "radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.28), rgba(94,106,210,0.18) 40%, transparent 70%)",
+        }}
+      />
+      {/* Subtle rim light from the right */}
+      <div
+        aria-hidden
+        className="absolute -right-20 top-10 w-[460px] h-[460px] -z-10 pointer-events-none blur-3xl opacity-40"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(94,106,210,0.45), transparent 60%)",
+        }}
+      />
+
+      <div
+        className="relative rounded-2xl overflow-hidden will-change-transform"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(32,32,36,0.92) 0%, rgba(22,22,26,0.96) 50%, rgba(16,16,20,0.98) 100%)",
+          border: "0.5px solid rgba(255,255,255,0.09)",
+          transform: "rotateX(2deg)",
+          transformOrigin: "50% 100%",
+          boxShadow: [
+            // ambient
+            "0 1px 0 rgba(255,255,255,0.08) inset",
+            "0 0 0 1px rgba(255,255,255,0.04) inset",
+            // contact shadow under the device
+            "0 2px 6px rgba(0,0,0,0.4)",
+            // mid drop
+            "0 24px 60px rgba(0,0,0,0.55)",
+            // long, photographic falloff
+            "0 60px 140px rgba(0,0,0,0.7)",
+            // subtle colored bounce light
+            "0 80px 200px rgba(49,46,129,0.35)",
+          ].join(", "),
         }}
       >
+        {/* Top glass highlight (mimics studio key light hitting the bezel) */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-px pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
+          }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-24 pointer-events-none opacity-60"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.06), transparent)",
+            mixBlendMode: "overlay",
+          }}
+        />
+        {/* Faint diagonal sheen */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none opacity-[0.07]"
+          style={{
+            background:
+              "linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.6) 48%, transparent 60%)",
+            mixBlendMode: "overlay",
+          }}
+        />
+
         {/* App chrome */}
         <div
-          className="px-4 py-2.5 flex items-center gap-2"
-          style={{ borderBottom: "0.5px solid rgba(255,255,255,0.06)" }}
+          className="relative px-4 py-2.5 flex items-center gap-2"
+          style={{
+            borderBottom: "0.5px solid rgba(255,255,255,0.07)",
+            background:
+              "linear-gradient(180deg, rgba(44,44,48,0.75), rgba(30,30,34,0.55))",
+            boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset",
+          }}
         >
           <div className="flex gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
@@ -228,12 +296,32 @@ export function ProductPreview() {
               <CheckCircle2 className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
               <p className="text-[11.5px] text-white/75">
                 <span className="font-semibold text-white">Next:</span>{" "}
-                Generate personalized pitches for these 3 leads — 1 click.
+                Generate personalized pitches for these three leads in one click.
               </p>
             </div>
           </div>
         </div>
+
+        {/* Faint inner vignette to deepen the corners (photographic falloff) */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none rounded-2xl"
+          style={{
+            boxShadow:
+              "inset 0 0 120px rgba(0,0,0,0.35), inset 0 -40px 80px rgba(0,0,0,0.25)",
+          }}
+        />
       </div>
+
+      {/* Floor reflection (gives the device weight, like sitting on glass) */}
+      <div
+        aria-hidden
+        className="absolute left-1/2 -translate-x-1/2 -bottom-10 w-[88%] h-24 pointer-events-none -z-10 blur-2xl opacity-70"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.55), transparent 70%)",
+        }}
+      />
     </div>
   );
 }

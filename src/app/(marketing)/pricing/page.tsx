@@ -23,7 +23,7 @@ export default function PricingPage() {
             Simple, fair pricing.
           </h1>
           <p className="text-[16px] text-white/55 max-w-xl mx-auto">
-            Start free. Upgrade when the deals start closing. Cancel any time.
+            Start free. Upgrade once you're closing deals.
           </p>
         </div>
 

@@ -8,7 +8,7 @@ const COPY: VerticalCopy = {
   eyebrow: "For B2B outbound agencies",
   h1: "Apollo's tired.",
   h1Highlight: "Your pipeline doesn't have to be.",
-  sub: "Pull fresh local leads from Google Maps every search. Get a website audit, a custom mockup, and a first-draft opener for each one. Push to Smartlead or Instantly in two clicks.",
+  sub: "Pull fresh local leads from Google Maps every search. Each one comes with a website audit, a custom mockup, and a draft opener. Push the file to Smartlead or Instantly in two clicks.",
   primaryCta: "Try with 50 free leads",
   validationQuote: {
     source: "From r/coldemail, 5 days ago — $140k/mo agency stack thread",
@@ -35,15 +35,15 @@ const COPY: VerticalCopy = {
   proofHeading: "What changes for your team.",
   proofPoints: [
     "Discovery is per-search, not bulk-imported. Every list you pull is fresh data from Google Maps, not a recycled Apollo dump.",
-    "For each shortlisted lead, generate a custom one-page mockup populated with the prospect's actual business info — hero, services, CTA. Attach the link in your opener.",
+    "For each shortlisted lead, generate a custom one-page mockup using the prospect's actual business info (hero, services, CTA). Attach the link in your opener.",
     "First-draft openers reference specific things on the prospect's existing site (load time, missing booking button, last-updated year). No more 'Hi {firstName}, hope this helps.'",
-    "Push to Smartlead or Instantly with native CSV export. Custom variables wire up automatically — mockup URL, audit signals, suggested package.",
-    "Auto-send is off by default. AI writes, your SDR ships. Brand stays intact, deliverability holds.",
+    "Push to Smartlead or Instantly with native CSV export. The custom variables (mockup URL, audit signals, suggested package) wire up on import.",
+    "Auto-send is off by default. AI writes the draft, your SDR ships it.",
     "Multi-tenant workspaces (Agency plan) so your client work and your own outbound stay separate.",
   ],
   closingHeading: "Stop fighting over the same lists.",
   closingHeadingHighlight: "Pull leads no one else has.",
-  closingBody: "50 fresh leads in your first 5 minutes. No credit card.",
+  closingBody: "Get 50 fresh leads in five minutes without a credit card.",
 };
 
 export const metadata = {

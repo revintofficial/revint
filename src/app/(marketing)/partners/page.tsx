@@ -44,7 +44,7 @@ const FAQS = [
   },
   {
     q: "What about the brand kit?",
-    a: "Logos, screenshots, demo Loom, copy snippets. Download below. We update it whenever a major feature ships.",
+    a: "You get logos, product screenshots, a demo Loom, and copy snippets for video descriptions. Link below. We refresh it whenever a major feature ships.",
   },
 ];
 
@@ -93,8 +93,9 @@ export default function PartnersPage() {
           </h1>
 
           <p className="text-[16px] sm:text-[18px] text-white/55 max-w-2xl mx-auto mb-9 leading-relaxed">
-            30% recurring commission. Cookie-based attribution. Pays via Rewardful
-            and Stripe. No quotas, no exclusivity, no nonsense.
+            30% recurring commission for the lifetime of every signup.
+            Cookie-based attribution through Rewardful and Stripe. No quotas
+            and no exclusivity.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
@@ -245,11 +246,11 @@ export default function PartnersPage() {
           >
             Ship one video this month.
             <br />
-            <span className="text-white/55">Earn for years.</span>
+            <span className="text-white/55">Get paid every month a customer stays.</span>
           </h2>
           <p className="text-[15px] text-white/55 mb-8 max-w-lg mx-auto">
-            Apply to the partner program in 60 seconds. We approve agencies,
-            creators, and newsletters with a real audience.
+            Apply to the partner program in 60 seconds. We approve creators
+            and newsletters with a real audience.
           </p>
           <Link
             href="/signup?ref=partners"

@@ -6,19 +6,19 @@ import { ChevronDown } from "lucide-react";
 const QUESTIONS = [
   {
     q: "How is this different from Apollo or Clay?",
-    a: "Apollo and Clay sell the same 50M B2B contacts to thousands of agencies, so the same prospects get hit by 10 different pitches a month. Lead Engine pulls live from Google Maps every time you search, so the data is fresh and the businesses self-update it. We're built around local service verticals (plumbers, HVAC, dental, repair shops, etc.) where Apollo's coverage is thin anyway.",
+    a: "Apollo and Clay sell the same 50M B2B contacts to thousands of agencies, so the same prospects get hit by ten different pitches a month. Lead Engine pulls live from Google Maps every time you search, so the data is fresh and the businesses keep it current themselves. We focus on local service verticals like plumbers and dental practices, where Apollo's coverage is thin to begin with.",
   },
   {
     q: "Does it integrate with Smartlead, Instantly, or my existing sender?",
-    a: "Yes — Pro and Agency plans include native CSV export in Smartlead and Instantly format, with custom variables for the mockup URL and audit signals. Drop the file in your sender and the personalization fields wire up automatically. We don't replace your sender; we feed it.",
+    a: "Yes. Pro and Agency plans include native CSV export in Smartlead and Instantly format, with custom variables for the mockup URL and the audit signals. Drop the file into your sender and the personalization fields wire up on import. We don't replace your sender; we feed it.",
   },
   {
     q: "Is the AI sending emails for me?",
-    a: "No. Auto-send is intentionally off. Lead Engine generates the audit, mockup, and first-draft opener — you review and ship from your own inbox or sender. AI cold outreach with no human in the loop hurts brand and deliverability; we won't ship that.",
+    a: "No. Auto-send is off by default. Lead Engine generates the audit, the mockup, and the draft opener. You review and ship from your own inbox or sender. AI cold outreach with no human in the loop hurts brand and deliverability; we won't ship that.",
   },
   {
     q: "Where do the leads come from?",
-    a: "Live from Google Maps via the Places API — name, address, phone, website, rating, review count, business hours. Searched fresh for every query. Businesses self-maintain their Google profile, so the data is far more current than scraped lists.",
+    a: "Live from Google Maps via the Places API: business name, website, phone, plus rating and hours. Searched fresh for every query. Businesses keep their own Google profile current, so the data is much more accurate than a scraped list.",
   },
   {
     q: "What's the website mockup for?",
@@ -30,7 +30,7 @@ const QUESTIONS = [
   },
   {
     q: "What counts as one lead?",
-    a: "One lead = one business pulled from Google. Free gets 50/month, Pro gets 1,000, Agency gets 10,000. Re-running the same search doesn't double-count — duplicates are filtered per workspace automatically.",
+    a: "One lead = one business pulled from Google. Free gets 50/month, Pro gets 1,000, Agency gets 10,000. Re-running the same search doesn't double-count, since duplicates get filtered per workspace.",
   },
   {
     q: "Can I cancel anytime?",
@@ -38,7 +38,7 @@ const QUESTIONS = [
   },
   {
     q: "Is my data private?",
-    a: "Your leads, notes, pipeline, and shortlists are isolated to your workspace. Only invited members see them. We don't share, sell, or use your data to train anything. Full stop.",
+    a: "Your leads, notes, pipeline, and shortlists are isolated to your workspace. Only invited members see them. We don't share or sell your data, and we don't use it to train models.",
   },
 ];
 
