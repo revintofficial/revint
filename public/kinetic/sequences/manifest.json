@@ -1,0 +1,32 @@
+{
+  "discovery": {
+    "frames": 32,
+    "width": 1600,
+    "height": 826,
+    "pattern": "/kinetic/sequences/discovery/frame_{i}.webp"
+  },
+  "audit": {
+    "frames": 32,
+    "width": 1600,
+    "height": 826,
+    "pattern": "/kinetic/sequences/audit/frame_{i}.webp"
+  },
+  "mockup": {
+    "frames": 32,
+    "width": 1600,
+    "height": 826,
+    "pattern": "/kinetic/sequences/mockup/frame_{i}.webp"
+  },
+  "opener": {
+    "frames": 32,
+    "width": 1600,
+    "height": 826,
+    "pattern": "/kinetic/sequences/opener/frame_{i}.webp"
+  },
+  "pipeline": {
+    "frames": 32,
+    "width": 1600,
+    "height": 826,
+    "pattern": "/kinetic/sequences/pipeline/frame_{i}.webp"
+  }
+}

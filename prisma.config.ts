@@ -3,12 +3,12 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+// Prisma 6.9's PrismaConfig<never> type only accepts `schema`. Migrations
+// and datasource URLs are already defined in prisma/schema.prisma
+// (url = env("DATABASE_URL"), directUrl = env("DIRECT_URL")), so the
+// duplicate config keys that were here before are unnecessary. Re-add when
+// we upgrade to Prisma 7.
 export default defineConfig({
+  earlyAccess: true,
   schema: "prisma/schema.prisma",
-  migrations: {
-    path: "prisma/migrations",
-  },
-  datasource: {
-    url: process.env["DIRECT_URL"] || process.env["DATABASE_URL"],
-  },
 });

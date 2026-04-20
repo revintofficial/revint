@@ -1,0 +1,78 @@
+{
+  "intro": {
+    "title": "Lead Engine",
+    "subtitle": "Google Maps to ranked pipeline to website plan, in one workspace.",
+    "durationSec": 3
+  },
+  "outro": {
+    "title": "Stop buying the same 50M contacts as everyone else.",
+    "cta": "Start free at leadengine.app",
+    "url": "leadengine.app",
+    "durationSec": 4
+  },
+  "beats": [
+    {
+      "id": "marketing",
+      "url": "/",
+      "action": "screenshot",
+      "caption": "Built for local-service prospecting.",
+      "subCaption": "Phone repair, HVAC, plumbing, dental, auto detailing.",
+      "screenshot": "captures/01-marketing.png",
+      "durationSec": 4,
+      "zoom": { "from": 1.0, "to": 1.05, "originX": 0.5, "originY": 0.4 }
+    },
+    {
+      "id": "discovery",
+      "url": "/app/discovery",
+      "action": "screenshot",
+      "caption": "Give it a postcode and a vertical.",
+      "subCaption": "Lead Engine pulls fresh businesses from Google Maps.",
+      "screenshot": "captures/02-discovery.png",
+      "durationSec": 5,
+      "zoom": { "from": 1.0, "to": 1.08, "originX": 0.35, "originY": 0.5 },
+      "cursor": { "fromX": 0.5, "fromY": 0.85, "toX": 0.32, "toY": 0.42, "clickAt": 24 }
+    },
+    {
+      "id": "leads",
+      "url": "/app/leads",
+      "action": "screenshot",
+      "caption": "Every lead arrives audited and AI-scored.",
+      "subCaption": "Reply rate clears the 3-4% industry baseline.",
+      "screenshot": "captures/03-leads.png",
+      "durationSec": 5,
+      "zoom": { "from": 1.0, "to": 1.07, "originX": 0.6, "originY": 0.45 }
+    },
+    {
+      "id": "lead-detail",
+      "url": "/app/leads/sample",
+      "action": "screenshot",
+      "caption": "Per-lead website plan, generated in seconds.",
+      "subCaption": "Page structure, copy, CTAs, SEO notes - grounded in the live audit.",
+      "screenshot": "captures/04-lead-detail.png",
+      "durationSec": 6,
+      "zoom": { "from": 1.0, "to": 1.1, "originX": 0.55, "originY": 0.55 },
+      "cursor": { "fromX": 0.5, "fromY": 0.9, "toX": 0.55, "toY": 0.55, "clickAt": 30 }
+    },
+    {
+      "id": "deals",
+      "url": "/app/deals",
+      "action": "screenshot",
+      "caption": "Drag deals across stages, kanban-native.",
+      "subCaption": "Watchlist + pipeline collapsed into a single board.",
+      "screenshot": "captures/05-deals.png",
+      "durationSec": 5,
+      "zoom": { "from": 1.0, "to": 1.06, "originX": 0.5, "originY": 0.5 },
+      "cursor": { "fromX": 0.25, "fromY": 0.5, "toX": 0.65, "toY": 0.5, "clickAt": 60 }
+    },
+    {
+      "id": "billing",
+      "url": "/app/settings/billing",
+      "action": "screenshot",
+      "caption": "Solo, Team, Agency. Monthly or annual.",
+      "subCaption": "From $79/mo. Cancel anytime.",
+      "screenshot": "captures/06-billing.png",
+      "durationSec": 4,
+      "zoom": { "from": 1.0, "to": 1.05, "originX": 0.5, "originY": 0.5 }
+    }
+  ]
+}

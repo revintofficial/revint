@@ -73,3 +73,9 @@ Thumbs.db
 
 # amplify
 amplify.yml
+
+# Video pipeline — Steel captures (binary PNG sequences) and Remotion build output
+/captures
+/video/node_modules
+/video/out
+

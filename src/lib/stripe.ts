@@ -10,10 +10,11 @@ export function getStripe(): Stripe {
       "STRIPE_SECRET_KEY is not set. Add it to .env to enable billing."
     );
   }
-  // Lock to a specific API version so the typed shape stays stable.
-  _stripe = new Stripe(key, {
-    apiVersion: "2025-01-27.acacia" as Stripe.StripeConfig["apiVersion"],
-  });
+  // Intentionally omit `apiVersion` - the Stripe SDK uses the version it
+  // was compiled against, which matches the typed shape. Pinning a
+  // specific string here is what broke against the Stripe v22 types in
+  // earlier revisions (Stripe.StripeConfig was renamed).
+  _stripe = new Stripe(key);
   return _stripe;
 }
 

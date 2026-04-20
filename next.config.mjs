@@ -1,22 +1,36 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // AWS Amplify SSR compute expects the standalone output bundle.
-  output: "standalone",
-
-  // Amplify builds fail hard on any TS/ESLint warning in transitive deps
-  // (e.g. generated prisma client, tiptap types). Keep the build unblocked;
-  // CI (.github/workflows/ci.yml) still runs tsc --noEmit and eslint on PRs
-  // so regressions don't slip in silently.
-  typescript: { ignoreBuildErrors: true },
-  eslint: { ignoreDuringBuilds: true },
+  // Build safety: typecheck errors fail the build. Do not flip this to true
+  // to unblock unrelated deploys - fix the type error. See SECURITY.md and
+  // .github/workflows/ci.yml. Next 16 removed the `eslint` config key; lint
+  // is now enforced in CI via the separate `eslint .` step, not at build.
+  typescript: { ignoreBuildErrors: false },
 
   // Keep the Prisma engine + pg driver out of the webpack bundle so the
-  // native binary resolves correctly at runtime on Amplify.
+  // native binary resolves correctly at runtime.
   serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg"],
 
   // Intentionally no top-level `env` block. Anything declared there is
   // inlined into the CLIENT bundle at build time. Server secrets must be
   // read via process.env inside server code only. See SECURITY.md.
+
+  // /app/watchlist and /app/pipeline collapsed into /app/deals (kanban).
+  // Permanent redirects preserve bookmarks, command-palette deep links, and
+  // any email body URLs pointing at the old routes.
+  async redirects() {
+    return [
+      {
+        source: "/app/watchlist",
+        destination: "/app/deals",
+        permanent: true,
+      },
+      {
+        source: "/app/pipeline",
+        destination: "/app/deals",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

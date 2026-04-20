@@ -32,7 +32,7 @@ function createPrismaClient() {
   if (!connectionString) {
     throw new Error(
       "DATABASE_URL environment variable is not set. " +
-        "Set it in AWS Amplify Console > App settings > Environment variables."
+        "Set it in the Vercel project environment settings (Production + Preview)."
     );
   }
 
