@@ -68,3 +68,48 @@ export function priceCurrency(language: string | null | undefined): string {
 export function isSupportedLanguage(value: string): value is SupportedLanguage {
   return (SUPPORTED_LANGUAGES as readonly string[]).includes(value);
 }
+
+/**
+ * Pick a translation string from a `{ tr, en }` map for AI Workers UI
+ * labels that aren't part of the per-worker registry (error strings,
+ * quota messages, empty states, etc.). Falls back to `en` when the
+ * requested language isn't present in the map.
+ */
+export function pickLang<T extends Record<string, string>>(
+  language: string | null | undefined,
+  labels: T & { tr: string; en: string },
+): string {
+  const lang = (language ?? "tr").toLowerCase();
+  if (lang in labels) return labels[lang as keyof T];
+  return labels.en;
+}
+
+/**
+ * Common AI Workers UI strings reused across the panel, the public
+ * mockup route, and the export endpoints. Kept here (not inline in
+ * each component) so we can audit translations in one place.
+ */
+export const AGENT_WORKER_LABELS = {
+  panel_title: { tr: "AI Agent", en: "AI Workers" },
+  panel_subtitle: {
+    tr: "Her lead icin uretilen AI worker paketleri. 4 grup, 14 is.",
+    en: "AI worker packs generated per lead. 4 groups, 14 jobs.",
+  },
+  action_generate: { tr: "Uret", en: "Generate" },
+  action_regenerate: { tr: "Yeniden uret", en: "Regenerate" },
+  action_open: { tr: "Ac", en: "Open" },
+  action_export: { tr: "Export", en: "Export" },
+  status_ready: { tr: "Hazir", en: "Ready" },
+  status_running: { tr: "Calisiyor...", en: "Running..." },
+  status_failed: { tr: "Basarisiz", en: "Failed" },
+  status_soon: { tr: "Yakinda", en: "Soon" },
+  quota_exhausted: {
+    tr: "Kota doldu. Plan yukseltin veya cycle reset'i bekleyin.",
+    en: "Quota exhausted. Upgrade or wait for cycle reset.",
+  },
+  plan_upgrade_required: {
+    tr: "Plan yukseltilmeli",
+    en: "Upgrade required",
+  },
+} as const;
+

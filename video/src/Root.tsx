@@ -3,7 +3,7 @@
  *
  * Each <Composition> is a renderable target — `pnpm render:master` picks
  * MasterFilm, `pnpm render:hero` picks HeroLoop, `pnpm render:showcase`
- * picks AppleShowcase, etc.
+ * picks AppleShowcase, `pnpm render:ad` picks AdCut, etc.
  */
 import React from "react";
 import { Composition, registerRoot } from "remotion";
@@ -14,6 +14,9 @@ import { HeroLoop } from "./compositions/HeroLoop";
 import { VerticalCut } from "./compositions/VerticalCut";
 import { SquareCut } from "./compositions/SquareCut";
 import { AppleShowcase } from "./scenes/AppleShowcase";
+import { AdCut, AD_CUT_DURATION_FRAMES } from "./compositions/AdCut";
+import { AdCutVertical } from "./compositions/AdCutVertical";
+import { AdTeaser15, AD_TEASER_DURATION_FRAMES } from "./compositions/AdTeaser15";
 
 const RemotionRoot: React.FC = () => {
   return (
@@ -65,6 +68,42 @@ const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={1080}
         height={1080}
+      />
+
+      {/*
+        Ad cut family — paid-media masters.
+        AdCut: 1920x1080 master (X, LinkedIn, YouTube in-stream, landing hero).
+        AdCutVertical: 1080x1920 reframe (TikTok, Shorts, Reels).
+        AdTeaser15: 15s hard-cut teaser (pre-roll, retargeting).
+
+        defaultProps.audioBed/audioVo stay false until the real audio files
+        land under captures/audio/. See video/AD-SCRIPT.md.
+      */}
+      <Composition
+        id="AdCut"
+        component={AdCut}
+        durationInFrames={AD_CUT_DURATION_FRAMES}
+        fps={FPS}
+        width={1920}
+        height={1080}
+        defaultProps={{ audioBed: false, audioVo: false, hideCaptions: false }}
+      />
+      <Composition
+        id="AdCutVertical"
+        component={AdCutVertical}
+        durationInFrames={AD_CUT_DURATION_FRAMES}
+        fps={FPS}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="AdTeaser15"
+        component={AdTeaser15}
+        durationInFrames={AD_TEASER_DURATION_FRAMES}
+        fps={FPS}
+        width={1920}
+        height={1080}
+        defaultProps={{ audioBed: false }}
       />
     </>
   );

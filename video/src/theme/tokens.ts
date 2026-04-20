@@ -145,3 +145,73 @@ export const PARALLAX = {
   // Far layers automatically blur — creates rack-focus depth-of-field.
   blurPerDepth: 0.012, // px of blur per |z| px. |-320| → 3.84px
 } as const;
+
+/**
+ * AdCut — 40-second paid-media composition. Per-beat durations in seconds.
+ * Sum must equal AD_TOTAL_S. Keep in lockstep with `video/AD-SCRIPT.md`.
+ *
+ *   pain       0.0 - 3.0   (3.0s)  Apollo csv desaturates, "same 50M contacts"
+ *   promise    3.0 - 8.5   (5.5s)  Discovery card types, 47 leads chip in
+ *   discovery  8.5 - 13.5  (5.0s)  Leads list cascade, counter 0 -> 47
+ *   audit     13.5 - 18.5  (5.0s)  Audit morph, score badge lands
+ *   wedge     18.5 - 23.5  (5.0s)  Website plan + "we ship the pitch"
+ *   opener    23.5 - 28.5  (5.0s)  Copilot drawer typing first line
+ *   proof     28.5 - 33.5  (5.0s)  3 big numbers pop in
+ *   cta       33.5 - 40.0  (6.5s)  "Your first 50 leads are 5 minutes away"
+ */
+export const AD_S = {
+  pain: 3.0,
+  promise: 5.5,
+  discovery: 5.0,
+  audit: 5.0,
+  wedge: 5.0,
+  opener: 5.0,
+  proof: 5.0,
+  cta: 6.5,
+} as const;
+
+export const AD_TOTAL_S =
+  AD_S.pain +
+  AD_S.promise +
+  AD_S.discovery +
+  AD_S.audit +
+  AD_S.wedge +
+  AD_S.opener +
+  AD_S.proof +
+  AD_S.cta;
+
+/**
+ * Beat markers in seconds from T+0. Used by KineticCaption, scene cuts,
+ * and music sync. When you re-score, move the music hits here — never in
+ * individual scene files.
+ */
+export const AD_BEATS = {
+  pain: 0,
+  hook: 3.0,
+  promise: 3.0,
+  discovery: 8.5,
+  audit: 13.5,
+  wedge: 18.5,
+  opener: 23.5,
+  proof: 28.5,
+  cta: 33.5,
+  endCard: 39.0,
+} as const;
+
+/**
+ * Teaser (15s) cut. Keeps only the hardest-punching beats of the 40s ad.
+ *
+ *   pain     0.0 - 2.0  (2.0s)   cold open
+ *   promise  2.0 - 5.5  (3.5s)   postcode + niche
+ *   proof    5.5 - 11.0 (5.5s)   website plan + 3 numbers quick
+ *   cta     11.0 - 15.0 (4.0s)
+ */
+export const TEASER_S = {
+  pain: 2.0,
+  promise: 3.5,
+  proof: 5.5,
+  cta: 4.0,
+} as const;
+
+export const TEASER_TOTAL_S =
+  TEASER_S.pain + TEASER_S.promise + TEASER_S.proof + TEASER_S.cta;

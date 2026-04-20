@@ -1,20 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getMockupRenderer } from "@/lib/mockups/templates";
+import { renderLeadacHero } from "@/lib/mockups/renderers/leadac-hero";
 import { parseBranding } from "@/lib/branding";
+import type { WebsiteMockupSections } from "@/lib/prompts/website-mockup-prompt";
 
 /**
  * Public mockup view route. Served as raw HTML (not React) because the page
  * needs to render fast on a phone the moment a cold-email recipient taps the
  * link, and the content is already a fully-baked document.
  *
- * No authentication. The slug is the only protection — 36^10 keyspace, mockups
- * default to `isPublic: true`. Workspaces can flip `isPublic: false` to take
- * a mockup offline (returns 404).
+ * Lookup order: WebsiteMockup (flagship landing-page artifact) first,
+ * then legacy Mockup table (markdown website plans). Slugs across both
+ * tables share a 36^10 keyspace so collision probability is negligible.
  *
- * View counter: incremented every request. Could go async / debounced later
- * if it becomes hot enough to matter. Right now any cold-email link click is
- * useful signal, even from email scanners and link previewers.
+ * No authentication. The slug is the only protection. Mockups default
+ * to `isPublic: true`; workspaces can flip it off to take one offline
+ * (returns 404).
+ *
+ * View counter: incremented every request. Fire-and-forget so link
+ * preview bots and email scanners don't block the response.
  */
 export const dynamic = "force-dynamic";
 
@@ -24,6 +29,65 @@ export async function GET(
 ) {
   const { slug } = await params;
 
+  // Prefer the new WebsiteMockup table (flagship Website Mockup
+  // Generator output) over the legacy Mockup table (markdown plans).
+  const wm = await prisma.websiteMockup.findUnique({
+    where: { slug },
+    include: {
+      lead: {
+        include: {
+          workspace: { select: { name: true, branding: true, plan: true, language: true } },
+        },
+      },
+    },
+  });
+
+  if (wm) {
+    if (!wm.isPublic) {
+      return notFound();
+    }
+    if (wm.expiresAt && wm.expiresAt.getTime() < Date.now()) {
+      return expired();
+    }
+
+    prisma.websiteMockup
+      .update({ where: { id: wm.id }, data: { viewCount: { increment: 1 } } })
+      .catch((err) => console.error("WebsiteMockup view counter failed:", err));
+
+    // Prefer the cached HTML for instant response; re-render from
+    // sections if cache is missing (should be rare).
+    let html = wm.htmlCache;
+    if (!html) {
+      const branding = wm.lead.workspace.plan === "AGENCY"
+        ? parseBranding(wm.lead.workspace.branding)
+        : null;
+      html = renderLeadacHero({
+        businessName: wm.lead.businessName,
+        formattedAddress: wm.lead.formattedAddress,
+        borough: wm.lead.borough,
+        phone: wm.lead.phone,
+        websiteUrl: wm.lead.websiteUrl,
+        rating: wm.lead.rating,
+        reviewCount: wm.lead.reviewCount,
+        googleMapsUri: wm.lead.googleMapsUri,
+        sections: wm.sectionsJson as unknown as WebsiteMockupSections,
+        workspaceName: wm.lead.workspace.name,
+        branding,
+        lang: wm.lead.workspace.language ?? "tr",
+      });
+    }
+
+    return new NextResponse(html, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "X-Robots-Tag": "noindex, nofollow",
+        "Cache-Control": "private, max-age=300",
+      },
+    });
+  }
+
+  // Legacy Mockup (markdown website plan) fallback.
   const mockup = await prisma.mockup.findUnique({
     where: { slug },
     include: {
@@ -36,20 +100,13 @@ export async function GET(
   });
 
   if (!mockup || !mockup.isPublic) {
-    return new NextResponse(notFoundHtml(), {
-      status: 404,
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-    });
+    return notFound();
   }
 
   if (mockup.expiresAt && mockup.expiresAt.getTime() < Date.now()) {
-    return new NextResponse(expiredHtml(), {
-      status: 410,
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-    });
+    return expired();
   }
 
-  // Fire-and-forget view counter; don't block the response on it.
   prisma.mockup
     .update({
       where: { id: mockup.id },
@@ -60,8 +117,6 @@ export async function GET(
     });
 
   const render = getMockupRenderer(mockup.templateId);
-  // Branding only applied for Agency tier; lower plans render with defaults
-  // even if a stale `branding` field is in the DB from a previous Agency run.
   const branding = mockup.lead.workspace.plan === "AGENCY"
     ? parseBranding(mockup.lead.workspace.branding)
     : null;
@@ -81,6 +136,20 @@ export async function GET(
       "X-Robots-Tag": "noindex, nofollow",
       "Cache-Control": "private, max-age=300",
     },
+  });
+}
+
+function notFound(): NextResponse {
+  return new NextResponse(notFoundHtml(), {
+    status: 404,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+}
+
+function expired(): NextResponse {
+  return new NextResponse(expiredHtml(), {
+    status: 410,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
   });
 }
 

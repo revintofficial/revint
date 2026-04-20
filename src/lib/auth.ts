@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+
+/** Cookie storing the user's selected workspace id (non-httpOnly for client reads). */
+export const ACTIVE_WORKSPACE_COOKIE = "leadac_active_workspace_id";
 
 export class UnauthorizedError extends Error {
   status = 401;
@@ -97,6 +101,18 @@ export async function requireUser(): Promise<AuthedSession> {
       where: { userId: dbUser.id, workspaceId: workspace.id },
       include: { workspace: true },
     });
+  }
+
+  const cookieStore = await cookies();
+  const activeWorkspaceId = cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value;
+  if (activeWorkspaceId) {
+    const preferred = await prisma.workspaceMember.findFirst({
+      where: { userId: dbUser.id, workspaceId: activeWorkspaceId },
+      include: { workspace: true },
+    });
+    if (preferred) {
+      membership = preferred;
+    }
   }
 
   return {

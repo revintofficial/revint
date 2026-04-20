@@ -85,14 +85,57 @@ enum Role {
   MEMBER
 }
 
+// AI Workers catalog. Every lead-activated AI deliverable produced by the
+// platform is one of these kinds. Keep this enum exhaustive: if a new worker
+// ships, add it here first, then wire a registry entry in
+// src/lib/agent-workers/registry.ts.
+//
+// Group A (Intelligence): auto-run on lead ingest; Grup B (Pitch):
+// agency-facing artifacts sent to prospects; Grup C (Deliverable):
+// ready-to-install config packs for the prospect's own stack (Synthflow,
+// Retell, GHL, etc.); Grup D (Ops): platform-level ongoing work.
+enum AgentWorkerKind {
+  // Grup A - Intelligence
+  WEBSITE_AUDITOR
+  REVIEW_ANALYST
+  SALES_OPPORTUNITY_SCORER
+  SOCIAL_SCRAPER
+  EMAIL_VERIFIER
+  // Grup B - Pitch
+  WEBSITE_PLAN_GENERATOR
+  WEBSITE_MOCKUP_GENERATOR
+  OPENER_WRITER
+  VIDEO_SCRIPT_WRITER
+  VOICE_NOTE_TRANSCRIBER
+  // Grup C - Deliverable (prospect install packs)
+  AI_RECEPTIONIST_BUILDER
+  REVIEW_REPLY_AGENT
+  LEAD_RESPONSE_AGENT
+  BOOKING_WIDGET_BUILDER
+  GBP_AUTOPOST_AGENT
+  // Grup D - Ops
+  COPILOT_CHAT
+  INBOX_REPLY_ATTRIBUTOR
+  OUTREACH_SENDER
+  CONTAINMENT_RATE_TRACKER
+}
+
+enum AgentRunStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
 // Mirrors Supabase auth.users.id (uuid). A trigger keeps these in sync.
 model User {
-  id            String   @id @default(uuid()) @db.Uuid
-  email         String   @unique
-  fullName      String?  @map("full_name")
-  avatarUrl     String?  @map("avatar_url")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  fullName  String?  @map("full_name")
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   ownedWorkspaces Workspace[]       @relation("WorkspaceOwner")
   memberships     WorkspaceMember[]
@@ -115,36 +158,38 @@ model Workspace {
 
   // White-label branding (Agency+ tier). Mockup pages, exports, and partner
   // collateral pick this up to render workspace-specific styling.
-  branding               Json?
+  branding Json?
 
   // Public lead profile gate. When true, indexable /[country]/[city]/[niche]/[business]
   // pages are rendered for this workspace's leads. Workspaces opt in.
-  publicProfilesEnabled  Boolean   @default(false) @map("public_profiles_enabled")
+  publicProfilesEnabled Boolean @default(false) @map("public_profiles_enabled")
 
   // P0.2 "My offer" workspace context. These fields feed both the SalesOpportunity
   // prompt (offer ↔ pain matching) and the website-plan prompt (mockup CTA + hero).
   // Without them every email and mockup is generic; with them they are tailored
   // to what THIS workspace actually sells. See plan.md §4 P0.2.
-  offerName          String? @map("offer_name")
-  valueProposition   String? @map("value_proposition") @db.Text
-  socialProof        String? @map("social_proof") @db.Text
-  offerHook          String? @map("offer_hook") @db.Text
-  objective          String? @map("objective")
-  tone               String? @map("tone")
-  length             String? @map("length")
-  language           String  @default("tr") @map("language")
-  senderName         String? @map("sender_name")
-  conversionLink     String? @map("conversion_link")
+  offerName        String? @map("offer_name")
+  valueProposition String? @map("value_proposition") @db.Text
+  socialProof      String? @map("social_proof") @db.Text
+  offerHook        String? @map("offer_hook") @db.Text
+  objective        String? @map("objective")
+  tone             String? @map("tone")
+  length           String? @map("length")
+  language         String  @default("tr") @map("language")
+  senderName       String? @map("sender_name")
+  conversionLink   String? @map("conversion_link")
 
-  createdAt              DateTime  @default(now()) @map("created_at")
-  updatedAt              DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner          User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members        WorkspaceMember[]
-  leads          Lead[]
-  todos          TeamTodo[]
-  emailAccounts  EmailAccount[]
+  owner           User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members         WorkspaceMember[]
+  leads           Lead[]
+  todos           TeamTodo[]
+  emailAccounts   EmailAccount[]
   copilotMessages CopilotMessage[]
+  agentRuns       AgentRun[]
+  websiteMockups  WebsiteMockup[]
 
   @@map("workspaces")
 }
@@ -165,28 +210,28 @@ model WorkspaceMember {
 }
 
 model Lead {
-  id               String   @id @default(cuid())
-  workspaceId      String   @map("workspace_id")
-  placeId          String   @map("place_id")
-  businessName     String   @map("business_name")
-  formattedAddress String   @map("formatted_address")
-  borough          String?
-  phone            String?
-  websiteUrl       String?  @map("website_url")
-  hasWebsite       Boolean  @default(false) @map("has_website")
-  googleMapsUri    String?  @map("google_maps_uri")
-  rating           Float?
-  reviewCount      Int?     @map("review_count")
-  businessStatus   String?  @map("business_status")
-  primaryType      String?  @map("primary_type")
-  sourceQuery      String?  @map("source_query")
-  sourceLat        Float?   @map("source_lat")
-  sourceLng        Float?   @map("source_lng")
-  crawlStatus           CrawlStatus          @default(PENDING) @map("crawl_status")
-  analyzeStatus         AnalyzeStatus        @default(PENDING) @map("analyze_status")
-  reviewAnalysisStatus  ReviewAnalysisStatus @default(PENDING) @map("review_analysis_status")
-  createdAt             DateTime             @default(now()) @map("created_at")
-  updatedAt             DateTime             @updatedAt @map("updated_at")
+  id                   String               @id @default(cuid())
+  workspaceId          String               @map("workspace_id")
+  placeId              String               @map("place_id")
+  businessName         String               @map("business_name")
+  formattedAddress     String               @map("formatted_address")
+  borough              String?
+  phone                String?
+  websiteUrl           String?              @map("website_url")
+  hasWebsite           Boolean              @default(false) @map("has_website")
+  googleMapsUri        String?              @map("google_maps_uri")
+  rating               Float?
+  reviewCount          Int?                 @map("review_count")
+  businessStatus       String?              @map("business_status")
+  primaryType          String?              @map("primary_type")
+  sourceQuery          String?              @map("source_query")
+  sourceLat            Float?               @map("source_lat")
+  sourceLng            Float?               @map("source_lng")
+  crawlStatus          CrawlStatus          @default(PENDING) @map("crawl_status")
+  analyzeStatus        AnalyzeStatus        @default(PENDING) @map("analyze_status")
+  reviewAnalysisStatus ReviewAnalysisStatus @default(PENDING) @map("review_analysis_status")
+  createdAt            DateTime             @default(now()) @map("created_at")
+  updatedAt            DateTime             @updatedAt @map("updated_at")
 
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   websiteAudit     WebsiteAudit?
@@ -196,6 +241,8 @@ model Lead {
   mockups          Mockup[]
   reviewAnalysis   ReviewAnalysis?
   voiceNotes       VoiceNote[]
+  agentRuns        AgentRun[]
+  websiteMockups   WebsiteMockup[]
 
   // placeId scoped per workspace so two workspaces can independently track the same business
   @@unique([workspaceId, placeId])
@@ -350,23 +397,23 @@ model TeamTodo {
 // Mapileads-style weakness/strength bars, sentiment breakdown, lead score.
 // Generated by `analyze-reviews` worker via Gemini 2.5 Flash JSON mode.
 model ReviewAnalysis {
-  id                  String   @id @default(cuid())
-  leadId              String   @unique @map("lead_id")
-  reviewsAnalyzedCount Int     @default(0) @map("reviews_analyzed_count")
+  id                   String   @id @default(cuid())
+  leadId               String   @unique @map("lead_id")
+  reviewsAnalyzedCount Int      @default(0) @map("reviews_analyzed_count")
   // [{ label: "wait time", percent: 90 }, ...]
-  weaknessKpis        Json     @default("[]") @map("weakness_kpis")
-  strengthKpis        Json     @default("[]") @map("strength_kpis")
+  weaknessKpis         Json     @default("[]") @map("weakness_kpis")
+  strengthKpis         Json     @default("[]") @map("strength_kpis")
   // { positive: 0.65, neutral: 0.20, negative: 0.15 }
-  sentimentBreakdown  Json     @default("{}") @map("sentiment_breakdown")
-  painPhrases         Json     @default("[]") @map("pain_phrases")
-  strengthPhrases     Json     @default("[]") @map("strength_phrases")
+  sentimentBreakdown   Json     @default("{}") @map("sentiment_breakdown")
+  painPhrases          Json     @default("[]") @map("pain_phrases")
+  strengthPhrases      Json     @default("[]") @map("strength_phrases")
   // Pattern: "X yıllarca kullandık ama Y, Z'ye geçtik" extracted from positive reviews.
-  switchSignals       Json     @default("[]") @map("switch_signals")
+  switchSignals        Json     @default("[]") @map("switch_signals")
   // 0-100 hot prospect score for what your offer fixes (higher = better fit).
-  leadScore           Int      @default(0) @map("lead_score")
+  leadScore            Int      @default(0) @map("lead_score")
   // Free-text 1-2 sentence narrative summarizing what reviewers care about.
-  summary             String?  @db.Text
-  analyzedAt          DateTime @default(now()) @map("analyzed_at")
+  summary              String?  @db.Text
+  analyzedAt           DateTime @default(now()) @map("analyzed_at")
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
@@ -378,16 +425,16 @@ model ReviewAnalysis {
 // Transcribed via Whisper / Gemini, attached to the lead, optionally appended to
 // WatchlistItem.pipelineNotes for pipeline visibility.
 model VoiceNote {
-  id           String   @id @default(cuid())
-  leadId       String   @map("lead_id")
-  workspaceId  String   @map("workspace_id")
-  audioUrl     String?  @map("audio_url")
-  durationSec  Int      @default(0) @map("duration_sec")
-  transcript   String?  @db.Text
-  language     String?
-  source       String   @default("web") @map("source")
-  createdBy    String?  @map("created_by") @db.Uuid
-  createdAt    DateTime @default(now()) @map("created_at")
+  id          String   @id @default(cuid())
+  leadId      String   @map("lead_id")
+  workspaceId String   @map("workspace_id")
+  audioUrl    String?  @map("audio_url")
+  durationSec Int      @default(0) @map("duration_sec")
+  transcript  String?  @db.Text
+  language    String?
+  source      String   @default("web") @map("source")
+  createdBy   String?  @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
@@ -401,23 +448,23 @@ model VoiceNote {
 // from inside the platform. CSV export to Smartlead/Instantly stays as the
 // alternative path for users who already live in those senders.
 model EmailAccount {
-  id            String        @id @default(cuid())
-  workspaceId   String        @map("workspace_id")
-  userId        String        @map("user_id") @db.Uuid
-  provider      EmailProvider
-  email         String
-  accessToken   String        @map("access_token") @db.Text
-  refreshToken  String        @map("refresh_token") @db.Text
-  expiresAt     DateTime?     @map("expires_at")
-  dailyLimit    Int           @default(500) @map("daily_limit")
-  sentToday     Int           @default(0) @map("sent_today")
-  resetAt       DateTime      @default(now()) @map("reset_at")
+  id                      String        @id @default(cuid())
+  workspaceId             String        @map("workspace_id")
+  userId                  String        @map("user_id") @db.Uuid
+  provider                EmailProvider
+  email                   String
+  accessToken             String        @map("access_token") @db.Text
+  refreshToken            String        @map("refresh_token") @db.Text
+  expiresAt               DateTime?     @map("expires_at")
+  dailyLimit              Int           @default(500) @map("daily_limit")
+  sentToday               Int           @default(0) @map("sent_today")
+  resetAt                 DateTime      @default(now()) @map("reset_at")
   // P1.4 reply attribution opt-in. When true, the worker reads inbox replies
   // and updates SalesOpportunity.status accordingly.
-  replyAttributionEnabled Boolean @default(false) @map("reply_attribution_enabled")
-  lastInboxSyncAt DateTime?   @map("last_inbox_sync_at")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  replyAttributionEnabled Boolean       @default(false) @map("reply_attribution_enabled")
+  lastInboxSyncAt         DateTime?     @map("last_inbox_sync_at")
+  createdAt               DateTime      @default(now()) @map("created_at")
+  updatedAt               DateTime      @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -459,4 +506,72 @@ model CopilotMessage {
 
   @@index([workspaceId, createdAt])
   @@map("copilot_messages")
+}
+
+// AI Workers runtime - one row per agent worker invocation. Phase 1 writes
+// rows for Grup B + C workers (Pitch + Deliverable). Grup A workers still
+// mutate Lead.crawlStatus / analyzeStatus / reviewAnalysisStatus to avoid a
+// breaking migration; they move to AgentRun in Phase 2.
+//
+// Lifecycle: row created PENDING by API handler, worker picks up, marks
+// RUNNING, finishes as SUCCEEDED or FAILED. outputJson holds the worker's
+// raw structured output (JSON schema per worker kind). artifactUrl is set
+// when the worker produces a shareable public link (e.g. a WebsiteMockup
+// slug becomes /m/{slug}). errorMsg captures the failure message for UI.
+model AgentRun {
+  id          String          @id @default(cuid())
+  workspaceId String          @map("workspace_id")
+  leadId      String?         @map("lead_id")
+  userId      String?         @map("user_id") @db.Uuid
+  workerKind  AgentWorkerKind @map("worker_kind")
+  status      AgentRunStatus  @default(PENDING)
+  inputsJson  Json            @default("{}") @map("inputs_json")
+  outputJson  Json?           @map("output_json")
+  artifactUrl String?         @map("artifact_url")
+  costTokens  Int             @default(0) @map("cost_tokens")
+  errorMsg    String?         @map("error_msg") @db.Text
+  startedAt   DateTime?       @map("started_at")
+  finishedAt  DateTime?       @map("finished_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead      Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, workerKind, createdAt])
+  @@index([leadId, workerKind])
+  @@map("agent_runs")
+}
+
+// Website Mockup Generator output - a fully rendered landing page for a
+// single lead. The current `Mockup` table stores markdown website PLANS
+// (strategy docs) with a confusing `htmlContent` field name; `WebsiteMockup`
+// is the real landing-page artifact. Served at /m/{slug} (unified route
+// prefers WebsiteMockup over legacy Mockup for the same slug keyspace).
+//
+// Storage: sectionsJson holds the Gemini-produced structured data
+// (hero / services / testimonial / cta / about); themeJson holds the
+// color + mode config; htmlCache caches the server-rendered HTML string
+// so /m/{slug} stays instant-load on cold-email click. Regenerate a
+// mockup by nulling htmlCache, the public route re-renders on next hit.
+model WebsiteMockup {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  leadId       String    @map("lead_id")
+  workspaceId  String    @map("workspace_id")
+  sectionsJson Json      @map("sections_json")
+  themeJson    Json      @map("theme_json")
+  htmlCache    String?   @map("html_cache") @db.Text
+  templateId   String    @default("leadac-hero-v1") @map("template_id")
+  isPublic     Boolean   @default(true) @map("is_public")
+  expiresAt    DateTime? @map("expires_at")
+  viewCount    Int       @default(0) @map("view_count")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([workspaceId])
+  @@map("website_mockups")
 }

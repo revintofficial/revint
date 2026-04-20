@@ -7,6 +7,7 @@ import { startCrawlWorker } from "./crawl-worker";
 import { startAnalyzeWorker } from "./analyze-worker";
 import { startReviewAnalysisWorker } from "./review-analysis-worker";
 import { startEmailVerificationWorker } from "./email-verification-worker";
+import { startAgentRunWorker } from "./agent-run-worker";
 import { logger } from "../lib/logger";
 
 logger.info("worker.supervisor.starting");
@@ -16,6 +17,7 @@ const crawlWorker = startCrawlWorker();
 const analyzeWorker = startAnalyzeWorker();
 const reviewAnalysisWorker = startReviewAnalysisWorker();
 const emailVerificationWorker = startEmailVerificationWorker();
+const agentRunWorker = startAgentRunWorker();
 
 logger.info("worker.supervisor.started");
 
@@ -27,6 +29,7 @@ async function shutdown() {
     analyzeWorker.close(),
     reviewAnalysisWorker.close(),
     emailVerificationWorker.close(),
+    agentRunWorker.close(),
   ]);
   process.exit(0);
 }

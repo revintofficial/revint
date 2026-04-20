@@ -7,6 +7,7 @@ let analyzeQueue: Queue | null = null;
 let reviewAnalysisQueue: Queue | null = null;
 let emailVerificationQueue: Queue | null = null;
 let inboxSyncQueue: Queue | null = null;
+let agentRunsQueue: Queue | null = null;
 
 export function getDiscoveryQueue(): Queue {
   if (!discoveryQueue) {
@@ -51,4 +52,15 @@ export function getInboxSyncQueue(): Queue {
     inboxSyncQueue = new Queue("inbox-sync", { connection: getRedis() });
   }
   return inboxSyncQueue;
+}
+
+// AI Workers - single queue for every Phase 1 lead-activated worker
+// (Website Mockup, AI Receptionist, Review Reply, Lead Response). Jobs
+// carry just `{ runId }`; the worker hydrates the AgentRun row and
+// dispatches to the right registry entry. See `src/workers/agent-run-worker.ts`.
+export function getAgentRunsQueue(): Queue {
+  if (!agentRunsQueue) {
+    agentRunsQueue = new Queue("agent-runs", { connection: getRedis() });
+  }
+  return agentRunsQueue;
 }

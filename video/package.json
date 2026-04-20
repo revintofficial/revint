@@ -13,9 +13,18 @@
     "render:showcase:webm": "remotion render src/Root.tsx AppleShowcase out/showcase.webm --codec=vp9",
     "render:launch": "remotion render src/Root.tsx LaunchFilm out/launch.mp4",
     "render:launch:webm": "remotion render src/Root.tsx LaunchFilm out/launch.webm --codec=vp9",
-    "render:all": "npm run render:master && npm run render:hero && npm run render:vertical && npm run render:square && npm run render:showcase && npm run render:launch",
+    "render:ad": "cross-env RENDER_PROFILE=master remotion render src/Root.tsx AdCut out/ad.mp4",
+    "render:ad:vertical": "cross-env RENDER_PROFILE=master remotion render src/Root.tsx AdCutVertical out/ad-vertical.mp4",
+    "render:ad:teaser": "cross-env RENDER_PROFILE=master remotion render src/Root.tsx AdTeaser15 out/ad-teaser.mp4",
+    "render:ad:webm": "cross-env RENDER_PROFILE=master remotion render src/Root.tsx AdCut out/ad.webm --codec=vp9",
+    "render:ad:with-bed": "cross-env RENDER_PROFILE=master remotion render src/Root.tsx AdCut out/ad-bed.mp4 --props=\"{\\\"audioBed\\\":true}\"",
+    "render:ad:full": "cross-env RENDER_PROFILE=master remotion render src/Root.tsx AdCut out/ad-full.mp4 --props=\"{\\\"audioBed\\\":true,\\\"audioVo\\\":true}\"",
+    "render:ad:all": "npm run render:ad && npm run render:ad:vertical && npm run render:ad:teaser",
+    "render:all": "npm run render:master && npm run render:hero && npm run render:vertical && npm run render:square && npm run render:showcase && npm run render:launch && npm run render:ad:all",
     "encode:web": "ffmpeg -y -i out/hero-loop.mp4 -vcodec libx265 -crf 28 -tag:v hvc1 ../public/hero-loop.mp4 && ffmpeg -y -i out/hero-loop.mp4 -c:v libvpx-vp9 -crf 30 ../public/hero-loop.webm && ffmpeg -y -i out/showcase.mp4 -vcodec libx265 -crf 26 -tag:v hvc1 ../public/showcase.mp4 && ffmpeg -y -i out/showcase.mp4 -c:v libvpx-vp9 -crf 28 ../public/showcase.webm",
-    "poster": "ffmpeg -y -i out/master.mp4 -ss 00:00:18 -frames:v 1 ../public/og-cover.jpg"
+    "encode:ad": "ffmpeg -y -i out/ad.mp4 -vcodec libx265 -crf 26 -tag:v hvc1 ../public/ad.mp4 && ffmpeg -y -i out/ad.mp4 -c:v libvpx-vp9 -crf 28 ../public/ad.webm",
+    "poster": "ffmpeg -y -i out/master.mp4 -ss 00:00:18 -frames:v 1 ../public/og-cover.jpg",
+    "poster:ad": "ffmpeg -y -i out/ad.mp4 -ss 00:00:34 -frames:v 1 ../public/ad-poster.jpg"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
@@ -24,6 +33,7 @@
     "@remotion/google-fonts": "^4.0.448",
     "@remotion/three": "^4.0.448",
     "@remotion/transitions": "^4.0.448",
+    "cross-env": "^7.0.3",
     "flubber": "^0.4.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

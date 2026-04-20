@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
@@ -18,6 +18,7 @@ import {
   Command as CommandIcon,
 } from "lucide-react";
 import { UserMenu } from "@/components/app/user-menu";
+import { WorkspaceSwitcher } from "@/components/app/workspace-switcher";
 import { CommandPalette } from "@/components/app/command-palette";
 import { UsageBadge } from "@/components/app/usage-badge";
 import { UpgradeBanner } from "@/components/app/upgrade-banner";
@@ -221,12 +222,11 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                   <h1 className="text-[15px] font-semibold truncate text-white tracking-tight">
                     Leadac AI
                   </h1>
-                  <p
-                    className="text-[11px] truncate"
-                    style={{ color: "rgba(235, 235, 245, 0.5)" }}
-                  >
-                    {workspace.name}
-                  </p>
+                  <WorkspaceSwitcher
+                    current={workspace}
+                    role={role}
+                    collapsed={collapsed}
+                  />
                 </div>
                 <button
                   onClick={closeSidebar}

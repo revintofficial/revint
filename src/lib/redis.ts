@@ -13,18 +13,49 @@ let requestRedis: IORedis | null = null;
  */
 export function getRedis(): IORedis {
   if (!redis) {
+    // In the BullMQ worker process (npm run workers) we want the
+    // classic "hang until Redis comes back" semantics. In the Next.js
+    // HTTP process we don't - ioredis spewing ECONNREFUSED loops
+    // every second floods dev logs without adding information.
+    // IS_WORKER is set by src/workers/index.ts before any import.
+    const isWorkerProcess = process.env.IS_WORKER === "1";
+
     redis = new IORedis(process.env.REDIS_URL || "redis://localhost:6379", {
-      maxRetriesPerRequest: null,
-      // Silence unhandled 'error' events (connection refused, DNS failures).
-      // BullMQ itself logs queue-level errors; the ioredis event noise just
-      // floods the server console without adding information.
+      maxRetriesPerRequest: isWorkerProcess ? null : 0,
       enableReadyCheck: false,
+      // In HTTP process, don't queue commands when disconnected - the
+      // caller's enqueue-timeout + inline fallback handles unavailable
+      // Redis cleanly. Queuing would keep the ioredis reconnect loop
+      // alive and re-trigger error emissions indefinitely.
+      enableOfflineQueue: isWorkerProcess,
+      // Backoff on failed connects. Worker keeps retrying (prod needs
+      // this for transient blips); HTTP process gives up after a
+      // handful of attempts so stderr stays clean.
+      retryStrategy: (times) => {
+        if (isWorkerProcess) {
+          return Math.min(1000 * Math.pow(2, Math.min(times, 6)), 60000);
+        }
+        // HTTP process: try 3 fast attempts, then give up for this
+        // client. The request-path cooldown cache (in the API route)
+        // keeps us from creating a fresh reconnect storm.
+        return times > 3 ? null : 500 + times * 500;
+      },
     });
+    let warned = false;
     redis.on("error", (err) => {
-      // Swallow - BullMQ reconnects automatically and surfaces real errors
-      // via its own events. Logging every connect retry is pure noise.
+      if (process.env.NODE_ENV !== "production" && !warned) {
+        warned = true;
+        console.warn(
+          "[redis:worker] not reachable -",
+          err.message,
+          "(further retry errors suppressed)",
+        );
+      }
+    });
+    redis.on("ready", () => {
+      warned = false;
       if (process.env.NODE_ENV !== "production") {
-        console.warn("[redis:worker]", err.message);
+        console.log("[redis:worker] connected");
       }
     });
   }
