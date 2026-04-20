@@ -11,7 +11,15 @@ export async function PATCH(
     const { workspaceId } = await requireUser();
     const { id } = await params;
     const body = await request.json();
-    const { siteUrl, notes, selectedOffer, meetingResult, pipelineNotes } = body;
+    const {
+      siteUrl,
+      notes,
+      selectedOffer,
+      meetingResult,
+      pipelineNotes,
+      pipelineStage,
+      stageOrder,
+    } = body;
 
     const validOffers = ["STARTER", "GROWTH", "SALES"];
     const offerValue =
@@ -29,6 +37,17 @@ export async function PATCH(
         ? meetingResult
         : undefined;
 
+    const validStages = ["NEW", "REACHED_OUT", "IN_TALKS", "WON", "LOST"];
+    const stageValue =
+      typeof pipelineStage === "string" && validStages.includes(pipelineStage)
+        ? pipelineStage
+        : undefined;
+
+    const orderValue =
+      typeof stageOrder === "number" && Number.isFinite(stageOrder)
+        ? Math.trunc(stageOrder)
+        : undefined;
+
     const existing = await prisma.watchlistItem.findFirst({
       where: { id, lead: { workspaceId } },
     });
@@ -44,6 +63,10 @@ export async function PATCH(
         ...(offerValue !== undefined && { selectedOffer: offerValue }),
         ...(resultValue !== undefined && { meetingResult: resultValue }),
         ...(pipelineNotes !== undefined && { pipelineNotes }),
+        ...(stageValue !== undefined && {
+          pipelineStage: stageValue as "NEW" | "REACHED_OUT" | "IN_TALKS" | "WON" | "LOST",
+        }),
+        ...(orderValue !== undefined && { stageOrder: orderValue }),
       },
       include: { lead: true },
     });

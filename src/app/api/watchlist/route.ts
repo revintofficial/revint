@@ -28,7 +28,10 @@ export async function GET() {
           },
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: [
+        { stageOrder: "asc" },
+        { createdAt: "desc" },
+      ],
     });
 
     return NextResponse.json({ items });

@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Users,
   Megaphone,
-  Star,
   GitBranch,
   Search,
   CheckSquare,
@@ -40,8 +39,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Work",
     items: [
       { href: "/app/leads", label: "Leads", icon: Users },
-      { href: "/app/pipeline", label: "Pipeline", icon: GitBranch },
-      { href: "/app/watchlist", label: "Shortlist", icon: Star },
+      { href: "/app/deals", label: "Deals", icon: GitBranch },
     ],
   },
   {

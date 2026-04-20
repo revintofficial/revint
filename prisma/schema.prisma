@@ -54,6 +54,14 @@ enum MeetingResult {
   IN_PROGRESS
 }
 
+enum PipelineStage {
+  NEW
+  REACHED_OUT
+  IN_TALKS
+  WON
+  LOST
+}
+
 enum Plan {
   FREE
   PRO
@@ -287,6 +295,11 @@ model WatchlistItem {
   pipelineNotes   String?         @map("pipeline_notes") @db.Text
   selectedOffer   SuggestedOffer? @map("selected_offer")
   meetingResult   MeetingResult?  @map("meeting_result")
+  // Kanban pipeline stage. Replaces meetingResult as the primary sales-stage
+  // signal; meetingResult is kept for backward compat but no longer drives UI.
+  pipelineStage   PipelineStage   @default(NEW) @map("pipeline_stage")
+  // Within-column sort order for the kanban board. Lower = higher in column.
+  stageOrder      Int             @default(0) @map("stage_order")
   // P1.3 calendar sync: next scheduled meeting with this lead (Google Cal / Outlook).
   nextMeetingAt   DateTime?       @map("next_meeting_at")
   meetingProvider String?         @map("meeting_provider")
@@ -296,6 +309,7 @@ model WatchlistItem {
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
+  @@index([pipelineStage, stageOrder])
   @@map("watchlist_items")
 }
 

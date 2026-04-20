@@ -546,7 +546,7 @@ function LeadsPageContent() {
                     </Button>
                   )}
                   {watchlistLeadIds.has(lead.id) ? (
-                    <Link href="/app/watchlist">
+                    <Link href={`/app/deals?lead=${lead.id}`}>
                       <Button size="sm" variant="ghost" className="h-8 px-2 gap-1 text-[11px] text-[#FF9F0A] hover:text-[#FF9F0A]">
                         <BookmarkCheck className="w-3 h-3" />
                         Saved
@@ -732,10 +732,10 @@ function LeadsPageContent() {
                     <td className="p-3">
                       <div className="flex flex-wrap gap-1">
                         {watchlistLeadIds.has(lead.id) ? (
-                          <Link href="/app/watchlist">
+                          <Link href={`/app/deals?lead=${lead.id}`}>
                             <Button size="sm" variant="ghost" className="text-[#FF9F0A] hover:text-[#FF9F0A] h-8 px-2 gap-1">
                               <BookmarkCheck className="w-4 h-4 shrink-0" />
-                              Shortlist
+                              Open Deal
                             </Button>
                           </Link>
                         ) : (

@@ -12,7 +12,6 @@ import {
   Search,
   ArrowRight,
   Sparkles,
-  Star,
   GitBranch,
   Users,
   type LucideIcon,
@@ -188,35 +187,19 @@ export function CommandPalette({
     [leadHits]
   );
 
-  // For leads that are on the watchlist we surface jump-links into the
-  // Shortlist and Pipeline pages so the user can land on the actual card
-  // (with its notes / offer / meeting state) instead of the lead detail.
-  const shortlistResults: Result[] = useMemo(
+  // For leads on the pipeline we surface a deep-link that opens the deal's
+  // side panel on the Deals board via the ?lead= query param.
+  const dealsResults: Result[] = useMemo(
     () =>
       leadHits
         .filter((l) => l.inWatchlist)
         .map((l) => ({
-          id: `shortlist:${l.id}`,
+          id: `deal:${l.id}`,
           label: l.businessName,
-          hint: "Open in Shortlist",
-          href: `/app/watchlist#lead-${l.id}`,
-          icon: Star,
-          group: "Shortlist",
-        })),
-    [leadHits]
-  );
-
-  const pipelineResults: Result[] = useMemo(
-    () =>
-      leadHits
-        .filter((l) => l.inWatchlist)
-        .map((l) => ({
-          id: `pipeline:${l.id}`,
-          label: l.businessName,
-          hint: "Open in Pipeline",
-          href: `/app/pipeline#lead-${l.id}`,
+          hint: "Open in Deals",
+          href: `/app/deals?lead=${l.id}`,
           icon: GitBranch,
-          group: "Pipeline",
+          group: "Deals",
         })),
     [leadHits]
   );
@@ -225,11 +208,10 @@ export function CommandPalette({
     () => [
       ...navResults,
       ...leadResults,
-      ...shortlistResults,
-      ...pipelineResults,
+      ...dealsResults,
       ...actionResults,
     ],
-    [navResults, leadResults, shortlistResults, pipelineResults, actionResults]
+    [navResults, leadResults, dealsResults, actionResults]
   );
 
   useEffect(() => {

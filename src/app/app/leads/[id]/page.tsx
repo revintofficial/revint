@@ -14,6 +14,7 @@ import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { OutreachStepper } from "@/components/ui/outreach-stepper";
 import { CRAWL_LABELS, ANALYZE_LABELS, OUTREACH_LABELS } from "@/lib/labels";
 import { ReviewIntelligencePanel } from "@/components/app/review-intelligence-panel";
+import { GoogleReviewsAccordion } from "@/components/app/google-reviews-accordion";
 import { VoiceNotesPanel } from "@/components/app/voice-notes-panel";
 import { SocialProfileIcons } from "@/components/app/social-profile-icons";
 import { LeadMapView } from "@/components/app/lead-map-view";
@@ -817,6 +818,9 @@ export default function LeadDetailPage({
             leadId={lead.id}
             hasReviews={(lead.googleReviews?.length ?? 0) > 0}
           />
+
+          {/* Raw Google Reviews — moved from the old Shortlist card */}
+          <GoogleReviewsAccordion leadId={lead.id} />
 
           {/* P0.7 Voice Notes light — saha satışçısı ICP4 için */}
           <VoiceNotesPanel leadId={lead.id} />
