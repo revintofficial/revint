@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -65,7 +66,7 @@ export async function GET() {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Campaigns error:", error);
+    logger.error("api.campaigns.error", { err: error });
     return NextResponse.json({ error: "Failed to fetch campaigns" }, { status: 500 });
   }
 }

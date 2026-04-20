@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 const VALID_STATUSES = ["NEW", "CONTACTED", "INTERESTED", "MEETING", "WON", "LOST"];
 
@@ -42,7 +43,7 @@ export async function PATCH(
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Status update error:", error);
+    logger.error("api.leads.status_update_error", { err: error });
     return NextResponse.json({ error: "Failed to update status" }, { status: 500 });
   }
 }

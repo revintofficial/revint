@@ -13,13 +13,10 @@
  */
 
 import { Worker, type Job } from "bullmq";
-import { PrismaClient } from "../generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
 import IORedis from "ioredis";
 import { analyzeReviewsWithGemini } from "../lib/gemini";
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
+import { prisma } from "../lib/prisma";
+import { logger } from "../lib/logger";
 
 interface ReviewAnalysisJobData {
   leadId: string;
@@ -27,7 +24,7 @@ interface ReviewAnalysisJobData {
 
 async function processReviewAnalysis(job: Job<ReviewAnalysisJobData>) {
   const { leadId } = job.data;
-  console.log(`[ReviewAnalysis] Starting lead: ${leadId}`);
+  logger.info("worker.review_analysis.starting", { leadId });
 
   await prisma.lead.update({
     where: { id: leadId },
@@ -51,7 +48,7 @@ async function processReviewAnalysis(job: Job<ReviewAnalysisJobData>) {
         where: { id: leadId },
         data: { reviewAnalysisStatus: "NO_REVIEWS" },
       });
-      console.log(`[ReviewAnalysis] No reviews for ${leadId}, marking NO_REVIEWS`);
+      logger.info("worker.review_analysis.no_reviews", { leadId });
       return { leadId, skipped: true };
     }
 
@@ -106,7 +103,11 @@ async function processReviewAnalysis(job: Job<ReviewAnalysisJobData>) {
       data: { reviewAnalysisStatus: "ANALYZED" },
     });
 
-    console.log(`[ReviewAnalysis] Done: ${lead.businessName} (leadScore: ${analysis.leadScore})`);
+    logger.info("worker.review_analysis.done", {
+      leadId,
+      businessName: lead.businessName,
+      leadScore: analysis.leadScore,
+    });
     return { leadId, leadScore: analysis.leadScore };
   } catch (error) {
     await prisma.lead.update({
@@ -129,11 +130,11 @@ export function startReviewAnalysisWorker() {
   });
 
   worker.on("completed", (job) => {
-    console.log(`[ReviewAnalysis] Job ${job.id} completed`);
+    logger.info("worker.review_analysis.job_completed", { jobId: job.id });
   });
 
   worker.on("failed", (job, err) => {
-    console.error(`[ReviewAnalysis] Job ${job?.id} failed:`, err.message);
+    logger.error("worker.review_analysis.job_failed", { jobId: job?.id, err });
   });
 
   return worker;

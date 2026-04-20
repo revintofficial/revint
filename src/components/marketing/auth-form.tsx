@@ -8,11 +8,34 @@ import { Input } from "@/components/ui/input";
 import { createSupabaseBrowser } from "@/lib/supabase/browser";
 import { Zap, Loader2, Mail, Check, AlertCircle } from "lucide-react";
 
+/**
+ * If the visitor arrived from the pricing page with `?plan=PRO_TEAM`
+ * (and optional `currency` / `cycle`), build a post-auth URL that lands them
+ * directly in checkout: `/app/settings/billing?plan=...&autocheckout=1`.
+ * Falls back to the explicit `?next=` param, then to the dashboard. This is
+ * the load-bearing piece that turns a 5-click "pricing -> signup -> dashboard
+ * -> settings -> billing -> upgrade -> Stripe" funnel into "pricing -> signup
+ * -> Stripe".
+ */
+function resolveNext(params: URLSearchParams): string {
+  const plan = params.get("plan");
+  if (plan === "PRO" || plan === "PRO_TEAM" || plan === "AGENCY") {
+    const checkoutParams = new URLSearchParams({ plan, autocheckout: "1" });
+    const currency = params.get("currency");
+    if (currency === "USD" || currency === "GBP") checkoutParams.set("currency", currency);
+    const cycle = params.get("cycle");
+    if (cycle === "monthly" || cycle === "annual") checkoutParams.set("cycle", cycle);
+    return `/app/settings/billing?${checkoutParams.toString()}`;
+  }
+  return params.get("next") || "/app/dashboard";
+}
+
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/app/dashboard";
+  const next = resolveNext(new URLSearchParams(params.toString()));
   const supabase = createSupabaseBrowser();
+  const intentPlan = params.get("plan");
 
   const [tab, setTab] = useState<"password" | "magic">("password");
   const [email, setEmail] = useState("");
@@ -126,6 +149,19 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               ? "Discover your first 50 leads — free."
               : "Sign in to your Lead Engine workspace."}
           </p>
+          {intentPlan && (intentPlan === "PRO" || intentPlan === "PRO_TEAM" || intentPlan === "AGENCY") && (
+            <div
+              className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11.5px]"
+              style={{
+                background: "rgba(94,106,210,0.12)",
+                border: "0.5px solid rgba(94,106,210,0.32)",
+                color: "#A5B4FC",
+              }}
+            >
+              <Check className="w-3 h-3" />
+              We&apos;ll take you straight to checkout after signup.
+            </div>
+          )}
         </div>
 
         <div
@@ -314,14 +350,20 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           {mode === "signup" ? (
             <>
               Already have an account?{" "}
-              <Link href="/login" className="text-[#A5B4FC] hover:underline">
+              <Link
+                href={`/login${params.toString() ? `?${params.toString()}` : ""}`}
+                className="text-[#A5B4FC] hover:underline"
+              >
                 Log in
               </Link>
             </>
           ) : (
             <>
               New to Lead Engine?{" "}
-              <Link href="/signup" className="text-[#A5B4FC] hover:underline">
+              <Link
+                href={`/signup${params.toString() ? `?${params.toString()}` : ""}`}
+                className="text-[#A5B4FC] hover:underline"
+              >
                 Create an account
               </Link>
             </>

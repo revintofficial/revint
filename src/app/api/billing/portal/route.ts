@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getStripe, isBillingEnabled } from "@/lib/stripe";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: Request) {
   try {
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Portal error:", error);
+    logger.error("api.billing.portal_error", { err: error });
     return NextResponse.json(
       { error: "Failed to open billing portal", detail: String(error) },
       { status: 500 }

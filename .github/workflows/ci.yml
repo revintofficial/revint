@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # Placeholder values so Prisma generate + Next build succeed. Real
+      # secrets live only in production env.
+      DATABASE_URL: postgresql://user:pass@localhost:5432/db?schema=public
+      DIRECT_URL: postgresql://user:pass@localhost:5432/db?schema=public
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+      REDIS_URL: redis://localhost:6379
+      GOOGLE_PLACES_API_KEY: placeholder
+      GEMINI_API_KEY: placeholder
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint .
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Build
+        run: npx next build

@@ -13,6 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { getReviewAnalysisQueue } from "@/lib/queues";
 import { assertCanUseAi, recordAiUsed, QuotaExceededError } from "@/lib/quotas";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   _request: Request,
@@ -69,7 +70,7 @@ export async function POST(
     if (error instanceof QuotaExceededError) {
       return error.toResponse();
     }
-    console.error("Review analysis enqueue error:", error);
+    logger.error("api.reviews.analyze_enqueue_error", { err: error });
     return NextResponse.json(
       { error: "Failed to enqueue review analysis" },
       { status: 500 },
@@ -106,7 +107,7 @@ export async function GET(
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Review analysis fetch error:", error);
+    logger.error("api.reviews.analyze_fetch_error", { err: error });
     return NextResponse.json(
       { error: "Failed to fetch review analysis" },
       { status: 500 },

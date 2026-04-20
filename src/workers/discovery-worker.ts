@@ -1,11 +1,8 @@
 import { Worker, type Job } from "bullmq";
-import { PrismaClient } from "../generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
 import { discoverLeads, extractBoroughFromAddress } from "../lib/google-places";
+import { prisma } from "../lib/prisma";
+import { logger } from "../lib/logger";
 import IORedis from "ioredis";
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
 
 interface DiscoveryJobData {
   workspaceId: string;
@@ -20,11 +17,15 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
     throw new Error("Discovery job missing workspaceId");
   }
 
-  console.log(`[Discovery] Starting: "${searchQuery}" in ${borough.name}`);
+  logger.info("worker.discovery.starting", { searchQuery, borough: borough.name });
 
   const places = await discoverLeads(searchQuery, borough, radiusMeters);
 
-  console.log(`[Discovery] Found ${places.length} places for "${searchQuery}" in ${borough.name}`);
+  logger.info("worker.discovery.found_places", {
+    searchQuery,
+    borough: borough.name,
+    count: places.length,
+  });
 
   let created = 0;
   let skipped = 0;
@@ -71,7 +72,7 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
     created++;
   }
 
-  console.log(`[Discovery] Done: ${created} created, ${skipped} duplicates`);
+  logger.info("worker.discovery.done", { created, skipped, total: places.length });
   return { created, skipped, total: places.length };
 }
 
@@ -87,11 +88,11 @@ export function startDiscoveryWorker() {
   });
 
   worker.on("completed", (job) => {
-    console.log(`[Discovery] Job ${job.id} completed`);
+    logger.info("worker.discovery.job_completed", { jobId: job.id });
   });
 
   worker.on("failed", (job, err) => {
-    console.error(`[Discovery] Job ${job?.id} failed:`, err.message);
+    logger.error("worker.discovery.job_failed", { jobId: job?.id, err });
   });
 
   return worker;

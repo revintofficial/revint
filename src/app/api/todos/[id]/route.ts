@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(
   request: Request,
@@ -35,7 +36,7 @@ export async function PATCH(
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Todo update error:", error);
+    logger.error("api.todos.update_error", { err: error });
     return NextResponse.json(
       { error: "Failed to update todo", details: String(error) },
       { status: 500 }
@@ -64,7 +65,7 @@ export async function DELETE(
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Todo delete error:", error);
+    logger.error("api.todos.delete_error", { err: error });
     return NextResponse.json(
       { error: "Failed to delete todo", details: String(error) },
       { status: 500 }

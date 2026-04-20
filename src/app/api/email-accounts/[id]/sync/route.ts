@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { listRecentInboxMessages } from "@/lib/oauth/email-client";
+import { logger } from "@/lib/logger";
 
 const LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000; // last 7 days
 
@@ -108,7 +109,7 @@ export async function POST(
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Inbox sync error:", err);
+    logger.error("api.email_accounts.sync_error", { err });
     return NextResponse.json({ error: "Sync failed", detail: String(err) }, { status: 500 });
   }
 }

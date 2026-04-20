@@ -13,13 +13,22 @@ import {
   recordAiUsed,
   QuotaExceededError,
 } from "@/lib/quotas";
+import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
+import { getAnalyzeQueue } from "@/lib/queues";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: Request) {
   try {
     const { workspaceId } = await requireUser();
+
+    const rl = await checkRateLimit(workspaceId, LIMITS.analyze);
+    if (!rl.ok) return rateLimitResponse(rl);
+
     const body = await request.json();
     const { leadId, analyzeAll = false } = body;
 
+    // Bulk analyze moved to the worker queue. Previously ran up to 50
+    // Gemini calls sequentially inside one HTTP request.
     if (analyzeAll) {
       const pendingLeads = await prisma.lead.findMany({
         where: {
@@ -31,48 +40,30 @@ export async function POST(request: Request) {
             { crawlStatus: "FAILED" },
           ],
         },
-        include: { websiteAudit: true },
-        take: 50,
+        select: { id: true },
+        take: 200,
       });
 
-      let analyzed = 0;
-      let failed = 0;
-      let quotaHit: string | null = null;
-
+      const queue = getAnalyzeQueue();
+      let enqueued = 0;
       for (const lead of pendingLeads) {
-        try {
-          await assertCanUseAi(workspaceId, 1);
-        } catch (e) {
-          if (e instanceof QuotaExceededError) {
-            quotaHit = e.message;
-            break;
-          }
-          throw e;
-        }
-        try {
-          await analyzeSingleLead(lead.id);
-          await recordAiUsed(workspaceId, 1);
-          analyzed++;
-        } catch (err) {
-          console.error(`Analyze failed for ${lead.businessName}:`, err);
-          failed++;
-        }
+        await queue.add(
+          "analyze",
+          { leadId: lead.id, workspaceId },
+          { removeOnComplete: 100, removeOnFail: 50, attempts: 2 },
+        );
+        enqueued++;
       }
-
-      return NextResponse.json({
-        success: true,
-        analyzed,
-        failed,
-        total: pendingLeads.length,
-        ...(quotaHit ? { quota: quotaHit } : {}),
-      });
+      return NextResponse.json(
+        { success: true, enqueued, total: pendingLeads.length },
+        { status: 202 },
+      );
     }
 
     if (!leadId) {
       return NextResponse.json({ error: "leadId is required" }, { status: 400 });
     }
 
-    // Verify lead belongs to workspace
     const lead = await prisma.lead.findFirst({
       where: { id: leadId, workspaceId },
       select: { id: true },
@@ -82,7 +73,7 @@ export async function POST(request: Request) {
     }
 
     await assertCanUseAi(workspaceId, 1);
-    const result = await analyzeSingleLead(leadId);
+    const result = await analyzeSingleLead(workspaceId, leadId);
     await recordAiUsed(workspaceId, 1);
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
@@ -92,7 +83,7 @@ export async function POST(request: Request) {
     if (error instanceof QuotaExceededError) {
       return error.toResponse();
     }
-    console.error("Analyze error:", error);
+    logger.error("api.analyze.error", { err: error });
     return NextResponse.json(
       { error: "Analysis failed", details: String(error) },
       { status: 500 }
@@ -100,15 +91,20 @@ export async function POST(request: Request) {
   }
 }
 
-async function analyzeSingleLead(leadId: string) {
-  await prisma.lead.update({
-    where: { id: leadId },
+/**
+ * Always scope reads and writes by workspaceId so this helper stays safe
+ * when called from worker code or future bulk paths. A stray caller that
+ * passed only `leadId` previously could write across tenants.
+ */
+async function analyzeSingleLead(workspaceId: string, leadId: string) {
+  await prisma.lead.updateMany({
+    where: { id: leadId, workspaceId },
     data: { analyzeStatus: "ANALYZING" },
   });
 
   try {
-    const lead = await prisma.lead.findUniqueOrThrow({
-      where: { id: leadId },
+    const lead = await prisma.lead.findFirstOrThrow({
+      where: { id: leadId, workspaceId },
       include: { websiteAudit: true },
     });
 
@@ -132,7 +128,7 @@ async function analyzeSingleLead(leadId: string) {
         features
       );
     } catch (aiError) {
-      console.error(`[Analyze] Gemini failed for ${leadId}:`, aiError);
+      logger.warn("api.analyze.gemini_fallback", { leadId, err: aiError });
       const offer = suggestOffer(deterministicScore, reasons);
       analysis = {
         opportunity_score: deterministicScore,
@@ -152,6 +148,18 @@ async function analyzeSingleLead(leadId: string) {
 
     const mergedReasons = [...new Set([...reasons, ...analysis.reason_codes])];
     const finalOffer = analysis.suggested_offer || suggestOffer(finalScore, mergedReasons);
+
+    // Scope the upsert by leadId + workspace via a two-step pattern: check
+    // the lead belongs to this workspace, then upsert. Prisma's upsert
+    // doesn't support compound scope in `where` when the target column has
+    // a unique constraint on leadId alone.
+    const owned = await prisma.lead.findFirst({
+      where: { id: leadId, workspaceId },
+      select: { id: true },
+    });
+    if (!owned) {
+      throw new Error("Lead not found in workspace");
+    }
 
     await prisma.salesOpportunity.upsert({
       where: { leadId },
@@ -179,15 +187,15 @@ async function analyzeSingleLead(leadId: string) {
       },
     });
 
-    await prisma.lead.update({
-      where: { id: leadId },
+    await prisma.lead.updateMany({
+      where: { id: leadId, workspaceId },
       data: { analyzeStatus: "ANALYZED" },
     });
 
     return { score: finalScore, offer: finalOffer };
   } catch (error) {
-    await prisma.lead.update({
-      where: { id: leadId },
+    await prisma.lead.updateMany({
+      where: { id: leadId, workspaceId },
       data: { analyzeStatus: "FAILED" },
     });
     throw error;

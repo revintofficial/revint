@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET } from "@/app/api/leads/route";
 
+vi.mock("@/lib/auth", () => ({
+  requireUser: vi.fn().mockResolvedValue({
+    user: { id: "test-user", email: "t@t.com", fullName: null, avatarUrl: null },
+    workspaceId: "test-workspace",
+    workspace: { id: "test-workspace", name: "Test", slug: "test", plan: "FREE" },
+    role: "OWNER",
+  }),
+  UnauthorizedError: class UnauthorizedError extends Error {},
+}));
+
 const mockLeads = [
   {
     id: "1",
@@ -92,7 +102,7 @@ describe("/api/leads GET", () => {
     expect(data.pagination.total).toBe(3);
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {},
+        where: { workspaceId: "test-workspace" },
         skip: 0,
         take: 20,
       })
@@ -273,5 +283,11 @@ describe("/api/leads GET", () => {
 
     const calledWhere = mockFindMany.mock.calls[0][0].where;
     expect(calledWhere.OR).toBeUndefined();
+  });
+
+  it("always scopes query to the caller's workspaceId", async () => {
+    await GET(makeRequest());
+    const calledWhere = mockFindMany.mock.calls[0][0].where;
+    expect(calledWhere.workspaceId).toBe("test-workspace");
   });
 });

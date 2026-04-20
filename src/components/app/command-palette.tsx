@@ -12,6 +12,9 @@ import {
   Search,
   ArrowRight,
   Sparkles,
+  Star,
+  GitBranch,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -31,6 +34,7 @@ interface LeadHit {
   id: string;
   businessName: string;
   borough: string | null;
+  inWatchlist: boolean;
 }
 
 export function CommandPalette({
@@ -45,6 +49,8 @@ export function CommandPalette({
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [leadHits, setLeadHits] = useState<LeadHit[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(false);
+  const [leadsError, setLeadsError] = useState<string | null>(null);
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -52,34 +58,63 @@ export function CommandPalette({
     if (open) {
       setQuery("");
       setLeadHits([]);
+      setLeadsError(null);
+      setLeadsLoading(false);
       setHighlight(0);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
 
   useEffect(() => {
-    if (!query.trim() || query.length < 2) {
+    const trimmed = query.trim();
+    if (!trimmed) {
       setLeadHits([]);
+      setLeadsError(null);
+      setLeadsLoading(false);
       return;
     }
     const ctl = new AbortController();
+    setLeadsLoading(true);
+    setLeadsError(null);
     const t = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/leads?search=${encodeURIComponent(query)}&limit=6`,
+          `/api/leads?search=${encodeURIComponent(trimmed)}&limit=8`,
           { signal: ctl.signal }
         );
-        if (!res.ok) return;
+        if (!res.ok) {
+          setLeadHits([]);
+          setLeadsError(
+            res.status === 401
+              ? "Please sign in again to search leads."
+              : `Search failed (${res.status})`
+          );
+          return;
+        }
         const data = await res.json();
         setLeadHits(
-          (data.leads || []).slice(0, 6).map((l: { id: string; businessName: string; borough: string | null }) => ({
-            id: l.id,
-            businessName: l.businessName,
-            borough: l.borough,
-          }))
+          (data.leads || [])
+            .slice(0, 8)
+            .map(
+              (l: {
+                id: string;
+                businessName: string;
+                borough: string | null;
+                formattedAddress?: string | null;
+                watchlistItem?: { id: string } | null;
+              }) => ({
+                id: l.id,
+                businessName: l.businessName,
+                borough: l.borough || l.formattedAddress || null,
+                inWatchlist: !!l.watchlistItem,
+              })
+            )
         );
-      } catch {
-        // aborted
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setLeadsError("Search failed. Check your connection.");
+      } finally {
+        setLeadsLoading(false);
       }
     }, 180);
     return () => {
@@ -147,14 +182,54 @@ export function CommandPalette({
         label: l.businessName,
         hint: l.borough || "Lead",
         href: `/app/leads/${l.id}`,
+        icon: Users,
         group: "Leads",
       })),
     [leadHits]
   );
 
+  // For leads that are on the watchlist we surface jump-links into the
+  // Shortlist and Pipeline pages so the user can land on the actual card
+  // (with its notes / offer / meeting state) instead of the lead detail.
+  const shortlistResults: Result[] = useMemo(
+    () =>
+      leadHits
+        .filter((l) => l.inWatchlist)
+        .map((l) => ({
+          id: `shortlist:${l.id}`,
+          label: l.businessName,
+          hint: "Open in Shortlist",
+          href: `/app/watchlist#lead-${l.id}`,
+          icon: Star,
+          group: "Shortlist",
+        })),
+    [leadHits]
+  );
+
+  const pipelineResults: Result[] = useMemo(
+    () =>
+      leadHits
+        .filter((l) => l.inWatchlist)
+        .map((l) => ({
+          id: `pipeline:${l.id}`,
+          label: l.businessName,
+          hint: "Open in Pipeline",
+          href: `/app/pipeline#lead-${l.id}`,
+          icon: GitBranch,
+          group: "Pipeline",
+        })),
+    [leadHits]
+  );
+
   const allResults = useMemo(
-    () => [...navResults, ...leadResults, ...actionResults],
-    [navResults, leadResults, actionResults]
+    () => [
+      ...navResults,
+      ...leadResults,
+      ...shortlistResults,
+      ...pipelineResults,
+      ...actionResults,
+    ],
+    [navResults, leadResults, shortlistResults, pipelineResults, actionResults]
   );
 
   useEffect(() => {
@@ -220,13 +295,23 @@ export function CommandPalette({
         </div>
 
         <div className="max-h-[420px] overflow-y-auto py-2">
-          {allResults.length === 0 && (
+          {leadsError && (
+            <div className="mx-3 mb-2 px-3 py-2 rounded-lg text-[12px]" style={{ background: "rgba(255, 69, 58, 0.12)", color: "#FF6961" }}>
+              {leadsError}
+            </div>
+          )}
+          {allResults.length === 0 && !leadsLoading && (
             <div className="px-5 py-10 text-center text-[13px] text-white/40">
-              No results. Try another search.
+              {query.trim() ? "No results. Try another search." : "Start typing a business name, address, or phone…"}
+            </div>
+          )}
+          {allResults.length === 0 && leadsLoading && (
+            <div className="px-5 py-10 text-center text-[13px] text-white/40">
+              Searching leads…
             </div>
           )}
 
-          {(["Navigate", "Leads", "Actions"] as const).map((group) => {
+          {(["Navigate", "Leads", "Shortlist", "Pipeline", "Actions"] as const).map((group) => {
             const items = allResults.filter((r) => r.group === group);
             if (items.length === 0) return null;
             return (

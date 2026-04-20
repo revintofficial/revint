@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(
   request: Request,
@@ -52,7 +53,7 @@ export async function PATCH(
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Watchlist update error:", error);
+    logger.error("api.watchlist.update_error", { err: error });
     return NextResponse.json({ error: "Failed to update watchlist item" }, { status: 500 });
   }
 }
@@ -77,7 +78,7 @@ export async function DELETE(
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Watchlist delete error:", error);
+    logger.error("api.watchlist.delete_error", { err: error });
     return NextResponse.json({ error: "Failed to remove from watchlist" }, { status: 500 });
   }
 }

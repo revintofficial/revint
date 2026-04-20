@@ -412,6 +412,18 @@ model EmailAccount {
   @@map("email_accounts")
 }
 
+// Stripe webhook idempotency. Stripe retries delivered events; we insert
+// the event id on first successful handling and skip replays. No PII; just
+// the event id and type for audit.
+model StripeEventLog {
+  id         String   @id
+  type       String
+  receivedAt DateTime @default(now()) @map("received_at")
+
+  @@index([receivedAt])
+  @@map("stripe_event_log")
+}
+
 // P1.2 - AI sales co-pilot chat.
 // Workspace-wide chat history. Each message references which leadIds the
 // assistant pulled context from, so the user can audit "where did this

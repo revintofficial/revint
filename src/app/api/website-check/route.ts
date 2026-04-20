@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 interface ContentAnalysis {
   url: string;
@@ -389,7 +390,7 @@ export async function POST(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Website check error:", error);
+    logger.error("api.website_check.error", { err: error });
     return NextResponse.json(
       { error: "Website check failed", details: String(error) },
       { status: 500 }

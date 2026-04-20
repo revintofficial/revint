@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -21,7 +22,7 @@ export async function GET() {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Todos fetch error:", error);
+    logger.error("api.todos.fetch_error", { err: error });
     return NextResponse.json(
       { error: "Failed to fetch todos", detail: error instanceof Error ? error.message : String(error) },
       { status: 500 }
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Todo create error:", error);
+    logger.error("api.todos.create_error", { err: error });
     return NextResponse.json(
       { error: "Failed to create todo", details: String(error) },
       { status: 500 }

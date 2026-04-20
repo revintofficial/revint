@@ -3,11 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { discoverLeads, extractBoroughFromAddress } from "@/lib/google-places";
 import { LONDON_BOROUGHS, SEARCH_QUERIES } from "@/types";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
-import { assertCanCreateLeads, recordLeadsCreated, QuotaExceededError } from "@/lib/quotas";
+import {
+  assertCanCreateLeads,
+  recordLeadsCreated,
+  QuotaExceededError,
+} from "@/lib/quotas";
+import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
+import { getDiscoveryQueue } from "@/lib/queues";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: Request) {
   try {
     const { workspaceId } = await requireUser();
+
+    // Rate limit on expensive Google Places spend. Quota (leads/cycle) still
+    // caps absolute usage via src/lib/quotas.ts.
+    const rl = await checkRateLimit(workspaceId, LIMITS.discovery);
+    if (!rl.ok) return rateLimitResponse(rl);
+
     const body = await request.json();
     const {
       searchQuery,
@@ -16,73 +29,32 @@ export async function POST(request: Request) {
       runAll = false,
     } = body;
 
+    // Bulk path moved to the worker queue. Previously this ran 5 boroughs x
+    // 3 queries sequentially inside the HTTP handler, with 1s sleeps and
+    // per-place DB writes - guaranteed Vercel timeout at any real scale.
     if (runAll) {
-      const results: { borough: string; query: string; created: number; skipped: number }[] = [];
-
+      const queue = getDiscoveryQueue();
+      const jobs: { borough: string; query: string }[] = [];
       for (const borough of LONDON_BOROUGHS.slice(0, 5)) {
         for (const query of SEARCH_QUERIES.slice(0, 3)) {
-          try {
-            const places = await discoverLeads(query, borough, radiusMeters);
-            let created = 0;
-            let skipped = 0;
-
-            for (const place of places) {
-              if (!place.id) continue;
-              const existing = await prisma.lead.findUnique({
-                where: { workspaceId_placeId: { workspaceId, placeId: place.id } },
-              });
-              if (existing) {
-                skipped++;
-                continue;
-              }
-
-              try {
-                await assertCanCreateLeads(workspaceId, 1);
-              } catch (e) {
-                if (e instanceof QuotaExceededError) {
-                  results.push({ borough: borough.name, query, created, skipped });
-                  return NextResponse.json({ success: true, results, partial: true, quota: e.message });
-                }
-                throw e;
-              }
-
-              const address = place.formattedAddress || "";
-              const websiteUrl = place.websiteUri || null;
-              await prisma.lead.create({
-                data: {
-                  workspaceId,
-                  placeId: place.id,
-                  businessName: place.displayName?.text || "Unknown",
-                  formattedAddress: address,
-                  borough: extractBoroughFromAddress(address) || borough.name,
-                  phone: place.nationalPhoneNumber || null,
-                  websiteUrl,
-                  hasWebsite: !!websiteUrl,
-                  googleMapsUri: place.googleMapsUri || null,
-                  rating: place.rating || null,
-                  reviewCount: place.userRatingCount || null,
-                  businessStatus: place.businessStatus || null,
-                  primaryType: place.primaryType || null,
-                  sourceQuery: `${query} in ${borough.name} London`,
-                  sourceLat: borough.lat,
-                  sourceLng: borough.lng,
-                  crawlStatus: websiteUrl ? "PENDING" : "NO_WEBSITE",
-                  analyzeStatus: "PENDING",
-                },
-              });
-              await recordLeadsCreated(workspaceId, 1);
-              created++;
-            }
-
-            results.push({ borough: borough.name, query, created, skipped });
-            await new Promise((r) => setTimeout(r, 1000));
-          } catch (err) {
-            console.error(`Discovery error for ${query} in ${borough.name}:`, err);
-          }
+          await queue.add(
+            "discover",
+            { workspaceId, searchQuery: query, borough, radiusMeters },
+            { removeOnComplete: 100, removeOnFail: 50 },
+          );
+          jobs.push({ borough: borough.name, query });
         }
       }
-
-      return NextResponse.json({ success: true, results });
+      return NextResponse.json(
+        {
+          success: true,
+          enqueued: jobs.length,
+          jobs,
+          message:
+            "Bulk discovery enqueued. Worker will populate leads in the background; poll /api/leads for new rows.",
+        },
+        { status: 202 },
+      );
     }
 
     if (!searchQuery || !boroughName) {
@@ -97,7 +69,6 @@ export async function POST(request: Request) {
     );
     const borough: { name: string; lat: number; lng: number } = matched
       ? { name: matched.name, lat: matched.lat, lng: matched.lng }
-      // Allow free-text locations: synthesize a "borough" with placeholder coords.
       : { name: boroughName, lat: 0, lng: 0 };
 
     const places = await discoverLeads(searchQuery, borough, radiusMeters);
@@ -168,7 +139,7 @@ export async function POST(request: Request) {
     if (error instanceof QuotaExceededError) {
       return error.toResponse();
     }
-    console.error("Discovery error:", error);
+    logger.error("api.discovery.error", { err: error });
     const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ error: message }, { status: 500 });
   }

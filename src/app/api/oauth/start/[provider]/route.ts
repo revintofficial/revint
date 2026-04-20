@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { buildAuthUrl, isProviderConfigured, type OAuthProvider } from "@/lib/oauth/providers";
+import { logger } from "@/lib/logger";
 import { randomBytes } from "crypto";
 
 export async function GET(
@@ -55,7 +56,7 @@ export async function GET(
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("OAuth start error:", err);
+    logger.error("api.oauth.start_error", { err });
     return NextResponse.json({ error: "Failed to start OAuth" }, { status: 500 });
   }
 }

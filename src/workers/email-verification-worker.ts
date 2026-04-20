@@ -10,17 +10,14 @@
  */
 
 import { Worker, type Job } from "bullmq";
-import { PrismaClient } from "../generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
 import IORedis from "ioredis";
 import {
   verifyEmail,
   isVerificationConfigured,
   type EmailVerificationResult,
 } from "../lib/email-verification";
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
+import { prisma } from "../lib/prisma";
+import { logger } from "../lib/logger";
 
 interface EmailVerificationJobData {
   leadId: string;
@@ -30,9 +27,7 @@ async function processEmailVerification(job: Job<EmailVerificationJobData>) {
   const { leadId } = job.data;
 
   if (!isVerificationConfigured()) {
-    console.log(
-      `[EmailVerification] ZEROBOUNCE_API_KEY not set, skipping ${leadId} (graceful degradation)`,
-    );
+    logger.info("worker.email_verification.not_configured", { leadId });
     return { leadId, skipped: true };
   }
 
@@ -42,7 +37,7 @@ async function processEmailVerification(job: Job<EmailVerificationJobData>) {
   });
 
   if (!audit) {
-    console.log(`[EmailVerification] No audit for ${leadId}, skipping`);
+    logger.info("worker.email_verification.no_audit", { leadId });
     return { leadId, skipped: true };
   }
 
@@ -51,7 +46,10 @@ async function processEmailVerification(job: Job<EmailVerificationJobData>) {
     return { leadId, skipped: true, count: 0 };
   }
 
-  console.log(`[EmailVerification] Verifying ${emails.length} email(s) for ${leadId}`);
+  logger.info("worker.email_verification.verifying", {
+    leadId,
+    count: emails.length,
+  });
 
   const results: EmailVerificationResult[] = [];
   for (const email of emails) {
@@ -68,9 +66,11 @@ async function processEmailVerification(job: Job<EmailVerificationJobData>) {
   });
 
   const validCount = results.filter((r) => r.verified).length;
-  console.log(
-    `[EmailVerification] Done ${leadId}: ${validCount}/${results.length} valid`,
-  );
+  logger.info("worker.email_verification.done", {
+    leadId,
+    valid: validCount,
+    total: results.length,
+  });
 
   return { leadId, total: results.length, valid: validCount };
 }
@@ -91,11 +91,11 @@ export function startEmailVerificationWorker() {
   );
 
   worker.on("completed", (job, result) => {
-    console.log(`[EmailVerification] Job ${job.id} completed`, result);
+    logger.info("worker.email_verification.job_completed", { jobId: job.id, result });
   });
 
   worker.on("failed", (job, err) => {
-    console.error(`[EmailVerification] Job ${job?.id} failed:`, err.message);
+    logger.error("worker.email_verification.job_failed", { jobId: job?.id, err });
   });
 
   return worker;

@@ -7,6 +7,8 @@ import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { assertCanUseAi, recordAiUsed, QuotaExceededError } from "@/lib/quotas";
 import { generateMockupSlug } from "@/lib/mockup";
 import { getNicheByQuery } from "@/lib/niches";
+import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   request: Request,
@@ -14,6 +16,10 @@ export async function POST(
 ) {
   try {
     const { workspaceId } = await requireUser();
+
+    const rl = await checkRateLimit(workspaceId, LIMITS.websitePlan);
+    if (!rl.ok) return rateLimitResponse(rl);
+
     const { leadId } = await params;
 
     const lead = await prisma.lead.findFirst({
@@ -143,7 +149,7 @@ export async function POST(
       const host = request.headers.get("host") || "leadengine.app";
       mockupUrl = `${proto}://${host}/m/${mockup.slug}`;
     } catch (mockupErr) {
-      console.error("Failed to create mockup; plan saved without public URL:", mockupErr);
+      logger.error("api.website_plan.mockup_create_failed", { err: mockupErr });
     }
 
     // Persist plan to watchlist, with the public mockup link appended as a
@@ -160,7 +166,7 @@ export async function POST(
         data: { websitePlan: planWithLink },
       });
     } catch (saveErr) {
-      console.error("Failed to save plan to DB, returning anyway:", saveErr);
+      logger.error("api.website_plan.save_failed", { err: saveErr });
     }
 
     await recordAiUsed(workspaceId, 2);
@@ -178,7 +184,7 @@ export async function POST(
     if (error instanceof QuotaExceededError) {
       return error.toResponse();
     }
-    console.error("Website plan generation error:", error);
+    logger.error("api.website_plan.error", { err: error });
     return NextResponse.json(
       { error: "Failed to generate website plan", details: String(error) },
       { status: 500 }

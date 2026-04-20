@@ -18,6 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { transcribeAudioWithGemini } from "@/lib/gemini-transcribe";
 import { assertCanUseAi, recordAiUsed, QuotaExceededError } from "@/lib/quotas";
+import { logger } from "@/lib/logger";
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 const MAX_DURATION_SEC = 90;
@@ -78,7 +79,7 @@ export async function POST(
     try {
       transcript = await transcribeAudioWithGemini(buffer, mimeType, language);
     } catch (err) {
-      console.error("Transcription failed:", err);
+      logger.error("api.voice_notes.transcription_failed", { err });
       return NextResponse.json(
         { error: "Transcription failed", details: String(err) },
         { status: 502 },
@@ -124,7 +125,7 @@ export async function POST(
     if (error instanceof QuotaExceededError) {
       return error.toResponse();
     }
-    console.error("Voice note error:", error);
+    logger.error("api.voice_notes.create_error", { err: error });
     return NextResponse.json({ error: "Failed to save voice note" }, { status: 500 });
   }
 }
@@ -156,7 +157,7 @@ export async function GET(
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Voice note list error:", error);
+    logger.error("api.voice_notes.list_error", { err: error });
     return NextResponse.json({ error: "Failed to list voice notes" }, { status: 500 });
   }
 }

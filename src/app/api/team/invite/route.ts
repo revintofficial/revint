@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { PLANS, planAllowsAdditionalSeat } from "@/lib/plans";
+import { logger } from "@/lib/logger";
 
 export async function POST(request: Request) {
   try {
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         // Fall back: if Supabase admin/invite isn't configured, still create a placeholder
-        console.warn("Supabase invite failed:", msg);
+        logger.warn("api.team.supabase_invite_failed", { err });
         return NextResponse.json(
           {
             error:
@@ -96,7 +97,7 @@ export async function POST(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Invite error:", error);
+    logger.error("api.team.invite_error", { err: error });
     return NextResponse.json({ error: "Failed to invite", detail: String(error) }, { status: 500 });
   }
 }

@@ -1,40 +1,50 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getOptionalUser } from "@/lib/auth";
 
+/**
+ * Minimal health probe.
+ *
+ * Unauthenticated callers get a bare 200 ("ok") or 503 ("down"). Operators
+ * listed in HEALTH_ADMIN_EMAILS (comma-separated) get a verbose payload.
+ * Nothing about the environment is revealed to anonymous clients - no
+ * version numbers, no env var presence, no table counts. The previous
+ * implementation was an enumeration surface.
+ */
 export async function GET() {
-  const checks: Record<string, unknown> = {
-    timestamp: new Date().toISOString(),
-    node: process.version,
-    env: {
-      DATABASE_URL: process.env.DATABASE_URL ? "set (" + process.env.DATABASE_URL.replace(/:[^@]+@/, ":***@") + ")" : "MISSING",
-      DIRECT_URL: process.env.DIRECT_URL ? "set" : "MISSING",
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY ? "set" : "MISSING",
-      GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY ? "set" : "MISSING",
+  const adminEmails = (process.env.HEALTH_ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
+  const session = await getOptionalUser();
+  const isAdmin =
+    session !== null &&
+    adminEmails.length > 0 &&
+    adminEmails.includes(session.user.email.toLowerCase());
+
+  let dbOk = false;
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    dbOk = true;
+  } catch {
+    dbOk = false;
+  }
+
+  const status = dbOk ? 200 : 503;
+
+  if (!isAdmin) {
+    // Opaque response. Clients relying on this for uptime checks should
+    // look at the HTTP status, not the body.
+    return NextResponse.json({ ok: dbOk }, { status });
+  }
+
+  return NextResponse.json(
+    {
+      ok: dbOk,
+      db: dbOk ? "ok" : "unreachable",
+      ts: new Date().toISOString(),
     },
-  };
-
-  try {
-    const { PrismaPg } = await import("@prisma/adapter-pg");
-    checks.prismaAdapterPg = "ok";
-  } catch (e) {
-    checks.prismaAdapterPg = `FAILED: ${e instanceof Error ? e.message : String(e)}`;
-  }
-
-  try {
-    const pg = await import("pg");
-    checks.pgModule = "ok";
-  } catch (e) {
-    checks.pgModule = `FAILED: ${e instanceof Error ? e.message : String(e)}`;
-  }
-
-  try {
-    const { prisma } = await import("@/lib/prisma");
-    const count = await prisma.lead.count();
-    checks.database = `ok (${count} leads)`;
-  } catch (e) {
-    checks.database = `FAILED: ${e instanceof Error ? e.stack : String(e)}`;
-  }
-
-  const allOk = !JSON.stringify(checks).includes("FAILED") && !JSON.stringify(checks).includes("MISSING");
-
-  return NextResponse.json(checks, { status: allOk ? 200 : 500 });
+    { status },
+  );
 }

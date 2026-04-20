@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useScrollToLeadHash } from "@/lib/use-scroll-to-lead-hash";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Table } from "@tiptap/extension-table";
@@ -103,6 +104,9 @@ export default function PipelinePage() {
   useEffect(() => {
     fetchWatchlist();
   }, [fetchWatchlist]);
+
+  // Honor command-palette deep links like /app/pipeline#lead-<id>.
+  useScrollToLeadHash(!loading && items.length > 0);
 
   const positiveCount = items.filter((i) => i.meetingResult === "POSITIVE").length;
   const negativeCount = items.filter((i) => i.meetingResult === "NEGATIVE").length;
@@ -261,7 +265,7 @@ function PipelineCard({ item }: { item: WatchlistItem }) {
         : null;
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200">
+    <Card id={`lead-${item.lead.id}`} className="hover:shadow-md transition-shadow duration-200 scroll-mt-24">
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">

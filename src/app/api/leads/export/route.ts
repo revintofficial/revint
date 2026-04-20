@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 type ExportFormat = "smartlead" | "instantly" | "csv";
 
@@ -247,7 +248,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const message = error instanceof Error ? error.message : String(error);
-    console.error("Export error:", message);
+    logger.error("api.leads.export_error", { err: error });
     return NextResponse.json(
       { error: "Export failed", detail: message },
       { status: 500 }

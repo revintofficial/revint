@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { sortByDistance, filterWithinMiles } from "@/lib/geo";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -31,11 +32,25 @@ export async function GET(request: Request) {
     if (hasWebsite === "false") where.hasWebsite = false;
 
     if (search) {
-      where.OR = [
-        { businessName: { contains: search, mode: "insensitive" } },
-        { formattedAddress: { contains: search, mode: "insensitive" } },
-        { phone: { contains: search } },
-      ];
+      // Split the query into whitespace-separated terms and AND them together.
+      // Each term must match at least one of businessName / formattedAddress
+      // (or phone if the term looks like digits). This lets "main brooklyn"
+      // find "123 Main St, Brooklyn, NY" even though the literal substring
+      // "main brooklyn" never appears.
+      const terms = search.trim().split(/\s+/).filter(Boolean);
+      if (terms.length > 0) {
+        where.AND = terms.map((term) => {
+          const or: Array<Record<string, unknown>> = [
+            { businessName: { contains: term, mode: "insensitive" } },
+            { formattedAddress: { contains: term, mode: "insensitive" } },
+          ];
+          const digits = term.replace(/\D/g, "");
+          if (digits.length >= 3) {
+            or.push({ phone: { contains: digits } });
+          }
+          return { OR: or };
+        });
+      }
     }
 
     if (status && status !== "all") {
@@ -72,7 +87,13 @@ export async function GET(request: Request) {
     const [allLeads, total] = await Promise.all([
       prisma.lead.findMany({
         where,
-        include: { websiteAudit: true, salesOpportunity: true },
+        include: {
+          websiteAudit: true,
+          salesOpportunity: true,
+          // Surface watchlist membership so the command palette can deep-link
+          // into Shortlist / Pipeline views for leads that live there.
+          watchlistItem: { select: { id: true } },
+        },
         orderBy,
         skip: fetchSkip,
         take: fetchLimit,
@@ -108,8 +129,8 @@ export async function GET(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    logger.error("api.leads.fetch_error", { err: error });
     const message = error instanceof Error ? error.message : String(error);
-    console.error("Leads fetch error:", message);
     return NextResponse.json({ error: "Failed to fetch leads", detail: message }, { status: 500 });
   }
 }

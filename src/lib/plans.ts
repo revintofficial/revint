@@ -1,11 +1,39 @@
 import type { Plan } from "@/generated/prisma/client";
 
+export type Currency = "USD" | "GBP";
+export const SUPPORTED_CURRENCIES: Currency[] = ["USD", "GBP"];
+export const DEFAULT_CURRENCY: Currency = "USD";
+
+export type BillingCycle = "monthly" | "annual";
+export const SUPPORTED_CYCLES: BillingCycle[] = ["monthly", "annual"];
+export const DEFAULT_CYCLE: BillingCycle = "monthly";
+
+/**
+ * P0.9: Annual billing - 20% discount on monthly price (industry standard 2026:
+ * Asana 18%, Canva 23%, Notion 31%; deeper than 30% signals desperation).
+ * Per-currency annual Stripe Price IDs are optional - fall back to monthly
+ * when not configured so we never break checkout for tenants without annual
+ * pricing set up.
+ */
+export const ANNUAL_DISCOUNT_PCT = 20;
+
 export interface PlanDefinition {
   id: Plan;
   name: string;
   tagline: string;
+  /** USD headline price - shown as the default. Use `monthlyPrices` for both. */
   monthlyPrice: number;
+  /** Per-currency display prices (whole units, no cents). */
+  monthlyPrices: Record<Currency, number>;
+  /**
+   * USD-default price ID for backward compat. Prefer `priceIds[currency]`
+   * via `getPriceId(plan, currency)` for new code.
+   */
   priceId: string | null;
+  /** Per-currency Stripe Price IDs - both must exist for the plan to be live. */
+  priceIds: Record<Currency, string | null>;
+  /** P0.9: Per-currency annual Stripe Price IDs (optional). */
+  annualPriceIds: Record<Currency, string | null>;
   leadsPerCycle: number;
   aiCreditsPerCycle: number;
   /** P0.8: max number of seats this tier allows. */
@@ -34,7 +62,10 @@ export const PLANS: Record<Plan, PlanDefinition> = {
     name: "Free",
     tagline: "Test it on your next prospect list.",
     monthlyPrice: 0,
+    monthlyPrices: { USD: 0, GBP: 0 },
     priceId: null,
+    priceIds: { USD: null, GBP: null },
+    annualPriceIds: { USD: null, GBP: null },
     leadsPerCycle: 50,
     aiCreditsPerCycle: 20,
     maxSeats: 1,
@@ -52,7 +83,16 @@ export const PLANS: Record<Plan, PlanDefinition> = {
     name: "Pro Solo",
     tagline: "For solo SDRs and vertical specialists.",
     monthlyPrice: 79,
-    priceId: process.env.STRIPE_PRICE_PRO || null,
+    monthlyPrices: { USD: 79, GBP: 59 },
+    priceId: process.env.STRIPE_PRICE_PRO_USD || process.env.STRIPE_PRICE_PRO || null,
+    priceIds: {
+      USD: process.env.STRIPE_PRICE_PRO_USD || process.env.STRIPE_PRICE_PRO || null,
+      GBP: process.env.STRIPE_PRICE_PRO_GBP || null,
+    },
+    annualPriceIds: {
+      USD: process.env.STRIPE_PRICE_PRO_ANNUAL_USD || null,
+      GBP: process.env.STRIPE_PRICE_PRO_ANNUAL_GBP || null,
+    },
     leadsPerCycle: 1_000,
     aiCreditsPerCycle: 500,
     maxSeats: 1,
@@ -71,7 +111,16 @@ export const PLANS: Record<Plan, PlanDefinition> = {
     name: "Pro Team",
     tagline: "For walk-in web agency starters and small teams.",
     monthlyPrice: 149,
-    priceId: process.env.STRIPE_PRICE_PRO_TEAM || null,
+    monthlyPrices: { USD: 149, GBP: 99 },
+    priceId: process.env.STRIPE_PRICE_PRO_TEAM_USD || process.env.STRIPE_PRICE_PRO_TEAM || null,
+    priceIds: {
+      USD: process.env.STRIPE_PRICE_PRO_TEAM_USD || process.env.STRIPE_PRICE_PRO_TEAM || null,
+      GBP: process.env.STRIPE_PRICE_PRO_TEAM_GBP || null,
+    },
+    annualPriceIds: {
+      USD: process.env.STRIPE_PRICE_PRO_TEAM_ANNUAL_USD || null,
+      GBP: process.env.STRIPE_PRICE_PRO_TEAM_ANNUAL_GBP || null,
+    },
     leadsPerCycle: 2_500,
     aiCreditsPerCycle: 1_500,
     maxSeats: 3,
@@ -93,7 +142,16 @@ export const PLANS: Record<Plan, PlanDefinition> = {
     name: "Agency",
     tagline: "For agencies running outbound for clients.",
     monthlyPrice: 249,
-    priceId: process.env.STRIPE_PRICE_AGENCY || null,
+    monthlyPrices: { USD: 249, GBP: 199 },
+    priceId: process.env.STRIPE_PRICE_AGENCY_USD || process.env.STRIPE_PRICE_AGENCY || null,
+    priceIds: {
+      USD: process.env.STRIPE_PRICE_AGENCY_USD || process.env.STRIPE_PRICE_AGENCY || null,
+      GBP: process.env.STRIPE_PRICE_AGENCY_GBP || null,
+    },
+    annualPriceIds: {
+      USD: process.env.STRIPE_PRICE_AGENCY_ANNUAL_USD || null,
+      GBP: process.env.STRIPE_PRICE_AGENCY_ANNUAL_GBP || null,
+    },
     leadsPerCycle: 5_000,
     aiCreditsPerCycle: 5_000,
     maxSeats: 5,
@@ -121,4 +179,86 @@ export function getPlan(plan: Plan): PlanDefinition {
 /** P0.8: assert this workspace can invite an additional seat without exceeding tier max. */
 export function planAllowsAdditionalSeat(plan: Plan, currentSeatCount: number): boolean {
   return currentSeatCount < PLANS[plan].maxSeats;
+}
+
+/**
+ * Look up the Stripe Price ID for a plan in the requested currency and cycle.
+ * Annual is preferred when requested AND configured; otherwise falls back to
+ * the same-currency monthly price (then USD monthly) so checkout never breaks
+ * for tenants without annual pricing wired up.
+ */
+export function getPriceId(
+  plan: Plan,
+  currency: Currency = DEFAULT_CURRENCY,
+  cycle: BillingCycle = DEFAULT_CYCLE
+): string | null {
+  const def = PLANS[plan];
+  if (cycle === "annual") {
+    const annual = def.annualPriceIds[currency] ?? def.annualPriceIds[DEFAULT_CURRENCY];
+    if (annual) return annual;
+  }
+  return def.priceIds[currency] ?? def.priceIds[DEFAULT_CURRENCY] ?? def.priceId;
+}
+
+/** True if at least one annual price ID is configured for this plan. */
+export function hasAnnualPricing(plan: Plan, currency: Currency = DEFAULT_CURRENCY): boolean {
+  const def = PLANS[plan];
+  return Boolean(def.annualPriceIds[currency] ?? def.annualPriceIds[DEFAULT_CURRENCY]);
+}
+
+/** Narrow an arbitrary string to a supported Currency, or fall back to default. */
+export function normalizeCurrency(input: unknown): Currency {
+  if (typeof input === "string") {
+    const upper = input.toUpperCase();
+    if ((SUPPORTED_CURRENCIES as string[]).includes(upper)) {
+      return upper as Currency;
+    }
+  }
+  return DEFAULT_CURRENCY;
+}
+
+/** Narrow an arbitrary string to a supported BillingCycle, default monthly. */
+export function normalizeCycle(input: unknown): BillingCycle {
+  if (typeof input === "string") {
+    const lower = input.toLowerCase();
+    if ((SUPPORTED_CYCLES as string[]).includes(lower)) {
+      return lower as BillingCycle;
+    }
+  }
+  return DEFAULT_CYCLE;
+}
+
+/**
+ * Display price for a plan/currency/cycle. Annual cycle returns the discounted
+ * effective monthly price (rounded). UI components show the per-month figure
+ * even on annual to avoid sticker shock.
+ */
+export function getDisplayPrice(
+  plan: Plan,
+  currency: Currency = DEFAULT_CURRENCY,
+  cycle: BillingCycle = DEFAULT_CYCLE
+): number {
+  const monthly = PLANS[plan].monthlyPrices[currency] ?? PLANS[plan].monthlyPrice;
+  if (cycle === "annual") {
+    return Math.round(monthly * (1 - ANNUAL_DISCOUNT_PCT / 100));
+  }
+  return monthly;
+}
+
+/** Currency symbol for display. */
+export function currencySymbol(currency: Currency): string {
+  return currency === "GBP" ? "£" : "$";
+}
+
+/**
+ * Best-effort browser-side currency detection from navigator.language /
+ * Intl.Locale region. UK locales -> GBP, everything else -> USD. Safe on
+ * SSR (returns default).
+ */
+export function detectBrowserCurrency(): Currency {
+  if (typeof navigator === "undefined") return DEFAULT_CURRENCY;
+  const lang = navigator.language || "";
+  const region = lang.split("-")[1]?.toUpperCase() || "";
+  if (region === "GB" || lang.toLowerCase() === "en-gb") return "GBP";
+  return DEFAULT_CURRENCY;
 }

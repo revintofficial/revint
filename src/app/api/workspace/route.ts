@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { parseBranding, planAllowsWhiteLabel } from "@/lib/branding";
+import { logger } from "@/lib/logger";
 
 interface PatchBody {
   name?: string;
@@ -69,7 +70,7 @@ export async function PATCH(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Workspace update error:", error);
+    logger.error("api.workspace.update_error", { err: error });
     return NextResponse.json({ error: "Failed to update workspace" }, { status: 500 });
   }
 }

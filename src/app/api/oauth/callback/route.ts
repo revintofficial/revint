@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { exchangeCodeForToken, type OAuthProvider } from "@/lib/oauth/providers";
+import { logger } from "@/lib/logger";
 
 interface ProfileResponse {
   email?: string;
@@ -91,7 +92,7 @@ export async function GET(request: Request) {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("OAuth callback error:", err);
+    logger.error("api.oauth.callback_error", { err });
     return NextResponse.json({ error: "OAuth callback failed", detail: String(err) }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function DELETE(
   _request: Request,
@@ -28,7 +29,7 @@ export async function DELETE(
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Voice note delete error:", error);
+    logger.error("api.voice_notes.delete_error", { err: error });
     return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
 }

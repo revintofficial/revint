@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { sendEmail } from "@/lib/oauth/email-client";
+import { logger } from "@/lib/logger";
 
 interface SendBody {
   accountId: string;
@@ -92,7 +93,7 @@ export async function POST(
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Send email error:", err);
+    logger.error("api.leads.send_email_error", { err });
     return NextResponse.json({ error: "Send failed", detail: String(err) }, { status: 500 });
   }
 }

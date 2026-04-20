@@ -1,5 +1,37 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { POST } from "@/app/api/discovery/route";
+
+vi.mock("@/lib/auth", () => ({
+  requireUser: vi.fn().mockResolvedValue({
+    user: { id: "test-user", email: "t@t.com", fullName: null, avatarUrl: null },
+    workspaceId: "test-workspace",
+    workspace: { id: "test-workspace", name: "Test", slug: "test", plan: "FREE" },
+    role: "OWNER",
+  }),
+  UnauthorizedError: class UnauthorizedError extends Error {},
+}));
+
+vi.mock("@/lib/quotas", () => ({
+  assertCanCreateLeads: vi.fn().mockResolvedValue(undefined),
+  recordLeadsCreated: vi.fn().mockResolvedValue(undefined),
+  QuotaExceededError: class QuotaExceededError extends Error {},
+}));
+
+vi.mock("@/lib/queues", () => ({
+  getDiscoveryQueue: () => ({ add: vi.fn().mockResolvedValue(undefined) }),
+}));
+
+vi.mock("@/lib/ratelimit", () => ({
+  checkRateLimit: vi.fn().mockResolvedValue({ ok: true, remaining: 10, limit: 10, resetSec: 60 }),
+  rateLimitResponse: () => new Response(JSON.stringify({ error: "rate_limited" }), { status: 429 }),
+  LIMITS: {
+    discovery: { bucket: "disc", windowSec: 60, limit: 10 },
+    analyze: { bucket: "ana", windowSec: 60, limit: 20 },
+    websitePlan: { bucket: "plan", windowSec: 60, limit: 10 },
+    websiteSearch: { bucket: "wsrch", windowSec: 60, limit: 15 },
+    copilot: { bucket: "copi", windowSec: 60, limit: 30 },
+  },
+}));
 
 const mockPlaces = [
   {
@@ -229,34 +261,27 @@ describe("/api/discovery POST", () => {
   });
 
   describe("runAll (bulk discovery)", () => {
-    it("runs discovery for first 5 boroughs x first 3 queries", async () => {
+    // Bulk discovery was converted to the worker queue - the HTTP handler
+    // now enqueues 15 jobs (5 boroughs x 3 queries) and returns 202 instead
+    // of running the search inline.
+    it("enqueues 15 jobs and returns 202 without calling discoverLeads inline", async () => {
       mockDiscoverLeads.mockResolvedValue([]);
 
       const res = await POST(makeRequest({ runAll: true }));
       const data = await res.json();
 
+      expect(res.status).toBe(202);
       expect(data.success).toBe(true);
-      expect(data.results).toBeDefined();
-      expect(mockDiscoverLeads).toHaveBeenCalledTimes(15);
-    }, 30000);
-
-    it("returns results array with per-borough-query breakdown", async () => {
-      mockDiscoverLeads.mockResolvedValue(mockPlaces);
-      mockFindUnique.mockResolvedValue(null);
-
-      const res = await POST(makeRequest({ runAll: true }));
-      const data = await res.json();
-
-      expect(data.results.length).toBe(15);
-      for (const result of data.results) {
-        expect(result).toHaveProperty("borough");
-        expect(result).toHaveProperty("query");
-        expect(result).toHaveProperty("created");
-        expect(result).toHaveProperty("skipped");
+      expect(data.enqueued).toBe(15);
+      expect(data.jobs).toHaveLength(15);
+      for (const job of data.jobs) {
+        expect(job).toHaveProperty("borough");
+        expect(job).toHaveProperty("query");
       }
-    }, 30000);
+      expect(mockDiscoverLeads).not.toHaveBeenCalled();
+    });
 
-    it("continues even if one borough-query combo fails", async () => {
+    it("continues enqueuing even if one borough-query combo would have failed", async () => {
       let callCount = 0;
       mockDiscoverLeads.mockImplementation(() => {
         callCount++;
@@ -267,8 +292,9 @@ describe("/api/discovery POST", () => {
       const res = await POST(makeRequest({ runAll: true }));
       const data = await res.json();
 
+      expect(res.status).toBe(202);
       expect(data.success).toBe(true);
-      expect(data.results.length).toBe(14);
-    }, 30000);
+      expect(data.enqueued).toBe(15);
+    });
   });
 });

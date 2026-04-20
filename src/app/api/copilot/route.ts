@@ -8,6 +8,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { sendCopilotMessage, CopilotQuotaExceeded } from "@/lib/copilot";
+import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -36,6 +38,10 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await requireUser();
+
+    const rl = await checkRateLimit(session.workspaceId, LIMITS.copilot);
+    if (!rl.ok) return rateLimitResponse(rl);
+
     const body = await request.json();
     const message = typeof body.message === "string" ? body.message.trim() : "";
     if (!message) {
@@ -68,7 +74,7 @@ export async function POST(request: Request) {
         { status: 402 },
       );
     }
-    console.error("Copilot error:", err);
+    logger.error("api.copilot.error", { err });
     return NextResponse.json({ error: "Copilot failed", detail: String(err) }, { status: 500 });
   }
 }

@@ -1,13 +1,10 @@
 import { Worker, type Job } from "bullmq";
-import { PrismaClient } from "../generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
 import { crawlWebsite, closeBrowser } from "../lib/crawler";
 import { getEmailVerificationQueue } from "../lib/queues";
 import { isVerificationConfigured } from "../lib/email-verification";
+import { prisma } from "../lib/prisma";
+import { logger } from "../lib/logger";
 import IORedis from "ioredis";
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
 
 interface CrawlJobData {
   leadId: string;
@@ -17,7 +14,7 @@ interface CrawlJobData {
 async function processCrawl(job: Job<CrawlJobData>) {
   const { leadId, websiteUrl } = job.data;
 
-  console.log(`[Crawl] Starting: ${websiteUrl} (lead: ${leadId})`);
+  logger.info("worker.crawl.starting", { leadId, websiteUrl });
 
   await prisma.lead.update({
     where: { id: leadId },
@@ -97,11 +94,18 @@ async function processCrawl(job: Job<CrawlJobData>) {
           { removeOnComplete: 100, removeOnFail: 50 },
         );
       } catch (verifyErr) {
-        console.warn(`[Crawl] Email verification enqueue failed for ${leadId}:`, verifyErr);
+        logger.warn("worker.crawl.email_verification_enqueue_failed", {
+          leadId,
+          err: verifyErr,
+        });
       }
     }
 
-    console.log(`[Crawl] Done: ${websiteUrl} (reachable: ${features.reachable})`);
+    logger.info("worker.crawl.done", {
+      leadId,
+      websiteUrl,
+      reachable: features.reachable,
+    });
     return { reachable: features.reachable, url: websiteUrl };
   } catch (error) {
     await prisma.lead.update({
@@ -124,11 +128,11 @@ export function startCrawlWorker() {
   });
 
   worker.on("completed", (job) => {
-    console.log(`[Crawl] Job ${job.id} completed`);
+    logger.info("worker.crawl.job_completed", { jobId: job.id });
   });
 
   worker.on("failed", (job, err) => {
-    console.error(`[Crawl] Job ${job?.id} failed:`, err.message);
+    logger.error("worker.crawl.job_failed", { jobId: job?.id, err });
   });
 
   process.on("SIGTERM", async () => {

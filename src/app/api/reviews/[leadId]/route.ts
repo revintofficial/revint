@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getPlaceReviews } from "@/lib/google-places";
 import type { PlaceReview } from "@/types";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 async function fetchAndStoreReviews(leadId: string, placeId: string) {
   const apiReviews: PlaceReview[] = await getPlaceReviews(placeId);
@@ -63,7 +64,7 @@ export async function GET(
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Reviews fetch error:", error);
+    logger.error("api.reviews.fetch_error", { err: error });
     return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
   }
 }

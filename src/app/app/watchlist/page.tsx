@@ -39,6 +39,7 @@ import {
 import { toast } from "sonner";
 import { exportToExcel, exportToPDF } from "@/lib/watchlist-export";
 import { REASON_LABELS } from "@/lib/labels";
+import { useScrollToLeadHash } from "@/lib/use-scroll-to-lead-hash";
 
 interface GoogleReviewData {
   id: string;
@@ -180,6 +181,9 @@ export default function WatchlistPage() {
   useEffect(() => {
     fetchWatchlist();
   }, [fetchWatchlist]);
+
+  // Honor command-palette deep links like /app/watchlist#lead-<id>.
+  useScrollToLeadHash(!loading && items.length > 0);
 
   const handleRemove = async (id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
@@ -1183,7 +1187,7 @@ function WatchlistCard({
 
   return (
     <>
-    <Card className={`overflow-hidden hover:shadow-md transition-all duration-300${hasValidSiteUrl ? " bg-[#30D158]/10 border-[#30D158]/30" : ""}`}>
+    <Card id={`lead-${item.lead.id}`} className={`overflow-hidden hover:shadow-md transition-all duration-300 scroll-mt-24${hasValidSiteUrl ? " bg-[#30D158]/10 border-[#30D158]/30" : ""}`}>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">

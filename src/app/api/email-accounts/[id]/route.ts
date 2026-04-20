@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 interface PatchBody {
   replyAttributionEnabled?: boolean;
@@ -45,7 +46,7 @@ export async function PATCH(
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Email account PATCH error:", err);
+    logger.error("api.email_accounts.patch_error", { err });
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
   }
 }
@@ -70,7 +71,7 @@ export async function DELETE(
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Email account DELETE error:", err);
+    logger.error("api.email_accounts.delete_error", { err });
     return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
 }

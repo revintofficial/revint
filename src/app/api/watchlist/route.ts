@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -35,7 +36,7 @@ export async function GET() {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Watchlist fetch error:", error);
+    logger.error("api.watchlist.fetch_error", { err: error });
     return NextResponse.json(
       { error: "Failed to fetch watchlist", detail: error instanceof Error ? error.message : String(error) },
       { status: 500 }
@@ -51,7 +52,7 @@ async function triggerAnalysis(leadId: string, origin: string, cookie: string) {
       body: JSON.stringify({ leadId }),
     });
   } catch (err) {
-    console.error("Auto-analyze trigger failed:", err);
+    logger.error("api.watchlist.auto_analyze_trigger_failed", { err });
   }
 }
 
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Watchlist create error:", error);
+    logger.error("api.watchlist.create_error", { err: error });
     return NextResponse.json({ error: "Failed to add to watchlist" }, { status: 500 });
   }
 }

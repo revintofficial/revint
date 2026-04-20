@@ -1,6 +1,4 @@
 import { Worker, type Job } from "bullmq";
-import { PrismaClient } from "../generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
 import { analyzeLeadWithGemini } from "../lib/gemini";
 import {
   calculateDeterministicScore,
@@ -8,10 +6,9 @@ import {
   estimatePriceBand,
 } from "../lib/scoring";
 import type { WebsiteFeatures } from "../types";
+import { prisma } from "../lib/prisma";
+import { logger } from "../lib/logger";
 import IORedis from "ioredis";
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
 
 interface AnalyzeJobData {
   leadId: string;
@@ -20,7 +17,7 @@ interface AnalyzeJobData {
 async function processAnalyze(job: Job<AnalyzeJobData>) {
   const { leadId } = job.data;
 
-  console.log(`[Analyze] Starting lead: ${leadId}`);
+  logger.info("worker.analyze.starting", { leadId });
 
   await prisma.lead.update({
     where: { id: leadId },
@@ -58,7 +55,7 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
         lead.workspace.language ?? "tr",
       );
     } catch (aiError) {
-      console.warn(`[Analyze] Gemini failed for ${leadId}, using deterministic only:`, aiError);
+      logger.warn("worker.analyze.gemini_failed", { leadId, err: aiError });
       const offer = suggestOffer(deterministicScore, reasons);
       analysis = {
         opportunity_score: deterministicScore,
@@ -114,7 +111,11 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
       data: { analyzeStatus: "ANALYZED" },
     });
 
-    console.log(`[Analyze] Done: ${lead.businessName} (score: ${finalScore})`);
+    logger.info("worker.analyze.done", {
+      leadId,
+      businessName: lead.businessName,
+      score: finalScore,
+    });
     return { leadId, score: finalScore };
   } catch (error) {
     await prisma.lead.update({
@@ -156,11 +157,11 @@ export function startAnalyzeWorker() {
   });
 
   worker.on("completed", (job) => {
-    console.log(`[Analyze] Job ${job.id} completed`);
+    logger.info("worker.analyze.job_completed", { jobId: job.id });
   });
 
   worker.on("failed", (job, err) => {
-    console.error(`[Analyze] Job ${job?.id} failed:`, err.message);
+    logger.error("worker.analyze.job_failed", { jobId: job?.id, err });
   });
 
   return worker;

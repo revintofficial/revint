@@ -64,18 +64,34 @@ export async function generateMetadata({
   const resolved = await params;
   const lead = await loadLead(resolved);
   if (!lead) {
-    return { title: "Business not found" };
+    return { title: "Business not found", robots: { index: false, follow: false } };
   }
   const city = lead.borough || "London";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://leadengine.app";
+  const canonical = `${baseUrl}/b/${resolved.citySlug}/${resolved.businessSlug}`;
+  const title = `${lead.businessName} - ${city}`;
+  const description =
+    lead.salesOpportunity?.whyGoodTarget?.slice(0, 160) ||
+    `${lead.businessName} in ${city}. Website audit, services, and contact info.`;
+
   return {
-    title: `${lead.businessName} - ${city}`,
-    description:
-      lead.salesOpportunity?.whyGoodTarget?.slice(0, 160) ||
-      `${lead.businessName} in ${city}. Website audit, services, and contact info.`,
+    title,
+    description,
+    alternates: { canonical },
     robots: { index: true, follow: true },
     openGraph: {
-      title: `${lead.businessName} - ${city}`,
+      title,
+      description,
       type: "website",
+      url: canonical,
+      siteName: "Lead Engine",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
     },
   };
 }
@@ -94,12 +110,18 @@ export default async function PublicLeadProfile({
   const reviews = lead.googleReviews;
   const city = lead.borough || "London";
 
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://leadengine.app";
+  const canonical = `${baseUrl}/b/${resolved.citySlug}/${resolved.businessSlug}`;
+
   // Schema.org LocalBusiness JSON-LD. Stripped down because we don't want to
   // claim opening hours we don't actually have; only ship facts the audit
   // verified.
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
+    "@id": canonical,
     name: lead.businessName,
     address: {
       "@type": "PostalAddress",
@@ -119,11 +141,37 @@ export default async function PublicLeadProfile({
       : {}),
   };
 
+  // Separate BreadcrumbList document. Google recommends a dedicated graph
+  // node rather than nesting.
+  const breadcrumbJsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: baseUrl },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: city,
+        item: `${baseUrl}/b/${resolved.citySlug}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: lead.businessName,
+        item: canonical,
+      },
+    ],
+  };
+
   return (
     <div style={pageStyles.body}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
       <div style={pageStyles.wrap}>

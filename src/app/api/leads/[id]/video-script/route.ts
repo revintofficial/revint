@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { VIDEO_SCRIPT_PROMPT } from "@/lib/prompts/video-script-prompt";
 import { assertCanUseAi, recordAiUsed, QuotaExceededError } from "@/lib/quotas";
+import { logger } from "@/lib/logger";
 
 export async function POST(
   _request: Request,
@@ -109,7 +110,7 @@ export async function POST(
     if (err instanceof QuotaExceededError) {
       return err.toResponse();
     }
-    console.error("Video script error:", err);
+    logger.error("api.leads.video_script_error", { err });
     return NextResponse.json(
       { error: "Failed to generate video script", detail: String(err) },
       { status: 500 },

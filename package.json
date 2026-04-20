@@ -15,6 +15,7 @@
     "db:migrate": "npx prisma migrate dev",
     "db:studio": "npx prisma studio",
     "db:multitenant": "tsx prisma/migrations/apply.ts bootstrap_multitenant.sql",
+    "icons:generate": "tsx scripts/generate-pwa-icons.ts",
     "postinstall": "npx prisma generate"
   },
   "dependencies": {

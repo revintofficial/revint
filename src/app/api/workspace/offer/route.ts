@@ -18,6 +18,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export const OFFER_FIELDS = [
   "offerName",
@@ -71,7 +72,7 @@ export async function GET() {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Offer GET error:", error);
+    logger.error("api.workspace.offer_get_error", { err: error });
     return NextResponse.json({ error: "Failed to fetch offer" }, { status: 500 });
   }
 }
@@ -162,7 +163,7 @@ export async function PATCH(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.error("Offer PATCH error:", error);
+    logger.error("api.workspace.offer_patch_error", { err: error });
     return NextResponse.json({ error: "Failed to update offer" }, { status: 500 });
   }
 }
