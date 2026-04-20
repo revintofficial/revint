@@ -4,6 +4,11 @@ import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
 import { logger } from "@/lib/logger";
 
+// HEAD-checks multiple domain variants; needs real Node runtime.
+export const runtime = "nodejs";
+export const maxDuration = 30;
+export const dynamic = "force-dynamic";
+
 /**
  * Find a website for a business when Google Places didn't return one.
  *

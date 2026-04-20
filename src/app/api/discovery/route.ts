@@ -12,6 +12,16 @@ import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
 import { getDiscoveryQueue } from "@/lib/queues";
 import { logger } from "@/lib/logger";
 
+// Vercel serverless function config.
+// - nodejs runtime: Prisma + BullMQ need a full Node runtime (no Edge).
+// - maxDuration 60s: single-borough discovery does up to 3 pages of Google
+//   Places (2s sleep between pages) + ~60 sequential DB writes. Default
+//   Hobby cap is 10s which the real flow blew past silently.
+// - force-dynamic: never cache. This route always mutates DB state.
+export const runtime = "nodejs";
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const { workspaceId } = await requireUser();

@@ -10,6 +10,11 @@ import { getNicheByQuery } from "@/lib/niches";
 import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
 import { logger } from "@/lib/logger";
 
+// Gemini plan generation can take 20-40s inline.
+export const runtime = "nodejs";
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ leadId: string }> }

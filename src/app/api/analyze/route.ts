@@ -17,6 +17,13 @@ import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
 import { getAnalyzeQueue } from "@/lib/queues";
 import { logger } from "@/lib/logger";
 
+// Single-lead path calls Gemini inline (can take 10-30s on cold start).
+// Bulk path just enqueues, but we keep the same config so cold starts don't
+// get truncated by the Hobby tier's 10s default.
+export const runtime = "nodejs";
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const { workspaceId } = await requireUser();
