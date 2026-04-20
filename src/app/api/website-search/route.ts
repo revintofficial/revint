@@ -81,7 +81,7 @@ async function checkUrl(url: string): Promise<{ reachable: boolean; title: strin
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; LeadEngineBot/1.0; +https://leadengine.app/bot)",
+        "User-Agent": "Mozilla/5.0 (compatible; LeadacBot/1.0; +https://leadac.ai/bot)",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.5",
       },

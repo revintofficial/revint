@@ -1,7 +1,7 @@
 /**
  * Bypass the email login flow for video capture.
  *
- * The Lead Engine app uses Supabase's PKCE / `@supabase/ssr` cookie flow,
+ * The Leadac AI app uses Supabase's PKCE / `@supabase/ssr` cookie flow,
  * which is incompatible with the implicit-grant magic link that
  * `auth.admin.generateLink` returns. Trying to navigate the browser
  * through the magic link drops the access token into a URL fragment

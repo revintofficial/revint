@@ -17,7 +17,7 @@ const SCENES: ScrollScene[] = [
     id: "discover",
     eyebrow: "01 — Discover",
     title: "Pick a postcode and a niche.",
-    body: "Lead Engine pulls every matching local business straight from Google Maps the moment you ask. The data is live, never a recycled Apollo export the whole industry already burned.",
+    body: "Leadac AI pulls every matching local business straight from Google Maps the moment you ask. The data is live, never a recycled Apollo export the whole industry already burned.",
     visual: (
       <DiscoveryDemo
         cities={DemoData.HOME_CITIES}

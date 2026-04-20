@@ -2,9 +2,9 @@ import Link from "next/link";
 import { ArrowRight, DollarSign, Megaphone, Award, Download } from "lucide-react";
 
 export const metadata = {
-  title: "Partner program — Lead Engine",
+  title: "Partner program — Leadac AI",
   description:
-    "Refer agencies and SDRs to Lead Engine. 30% recurring commission for the lifetime of every paid customer you bring in.",
+    "Refer agencies and SDRs to Leadac AI. 30% recurring commission for the lifetime of every paid customer you bring in.",
 };
 
 const TIERS = [
@@ -21,7 +21,7 @@ const TIERS = [
   {
     icon: Award,
     title: "Certified Partner",
-    body: "Hit $5k MRR referred and you get 'Lead Engine Certified Partner' on your profile, plus access to early features and Slack.",
+    body: "Hit $5k MRR referred and you get 'Leadac AI Certified Partner' on your profile, plus access to early features and Slack.",
   },
 ];
 
@@ -39,7 +39,7 @@ const FAQS = [
     a: "If a referred customer refunds within their first 30 days, the matching commission is reversed. After 30 days, commissions are locked in.",
   },
   {
-    q: "Can I promote Lead Engine on YouTube / Twitter / a newsletter?",
+    q: "Can I promote Leadac AI on YouTube / Twitter / a newsletter?",
     a: "Yes. The only ask: be honest, don't promise replies-per-dollar numbers we can't back up, and don't bid on our brand keywords on Google Ads.",
   },
   {
@@ -79,7 +79,7 @@ export default function PartnersPage() {
             className="text-[40px] sm:text-[58px] md:text-[64px] font-semibold tracking-tight leading-[1.04] mb-6"
             style={{ letterSpacing: "-0.035em" }}
           >
-            Recommend Lead Engine.
+            Recommend Leadac AI.
             <br />
             <span
               className="bg-clip-text text-transparent"

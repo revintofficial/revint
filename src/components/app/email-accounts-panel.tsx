@@ -69,7 +69,7 @@ export function EmailAccountsPanel({ accounts: initial }: { accounts: Account[] 
             <Mail className="w-5 h-5 text-[#A5B4FC]" /> Email accounts
           </CardTitle>
           <CardDescription>
-            Lead Engine&apos;den direkt opener gönder. CSV export Smartlead/Instantly için
+            Leadac AI&apos;den direkt opener gönder. CSV export Smartlead/Instantly için
             açık kalır; bu ek kanaldır. Daily limit Gmail için 500, Outlook için 30.
           </CardDescription>
         </CardHeader>

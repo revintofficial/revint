@@ -146,7 +146,7 @@ export async function POST(
         },
       });
       const proto = request.headers.get("x-forwarded-proto") || "https";
-      const host = request.headers.get("host") || "leadengine.app";
+      const host = request.headers.get("host") || "leadac.ai";
       mockupUrl = `${proto}://${host}/m/${mockup.slug}`;
     } catch (mockupErr) {
       logger.error("api.website_plan.mockup_create_failed", { err: mockupErr });

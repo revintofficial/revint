@@ -82,7 +82,7 @@ export async function POST(
       .replaceAll("{mockup_solution}", topPain + " sorununu çözen yeni hero ve booking widget")
       .replaceAll("{offer_value_proposition}", ws.valueProposition || "Modern yerel işletme web sitesi")
       .replaceAll("{offer_hook}", ws.offerHook || "Mevcut sitenizdeki üç sorunu gösteren bir taslak hazırladım")
-      .replaceAll("{conversion_link}", ws.conversionLink || "leadengine.io")
+      .replaceAll("{conversion_link}", ws.conversionLink || "leadac.ai")
       .replaceAll("{workspace_objective}", ws.objective || "Book a 15-min call")
       .replaceAll("{workspace_tone}", ws.tone || "friendly")
       .replaceAll("{workspace_language}", ws.language || "tr");

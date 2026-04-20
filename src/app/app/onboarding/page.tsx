@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Zap, MapPin, Search, Loader2, ArrowRight, Check } from "lucide-react";
+import Image from "next/image";
+import { MapPin, Search, Loader2, ArrowRight, Check } from "lucide-react";
 import { toast } from "sonner";
 
 const STEPS = [
@@ -35,10 +36,14 @@ export default function OnboardingPage() {
   const effectiveLocation = customLocation || location;
 
   const handleDiscover = async () => {
-    if (!effectiveNiche || !effectiveLocation) return;
+    if (!effectiveNiche || !effectiveLocation || running) return;
     setRunning(true);
 
     const loc = DEFAULT_LOCATIONS.find((l) => l.name === effectiveLocation);
+
+    // Hard client-side cap — see discovery/page.tsx for rationale.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90_000);
 
     try {
       const res = await fetch("/api/discovery", {
@@ -48,8 +53,14 @@ export default function OnboardingPage() {
           searchQuery: effectiveNiche,
           boroughName: loc?.name || effectiveLocation,
         }),
+        signal: controller.signal,
       });
-      const data = await res.json();
+      let data: { success?: boolean; error?: string; created?: number } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // empty / invalid body (e.g. 504 from gateway)
+      }
       if (res.ok && data.success) {
         const found = data.created ?? 0;
         if (found === 0) {
@@ -80,12 +91,18 @@ export default function OnboardingPage() {
 
         router.push("/app/leads");
       } else {
-        toast.error(data.error || "Discovery failed. Please try again.");
+        toast.error(data.error || `Discovery failed (HTTP ${res.status}). Please try again.`);
         setRunning(false);
       }
-    } catch {
-      toast.error("Connection error. Is the server running?");
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        toast.error("Request timed out after 90s. Try a smaller area or retry.");
+      } else {
+        toast.error("Connection error. Is the server running?");
+      }
       setRunning(false);
+    } finally {
+      clearTimeout(timeoutId);
     }
   };
 
@@ -94,10 +111,15 @@ export default function OnboardingPage() {
       <div className="w-full max-w-lg space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl bg-[#1d1d1f] flex items-center justify-center mx-auto mb-4">
-            <Zap className="w-7 h-7 text-white" />
-          </div>
-          <h1 className="text-2xl font-semibold text-white">Welcome to Lead Engine</h1>
+          <Image
+            src="/logo.png"
+            alt="Leadac AI"
+            width={56}
+            height={56}
+            priority
+            className="w-14 h-14 object-contain mx-auto mb-4"
+          />
+          <h1 className="text-2xl font-semibold text-white">Welcome to Leadac AI</h1>
           <p className="text-sm text-white/50 mt-1">Pick a niche and a city. We&apos;ll bring back 50 audited leads.</p>
         </div>
 

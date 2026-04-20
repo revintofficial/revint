@@ -23,6 +23,34 @@ function getApiKey(): string {
   return key;
 }
 
+// Hard cap on every outbound call to Google Places. Without this a hung TCP
+// connection (or a Google-side incident) silently holds the entire /api/discovery
+// HTTP handler open until the Vercel/edge function timeout kills it mid-flight,
+// which the client then sees as an indefinite "Searching…" spinner.
+const PLACES_FETCH_TIMEOUT_MS = 15000;
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = PLACES_FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new Error(
+        `Google Places request timed out after ${timeoutMs}ms. ` +
+          `Try again or narrow the search.`,
+      );
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function textSearch(
   query: DiscoveryQuery,
   pageToken?: string
@@ -41,7 +69,7 @@ export async function textSearch(
     body.pageToken = pageToken;
   }
 
-  const res = await fetch(`${PLACES_API_BASE}/places:searchText`, {
+  const res = await fetchWithTimeout(`${PLACES_API_BASE}/places:searchText`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -85,7 +113,7 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceResult> {
     "primaryTypeDisplayName",
   ].join(",");
 
-  const res = await fetch(`${PLACES_API_BASE}/places/${placeId}`, {
+  const res = await fetchWithTimeout(`${PLACES_API_BASE}/places/${placeId}`, {
     method: "GET",
     headers: {
       "X-Goog-Api-Key": getApiKey(),
@@ -110,7 +138,7 @@ export async function getPlaceReviews(placeId: string): Promise<PlaceReview[]> {
     "reviews.publishTime",
   ].join(",");
 
-  const res = await fetch(`${PLACES_API_BASE}/places/${placeId}`, {
+  const res = await fetchWithTimeout(`${PLACES_API_BASE}/places/${placeId}`, {
     method: "GET",
     headers: {
       "X-Goog-Api-Key": getApiKey(),

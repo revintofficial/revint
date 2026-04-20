@@ -4,7 +4,7 @@ import { AuthForm } from "@/components/marketing/auth-form";
 import { getOptionalUser } from "@/lib/auth";
 
 export const metadata = {
-  title: "Log in — Lead Engine",
+  title: "Log in — Leadac AI",
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;

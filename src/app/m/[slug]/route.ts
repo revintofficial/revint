@@ -111,5 +111,5 @@ function baseShell(title: string, body: string): string {
   a{color:#a5b4fc;text-decoration:none;font-size:13px}
   a:hover{text-decoration:underline}
 </style>
-</head><body><div class="b"><h1>${title}</h1><p>${body}</p><a href="https://leadengine.app">leadengine.app</a></div></body></html>`;
+</head><body><div class="b"><h1>${title}</h1><p>${body}</p><a href="https://leadac.ai">leadac.ai</a></div></body></html>`;
 }

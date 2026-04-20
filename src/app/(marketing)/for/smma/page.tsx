@@ -9,13 +9,13 @@ import {
 
 const COPY: VerticalCopy = {
   metaTitle:
-    "Lead Engine for new SMMA owners - first 10 emails today, not next quarter",
+    "Leadac AI for new SMMA owners - first 10 emails today, not next quarter",
   metaDescription:
-    "Most new SMMA owners' strategy is referrals, posting on social, and hoping. Lead Engine gives you 50 audited prospects with mockups, so the first 10 emails take 15 minutes instead of 8 hours.",
+    "Most new SMMA owners' strategy is referrals, posting on social, and hoping. Leadac AI gives you 50 audited prospects with mockups, so the first 10 emails take 15 minutes instead of 8 hours.",
   eyebrow: "For SMMA owners landing their first clients",
   h1: "Referrals, posting, and hoping.",
   h1Highlight: "That's not a strategy. That's a prayer.",
-  sub: "Every new SMMA owner ends up here: the deliverable is solid, the testimonials are slowly coming, but the pipeline is whoever your cousin introduced you to last week. Lead Engine pulls 50 audited local prospects in 30 seconds, generates a mockup for each, and writes the opener that references their actual site. Your first 10 emails stop being the thing that breaks you.",
+  sub: "Every new SMMA owner ends up here: the deliverable is solid, the testimonials are slowly coming, but the pipeline is whoever your cousin introduced you to last week. Leadac AI pulls 50 audited local prospects in 30 seconds, generates a mockup for each, and writes the opener that references their actual site. Your first 10 emails stop being the thing that breaks you.",
   primaryCta: "Get my first 50 leads free",
   validationQuote: {
     source: "7 days ago - new agency owner asking r/coldemail for tools",
@@ -45,7 +45,7 @@ const COPY: VerticalCopy = {
   proofHeading: "What changes for you.",
   proofTourTitle: "From 8 hours to 15 minutes for your first 10 emails.",
   proofPoints: [
-    "Pick a city and a niche. Lead Engine pulls 50 real local businesses from Google Maps in 30 seconds. No Apollo seat required.",
+    "Pick a city and a niche. Leadac AI pulls 50 real local businesses from Google Maps in 30 seconds. No Apollo seat required.",
     "Each lead arrives with a website audit telling you what's broken. That's the conversation starter you didn't have to invent.",
     "One click generates a custom one-page mockup for each prospect. Show it on the call and watch the conversation shift from 'who are you' to 'how do we start'.",
     "First-draft opener written for you, referencing their actual site. Edit, hit send. Your first 10 emails take 15 minutes, not 8 hours.",
@@ -62,7 +62,7 @@ const COPY: VerticalCopy = {
   demoLeads: SMMA_LEADS,
   beforeAfter: {
     beforeLabel: "Manual prospecting · 8 hours",
-    afterLabel: "Lead Engine · 15 minutes",
+    afterLabel: "Leadac AI · 15 minutes",
   },
 };
 

@@ -17,7 +17,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
 import type { Plan } from "@/generated/prisma/client";
 
-const SYSTEM_PROMPT = `Sen Lead Engine'in workspace co-pilot'usun. Kullanıcı outbound satış yapan bir ajans/freelance/SDR. Sen onun lead listesini, mockup'larını, opportunity skorlarını ve review intelligence verilerini biliyorsun.
+const SYSTEM_PROMPT = `Sen Leadac AI'in workspace co-pilot'usun. Kullanıcı outbound satış yapan bir ajans/freelance/SDR. Sen onun lead listesini, mockup'larını, opportunity skorlarını ve review intelligence verilerini biliyorsun.
 
 Çalışma kuralların:
 - Önce sorulanı anla, varsayım yapma. Belirsizse tek soru sor.

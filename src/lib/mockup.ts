@@ -46,8 +46,8 @@ export function renderMockupHtml(input: {
   const branding = input.branding;
   const accent = branding?.accentColor || "#a5b4fc";
   const primary = branding?.primaryColor || "#5e6ad2";
-  const footerText = branding?.footerText || (input.workspaceName ? `Drafted by ${escapeHtml(input.workspaceName)}` : "Drafted by Lead Engine");
-  const showLeadEngineCredit = !branding?.hideLeadEngineCredit;
+  const footerText = branding?.footerText || (input.workspaceName ? `Drafted by ${escapeHtml(input.workspaceName)}` : "Drafted by Leadac AI");
+  const showLeadacCredit = !branding?.hideLeadacCredit;
   const safeLogoUrl = branding?.logoUrl ? escapeHtml(branding.logoUrl) : null;
 
   return `<!doctype html>
@@ -102,7 +102,7 @@ export function renderMockupHtml(input: {
   </p>
   <div class="panel">${body}</div>
   <p class="footer">
-    ${footerText}${showLeadEngineCredit ? ` &middot; <a href="https://leadengine.app" target="_blank" rel="noopener">leadengine.app</a>` : ""}
+    ${footerText}${showLeadacCredit ? ` &middot; <a href="https://leadac.ai" target="_blank" rel="noopener">leadac.ai</a>` : ""}
   </p>
 </div>
 </body>

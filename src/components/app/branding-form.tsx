@@ -30,7 +30,7 @@ export function BrandingForm({
   const [primaryColor, setPrimaryColor] = useState(initialBranding.primaryColor ?? "#5e6ad2");
   const [accentColor, setAccentColor] = useState(initialBranding.accentColor ?? "#a5b4fc");
   const [footerText, setFooterText] = useState(initialBranding.footerText ?? "");
-  const [hideCredit, setHideCredit] = useState(initialBranding.hideLeadEngineCredit);
+  const [hideCredit, setHideCredit] = useState(initialBranding.hideLeadacCredit);
   const [publicProfiles, setPublicProfiles] = useState(initialPublicProfilesEnabled);
   const [busy, setBusy] = useState(false);
 
@@ -48,7 +48,7 @@ export function BrandingForm({
           primaryColor: primaryColor || null,
           accentColor: accentColor || null,
           footerText: footerText || null,
-          hideLeadEngineCredit: hideCredit,
+          hideLeadacCredit: hideCredit,
         },
       }),
     });
@@ -102,7 +102,7 @@ export function BrandingForm({
                 </p>
                 <p className="text-[12px] text-white/55 mt-1">
                   You&apos;re on {plan}. Upgrade to swap the logo, colors, and
-                  remove the &quot;Lead Engine&quot; credit on shared mockups.
+                  remove the &quot;Leadac AI&quot; credit on shared mockups.
                 </p>
                 <Link
                   href="/app/settings/billing"
@@ -186,7 +186,7 @@ export function BrandingForm({
                 className="mt-0.5"
               />
               <span>
-                Remove the &ldquo;Drafted by Lead Engine&rdquo; line at the bottom
+                Remove the &ldquo;Drafted by Leadac AI&rdquo; line at the bottom
                 of mockup pages.
               </span>
             </label>
@@ -207,7 +207,7 @@ export function BrandingForm({
             Public lead profiles
           </CardTitle>
           <CardDescription>
-            When enabled, Lead Engine generates indexable public pages for each
+            When enabled, Leadac AI generates indexable public pages for each
             audited lead so prospects searching ChatGPT or Perplexity for your
             niche can find you.
           </CardDescription>

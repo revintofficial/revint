@@ -15,7 +15,7 @@ import { slugify } from "@/lib/slug";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://leadengine.app";
+    "https://leadac.ai";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${baseUrl}/`, changeFrequency: "weekly", priority: 1.0 },

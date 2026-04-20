@@ -1,6 +1,6 @@
-# Lead Engine - Pazar Doğrulama Belgesi (TR)
+# Leadac AI - Pazar Doğrulama Belgesi (TR)
 
-> **Soru:** "Lead Engine + Website Generator" gerçek bir boşluğu dolduruyor mu, alıcısı var mı, ne işe yarar?
+> **Soru:** "Leadac AI + Website Generator" gerçek bir boşluğu dolduruyor mu, alıcısı var mı, ne işe yarar?
 > **Cevap (kısa):** Evet, evet ve "lead + çözüm" satıyor. Üçü de bu ay Reddit'te canlı kanıtla doğrulandı.
 
 **Hazırlık tarihi:** 2026-04-19
@@ -11,7 +11,7 @@
 ## 1. Yönetici Özeti
 
 **Tek cümlelik tez:**
-Lead Engine, Apollo/Clay'in tükenmiş veri tabanlarını kullanmak yerine **Google Maps'i taze veri kaynağı** olarak alıp, her lead'e bir **website audit + AI skor + kişiselleştirilmiş outreach + müşteri için hazır website taslağı** veren dikey bir SaaS. Rakipler "lead verir", Lead Engine "lead + çözüm" verir.
+Leadac AI, Apollo/Clay'in tükenmiş veri tabanlarını kullanmak yerine **Google Maps'i taze veri kaynağı** olarak alıp, her lead'e bir **website audit + AI skor + kişiselleştirilmiş outreach + müşteri için hazır website taslağı** veren dikey bir SaaS. Rakipler "lead verir", Leadac AI "lead + çözüm" verir.
 
 **Üç doğrulama (hepsi son 30 gün, Reddit verisi):**
 
@@ -25,10 +25,10 @@ Lead Engine, Apollo/Clay'in tükenmiş veri tabanlarını kullanmak yerine **Goo
 
 Aşağıdaki postların hepsi gerçek, son 30 günde, doğrudan ICP'nizden geldi.
 
-| Sinyal | Kaynak | Lead Engine için anlamı |
+| Sinyal | Kaynak | Leadac AI için anlamı |
 |---|---|---|
 | **"Google Maps cold email'de en undervalued lead database. Apollo/Clay aynı 50M kontağı satıyor."** | r/coldemail, 14 Nisan, 24 up / 121 yorum | Discovery modülünüzün tezi. Doğrudan kanıt. |
-| **"Yerel işletmeler için ICP ne demek? Plumber/HVAC/electrician'a gelince standart B2B tool'lar çalışmıyor."** | r/coldemail, 15 Nisan, 9 yorum | Lead Engine zaten dikey olarak buraya odaklı. Ürün cevap. |
+| **"Yerel işletmeler için ICP ne demek? Plumber/HVAC/electrician'a gelince standart B2B tool'lar çalışmıyor."** | r/coldemail, 15 Nisan, 9 yorum | Leadac AI zaten dikey olarak buraya odaklı. Ürün cevap. |
 | **"500 SaaS kurucusuna cold email attım - yanıt aldıran şey personalized referans."** Generic template'ler değil. | r/SaaS, 30 Mart, 32 up / 40 yorum | Personalized outreach modülünüz + website mockup → en güçlü hook. |
 | **"AI cold outreach kullanıyorsanız hasara razı mısınız?"** Engineer her mesajı manuel yeniden yazmak zorunda kalmış. | r/agency, 31 Mart, 22 up / 78 yorum | "AI yazar, insan gönderir" konumlandırması doğru - "AI gönderir" değil. |
 | **"Local business bul → email scrape → AI Google reviews okusun → cold email 2 tıkta hazır"** (sizin yarınız) | r/SaaS, 31 Mart, 6 up / 41 yorum | Direkt rakip. Ama website generator'ı yok. Sizin farkınız tam burada. |
@@ -42,7 +42,7 @@ Aşağıdaki postların hepsi gerçek, son 30 günde, doğrudan ICP'nizden geldi
 
 ## 3. Boşluğu Dolduruyor mu? (EVET - 4 katmanlı)
 
-Lead Engine + Website Generator dört spesifik pazar boşluğunu aynı anda kapatıyor.
+Leadac AI + Website Generator dört spesifik pazar boşluğunu aynı anda kapatıyor.
 
 ### Boşluk 1: "Aynı Apollo dump'ından çekilmiş tükenmiş listeler"
 Çözüm: Google Places API → her sorgu canlı, ajansların kendileri güncellediği veri.
@@ -54,7 +54,7 @@ Lead Engine + Website Generator dört spesifik pazar boşluğunu aynı anda kapa
 Çözüm: AI **araştırır + ilk taslağı yazar**. Otomatik gönderim YOK by default. SDR son sözü söyler.
 
 ### Boşluk 4 (CORE DIFFERENTIATOR): "Cold outreach'te value vermeden satıyorum"
-Bu boşluk şu an **hiç kimse tarafından** doldurulmuyor. Mevcut araçlar sadece "merhaba, sizin için faydalı olabilir" diyor. Lead Engine + Website Generator ile mesaj şuna dönüşüyor:
+Bu boşluk şu an **hiç kimse tarafından** doldurulmuyor. Mevcut araçlar sadece "merhaba, sizin için faydalı olabilir" diyor. Leadac AI + Website Generator ile mesaj şuna dönüşüyor:
 
 > "Selam Ahmet, websiteniz mobile'da 4.8 saniyede yükleniyor (Google önerisi 2.5 sn altı), randevu butonu yok ve fotoğraflar 2019'dan kalma. Sizin için 1 sayfalık bir taslak hazırladım, link aşağıda. Beğendiyseniz 15 dakika konuşalım."
 
@@ -79,7 +79,7 @@ Mockup + audit raporu + linki → cold email değil, **tamamlanmış ücretsiz h
 
 ### Üçüncül ICP: Kurucu (0-2. yıl, kendi satışını yapan)
 - ICP #1 veya #2 ile aynı ürün, yalnız.
-- Lead Engine = gece yarısı Google Maps'ten Excel'e veri kopyalamayı bırakma anı.
+- Leadac AI = gece yarısı Google Maps'ten Excel'e veri kopyalamayı bırakma anı.
 
 ### Türkiye'ye özel ek katman
 - Ankara/İstanbul'daki ajansların hepsi WordPress + WhatsApp ile çalışıyor.
@@ -90,7 +90,7 @@ Mockup + audit raporu + linki → cold email değil, **tamamlanmış ücretsiz h
 
 ## 5. Ne İşe Yarar? (Feature → Doğrulanmış Kazanç Eşlemesi)
 
-| Lead Engine yeteneği | Karşıladığı topluluk acısı | Kanıt |
+| Leadac AI yeteneği | Karşıladığı topluluk acısı | Kanıt |
 |---|---|---|
 | Google Places ile postcode + niche keşfi | "Apollo'nun aynı listesini herkese satıyor" | r/coldemail "Google Maps undervalued" (121 yorum) |
 | Playwright tabanlı website audit | "Her lead'i manuel araştırmadan mesaj yazamıyorum" | r/agency engineer postu (78 yorum) |
@@ -108,7 +108,7 @@ Mockup + audit raporu + linki → cold email değil, **tamamlanmış ücretsiz h
 
 **Konumlandırma cümlesi:**
 
-> Lead Engine, yerel hizmet işletmelerine satış yapan SDR'lar ve ajanslar için yapılmış lead-discovery + outreach + value-delivery platformudur. Apollo size 50 milyon herkesin elindeki bayat kontağı verirken, Lead Engine size bir postcode'daki her plumber, repair shop ve klima bakımcısını - her birinin website audit'i, AI kalite skoru, kişiselleştirilmiş mesajı **ve müşteri için hazır site taslağı** ile - getiriyor. Mesaj artık "merhaba" değil, "size ücretsiz bir hizmet teslim ettim, beğendiyseniz konuşalım."
+> Leadac AI, yerel hizmet işletmelerine satış yapan SDR'lar ve ajanslar için yapılmış lead-discovery + outreach + value-delivery platformudur. Apollo size 50 milyon herkesin elindeki bayat kontağı verirken, Leadac AI size bir postcode'daki her plumber, repair shop ve klima bakımcısını - her birinin website audit'i, AI kalite skoru, kişiselleştirilmiş mesajı **ve müşteri için hazır site taslağı** ile - getiriyor. Mesaj artık "merhaba" değil, "size ücretsiz bir hizmet teslim ettim, beğendiyseniz konuşalım."
 
 **Anti-konumlandırma (NE değiliz):**
 
@@ -124,7 +124,7 @@ Mockup + audit raporu + linki → cold email değil, **tamamlanmış ücretsiz h
 
 ## 7. Rakip Haritası
 
-| Rakip | Ne yapar | Eksiği | Lead Engine farkı |
+| Rakip | Ne yapar | Eksiği | Leadac AI farkı |
 |---|---|---|---|
 | **Apollo / Clay / ZoomInfo** | B2B kontak veritabanı | Yerel hizmette zayıf, herkes aynı listeyi alıyor | Google Places = taze + dikey |
 | **Instantly / Smartlead / Lemlist** | Cold email sender | Lead bulmuyor, audit yapmıyor | Upstream layer'ız - integration partner'ız |
@@ -152,7 +152,7 @@ Mockup + audit raporu + linki → cold email değil, **tamamlanmış ücretsiz h
 ## 9. Akış (Ürün Hikayesi - Kullanıcı Yolculuğu)
 
 ```
-1. Ajans sahibi Lead Engine'e girer.
+1. Ajans sahibi Leadac AI'e girer.
 2. "Camden / phone repair" yazar → 47 lead 5 dakikada gelir.
 3. Her lead'in yanında: AI skor (0-100), website audit (mobile, hız, booking, foto yaşı), Gemini'nin yazdığı opener.
 4. Skoru 80+ olan 12 lead'i seçer → "Generate Website Mockup" butonuna basar.
@@ -160,7 +160,7 @@ Mockup + audit raporu + linki → cold email değil, **tamamlanmış ücretsiz h
    (hero, services, about, CTA, pricing önerisi - işletmenin gerçek bilgileriyle).
 6. Outreach mesajı + mockup linki Instantly'ye CSV export eder.
 7. 12 mesaj gönderir. 3 yanıt alır. 1'i toplantıya dönüşür. 1 closing → $1,500/ay retainer.
-8. Lead Engine'e ödediği $79/ay'ı 19x return etmiş olur.
+8. Leadac AI'e ödediği $79/ay'ı 19x return etmiş olur.
 ```
 
 **Bu hikaye case study'ye dönüşür → marketing flywheel başlar.**
@@ -205,7 +205,7 @@ Beğendiyseniz 15 dakika konuşalım - değilse sadece taslağı saklayın,
 ücretsiz.
 
 {{senderFirstName}}
-Lead Engine | leadengine.io
+Leadac AI | leadac.ai
 ```
 
 ### 11.2 Cold email (EN)
@@ -226,7 +226,7 @@ with your real info: {{mockupUrl}}
 Worth 15 minutes if you like it. If not, keep the draft. Free either way.
 
 {{senderFirstName}}
-Lead Engine | leadengine.io
+Leadac AI | leadac.ai
 ```
 
 ### 11.3 Demo açılış cümlesi (TR)
@@ -261,7 +261,7 @@ Lead Engine | leadengine.io
 | Kanal | Taktik | Neden işler (kanıt) |
 |---|---|---|
 | **r/coldemail** | "Google Maps undervalued" thread'ine yorum + haftalık taktik post ("X postcode'unu crawl ettik") | 121 yorumlu thread = en yüksek engagement community |
-| **r/agency** | "Lead Engine ile X niche'inde SDR'ın takvimini doldurduk" case study | r/agency AI-outreach hasar postu = aç hedef kitle |
+| **r/agency** | "Leadac AI ile X niche'inde SDR'ın takvimini doldurduk" case study | r/agency AI-outreach hasar postu = aç hedef kitle |
 | **r/SaaS** | Build-in-public thread'leri (her yeni niche shipping'de) | "Feedback please" postları düşük bar, kolay görünürlük |
 | **r/ai_website_builder** | Sadece website generator açısından native post: "AI ile yerel işletmelere site mockup üretiyorum" | Bu subreddit research'te top voice çıktı - direkt audience |
 | **X / sales-AI Twitter** | 1k-30k follower'lı sales-AI account'larına ücretsiz lead'ler DM | Founders novel data source'u severek amplify ediyor |
@@ -307,13 +307,13 @@ Toplulukta açıkça istenen ve roadmap'e net mapping yapan özellikler:
 2. **İlk niche pack: phone repair Londra mı, halı yıkama İstanbul mu?** (TR vs UK önceliği = brand language ve CAC stratejisini değiştirir)
 3. **Fiyatlama dual currency mi (USD + TRY otomatik), tek currency mi?** Stripe slot'ları zaten hazır.
 4. **r/coldemail organic launch tarihi:** önümüzdeki Pazartesi mi, MVP demo loom hazır olduğu gün mü?
-5. **Domain:** leadengine.io tutuluyor mu, yoksa TR pazarı için ikinci domain (örn. leadengine.com.tr) ayrı mı?
+5. **Domain:** leadac.ai tutuluyor mu, yoksa TR pazarı için ikinci domain (örn. leadac.com.tr) ayrı mı?
 
 ---
 
 ## 17. Tek Cümle Özet (Investor / Pitch için)
 
-> Lead Engine, yerel hizmet işletmelerine satış yapan ajansların Apollo + Clay'in tükenmiş listelerinden kurtulup, Google Maps'ten taze lead bulmasını, her lead için website audit + AI skor + kişiselleştirilmiş outreach + müşteri için hazır site mockup'ı üretmesini sağlayan dikey B2B SaaS - Reddit'in r/coldemail topluluğunda son 30 günde 261 upvote ve 490 yorumla doğrulanmış pazar ihtiyacına yapılmış cevap.
+> Leadac AI, yerel hizmet işletmelerine satış yapan ajansların Apollo + Clay'in tükenmiş listelerinden kurtulup, Google Maps'ten taze lead bulmasını, her lead için website audit + AI skor + kişiselleştirilmiş outreach + müşteri için hazır site mockup'ı üretmesini sağlayan dikey B2B SaaS - Reddit'in r/coldemail topluluğunda son 30 günde 261 upvote ve 490 yorumla doğrulanmış pazar ihtiyacına yapılmış cevap.
 
 ---
 

@@ -9,13 +9,13 @@ import {
 
 const COPY: VerticalCopy = {
   metaTitle:
-    "Lead Engine for vertical specialists - the deliverable is yours, the pipeline is ours",
+    "Leadac AI for vertical specialists - the deliverable is yours, the pipeline is ours",
   metaDescription:
-    "You shipped Klaviyo flows and Webflow builds in three agencies. You never saw how those agencies got clients. Lead Engine gives you 50 audited prospects with mockups, so the cold start stops being the part you guess at.",
+    "You shipped Klaviyo flows and Webflow builds in three agencies. You never saw how those agencies got clients. Leadac AI gives you 50 audited prospects with mockups, so the cold start stops being the part you guess at.",
   eyebrow: "For vertical specialists going independent",
   h1: "You shipped 50 flows.",
   h1Highlight: "You never sent 50 emails.",
-  sub: "You spent three years executing inside someone else's agency. The deliverable is muscle memory by now. What you never saw was how the agency landed those clients in the first place. Lead Engine gives you a fresh prospect list, an audit on each one, a custom mockup for the call, and the opener already drafted. The pipeline stops being the part you guess at.",
+  sub: "You spent three years executing inside someone else's agency. The deliverable is muscle memory by now. What you never saw was how the agency landed those clients in the first place. Leadac AI gives you a fresh prospect list, an audit on each one, a custom mockup for the call, and the opener already drafted. The pipeline stops being the part you guess at.",
   primaryCta: "Get my first 50 leads free",
   validationQuote: {
     source: "1 day ago - Klaviyo specialist starting their own agency",
@@ -45,7 +45,7 @@ const COPY: VerticalCopy = {
   proofHeading: "What changes for you.",
   proofTourTitle: "From the deliverable you know to the pipeline you didn't.",
   proofPoints: [
-    "Pick your specialty. Lead Engine pulls a fresh prospect list from Google Maps in 30 seconds. Filtered by site signal, not bought from Apollo.",
+    "Pick your specialty. Leadac AI pulls a fresh prospect list from Google Maps in 30 seconds. Filtered by site signal, not bought from Apollo.",
     "Each lead arrives with a website audit pinpointing what's broken. That's the cold-email opener you couldn't write yourself.",
     "Generate a one-page custom mockup for each shortlisted prospect. Attach the link in the cold email. Replies start with 'how soon can you start' instead of 'who are you'.",
     "First-draft opener references their actual site, in plain English. You edit the parts that need your voice and ship.",
@@ -62,7 +62,7 @@ const COPY: VerticalCopy = {
   demoLeads: SPECIALIST_LEADS,
   beforeAfter: {
     beforeLabel: "Klaviyo flows · executor",
-    afterLabel: "Lead Engine pipeline · operator",
+    afterLabel: "Leadac AI pipeline · operator",
   },
 };
 

@@ -8,7 +8,7 @@ interface TabletFrameProps {
   orientation?: "landscape" | "portrait";
   /** Subtle perspective tilt on desktop. Flat on mobile. */
   tilt?: "left" | "right" | "none";
-  /** Status bar app label (e.g. "Lead Engine"). Hidden if omitted. */
+  /** Status bar app label (e.g. "Leadac AI"). Hidden if omitted. */
   appLabel?: string;
   /** Status bar clock. Defaults to "9:41" (Apple's signature time). */
   clock?: string;

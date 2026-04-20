@@ -1,8 +1,8 @@
 {
-  "name": "lead-engine-video",
+  "name": "leadac-ai-video",
   "version": "0.1.0",
   "private": true,
-  "description": "Remotion launch film for Lead Engine. Composes Steel-captured plates into the master + delivery cuts.",
+  "description": "Remotion launch film for Leadac AI. Composes Steel-captured plates into the master + delivery cuts.",
   "scripts": {
     "dev": "remotion studio src/Root.tsx",
     "render:master": "remotion render src/Root.tsx MasterFilm out/master.mp4",

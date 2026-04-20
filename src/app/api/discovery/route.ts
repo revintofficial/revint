@@ -71,11 +71,23 @@ export async function POST(request: Request) {
       ? { name: matched.name, lat: matched.lat, lng: matched.lng }
       : { name: boroughName, lat: 0, lng: 0 };
 
+    const t0 = Date.now();
+    logger.info("api.discovery.places_start", {
+      workspaceId,
+      searchQuery,
+      boroughName: borough.name,
+    });
     const places = await discoverLeads(searchQuery, borough, radiusMeters);
+    logger.info("api.discovery.places_done", {
+      workspaceId,
+      count: places.length,
+      ms: Date.now() - t0,
+    });
 
     let created = 0;
     let skipped = 0;
     let quotaHit: string | null = null;
+    const tDb = Date.now();
 
     for (const place of places) {
       if (!place.id) continue;
@@ -124,6 +136,14 @@ export async function POST(request: Request) {
       await recordLeadsCreated(workspaceId, 1);
       created++;
     }
+
+    logger.info("api.discovery.db_done", {
+      workspaceId,
+      created,
+      skipped,
+      total: places.length,
+      ms: Date.now() - tDb,
+    });
 
     return NextResponse.json({
       success: true,

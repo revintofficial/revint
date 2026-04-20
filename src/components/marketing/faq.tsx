@@ -6,7 +6,7 @@ import { ChevronDown } from "lucide-react";
 const QUESTIONS = [
   {
     q: "How is this different from Apollo or Clay?",
-    a: "Apollo and Clay sell the same 50M B2B contacts to thousands of agencies, so the same prospects get hit by ten different pitches a month. Lead Engine pulls live from Google Maps every time you search, so the data is fresh and the businesses keep it current themselves. We focus on local service verticals like plumbers and dental practices, where Apollo's coverage is thin to begin with.",
+    a: "Apollo and Clay sell the same 50M B2B contacts to thousands of agencies, so the same prospects get hit by ten different pitches a month. Leadac AI pulls live from Google Maps every time you search, so the data is fresh and the businesses keep it current themselves. We focus on local service verticals like plumbers and dental practices, where Apollo's coverage is thin to begin with.",
   },
   {
     q: "Does it integrate with Smartlead, Instantly, or my existing sender?",
@@ -14,7 +14,7 @@ const QUESTIONS = [
   },
   {
     q: "Is the AI sending emails for me?",
-    a: "No. Auto-send is off by default. Lead Engine generates the audit, the mockup, and the draft opener. You review and ship from your own inbox or sender. AI cold outreach with no human in the loop hurts brand and deliverability; we won't ship that.",
+    a: "No. Auto-send is off by default. Leadac AI generates the audit, the mockup, and the draft opener. You review and ship from your own inbox or sender. AI cold outreach with no human in the loop hurts brand and deliverability; we won't ship that.",
   },
   {
     q: "Where do the leads come from?",
@@ -22,7 +22,7 @@ const QUESTIONS = [
   },
   {
     q: "What's the website mockup for?",
-    a: "For each shortlisted lead, Lead Engine generates a custom one-page mockup (hero, services, CTA) populated with the business's real info. You attach the mockup link to your cold email, so the message goes from 'hi, I might be useful' to 'I built you a draft, link below.' That's the difference between 1% and 4% reply rates.",
+    a: "For each shortlisted lead, Leadac AI generates a custom one-page mockup (hero, services, CTA) populated with the business's real info. You attach the mockup link to your cold email, so the message goes from 'hi, I might be useful' to 'I built you a draft, link below.' That's the difference between 1% and 4% reply rates.",
   },
   {
     q: "How accurate is the AI scoring?",

@@ -4,7 +4,7 @@ import { Faq } from "@/components/marketing/faq";
 import { ArrowRight } from "lucide-react";
 
 export const metadata = {
-  title: "Pricing — Lead Engine",
+  title: "Pricing — Leadac AI",
   description: "Simple, fair pricing. Start free. Upgrade when you start closing.",
 };
 
@@ -40,7 +40,7 @@ export default function PricingPage() {
             <span className="font-semibold text-white">Need more?</span>{" "}
             We do custom volume deals for agencies running 50k+ leads/month.{" "}
             <a
-              href="mailto:hello@leadengine.app"
+              href="mailto:hello@leadac.ai"
               className="text-[#A5B4FC] hover:underline"
             >
               Talk to us →

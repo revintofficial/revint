@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState, useRef } from "react";
-import { Zap, Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 
 const FOR_LINKS = [
   { href: "/for/agencies", label: "B2B outbound agencies", desc: "Fresh leads, no Apollo" },
@@ -45,17 +46,16 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
       }}
     >
       <div className="max-w-6xl mx-auto px-5 sm:px-6 h-14 flex items-center">
-        <Link href="/" className="flex items-center gap-2 mr-8 group" aria-label="Lead Engine home">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105"
-            style={{
-              background: "linear-gradient(135deg, rgba(94, 106, 210, 0.28), rgba(139, 92, 246, 0.16))",
-              border: "0.5px solid rgba(94, 106, 210, 0.32)",
-            }}
-          >
-            <Zap className="w-3.5 h-3.5 text-[#8B95E8]" />
-          </div>
-          <span className="text-[15px] font-semibold tracking-tight">Lead Engine</span>
+        <Link href="/" className="flex items-center gap-2 mr-8 group" aria-label="Leadac AI home">
+          <Image
+            src="/logo.png"
+            alt=""
+            width={28}
+            height={28}
+            priority
+            className="w-7 h-7 object-contain transition-transform group-hover:scale-105"
+          />
+          <span className="text-[15px] font-semibold tracking-tight">Leadac AI</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-[13px]" aria-label="Marketing navigation">

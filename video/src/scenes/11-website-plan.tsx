@@ -4,7 +4,7 @@
  * Website plan document. A long markdown plan scrolls up like the real
  * `/app/leads/[id]` website-plan section, with action chips "Copy" and
  * "Download .md" landing at the end. Communicates the deliverable that
- * separates Lead Engine from Apollo/Clay.
+ * separates Leadac AI from Apollo/Clay.
  */
 import React from "react";
 import {

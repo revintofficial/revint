@@ -1,5 +1,5 @@
 /**
- * P0.6 - Lead Engine PWA service worker.
+ * P0.6 - Leadac AI PWA service worker.
  *
  * Goals:
  *   1. "Add to Home Screen" works on iOS/Android (register + manifest).
@@ -14,7 +14,7 @@
  *   - Static assets            → cache-first
  */
 
-const CACHE_VERSION = "le-v1";
+const CACHE_VERSION = "leadac-v1";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
@@ -132,14 +132,14 @@ self.addEventListener("push", (event) => {
     try {
       return event.data.json();
     } catch {
-      return { title: "Lead Engine", body: event.data.text() };
+      return { title: "Leadac AI", body: event.data.text() };
     }
   })();
   event.waitUntil(
-    self.registration.showNotification(data.title || "Lead Engine", {
+    self.registration.showNotification(data.title || "Leadac AI", {
       body: data.body || "",
-      icon: "/icon.svg",
-      badge: "/icon.svg",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
       data: { url: data.leadId ? `/app/leads/${data.leadId}` : "/app/leads" },
     }),
   );

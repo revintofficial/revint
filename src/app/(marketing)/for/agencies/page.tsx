@@ -9,13 +9,13 @@ import {
 
 const COPY: VerticalCopy = {
   metaTitle:
-    "Lead Engine for B2B outbound agencies - fresh local signals, not Apollo's exhaust",
+    "Leadac AI for B2B outbound agencies - fresh local signals, not Apollo's exhaust",
   metaDescription:
-    "AI cold email is tanking everyone's reply rates. Lead Engine pulls fresh local leads from Google Maps every search, audits each site, generates a custom mockup, and writes openers grounded in what the prospect actually sees - not GPT-fabricated 'I noticed you...'",
+    "AI cold email is tanking everyone's reply rates. Leadac AI pulls fresh local leads from Google Maps every search, audits each site, generates a custom mockup, and writes openers grounded in what the prospect actually sees - not GPT-fabricated 'I noticed you...'",
   eyebrow: "For B2B outbound agencies",
   h1: "AI personalization is dying.",
   h1Highlight: "Reply rates: 1 to 2 per 200.",
-  sub: "Six months of AI-generated 'I noticed you...' openers and the receiving inbox figured it out. Reply rates tanked across the industry. Lead Engine doesn't try harder at GPT personalization. It pulls fresh local signals from Google Maps, audits the site, builds the mockup, and grounds the opener in something the prospect sees the moment they open their own homepage. Different fuel, not louder.",
+  sub: "Six months of AI-generated 'I noticed you...' openers and the receiving inbox figured it out. Reply rates tanked across the industry. Leadac AI doesn't try harder at GPT personalization. It pulls fresh local signals from Google Maps, audits the site, builds the mockup, and grounds the opener in something the prospect sees the moment they open their own homepage. Different fuel, not louder.",
   primaryCta: "Try with 50 free leads",
   validationQuote: {
     source: "14 days ago - 8-year cold email vet on what shifted in 2026",
@@ -62,7 +62,7 @@ const COPY: VerticalCopy = {
   demoLeads: AGENCY_LEADS,
   beforeAfter: {
     beforeLabel: "Apollo · saturated",
-    afterLabel: "Lead Engine · fresh signal",
+    afterLabel: "Leadac AI · fresh signal",
   },
 };
 

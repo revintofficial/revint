@@ -1,4 +1,4 @@
-# Lead Engine: tam alıcı kim
+# Leadac AI: tam alıcı kim
 
 Hazırlık: 2026-04-19. Veri: `/last30days` ile çekilen 30 thread, ham çıktılar `~/Documents/Last30Days/` altında.
 
@@ -26,15 +26,15 @@ Cinsiyet konusunda dürüst olmak lazım: Reddit aktiviteleri ezici çoğunlukla
 
 Beş yıl önceki Josh küçük bir versiyondu: ayda 5-15 bin dolar, 1-3 müşteri, tek başına ya da bir freelancer'la. Aynı hikayeyi r/coldemail'de 3 Nisan'daki "$62k/month'a nasıl çıktım" postunda okuyorsunuz, 144 upvote, 73 yorum. Yazar 0'dan 62k'ya çıkma süreci için iki üç yıl harcadığını söylüyor. Pro plan ($79) bu kademeye satılır, ama 6 ayda yarısı kayıp.
 
-Şu anki Josh'un ana kütlesi orta kademede: ayda 15-60 bin, müşteri sayısı 4-12, ekipte 2-4 kişi. Lead Engine'in Agency planı (249 dolar) tam buraya yazılmış. Bu insanlar zaten tool stack'lerine bin dolar civarı harcıyor, 249 dolar görünmüyor bile.
+Şu anki Josh'un ana kütlesi orta kademede: ayda 15-60 bin, müşteri sayısı 4-12, ekipte 2-4 kişi. Leadac AI'in Agency planı (249 dolar) tam buraya yazılmış. Bu insanlar zaten tool stack'lerine bin dolar civarı harcıyor, 249 dolar görünmüyor bile.
 
 Üst kademedeki Josh artık küçük bir şirket: ayda 60-150 bin, 15-25 müşteri, 5-10 kişilik ekip. Sizin Custom planınız (talk-to-us) için bu kademe hedef. White label, dedicated crawl pool, multi-tenant'tan öteye geçmiş bir ihtiyaç. Bu adam ayda 3-5 bin dolar tool harcıyor, doğru özellikleri varsa 999 dolarlık aylık kontratı tek demoyla imzalar.
 
-Müşteri tarafına bakınca Josh'un tipik kullanıcısı B2B SaaS firması, IT/MSP, profesyonel hizmet (muhasebeci, hukuk firması, finansal danışman) ya da boutique consultancy. Sizin Lead Engine'in vertical odağı yerel hizmet işletmeleri (phone repair, HVAC, plumbing, dental). İlk bakışta uyumsuz duruyor, değil. Çünkü Josh'un kendi müşterileri için yerel-iş kampanyaları açtığı durumlar oluyor; örneğin Klaviyo agency'sinin ya da bir SEO ajansının müşterilerini bulmak için Lead Engine'i kullanır.
+Müşteri tarafına bakınca Josh'un tipik kullanıcısı B2B SaaS firması, IT/MSP, profesyonel hizmet (muhasebeci, hukuk firması, finansal danışman) ya da boutique consultancy. Sizin Leadac AI'in vertical odağı yerel hizmet işletmeleri (phone repair, HVAC, plumbing, dental). İlk bakışta uyumsuz duruyor, değil. Çünkü Josh'un kendi müşterileri için yerel-iş kampanyaları açtığı durumlar oluyor; örneğin Klaviyo agency'sinin ya da bir SEO ajansının müşterilerini bulmak için Leadac AI'i kullanır.
 
 Josh'un masasında muhtemelen şunlar açık: lead source olarak Apollo veya Clay (bazen ikisi birden, çünkü Apollo "yetersiz" Clay "pahalı" diyor), Maildoso ya da Mailreef email altyapı için, Smartlead veya Instantly sender olarak, SignalHire veya PhantomBuster LinkedIn için. ChatGPT Plus kesinlikle. Claude bazen, gittikçe daha çok. Notion proje, Slack ekip, Loom demo, Stripe ödeme, GoHighLevel veya Pipedrive veya HubSpot CRM. Bunların toplamı orta kademe için ayda bin dolar civarı, üstte 3-5 bin. Üstüne Adobe, Figma, ekstra domain, Aircall ya da JustCall soğuk arama yazılımı eklenir.
 
-Yani 249 dolarlık Lead Engine bütçesinin yüzde 15'ini bile geçmiyor. Eğer Apollo'yu replace ediyorsanız tasarruf bile çıkıyor.
+Yani 249 dolarlık Leadac AI bütçesinin yüzde 15'ini bile geçmiyor. Eğer Apollo'yu replace ediyorsanız tasarruf bile çıkıyor.
 
 ---
 
@@ -46,7 +46,7 @@ Ama "predictable" kelimesini sloganda kullanma. AI'nın en sevdiği kelimelerden
 
 Josh'un asıl üç derdi şu. Apollo'nun listesi tükenmiş; aynı 50 milyon kontak Josh ile beraber binlerce ajansta açık, aynı insan aynı hafta beş farklı pitch alıyor, reply rate düşüyor, müşteri churn ediyor. Personalization at scale bir türlü oturmuyor; r/coldemail'de 31 Mart'ta paylaşılan "%12 reply rate veren script" postunun (52 upvote, 83 yorum) ana mesajı zaten bu. Josh denedi, ChatGPT'yle her lead için 30 saniyede first-line üretti, sonuç bayağıydı, geri döndü manuel araştırmaya, bu da onu yavaşlatıyor. Bir de brand riski var; r/agency'deki 31 Mart postu (78 yorum) tam bunu anlatıyor: yazılımcı adamımız AI cold outreach'i kullanıyor ama her mesajı baştan yazıyor, çünkü AI çıktısı brand'ini öldürüyor.
 
-Bunların yanında ikincil dertler var. Kötü-fit müşteriyi filtreleme, ekip büyütme, case study üretme, reply attribution. Lead Engine bunları bugün çözmüyor. Söz vermeyin. Çözdüğünüz tek bir şeyi keskin söyleyin: taze data, mockup'la beraber gelen kişiselleştirme, kontrolü Josh'ta bırakan AI.
+Bunların yanında ikincil dertler var. Kötü-fit müşteriyi filtreleme, ekip büyütme, case study üretme, reply attribution. Leadac AI bunları bugün çözmüyor. Söz vermeyin. Çözdüğünüz tek bir şeyi keskin söyleyin: taze data, mockup'la beraber gelen kişiselleştirme, kontrolü Josh'ta bırakan AI.
 
 ---
 
@@ -70,7 +70,7 @@ Geri çekildiği şeyler: kart bilgisi isteyen trial, fiyatın orta kademede ayl
 
 Bu insan altın. Çünkü becerisi gerçek (Klaviyo email marketing), parası var (yıllarca ajansta çalışmış), tek eksiği client acquisition. Aynı pattern Webflow specialist'lerde, GoHighLevel uzmanlarında, Shopify Plus geliştiricilerinde, AI workflow consultant'larında, hatta Notion expert'lerinde tekrar ediyor. Hepsi bir vertical-deep beceriye sahip ama satış kasları zayıf insanlar.
 
-Lead Engine onlara diyebilir ki: "Postcode + niche yaz, 47 lead geliyor, mockup hazır, ilk taslak mesaj orada." Profil 26-35 yaş, eski ajans çalışanı veya senior freelancer, ayda 0-15 bin gelir (çoğu sıfırdan başlıyor), tool bütçesi 100-400 dolar arası ve ROI gösterilebilirse 800'e kadar açılır. Pro plan'ın asıl hedefi.
+Leadac AI onlara diyebilir ki: "Postcode + niche yaz, 47 lead geliyor, mockup hazır, ilk taslak mesaj orada." Profil 26-35 yaş, eski ajans çalışanı veya senior freelancer, ayda 0-15 bin gelir (çoğu sıfırdan başlıyor), tool bütçesi 100-400 dolar arası ve ROI gösterilebilirse 800'e kadar açılır. Pro plan'ın asıl hedefi.
 
 Lifetime value tahmini biraz çatallı: ajans büyürse 18-24 ay yanınızda kalır, kapatırsa 3-6 ay kaybedersiniz. Genel ortalama 9-12 ay civarı.
 
@@ -82,11 +82,11 @@ Bu segmenti hedeflemenin doğal yolu vertical-spesifik landing page'ler. `/for-k
 
 Üçüncü segment küçük ama hızlı büyüyor. r/SMMA'da 13 Nisan'da bir post: 16 yaşındaki çocuk, ajans sahibi adamla görüşmesinde "kaç yaşındasın?" sorusunu alıyor, 16 cevabını veriyor, 40 dakika sonra adam 2 bin avro/ay kontrat imzalıyor. 11 upvote, küçük post ama gerçeği gösteriyor.
 
-Bu segment Iman Gadzhi'nin Skool grubunun kalbi. 50 bin ödeyen üyenin önemli bir kısmı 16-22 yaş aralığında. Aktiviteleri Reddit'ten çok TikTok ve Discord'da. Lead Engine bu segmente direkt cold outreach ile satılmaz; doğal kanal influencer mediated, sizin değil.
+Bu segment Iman Gadzhi'nin Skool grubunun kalbi. 50 bin ödeyen üyenin önemli bir kısmı 16-22 yaş aralığında. Aktiviteleri Reddit'ten çok TikTok ve Discord'da. Leadac AI bu segmente direkt cold outreach ile satılmaz; doğal kanal influencer mediated, sizin değil.
 
 Ödeme gücü düşük ve düzensiz; aile bütçesinden geliyor genelde. 79 dolarlık Pro plan kart genelde aile kartı, çocuk auto-renew'u yönetemez, trial'da kayıp yüksek (yüzde 60 civarı). LTV 4-9 ay civarı.
 
-O yüzden bu segmenti şu sebeplerden hedefleyin: brand awareness yaratıyor, sosyal medyada Lead Engine adı yayılıyor, içeriğinizi (YouTube videolar, Twitter thread'leri) bedava dağıtıyorlar. Ama gelirin onda birinden fazlasını bu segmentten beklemeyin, sayılar tutmaz.
+O yüzden bu segmenti şu sebeplerden hedefleyin: brand awareness yaratıyor, sosyal medyada Leadac AI adı yayılıyor, içeriğinizi (YouTube videolar, Twitter thread'leri) bedava dağıtıyorlar. Ama gelirin onda birinden fazlasını bu segmentten beklemeyin, sayılar tutmaz.
 
 ---
 
@@ -94,7 +94,7 @@ O yüzden bu segmenti şu sebeplerden hedefleyin: brand awareness yaratıyor, so
 
 Hepsinin ortak yanı şu: cold outbound üzerinden müşteri buluyor ya da bulmak istiyor, ve mevcut sistemde bir yerde tıkanma var. Josh'ta tükenmiş data ve personalization eksiği. Klaviyo specialist'te client acquisition sıfırdan. Genç SMMA'da işin tamamına yeni başlama.
 
-Lead Engine'in ortak cevabı basit: postcode + niche → audit + mockup. Ama mesaj üç farklı dilde söyleniyor. Josh'a "fresh data + ready personalization" diyorsunuz. Klaviyo specialist'e "ready-to-pitch list, mesaj örneğiyle." Genç SMMA'ya "kursun anlattığı şeyin ürünleştirilmiş hali."
+Leadac AI'in ortak cevabı basit: postcode + niche → audit + mockup. Ama mesaj üç farklı dilde söyleniyor. Josh'a "fresh data + ready personalization" diyorsunuz. Klaviyo specialist'e "ready-to-pitch list, mesaj örneğiyle." Genç SMMA'ya "kursun anlattığı şeyin ürünleştirilmiş hali."
 
 Yani aynı ürün üç farklı kapı. Ana sayfa Josh'a, `/for/specialists` Klaviyo/Webflow türüne, `/for/smma` ya da `/for/beginners` genç segmente. Üç sayfanın da hero'su, case study'leri, fiyat anchor'ı farklı. Tek SaaS, üç ayrı satış katı.
 
@@ -147,7 +147,7 @@ for v2. If not, keep it.
 15min Loom demo first?
 
 Mert
-Lead Engine
+Leadac AI
 ```
 
 Eğer Josh'lardan biri bile cevap verirse GTM hipotezini doğrulamış olursun. Hiçbiri cevap vermezse, soğuk mailde bir şey bozuk ya da ürün-mesaj uyumu zayıf, geri dönüp düzelteceksin. Üçüncü senaryo da var: cevap geldi ama "ilginç ama almam çünkü şu eksik" dedi. O cevap ürünün geri kalanını şekillendiren cevap olur, satıştan daha değerli.

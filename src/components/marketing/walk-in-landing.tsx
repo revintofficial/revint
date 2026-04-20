@@ -56,7 +56,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
       title: "Type 'Camden + plumber' in the cab.",
       body: "47 audited leads loaded before the first knock, sorted by which sites are most broken. The iPad is your cold file the second you stand up.",
       visual: (
-        <TabletFrame appLabel="Lead Engine" tilt="left">
+        <TabletFrame appLabel="Leadac AI" tilt="left">
           <DiscoveryDemo
             cities={copy.demoCities}
             niches={copy.demoNiches}
@@ -72,7 +72,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
       title: "Hand him the tablet. Watch his shoulders drop.",
       body: "20 seconds of generation and he is looking at his own services, his own reviews, a booking button, a price. Most owners stop arguing once they are touching it.",
       visual: (
-        <TabletFrame appLabel="Lead Engine - Mockup" tilt="left">
+        <TabletFrame appLabel="Leadac AI - Mockup" tilt="left">
           <MockupGeneratorDemo lead={tourLead} />
         </TabletFrame>
       ),
@@ -174,7 +174,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
         {/* Live discovery preview, framed as the iPad you'd carry */}
         <div id="try-it" className="max-w-5xl mx-auto px-5 sm:px-6 mt-6">
           <RevealOnScroll>
-            <TabletFrame appLabel="Lead Engine" tilt="none">
+            <TabletFrame appLabel="Leadac AI" tilt="none">
               <DiscoveryDemo
                 cities={copy.demoCities}
                 niches={copy.demoNiches}
@@ -594,7 +594,7 @@ function BrochureVsTablet({
           </p>
         </div>
         <div className="max-w-[480px] mx-auto">
-          <TabletFrame appLabel="Lead Engine - Mockup" tilt="right">
+          <TabletFrame appLabel="Leadac AI - Mockup" tilt="right">
             <MockupGeneratorDemo lead={lead} />
           </TabletFrame>
         </div>

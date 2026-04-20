@@ -1,6 +1,6 @@
-# Lead Engine - Marketing Paper
+# Leadac AI - Marketing Paper
 
-> Positioning, messaging, and go-to-market for **Lead Engine** - a B2B prospecting platform that turns Google Maps into a curated, AI-scored sales pipeline for local-service verticals, with a built-in **Website Generator** module that turns every lead into a tangible "here's what we'd build for you" deliverable.
+> Positioning, messaging, and go-to-market for **Leadac AI** - a B2B prospecting platform that turns Google Maps into a curated, AI-scored sales pipeline for local-service verticals, with a built-in **Website Generator** module that turns every lead into a tangible "here's what we'd build for you" deliverable.
 
 **Prepared:** 2026-04-19
 **Research basis:** 12 community signals from the last 30 days (Reddit r/coldemail, r/sales, r/SaaS, r/agency, r/Entrepreneur, r/smallbusiness, r/AiAutomations) - 261 upvotes, 490 comments. Full raw evidence in `~/Documents/Last30Days/`.
@@ -9,7 +9,7 @@
 
 ## 1. Executive summary
 
-**The thesis (validated this month):** Apollo and Clay sell the same 50M contacts to everyone. The next edge in cold outreach is a fresh, hyper-local source that competitors aren't scraping yet - **Google Maps / Places** - paired with per-lead website intelligence and AI-generated personalization. Lead Engine ships exactly that, and then takes one step further: it produces a **per-lead website plan** the SDR can drop into the first reply as a leave-behind.
+**The thesis (validated this month):** Apollo and Clay sell the same 50M contacts to everyone. The next edge in cold outreach is a fresh, hyper-local source that competitors aren't scraping yet - **Google Maps / Places** - paired with per-lead website intelligence and AI-generated personalization. Leadac AI ships exactly that, and then takes one step further: it produces a **per-lead website plan** the SDR can drop into the first reply as a leave-behind.
 
 **The wedge:** Phone-repair shops in London. A vertical small enough to win, painful enough to pay for, and structurally identical to dozens of adjacent local-service verticals (HVAC, plumbing, locksmiths, dental, auto-detailing, opticians) we expand into next.
 
@@ -29,7 +29,7 @@
 
 These are not invented quotes. They are top-scoring posts from the last 30 days, pulled live by the `/last30days` skill on 2026-04-19.
 
-| Signal | Source | Why it matters for Lead Engine |
+| Signal | Source | Why it matters for Leadac AI |
 |---|---|---|
 | **"Google Maps is the most underrated lead database in cold email."** Lists three reasons: businesses self-update it, every local business is on it, fresher than scraped lists. | r/coldemail, 2026-04-14, 24 upvotes, **121 comments** | This is our entire thesis, posted by a stranger, upvoted by the exact buyer we sell to. |
 | **"What does ICP actually mean for home service businesses? The usual B2B data tools don't work here."** Specifically calls out plumbers, HVAC, pest control, electricians. | r/coldemail, 2026-04-15, 9 comments | Our ICP is the operator who feels this pain. The product is the answer. |
@@ -44,7 +44,7 @@ These are not invented quotes. They are top-scoring posts from the last 30 days,
 
 ## 3. The differentiator: Website Generator
 
-Every other lead tool stops at "here's the contact." Lead Engine ships the next move for the SDR - a generated website plan grounded in the prospect's actual audit findings, reviews, and missing features. This is the wedge that turns Lead Engine from a list-builder into a **value engine**.
+Every other lead tool stops at "here's the contact." Leadac AI ships the next move for the SDR - a generated website plan grounded in the prospect's actual audit findings, reviews, and missing features. This is the wedge that turns Leadac AI from a list-builder into a **value engine**.
 
 ### 3.1 What it does
 
@@ -74,7 +74,7 @@ We talk about the plan generator as live (it is), and the landing-page mockup as
 |---|---|
 | SDR sends an opener, prays for a reply, follows up with a nudge. | SDR sends an opener, attaches a 1-page plan summary, reply rate compounds. |
 | Reply = "what would this cost?" → SDR has to research. | Reply = "what would this cost?" → SDR already has scope, sections, and CTA structure to quote against. |
-| Lead Engine competes on data freshness alone. | Lead Engine competes on data freshness + a deliverable that takes a competing tool a 30-min consult to produce. |
+| Leadac AI competes on data freshness alone. | Leadac AI competes on data freshness + a deliverable that takes a competing tool a 30-min consult to produce. |
 
 > **Positioning line:** "We don't just sell you the lead. We sell you the first version of the pitch."
 
@@ -88,7 +88,7 @@ Three pain clusters dominate every thread above:
 2. **No usable ICP for the local segment.** Standard B2B tools assume LinkedIn-rich SaaS buyers. Plumbers, HVAC techs, locksmiths, repair shops don't show up cleanly. Operators end up scraping Google Maps manually in spreadsheets.
 3. **AI outreach quality collapse.** Tools that auto-generate cold emails produce slop that hurts deliverability and brand. Operators want AI to do the **research** and **first draft**, not press send.
 
-Lead Engine resolves all three:
+Leadac AI resolves all three:
 
 - Source: live Google Places API, refreshed per discovery run, never the Apollo dump.
 - Coverage: built specifically for local service verticals.
@@ -102,7 +102,7 @@ Lead Engine resolves all three:
 
 **Positioning statement:**
 
-> Lead Engine is the lead-discovery, outreach, and website-value platform built for SDRs and agencies that sell to local service businesses. Where Apollo gives you a stale spreadsheet of 50M contacts everyone else has, Lead Engine gives you a fresh, ranked list of every plumber, repair shop, or HVAC company in a postcode - each one with a Playwright website audit, an AI-generated quality score, a personalized opener, **and a full website plan you can hand the prospect on the first reply**. Reply rates that clear the cold-email industry baseline because the data is fresh, the copy isn't generic, and the follow-up is a deliverable.
+> Leadac AI is the lead-discovery, outreach, and website-value platform built for SDRs and agencies that sell to local service businesses. Where Apollo gives you a stale spreadsheet of 50M contacts everyone else has, Leadac AI gives you a fresh, ranked list of every plumber, repair shop, or HVAC company in a postcode - each one with a Playwright website audit, an AI-generated quality score, a personalized opener, **and a full website plan you can hand the prospect on the first reply**. Reply rates that clear the cold-email industry baseline because the data is fresh, the copy isn't generic, and the follow-up is a deliverable.
 
 **Anti-positioning (who we are not):**
 
@@ -118,9 +118,9 @@ Lead Engine resolves all three:
 
 ## 6. Product → market mapping
 
-Each Lead Engine feature maps to a community-validated pain.
+Each Leadac AI feature maps to a community-validated pain.
 
-| Lead Engine capability | Community pain it answers | Evidence |
+| Leadac AI capability | Community pain it answers | Evidence |
 |---|---|---|
 | Google Places-powered discovery by borough / postcode + vertical | "Same Apollo exports as everyone else" | r/coldemail "Google Maps is the most underrated lead database" (121 comments) |
 | Playwright-driven website audit (booking? mobile? speed? schema?) | "I have to research every lead manually before I can write copy" | r/agency thread (78 comments) |
@@ -134,7 +134,7 @@ Each Lead Engine feature maps to a community-validated pain.
 
 ## 7. Team and roles
 
-Lead Engine is built and taken to market by a three-person founding team. Roles are crisp on purpose - no overlap, no ambiguity about who ships what.
+Leadac AI is built and taken to market by a three-person founding team. Roles are crisp on purpose - no overlap, no ambiguity about who ships what.
 
 ### 7.1 Mert - CTO / Product / Infrastructure
 
@@ -190,7 +190,7 @@ Lead Engine is built and taken to market by a three-person founding team. Roles 
 ### Tertiary ICP: the founder doing their own sales (years 0-2)
 
 - Same product as ICP #1 or #2, but solo.
-- Lead Engine is the wedge that lets them stop scraping Google Maps in spreadsheets at midnight.
+- Leadac AI is the wedge that lets them stop scraping Google Maps in spreadsheets at midnight.
 
 ### What disqualifies a lead
 
@@ -204,7 +204,7 @@ Lead Engine is built and taken to market by a three-person founding team. Roles 
 
 ### 9.1 Cold email (for our own outbound)
 
-Modeled on the validated 12% positive-reply script structure. Short subject. Specific opener grounded in something only Lead Engine could know about the prospect. The website-plan deliverable is the explicit hook.
+Modeled on the validated 12% positive-reply script structure. Short subject. Specific opener grounded in something only Leadac AI could know about the prospect. The website-plan deliverable is the explicit hook.
 
 ```
 SL: {{firstName}}, your r/coldemail post
@@ -224,7 +224,7 @@ Free pilot on the first 50 leads + 5 generated website plans.
 Worth 10 minutes?
 
 - {{senderFirstName}}
-Lead Engine | leadengine.io
+Leadac AI | leadac.ai
 ```
 
 ### 9.2 LinkedIn / X DM opener
@@ -264,11 +264,11 @@ Rank-ordered by signal strength from the research.
 | Channel | Tactic | Why it works (evidence) | Owner |
 |---|---|---|---|
 | **r/coldemail** | Reply with concrete value to the "Google Maps is underrated" thread; weekly tactical posts of our own (e.g. "We crawled every London postcode for plumbers - here are 5 patterns we found, plus a sample website plan for one of them"). | 121 comments on a single thread = highest-engagement community in our space. | Çınar |
-| **r/agency** | Case-study post: "How we used Lead Engine to fill an SDR's calendar in vertical X - and used the auto-generated website plans as the closing artifact." | r/agency thread on AI-outreach damage shows the audience is hungry for tools that *don't* embarrass them. | Çınar |
+| **r/agency** | Case-study post: "How we used Leadac AI to fill an SDR's calendar in vertical X - and used the auto-generated website plans as the closing artifact." | r/agency thread on AI-outreach damage shows the audience is hungry for tools that *don't* embarrass them. | Çınar |
 | **r/SaaS, r/Entrepreneur** | Build-in-public threads when we ship a new vertical or a website-mockup feature. Engagement-first, not pitch-first. | "Feedback please" agency post got 36 score with 4 comments - low bar to break through. | Çınar |
 | **X / sales-AI Twitter** | Free leads-in-your-postcode hook DM'd to mid-following sales-AI accounts (1k-30k followers). Include a one-page generated website plan as the proof. | Founders here amplify novel data sources eagerly. | Kaan |
 | **YouTube partner content** | Sponsor or guest on Alex Berman, Charlie Morgan, lead-gen-agency channels. Demo segment ends on the website-plan reveal. | Their audience is exactly ICP #1. | Kaan |
-| **Short-form video** | 30-60s screen recordings: "Watch Lead Engine generate a website plan for a real London plumber in 20 seconds." Repurpose across X, LinkedIn, TikTok, YouTube Shorts. | Mockup reveals are inherently shareable; this is a visual product. | Kaan |
+| **Short-form video** | 30-60s screen recordings: "Watch Leadac AI generate a website plan for a real London plumber in 20 seconds." Repurpose across X, LinkedIn, TikTok, YouTube Shorts. | Mockup reveals are inherently shareable; this is a visual product. | Kaan |
 | **GEO / generative-AI search** | Structured `<script type="application/ld+json">` Organization + Product schema, plus deep landing pages per vertical (`/for/plumbers`, `/for/phone-repair`). Per-lead public "leave-behind" pages later. | r/DigitalMarketing GEO thread confirms buyers are searching ChatGPT/Perplexity for tools - we want to be the answer. | Çınar (content) + Mert (schema infra) |
 
 **Anti-channel:** generic Google Ads on "lead generation" - CAC is brutal and intent is too broad. Wait until we have a $500+ ACV product and clean attribution.
@@ -288,7 +288,7 @@ Schema in `.env` already supports `STRIPE_PRICE_PRO` and `STRIPE_PRICE_AGENCY`. 
 
 Three pricing principles backed by the research and the new product shape:
 
-1. **Anchor on cost of one booked call.** A booked sales call in this market is worth $100-$500. If Lead Engine generates one extra booking per month, Pro is paid for 1-5x over.
+1. **Anchor on cost of one booked call.** A booked sales call in this market is worth $100-$500. If Leadac AI generates one extra booking per month, Pro is paid for 1-5x over.
 2. **Don't undersell the agency tier.** Multi-tenant workspaces are a non-trivial moat (you already built it - team invites, workspace settings, role-based access). Agencies will pay $249 without flinching if it replaces three subscriptions.
 3. **Meter the website plans.** Plans are the most expensive call we make (Gemini 2.5 Flash with a long handbook system prompt). Quotas live in `src/lib/quotas.ts` already - reuse them.
 
@@ -332,7 +332,7 @@ Concrete actions to ship this paper into the market. Owners assigned per the rol
 | 1 | Comment in 3 r/coldemail threads with concrete value (no link drop). | Çınar | 3 threads, 1 backlink earned |
 | 2 | Publish "We crawled every London postcode for phone repair shops - here's what we found, plus the website plan we'd build for the worst one" on the blog and r/coldemail. | Çınar | 1 viral-shaped post |
 | 2 | Ship native CSV export to Instantly / Smartlead format. | Mert | Feature ships, blog announces |
-| 2 | Cut 30-second video: "Watch Lead Engine generate a website plan for a real plumber in 20 seconds." | Kaan | 1 short-form asset, distributed across X / LinkedIn / Shorts |
+| 2 | Cut 30-second video: "Watch Leadac AI generate a website plan for a real plumber in 20 seconds." | Kaan | 1 short-form asset, distributed across X / LinkedIn / Shorts |
 | 3 | Record 90-second demo loom (per §9.3, ending on the website-plan reveal). Embed on landing page + Pricing. | Kaan + Çınar (script) | 1 video, 1 conversion lift |
 | 3 | Cold-email the top 50 commenters from the validated r/coldemail threads with the script in §9.1. | Çınar | 50 sends, target 5-7 replies |
 | 3 | Ship website-plan QA dashboard v0 (read-only sample viewer + 1-5 score field). | Mert (build) + Çınar (rubric + first 20 reviews) | Working internal tool, first 20 plans scored |

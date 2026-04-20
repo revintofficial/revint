@@ -30,8 +30,8 @@ interface SdrPodFrameProps {
 export function SdrPodFrame({
   leftScreen,
   rightScreen,
-  leftUrl = "leadengine.app/discovery",
-  rightUrl = "leadengine.app/pipeline",
+  leftUrl = "leadac.ai/discovery",
+  rightUrl = "leadac.ai/pipeline",
   leftTab = "Discovery",
   rightTab = "Pipeline",
   className = "",

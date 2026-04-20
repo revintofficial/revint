@@ -48,7 +48,7 @@ export function SpecialistsLanding({ copy }: { copy: VerticalCopy }) {
       body: "Not buried Apollo exports. Not a friend's spreadsheet. Real local businesses pulled from Maps, scored by site freshness, ranked by which ones look most ready to buy what you ship.",
       visual: (
         <MacBookFrame
-          url="leadengine.app/discovery"
+          url="leadac.ai/discovery"
           tabLabel="Discovery"
           tilt="left"
         >
@@ -68,7 +68,7 @@ export function SpecialistsLanding({ copy }: { copy: VerticalCopy }) {
       body: "Use their actual reviews, services, address. Send the link with the cold email. Replies start with 'how soon can you start' instead of 'who are you'.",
       visual: (
         <MacBookFrame
-          url="leadengine.app/leads/jamies-hvac/mockup"
+          url="leadac.ai/leads/jamies-hvac/mockup"
           tabLabel="Mockup"
           tilt="left"
         >
@@ -83,7 +83,7 @@ export function SpecialistsLanding({ copy }: { copy: VerticalCopy }) {
       body: "The audit signals are the personalization. Drafted opener in your voice, references their site, no GPT-fabricated 'I noticed your bounce rate'. The first one sets the tone for the next fifty.",
       visual: (
         <MacBookFrame
-          url="leadengine.app/leads/jamies-hvac/opener"
+          url="leadac.ai/leads/jamies-hvac/opener"
           tabLabel="Opener"
           tilt="left"
         >
@@ -100,7 +100,7 @@ export function SpecialistsLanding({ copy }: { copy: VerticalCopy }) {
       body: "Notes, status, voice memos, follow-up dates. All next to the lead. The 'how do agencies acquire clients' question turns into a workflow you can see.",
       visual: (
         <MacBookFrame
-          url="leadengine.app/pipeline"
+          url="leadac.ai/pipeline"
           tabLabel="Pipeline"
           tilt="left"
         >
@@ -124,7 +124,7 @@ export function SpecialistsLanding({ copy }: { copy: VerticalCopy }) {
         secondaryCtaLabel="See the operator side"
         footnote="50 free leads · no card · the deliverable stays yours"
         visual={
-          <MacBookFrame url="leadengine.app/discovery" tabLabel="Discovery">
+          <MacBookFrame url="leadac.ai/discovery" tabLabel="Discovery">
             <DiscoveryDemo
               cities={copy.demoCities}
               niches={copy.demoNiches}
@@ -229,7 +229,7 @@ export function SpecialistsLanding({ copy }: { copy: VerticalCopy }) {
 /**
  * Executor / Operator swap: a single stylized macOS browser window with
  * two tabs visible. Left tab = the deliverable they already know
- * (Klaviyo, Webflow). Right tab = the pipeline surface (Lead Engine).
+ * (Klaviyo, Webflow). Right tab = the pipeline surface (Leadac AI).
  * The active tab in the rendering is the right one - the pipeline they
  * never had to operate.
  */
@@ -272,7 +272,7 @@ function ExecutorOperatorSwap() {
         <div className="flex items-end gap-1 -mb-px">
           <Tab label="Klaviyo · Flows" sub="executor" subIcon={Briefcase} />
           <Tab
-            label="Lead Engine · Pipeline"
+            label="Leadac AI · Pipeline"
             sub="operator"
             subIcon={Compass}
             active

@@ -1,4 +1,4 @@
-export const metadata = { title: "Privacy — Lead Engine" };
+export const metadata = { title: "Privacy — Leadac AI" };
 
 export default function PrivacyPage() {
   return (
@@ -34,8 +34,8 @@ export default function PrivacyPage() {
         <h2 className="text-[18px] font-semibold text-white mt-6">Your rights</h2>
         <p>
           Email{" "}
-          <a href="mailto:hello@leadengine.app" className="text-[#A5B4FC] hover:underline">
-            hello@leadengine.app
+          <a href="mailto:hello@leadac.ai" className="text-[#A5B4FC] hover:underline">
+            hello@leadac.ai
           </a>{" "}
           to request a full export or deletion of your account and data.
         </p>

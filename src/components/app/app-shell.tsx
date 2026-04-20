@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   LayoutDashboard,
   Users,
@@ -14,7 +15,6 @@ import {
   PanelLeft,
   Menu,
   X,
-  Zap,
   Command as CommandIcon,
 } from "lucide-react";
 import { UserMenu } from "@/components/app/user-menu";
@@ -119,7 +119,7 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
       l.href === "/app/dashboard"
         ? pathname === "/app/dashboard"
         : pathname.startsWith(l.href)
-    )?.label || "Lead Engine";
+    )?.label || "Leadac AI";
 
   return (
     <div className="flex h-screen overflow-hidden relative bg-black">
@@ -158,17 +158,15 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
           <Menu className="w-5 h-5" />
         </button>
         <Link href="/app/dashboard" className="flex items-center gap-2">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{
-              background: "rgba(10, 132, 255, 0.12)",
-              border: "0.5px solid rgba(10, 132, 255, 0.2)",
-            }}
-          >
-            <Zap className="w-4 h-4 text-[#0A84FF]" />
-          </div>
+          <Image
+            src="/logo.png"
+            alt=""
+            width={28}
+            height={28}
+            className="w-7 h-7 object-contain"
+          />
           <h1 className="text-base font-semibold tracking-tight text-white">
-            Lead Engine
+            Leadac AI
           </h1>
         </Link>
       </div>
@@ -208,17 +206,20 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                 <Link
                   href="/app/dashboard"
                   className="relative flex items-center justify-center w-9 h-9 rounded-xl shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A84FF]"
-                  style={{
-                    background: "rgba(10, 132, 255, 0.12)",
-                    border: "0.5px solid rgba(10, 132, 255, 0.2)",
-                  }}
-                  aria-label="Lead Engine home"
+                  aria-label="Leadac AI home"
                 >
-                  <Zap className="w-4.5 h-4.5 text-[#0A84FF]" />
+                  <Image
+                    src="/logo.png"
+                    alt=""
+                    width={36}
+                    height={36}
+                    priority
+                    className="w-9 h-9 object-contain"
+                  />
                 </Link>
                 <div className={`flex-1 min-w-0 ${collapsed ? "md:hidden" : ""}`}>
                   <h1 className="text-[15px] font-semibold truncate text-white tracking-tight">
-                    Lead Engine
+                    Leadac AI
                   </h1>
                   <p
                     className="text-[11px] truncate"

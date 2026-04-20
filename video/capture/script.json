@@ -1,13 +1,13 @@
 {
   "intro": {
-    "title": "Lead Engine",
+    "title": "Leadac AI",
     "subtitle": "Google Maps to ranked pipeline to website plan, in one workspace.",
     "durationSec": 3
   },
   "outro": {
     "title": "Stop buying the same 50M contacts as everyone else.",
-    "cta": "Start free at leadengine.app",
-    "url": "leadengine.app",
+    "cta": "Start free at leadac.ai",
+    "url": "leadac.ai",
     "durationSec": 4
   },
   "beats": [
@@ -26,7 +26,7 @@
       "url": "/app/discovery",
       "action": "screenshot",
       "caption": "Give it a postcode and a vertical.",
-      "subCaption": "Lead Engine pulls fresh businesses from Google Maps.",
+      "subCaption": "Leadac AI pulls fresh businesses from Google Maps.",
       "screenshot": "captures/02-discovery.png",
       "durationSec": 5,
       "zoom": { "from": 1.0, "to": 1.08, "originX": 0.35, "originY": 0.5 },

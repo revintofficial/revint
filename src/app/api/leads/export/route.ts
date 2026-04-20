@@ -152,7 +152,7 @@ export async function POST(request: Request) {
     }
 
     const proto = request.headers.get("x-forwarded-proto") || "https";
-    const host = request.headers.get("host") || "leadengine.app";
+    const host = request.headers.get("host") || "leadac.ai";
     const baseUrl = `${proto}://${host}`;
 
     const headers =
@@ -232,7 +232,7 @@ export async function POST(request: Request) {
     }
 
     const csv = rows.join("\r\n") + "\r\n";
-    const filename = `leadengine-${format}-${new Date().toISOString().slice(0, 10)}.csv`;
+    const filename = `leadac-${format}-${new Date().toISOString().slice(0, 10)}.csv`;
 
     return new NextResponse(csv, {
       status: 200,

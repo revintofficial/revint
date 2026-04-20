@@ -1,4 +1,4 @@
-export const metadata = { title: "Terms — Lead Engine" };
+export const metadata = { title: "Terms — Leadac AI" };
 
 export default function TermsPage() {
   return (
@@ -8,7 +8,7 @@ export default function TermsPage() {
 
       <div className="space-y-6 text-[14px] text-white/70 leading-relaxed">
         <p>
-          By using Lead Engine you agree to these terms. They&apos;re intentionally short.
+          By using Leadac AI you agree to these terms. They&apos;re intentionally short.
         </p>
         <h2 className="text-[18px] font-semibold text-white mt-6">Your account</h2>
         <p>
@@ -17,7 +17,7 @@ export default function TermsPage() {
         </p>
         <h2 className="text-[18px] font-semibold text-white mt-6">Acceptable use</h2>
         <p>
-          Don&apos;t use Lead Engine to spam, scrape data we don&apos;t expose, or do
+          Don&apos;t use Leadac AI to spam, scrape data we don&apos;t expose, or do
           anything illegal. We will terminate accounts that abuse the service.
         </p>
         <h2 className="text-[18px] font-semibold text-white mt-6">Plans, limits, refunds</h2>
@@ -34,8 +34,8 @@ export default function TermsPage() {
         <h2 className="text-[18px] font-semibold text-white mt-6">Contact</h2>
         <p>
           Questions? Reach us at{" "}
-          <a href="mailto:hello@leadengine.app" className="text-[#A5B4FC] hover:underline">
-            hello@leadengine.app
+          <a href="mailto:hello@leadac.ai" className="text-[#A5B4FC] hover:underline">
+            hello@leadac.ai
           </a>
           .
         </p>

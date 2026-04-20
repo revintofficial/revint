@@ -6,10 +6,10 @@ interface MacBookFrameProps {
   children: ReactNode;
   /**
    * Browser address bar text (omit to hide the chrome entirely).
-   * e.g. "leadengine.app/discovery"
+   * e.g. "leadac.ai/discovery"
    */
   url?: string;
-  /** Tab label (defaults to "Lead Engine"). */
+  /** Tab label (defaults to "Leadac AI"). */
   tabLabel?: string;
   /** Tilt for desktop perspective. */
   tilt?: "left" | "right" | "none";
@@ -28,7 +28,7 @@ interface MacBookFrameProps {
 export function MacBookFrame({
   children,
   url,
-  tabLabel = "Lead Engine",
+  tabLabel = "Leadac AI",
   tilt = "none",
   className = "",
 }: MacBookFrameProps) {

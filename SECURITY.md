@@ -32,4 +32,4 @@ Before each production deploy:
 
 ## Reporting a vulnerability
 
-Email security@leadengine.app. Do not file a public GitHub issue.
+Email security@leadac.ai. Do not file a public GitHub issue.

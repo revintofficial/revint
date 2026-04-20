@@ -51,8 +51,8 @@ export function AgenciesLanding({ copy }: { copy: VerticalCopy }) {
       body: "Every list you pull is fresh from Maps. Audited on the way in. Your SDR sees what is broken before they decide who to pitch.",
       visual: (
         <SdrPodFrame
-          leftUrl="leadengine.app/discovery"
-          rightUrl="leadengine.app/leads/jamies-hvac"
+          leftUrl="leadac.ai/discovery"
+          rightUrl="leadac.ai/leads/jamies-hvac"
           leftTab="Discovery"
           rightTab="Lead detail"
           leftScreen={
@@ -78,8 +78,8 @@ export function AgenciesLanding({ copy }: { copy: VerticalCopy }) {
       body: "Generate a one-page mockup using the prospect's actual reviews, services, and address. Attach the link in the opener. The receiving inbox can tell the difference.",
       visual: (
         <SdrPodFrame
-          leftUrl="leadengine.app/leads/jamies-hvac/mockup"
-          rightUrl="leadengine.app/leads/jamies-hvac/opener"
+          leftUrl="leadac.ai/leads/jamies-hvac/mockup"
+          rightUrl="leadac.ai/leads/jamies-hvac/opener"
           leftTab="Mockup"
           rightTab="Opener"
           leftScreen={<MockupGeneratorDemo lead={tourLead} />}
@@ -98,8 +98,8 @@ export function AgenciesLanding({ copy }: { copy: VerticalCopy }) {
       body: "AI writes the draft, your SDR reads it once, hits send. Your domain does not burn while you sleep. Push to Smartlead in two clicks when you want volume.",
       visual: (
         <SdrPodFrame
-          leftUrl="leadengine.app/pipeline"
-          rightUrl="leadengine.app/leads/jamies-hvac/opener"
+          leftUrl="leadac.ai/pipeline"
+          rightUrl="leadac.ai/leads/jamies-hvac/opener"
           leftTab="Pipeline"
           rightTab="Opener"
           leftScreen={<PipelineBoard business={tourLead.name} />}
@@ -118,8 +118,8 @@ export function AgenciesLanding({ copy }: { copy: VerticalCopy }) {
       body: "Discovery, audit, mockup, opener, pipeline, voice notes. All in the same place. The SDR stops paying the focus tax of switching between four tools to update one record.",
       visual: (
         <SdrPodFrame
-          leftUrl="leadengine.app/leads/jamies-hvac"
-          rightUrl="leadengine.app/pipeline"
+          leftUrl="leadac.ai/leads/jamies-hvac"
+          rightUrl="leadac.ai/pipeline"
           leftTab="Lead detail"
           rightTab="Pipeline"
           leftScreen={
@@ -146,8 +146,8 @@ export function AgenciesLanding({ copy }: { copy: VerticalCopy }) {
         footnote="50 free leads · no card · no Apollo seat, no Clay table"
         visual={
           <SdrPodFrame
-            leftUrl="leadengine.app/discovery"
-            rightUrl="leadengine.app/leads/jamies-hvac/opener"
+            leftUrl="leadac.ai/discovery"
+            rightUrl="leadac.ai/leads/jamies-hvac/opener"
             leftTab="Discovery"
             rightTab="Opener"
             leftScreen={

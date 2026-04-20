@@ -16,7 +16,7 @@ import { slugify, extractIdSuffix } from "@/lib/slug";
  *
  * Why this exists: ChatGPT, Perplexity, and increasingly Google answer "best
  * phone repair in Camden" by reading structured pages from the open web.
- * Lead Engine's audit data + Schema.org LocalBusiness markup makes us a
+ * Leadac AI's audit data + Schema.org LocalBusiness markup makes us a
  * candidate source. Indirect SEO play, but cheap to ship.
  */
 
@@ -69,7 +69,7 @@ export async function generateMetadata({
   const city = lead.borough || "London";
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://leadengine.app";
+    "https://leadac.ai";
   const canonical = `${baseUrl}/b/${resolved.citySlug}/${resolved.businessSlug}`;
   const title = `${lead.businessName} - ${city}`;
   const description =
@@ -86,7 +86,7 @@ export async function generateMetadata({
       description,
       type: "website",
       url: canonical,
-      siteName: "Lead Engine",
+      siteName: "Leadac AI",
     },
     twitter: {
       card: "summary_large_image",
@@ -112,7 +112,7 @@ export default async function PublicLeadProfile({
 
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://leadengine.app";
+    "https://leadac.ai";
   const canonical = `${baseUrl}/b/${resolved.citySlug}/${resolved.businessSlug}`;
 
   // Schema.org LocalBusiness JSON-LD. Stripped down because we don't want to
@@ -244,7 +244,7 @@ export default async function PublicLeadProfile({
         )}
 
         <p style={pageStyles.footer}>
-          Profile compiled by {lead.workspace.name} via Lead Engine.
+          Profile compiled by {lead.workspace.name} via Leadac AI.
         </p>
       </div>
     </div>

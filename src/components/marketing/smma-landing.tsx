@@ -35,7 +35,7 @@ import {
  * MacBook Pro screen because the new SMMA owner is at a laptop in a coffee
  * shop, not on a doorstep with a tablet. The "swap" middle section is a
  * stopwatch comparison: 8 hours of manual prospecting vs 15 minutes of
- * Lead Engine + a shipped first 10 emails.
+ * Leadac AI + a shipped first 10 emails.
  */
 export function SmmaLanding({ copy }: { copy: VerticalCopy }) {
   const tourLead = copy.demoLeads[1] ?? copy.demoLeads[0];
@@ -47,7 +47,7 @@ export function SmmaLanding({ copy }: { copy: VerticalCopy }) {
       title: "Pick a city. 50 audited leads in 30 seconds.",
       body: "Type the niche, hit search. No Apollo seat, no Clay table, no scraping the wrong list off Google. Real local businesses with real audit signals.",
       visual: (
-        <MacBookFrame url="leadengine.app/discovery" tabLabel="Discovery" tilt="left">
+        <MacBookFrame url="leadac.ai/discovery" tabLabel="Discovery" tilt="left">
           <DiscoveryDemo
             cities={copy.demoCities}
             niches={copy.demoNiches}
@@ -64,7 +64,7 @@ export function SmmaLanding({ copy }: { copy: VerticalCopy }) {
       body: "Hero, services, booking widget, price block. 20 seconds of generation. Send the link in the email and the call starts with 'how soon can we start' instead of 'who are you'.",
       visual: (
         <MacBookFrame
-          url="leadengine.app/leads/jamies-hvac/mockup"
+          url="leadac.ai/leads/jamies-hvac/mockup"
           tabLabel="Mockup"
           tilt="left"
         >
@@ -79,7 +79,7 @@ export function SmmaLanding({ copy }: { copy: VerticalCopy }) {
       body: "Drafted from real audit signals on their actual site. Not 'I noticed your website' slop. The first 10 take fifteen minutes, not eight hours.",
       visual: (
         <MacBookFrame
-          url="leadengine.app/leads/jamies-hvac/opener"
+          url="leadac.ai/leads/jamies-hvac/opener"
           tabLabel="Opener"
           tilt="left"
         >
@@ -96,7 +96,7 @@ export function SmmaLanding({ copy }: { copy: VerticalCopy }) {
       body: "Notes, status, meeting outcomes. Voice memos auto-transcribed. No second CRM, no spreadsheet, no 'wait which one was that again' on Friday afternoon.",
       visual: (
         <MacBookFrame
-          url="leadengine.app/pipeline"
+          url="leadac.ai/pipeline"
           tabLabel="Pipeline"
           tilt="left"
         >
@@ -120,7 +120,7 @@ export function SmmaLanding({ copy }: { copy: VerticalCopy }) {
         secondaryCtaLabel="See the workflow"
         footnote="50 free leads · no credit card · works on your MacBook in any coffee shop"
         visual={
-          <MacBookFrame url="leadengine.app/discovery" tabLabel="Discovery">
+          <MacBookFrame url="leadac.ai/discovery" tabLabel="Discovery">
             <DiscoveryDemo
               cities={copy.demoCities}
               niches={copy.demoNiches}
@@ -224,7 +224,7 @@ export function SmmaLanding({ copy }: { copy: VerticalCopy }) {
 
 /**
  * Stopwatch swap: two cards side by side. Left = "8 hours" (manual), right
- * = "15 minutes" (Lead Engine), each with a stylized analog stopwatch.
+ * = "15 minutes" (Leadac AI), each with a stylized analog stopwatch.
  * Numbers are deliberately specific - "first 10 emails" is the unit the
  * SMMA founder actually thinks in.
  */
@@ -292,7 +292,7 @@ function StopwatchSwap() {
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="w-4 h-4 text-[#A5B4FC]" />
           <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#A5B4FC]">
-            With Lead Engine
+            With Leadac AI
           </p>
         </div>
 

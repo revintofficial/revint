@@ -1,5 +1,5 @@
 /**
- * AppChrome — reusable shell that reproduces the Lead Engine app UI
+ * AppChrome — reusable shell that reproduces the Leadac AI app UI
  * (sidebar + workspace header + content area) for pure-Remotion feature
  * scenes that don't have a captured plate.
  *

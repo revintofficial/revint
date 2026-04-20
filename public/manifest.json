@@ -1,6 +1,6 @@
 {
-  "name": "Lead Engine",
-  "short_name": "Lead Engine",
+  "name": "Leadac AI",
+  "short_name": "Leadac AI",
   "description": "Walk in. Open the tablet. Close the deal. Your tablet, their site, your close.",
   "start_url": "/app/leads",
   "scope": "/",
@@ -27,12 +27,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    },
-    {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
     }
   ],
   "shortcuts": [

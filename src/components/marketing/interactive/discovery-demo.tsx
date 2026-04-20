@@ -39,14 +39,25 @@ export function DiscoveryDemo({
   const reduce = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
   const startedAutoplay = useRef(false);
+  // Watchdog: guarantees we leave the "running" state even if the page was
+  // backgrounded during the setTimeout or the component remounted mid-transition.
+  // Without this the production build sometimes sat on "Calling Google Places…"
+  // indefinitely because IntersectionObserver fired but the subsequent timer
+  // didn't deliver its state update before the sticky ScrollStage re-laid-out.
+  const runTokenRef = useRef(0);
 
   function run() {
+    const token = ++runTokenRef.current;
     setPhase("running");
     setVisibleCount(0);
+    const delay = reduce ? 0 : autoplayDelayMs;
     setTimeout(() => {
+      // Only advance if no other run() was started in the meantime
+      if (runTokenRef.current !== token) return;
       setPhase("done");
       let i = 0;
       const tick = () => {
+        if (runTokenRef.current !== token) return;
         i += 1;
         setVisibleCount(i);
         if (i < leads.length) {
@@ -54,27 +65,60 @@ export function DiscoveryDemo({
         }
       };
       tick();
-    }, reduce ? 0 : autoplayDelayMs);
+    }, delay);
+
+    // Watchdog: if the normal timer didn't move us past "running", force-finish.
+    const watchdogDelay = delay + 2000;
+    setTimeout(() => {
+      if (runTokenRef.current !== token) return;
+      setPhase((current) => {
+        if (current !== "running") return current;
+        setVisibleCount(leads.length);
+        return "done";
+      });
+    }, watchdogDelay);
   }
 
-  // Autoplay once when scrolled into view
+  // Autoplay once when scrolled into view. Falls back to a plain timer if the
+  // IntersectionObserver never fires (which happens in production when the
+  // demo mounts inside the sticky ScrollStage with pointer-events:none siblings
+  // stacked on top — the element has a layout box but the observer's 40%
+  // threshold is never satisfied on short viewports).
   useEffect(() => {
     if (!containerRef.current || startedAutoplay.current) return;
     const el = containerRef.current;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting && !startedAutoplay.current) {
-            startedAutoplay.current = true;
-            run();
-            io.disconnect();
+
+    const trigger = () => {
+      if (startedAutoplay.current) return;
+      startedAutoplay.current = true;
+      run();
+    };
+
+    let io: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== "undefined") {
+      io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.isIntersecting) {
+              trigger();
+              io?.disconnect();
+            }
           }
-        }
-      },
-      { threshold: 0.4 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
+        },
+        // Looser threshold + rootMargin so tall demos inside a sticky
+        // container still trip the observer on smaller viewports.
+        { threshold: 0.1, rootMargin: "0px 0px -10% 0px" },
+      );
+      io.observe(el);
+    }
+
+    // Safety fallback: always autoplay within 2.5s of mount.
+    const fallback = setTimeout(trigger, 2500);
+
+    return () => {
+      io?.disconnect();
+      clearTimeout(fallback);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -123,7 +167,7 @@ export function DiscoveryDemo({
             className="ml-3 flex-1 max-w-md mx-auto px-3 py-1 rounded text-[11px] text-white/40 truncate"
             style={{ background: "rgba(255,255,255,0.03)" }}
           >
-            app.leadengine.io / discover
+            app.leadac.ai / discover
           </div>
         </div>
 
@@ -206,8 +250,10 @@ export function DiscoveryDemo({
               <button
                 type="button"
                 onClick={run}
-                disabled={phase === "running"}
-                className="px-3.5 py-2 rounded-lg text-[12.5px] font-semibold text-white inline-flex items-center justify-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed"
+                // Intentionally always clickable: re-clicking during "running"
+                // starts a fresh run (runTokenRef invalidates stale timers),
+                // which is the user's escape hatch if the demo ever gets stuck.
+                className="px-3.5 py-2 rounded-lg text-[12.5px] font-semibold text-white inline-flex items-center justify-center gap-1.5"
                 style={{
                   background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
                   boxShadow:

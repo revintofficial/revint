@@ -1,19 +1,19 @@
-# Lead Engine - Lansman Hazırlık Belgesi
+# Leadac AI - Lansman Hazırlık Belgesi
 
 > Bu belge ürünü piyasaya çıkarmak için ihtiyacımız olan her şeyi tek dosyada topluyor. Pazarlama mesajı, yatırımcı pitch'i, rakip haritası, çözdüğümüz problem, problemin gerçek kanıtı, fiyat, dağıtım, ilk 90 günlük sprint. Hiçbir cümle fikir değil, hepsi ya üründen ya son 30 günlük Reddit verisinden ya da satışta gerçekten konuştuğumuz kişilerden geliyor.
 
 **Hazırlık tarihi:** 2026-04-19
 **Veri kaynağı:** `/last30days` skill'i ile son 30 günde çekilen 11 ham dosya, toplam 66 thread, 40.000+ upvote, 7.500+ yorum. Hepsi `~/Documents/Last30Days/` altında.
-**Ürün:** Lead Engine. B2B outbound ajansları için Google Maps tabanlı lead intelligence + AI website mockup + kişiselleştirilmiş outreach.
+**Ürün:** Leadac AI. B2B outbound ajansları için Google Maps tabanlı lead intelligence + AI website mockup + kişiselleştirilmiş outreach.
 **Mevcut sürüm:** Web uygulaması (Next.js + Prisma + BullMQ + Playwright + Gemini 2.5 Flash). Discovery, audit, scoring, mockup generator, outreach drafting, multi-tenant workspace, billing slot'ları hazır.
 
 ---
 
 ## 1. Tek paragrafta tez
 
-Apollo ve Clay aynı 50 milyon kontağı binlerce ajansa satıyor. Aynı plumber Pazartesi sabahı 5 farklı pitch alıyor, Cuma'ya kalmadan reply rate %2'nin altına düşüyor. Lead Engine bu tıkanmayı bir noktadan kırıyor: Google Places'tan canlı veri çek, her lead'in sitesine Playwright ile gir, mobil hız + booking + son güncelleme + 17 başka sinyal topla, AI ile 0-100 arası bir skor üret, ve en önemlisi her lead için tek sayfalık özelleştirilmiş site mockup'ı çıkar. Cold email artık "merhaba, sizin için faydalı olabilir" değil, "size ücretsiz bir taslak hazırladım, beğendiyseniz konuşalım." Sektör baseline'ı %3-4 reply rate; biz mockup'la beraber gönderilen mesajda 4x lift hedefliyoruz. Pilot kullanıcılarda görülen erken sayı bunu doğruluyor.
+Apollo ve Clay aynı 50 milyon kontağı binlerce ajansa satıyor. Aynı plumber Pazartesi sabahı 5 farklı pitch alıyor, Cuma'ya kalmadan reply rate %2'nin altına düşüyor. Leadac AI bu tıkanmayı bir noktadan kırıyor: Google Places'tan canlı veri çek, her lead'in sitesine Playwright ile gir, mobil hız + booking + son güncelleme + 17 başka sinyal topla, AI ile 0-100 arası bir skor üret, ve en önemlisi her lead için tek sayfalık özelleştirilmiş site mockup'ı çıkar. Cold email artık "merhaba, sizin için faydalı olabilir" değil, "size ücretsiz bir taslak hazırladım, beğendiyseniz konuşalım." Sektör baseline'ı %3-4 reply rate; biz mockup'la beraber gönderilen mesajda 4x lift hedefliyoruz. Pilot kullanıcılarda görülen erken sayı bunu doğruluyor.
 
-İki cümlelik versiyonu: Lead Engine, ajansın kendisi için müşteri bulma sürecini Apollo'nun yarısı fiyata, taze veriyle ve teslim edilmiş bir hizmet ekiyle yapıyor. Investor lensiyle: vertical lead intelligence + value-engine kategorisinde geliyor, kategoriyi biz tanımlıyoruz, Apollo'nun kıyısında değil farklı bir oyun oynuyoruz.
+İki cümlelik versiyonu: Leadac AI, ajansın kendisi için müşteri bulma sürecini Apollo'nun yarısı fiyata, taze veriyle ve teslim edilmiş bir hizmet ekiyle yapıyor. Investor lensiyle: vertical lead intelligence + value-engine kategorisinde geliyor, kategoriyi biz tanımlıyoruz, Apollo'nun kıyısında değil farklı bir oyun oynuyoruz.
 
 ---
 
@@ -21,17 +21,17 @@ Apollo ve Clay aynı 50 milyon kontağı binlerce ajansa satıyor. Aynı plumber
 
 Bu bölümün her satırı son 30 gündeki bir Reddit postundan ya da yorumundan geliyor. Hiçbiri benim cümlem değil. Linkler kaynak listesinde.
 
-**Tükenmiş veri.** [r/coldemail, 14 Nisan, 24 upvote, 121 yorum](https://www.reddit.com/r/coldemail/comments/1sl3go9/google_maps_is_the_most_underrated_lead_database/): *"Everyone's fighting over the same Apollo and Clay exports. Same 50 million contacts. Same data from the same crawls. Same emails that have been cold emailed by 10 other people this month."* Bu post Lead Engine'in tezini bizden önce başka biri yazıp 121 yorum almış. Postun kendisi ürün-pazar uyumumuzun en güçlü tek kanıtı.
+**Tükenmiş veri.** [r/coldemail, 14 Nisan, 24 upvote, 121 yorum](https://www.reddit.com/r/coldemail/comments/1sl3go9/google_maps_is_the_most_underrated_lead_database/): *"Everyone's fighting over the same Apollo and Clay exports. Same 50 million contacts. Same data from the same crawls. Same emails that have been cold emailed by 10 other people this month."* Bu post Leadac AI'in tezini bizden önce başka biri yazıp 121 yorum almış. Postun kendisi ürün-pazar uyumumuzun en güçlü tek kanıtı.
 
-**Yerel iş ICP'si yok.** [r/coldemail, 15 Nisan, 9 yorum](https://www.reddit.com/r/coldemail/comments/1smj2z6/what_does_icp_actually_mean_for_home_service/): *"I keep hearing 'your ICP matters more than your copy' but what does that actually mean when you're going after plumbers, HVAC guys, pest control, electricians? These aren't SaaS companies with clean LinkedIn profiles. The usual B2B data tools don't work here."* Apollo'nun coverage'ı LinkedIn'e bağlı, plumber'da Sales Navigator çalışmıyor. Lead Engine zaten Google Business Profile'a bağlı, alıcının istediği ICP'yi default olarak veriyor.
+**Yerel iş ICP'si yok.** [r/coldemail, 15 Nisan, 9 yorum](https://www.reddit.com/r/coldemail/comments/1smj2z6/what_does_icp_actually_mean_for_home_service/): *"I keep hearing 'your ICP matters more than your copy' but what does that actually mean when you're going after plumbers, HVAC guys, pest control, electricians? These aren't SaaS companies with clean LinkedIn profiles. The usual B2B data tools don't work here."* Apollo'nun coverage'ı LinkedIn'e bağlı, plumber'da Sales Navigator çalışmıyor. Leadac AI zaten Google Business Profile'a bağlı, alıcının istediği ICP'yi default olarak veriyor.
 
 **ICP listesinin yarısı çöp.** [r/salestechniques, 15 Nisan, 11 yorum](https://www.reddit.com/r/salestechniques/comments/1sm3m4l/most_companies_on_your_email_list_probably_arent/): *"50-70% of companies on a typical outreach list don't actually fit the ICP. Doesn't matter if you're using Apollo, Clay, ZoomInfo, whatever."* Bu bizim AI scoring katmanımızın ekonomik gerekçesi. Skorla, sırala, üstten 100 lead'e mesaj at, alttaki 400'ü atma. Bandwidth tasarrufu = reply rate artışı.
 
-**AI'ı doğru noktaya koymadığında reply rate düşmez.** [r/coldemail, 13 Nisan, 10 yorum](https://www.reddit.com/r/coldemail/comments/1sk8h01/6_months_running_outbound_for_14_b2b_clients_the/): *"6 months running outbound for 14 B2B clients. The single change that took us from 2.4% to 8.1% reply rate wasn't letting AI write the emails. It was letting an agent do the research."* Bu cümle ürünün konumlandırma cümlesi olabilir. AI yazar değil, AI araştırır. Lead Engine tam bunu yapıyor.
+**AI'ı doğru noktaya koymadığında reply rate düşmez.** [r/coldemail, 13 Nisan, 10 yorum](https://www.reddit.com/r/coldemail/comments/1sk8h01/6_months_running_outbound_for_14_b2b_clients_the/): *"6 months running outbound for 14 B2B clients. The single change that took us from 2.4% to 8.1% reply rate wasn't letting AI write the emails. It was letting an agent do the research."* Bu cümle ürünün konumlandırma cümlesi olabilir. AI yazar değil, AI araştırır. Leadac AI tam bunu yapıyor.
 
 **AI cold email brand öldürüyor.** [r/agency, 31 Mart, 22 upvote, 78 yorum](https://www.reddit.com/r/agency/comments/1s8s3v0/if_youre_using_ai_for_cold_outreach_are_you_ok/). Yazılımcı bir adam, tool sourcing + research yapıyor ama her mesajı manuel yeniden yazıyor çünkü AI çıktısı imajını bozuyor. Bizim cevap pozisyonumuz şu: AI ranks and drafts, human ships. Auto-send default kapalı. Çıkışı insan onaylar.
 
-**Personalization at scale çözülmüş bir problem değil.** [r/coldemail, 31 Mart, 52 upvote, 83 yorum](https://www.reddit.com/r/coldemail/comments/1s8gniv/the_exact_cold_email_script_that_got_me_12/), "12% positive reply rate veren script" postu. Tüm post {{firstName}} {{companyName}} {{insight}} template anatomisi üzerine. Lead Engine'in mockup URL'si tam o {{insight}} slot'una giriyor. Diğer template variable'lar zaten standart.
+**Personalization at scale çözülmüş bir problem değil.** [r/coldemail, 31 Mart, 52 upvote, 83 yorum](https://www.reddit.com/r/coldemail/comments/1s8gniv/the_exact_cold_email_script_that_got_me_12/), "12% positive reply rate veren script" postu. Tüm post {{firstName}} {{companyName}} {{insight}} template anatomisi üzerine. Leadac AI'in mockup URL'si tam o {{insight}} slot'una giriyor. Diğer template variable'lar zaten standart.
 
 **Cold email öldü mü? Hayır, kötü cold email öldü.** [r/coldemail, 30 Mart, 19 upvote, 204 yorum](https://www.reddit.com/r/coldemail/comments/1s7e49r/everyone_told_me_cold_email_was_dead_in_2026/): *"Sent 2,700 emails in 30 days using an AI agent. Got 47 replies. Booked 9 meetings. Closed 2 deals. Cold email isn't dead. Bad cold email is dead."* Pazarın sektör algısı bu. Bizim katmanımız "az ama iyi" tarafına oynuyor, "çok ama kötü" tarafına değil.
 
@@ -47,7 +47,7 @@ Bu bölümün her satırı son 30 gündeki bir Reddit postundan ya da yorumundan
 
 ---
 
-## 3. Çözüm: Lead Engine ne yapıyor
+## 3. Çözüm: Leadac AI ne yapıyor
 
 Dört ekran, tek workflow. Landing page'in scrollytelling bölümü zaten bunu gösteriyor; burası investor sunumuna girecek versiyonu.
 
@@ -65,7 +65,7 @@ Dört ekran, tek workflow. Landing page'in scrollytelling bölümü zaten bunu g
 
 ## 4. Differentiator: Website Generator
 
-Diğer her lead tool kontak verdikten sonra duruyor. Lead Engine bir adım daha atıyor. Cold email konuşmasının yönünü değiştiren şey ekteki link.
+Diğer her lead tool kontak verdikten sonra duruyor. Leadac AI bir adım daha atıyor. Cold email konuşmasının yönünü değiştiren şey ekteki link.
 
 **Müşterinin matematiği değişiyor.** Mockup yokken: SDR mesaj atar, dua eder, takipte "checking in" der. Mockup'la: SDR mesaj atar, "size 1 sayfalık taslak hazırladım, link burada" der. Reply geldiğinde "bu ne kadara mal olur" sorusu geliyor; cevabı zaten plan içinde, scope, sayfalar, fiyat aralığı hazır. Konuşma 5 mesajdan 2 mesaja iniyor.
 
@@ -79,11 +79,11 @@ Diğer her lead tool kontak verdikten sonra duruyor. Lead Engine bir adım daha 
 
 Son 30 gündeki tool comparison thread'lerinden çıkan gerçek rakip görünümü. Burada yorum yapacağım, sadece liste değil.
 
-**Apollo, Clay, ZoomInfo, Lusha.** B2B kontak veritabanları. SaaS satışında güçlü, yerel hizmette zayıf. r/coldemail kalabalığının kendisi "burası tükendi" diyor. Lead Engine bunlarla aynı pazarda değil; üstüne çıkmaya da çalışmıyoruz. Apollo bir "Maps mode" ekleyebilir; eklerse de phone-repair-specific scoring yapmaz, per-vertical audit yazmaz, mockup üretmez. Vertical-deep kalıyoruz.
+**Apollo, Clay, ZoomInfo, Lusha.** B2B kontak veritabanları. SaaS satışında güçlü, yerel hizmette zayıf. r/coldemail kalabalığının kendisi "burası tükendi" diyor. Leadac AI bunlarla aynı pazarda değil; üstüne çıkmaya da çalışmıyoruz. Apollo bir "Maps mode" ekleyebilir; eklerse de phone-repair-specific scoring yapmaz, per-vertical audit yazmaz, mockup üretmez. Vertical-deep kalıyoruz.
 
 **Instantly, Smartlead, Lemlist.** Cold email sender'lar. Lead bulmuyor, audit yapmıyor. Bizim upstream'imiz. Rakip değil partner. Native CSV export onlara doğru, ileride push API. Bunların affiliate ilişkisi MRR'imizin %20-30'unu getirebilir, masaya bu kart konacak.
 
-**SalesTarget.ai.** Yeni çıkan all-in-one, $149/ay. [r/B2BSaaS'taki "Best outbound sales tools 2026" tier list'inde](https://www.reddit.com/r/B2BSaaS/comments/1sl9y7g/best_outbound_sales_tools_for_startups_in_2026/) Tier 1'de. Lead database (840M profil) + cold email + CRM + dialer. Geniş bir oyuncu. Lead Engine ile eşleşmiyor: SaaS satışına ayarlı, yerel hizmet vertical'inde zayıf, ürünleştirilmiş bir mockup ya da audit yok. Bizim için anti-positioning: "biz horizontal değiliz, yerel hizmette derinleşiyoruz." Demoda yan yana koyulduğunda farkı 30 saniyede gösteriyoruz.
+**SalesTarget.ai.** Yeni çıkan all-in-one, $149/ay. [r/B2BSaaS'taki "Best outbound sales tools 2026" tier list'inde](https://www.reddit.com/r/B2BSaaS/comments/1sl9y7g/best_outbound_sales_tools_for_startups_in_2026/) Tier 1'de. Lead database (840M profil) + cold email + CRM + dialer. Geniş bir oyuncu. Leadac AI ile eşleşmiyor: SaaS satışına ayarlı, yerel hizmet vertical'inde zayıf, ürünleştirilmiş bir mockup ya da audit yok. Bizim için anti-positioning: "biz horizontal değiliz, yerel hizmette derinleşiyoruz." Demoda yan yana koyulduğunda farkı 30 saniyede gösteriyoruz.
 
 **Apollo'nun kendi Maps özelliği.** 2025'te eklendi. Veriyi çekiyor, ama audit yok, scoring yok, mockup yok. Bizim 4 katman daha derin olduğumuzun kanıtı.
 
@@ -91,11 +91,11 @@ Son 30 gündeki tool comparison thread'lerinden çıkan gerçek rakip görünüm
 
 **r/SaaS'taki yarı-rakip post.** [r/SaaS, 31 Mart](https://www.reddit.com/r/SaaS/comments/1s8wwhn/i_built_a_tool_that_lets_you_find_local/) - Mapileads'in OP postu. Hâlâ pin'imizde. Window açık ama kapanmaya başladığını hissetmek için bu postu izlemeye devam. Çınar haftalık `/last30days mapileads` çalıştıracak, yeni özellik shipped'a göre Plan revize.
 
-**Durable, Framer AI, Wix AI.** AI website builder'lar. [r/smallbusinesssupport, 26 Mart](https://www.reddit.com/r/smallbusinesssupport/comments/1s498i6/durable_vs_framer_for_local_business_websites_seo/) "Durable vs Framer for Local Business Websites" tartışması açık. Lead Engine onların rakibi değil. Biz site barındırmıyoruz, biz site mockup'ı satış aracı olarak üretiyoruz. Eğer ajans kapanan müşteriyle gerçek site yapacaksa Framer'a, Webflow'a veya kendi tasarım stack'ine gidiyor. Hosting katmanına asla girmiyoruz; "Webflow killer" değiliz.
+**Durable, Framer AI, Wix AI.** AI website builder'lar. [r/smallbusinesssupport, 26 Mart](https://www.reddit.com/r/smallbusinesssupport/comments/1s498i6/durable_vs_framer_for_local_business_websites_seo/) "Durable vs Framer for Local Business Websites" tartışması açık. Leadac AI onların rakibi değil. Biz site barındırmıyoruz, biz site mockup'ı satış aracı olarak üretiyoruz. Eğer ajans kapanan müşteriyle gerçek site yapacaksa Framer'a, Webflow'a veya kendi tasarım stack'ine gidiyor. Hosting katmanına asla girmiyoruz; "Webflow killer" değiliz.
 
 **OpenStreetMap + ChatGPT'le DIY çözmek.** [r/AiAutomations, 17 Nisan, 38 yorum](https://www.reddit.com/r/AiAutomations/comments/1sobq9a/looking_for_someone_to_help_me_build_an_ai_cold/): bir kullanıcı "kendim AI cold outreach agent kurmak istiyorum, subscription'lardan kurtulmak için" diyor. Bu DIY tehdit teknik açıdan gerçek. Cevabımız multi-tenant ops + handbook-grounded prompt sistemi + crawl queue + watchlist + reply attribution gibi tek hafta sonu çözülmeyen şeyler. Discovery query alone moat değil, kabul ediyoruz. Etrafındaki ürünleştirilmiş katmanlar moat.
 
-**Türkiye yerel:** Pingo, Lead Capsule, BiHaftada gibi geleneksel CRM + outreach çözümleri. AI personalization sınırlı, Google Places yok, mockup yok. Lead Engine TR pazarına dolar fiyatla girmiyor; TL üzerinden, tek tıkla iptal, ilk ay 1 USD deneme. Bu farkı da konumlandırma cümlesine koyuyoruz.
+**Türkiye yerel:** Pingo, Lead Capsule, BiHaftada gibi geleneksel CRM + outreach çözümleri. AI personalization sınırlı, Google Places yok, mockup yok. Leadac AI TR pazarına dolar fiyatla girmiyor; TL üzerinden, tek tıkla iptal, ilk ay 1 USD deneme. Bu farkı da konumlandırma cümlesine koyuyoruz.
 
 **Sonuç:** Tam üst üste binen rakip yok. r/SaaS'taki yarı-rakip bir tetikçi, traction kazanırsa pozisyonumuz daralır. Biz daha derin (audit + mockup + multi-tenant + vertical pack) ve daha hızlı pazara çıkıyoruz. Window 6-12 ay açık.
 
@@ -103,13 +103,13 @@ Son 30 gündeki tool comparison thread'lerinden çıkan gerçek rakip görünüm
 
 ## 6. ICP - dört core katman, tek ürün, dört kapı
 
-**Birincil: Josh.** İsim Reddit'te 8 Nisan'da [AMA açan "Built for B2B" kurucusundan](https://www.reddit.com/r/coldemail/comments/1sfxygz/ama_i_run_a_b2b_outbound_agency_booking/) geliyor, ama profil tek bir kişi değil. 27-32 yaş arası, çoğu erkek, ABD/UK/AB. Aylık 15-60 bin USD MRR'li bir cold email ya da B2B outbound ajansı yönetiyor. Ekibi 2-4 kişi, müşteri sayısı 4-12. Stack'inde Apollo veya Clay var, yanına Instantly ya da Smartlead, Maildoso, Notion, ChatGPT Plus. Aylık tool faturası 800-1500 USD. Lead Engine'in 249 USD Agency planı bütçesinin %15'ini bile geçmiyor. Apollo'yu replace ediyorsa tasarruf çıkıyor. Çıkış noktası: r/coldemail, r/agency, r/SMMA. Karar 48 saat içinde verilir, demo iyi geçmediyse geri dönmez. Plan tier: **Agency $249/5 seat**. Landing: `/for/agencies`.
+**Birincil: Josh.** İsim Reddit'te 8 Nisan'da [AMA açan "Built for B2B" kurucusundan](https://www.reddit.com/r/coldemail/comments/1sfxygz/ama_i_run_a_b2b_outbound_agency_booking/) geliyor, ama profil tek bir kişi değil. 27-32 yaş arası, çoğu erkek, ABD/UK/AB. Aylık 15-60 bin USD MRR'li bir cold email ya da B2B outbound ajansı yönetiyor. Ekibi 2-4 kişi, müşteri sayısı 4-12. Stack'inde Apollo veya Clay var, yanına Instantly ya da Smartlead, Maildoso, Notion, ChatGPT Plus. Aylık tool faturası 800-1500 USD. Leadac AI'in 249 USD Agency planı bütçesinin %15'ini bile geçmiyor. Apollo'yu replace ediyorsa tasarruf çıkıyor. Çıkış noktası: r/coldemail, r/agency, r/SMMA. Karar 48 saat içinde verilir, demo iyi geçmediyse geri dönmez. Plan tier: **Agency $249/5 seat**. Landing: `/for/agencies`.
 
 **İkincil: Vertical specialist.** [r/agency, 18 Nisan](https://www.reddit.com/r/agency/comments/1sp9a02/after_working_on_3_klaviyo_agencies_im_ready_to/), "After working on 3 Klaviyo agencies, I'm ready to start my own agency." Klaviyo, Webflow, GoHighLevel, Shopify Plus, AI workflow consultant veya Notion expert. Becerisi gerçek, deneyimi var, tek tıkanma noktası client acquisition. 26-35 yaş, eski ajans çalışanı veya senior freelancer. Ayda 0-15 bin USD gelir, tool bütçesi 100-400 USD, ROI gösterilebilirse 800'e açılır. Plan tier: solo başlıyorsa **Pro Solo $79/1 seat**, 2-3 kişiye büyüdüyse **Pro Team $149/3 seat**. Landing: `/for/specialists`. Vertical pack ekledikçe `/for/klaviyo`, `/for/webflow` vb. açılır.
 
 **Üçüncül: Genç SMMA.** [r/SMMA, 13 Nisan](https://www.reddit.com/r/SMMA/comments/1skdex7/a_client_told_me_i_was_too_young_to_know_what_im/), 16 yaşında çocuk 40 dakikada 2k EUR/ay kontrat imzalıyor. Iman Gadzhi, Charlie Morgan kursunu yeni bitirmiş 16-25 yaş aralığı. Free trial'da kayıp yüksek (~%60), kart genelde aile kartı, LTV 4-9 ay. Bu segmente direkt cold outreach satılmaz; doğal kanal influencer-mediated. Brand awareness ve içerik dağıtımı için faydalı, MRR'in onda birinden fazlasını beklemiyoruz. Plan tier: **Free + Pro Solo $79**. Landing: `/for/smma`.
 
-**Dördüncül (yeni): Walk-in web agency starter.** Londra'da sahada gezip yerel işletmelere site satmaya çalışan 22 yaşında 3 kişilik grup. Sabah Camden ya da Hackney'de o gün ziyaret edecekleri 8-12 işletmeyi tabletten görüyor. Müşterinin önünde mevcut sitelerini açıyor, "bak yavaş, bak booking yok, bak son güncelleme 2019" diyor. Lead Engine'in mockup'ını tek tıkla 20 saniyede üretip tableti uzatıyor. £800'den başlayan paketle 2 hafta sonra Webflow'da gerçek site teslim ediyor. Akşam dönüşte hangi prospect ne dedi diye 30 saniye ses notu ile lead'e tag atıyor. Bu segment için ürün **face-to-face konversiyon makinesi**: tablet açıp "size yaptığımız taslak" gösterimi yüz yüze ikna sürecinin altın artifact'ı. Plan tier: **Pro Team $149/3 seat**. Landing: `/for/walk-in-web-agencies` (EN), TR versiyonu `/for/saha-satiscilari` ileride. Mobile responsive PWA + voice notes + GPS lead sıralaması bu segment için kritik (planda P0.6, P0.7, P1.5 olarak sıraya alındı).
+**Dördüncül (yeni): Walk-in web agency starter.** Londra'da sahada gezip yerel işletmelere site satmaya çalışan 22 yaşında 3 kişilik grup. Sabah Camden ya da Hackney'de o gün ziyaret edecekleri 8-12 işletmeyi tabletten görüyor. Müşterinin önünde mevcut sitelerini açıyor, "bak yavaş, bak booking yok, bak son güncelleme 2019" diyor. Leadac AI'in mockup'ını tek tıkla 20 saniyede üretip tableti uzatıyor. £800'den başlayan paketle 2 hafta sonra Webflow'da gerçek site teslim ediyor. Akşam dönüşte hangi prospect ne dedi diye 30 saniye ses notu ile lead'e tag atıyor. Bu segment için ürün **face-to-face konversiyon makinesi**: tablet açıp "size yaptığımız taslak" gösterimi yüz yüze ikna sürecinin altın artifact'ı. Plan tier: **Pro Team $149/3 seat**. Landing: `/for/walk-in-web-agencies` (EN), TR versiyonu `/for/saha-satiscilari` ileride. Mobile responsive PWA + voice notes + GPS lead sıralaması bu segment için kritik (planda P0.6, P0.7, P1.5 olarak sıraya alındı).
 
 **Türkiye katmanı.** TR Josh'u 35-45 yaş, English'tan biraz daha geç başlıyor. Avukat-pazarlama ajansı, e-ticaret danışmanı, Webflow specialist, Shopify development ajansı. LinkedIn'de görünüyor, Reddit'te değil. Aylık 100-500 bin TL gelir, tool bütçesi 5-15 bin TL/ay. TR'de yerel hizmet vertical olarak en parlak olanlar: oto bakım, klima servisi, halı yıkama, fizik tedavi merkezi, butik diş hekimi. Phone repair Londra'dan çok daha küçük niche TR'de. Türkiye için önce halı yıkama İstanbul ya da klima servis Ankara açıyoruz; phone repair'e ikinci dalgada bakıyoruz. Plan tier: **Pro Solo ₺2.500** ya da **Pro Team ₺4.700** geliri ve ekibe göre.
 
@@ -121,7 +121,7 @@ Son 30 gündeki tool comparison thread'lerinden çıkan gerçek rakip görünüm
 
 **Tek cümle pitch (yatırımcıya):**
 
-> Lead Engine, yerel hizmet işletmelerine satış yapan ajansların Apollo/Clay'in tükenmiş listelerinden kurtulup Google Maps'ten taze lead bulmasını, her lead için website audit + AI skor + kişiselleştirilmiş outreach + müşteri için hazır site mockup'ı üretmesini sağlayan dikey B2B SaaS. r/coldemail topluluğunda son 30 günde 261 upvote, 490 yorumla doğrulanmış pazar ihtiyacına yapılmış cevap.
+> Leadac AI, yerel hizmet işletmelerine satış yapan ajansların Apollo/Clay'in tükenmiş listelerinden kurtulup Google Maps'ten taze lead bulmasını, her lead için website audit + AI skor + kişiselleştirilmiş outreach + müşteri için hazır site mockup'ı üretmesini sağlayan dikey B2B SaaS. r/coldemail topluluğunda son 30 günde 261 upvote, 490 yorumla doğrulanmış pazar ihtiyacına yapılmış cevap.
 
 **Tek cümle pitch (alıcıya):**
 
@@ -157,7 +157,7 @@ Bir VC veya angel toplantısında konuşulacak akış. 15-20 slayt değil; 5 ba�
 
 **Slide 3 - İçgörü.** Yerel hizmet işletmesi LinkedIn'de yok ama Google Business Profile'ı kendisi tutuyor. Bu fresh, structured, public data. Apollo'nun değil; bizim oyun alanımız. Üstüne audit + AI scoring + mockup koyduğumuzda mesajın değeri kategori değiştiriyor.
 
-**Slide 4 - Demo.** 90 saniye, ekran paylaşımı. "Camden, phone repair" → 47 lead → bir lead aç → audit + Gemini analysis → "Generate plan" → 20 saniyede mockup → opener compose. Sahne kapanırken: "Bu workflow'u manuel yapmak ajansa lead başına 30 dakika." Sayı görsel: 47 lead × 30 dakika = 23.5 saat. Lead Engine'de 5 dakika.
+**Slide 4 - Demo.** 90 saniye, ekran paylaşımı. "Camden, phone repair" → 47 lead → bir lead aç → audit + Gemini analysis → "Generate plan" → 20 saniyede mockup → opener compose. Sahne kapanırken: "Bu workflow'u manuel yapmak ajansa lead başına 30 dakika." Sayı görsel: 47 lead × 30 dakika = 23.5 saat. Leadac AI'de 5 dakika.
 
 **Slide 5 - Pazar.** TAM: İngilizce konuşan B2B outbound ajansı evreni 200-400 bin işletme. Para harcayan dilim 30-100 bin. TR ek 5-15 bin işletme. ACV $79-249, üst tier custom ($499-$999). 12. ayda hedef: 600 ödeyen müşteri × $150 ortalama ACV = $90k MRR. 24. ayda $300k MRR.
 
@@ -193,7 +193,7 @@ with your real info: {{mockupUrl}}
 Worth 15 minutes if you like it. If not, keep the draft. Free either way.
 
 {{senderFirstName}}
-Lead Engine | leadengine.io
+Leadac AI | leadac.ai
 ```
 
 ### 9.2 Cold email (TR)
@@ -214,7 +214,7 @@ gerçek bilgilerinizle: {{mockupUrl}}
 Beğendiyseniz 15 dakika konuşalım. Değilse taslağı saklayın, ücretsiz.
 
 {{senderFirstName}}
-Lead Engine | leadengine.io
+Leadac AI | leadac.ai
 ```
 
 ### 9.3 LinkedIn / X DM (Josh segmentine, EN)
@@ -246,7 +246,7 @@ If not, keep it.
 ```
 Hi {{name}},
 
-{{introducer}} suggested we connect. I'm building Lead Engine - vertical
+{{introducer}} suggested we connect. I'm building Leadac AI - vertical
 lead intelligence + AI website mockups for outbound agencies selling to
 local service businesses.
 
@@ -283,7 +283,7 @@ Mert
 
 **Dört fiyat prensibi:**
 
-1. **Anchor: bir kapatılmış call.** Yerel hizmet pazarında bir booked call $100-$500 değer. Lead Engine ayda bir ekstra booking üretirse Pro Solo 1-5x, Pro Team 3-15x amortise. Bu cümle pricing sayfasında, yatırımcı slayt'ında ve cold email'de tekrarlanıyor.
+1. **Anchor: bir kapatılmış call.** Yerel hizmet pazarında bir booked call $100-$500 değer. Leadac AI ayda bir ekstra booking üretirse Pro Solo 1-5x, Pro Team 3-15x amortise. Bu cümle pricing sayfasında, yatırımcı slayt'ında ve cold email'de tekrarlanıyor.
 
 2. **Agency'yi underprice etme.** Multi-tenant, role-based access, watchlist, priority crawl - bunlar ciddi engineering. Ajans 249 USD'ye tereddütsüz öder, indirme baskısına kapılma. Yarı fiyat ($475 → $249) Apollo + Clay setup'ına karşı zaten önemli bir avantaj.
 
@@ -301,7 +301,7 @@ Sıralama: bedava ve hızlı sinyal verenden başlayıp paid'e doğru. Bütçe �
 
 ### 11.1 Cold outbound (kendi tool'umuzla kendimize satıyoruz)
 
-**Ne yapıyoruz:** Lead Engine'i Lead Engine'le ICP'ye satıyoruz. r/coldemail'in son 30 günkü top 50 commenter'ına § 9.3 DM şablonu. Aynı zamanda Reddit + LinkedIn'de [Built for B2B Josh](https://www.reddit.com/r/coldemail/comments/1sfxygz/ama_i_run_a_b2b_outbound_agency_booking/), [$140k/mo stack yazarı](https://www.reddit.com/r/coldemail/comments/1sdd3hy/every_tool_i_use_running_a_140kmonth_cold_email/), [$62k/mo yazarı](https://www.reddit.com/r/coldemail/comments/1sbcy46/how_i_got_to_62kmonth_running_cold_email_for/) gibi tanımlanmış kişilere bireysel outreach. Hedef: ilk hafta 50 send, 5-10 reply, 3-5 demo.
+**Ne yapıyoruz:** Leadac AI'i Leadac AI'le ICP'ye satıyoruz. r/coldemail'in son 30 günkü top 50 commenter'ına § 9.3 DM şablonu. Aynı zamanda Reddit + LinkedIn'de [Built for B2B Josh](https://www.reddit.com/r/coldemail/comments/1sfxygz/ama_i_run_a_b2b_outbound_agency_booking/), [$140k/mo stack yazarı](https://www.reddit.com/r/coldemail/comments/1sdd3hy/every_tool_i_use_running_a_140kmonth_cold_email/), [$62k/mo yazarı](https://www.reddit.com/r/coldemail/comments/1sbcy46/how_i_got_to_62kmonth_running_cold_email_for/) gibi tanımlanmış kişilere bireysel outreach. Hedef: ilk hafta 50 send, 5-10 reply, 3-5 demo.
 
 **Sahip:** Mert direkt yapıyor, çünkü dogfood + erken pilot feedback CTO için en yüksek sinyal.
 
@@ -313,11 +313,11 @@ Sıralama: bedava ve hızlı sinyal verenden başlayıp paid'e doğru. Bütçe �
 
 **r/coldemail.** ["Google Maps is underrated" thread'ine](https://www.reddit.com/r/coldemail/comments/1sl3go9/google_maps_is_the_most_underrated_lead_database/) değer katan yorum (link drop yok). Haftalık taktik post: "Londra'daki tüm phone repair shop'larını crawl ettik. 5 desen + en kötü olanına yapılmış mockup buraya." Çınar yazıyor, Mert teknik doğrulama. Ortalama haftalık 1-2 yüksek-engagement post.
 
-**r/agency.** [AI-outreach hasar postuna](https://www.reddit.com/r/agency/comments/1s8s3v0/if_youre_using_ai_for_cold_outreach_are_you_ok/) case study cevabı. "Lead Engine mockup'larıyla SDR takvimimizi vertical X'te nasıl doldurduk." Reply attribution sayıları geldikten sonra (4. hafta).
+**r/agency.** [AI-outreach hasar postuna](https://www.reddit.com/r/agency/comments/1s8s3v0/if_youre_using_ai_for_cold_outreach_are_you_ok/) case study cevabı. "Leadac AI mockup'larıyla SDR takvimimizi vertical X'te nasıl doldurduk." Reply attribution sayıları geldikten sonra (4. hafta).
 
 **r/SaaS, r/Entrepreneur.** Build-in-public thread'leri her vertical pack shipping'de. "Feedback please" formatı düşük bar, kolay görünürlük.
 
-**r/ai_website_builder.** [16 Nisan'da "Can an AI website builder help me rank in my city"](https://www.reddit.com/r/ai_website_builder/comments/1smyqr4/can_an_ai_website_builder_help_me_rank_in_my_city/) 28 yorum almış. Bu sub Lead Engine için doğal home. Native post: "Yerel işletmelere lead-magnet olarak AI mockup üretiyorum, SEO açısından nasıl optimize ediyoruz."
+**r/ai_website_builder.** [16 Nisan'da "Can an AI website builder help me rank in my city"](https://www.reddit.com/r/ai_website_builder/comments/1smyqr4/can_an_ai_website_builder_help_me_rank_in_my_city/) 28 yorum almış. Bu sub Leadac AI için doğal home. Native post: "Yerel işletmelere lead-magnet olarak AI mockup üretiyorum, SEO açısından nasıl optimize ediyoruz."
 
 **Ölçü:** Haftalık post sayısı, accumulated upvote, organik backlink, signup attribution. Çınar weekly tracking.
 
@@ -402,7 +402,7 @@ YouTube short serisi: "5 dakikada İstanbul'daki tüm halı yıkamacıları" tar
 
 - En yüksek conversion veren mid-tier influencer'la 6 aylık affiliate kontrat.
 - Tier S sponsorluk #2.
-- "Lead Engine Certified Partner" affiliate program lansmanı.
+- "Leadac AI Certified Partner" affiliate program lansmanı.
 - İlk paid case study video formatında (Kaan).
 - Public per-lead leave-behind sayfa MVP (GEO için).
 - Booking-system detection v2 (Calendly + SimplyBook + Setmore + Booksy + Square Appointments + Booqable).
@@ -472,7 +472,7 @@ Lansman öncesi karara bağlanması gereken beş şey:
 
 4. **Affiliate yapısı.** %30 lifetime mı, %20 12 ay mı, signup başına flat $50 mı? Önerim: %30 lifetime mid-tier influencer için (uzun ortaklık teşviki), $50 flat micro tier için (basit ödeme + spam kontrolü).
 
-5. **Domain.** leadengine.io tutuluyor, ek olarak leadengine.com.tr alınmalı (TR pazarı için trust faktörü, hreflang yapısı kuruluyor).
+5. **Domain.** leadac.ai tutuluyor, ek olarak leadac.com.tr alınmalı (TR pazarı için trust faktörü, hreflang yapısı kuruluyor).
 
 Bu beş soru bir saatlik takım toplantısında karara bağlanır.
 

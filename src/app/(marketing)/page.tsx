@@ -1,11 +1,11 @@
-import Link from "next/link";
+﻿import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   Sparkles,
   Search,
   Globe,
   Wand2,
-  Zap,
   GitBranch,
   type LucideIcon,
 } from "lucide-react";
@@ -27,7 +27,7 @@ import {
 import { HOME_LEADS, HOME_CITIES, HOME_NICHES } from "@/components/marketing/interactive/demo-data";
 
 export const metadata = {
-  title: "Lead Engine — Predictable client pipeline for outbound agencies",
+  title: "Leadac AI — Predictable client pipeline for outbound agencies",
   description:
     "Pull fresh local leads from Google Maps, audit their sites, generate a custom mockup, and write the opener. Half the price of a Clay setup, with mockups included.",
 };
@@ -67,7 +67,7 @@ export default function LandingPage() {
       id: "discover",
       eyebrow: "Step one",
       title: "Type a postcode. Get the list.",
-      body: "Pick a city and a niche. Lead Engine queries Google Places live and returns every matching business with phone, rating, address, and website status. No re-using last quarter's Apollo dump.",
+      body: "Pick a city and a niche. Leadac AI queries Google Places live and returns every matching business with phone, rating, address, and website status. No re-using last quarter's Apollo dump.",
       visual: (
         <DiscoveryDemo
           cities={HOME_CITIES}
@@ -418,7 +418,7 @@ export default function LandingPage() {
               </p>
               <p className="text-[12.5px] text-white/40 max-w-xl mx-auto">
                 For reference: a typical Clay + cold email stack runs around
-                $475/mo. Lead Engine includes the audit and the mockup for
+                $475/mo. Leadac AI includes the audit and the mockup for
                 less.
               </p>
             </div>
@@ -462,15 +462,13 @@ export default function LandingPage() {
         />
         <div className="max-w-3xl mx-auto px-5 sm:px-6 text-center">
           <RevealOnScroll>
-            <div
-              className="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-6"
-              style={{
-                background: "rgba(94, 106, 210, 0.14)",
-                border: "0.5px solid rgba(94, 106, 210, 0.32)",
-              }}
-            >
-              <Zap className="w-5 h-5" style={{ color: "#A5B4FC" }} />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Leadac AI"
+              width={48}
+              height={48}
+              className="inline-block w-12 h-12 object-contain mb-6"
+            />
             <h2
               className="text-[36px] sm:text-[56px] font-semibold tracking-tight mb-4 leading-[1.05]"
               style={{ letterSpacing: "-0.03em" }}

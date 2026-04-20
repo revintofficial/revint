@@ -51,10 +51,18 @@ export default function DiscoveryPage() {
   const canRun = effectiveLocation && effectiveQuery;
 
   const runDiscovery = async () => {
-    if (!canRun) return;
+    if (!canRun || running) return;
     setRunning(true);
     setSingleResult(null);
     setError(null);
+
+    // Hard client-side cap so the button never stays on "Searching…" forever.
+    // Google Places + Vercel function timeout should be well under this; if
+    // we hit 90s something is actually broken and the user deserves an error
+    // instead of an infinite spinner.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 90_000);
+
     try {
       const res = await fetch("/api/discovery", {
         method: "POST",
@@ -63,8 +71,14 @@ export default function DiscoveryPage() {
           searchQuery: effectiveQuery,
           boroughName: effectiveLocation,
         }),
+        signal: controller.signal,
       });
-      const data = await res.json();
+      let data: { success?: boolean; error?: string; created?: number; skipped?: number; total?: number } = {};
+      try {
+        data = await res.json();
+      } catch {
+        // empty / invalid body (e.g. 504 from gateway) - fall through to error
+      }
       if (!res.ok) {
         setError(data.error || `API error: ${res.status}`);
         return;
@@ -73,12 +87,23 @@ export default function DiscoveryPage() {
         setError(data.error || "Unknown error");
         return;
       }
-      setSingleResult(data);
-      toast.success(`${data.created} new leads added!`);
+      setSingleResult({
+        created: data.created ?? 0,
+        skipped: data.skipped ?? 0,
+        total: data.total ?? 0,
+      });
+      toast.success(`${data.created ?? 0} new leads added!`);
     } catch (err) {
-      console.error("Discovery failed:", err);
-      setError("Connection error. Is the server running?");
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError(
+          "Request timed out after 90s. Google Places may be slow — try a smaller area or retry.",
+        );
+      } else {
+        console.error("Discovery failed:", err);
+        setError("Connection error. Is the server running?");
+      }
     } finally {
+      clearTimeout(timeoutId);
       setRunning(false);
     }
   };

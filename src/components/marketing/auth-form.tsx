@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -6,7 +6,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowser } from "@/lib/supabase/browser";
-import { Zap, Loader2, Mail, Check, AlertCircle } from "lucide-react";
+import Image from "next/image";
+import { Loader2, Mail, Check, AlertCircle } from "lucide-react";
 
 /**
  * If the visitor arrived from the pricing page with `?plan=PRO_TEAM`
@@ -127,16 +128,15 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-7">
-          <Link href="/" className="inline-block mb-5" aria-label="Home">
-            <div
-              className="w-11 h-11 rounded-2xl flex items-center justify-center mx-auto"
-              style={{
-                background: "linear-gradient(135deg, rgba(94,106,210,0.28), rgba(139,92,246,0.18))",
-                border: "0.5px solid rgba(94,106,210,0.32)",
-              }}
-            >
-              <Zap className="w-5 h-5" style={{ color: "#A5B4FC" }} />
-            </div>
+          <Link href="/" className="inline-block mb-5" aria-label="Leadac AI home">
+            <Image
+              src="/logo.png"
+              alt="Leadac AI"
+              width={44}
+              height={44}
+              priority
+              className="w-11 h-11 object-contain mx-auto"
+            />
           </Link>
           <h1
             className="text-[26px] font-semibold tracking-tight mb-1"
@@ -147,7 +147,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           <p className="text-[13px] text-white/55">
             {mode === "signup"
               ? "Discover your first 50 leads — free."
-              : "Sign in to your Lead Engine workspace."}
+              : "Sign in to your Leadac AI workspace."}
           </p>
           {intentPlan && (intentPlan === "PRO" || intentPlan === "PRO_TEAM" || intentPlan === "AGENCY") && (
             <div
@@ -359,7 +359,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             </>
           ) : (
             <>
-              New to Lead Engine?{" "}
+              New to Leadac AI?{" "}
               <Link
                 href={`/signup${params.toString() ? `?${params.toString()}` : ""}`}
                 className="text-[#A5B4FC] hover:underline"

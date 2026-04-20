@@ -2,7 +2,7 @@
  * Video launch film seed.
  *
  * Wipes Mert's Workspace and re-seeds it with a deterministic, "showtime-ready"
- * fixture set crafted to mirror the Lead Engine landing page narrative
+ * fixture set crafted to mirror the Leadac AI landing page narrative
  * (Bella Vita Trattoria as hero lead) and to give Steel scenarios stable IDs
  * to target during scripted recording.
  *

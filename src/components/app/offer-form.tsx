@@ -258,7 +258,7 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
                 onChange={(e) => update("conversionLink")(e.target.value)}
                 disabled={!canEdit}
                 maxLength={300}
-                placeholder="https://leadengine.io/demo"
+                placeholder="https://leadac.ai/demo"
               />
             </Field>
           </div>

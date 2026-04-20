@@ -1,5 +1,5 @@
 /**
- * SCENE 08 — "Lead Engine. Your first 50 leads are five minutes away." (3s)
+ * SCENE 08 — "Leadac AI. Your first 50 leads are five minutes away." (3s)
  *
  * Pure Remotion. Logo lockup + CTA, with a subtle radial gradient backdrop
  * picking up the same indigo glow as the marketing site CTA section.
@@ -52,7 +52,7 @@ export const Cta: React.FC = () => {
             marginBottom: 24,
           }}
         >
-          Lead Engine
+          Leadac AI
         </div>
         <div
           style={{

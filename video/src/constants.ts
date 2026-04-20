@@ -13,7 +13,7 @@ export const COLORS = {
 } as const;
 
 export const BRAND = {
-  name: "Lead Engine",
+  name: "Leadac AI",
   tagline: "Google Maps → ranked pipeline → website plan, in one workspace.",
-  url: "leadengine.app",
+  url: "leadac.ai",
 } as const;

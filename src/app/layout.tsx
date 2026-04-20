@@ -10,14 +10,14 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Lead Engine — Find local businesses that need a new website",
+  title: "Leadac AI — Find local businesses that need a new website",
   description:
     "Discover local businesses with weak or missing websites, get AI-powered pitches, and close web design deals.",
   manifest: "/manifest.json",
-  applicationName: "Lead Engine",
+  applicationName: "Leadac AI",
   appleWebApp: {
     capable: true,
-    title: "Lead Engine",
+    title: "Leadac AI",
     statusBarStyle: "black-translucent",
   },
   formatDetection: {

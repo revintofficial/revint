@@ -161,7 +161,7 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
           <RevealOnScroll>
             <div className="text-center mb-14 max-w-3xl mx-auto">
               <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
-                What Lead Engine fixes
+                What Leadac AI fixes
               </p>
               <h2
                 className="text-[34px] sm:text-[44px] font-semibold tracking-tight leading-[1.1]"

@@ -1,7 +1,7 @@
 /**
  * Workspace-level branding for the white-label tier.
  *
- * Agency plan customers can override the Lead Engine logo, primary color, and
+ * Agency plan customers can override the Leadac AI logo, primary color, and
  * footer text on public mockup pages so the prospect sees the agency's brand,
  * not ours. Pro and Free fall back to the defaults below.
  */
@@ -11,7 +11,7 @@ export interface WorkspaceBranding {
   primaryColor: string | null;
   accentColor: string | null;
   footerText: string | null;
-  hideLeadEngineCredit: boolean;
+  hideLeadacCredit: boolean;
 }
 
 export const DEFAULT_BRANDING: WorkspaceBranding = {
@@ -19,7 +19,7 @@ export const DEFAULT_BRANDING: WorkspaceBranding = {
   primaryColor: null,
   accentColor: null,
   footerText: null,
-  hideLeadEngineCredit: false,
+  hideLeadacCredit: false,
 };
 
 /**
@@ -34,7 +34,7 @@ export function parseBranding(raw: unknown): WorkspaceBranding {
     primaryColor: typeof obj.primaryColor === "string" ? clampColor(obj.primaryColor) : null,
     accentColor: typeof obj.accentColor === "string" ? clampColor(obj.accentColor) : null,
     footerText: typeof obj.footerText === "string" ? obj.footerText.slice(0, 200) : null,
-    hideLeadEngineCredit: obj.hideLeadEngineCredit === true,
+    hideLeadacCredit: obj.hideLeadacCredit === true,
   };
 }
 

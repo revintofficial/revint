@@ -9,7 +9,7 @@
  * see src/lib/quotas.ts.
  */
 
-import { getRedis } from "@/lib/redis";
+import { getRequestRedis } from "@/lib/redis";
 import { logger } from "@/lib/logger";
 
 export interface RateLimitConfig {
@@ -44,11 +44,19 @@ export async function checkRateLimit(
   const key = `rl:${cfg.bucket}:${subject}:${windowStart}`;
 
   try {
-    const redis = getRedis();
+    const redis = getRequestRedis();
     const pipeline = redis.multi();
     pipeline.incr(key);
     pipeline.expire(key, cfg.windowSec + 1);
-    const results = await pipeline.exec();
+    // Extra belt-and-braces timeout in case commandTimeout on the client
+    // fails to fire (e.g. during initial connect handshake).
+    const results = await Promise.race([
+      pipeline.exec(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+    ]);
+    if (!results) {
+      throw new Error("ratelimit.timeout");
+    }
     const count = Number((results?.[0]?.[1] as number | string | null) ?? 0);
     const remaining = Math.max(0, cfg.limit - count);
     const resetSec = windowStart + cfg.windowSec - Math.floor(Date.now() / 1000);

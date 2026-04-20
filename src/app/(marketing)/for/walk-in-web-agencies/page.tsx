@@ -22,13 +22,13 @@ import {
 } from "@/components/marketing/interactive/demo-data";
 
 const COPY: VerticalCopy = {
-  metaTitle: "Lead Engine for walk-in web sales crews - the tablet does the talking",
+  metaTitle: "Leadac AI for walk-in web sales crews - the tablet does the talking",
   metaDescription:
-    "Door-knocking websites in 2026 means selling to a guy who's been told every agency is scamming him. Lead Engine puts his actual broken site on your tablet in 20 seconds, before he writes you off.",
+    "Door-knocking websites in 2026 means selling to a guy who's been told every agency is scamming him. Leadac AI puts his actual broken site on your tablet in 20 seconds, before he writes you off.",
   eyebrow: "For door-to-door web sales crews",
   h1: "He's been pitched five times this week.",
   h1Highlight: "You've got 30 seconds before he writes you off.",
-  sub: "The plumber on the other side of the door reads r/smallbusiness on his lunch break, and the top comment last week called local SEO agencies 'borderline scamming'. Your portfolio doesn't fix that. His own broken site loaded on your tablet in 20 seconds does. Lead Engine handles the leads, the audit, and the mockup. The walking is still you.",
+  sub: "The plumber on the other side of the door reads r/smallbusiness on his lunch break, and the top comment last week called local SEO agencies 'borderline scamming'. Your portfolio doesn't fix that. His own broken site loaded on your tablet in 20 seconds does. Leadac AI handles the leads, the audit, and the mockup. The walking is still you.",
   primaryCta: "Try it with 50 free leads",
   validationQuote: {
     source: "11 days ago · plumber asking about a $3,500/mo SEO quote",
