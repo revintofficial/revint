@@ -96,18 +96,24 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   // Upsert the deeper review set into the GoogleReview table. We
   // delete-then-insert the lead's reviews rather than per-row upsert
   // because Apify review IDs are unstable across runs.
+  //
+  // Rating-only reviews (stars without a text body) were previously
+  // filtered out, which silently dropped a significant fraction of
+  // Google Maps data the workspace was billed for. Retained now; the
+  // downstream REVIEW_ANALYST grounding check is what should care
+  // about text presence, not the ingestion step.
   const reviews = Array.isArray(place.reviews) ? place.reviews : [];
   if (reviews.length > 0) {
     await prisma.googleReview.deleteMany({ where: { leadId: lead.id } });
     await prisma.googleReview.createMany({
       data: reviews
-        .filter((r) => r.text && typeof r.text === "string")
+        .filter((r) => typeof r.stars === "number" || typeof r.text === "string")
         .map((r) => ({
           leadId: lead.id,
           authorName: r.name ?? "Anonymous",
           authorPhoto: r.reviewerPhotoUrl ?? null,
           rating: Math.max(1, Math.min(5, Math.round(r.stars ?? 5))),
-          text: r.text ?? null,
+          text: typeof r.text === "string" ? r.text : null,
           relativeTime: "",
           publishTime: r.publishedAtDate ? new Date(r.publishedAtDate) : new Date(),
         })),

@@ -21,7 +21,15 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { emit } from "@/lib/ai-core/events";
+import { getChain } from "@/lib/ai-core/chains";
+import {
+  assertWorkerQuota,
+  PlanTooLowError,
+  QuotaExceededError,
+  ApifyBudgetExceededError,
+} from "@/lib/agent-workers/quota";
 import type { EventKind } from "@/lib/agent-workers/types";
+import type { AgentWorkerKind } from "@/generated/prisma/client";
 
 // Allowlist of events the UI is allowed to fire. Internal events like
 // `lead_created` and `inbox_reply_received` are emitted by server-side
@@ -73,6 +81,74 @@ export const POST = withAuth(async (session, req: Request) => {
       { error: "Lead not found in workspace" },
       { status: 403 },
     );
+  }
+
+  // Pre-flight quota check. Without this the endpoint returns 200
+  // with a sessionId, the session enqueues AgentRun rows, and each
+  // one fails with 402 at worker-time -- so the user sees 'running'
+  // in the UI for a few seconds and then a silent nothing. By
+  // inspecting the chain's required (non-optional) steps up front
+  // we can respond 402 synchronously and never create a stillborn
+  // session.
+  const chain = getChain(event as EventKind);
+  if (!chain) {
+    return NextResponse.json(
+      { error: `No chain registered for event: ${event}` },
+      { status: 400 },
+    );
+  }
+  const workspace = await prisma.workspace.findUniqueOrThrow({
+    where: { id: session.workspaceId },
+    select: { plan: true },
+  });
+  const requiredKinds: AgentWorkerKind[] = Array.from(
+    new Set(
+      chain
+        .filter((s) => !s.optional)
+        .map((s) => s.workerKind as AgentWorkerKind),
+    ),
+  );
+  for (const kind of requiredKinds) {
+    try {
+      await assertWorkerQuota({
+        workspaceId: session.workspaceId,
+        plan: workspace.plan,
+        kind,
+      });
+    } catch (err) {
+      if (err instanceof PlanTooLowError) {
+        return NextResponse.json(
+          {
+            error: "plan_too_low",
+            workerKind: err.kind,
+            requiredPlan: err.minPlan,
+          },
+          { status: 402 },
+        );
+      }
+      if (err instanceof ApifyBudgetExceededError) {
+        return NextResponse.json(
+          {
+            error: "apify_budget_exhausted",
+            usedCents: err.usedCents,
+            limitCents: err.limitCents,
+          },
+          { status: 402 },
+        );
+      }
+      if (err instanceof QuotaExceededError) {
+        return NextResponse.json(
+          {
+            error: "worker_quota_exceeded",
+            workerKind: err.kind,
+            used: err.used,
+            limit: err.limit,
+          },
+          { status: 402 },
+        );
+      }
+      throw err;
+    }
   }
 
   try {

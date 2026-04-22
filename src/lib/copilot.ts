@@ -11,7 +11,6 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import { logger } from "@/lib/logger";
 import type { Plan } from "@/generated/prisma/client";
 import { routerTurn } from "@/lib/ai-core/router";
 import { upsertAndEmbed } from "@/lib/ai-core/memory";
@@ -100,25 +99,28 @@ export async function sendCopilotMessage(input: {
   // about the dentist in Kadikoy?" works. Use a single concatenated
   // text to keep retrieval coherent (user question + assistant reply
   // as one chunk is more useful than two disconnected rows).
-  try {
-    const turnText = `Kullanici: ${input.message}\n\nAsistan: ${turn.reply}`;
-    await upsertAndEmbed({
-      workspaceId: input.workspaceId,
-      kind: "COPILOT_TURN",
-      text: turnText,
-      refType: "copilot_turn",
-      refId: asstRow.id,
-      metadata: {
-        userId: input.userId,
-        leadIds: turn.usedLeadIds,
-        toolCalls: turn.toolCalls.map((t) => t.name),
-      },
-    });
-  } catch (err) {
-    logger.warn("copilot.memory_write_failed", {
-      err: err instanceof Error ? err.message : String(err),
-    });
-  }
+  //
+  // Previously this was wrapped in try/catch that logged and
+  // continued: the user got their reply, but future "remember that
+  // conversation?" requests silently failed to find it. That is the
+  // exact silent-quality-drift pattern the P1 audit flagged. We now
+  // let the error propagate; the API route wraps copilot calls so
+  // the client surfaces an error. The assistant ChatMessage row is
+  // already persisted (it happened before this block), so the user's
+  // transcript is not lost.
+  const turnText = `Kullanici: ${input.message}\n\nAsistan: ${turn.reply}`;
+  await upsertAndEmbed({
+    workspaceId: input.workspaceId,
+    kind: "COPILOT_TURN",
+    text: turnText,
+    refType: "copilot_turn",
+    refId: asstRow.id,
+    metadata: {
+      userId: input.userId,
+      leadIds: turn.usedLeadIds,
+      toolCalls: turn.toolCalls.map((t) => t.name),
+    },
+  });
 
   return {
     reply: turn.reply,

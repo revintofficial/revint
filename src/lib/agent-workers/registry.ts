@@ -471,16 +471,25 @@ export async function resolveWorkerRun(kind: AgentWorkerKind): Promise<AgentWork
  * Returns the memoryWrites callback for a worker, or undefined if
  * the worker does not write semantic memory. Uses the same lazy-import
  * + cache as `resolveWorkerRun`.
+ *
+ * Previously this function had a `catch { return undefined }` around
+ * resolveModule to paper over phase-2/3 placeholders that have no
+ * implModule set. That hid every real import error too (bad default
+ * export, syntax error, runtime crash during module init), so a
+ * broken worker silently shipped no memory writes -- and the outer
+ * executor had no way to tell the difference from a legitimate
+ * no-writes worker. Now:
+ *   - Missing implModule (placeholder) returns undefined explicitly.
+ *   - Any other import failure throws, so executor marks the run
+ *     FAILED with a clear diagnostic.
  */
 export async function resolveMemoryWrites(
   kind: AgentWorkerKind,
 ): Promise<WorkerModule["memoryWrites"] | undefined> {
-  try {
-    const mod = await resolveModule(kind);
-    return mod.memoryWrites;
-  } catch {
-    return undefined;
-  }
+  const m = meta[kind];
+  if (!m?.implModule) return undefined;
+  const mod = await resolveModule(kind);
+  return mod.memoryWrites;
 }
 
 /**

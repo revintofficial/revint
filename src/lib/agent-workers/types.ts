@@ -75,7 +75,15 @@ export interface MemoryHit {
   refId: string | null;
   text: string;
   metadata: Record<string, unknown>;
-  similarity: number;
+  /**
+   * Cosine similarity from pgvector in [0, 1]. `null` means the hit
+   * was fetched without a vector query (e.g. the executor's static
+   * memoryReads pre-fetch which scores by recency, not semantics) and
+   * the caller MUST NOT treat it as a real similarity score. Do not
+   * sort or threshold on this when null; do a follow-up `memoryQuery`
+   * with a real query text if you need ranking.
+   */
+  similarity: number | null;
   createdAt: Date;
 }
 
