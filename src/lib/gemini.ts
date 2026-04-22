@@ -1,9 +1,130 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import type { GeminiAnalysis, WebsiteFeatures, AuditChecklistResult } from "@/types";
 import { WEBSITE_PLAN_SYSTEM_CONTEXT, WEBSITE_PLAN_TEMPLATE } from "./prompts/website-plan-prompt";
 import { REVIEW_ANALYSIS_PROMPT_TEMPLATE, type ReviewAnalysisOutput } from "./prompts/review-analysis-prompt";
 import { formatChecklistForPrompt } from "./audit-checklist";
 import { languagePreamble } from "./i18n";
+import { logger } from "./logger";
+
+/**
+ * Best-effort JSON parser for Gemini output.
+ *
+ * Even with `responseMimeType: "application/json"`, Gemini occasionally
+ * emits malformed JSON when user-generated text (review excerpts, KB
+ * chunks) is echoed back into string values - typically as raw control
+ * characters or trailing commas. This helper:
+ *
+ * 1. Strips leading/trailing markdown code fences.
+ * 2. Replaces unescaped ASCII control chars (0x00-0x1F except \t\n\r)
+ *    with spaces - the most common cause of "Expected ',' or ']'" errors.
+ * 3. Removes trailing commas before } and ].
+ * 4. Falls back to extracting the largest {...} substring.
+ *
+ * On total failure, throws an Error whose message includes a snippet of
+ * the raw output so the worker logs are actionable.
+ */
+export function safeParseGeminiJson<T = unknown>(raw: string, contextLabel = "gemini"): T {
+  let lastError: unknown;
+  let lastCandidate = "";
+  const tryParse = (s: string): T | undefined => {
+    lastCandidate = s;
+    try {
+      return JSON.parse(s) as T;
+    } catch (e) {
+      lastError = e;
+      return undefined;
+    }
+  };
+
+  const stripped = raw
+    .replace(/^\s*```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/i, "")
+    .trim();
+
+  const direct = tryParse(stripped);
+  if (direct !== undefined) return direct;
+
+  // Strip ASCII control chars (except the ones JSON allows between tokens)
+  // and trailing commas. This rescues the common case where Gemini echoes
+  // a review excerpt that ends with \u0000-\u001F bytes.
+  const cleaned = stripped
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, " ")
+    .replace(/,(\s*[}\]])/g, "$1");
+
+  const cleanedParse = tryParse(cleaned);
+  if (cleanedParse !== undefined) return cleanedParse;
+
+  // Escape raw \n / \r / \t that appear INSIDE string values (common
+  // when a Gemini "summary" includes a real newline).
+  const escaped = escapeControlCharsInStrings(cleaned);
+  const escapedParse = tryParse(escaped);
+  if (escapedParse !== undefined) return escapedParse;
+
+  const match = escaped.match(/\{[\s\S]*\}/);
+  if (match) {
+    const matched = tryParse(match[0]);
+    if (matched !== undefined) return matched;
+  }
+
+  const errorMsg = lastError instanceof Error ? lastError.message : String(lastError);
+  const position = /position (\d+)/.exec(errorMsg)?.[1];
+  const posNum = position ? Number(position) : -1;
+  const window =
+    posNum >= 0
+      ? lastCandidate.slice(Math.max(0, posNum - 120), posNum + 120)
+      : lastCandidate.slice(0, 400);
+  const snippet = raw.length > 2500 ? `${raw.slice(0, 2500)}...[truncated ${raw.length}]` : raw;
+  logger.error("gemini.parse_failed", {
+    contextLabel,
+    parseError: errorMsg,
+    errorWindow: window,
+    rawLength: raw.length,
+    snippet,
+  });
+  throw new Error(`${contextLabel}: Gemini returned malformed JSON (${errorMsg})`);
+}
+
+/**
+ * Walk the string and replace raw \n, \r, \t bytes that appear INSIDE a
+ * JSON string literal with their escaped equivalents. Ignores control
+ * chars outside strings (those are already whitespace-legal).
+ */
+function escapeControlCharsInStrings(s: string): string {
+  let out = "";
+  let inString = false;
+  let prevEscape = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (inString) {
+      if (prevEscape) {
+        out += ch;
+        prevEscape = false;
+        continue;
+      }
+      if (ch === "\\") {
+        out += ch;
+        prevEscape = true;
+        continue;
+      }
+      if (ch === '"') {
+        out += ch;
+        inString = false;
+        continue;
+      }
+      if (ch === "\n") { out += "\\n"; continue; }
+      if (ch === "\r") { out += "\\r"; continue; }
+      if (ch === "\t") { out += "\\t"; continue; }
+      out += ch;
+    } else {
+      if (ch === '"') {
+        inString = true;
+      }
+      out += ch;
+    }
+  }
+  return out;
+}
 
 export interface WorkspaceOfferContext {
   offerName: string | null;
@@ -55,7 +176,7 @@ export interface WebsitePlanInput {
   auditChecklist: AuditChecklistResult | null;
   // P0.3 Mockup × Review Intelligence sinerjisi: review KPI verilerini handbook prompt'una besle.
   reviewIntelligence?: ReviewIntelligenceContext | null;
-  // P0.2 Workspace "My offer" context: mockup CTA + hero offer'a göre şekillenir.
+  // P0.2 Workspace "My offer" context: mockup CTA + hero are shaped by the offer.
   offer?: WorkspaceOfferContext | null;
 }
 
@@ -72,11 +193,11 @@ Business Information:
 Based on this information, produce a JSON object with these exact fields:
 - opportunity_score: number 0-100 (higher = better sales opportunity)
 - reason_codes: string[] (e.g. "no_website", "poor_mobile", "no_booking", "no_whatsapp", "weak_seo", "no_https", "slow_site", "no_ecommerce", "high_rating_weak_site")
-- why_good_target: string (1-2 sentences explaining why this business is a good target, in Turkish)
-- likely_pain_points: string[] (list of likely pain points, in Turkish)
-- best_sales_angle: string (the best sales angle for approaching this business, 1 sentence, in Turkish)
+- why_good_target: string (1-2 sentences explaining why this business is a good target)
+- likely_pain_points: string[] (list of likely pain points)
+- best_sales_angle: string (the best sales angle for approaching this business, 1 sentence)
 - suggested_offer: "starter" | "growth" | "sales" (starter = basic mobile site, growth = site + booking + whatsapp + local SEO, sales = growth + inventory showcase + review embedding + lead capture)
-- personalized_first_message: string (a personalized cold outreach message for WhatsApp/email, in Turkish, friendly and professional, max 3 sentences)
+- personalized_first_message: string (a personalized cold outreach message for WhatsApp/email, friendly and professional, max 3 sentences)
 - expected_price_band: string (e.g. "£500-800", "£800-1500", "£1500-3000")
 
 Respond ONLY with valid JSON, no markdown, no explanation.`;
@@ -88,8 +209,8 @@ export async function analyzeLeadWithGemini(
   reviewCount: number | null,
   websiteUrl: string | null,
   features: WebsiteFeatures | null,
-  /** P2.3 - workspace.language injection. Defaults to 'tr' to preserve old behavior. */
-  language: string | null = "tr"
+  /** P2.3 - workspace.language injection. Defaults to 'en'; explicit TR workspaces still get TR output via languagePreamble. */
+  language: string | null = "en"
 ): Promise<GeminiAnalysis> {
   const client = getClient();
   const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -139,44 +260,44 @@ export async function generateWebsitePlan(input: WebsitePlanInput): Promise<stri
 
   const reviewsText = input.reviews.length > 0
     ? input.reviews.map((r, i) =>
-        `${i + 1}. ${r.authorName} (${r.rating}/5): ${r.text || "Yorum metni yok"}`
+        `${i + 1}. ${r.authorName} (${r.rating}/5): ${r.text || "No review text"}`
       ).join("\n")
-    : "Henuz Google yorumu bulunamadi.";
+    : "No Google reviews available yet.";
 
   const websiteAnalysisText = input.features
     ? JSON.stringify(input.features, null, 2)
-    : "Mevcut web sitesi yok veya analiz yapilmamis.";
+    : "No existing website, or not yet analysed.";
 
   const salesAnalysisText = input.salesOpportunity
-    ? `- Firsat Skoru: ${input.salesOpportunity.opportunityScore}/100
-- Neden Kodlari: ${(input.salesOpportunity.reasonCodes as string[]).join(", ")}
-- Neden Iyi Hedef: ${input.salesOpportunity.whyGoodTarget || "N/A"}
-- Aci Noktalari: ${(input.salesOpportunity.likelyPainPoints as string[]).join(", ")}
-- Onerilen Paket: ${input.salesOpportunity.suggestedOffer}
-- Satis Acisi: ${input.salesOpportunity.bestSalesAngle || "N/A"}`
-    : "Henuz satis firsat analizi yapilmamis.";
+    ? `- Opportunity score: ${input.salesOpportunity.opportunityScore}/100
+- Reason codes: ${(input.salesOpportunity.reasonCodes as string[]).join(", ")}
+- Why good target: ${input.salesOpportunity.whyGoodTarget || "N/A"}
+- Likely pain points: ${(input.salesOpportunity.likelyPainPoints as string[]).join(", ")}
+- Suggested package: ${input.salesOpportunity.suggestedOffer}
+- Best sales angle: ${input.salesOpportunity.bestSalesAngle || "N/A"}`
+    : "No sales opportunity analysis yet.";
 
   const auditChecklistText = input.auditChecklist
     ? formatChecklistForPrompt(input.auditChecklist)
-    : "Otomatik audit yapilmamis - mevcut website yok veya taranmamis.";
+    : "No automated audit yet - either no existing website or not yet crawled.";
 
   const reviewIntelligenceText = input.reviewIntelligence
     ? formatReviewIntelligenceForPrompt(input.reviewIntelligence)
-    : "Henuz Review Intelligence analizi yapilmamis - jenerik prompt kullaniliyor.";
+    : "No Review Intelligence analysis yet - falling back to generic prompt.";
 
   const offerText = input.offer
     ? formatOfferForPrompt(input.offer)
-    : "Workspace 'My Offer' context tanimlanmamis - jenerik teklif kullaniliyor.";
+    : "Workspace 'My Offer' context not defined - falling back to a generic offer.";
 
   const prompt = WEBSITE_PLAN_TEMPLATE
     .replace("{system_context}", WEBSITE_PLAN_SYSTEM_CONTEXT)
     .replace("{business_name}", input.businessName)
     .replace("{business_name}", input.businessName)
     .replace("{address}", input.address)
-    .replace("{phone}", input.phone || "Belirtilmemis")
+    .replace("{phone}", input.phone || "Not specified")
     .replace("{rating}", input.rating?.toString() ?? "N/A")
     .replace("{review_count}", input.reviewCount?.toString() ?? "0")
-    .replace("{website_url}", input.websiteUrl ?? "Mevcut website yok")
+    .replace("{website_url}", input.websiteUrl ?? "No existing website")
     .replace("{audit_checklist}", auditChecklistText)
     .replace("{website_analysis}", websiteAnalysisText)
     .replace("{sales_analysis}", salesAnalysisText)
@@ -212,9 +333,80 @@ export async function analyzeReviewsWithGemini(input: {
   const model = client.getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
-      maxOutputTokens: 4096,
+      // gemini-2.5-flash spends a chunk of its output budget on internal
+      // "thinking" tokens that the legacy @google/generative-ai SDK
+      // (v0.24.x) cannot disable via thinkingConfig. We need ~3-4k
+      // tokens of actual JSON; 16k leaves enough headroom for the
+      // model's reasoning pass on top of that.
+      maxOutputTokens: 16384,
       temperature: 0.3,
       responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          reviewsAnalyzedCount: { type: SchemaType.NUMBER },
+          weaknessKpis: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                label: { type: SchemaType.STRING },
+                percent: { type: SchemaType.NUMBER },
+                examples: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+              },
+              required: ["label", "percent", "examples"],
+            },
+          },
+          strengthKpis: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                label: { type: SchemaType.STRING },
+                percent: { type: SchemaType.NUMBER },
+                examples: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+              },
+              required: ["label", "percent", "examples"],
+            },
+          },
+          sentimentBreakdown: {
+            type: SchemaType.OBJECT,
+            properties: {
+              positive: { type: SchemaType.NUMBER },
+              neutral: { type: SchemaType.NUMBER },
+              negative: { type: SchemaType.NUMBER },
+            },
+            required: ["positive", "neutral", "negative"],
+          },
+          painPhrases: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          strengthPhrases: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          switchSignals: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                from: { type: SchemaType.STRING },
+                to: { type: SchemaType.STRING },
+                reason: { type: SchemaType.STRING },
+              },
+              required: ["from", "to", "reason"],
+            },
+          },
+          leadScore: { type: SchemaType.NUMBER },
+          summary: { type: SchemaType.STRING },
+        },
+        required: [
+          "reviewsAnalyzedCount",
+          "weaknessKpis",
+          "strengthKpis",
+          "sentimentBreakdown",
+          "painPhrases",
+          "strengthPhrases",
+          "switchSignals",
+          "leadScore",
+          "summary",
+        ],
+      },
     },
   });
 
@@ -222,7 +414,7 @@ export async function analyzeReviewsWithGemini(input: {
     .slice(0, 50)
     .map(
       (r, i) =>
-        `${i + 1}. ${r.authorName} (${r.rating}/5, ${r.relativeTime}): ${r.text || "[Yorum metni yok, sadece yildiz]"}`,
+        `${i + 1}. ${r.authorName} (${r.rating}/5, ${r.relativeTime}): ${r.text || "[No review text, star rating only]"}`,
     )
     .join("\n");
 
@@ -232,20 +424,17 @@ export async function analyzeReviewsWithGemini(input: {
     .replace("{rating}", input.rating?.toString() ?? "N/A")
     .replace("{review_count}", input.reviewCount?.toString() ?? input.reviews.length.toString())
     .replace("{reviews_count}", input.reviews.length.toString())
-    .replace("{our_offer}", input.ourOffer || "Yerel hizmet işletmelerine modern, mobil-uyumlu, online randevu özellikli web sitesi satıyoruz.")
+    .replace("{our_offer}", input.ourOffer || "Our offer: AI-assisted appointment-setting SaaS for local service businesses.")
     .replace("{reviews}", reviewsText);
 
   const result = await model.generateContent(prompt);
+  const finishReason = result.response.candidates?.[0]?.finishReason;
+  if (finishReason && finishReason !== "STOP") {
+    logger.warn("review_analyst.gemini_finish_reason", { finishReason });
+  }
   const text = result.response.text();
 
-  let parsed: ReviewAnalysisOutput;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("Gemini did not return valid JSON for review analysis");
-    parsed = JSON.parse(match[0]);
-  }
+  const parsed = safeParseGeminiJson<ReviewAnalysisOutput>(text, "review_analyst");
 
   if (typeof parsed.leadScore !== "number" || !Array.isArray(parsed.weaknessKpis)) {
     throw new Error("Gemini returned malformed review analysis");
@@ -263,25 +452,25 @@ export async function analyzeReviewsWithGemini(input: {
 
 function formatReviewIntelligenceForPrompt(ri: ReviewIntelligenceContext): string {
   const lines: string[] = [];
-  lines.push(`Lead Score: ${ri.leadScore}/100`);
-  if (ri.summary) lines.push(`Ozet: ${ri.summary}`);
+  lines.push(`Lead score: ${ri.leadScore}/100`);
+  if (ri.summary) lines.push(`Summary: ${ri.summary}`);
   lines.push(
-    `Sentiment: pozitif %${Math.round(ri.sentimentBreakdown.positive * 100)}, notr %${Math.round(ri.sentimentBreakdown.neutral * 100)}, negatif %${Math.round(ri.sentimentBreakdown.negative * 100)}`,
+    `Sentiment: positive ${Math.round(ri.sentimentBreakdown.positive * 100)}%, neutral ${Math.round(ri.sentimentBreakdown.neutral * 100)}%, negative ${Math.round(ri.sentimentBreakdown.negative * 100)}%`,
   );
   if (ri.weaknessKpis.length > 0) {
-    lines.push("\nMUSTERILERIN EN COK SIKAYET ETTIGI KONULAR (mockup'ta cozulmesi gereken):");
+    lines.push("\nTop customer complaints (the mockup must address these):");
     ri.weaknessKpis.forEach((k) => {
-      lines.push(`  - ${k.label} (%${k.percent}): ${(k.examples || []).slice(0, 2).join(" | ")}`);
+      lines.push(`  - ${k.label} (${k.percent}%): ${(k.examples || []).slice(0, 2).join(" | ")}`);
     });
   }
   if (ri.strengthKpis.length > 0) {
-    lines.push("\nMUSTERILERIN EN COK BEGENDIGI KONULAR (mockup'ta one cikarilmasi gereken):");
+    lines.push("\nTop customer praises (the mockup should highlight these):");
     ri.strengthKpis.forEach((k) => {
-      lines.push(`  - ${k.label} (%${k.percent}): ${(k.examples || []).slice(0, 2).join(" | ")}`);
+      lines.push(`  - ${k.label} (${k.percent}%): ${(k.examples || []).slice(0, 2).join(" | ")}`);
     });
   }
   if (ri.switchSignals.length > 0) {
-    lines.push("\nRAKIPTEN GECIS SINYALLERI (mockup'ta vurgulanabilir):");
+    lines.push("\nCompetitor switch signals (worth highlighting in the mockup):");
     ri.switchSignals.forEach((s) => {
       lines.push(`  - ${s.from} -> ${s.to}: ${s.reason}`);
     });
@@ -289,17 +478,110 @@ function formatReviewIntelligenceForPrompt(ri: ReviewIntelligenceContext): strin
   return lines.join("\n");
 }
 
+/**
+ * Lead Dossier - synthesises every collected signal about a lead
+ * (website audit, sales opportunity, review analysis, voice notes,
+ * every SUCCEEDED AgentRun output and semantic memory rows) into a
+ * human-readable Turkish markdown brief.
+ *
+ * Not a registered agent-worker: the request is fire-and-forget,
+ * uncached, and triggered from the lead detail hero band on demand.
+ * No BullMQ, no quota, no memory writes. See plan doc for rationale.
+ */
+export interface LeadDossierPayload {
+  lead: Record<string, unknown>;
+  websiteAudit: Record<string, unknown> | null;
+  salesOpportunity: Record<string, unknown> | null;
+  reviewAnalysis: Record<string, unknown> | null;
+  googleReviews: Array<Record<string, unknown>>;
+  voiceNotes: Array<Record<string, unknown>>;
+  agentRuns: Array<{
+    workerKind: string;
+    status: string;
+    finishedAt: string | null;
+    inputs: unknown;
+    output: unknown;
+    artifactUrl: string | null;
+  }>;
+  semanticMemory: Array<{
+    kind: string;
+    refType: string | null;
+    refId: string | null;
+    text: string;
+    metadata: Record<string, unknown>;
+    createdAt: string;
+  }>;
+}
+
+export async function generateLeadDossier(
+  payload: LeadDossierPayload,
+  // language kept in the signature for future i18n; output is always
+  // English regardless of workspace language per product requirement.
+  _language: string | null = "en",
+): Promise<string> {
+  const client = getClient();
+  const model = client.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    generationConfig: {
+      maxOutputTokens: 8192,
+      temperature: 0.4,
+    },
+  });
+
+  const prompt = `You are a senior B2B sales / research analyst working for a web design agency that sells websites and lead-gen add-ons to local service businesses. Below is ALL the raw intelligence different AI agents have collected about ONE business (a lead), provided as JSON: business metadata, website audit, sales-opportunity scoring, review analysis, raw Google reviews, voice notes, successful agent-run outputs (Apify social scrapers, SERP rank, competitor ads, Facebook/Instagram/TikTok/LinkedIn/Reddit, website mockup, opener writer, video script, etc.) and semantic memory rows.
+
+Task: Synthesise this raw data into a clean "Lead Dossier" that a salesperson seeing this lead for the first time can read in under 2 minutes and act on. You own the scoring and the package selection: do not defer to the sales_opportunity row — form your own judgement from the full evidence set. Write in English.
+
+Required sections (use Markdown ## headings, keep the exact order):
+1. Lead Score — a single integer 0-100 (higher = better target) on its own line prefixed with "Score: ", then a short label ("High", "Medium" or "Low" potential), then 1-2 sentences justifying the score from the evidence. Re-compute from scratch; if the JSON contains an existing salesOpportunity.opportunityScore note it only as a cross-check.
+2. Recommended Package — choose exactly one of "Starter", "Growth" or "Sales":
+     - Starter: basic mobile-friendly marketing site, minimal forms, for leads with no site or a placeholder.
+     - Growth: site + online booking + WhatsApp + local SEO, for leads with a basic site or missing conversion paths.
+     - Sales: Growth + inventory/showcase + review embedding + lead-capture automation, for leads already generating demand that leaks.
+   Also quote a price band in GBP (e.g. £600–£900, £1.2k–£2k, £2.5k–£4k) and justify the fit in 1-2 sentences referencing concrete audit / review findings.
+3. Business Overview — what they do, where, size signals.
+4. Web Presence — website audit findings, performance/security/mobile summary, technical weaknesses.
+5. Social & SERP Signals — posts, trends, competitors, ads, Reddit mentions from the social agents; if none, write "no data".
+6. Customer Feedback — star average, review volume, review_analyst KPIs (weaknesses/strengths), common complaints, common praise, any switch signals.
+7. Weak Points — concrete pains at the intersection of website + reviews + SERP (bullet list).
+8. Sales Angles — 2-3 short angles, each grounded in the data.
+9. Risk / Notes — red flags from sales_opportunity reasonCodes and negative review signals.
+10. Recommended First Action — one sentence: how to open the first message or call with this lead.
+
+Rules:
+- Cite the source for every meaningful claim in square brackets, e.g. "[review_analyst]", "[APIFY_FACEBOOK_DEEP]", "[website_audit]", "[semantic_memory:SOCIAL_POST]".
+- If a section has no data, write "no data" there. Do not fabricate or hallucinate.
+- Numbers and strings may be quoted verbatim from the JSON; for prose use an analytical, non-marketing tone.
+- Do not use emojis. Avoid promotional vocabulary (game-changer, unlock, elevate, seamless, etc.).
+- Long reviews, social posts or memory texts should be summarised in 1-2 sentences, not pasted in full.
+- Maximum 850 words.
+
+Raw JSON (LEAD_DOSSIER_INPUT):
+\`\`\`json
+${JSON.stringify(payload, null, 2)}
+\`\`\`
+
+Return Markdown only. No code fences, no preamble, no commentary.`;
+
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+  return text
+    .replace(/^\s*```(?:markdown|md)?\s*/i, "")
+    .replace(/\s*```\s*$/i, "")
+    .trim();
+}
+
 function formatOfferForPrompt(o: WorkspaceOfferContext): string {
   const lines: string[] = [];
-  if (o.offerName) lines.push(`Teklif Adi: ${o.offerName}`);
-  if (o.valueProposition) lines.push(`Deger Onerisi: ${o.valueProposition}`);
-  if (o.offerHook) lines.push(`Mesaj Hook: ${o.offerHook}`);
-  if (o.socialProof) lines.push(`Sosyal Kanit: ${o.socialProof}`);
-  if (o.objective) lines.push(`Mesaj Hedefi: ${o.objective}`);
-  if (o.tone) lines.push(`Ton: ${o.tone}`);
-  if (o.length) lines.push(`Uzunluk: ${o.length}`);
-  if (o.language) lines.push(`Dil: ${o.language}`);
-  if (o.senderName) lines.push(`Gonderen Adi: ${o.senderName}`);
-  if (o.conversionLink) lines.push(`Donusum Linki: ${o.conversionLink}`);
-  return lines.length > 0 ? lines.join("\n") : "Workspace 'My Offer' bos.";
+  if (o.offerName) lines.push(`Offer name: ${o.offerName}`);
+  if (o.valueProposition) lines.push(`Value proposition: ${o.valueProposition}`);
+  if (o.offerHook) lines.push(`Message hook: ${o.offerHook}`);
+  if (o.socialProof) lines.push(`Social proof: ${o.socialProof}`);
+  if (o.objective) lines.push(`Message objective: ${o.objective}`);
+  if (o.tone) lines.push(`Tone: ${o.tone}`);
+  if (o.length) lines.push(`Length: ${o.length}`);
+  if (o.language) lines.push(`Language: ${o.language}`);
+  if (o.senderName) lines.push(`Sender name: ${o.senderName}`);
+  if (o.conversionLink) lines.push(`Conversion link: ${o.conversionLink}`);
+  return lines.length > 0 ? lines.join("\n") : "Workspace 'My Offer' is empty.";
 }

@@ -1,6 +1,6 @@
 /**
  * P1.2 - AI sales co-pilot chat drawer.
- * Floating button in bottom-right that opens a chat panel. Linear/Notion AI tarzı.
+ * Floating button in bottom-right that opens a chat panel. Linear/Notion AI style.
  */
 
 "use client";
@@ -62,9 +62,9 @@ export function CopilotDrawer() {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         if (res.status === 402) {
-          toast.error(err.message || "Co-pilot quota dolu.");
+          toast.error(err.message || "Co-pilot quota reached.");
         } else {
-          toast.error(err.error || "Co-pilot cevap veremedi.");
+          toast.error(err.error || "Co-pilot couldn't respond.");
         }
         setMessages((m) => m.filter((x) => x.id !== provisional.id));
         return;
@@ -127,17 +127,17 @@ export function CopilotDrawer() {
 
             <div ref={scrollerRef} className="flex-1 overflow-y-auto p-4 space-y-3">
               {loading ? (
-                <p className="text-sm text-white/40">Yükleniyor...</p>
+                <p className="text-sm text-white/40">Loading...</p>
               ) : messages.length === 0 ? (
                 <div className="space-y-2">
                   <p className="text-sm text-white/55 leading-relaxed">
-                    Tüm lead listesini biliyorum. Şunları sorabilirsin:
+                    I know your full lead list. Try asking things like:
                   </p>
                   <ul className="text-xs text-white/45 space-y-1.5 list-disc list-inside">
-                    <li>&quot;Hangi 5 lead en yüksek lead-score&apos;a sahip?&quot;</li>
-                    <li>&quot;Camden&apos;deki en kötü reputation hangi işletme?&quot;</li>
-                    <li>&quot;Lead 12 için 30 saniyede walk-in pitch yaz&quot;</li>
-                    <li>&quot;En çok mockup&apos;ı convert eden 3 lead hangileri?&quot;</li>
+                    <li>&quot;Which 5 leads have the highest lead score?&quot;</li>
+                    <li>&quot;Which business in Camden has the worst reputation?&quot;</li>
+                    <li>&quot;Write a 30-second walk-in pitch for lead 12&quot;</li>
+                    <li>&quot;Which 3 leads converted the most mockups?&quot;</li>
                   </ul>
                 </div>
               ) : (
@@ -162,7 +162,7 @@ export function CopilotDrawer() {
                 <div className="flex justify-start">
                   <div className="rounded-2xl px-3 py-2 bg-white/5 border border-white/10 text-white/40 text-sm">
                     <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
-                    Düşünüyorum...
+                    Thinking...
                   </div>
                 </div>
               )}
@@ -178,7 +178,7 @@ export function CopilotDrawer() {
                     send(e as unknown as React.FormEvent);
                   }
                 }}
-                placeholder="Lead listene bir şey sor..."
+                placeholder="Ask something about your leads..."
                 rows={1}
                 className="flex-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50 resize-none"
                 disabled={sending}

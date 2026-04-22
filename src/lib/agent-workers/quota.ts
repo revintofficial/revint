@@ -68,6 +68,19 @@ const CONSERVATIVE_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   INBOX_REPLY_ATTRIBUTOR: { FREE: 0, PRO: UNLIMITED, PRO_TEAM: UNLIMITED, AGENCY: UNLIMITED },
   OUTREACH_SENDER: { FREE: 0, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
   CONTAINMENT_RATE_TRACKER: { FREE: 0, PRO: 0, PRO_TEAM: UNLIMITED, AGENCY: UNLIMITED },
+
+  // Apify enrichment. Per-workspace monthly run count. A separate USD
+  // cost cap lives in `MONTHLY_APIFY_USD_LIMIT` below and is enforced
+  // independently; whichever fires first stops the workspace.
+  APIFY_GMAPS_DEEP: { FREE: 0, PRO: 30, PRO_TEAM: 150, AGENCY: UNLIMITED },
+  APIFY_WEB_CRAWL_DEEP: { FREE: 0, PRO: 30, PRO_TEAM: 150, AGENCY: UNLIMITED },
+  APIFY_INSTAGRAM_DEEP: { FREE: 0, PRO: 20, PRO_TEAM: 100, AGENCY: UNLIMITED },
+  APIFY_FACEBOOK_DEEP: { FREE: 0, PRO: 20, PRO_TEAM: 100, AGENCY: UNLIMITED },
+  APIFY_TIKTOK_DEEP: { FREE: 0, PRO: 20, PRO_TEAM: 100, AGENCY: UNLIMITED },
+  APIFY_SERP_RANK: { FREE: 0, PRO: 50, PRO_TEAM: 250, AGENCY: UNLIMITED },
+  APIFY_COMPETITOR_ADS: { FREE: 0, PRO: 20, PRO_TEAM: 100, AGENCY: UNLIMITED },
+  APIFY_LINKEDIN_COMPANY: { FREE: 0, PRO: 0, PRO_TEAM: 50, AGENCY: UNLIMITED },
+  APIFY_REDDIT_MENTIONS: { FREE: 0, PRO: 20, PRO_TEAM: 100, AGENCY: UNLIMITED },
 };
 
 /**
@@ -98,6 +111,19 @@ const LAUNCH_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   INBOX_REPLY_ATTRIBUTOR: { FREE: UNLIMITED, PRO: UNLIMITED, PRO_TEAM: UNLIMITED, AGENCY: UNLIMITED },
   OUTREACH_SENDER: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
   CONTAINMENT_RATE_TRACKER: { FREE: UNLIMITED, PRO: UNLIMITED, PRO_TEAM: UNLIMITED, AGENCY: UNLIMITED },
+
+  // Apify enrichment at launch - still gated to paid plans because
+  // each run costs real USD. FREE stays at 0; the button is disabled
+  // at the UI layer with an upgrade CTA.
+  APIFY_GMAPS_DEEP: { FREE: 0, PRO: 50, PRO_TEAM: 250, AGENCY: UNLIMITED },
+  APIFY_WEB_CRAWL_DEEP: { FREE: 0, PRO: 50, PRO_TEAM: 250, AGENCY: UNLIMITED },
+  APIFY_INSTAGRAM_DEEP: { FREE: 0, PRO: 30, PRO_TEAM: 200, AGENCY: UNLIMITED },
+  APIFY_FACEBOOK_DEEP: { FREE: 0, PRO: 30, PRO_TEAM: 200, AGENCY: UNLIMITED },
+  APIFY_TIKTOK_DEEP: { FREE: 0, PRO: 30, PRO_TEAM: 200, AGENCY: UNLIMITED },
+  APIFY_SERP_RANK: { FREE: 0, PRO: 100, PRO_TEAM: 500, AGENCY: UNLIMITED },
+  APIFY_COMPETITOR_ADS: { FREE: 0, PRO: 30, PRO_TEAM: 200, AGENCY: UNLIMITED },
+  APIFY_LINKEDIN_COMPANY: { FREE: 0, PRO: 0, PRO_TEAM: 100, AGENCY: UNLIMITED },
+  APIFY_REDDIT_MENTIONS: { FREE: 0, PRO: 30, PRO_TEAM: 200, AGENCY: UNLIMITED },
 };
 
 const LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = LAUNCH_POLICY
@@ -109,6 +135,43 @@ const LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = LAUNCH_POLICY
 // we start throttling and alert. 50k per month per worker is safely
 // beyond any legitimate agency usage.
 const UNLIMITED_HARD_CAP = 50_000;
+
+/**
+ * Monthly per-workspace USD ceiling for Apify-backed enrichment
+ * workers. Expressed in cents for integer arithmetic. Applied as a
+ * second gate alongside the per-worker monthly count cap above; the
+ * tighter one wins. Agency tier has a very generous cap rather than
+ * unlimited to prevent a single account from blowing the whole Apify
+ * bill if something goes wrong.
+ */
+const MONTHLY_APIFY_USD_CENTS: Record<Plan, number> = {
+  FREE: 0,        // $0.00
+  PRO: 500,       // $5.00
+  PRO_TEAM: 2500, // $25.00
+  AGENCY: 10000,  // $100.00
+};
+
+/**
+ * All enrichment worker kinds whose cost rolls up into the shared
+ * Apify USD cap. Kept as a constant array so adding a new Apify
+ * worker in one place (registry) and one here flips the budget gate
+ * on for it.
+ */
+const APIFY_KINDS: Set<AgentWorkerKind> = new Set([
+  "APIFY_GMAPS_DEEP",
+  "APIFY_WEB_CRAWL_DEEP",
+  "APIFY_INSTAGRAM_DEEP",
+  "APIFY_FACEBOOK_DEEP",
+  "APIFY_TIKTOK_DEEP",
+  "APIFY_SERP_RANK",
+  "APIFY_COMPETITOR_ADS",
+  "APIFY_LINKEDIN_COMPANY",
+  "APIFY_REDDIT_MENTIONS",
+]);
+
+export function isApifyKind(kind: AgentWorkerKind): boolean {
+  return APIFY_KINDS.has(kind);
+}
 
 export class QuotaExceededError extends Error {
   used: number;
@@ -140,6 +203,25 @@ export interface QuotaCheckResult {
   limit: number;
   remaining: number;
   resetAt: Date | null;
+  /**
+   * Populated only for Apify kinds: the current USD cents spent this
+   * billing cycle and the per-plan ceiling. UI surfaces this as a
+   * "Remaining enrichment budget: $4.25" indicator next to the deep
+   * research button.
+   */
+  apifyCentsUsed?: number;
+  apifyCentsLimit?: number;
+}
+
+export class ApifyBudgetExceededError extends Error {
+  usedCents: number;
+  limitCents: number;
+  status = 402;
+  constructor(usedCents: number, limitCents: number) {
+    super(`Apify monthly USD budget exhausted: ${usedCents}¢/${limitCents}¢`);
+    this.usedCents = usedCents;
+    this.limitCents = limitCents;
+  }
 }
 
 /**
@@ -187,13 +269,37 @@ export async function checkWorkerQuota(args: {
     },
   });
 
-  return {
+  const base: QuotaCheckResult = {
     allowed: used < limit,
     used,
     limit,
     remaining: Math.max(0, limit - used),
     resetAt: ws.cycleResetAt,
   };
+
+  // Apify kinds: second gate on USD budget. Summed across ALL Apify
+  // kinds in the same cycle; one workspace cannot bypass the cap by
+  // spreading runs across actor types.
+  if (isApifyKind(args.kind)) {
+    const apifyLimitCents = MONTHLY_APIFY_USD_CENTS[args.plan] ?? 0;
+    const sum = await prisma.agentRun.aggregate({
+      where: {
+        workspaceId: args.workspaceId,
+        workerKind: { in: Array.from(APIFY_KINDS) },
+        status: { notIn: ["FAILED", "CANCELLED"] },
+        createdAt: { gte: ws.cycleResetAt },
+      },
+      _sum: { costUsdCents: true },
+    });
+    const usedCents = sum._sum.costUsdCents ?? 0;
+    base.apifyCentsUsed = usedCents;
+    base.apifyCentsLimit = apifyLimitCents;
+    if (usedCents >= apifyLimitCents) {
+      base.allowed = false;
+    }
+  }
+
+  return base;
 }
 
 /**
@@ -214,6 +320,17 @@ export async function assertWorkerQuota(args: {
   }
   const quota = await checkWorkerQuota(args);
   if (!quota.allowed) {
+    // Distinguish Apify budget exhaustion so the UI can prompt the
+    // user to upgrade or wait for cycle reset rather than a generic
+    // "quota exceeded" message.
+    if (
+      isApifyKind(args.kind) &&
+      quota.apifyCentsLimit !== undefined &&
+      quota.apifyCentsUsed !== undefined &&
+      quota.apifyCentsUsed >= quota.apifyCentsLimit
+    ) {
+      throw new ApifyBudgetExceededError(quota.apifyCentsUsed, quota.apifyCentsLimit);
+    }
     throw new QuotaExceededError(quota.used, quota.limit, args.kind);
   }
   return quota;

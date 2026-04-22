@@ -111,7 +111,15 @@ export function WorkspaceSwitcher({ current, role, collapsed }: WorkspaceSwitche
       }
       toast.success(`Switched to ${ws.name}`);
       setOpen(false);
-      router.refresh();
+      // Workspace switch changes the entire tenant context, so every
+      // client fetcher (dashboard `/api/stats`, lead detail, copilot
+      // drawer, usage badge, leads list, etc.) must re-run. router.refresh
+      // only re-renders server components; client-tree useEffects with
+      // stable deps stay put and keep showing the previous workspace's
+      // data. A hard navigation is the only reliable way to flush the
+      // whole tree.
+      window.location.assign("/app/dashboard");
+      return;
     } catch {
       toast.error("Failed to switch workspace");
     } finally {
@@ -139,7 +147,11 @@ export function WorkspaceSwitcher({ current, role, collapsed }: WorkspaceSwitche
       setCreateOpen(false);
       setCreateName("");
       setWorkspaces(null);
-      router.refresh();
+      // POST /api/workspaces sets the new workspace as active via cookie,
+      // so we're effectively switching workspaces. Hard nav to flush
+      // every client-side fetcher (see switchTo for the full rationale).
+      window.location.assign("/app/dashboard");
+      return;
     } catch {
       toast.error("Failed to create workspace");
     } finally {
@@ -159,9 +171,19 @@ export function WorkspaceSwitcher({ current, role, collapsed }: WorkspaceSwitche
         toast.error(data.error || "Failed to delete workspace");
         return;
       }
+      const wasActive = deleteTarget.id === current.id;
       toast.success(`Workspace "${deleteTarget.name}" deleted`);
       setDeleteTarget(null);
       setWorkspaces(null);
+      // If the deleted workspace was the active one the server clears
+      // the cookie and picks a new active workspace on the next request,
+      // so we need a full reload to re-fetch all tenant-scoped data.
+      // For non-active deletions router.refresh is enough - the list
+      // dropdown refetches on its own next open.
+      if (wasActive) {
+        window.location.assign("/app/dashboard");
+        return;
+      }
       router.refresh();
     } catch {
       toast.error("Failed to delete workspace");

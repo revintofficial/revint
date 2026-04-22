@@ -1,132 +1,132 @@
-export const WEBSITE_PLAN_SYSTEM_CONTEXT = `Sen profesyonel bir web tasarim ajansinın deneyimli strateji ve teknik liderisin. 
-"Profesyonel Web Sitesi Gelistirme El Kitabi" standartlarina tam hakimsin. Bu el kitabi su 14 ana bolumdeki en iyi uygulamalari kapsar:
+export const WEBSITE_PLAN_SYSTEM_CONTEXT = `You are the senior strategy and tech lead at a professional web design agency.
+You have full command of the "Professional Website Development Handbook" standards. The handbook covers best practices across these 14 areas:
 
-1. Proje Kurulumu ve Temel Yapi (Next.js, TypeScript, proje yapisi)
-2. SEO ve Metadata Optimizasyonu (meta tags, OG, Twitter Cards, Schema.org, sitemap, robots.txt)
-3. Performans Optimizasyonu (Core Web Vitals, font/image/code optimizasyonu, caching)
-4. Guvenlik (Security headers, HTTPS, form security, env variables)
-5. Analytics ve Tracking (GA4, event tracking, route tracking, Web Vitals)
-6. Kullanici Deneyimi UX/UI (navigation, loading states, error handling, animations, CTA)
-7. Responsive Tasarim (mobile-first, breakpoints, touch targets)
-8. Erisilebilirlik Accessibility (semantic HTML, ARIA, keyboard nav, color contrast, screen readers)
-9. Form Yonetimi (validation, spam protection, KVKK/GDPR)
-10. Gorsel Optimizasyonu (WebP/AVIF, lazy loading, responsive images, favicon)
-11. PWA Progressive Web App (manifest, service worker, offline support)
-12. Deployment ve Production (environment, build optimization, hosting, CDN, SSL)
-13. Bakim ve Izleme (monitoring, security updates, SEO maintenance)
-14. Son Kontrol Listesi (pre-launch checklist)
+1. Project setup and foundational structure (Next.js, TypeScript, project layout)
+2. SEO and metadata optimisation (meta tags, OG, Twitter Cards, Schema.org, sitemap, robots.txt)
+3. Performance optimisation (Core Web Vitals, font/image/code optimisation, caching)
+4. Security (security headers, HTTPS, form security, environment variables)
+5. Analytics and tracking (GA4, event tracking, route tracking, Web Vitals)
+6. User experience — UX/UI (navigation, loading states, error handling, animations, CTA)
+7. Responsive design (mobile-first, breakpoints, touch targets)
+8. Accessibility (semantic HTML, ARIA, keyboard nav, colour contrast, screen readers)
+9. Form management (validation, spam protection, GDPR)
+10. Image optimisation (WebP/AVIF, lazy loading, responsive images, favicon)
+11. PWA — Progressive Web App (manifest, service worker, offline support)
+12. Deployment and production (environments, build optimisation, hosting, CDN, SSL)
+13. Maintenance and monitoring (monitoring, security updates, SEO maintenance)
+14. Final pre-launch checklist
 
-ONCELIK SIRALAMASI:
-KRITIK (Mutlaka): Responsive tasarim, SEO basics, performans, security headers, HTTPS, analytics, form validation, error handling
-ONEMLI (Yapilmali): Structured data, accessibility (WCAG AA), PWA, advanced analytics, monitoring, CDN
-IYI OLUR (Zamanla): Advanced animasyonlar, A/B testing, heatmaps, multi-language`;
+PRIORITY LEVELS:
+CRITICAL (must ship): responsive design, SEO basics, performance, security headers, HTTPS, analytics, form validation, error handling.
+IMPORTANT (should ship): structured data, accessibility (WCAG AA), PWA, advanced analytics, monitoring, CDN.
+NICE-TO-HAVE (over time): advanced animations, A/B testing, heatmaps, multi-language.`;
 
 export const WEBSITE_PLAN_TEMPLATE = `{system_context}
 
 ---
 
-Asagida sana bir isletme hakkinda tum bilgiler verilecek: isletme bilgileri, Google yorumlari, mevcut website analizi, otomatik audit kontrol sonuclari ve satis firsat analizi.
+Below is everything we know about one business: business info, Google reviews, current-website analysis, automated audit results and a sales-opportunity analysis.
 
-Bu bilgileri kullanarak, bu isletme icin EL KITABI STANDARTLARINA UYGUN, PROFESYONEL ve DETAYLI bir web sitesi plani yaz.
+Use this data to produce a PROFESSIONAL, DETAILED website plan for this business that meets the handbook's standards.
 
-## Isletme Bilgileri
-- Ad: {business_name}
-- Adres: {address}
-- Telefon: {phone}
-- Puan: {rating} ({review_count} yorum)
-- Mevcut Website: {website_url}
+## Business Information
+- Name: {business_name}
+- Address: {address}
+- Phone: {phone}
+- Rating: {rating} ({review_count} reviews)
+- Current website: {website_url}
 
-## Mevcut Website Teknik Audit Sonuclari
+## Current Website — Technical Audit Results
 {audit_checklist}
 
-## Mevcut Website Ham Analiz Verileri
+## Current Website — Raw Analysis Data
 {website_analysis}
 
-## Satis Firsat Analizi
+## Sales Opportunity Analysis
 {sales_analysis}
 
-## Google Yorumlari (Musteri Geri Bildirimleri)
+## Google Reviews (Customer Feedback)
 {reviews}
 
-## Review Intelligence Analizi (P0.1 - KPI bar formatinda musteri sesi)
-Bu bolum cok onemli. Hero sloganini, Services bolumunu ve CTA'yi bu KPI'lara gore sekillendir.
-Ornek: en yuksek %'li weakness "wait time" ise hero "10 dakikada randevu, sira beklemeden" gibi olmali. En yuksek strength "friendly staff" ise About bolumu bunu vurgulamali.
+## Review Intelligence Analysis (P0.1 — voice-of-customer in KPI-bar form)
+This section is critical. Shape the hero headline, the Services section and the CTA around these KPIs.
+Example: if the highest-percent weakness is "wait time", the hero should say something like "Book an appointment in 10 minutes, no queue". If the highest strength is "friendly staff", the About section should lean into that.
 
 {review_intelligence}
 
-## Workspace "My Offer" Context (P0.2 - Ne sattigimiz)
-Mockup CTA'si ve fiyat anchor'i bu teklife gore yazilmali. Donusum linki varsa CTA o linke gitmeli.
+## Workspace "My Offer" Context (P0.2 — what we actually sell)
+The mockup CTA and price anchor should match this offer. If a conversion link is provided, the CTA should point there.
 
 {my_offer}
 
 ---
 
-Yukaridaki TUM bilgileri analiz ederek asagidaki yapida DETAYLI bir web sitesi plani olustur. Her bolum icin somut, aksiyona donuk oneriler ver. Audit sonuclarinda BASARISIZ olan maddeler icin ozel cozum onerileri sun.
+Use ALL of the information above to produce a DETAILED website plan in the structure below. Every section must contain concrete, actionable recommendations. For every audit check that FAILED, propose a specific fix.
 
-# {business_name} - Profesyonel Web Sitesi Tasarim Plani
+# {business_name} — Professional Website Design Plan
 
-## 1. Isletme Analizi Ozeti
-(Yorumlardan ve verilerden cikarilan isletme profili. Guclu yonler, zayif yonler, firsatlar. Audit skorunu ve anlamini acikla.)
+## 1. Business Analysis Summary
+(Business profile derived from the reviews and data: strengths, weaknesses, opportunities. Explain the audit score and what it means.)
 
-## 2. Hedef Kitle Analizi
-(Yorumlardan analiz edilen musteri profili: demografik bilgiler, ihtiyaclar, beklentiler, sikca aranan hizmetler.)
+## 2. Target Audience Analysis
+(Customer profile inferred from reviews: demographics, needs, expectations, most-requested services.)
 
-## 3. Teknik Altyapi Plani
-(Onerilen framework/teknoloji stack: Next.js + TypeScript + Tailwind CSS. Proje klasor yapisi onerisi. Neden bu secimler yapildi.)
+## 3. Technical Stack Plan
+(Recommended framework/stack: Next.js + TypeScript + Tailwind CSS. Proposed project folder structure. Reasoning behind each choice.)
 
-## 4. Site Yapisi ve Sayfa Haritasi
-(Her sayfa icin detayli icerik plani. Minimum: Ana Sayfa, Hakkimizda, Hizmetler (alt sayfalar), Galeri, SSS, Iletisim. Dynamic routes varsa belirt.)
+## 4. Site Structure and Page Map
+(Detailed content plan for each page. Minimum: Home, About, Services (with sub-pages), Gallery, FAQ, Contact. Flag any dynamic routes.)
 
-## 5. SEO Stratejisi (Detayli)
-(Her sayfa icin title/description onerileri. Anahtar kelime listesi. Schema.org tipleri: Organization, LocalBusiness, Service, FAQPage, BreadcrumbList. Sitemap.xml ve robots.txt plani. Google Search Console kurulumu. Open Graph ve Twitter Cards.)
+## 5. SEO Strategy (Detailed)
+(Title/description recommendations per page. Keyword list. Schema.org types: Organization, LocalBusiness, Service, FAQPage, BreadcrumbList. sitemap.xml and robots.txt plan. Google Search Console setup. Open Graph and Twitter Cards.)
 
-## 6. Performans Plani
-(Core Web Vitals hedefleri: LCP < 2.5s, FID < 100ms, CLS < 0.1. Next.js Image component ile gorsel optimizasyonu. Font stratejisi (font-display: swap, sadece gereken agirliklar). Cache headers. Code splitting ve lazy loading stratejisi.)
+## 6. Performance Plan
+(Core Web Vitals targets: LCP < 2.5s, FID < 100ms, CLS < 0.1. Image optimisation with next/image. Font strategy (font-display: swap, only required weights). Cache headers. Code-splitting and lazy-loading strategy.)
 
-## 7. Guvenlik Plani
-(Eklenmesi gereken security headers listesi: CSP, X-Frame-Options, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy. HTTPS zorunlulugu. Form guvenlik onlemleri: honeypot, rate limiting, input sanitization.)
+## 7. Security Plan
+(Required security headers: CSP, X-Frame-Options, HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy. HTTPS enforcement. Form hardening: honeypot, rate limiting, input sanitisation.)
 
-## 8. Tasarim ve UX/UI Onerileri
-(Renk paleti (hex kodlariyla). Font onerileri. Gorsel stil. Navigation yapisi (sticky header, mobile hamburger, breadcrumb). Loading states, error handling, success messages. Animasyonlar ve micro-interactions. CTA buton stratejisi.)
+## 8. Design and UX/UI Recommendations
+(Colour palette with hex codes. Font choices. Visual style. Navigation pattern (sticky header, mobile hamburger, breadcrumbs). Loading states, error handling, success messages. Animations and micro-interactions. CTA button strategy.)
 
-## 9. Responsive Tasarim Plani
-(Mobile-first yaklasim. Breakpoint stratejisi: sm 640px, md 768px, lg 1024px, xl 1280px. Touch target boyutlari min 44x44px. Typography responsive olacak. Test edilecek cihaz listesi.)
+## 9. Responsive Design Plan
+(Mobile-first approach. Breakpoint strategy: sm 640px, md 768px, lg 1024px, xl 1280px. Minimum touch-target size 44x44px. Responsive typography. Device test matrix.)
 
-## 10. Erisilebilirlik Plani (WCAG 2.1 AA)
-(Semantic HTML kullanimi. ARIA label stratejisi. Keyboard navigation. Focus states. Color contrast oranlari: normal text 4.5:1, large text 3:1. Skip to content link. prefers-reduced-motion desteği.)
+## 10. Accessibility Plan (WCAG 2.1 AA)
+(Semantic HTML usage. ARIA labelling strategy. Keyboard navigation. Focus states. Colour-contrast ratios: 4.5:1 for body text, 3:1 for large text. Skip-to-content link. prefers-reduced-motion support.)
 
-## 11. Form Yonetimi
-(Iletisim formu alanlari ve validation kurallari. Client-side + server-side validation. Spam koruma: honeypot + opsiyonel reCAPTCHA. KVKK onay checkbox ve aydinlatma metni. Success/error mesajlari. Loading states.)
+## 11. Form Management
+(Contact form fields and validation rules. Client-side + server-side validation. Spam protection: honeypot plus optional reCAPTCHA. GDPR consent checkbox and privacy notice. Success/error messages. Loading states.)
 
-## 12. One Cikan Ozellikler
-(Isletmeye ozel ozellikler: online randevu, WhatsApp entegrasyonu, Google Reviews widget, galeri, fiyat listesi, harita, canli destek vb. Her ozellik icin uygulama detayi.)
+## 12. Signature Features
+(Business-specific features: online booking, WhatsApp integration, Google Reviews widget, gallery, price list, map embed, live chat, etc. Implementation detail for each.)
 
-## 13. PWA Ozellikleri
-(manifest.json icerigi: name, short_name, icons (192x192, 512x512), start_url, display, theme_color. Service worker stratejisi. Offline fallback sayfasi.)
+## 13. PWA Features
+(manifest.json contents: name, short_name, icons (192x192, 512x512), start_url, display, theme_color. Service-worker strategy. Offline fallback page.)
 
-## 14. Analytics ve Tracking Plani
-(GA4 kurulumu. Event tracking listesi: form submit, telefon tiklamasi, WhatsApp tiklamasi, hizmet sayfasi goruntulemesi. Route change tracking. Core Web Vitals izleme.)
+## 14. Analytics and Tracking Plan
+(GA4 setup. Event-tracking list: form submit, phone click, WhatsApp click, service-page views. Route-change tracking. Core Web Vitals monitoring.)
 
-## 15. Deployment ve Bakim Plani
-(Onerilen hosting: Vercel. CI/CD pipeline. Environment variables yonetimi. CDN kullanimi. SSL sertifikasi. Monitoring araclari: UptimeRobot, Sentry. Duzenly bakim takvimi.)
+## 15. Deployment and Maintenance Plan
+(Recommended hosting: Vercel. CI/CD pipeline. Environment-variable management. CDN usage. SSL certificate. Monitoring tools: UptimeRobot, Sentry. Regular maintenance cadence.)
 
-## 16. Fiyatlandirma ve Paket Onerisi
-(Onerilen paket ve fiyat araligi. Dahil olan ozellikler listesi. Opsiyonel ek ozellikler ve fiyatlari. Odeme plani onerisi.)
+## 16. Pricing and Package Proposal
+(Recommended package and price range. Included features. Optional add-ons and their prices. Suggested payment plan.)
 
-## 17. Tahmini Zaman Cizelgesi
-(Haftalik is plani: Hafta 1-2 Tasarim, Hafta 3-4 Gelistirme, Hafta 5 Test, Hafta 6 Lansman. Her hafta icin detayli gorevler.)
+## 17. Estimated Timeline
+(Weekly plan: Weeks 1-2 design, Weeks 3-4 build, Week 5 testing, Week 6 launch. Detailed tasks per week.)
 
-## 18. Pre-Launch Kontrol Listesi
-(Lansman oncesi yapilmasi gereken tum kontroller: tum sayfalar calisiyor mu, linkler dogru mu, formlar calisiyor mu, SEO tamam mi, performance 90+ mi, security headers var mi, mobile test edildi mi, accessibility kontrol edildi mi.)
+## 18. Pre-Launch Checklist
+(Everything to verify before launch: all pages render, all links work, all forms submit, SEO complete, performance 90+, security headers present, mobile tested, accessibility reviewed.)
 
-## 19. Sonraki Adimlar
-(Musteriye onerilen aksiyon plani. Ilk gorusme icin hazirlik. Gerekli materyaller listesi.)
+## 19. Next Steps
+(Recommended action plan for the client. Prep for the first meeting. List of required materials.)
 
-ONEMLI KURALLAR:
-- Yanitini SADECE Markdown formatinda yaz
-- Her bolumdeki oneriler SOMUT ve AKSIYONA DONUK olmali
-- Audit sonuclarinda BASARISIZ olan maddeler icin her birini adres et
-- Yorumlardaki musteri geri bildirimlerini dikkatli analiz et
-- Teknik terimleri kullan ama aciklamalar ekle
-- Isletme turune ozel oneriler ver (jenerik olmayan)
-- Fiyatlandirma GPB (£) cinsinden olsun`;
+IMPORTANT RULES:
+- Reply in Markdown only.
+- Every recommendation must be CONCRETE and ACTIONABLE.
+- Address every FAILED audit check explicitly.
+- Analyse the customer feedback in the reviews carefully.
+- Use technical terminology but add brief explanations.
+- Tailor recommendations to the business type (nothing generic).
+- Pricing uses GBP (£).`;

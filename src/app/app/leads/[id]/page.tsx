@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use, useRef } from "react";
+import { useEffect, useState, use, useRef, useCallback } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import { VoiceNotesPanel } from "@/components/app/voice-notes-panel";
 import { SocialProfileIcons } from "@/components/app/social-profile-icons";
 import { LeadMapView } from "@/components/app/lead-map-view";
 import { AiWorkersPanel } from "@/components/app/ai-workers-panel";
+import { PlannerActions } from "@/components/app/planner-actions";
 import {
   ArrowLeft,
   Globe,
@@ -41,10 +42,11 @@ import {
   Zap,
   Sparkles,
   FileText,
-  ChevronRight,
   ChevronDown,
   Star,
   Phone,
+  Mail,
+  MessageCircle,
   X,
 } from "lucide-react";
 
@@ -95,6 +97,55 @@ interface SecurityHeaders {
   hasPermissionsPolicy: boolean;
 }
 
+interface HeroSocialProfiles {
+  instagram?: string | null;
+  facebook?: string | null;
+  linkedin?: string | null;
+  tiktok?: string | null;
+  youtube?: string | null;
+  twitter?: string | null;
+  whatsapp?: string | null;
+  pinterest?: string | null;
+}
+
+type DiscoveredCategory =
+  | "social"
+  | "directory"
+  | "review"
+  | "registry"
+  | "maps";
+
+type DiscoveredPlatform =
+  | "instagram"
+  | "facebook"
+  | "linkedin"
+  | "twitter"
+  | "youtube"
+  | "tiktok"
+  | "whatsapp"
+  | "pinterest"
+  | "reddit"
+  | "yell"
+  | "bark"
+  | "checkatrade"
+  | "trustatrader"
+  | "yellowpages"
+  | "foursquare"
+  | "trustpilot"
+  | "yelp"
+  | "glassdoor"
+  | "bbb"
+  | "companies_house"
+  | "google_maps";
+
+interface DiscoveredLink {
+  platform: DiscoveredPlatform;
+  category: DiscoveredCategory;
+  url: string;
+  title: string | null;
+  sources: string[];
+}
+
 interface LeadDetail {
   id: string;
   businessName: string;
@@ -141,6 +192,8 @@ interface LeadDetail {
     performanceHints?: string[];
     cssFramework?: string | null;
     pageCount?: number;
+    socialProfiles?: HeroSocialProfiles | null;
+    contactEmails?: string[] | null;
   } | null;
   salesOpportunity: {
     opportunityScore: number;
@@ -166,6 +219,7 @@ interface LeadDetail {
   googleReviews?: { id: string }[];
   sourceLat?: number | null;
   sourceLng?: number | null;
+  discoveredLinks?: DiscoveredLink[];
 }
 
 type TabKey = "overview" | "website" | "workers" | "reviews" | "outreach";
@@ -233,6 +287,10 @@ export default function LeadDetailPage({
   const [showWebsiteSearch, setShowWebsiteSearch] = useState(false);
   const [planSectionOpen, setPlanSectionOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [dossier, setDossier] = useState<string | null>(null);
+  const [dossierLoading, setDossierLoading] = useState(false);
+  const [dossierCopied, setDossierCopied] = useState(false);
+  const [dossierCollapsed, setDossierCollapsed] = useState(false);
 
   useEffect(() => {
     fetch(`/api/leads/${id}`)
@@ -380,6 +438,37 @@ export default function LeadDetailPage({
     }
   };
 
+  const generateDossier = async () => {
+    setDossierLoading(true);
+    try {
+      const res = await fetch(`/api/leads/${id}/explain`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || err.detail || `Failed to generate dossier (${res.status})`);
+        return;
+      }
+      const data = await res.json();
+      setDossier(data.markdown ?? null);
+      setDossierCollapsed(false);
+    } catch (err) {
+      console.error("Dossier generation failed:", err);
+      toast.error("Failed to generate dossier. Check your connection and retry.");
+    } finally {
+      setDossierLoading(false);
+    }
+  };
+
+  const copyDossier = async () => {
+    if (!dossier) return;
+    try {
+      await navigator.clipboard.writeText(dossier);
+      setDossierCopied(true);
+      setTimeout(() => setDossierCopied(false), 2000);
+    } catch {
+      // Fallback is noisy; silently ignore - user can select text manually.
+    }
+  };
+
   const copyOutreachMessage = () => {
     const msg = lead?.salesOpportunity?.personalizedFirstMessage;
     if (!msg) return;
@@ -464,24 +553,27 @@ export default function LeadDetailPage({
             </div>
 
             <TabsContent value="overview" className="space-y-5">
-              {opp ? (
-                <>
-                  <InsightGrid opp={opp} />
-                  {opp.personalizedFirstMessage && (
-                    <PersonalizedMessageCard
-                      message={opp.personalizedFirstMessage}
-                      copied={copied}
-                      onCopy={() => {
-                        navigator.clipboard.writeText(opp.personalizedFirstMessage || "");
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
-                      }}
-                    />
-                  )}
-                </>
-              ) : (
-                <EmptyAnalysisCard analyzing={analyzing} onAnalyze={runAnalyze} />
+              <DossierSection
+                dossier={dossier}
+                loading={dossierLoading}
+                copied={dossierCopied}
+                collapsed={dossierCollapsed}
+                onGenerate={generateDossier}
+                onCopy={copyDossier}
+                onToggle={() => setDossierCollapsed((v) => !v)}
+              />
+              {opp?.personalizedFirstMessage && (
+                <PersonalizedMessageCard
+                  message={opp.personalizedFirstMessage}
+                  copied={copied}
+                  onCopy={() => {
+                    navigator.clipboard.writeText(opp.personalizedFirstMessage || "");
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                />
               )}
+              {!opp && <EmptyAnalysisCard analyzing={analyzing} onAnalyze={runAnalyze} />}
             </TabsContent>
 
             <TabsContent value="website" className="space-y-5">
@@ -507,7 +599,12 @@ export default function LeadDetailPage({
             </TabsContent>
 
             <TabsContent value="workers" className="space-y-5">
-              <AiWorkersPanel leadId={lead.id} language="tr" />
+              {/* AI Core orchestrator actions - starts pre-built chains
+                  like one-click pitch pack, deep research, receptionist+KB.
+                  The actual per-worker panel below still exposes
+                  individual workers. */}
+              <PlannerActions leadId={lead.id} plan="PRO" />
+              <AiWorkersPanel leadId={lead.id} />
               <WebsitePlanSection
                 plan={plan}
                 showPlan={showPlan}
@@ -710,6 +807,12 @@ function HeroBand({
           </div>
         </div>
 
+        <HeroContactBar
+          phone={lead.phone}
+          whatsapp={lead.websiteAudit?.socialProfiles?.whatsapp ?? null}
+          emails={lead.websiteAudit?.contactEmails ?? null}
+        />
+
         <div className="flex flex-wrap items-center gap-2 mt-6 pt-5 border-t border-white/8">
           <Button
             onClick={nba.onClick}
@@ -754,8 +857,337 @@ function HeroBand({
               AI Analysis
             </Button>
           )}
+
+          <HeroSocialBadges
+            profiles={lead.websiteAudit?.socialProfiles ?? null}
+            discovered={lead.discoveredLinks ?? []}
+          />
         </div>
+
+        <HeroDirectoryBadges links={lead.discoveredLinks ?? []} />
+
+        <HeroAgentBar leadId={lead.id} />
       </div>
+    </div>
+  );
+}
+
+const BRAND_ICON_PROPS = {
+  xmlns: "http://www.w3.org/2000/svg",
+  viewBox: "0 0 24 24",
+  fill: "currentColor",
+  width: 16,
+  height: 16,
+} as const;
+
+const BRAND_PATHS = {
+  instagram:
+    "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849s-.012 3.584-.069 4.849c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919C8.416 2.175 8.796 2.163 12 2.163zm0-2.163C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z",
+  facebook:
+    "M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 011.141.195v3.325a8.623 8.623 0 00-.653-.036 26.805 26.805 0 00-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 00-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z",
+  linkedin:
+    "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.063 2.063 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z",
+  youtube:
+    "M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z",
+  twitter:
+    "M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z",
+  tiktok:
+    "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z",
+  whatsapp:
+    "M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z",
+  reddit:
+    "M12 0C5.373 0 0 5.373 0 12c0 3.314 1.343 6.314 3.515 8.485l-2.286 2.286C.775 23.225 1.097 24 1.738 24H12c6.627 0 12-5.373 12-12S18.627 0 12 0Zm4.388 3.199c.264 0 .515.107.703.295a1 1 0 0 1 0 1.412 1 1 0 0 1-1.405 0 1 1 0 0 1 0-1.412.996.996 0 0 1 .702-.295ZM12 5.499c2.45 0 4.652 1.084 6.193 2.816.188-.061.379-.093.582-.093.942 0 1.711.769 1.711 1.721a1.72 1.72 0 0 1-.688 1.377c.03.187.046.377.046.574 0 2.924-3.45 5.301-7.706 5.301s-7.706-2.377-7.706-5.301c0-.197.015-.387.046-.574a1.717 1.717 0 0 1-.688-1.377c0-.952.769-1.721 1.711-1.721.203 0 .394.032.582.093C7.348 6.583 9.55 5.499 12 5.499Zm-4.45 5.6c-.817 0-1.476.659-1.476 1.476 0 .816.659 1.476 1.476 1.476.817 0 1.476-.66 1.476-1.476 0-.817-.659-1.476-1.476-1.476Zm8.9 0c-.817 0-1.476.659-1.476 1.476 0 .816.659 1.476 1.476 1.476.817 0 1.476-.66 1.476-1.476 0-.817-.659-1.476-1.476-1.476ZM9.347 14.94a.495.495 0 0 0-.69.7c1.049 1.05 2.747 1.55 3.84 1.55 1.093 0 2.791-.5 3.84-1.55a.495.495 0 0 0-.69-.7c-.824.825-2.242 1.275-3.15 1.275-.908 0-2.326-.45-3.15-1.275Z",
+  pinterest:
+    "M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.406.042-3.442.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 01.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.358-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z",
+} as const;
+
+interface HeroSocialLink {
+  key: keyof typeof BRAND_PATHS;
+  label: string;
+  url: string;
+  color: string;
+}
+
+const SOCIAL_ORDER: Array<{
+  key: keyof typeof BRAND_PATHS;
+  platform: DiscoveredPlatform;
+  label: string;
+  color: string;
+}> = [
+  { key: "instagram", platform: "instagram", label: "Instagram", color: "#E1306C" },
+  { key: "facebook", platform: "facebook", label: "Facebook", color: "#1877F2" },
+  { key: "linkedin", platform: "linkedin", label: "LinkedIn", color: "#0A66C2" },
+  { key: "youtube", platform: "youtube", label: "YouTube", color: "#FF0000" },
+  { key: "twitter", platform: "twitter", label: "X", color: "#E7E9EA" },
+  { key: "tiktok", platform: "tiktok", label: "TikTok", color: "#EE1D52" },
+  { key: "whatsapp", platform: "whatsapp", label: "WhatsApp", color: "#25D366" },
+  { key: "reddit", platform: "reddit", label: "Reddit", color: "#FF4500" },
+  { key: "pinterest", platform: "pinterest", label: "Pinterest", color: "#E60023" },
+];
+
+// Merge website-audit-provided socials with anything the SERP / Apify
+// actors dug up. Direct website audit wins on collision (it's a first-party
+// signal) but the SERP fallback means we still get badges for leads that
+// don't link their own socials from their site.
+function HeroSocialBadges({
+  profiles,
+  discovered,
+}: {
+  profiles: HeroSocialProfiles | null;
+  discovered: DiscoveredLink[];
+}) {
+  const discoveredByPlatform = new Map<DiscoveredPlatform, DiscoveredLink>();
+  for (const d of discovered) {
+    if (d.category !== "social") continue;
+    if (!discoveredByPlatform.has(d.platform)) discoveredByPlatform.set(d.platform, d);
+  }
+
+  const profileBag = (profiles ?? {}) as Record<string, unknown>;
+  const links: HeroSocialLink[] = SOCIAL_ORDER
+    .map(({ key, platform, label, color }) => {
+      const rawProfile = profileBag[key];
+      const directUrl = typeof rawProfile === "string" && rawProfile ? rawProfile : null;
+      const url = directUrl ?? discoveredByPlatform.get(platform)?.url ?? null;
+      return url ? { key, label, url, color } : null;
+    })
+    .filter((v): v is HeroSocialLink => v !== null);
+
+  if (links.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 ml-auto">
+      <span className="text-[11px] uppercase tracking-[0.08em] text-white/30 mr-0.5">Social</span>
+      {links.map(({ key, label, url, color }) => (
+        <a
+          key={key}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`${label} · ${url}`}
+          className="w-9 h-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center hover:bg-white/10 hover:border-white/20 transition-colors"
+          style={{ color }}
+        >
+          <svg {...BRAND_ICON_PROPS}>
+            <path d={BRAND_PATHS[key]} />
+          </svg>
+          <span className="sr-only">{label}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+const DIRECTORY_META: Record<
+  DiscoveredPlatform,
+  { label: string; dot: string; category: DiscoveredCategory }
+> = {
+  instagram: { label: "Instagram", dot: "#E1306C", category: "social" },
+  facebook: { label: "Facebook", dot: "#1877F2", category: "social" },
+  linkedin: { label: "LinkedIn", dot: "#0A66C2", category: "social" },
+  twitter: { label: "X", dot: "#E7E9EA", category: "social" },
+  youtube: { label: "YouTube", dot: "#FF0000", category: "social" },
+  tiktok: { label: "TikTok", dot: "#EE1D52", category: "social" },
+  whatsapp: { label: "WhatsApp", dot: "#25D366", category: "social" },
+  pinterest: { label: "Pinterest", dot: "#E60023", category: "social" },
+  reddit: { label: "Reddit", dot: "#FF4500", category: "social" },
+  yell: { label: "Yell", dot: "#FFD100", category: "directory" },
+  bark: { label: "Bark", dot: "#30D158", category: "directory" },
+  checkatrade: { label: "Checkatrade", dot: "#F8A01B", category: "directory" },
+  trustatrader: { label: "TrustATrader", dot: "#0083C1", category: "directory" },
+  yellowpages: { label: "Yellow Pages", dot: "#FFD100", category: "directory" },
+  foursquare: { label: "Foursquare", dot: "#F94877", category: "directory" },
+  trustpilot: { label: "Trustpilot", dot: "#00B67A", category: "review" },
+  yelp: { label: "Yelp", dot: "#FF1A1A", category: "review" },
+  glassdoor: { label: "Glassdoor", dot: "#0CAA41", category: "review" },
+  bbb: { label: "BBB", dot: "#0A66C2", category: "review" },
+  companies_house: { label: "Companies House", dot: "#00703C", category: "registry" },
+  google_maps: { label: "Google Maps", dot: "#4285F4", category: "maps" },
+};
+
+const CATEGORY_LABELS: Record<DiscoveredCategory, string> = {
+  social: "Social",
+  directory: "Listings",
+  review: "Reviews",
+  registry: "Registry",
+  maps: "Maps",
+};
+
+function HeroDirectoryBadges({ links }: { links: DiscoveredLink[] }) {
+  // Social links already render in HeroSocialBadges; this row is for the
+  // longer tail of listings, reviews, registry and maps presence pulled
+  // from SERP / gmaps / reddit / competitor ads actors.
+  const nonSocial = links.filter((l) => l.category !== "social");
+  if (nonSocial.length === 0) return null;
+
+  const grouped = new Map<DiscoveredCategory, DiscoveredLink[]>();
+  for (const l of nonSocial) {
+    const arr = grouped.get(l.category) ?? [];
+    arr.push(l);
+    grouped.set(l.category, arr);
+  }
+
+  const order: DiscoveredCategory[] = ["directory", "review", "registry", "maps"];
+
+  return (
+    <div className="mt-4 flex flex-col gap-2">
+      {order.map((cat) => {
+        const items = grouped.get(cat);
+        if (!items || items.length === 0) return null;
+        return (
+          <div key={cat} className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] uppercase tracking-[0.08em] text-white/30 mr-1">
+              {CATEGORY_LABELS[cat]}
+            </span>
+            {items.map((link) => {
+              const meta = DIRECTORY_META[link.platform];
+              const title = link.title
+                ? `${meta.label} · ${link.title}`
+                : `${meta.label} · ${link.url}`;
+              return (
+                <a
+                  key={link.url}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={title}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] text-white/75 hover:bg-white/10 hover:border-white/20 hover:text-white transition-colors max-w-[260px]"
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ background: meta.dot }}
+                  />
+                  <span className="truncate">{meta.label}</span>
+                  <ExternalLink className="w-3 h-3 text-white/40 shrink-0" />
+                </a>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+type HeroAgentKind =
+  | "WEBSITE_MOCKUP_GENERATOR"
+  | "AI_RECEPTIONIST_BUILDER"
+  | "REVIEW_REPLY_AGENT"
+  | "LEAD_RESPONSE_AGENT";
+
+interface HeroAgentDef {
+  kind: HeroAgentKind;
+  label: string;
+  icon: typeof Sparkles;
+  hint: string;
+}
+
+const HERO_AGENTS: HeroAgentDef[] = [
+  { kind: "WEBSITE_MOCKUP_GENERATOR", label: "Website Mockup", icon: Globe, hint: "Generate a one-page preview of the site you'd build." },
+  { kind: "AI_RECEPTIONIST_BUILDER", label: "AI Receptionist", icon: Phone, hint: "Build the lead's receptionist bot from their site KB." },
+  { kind: "REVIEW_REPLY_AGENT", label: "Review Replies", icon: Star, hint: "50-response pool with approval rules for Google Business." },
+  { kind: "LEAD_RESPONSE_AGENT", label: "Lead Response", icon: Zap, hint: "60-second inbound lead reply flow (SMS/email triggers)." },
+];
+
+type AgentRunState = "idle" | "running" | "done" | "failed";
+
+function HeroAgentBar({ leadId }: { leadId: string }) {
+  const [state, setState] = useState<Record<HeroAgentKind, AgentRunState>>({
+    WEBSITE_MOCKUP_GENERATOR: "idle",
+    AI_RECEPTIONIST_BUILDER: "idle",
+    REVIEW_REPLY_AGENT: "idle",
+    LEAD_RESPONSE_AGENT: "idle",
+  });
+  const pollersRef = useRef<Map<HeroAgentKind, number>>(new Map());
+
+  useEffect(() => {
+    const pollers = pollersRef.current;
+    return () => {
+      for (const id of pollers.values()) window.clearInterval(id);
+      pollers.clear();
+    };
+  }, []);
+
+  const pollRun = useCallback((kind: HeroAgentKind, runId: string) => {
+    const existing = pollersRef.current.get(kind);
+    if (existing) window.clearInterval(existing);
+    const intervalId = window.setInterval(async () => {
+      try {
+        const res = await fetch(`/api/agent-runs/${runId}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const run = await res.json();
+        if (run.status === "SUCCEEDED" || run.status === "FAILED" || run.status === "CANCELLED") {
+          window.clearInterval(intervalId);
+          pollersRef.current.delete(kind);
+          const next: AgentRunState =
+            run.status === "SUCCEEDED" ? "done" : "failed";
+          setState((prev) => ({ ...prev, [kind]: next }));
+          if (run.status === "SUCCEEDED") {
+            toast.success(`${kind.replaceAll("_", " ").toLowerCase()} finished.`);
+          } else if (run.status === "FAILED") {
+            toast.error(
+              `${kind.replaceAll("_", " ").toLowerCase()} failed: ${run.errorMsg ?? "unknown error"}`,
+            );
+          }
+        }
+      } catch (err) {
+        console.error("HeroAgentBar poll error:", err);
+      }
+    }, 2000);
+    pollersRef.current.set(kind, intervalId);
+  }, []);
+
+  const trigger = useCallback(
+    async (kind: HeroAgentKind) => {
+      setState((prev) => ({ ...prev, [kind]: "running" }));
+      try {
+        const res = await fetch(`/api/leads/${leadId}/workers/${kind}`, { method: "POST" });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          setState((prev) => ({ ...prev, [kind]: "idle" }));
+          if (res.status === 402) {
+            toast.error(err.message || "Plan or quota insufficient.");
+          } else {
+            toast.error(err.error || `Failed to start (${res.status})`);
+          }
+          return;
+        }
+        const { runId } = await res.json();
+        pollRun(kind, runId);
+      } catch (err) {
+        console.error("HeroAgentBar trigger error:", err);
+        setState((prev) => ({ ...prev, [kind]: "idle" }));
+        toast.error("Connection error");
+      }
+    },
+    [leadId, pollRun],
+  );
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-3">
+      <span className="text-[11px] uppercase tracking-[0.08em] text-white/30 mr-0.5">Run agent</span>
+      {HERO_AGENTS.map((a) => {
+        const s = state[a.kind];
+        const running = s === "running";
+        const done = s === "done";
+        const failed = s === "failed";
+        const Icon = running ? Loader2 : done ? Check : failed ? AlertTriangle : a.icon;
+        return (
+          <Button
+            key={a.kind}
+            size="sm"
+            variant="outline"
+            onClick={() => trigger(a.kind)}
+            disabled={running}
+            title={a.hint}
+            className="h-9 rounded-full px-3 gap-1.5 text-[12px]"
+          >
+            <Icon className={`w-3.5 h-3.5 ${running ? "animate-spin" : ""}`} />
+            {a.label}
+            {done && <span className="ml-0.5 text-[10px] text-[#30D158]">done</span>}
+            {failed && <span className="ml-0.5 text-[10px] text-[#FF453A]">failed</span>}
+          </Button>
+        );
+      })}
     </div>
   );
 }
@@ -932,74 +1364,6 @@ function StatusDot({ status, children }: { status: "ok" | "pending" | "bad"; chi
       <span className={`w-1.5 h-1.5 rounded-full ${color}`} />
       {children}
     </span>
-  );
-}
-
-function InsightGrid({ opp }: { opp: NonNullable<LeadDetail["salesOpportunity"]> }) {
-  return (
-    <Card>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <CardTitle className="text-[17px] flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#0A84FF]" />
-            AI Insights
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge variant="default" className="text-[11px]">{opp.suggestedOffer}</Badge>
-            {opp.expectedPriceBand && (
-              <span className="text-[13px] font-semibold text-white">{opp.expectedPriceBand}</span>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {opp.whyGoodTarget && (
-          <InsightBlock label="Why Good Target">
-            <p className="text-[15px] leading-[1.55] text-white/80">{opp.whyGoodTarget}</p>
-          </InsightBlock>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-          {opp.bestSalesAngle && (
-            <InsightBlock label="Sales Angle">
-              <p className="text-[14px] leading-[1.55] text-white/75">{opp.bestSalesAngle}</p>
-            </InsightBlock>
-          )}
-
-          {opp.likelyPainPoints.length > 0 && (
-            <InsightBlock label="Pain Points">
-              <ul className="space-y-1.5">
-                {opp.likelyPainPoints.map((point, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[14px] text-white/75 leading-[1.5]">
-                    <ChevronRight className="w-3.5 h-3.5 mt-1 shrink-0 text-white/30" />
-                    <span>{point}</span>
-                  </li>
-                ))}
-              </ul>
-            </InsightBlock>
-          )}
-        </div>
-
-        {opp.reasonCodes.length > 0 && (
-          <InsightBlock label="Issue Flags">
-            <div className="flex flex-wrap gap-1.5">
-              {opp.reasonCodes.map((code) => (
-                <Badge key={code} variant="destructive">{code}</Badge>
-              ))}
-            </div>
-          </InsightBlock>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function InsightBlock({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div>
-      <p className="text-[11px] uppercase tracking-[0.08em] text-white/40 font-medium mb-1.5">{label}</p>
-      {children}
-    </div>
   );
 }
 
@@ -1570,6 +1934,191 @@ function WebsitePlanSection({
         </CardContent>
       )}
     </Card>
+  );
+}
+
+function DossierSection({
+  dossier,
+  loading,
+  copied,
+  collapsed,
+  onGenerate,
+  onCopy,
+  onToggle,
+}: {
+  dossier: string | null;
+  loading: boolean;
+  copied: boolean;
+  collapsed: boolean;
+  onGenerate: () => void;
+  onCopy: () => void;
+  onToggle: () => void;
+}) {
+  const hasContent = !!dossier;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <CardTitle className="text-[17px] flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#0A84FF]" />
+              AI Dossier
+            </CardTitle>
+            <p className="text-[12px] text-white/40 mt-1 max-w-xl">
+              Opportunity score, recommended package and a full sales brief synthesised from every
+              agent: website audit, reviews, SERP, social scrapers and semantic memory.
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {hasContent && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={onCopy}
+                  className="h-8 gap-1.5 text-xs"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={onToggle}
+                  className="h-8 gap-1.5 text-xs"
+                  title={collapsed ? "Expand dossier" : "Collapse dossier (text is preserved)"}
+                >
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 transition-transform ${collapsed ? "" : "rotate-180"}`}
+                  />
+                  {collapsed ? "Expand" : "Collapse"}
+                </Button>
+              </>
+            )}
+            <Button
+              size="sm"
+              onClick={onGenerate}
+              disabled={loading}
+              className="h-9 gap-1.5 text-xs rounded-full px-4"
+            >
+              {loading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : hasContent ? (
+                <RefreshCw className="w-3.5 h-3.5" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5" />
+              )}
+              {loading ? "Working..." : hasContent ? "Regenerate" : "Generate"}
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+
+      {loading && !hasContent && (
+        <CardContent>
+          <div className="py-10 flex flex-col items-center justify-center text-center gap-2">
+            <Loader2 className="w-5 h-5 text-[#0A84FF] animate-spin" />
+            <p className="text-[13px] text-white/55">
+              Gathering raw agent data and sending it to Gemini 2.5 Flash...
+            </p>
+          </div>
+        </CardContent>
+      )}
+
+      {!loading && !hasContent && (
+        <CardContent>
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-5 flex items-start gap-3">
+            <Info className="w-4 h-4 text-white/40 shrink-0 mt-0.5" />
+            <div className="text-[13px] text-white/65 leading-[1.55]">
+              Not generated yet. Click <strong className="text-white/90">Generate</strong> to
+              produce the opportunity score, recommended package and the full dossier in one pass.
+            </div>
+          </div>
+        </CardContent>
+      )}
+
+      {hasContent && !collapsed && (
+        <CardContent>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5 max-h-[720px] overflow-y-auto select-text">
+            <MarkdownRenderer content={dossier!} />
+          </div>
+        </CardContent>
+      )}
+
+      {hasContent && collapsed && (
+        <CardContent>
+          <div className="flex items-center gap-2 text-[12px] text-white/50">
+            <Info className="w-3.5 h-3.5 text-white/30 shrink-0" />
+            <span>
+              Dossier is collapsed ({dossier!.length.toLocaleString()} chars). Click{" "}
+              <strong className="text-white/80">Expand</strong> to view.
+            </span>
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+function HeroContactBar({
+  phone,
+  whatsapp,
+  emails,
+}: {
+  phone: string | null;
+  whatsapp: string | null;
+  emails: string[] | null;
+}) {
+  const phoneDigits = phone ? phone.replace(/[^\d+]/g, "").replace(/^\+?/, "") : "";
+  const waUrl = whatsapp
+    ? whatsapp
+    : phoneDigits.length >= 7
+    ? `https://wa.me/${phoneDigits}`
+    : null;
+  const primaryEmail =
+    emails && emails.length > 0
+      ? emails.find((e) => typeof e === "string" && e.includes("@")) ?? null
+      : null;
+
+  if (!phone && !waUrl && !primaryEmail) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 mt-5">
+      <span className="text-[11px] uppercase tracking-[0.08em] text-white/30 mr-0.5">Contact</span>
+      {phone && (
+        <a
+          href={`tel:${phone}`}
+          title={`Call ${phone}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] text-white/85 hover:bg-white/10 hover:border-white/20 hover:text-white transition-colors"
+        >
+          <Phone className="w-3.5 h-3.5 text-[#0A84FF]" />
+          <span className="truncate max-w-[200px]">{phone}</span>
+        </a>
+      )}
+      {waUrl && (
+        <a
+          href={waUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={`WhatsApp ${phone ?? waUrl}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] text-white/85 hover:bg-white/10 hover:border-white/20 hover:text-white transition-colors"
+        >
+          <MessageCircle className="w-3.5 h-3.5 text-[#25D366]" />
+          WhatsApp
+        </a>
+      )}
+      {primaryEmail && (
+        <a
+          href={`mailto:${primaryEmail}`}
+          title={`Email ${primaryEmail}`}
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] text-white/85 hover:bg-white/10 hover:border-white/20 hover:text-white transition-colors"
+        >
+          <Mail className="w-3.5 h-3.5 text-[#FF9F0A]" />
+          <span className="truncate max-w-[240px]">{primaryEmail}</span>
+        </a>
+      )}
+    </div>
   );
 }
 

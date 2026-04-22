@@ -12,8 +12,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExternalLink } from "lucide-react";
 
-// lucide-react@1.8.0 (codebase'de pinned) brand iconlar export etmiyor.
-// SVG path'leri Simple Icons (CC0) kaynağından alındı, normalize edildi.
+// lucide-react@1.8.0 (pinned in this codebase) doesn't export brand icons.
+// SVG paths are sourced from Simple Icons (CC0) and normalized.
 function Icon({ d, ...props }: { d: string } & React.SVGProps<SVGSVGElement>) {
   return (
     <svg
@@ -94,7 +94,7 @@ export function SocialProfileIcons({ leadId }: { leadId: string }) {
           <CardTitle>Social profiles</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-white/40">Yükleniyor...</p>
+          <p className="text-sm text-white/40">Loading...</p>
         </CardContent>
       </Card>
     );
@@ -108,7 +108,7 @@ export function SocialProfileIcons({ leadId }: { leadId: string }) {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-white/50">
-            Önce siteyi crawl et. Crawl sonrası 8 platform için profil scraping yapılır.
+            Crawl the site first. After crawling we scan for profiles across 8 platforms.
           </p>
         </CardContent>
       </Card>
@@ -126,7 +126,7 @@ export function SocialProfileIcons({ leadId }: { leadId: string }) {
       <CardContent>
         {found.length === 0 ? (
           <p className="text-sm text-white/50">
-            Bu işletmenin sitesinde sosyal profil linki bulunamadı.
+            No social profile links were found on this business's site.
           </p>
         ) : (
           <div className="flex flex-wrap gap-2 mb-4">
@@ -172,7 +172,7 @@ export function SocialProfileIcons({ leadId }: { leadId: string }) {
         )}
         {missing.length > 0 && (
           <p className="text-xs text-white/30 mt-3">
-            Bulunmayan: {missing.map((m) => m.label).join(", ")}
+            Not found: {missing.map((m) => m.label).join(", ")}
           </p>
         )}
       </CardContent>

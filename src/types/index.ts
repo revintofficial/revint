@@ -68,7 +68,7 @@ export interface WebsiteFeatures {
   // Extracted contact + integrations (used for outreach export and segmentation)
   contactEmails: string[];
   bookingProvider: string | null;
-  // P0.5 - genişletilmiş social profile scraping
+  // P0.5 - expanded social profile scraping
   socialProfiles?: {
     instagram: string | null;
     facebook: string | null;

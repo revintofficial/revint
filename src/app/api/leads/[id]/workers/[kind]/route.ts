@@ -25,14 +25,13 @@ import {
   PlanTooLowError,
   QuotaExceededError,
 } from "@/lib/agent-workers/quota";
-import type { AgentWorkerKind } from "@/generated/prisma/client";
+import { AgentWorkerKind } from "@/generated/prisma/client";
 
-const ALLOWED_KINDS: ReadonlyArray<AgentWorkerKind> = [
-  "WEBSITE_MOCKUP_GENERATOR",
-  "AI_RECEPTIONIST_BUILDER",
-  "REVIEW_REPLY_AGENT",
-  "LEAD_RESPONSE_AGENT",
-];
+// The registry is the source of truth for which worker kinds exist and
+// whether they're exposed to the UI. Never hardcode a subset here;
+// doing so silently masks newly registered workers (e.g. Apify enrichment
+// kinds) and produces misleading "Unknown or not yet implemented" 404s.
+const VALID_KINDS = new Set<string>(Object.values(AgentWorkerKind));
 
 /**
  * Cached "Redis is down" flag. When `tryEnqueue` detects an
@@ -93,14 +92,15 @@ export async function POST(
     const session = await requireUser();
     const { id: leadId, kind: rawKind } = await params;
 
-    // Validate kind is one of the Phase 1 workers that flow through AgentRun.
-    const kind = rawKind.toUpperCase() as AgentWorkerKind;
-    if (!ALLOWED_KINDS.includes(kind)) {
+    // Validate against the enum + registry instead of a hardcoded list.
+    const upper = rawKind.toUpperCase();
+    if (!VALID_KINDS.has(upper)) {
       return NextResponse.json(
-        { error: "Unknown or not yet implemented worker kind", kind: rawKind },
+        { error: "Unknown worker kind", kind: rawKind },
         { status: 404 },
       );
     }
+    const kind = upper as AgentWorkerKind;
 
     const worker = getWorker(kind);
     if (!worker || !worker.phase1Enabled) {

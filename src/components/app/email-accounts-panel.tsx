@@ -31,15 +31,15 @@ export function EmailAccountsPanel({ accounts: initial }: { accounts: Account[] 
   };
 
   const disconnect = async (id: string) => {
-    if (!confirm("Hesabı kaldır?")) return;
+    if (!confirm("Remove this account?")) return;
     setBusy(id);
     const res = await fetch(`/api/email-accounts/${id}`, { method: "DELETE" });
     setBusy(null);
     if (res.ok) {
       setAccounts((a) => a.filter((x) => x.id !== id));
-      toast.success("Hesap kaldırıldı");
+      toast.success("Account removed");
     } else {
-      toast.error("Kaldırılamadı");
+      toast.error("Couldn't remove account");
     }
   };
 
@@ -55,9 +55,9 @@ export function EmailAccountsPanel({ accounts: initial }: { accounts: Account[] 
       setAccounts((a) =>
         a.map((x) => (x.id === id ? { ...x, replyAttributionEnabled: enabled } : x)),
       );
-      toast.success(enabled ? "Reply attribution açıldı" : "Reply attribution kapatıldı");
+      toast.success(enabled ? "Reply attribution enabled" : "Reply attribution disabled");
     } else {
-      toast.error("Güncellenemedi");
+      toast.error("Update failed");
     }
   };
 
@@ -69,22 +69,22 @@ export function EmailAccountsPanel({ accounts: initial }: { accounts: Account[] 
             <Mail className="w-5 h-5 text-[#A5B4FC]" /> Email accounts
           </CardTitle>
           <CardDescription>
-            Leadac AI&apos;den direkt opener gönder. CSV export Smartlead/Instantly için
-            açık kalır; bu ek kanaldır. Daily limit Gmail için 500, Outlook için 30.
+            Send openers directly from Leadac AI. CSV export for Smartlead/Instantly
+            stays available; this is an extra channel. Daily limit is 500 for Gmail, 30 for Outlook.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => connect("gmail")} variant="outline">
-              + Gmail bağla
+              + Connect Gmail
             </Button>
             <Button onClick={() => connect("outlook")} variant="outline">
-              + Outlook bağla
+              + Connect Outlook
             </Button>
           </div>
 
           {accounts.length === 0 ? (
-            <p className="text-sm text-white/40">Henüz bağlı hesap yok.</p>
+            <p className="text-sm text-white/40">No accounts connected yet.</p>
           ) : (
             <div className="space-y-2">
               {accounts.map((a) => (
@@ -97,8 +97,8 @@ export function EmailAccountsPanel({ accounts: initial }: { accounts: Account[] 
                       {a.provider === "GMAIL" ? "Gmail" : "Outlook"} · {a.email}
                     </p>
                     <p className="text-xs text-white/40 mt-0.5">
-                      Bugün gönderilen: {a.sentToday} / {a.dailyLimit}
-                      {a.lastInboxSyncAt && ` · Son sync: ${new Date(a.lastInboxSyncAt).toLocaleString()}`}
+                      Sent today: {a.sentToday} / {a.dailyLimit}
+                      {a.lastInboxSyncAt && ` · Last sync: ${new Date(a.lastInboxSyncAt).toLocaleString()}`}
                     </p>
                   </div>
                   <label className="flex items-center gap-2 text-xs text-white/60">

@@ -4,7 +4,22 @@ import { getStripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { PLANS } from "@/lib/plans";
 import { logger } from "@/lib/logger";
+import { notifyBillingEvent } from "@/lib/email/notifications";
 import type { Plan } from "@/generated/prisma/client";
+
+function formatAmount(amount: number | null | undefined, currency: string | null | undefined): string | null {
+  if (amount == null || !currency) return null;
+  const minor = amount / 100;
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+      maximumFractionDigits: 2,
+    }).format(minor);
+  } catch {
+    return `${minor.toFixed(2)} ${currency.toUpperCase()}`;
+  }
+}
 
 export const runtime = "nodejs";
 
@@ -166,15 +181,42 @@ export async function POST(request: Request) {
               : null,
           },
         });
+
+        // Notify owner when the plan actually changed. Skip no-op updates
+        // (e.g. Stripe syncs that leave the price alone) so we don't ping
+        // the user for every invoice renewal.
+        const changed = await prisma.workspace.findFirst({
+          where: workspaceId
+            ? { id: workspaceId }
+            : { stripeCustomerId: sub.customer as string },
+          select: { id: true, plan: true },
+        });
+        if (changed) {
+          await notifyBillingEvent({
+            workspaceId: changed.id,
+            kind: "plan_updated",
+            planName: PLANS[plan].name,
+          });
+        }
         break;
       }
 
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
+        const ws = await prisma.workspace.findFirst({
+          where: { stripeSubscriptionId: sub.id },
+          select: { id: true },
+        });
         await prisma.workspace.updateMany({
           where: { stripeSubscriptionId: sub.id },
           data: { plan: "FREE", stripeSubscriptionId: null, currentPeriodEnd: null },
         });
+        if (ws) {
+          await notifyBillingEvent({
+            workspaceId: ws.id,
+            kind: "subscription_cancelled",
+          });
+        }
         break;
       }
 
@@ -216,6 +258,17 @@ export async function POST(request: Request) {
           subscriptionId,
           type: event.type,
         });
+        const ws = await prisma.workspace.findFirst({
+          where: { stripeSubscriptionId: subscriptionId },
+          select: { id: true },
+        });
+        if (ws) {
+          await notifyBillingEvent({
+            workspaceId: ws.id,
+            kind: "payment_failed",
+            amountFormatted: formatAmount(inv.amount_due, inv.currency ?? null),
+          });
+        }
         break;
       }
     }

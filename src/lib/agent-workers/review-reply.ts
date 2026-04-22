@@ -93,7 +93,7 @@ export const run: AgentWorkerRun = async (ctx) => {
     strengthPhrases,
     sampleReviews,
     workspaceTone: ctx.workspace.tone,
-    language: ctx.workspace.language ?? "tr",
+    language: ctx.workspace.language ?? "en",
   };
 
   const prompt = buildReviewReplyPrompt(promptInput);
@@ -116,13 +116,13 @@ export const run: AgentWorkerRun = async (ctx) => {
   const artifact: ReviewReplyArtifact = {
     businessName: lead.businessName,
     leadId: lead.id,
-    language: ctx.workspace.language ?? "tr",
+    language: ctx.workspace.language ?? "en",
     tone_spec: parsed.tone_spec,
     variables: parsed.variables,
     templates: parsed.templates,
     approval_rule: parsed.approval_rule,
     escalation_keywords: parsed.escalation_keywords,
-    setup_markdown: buildSetupMarkdown(parsed, lead.businessName, ctx.workspace.language ?? "tr"),
+    setup_markdown: buildSetupMarkdown(parsed, lead.businessName, ctx.workspace.language ?? "en"),
   };
 
   const costTokens = Math.ceil((prompt.length + text.length) / 4);

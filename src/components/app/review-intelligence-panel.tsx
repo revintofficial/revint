@@ -111,20 +111,20 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         if (res.status === 422) {
-          toast.error(err.message || "Önce Google yorumları çekilmeli.");
+          toast.error(err.message || "Pull the Google reviews first.");
         } else if (res.status === 402) {
-          toast.error(err.message || "AI quota dolu. Plan yükselt.");
+          toast.error(err.message || "AI quota reached. Upgrade your plan.");
         } else {
-          toast.error(err.error || "Review analysis başlatılamadı.");
+          toast.error(err.error || "Couldn't start review analysis.");
         }
         setRunning(false);
         return;
       }
       setStatus("ANALYZING");
-      toast.success("Review analysis kuyruğa alındı.");
+      toast.success("Review analysis queued.");
     } catch (err) {
       console.error("Run analysis failed:", err);
-      toast.error("Analysis tetiklenemedi.");
+      toast.error("Couldn't trigger the analysis.");
       setRunning(false);
     }
   };
@@ -146,7 +146,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-white/40">Yükleniyor...</p>
+          <p className="text-sm text-white/40">Loading...</p>
         </CardContent>
       </Card>
     );
@@ -163,7 +163,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
         </CardHeader>
         <CardContent>
           <p className="text-sm text-white/50">
-            Google yorumları henüz çekilmedi. Yorumları yenile, sonra analiz başlat.
+            Google reviews haven't been pulled yet. Refresh reviews first, then start the analysis.
           </p>
         </CardContent>
       </Card>
@@ -180,7 +180,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-white/50">Bu işletme için analiz edilebilir yorum yok.</p>
+          <p className="text-sm text-white/50">No reviews available to analyze for this business.</p>
         </CardContent>
       </Card>
     );
@@ -197,20 +197,20 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
           <Button size="sm" onClick={runAnalysis} disabled={running || status === "ANALYZING"}>
             {running || status === "ANALYZING" ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Analiz ediliyor...
+                <Loader2 className="w-4 h-4 animate-spin" /> Analyzing...
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" /> Analiz başlat
+                <Sparkles className="w-4 h-4" /> Run analysis
               </>
             )}
           </Button>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-white/50 leading-relaxed">
-            Bu lead için 50 adede kadar Google yorumunu Gemini ile KPI bar formatında analiz et.
-            Mapileads'in en güçlü kartı: müşterinin en çok şikayet ettiği şey direkt mockup
-            hero'suna düşer, övgü Services'a, switch sinyali pitch'e.
+            Run up to 50 Google reviews for this lead through Gemini in a KPI-bar format.
+            The strongest play here: the thing customers complain about most lands straight
+            in the mockup hero, praise goes into Services, and switch signals feed the pitch.
           </p>
         </CardContent>
       </Card>
@@ -226,13 +226,13 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
             Review Intelligence
           </CardTitle>
           <p className="text-xs text-white/30 mt-1">
-            {analysis.reviewsAnalyzedCount} yorum analiz edildi · Lead Score{" "}
+            {analysis.reviewsAnalyzedCount} reviews analyzed · Lead Score{" "}
             {analysis.leadScore}/100
           </p>
         </div>
         <Button size="sm" variant="outline" onClick={runAnalysis} disabled={running}>
           {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          Yenile
+          Refresh
         </Button>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -248,10 +248,10 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
             <p className="text-[13px] font-medium text-white/50 mb-1">Lead Score</p>
             <p className="text-xs text-white/40">
               {analysis.leadScore >= 70
-                ? "Sıcak prospect - bizim çözümümüz onların problemine doğrudan denk geliyor"
+                ? "Hot prospect — our solution maps directly onto their problem"
                 : analysis.leadScore >= 40
-                ? "Orta sıcak - bazı pain noktaları çözülebilir"
-                : "Soğuk - bizim çözümümüz onların problemini doğrudan adreslemiyor"}
+                ? "Warm — a few pain points we can address"
+                : "Cold — our solution doesn't directly address their problem"}
             </p>
           </div>
         </div>
@@ -261,7 +261,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
         {analysis.weaknessKpis.length > 0 && (
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <TrendingDown className="w-3.5 h-3.5 text-[#FF453A]" /> Müşterilerin şikayetleri
+              <TrendingDown className="w-3.5 h-3.5 text-[#FF453A]" /> What customers complain about
             </p>
             <div className="space-y-2">
               {analysis.weaknessKpis.map((k) => (
@@ -274,7 +274,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
         {analysis.strengthKpis.length > 0 && (
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-[#34D399]" /> Müşterilerin övgüleri
+              <TrendingUp className="w-3.5 h-3.5 text-[#34D399]" /> What customers praise
             </p>
             <div className="space-y-2">
               {analysis.strengthKpis.map((k) => (
@@ -287,7 +287,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
         {analysis.switchSignals.length > 0 && (
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <ArrowRight className="w-3.5 h-3.5 text-[#A5B4FC]" /> Rakipten geçiş sinyalleri
+              <ArrowRight className="w-3.5 h-3.5 text-[#A5B4FC]" /> Competitor switch signals
             </p>
             <div className="space-y-2">
               {analysis.switchSignals.map((s, i) => (
@@ -307,7 +307,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
 
         {analysis.painPhrases.length > 0 && (
           <div>
-            <p className="text-[13px] font-medium text-white/60 mb-2">En sık duyulan pain phrase</p>
+            <p className="text-[13px] font-medium text-white/60 mb-2">Most common pain phrases</p>
             <div className="flex flex-wrap gap-1.5">
               {analysis.painPhrases.map((p) => (
                 <Badge key={p} variant="destructive" className="text-xs font-normal">
@@ -321,7 +321,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
         {analysis.strengthPhrases.length > 0 && (
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <Star className="w-3.5 h-3.5 text-[#FBBF24]" /> En sık duyulan övgü
+              <Star className="w-3.5 h-3.5 text-[#FBBF24]" /> Most common praise
             </p>
             <div className="flex flex-wrap gap-1.5">
               {analysis.strengthPhrases.map((p) => (
@@ -368,16 +368,16 @@ function SentimentBar({ breakdown }: { breakdown: SentimentBreakdown }) {
   const neg = Math.round(breakdown.negative * 100);
   return (
     <div>
-      <p className="text-[13px] font-medium text-white/60 mb-2">Sentiment dağılımı</p>
+      <p className="text-[13px] font-medium text-white/60 mb-2">Sentiment breakdown</p>
       <div className="flex h-2 rounded-full overflow-hidden bg-white/5">
         <div className="bg-[#34D399]" style={{ width: `${pos}%` }} />
         <div className="bg-white/30" style={{ width: `${neu}%` }} />
         <div className="bg-[#FF453A]" style={{ width: `${neg}%` }} />
       </div>
       <div className="flex justify-between text-[11px] text-white/45 mt-1.5">
-        <span>%{pos} pozitif</span>
-        <span>%{neu} nötr</span>
-        <span>%{neg} negatif</span>
+        <span>{pos}% positive</span>
+        <span>{neu}% neutral</span>
+        <span>{neg}% negative</span>
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ export async function POST(
     }
     if (!account.replyAttributionEnabled) {
       return NextResponse.json(
-        { error: "reply_attribution_disabled", message: "Önce reply attribution toggle'ını aç." },
+        { error: "reply_attribution_disabled", message: "Turn on the reply attribution toggle first." },
         { status: 400 },
       );
     }
@@ -73,6 +73,9 @@ export async function POST(
       const subjectLower = msg.subject.toLowerCase();
       const isMeetingHint =
         subjectLower.includes("meet") ||
+        subjectLower.includes("meeting") ||
+        subjectLower.includes("appointment") ||
+        subjectLower.includes("booking") ||
         subjectLower.includes("call") ||
         subjectLower.includes("schedule") ||
         subjectLower.includes("randevu") ||

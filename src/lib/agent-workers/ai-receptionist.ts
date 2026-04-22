@@ -10,6 +10,8 @@
  */
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
+import { safeParseGeminiJson } from "@/lib/gemini";
+import { logger } from "@/lib/logger";
 import {
   buildReceptionistPrompt,
   type ReceptionistPromptInput,
@@ -65,6 +67,12 @@ export interface ReceptionistEscalationRule {
   action: string;
 }
 
+export interface ReceptionistKbChunk {
+  chunk_id: string;
+  text: string;
+  metadata: Record<string, unknown>;
+}
+
 export interface ReceptionistArtifact {
   businessName: string;
   businessPhone: string | null;
@@ -83,6 +91,16 @@ export interface ReceptionistArtifact {
   voicemail_fallback: string;
   guardrails: string[];
   setup_markdown: string;
+  /**
+   * Prospect knowledge base chunks harvested from APIFY_WEB_CRAWL_DEEP.
+   * Empty array when the receptionist was generated without the
+   * upstream crawl step. Surfaced through the `kb_json` export format
+   * so agency users can upload to Synthflow/Retell custom docs.
+   *
+   * Optional for backward compat: older artifacts in tests / fixtures
+   * predate this field and should still deserialise cleanly.
+   */
+  knowledge_base?: ReceptionistKbChunk[];
 }
 
 // --- Worker run ------------------------------------------------------
@@ -99,6 +117,15 @@ export const run: AgentWorkerRun = async (ctx) => {
   const painPhrases = toStringArray(review?.painPhrases);
   const strengthPhrases = toStringArray(review?.strengthPhrases);
 
+  // AI Core: grab PROSPECT_KB_CHUNK hits from ctx.memory. When the
+  // user ran `user_receptionist_with_kb` chain upstream, these are
+  // markdown chunks from the prospect's own site that ground the FAQ
+  // and services lists in real business content.
+  const kbChunks = ctx.memory
+    .filter((h) => h.kind === "PROSPECT_KB_CHUNK")
+    .map((h) => h.text)
+    .filter((t) => t.length > 0);
+
   const promptInput: ReceptionistPromptInput = {
     businessName: lead.businessName,
     primaryType: lead.primaryType,
@@ -111,23 +138,45 @@ export const run: AgentWorkerRun = async (ctx) => {
     painPhrases,
     strengthPhrases,
     workspaceTone: ctx.workspace.tone,
-    language: ctx.workspace.language ?? "tr",
+    language: ctx.workspace.language ?? "en",
   };
 
-  const prompt = buildReceptionistPrompt(promptInput);
+  let prompt = buildReceptionistPrompt(promptInput);
+
+  if (kbChunks.length > 0) {
+    // Append grounded knowledge base context. We keep it at the end
+    // of the prompt so the existing instruction scaffolding stays
+    // untouched; Gemini reliably uses the last block for grounding.
+    const kbBlock = [
+      "",
+      "---",
+      "KNOWLEDGE BASE (prospect's own website content; use verbatim for FAQ answers where possible):",
+      ...kbChunks.slice(0, 30).map((c, i) => `### Chunk ${i + 1}\n${c.slice(0, 1500)}`),
+    ].join("\n");
+    prompt = `${prompt}\n${kbBlock}`;
+  }
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
   const client = new GoogleGenerativeAI(apiKey);
   const model = client.getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
-      maxOutputTokens: 3072,
+      // gemini-2.5-flash spends a chunk of its output budget on internal
+      // "thinking" tokens that the legacy @google/generative-ai SDK
+      // (v0.24.x) cannot disable. The receptionist artifact is large
+      // (~12 nested fields, business_summary alone can be 800 chars),
+      // so we leave generous headroom to avoid mid-string truncation.
+      maxOutputTokens: 16384,
       temperature: 0.4,
       responseMimeType: "application/json",
     },
   });
 
   const result = await model.generateContent(prompt);
+  const finishReason = result.response.candidates?.[0]?.finishReason;
+  if (finishReason && finishReason !== "STOP") {
+    logger.warn("ai_receptionist.gemini_finish_reason", { finishReason, runId: ctx.runId });
+  }
   const text = result.response.text();
   const parsed = parseReceptionistJson(text);
 
@@ -139,12 +188,28 @@ export const run: AgentWorkerRun = async (ctx) => {
     orderBy: { updatedAt: "desc" },
   });
 
+  // Preserve the raw KB chunks on the artifact so the kb_json export
+  // can serialize them as a knowledge-base upload for Synthflow /
+  // Retell. Each chunk carries its source metadata from SemanticMemory.
+  const knowledgeBase = ctx.memory
+    .filter((h) => h.kind === "PROSPECT_KB_CHUNK")
+    .slice(0, 50)
+    .map((h, i) => ({
+      chunk_id: h.id,
+      text: h.text,
+      metadata: {
+        url: (h.metadata as Record<string, unknown>).url ?? null,
+        title: (h.metadata as Record<string, unknown>).title ?? null,
+        chunkIndex: i,
+      },
+    }));
+
   const artifact: ReceptionistArtifact = {
     businessName: lead.businessName,
     businessPhone: lead.phone,
     leadId: lead.id,
     leadSlug: mockup?.slug,
-    language: ctx.workspace.language ?? "tr",
+    language: ctx.workspace.language ?? "en",
     agent: parsed.agent,
     greeting: parsed.greeting,
     business_summary: parsed.business_summary,
@@ -156,7 +221,8 @@ export const run: AgentWorkerRun = async (ctx) => {
     escalation_rules: parsed.escalation_rules,
     voicemail_fallback: parsed.voicemail_fallback,
     guardrails: parsed.guardrails,
-    setup_markdown: buildSetupMarkdown(parsed, lead, ctx.workspace.language ?? "tr"),
+    setup_markdown: buildSetupMarkdown(parsed, lead, ctx.workspace.language ?? "en"),
+    knowledge_base: knowledgeBase,
   };
 
   const costTokens = Math.ceil((prompt.length + text.length) / 4);
@@ -170,14 +236,7 @@ export const run: AgentWorkerRun = async (ctx) => {
 // --- Parsing ---------------------------------------------------------
 
 function parseReceptionistJson(text: string): Omit<ReceptionistArtifact, "businessName" | "businessPhone" | "leadId" | "language" | "setup_markdown"> {
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("AI Receptionist prompt returned malformed JSON");
-    parsed = JSON.parse(match[0]);
-  }
+  const parsed = safeParseGeminiJson<Record<string, unknown>>(text, "ai_receptionist");
 
   const agent = parsed.agent as Record<string, unknown> | undefined;
   const greeting = parsed.greeting as Record<string, unknown> | undefined;
@@ -189,7 +248,7 @@ function parseReceptionistJson(text: string): Omit<ReceptionistArtifact, "busine
     agent: {
       name: String(agent?.name ?? "Receptionist"),
       voice_hint: String(agent?.voice_hint ?? "friendly, professional"),
-      language: String(agent?.language ?? "tr"),
+      language: String(agent?.language ?? "en"),
     },
     greeting: {
       initial: String(greeting?.initial ?? ""),
@@ -293,6 +352,12 @@ export function exportReceptionistArtifact(
         contentType: "application/json; charset=utf-8",
         filename: `${baseFilename}-ghl.json`,
       };
+    case "kb_json":
+      return {
+        body: JSON.stringify(toKnowledgeBaseJson(artifact), null, 2),
+        contentType: "application/json; charset=utf-8",
+        filename: `${baseFilename}-kb.json`,
+      };
     case "json":
     default:
       return {
@@ -301,6 +366,53 @@ export function exportReceptionistArtifact(
         filename: `${baseFilename}.json`,
       };
   }
+}
+
+/**
+ * Knowledge-base export. Produces a flat list of chunks suitable for
+ * uploading to Synthflow's "Documents" tab, Retell's "Knowledge base"
+ * feature, or Vapi's custom docs. When the artifact has no KB chunks
+ * (no crawl ran), falls back to a synthesized KB from the FAQ +
+ * services so the export is always useful.
+ */
+function toKnowledgeBaseJson(a: ReceptionistArtifact) {
+  const fromCrawl = a.knowledge_base ?? [];
+  if (fromCrawl.length > 0) {
+    return {
+      version: "v1",
+      leadId: a.leadId,
+      businessName: a.businessName,
+      source: "website_crawl",
+      chunks: fromCrawl,
+    };
+  }
+  const synth: ReceptionistKbChunk[] = [];
+  synth.push({
+    chunk_id: `${a.leadId}:summary`,
+    text: a.business_summary,
+    metadata: { kind: "business_summary" },
+  });
+  a.faqs.forEach((f, i) =>
+    synth.push({
+      chunk_id: `${a.leadId}:faq:${i}`,
+      text: `Q: ${f.question}\nA: ${f.answer}`,
+      metadata: { kind: "faq" },
+    }),
+  );
+  a.services.forEach((s, i) =>
+    synth.push({
+      chunk_id: `${a.leadId}:service:${i}`,
+      text: `${s.name}: ${s.short_description}`,
+      metadata: { kind: "service" },
+    }),
+  );
+  return {
+    version: "v1",
+    leadId: a.leadId,
+    businessName: a.businessName,
+    source: "synthesized_from_artifact",
+    chunks: synth,
+  };
 }
 
 /**

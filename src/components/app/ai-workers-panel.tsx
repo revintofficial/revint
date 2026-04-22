@@ -23,6 +23,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
   Sparkles,
   Loader2,
   Globe,
@@ -32,6 +39,7 @@ import {
   RefreshCw,
   Download,
   ExternalLink,
+  Eye,
   Lock,
   CircleCheck,
   CircleX,
@@ -72,15 +80,13 @@ type AgentWorkerKind =
 
 type Plan = "FREE" | "PRO" | "PRO_TEAM" | "AGENCY";
 type AgentRunStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
-type Group = "intelligence" | "pitch" | "deliverable" | "ops";
+type Group = "intelligence" | "pitch" | "deliverable" | "ops" | "enrichment";
 
 interface WorkerItem {
   kind: AgentWorkerKind;
   group: Group;
   displayName: string;
-  displayNameTr: string;
   description: string;
-  descriptionTr: string;
   minPlan: Plan;
   phase1Enabled: boolean;
   estimatedDurationMs: number;
@@ -128,40 +134,34 @@ const ICONS: Partial<Record<AgentWorkerKind, typeof Sparkles>> = {
   CONTAINMENT_RATE_TRACKER: LineChart,
 };
 
-const GROUP_COPY: Record<Group, { title: string; titleTr: string; hint: string; hintTr: string }> = {
+const GROUP_COPY: Record<Group, { title: string; hint: string }> = {
   intelligence: {
     title: "Intelligence",
-    titleTr: "Analiz",
     hint: "Runs automatically when a lead is ingested.",
-    hintTr: "Lead eklendiginde otomatik calisir.",
   },
   pitch: {
     title: "Pitch",
-    titleTr: "Pitch",
     hint: "Artifacts you send to the prospect.",
-    hintTr: "Prospect'e gonderdigin uretimler.",
   },
   deliverable: {
     title: "Deliverables",
-    titleTr: "Teslim Paketleri",
     hint: "Install packs for your client's own AI stack (Synthflow, GHL, Retell).",
-    hintTr: "Musterinin kendi AI stack'ine (Synthflow, GHL, Retell) kurulum paketleri.",
   },
   ops: {
     title: "Ops",
-    titleTr: "Operasyon",
     hint: "Platform-level agents on your side.",
-    hintTr: "Senin tarafinda, platform seviyesinde calisan ajanlar.",
+  },
+  enrichment: {
+    title: "Enrichment",
+    hint: "External data sources (Apify scrapers). Pay-per-use on PRO+.",
   },
 };
 
 interface Props {
   leadId: string;
-  language?: string; // "tr" | "en"
 }
 
-export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
-  const tr = language === "tr";
+export function AiWorkersPanel({ leadId }: Props) {
   const [data, setData] = useState<WorkersResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [runningKinds, setRunningKinds] = useState<Set<AgentWorkerKind>>(new Set());
@@ -169,7 +169,9 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
 
   const fetchWorkers = useCallback(async () => {
     try {
-      const res = await fetch(`/api/leads/${leadId}/workers`);
+      const res = await fetch(`/api/leads/${leadId}/workers`, {
+        cache: "no-store",
+      });
       if (!res.ok) return;
       const d: WorkersResponse = await res.json();
       setData(d);
@@ -198,7 +200,9 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
       if (existing) window.clearInterval(existing);
       const intervalId = window.setInterval(async () => {
         try {
-          const res = await fetch(`/api/agent-runs/${runId}`);
+          const res = await fetch(`/api/agent-runs/${runId}`, {
+            cache: "no-store",
+          });
           if (!res.ok) return;
           const run = await res.json();
           if (run.status === "SUCCEEDED" || run.status === "FAILED" || run.status === "CANCELLED") {
@@ -209,12 +213,37 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
               next.delete(kind);
               return next;
             });
+            // Optimistically merge the resolved run into local `data`
+            // so the spinner / badge flips immediately, without
+            // waiting for the fetchWorkers roundtrip. If fetchWorkers
+            // later returns a newer snapshot (e.g. quota counter
+            // bumped) we overwrite this on that pass.
+            setData((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                workers: prev.workers.map((w) =>
+                  w.kind === kind
+                    ? {
+                        ...w,
+                        latestRun: {
+                          id: run.id,
+                          status: run.status,
+                          artifactUrl: run.artifactUrl ?? null,
+                          errorMsg: run.errorMsg ?? null,
+                          createdAt: run.createdAt,
+                          finishedAt: run.finishedAt ?? null,
+                        },
+                      }
+                    : w,
+                ),
+              };
+            });
             if (run.status === "SUCCEEDED") {
-              toast.success(tr ? "Uretim tamamlandi." : "Generation complete.");
+              toast.success("Generation complete.");
             } else if (run.status === "FAILED") {
               toast.error(
-                (tr ? "Uretim basarisiz: " : "Generation failed: ") +
-                  (run.errorMsg ?? (tr ? "bilinmeyen hata" : "unknown error")),
+                "Generation failed: " + (run.errorMsg ?? "unknown error"),
               );
             }
             fetchWorkers();
@@ -225,32 +254,48 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
       }, 2000);
       pollersRef.current.set(kind, intervalId);
     },
-    [fetchWorkers, tr],
+    [fetchWorkers],
   );
+
+  // If the initial fetch surfaces any worker whose latest run is
+  // still PENDING/RUNNING (e.g. user navigated away and came back
+  // mid-generation, or hot-reload wiped in-memory state), attach a
+  // poller for it so the UI eventually flips to SUCCEEDED/FAILED
+  // without requiring a manual page refresh.
+  useEffect(() => {
+    if (!data) return;
+    for (const w of data.workers) {
+      const lr = w.latestRun;
+      if (!lr) continue;
+      if (lr.status !== "PENDING" && lr.status !== "RUNNING") continue;
+      if (pollersRef.current.has(w.kind)) continue;
+      setRunningKinds((prev) => {
+        if (prev.has(w.kind)) return prev;
+        const next = new Set(prev);
+        next.add(w.kind);
+        return next;
+      });
+      pollRun(w.kind, lr.id);
+    }
+    // We intentionally exclude pollRun from deps: it's stable per
+    // fetchWorkers, and re-running this effect only when `data`
+    // changes is what we want.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   const triggerWorker = useCallback(
     async (worker: WorkerItem) => {
       if (!worker.phase1Enabled) {
-        toast.info(
-          tr
-            ? "Bu worker sonraki lansmanda geliyor."
-            : "This worker is coming in the next launch.",
-        );
+        toast.info("This worker is coming in the next launch.");
         return;
       }
       if (worker.locked) {
-        toast.error(
-          tr
-            ? `Plan yukseltilmeli: ${worker.minPlan}`
-            : `Upgrade required: ${worker.minPlan}`,
-        );
+        toast.error(`Upgrade required: ${worker.minPlan}`);
         return;
       }
       if (worker.remaining <= 0) {
         toast.error(
-          tr
-            ? `Kota doldu (${worker.used}/${worker.limit}). Plan yukseltin veya cycle reset'i bekleyin.`
-            : `Quota exhausted (${worker.used}/${worker.limit}). Upgrade or wait for cycle reset.`,
+          `Quota exhausted (${worker.used}/${worker.limit}). Upgrade or wait for cycle reset.`,
         );
         return;
       }
@@ -268,17 +313,9 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
             return next;
           });
           if (res.status === 402) {
-            toast.error(
-              err.message ||
-                (tr
-                  ? "Plan veya kota yetersiz."
-                  : "Plan or quota insufficient."),
-            );
+            toast.error(err.message || "Plan or quota insufficient.");
           } else {
-            toast.error(
-              err.error ||
-                (tr ? "Baslatilamadi" : "Failed to start"),
-            );
+            toast.error(err.error || "Failed to start");
           }
           return;
         }
@@ -294,10 +331,10 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
           next.delete(worker.kind);
           return next;
         });
-        toast.error(tr ? "Baglanti hatasi" : "Connection error");
+        toast.error("Connection error");
       }
     },
-    [leadId, pollRun, tr],
+    [leadId, pollRun, fetchWorkers],
   );
 
   const grouped = useMemo(() => {
@@ -307,8 +344,12 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
       pitch: [],
       deliverable: [],
       ops: [],
+      enrichment: [],
     };
-    for (const w of data.workers) g[w.group].push(w);
+    for (const w of data.workers) {
+      const bucket = g[w.group];
+      if (bucket) bucket.push(w);
+    }
     return g;
   }, [data]);
 
@@ -318,13 +359,13 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-[#0A84FF]" />
-            {tr ? "AI Agent" : "AI Workers"}
+            AI Workers
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-2 text-white/50 text-sm">
             <Loader2 className="w-4 h-4 animate-spin" />
-            {tr ? "Yukleniyor..." : "Loading..."}
+            Loading...
           </div>
         </CardContent>
       </Card>
@@ -342,12 +383,10 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
           <div className="min-w-0">
             <CardTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-[#0A84FF] shrink-0" />
-              {tr ? "AI Agent" : "AI Workers"}
+              AI Workers
             </CardTitle>
             <p className="text-xs text-white/30 mt-1">
-              {tr
-                ? "Her lead icin uretilen AI worker paketleri. 4 grup, 14 is."
-                : "AI worker packs generated per lead. 4 groups, 14 jobs."}
+              AI worker packs generated per lead.
             </p>
           </div>
           <Badge variant="outline" className="text-[11px]">
@@ -356,7 +395,7 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {(["pitch", "deliverable", "intelligence", "ops"] as Group[]).map((group) => {
+        {(["pitch", "deliverable", "intelligence", "enrichment", "ops"] as Group[]).map((group) => {
           const items = grouped[group];
           if (!items.length) return null;
           const copy = GROUP_COPY[group];
@@ -364,10 +403,10 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
             <section key={group} className="space-y-3">
               <div>
                 <h3 className="text-[13px] font-semibold text-white/70">
-                  {tr ? copy.titleTr : copy.title}
+                  {copy.title}
                 </h3>
                 <p className="text-[11px] text-white/30">
-                  {tr ? copy.hintTr : copy.hint}
+                  {copy.hint}
                 </p>
               </div>
               <div className="space-y-2">
@@ -375,7 +414,6 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
                   <WorkerRow
                     key={w.kind}
                     worker={w}
-                    tr={tr}
                     running={runningKinds.has(w.kind)}
                     onGenerate={() => triggerWorker(w)}
                   />
@@ -391,18 +429,16 @@ export function AiWorkersPanel({ leadId, language = "tr" }: Props) {
 
 function WorkerRow({
   worker,
-  tr,
   running,
   onGenerate,
 }: {
   worker: WorkerItem;
-  tr: boolean;
   running: boolean;
   onGenerate: () => void;
 }) {
   const Icon = ICONS[worker.kind] ?? Sparkles;
-  const name = tr ? worker.displayNameTr : worker.displayName;
-  const desc = tr ? worker.descriptionTr : worker.description;
+  const name = worker.displayName;
+  const desc = worker.description;
   const latest = worker.latestRun;
   const succeeded = latest?.status === "SUCCEEDED";
   const failed = latest?.status === "FAILED";
@@ -440,22 +476,22 @@ function WorkerRow({
                 )}
                 {!worker.phase1Enabled && !worker.locked && (
                   <Badge variant="outline" className="text-[10px]">
-                    {tr ? "Yakinda" : "Soon"}
+                    Soon
                   </Badge>
                 )}
                 {succeeded && (
                   <Badge variant="success" className="text-[10px] gap-1">
-                    <CircleCheck className="w-3 h-3" /> {tr ? "Hazir" : "Ready"}
+                    <CircleCheck className="w-3 h-3" /> Ready
                   </Badge>
                 )}
                 {failed && (
                   <Badge variant="destructive" className="text-[10px] gap-1">
-                    <CircleX className="w-3 h-3" /> {tr ? "Basarisiz" : "Failed"}
+                    <CircleX className="w-3 h-3" /> Failed
                   </Badge>
                 )}
                 {stuck && (
                   <Badge variant="destructive" className="text-[10px] gap-1">
-                    <AlertTriangle className="w-3 h-3" /> {tr ? "Takildi" : "Stuck"}
+                    <AlertTriangle className="w-3 h-3" /> Stuck
                   </Badge>
                 )}
               </div>
@@ -469,9 +505,7 @@ function WorkerRow({
               {stuck && (
                 <p className="text-[11px] text-[#FF9F0A] mt-1 flex items-start gap-1">
                   <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
-                  {tr
-                    ? "Uretim 2 dakikadan uzundur bekliyor. Yeniden baslatmak icin 'Force retry' butonuna bas."
-                    : "Generation has been waiting over 2 minutes. Click 'Force retry' to restart."}
+                  Generation has been waiting over 2 minutes. Click &quot;Force retry&quot; to restart.
                 </p>
               )}
             </div>
@@ -491,15 +525,17 @@ function WorkerRow({
                 >
                   <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs">
                     <ExternalLink className="w-3 h-3" />
-                    {tr ? "Ac" : "Open"}
+                    Open
                   </Button>
                 </a>
+              )}
+              {succeeded && latest && (
+                <ViewRunButton runId={latest.id} workerName={name} />
               )}
               {succeeded && latest && worker.exportFormats.length > 0 && (
                 <ExportMenu
                   runId={latest.id}
                   formats={worker.exportFormats}
-                  tr={tr}
                 />
               )}
               <Button
@@ -512,22 +548,22 @@ function WorkerRow({
                 {showSpinner ? (
                   <>
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    {tr ? "Calisiyor..." : "Running..."}
+                    Running...
                   </>
                 ) : stuck ? (
                   <>
                     <RefreshCw className="w-3 h-3" />
-                    {tr ? "Force retry" : "Force retry"}
+                    Force retry
                   </>
                 ) : succeeded ? (
                   <>
                     <RefreshCw className="w-3 h-3" />
-                    {tr ? "Yeniden uret" : "Regenerate"}
+                    Regenerate
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-3 h-3" />
-                    {tr ? "Uret" : "Generate"}
+                    Generate
                   </>
                 )}
               </Button>
@@ -539,14 +575,211 @@ function WorkerRow({
   );
 }
 
+interface AgentRunDetail {
+  id: string;
+  workerKind: string;
+  status: string;
+  outputJson: unknown;
+  artifactUrl: string | null;
+  errorMsg: string | null;
+  costTokens: number | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  createdAt: string;
+}
+
+function ViewRunButton({
+  runId,
+  workerName,
+}: {
+  runId: string;
+  workerName: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [run, setRun] = useState<AgentRunDetail | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || run) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetch(`/api/agent-runs/${runId}`, { cache: "no-store" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as AgentRunDetail;
+        if (!cancelled) setRun(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(String(err?.message ?? err));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, run, runId]);
+
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 gap-1.5 text-xs"
+        onClick={() => setOpen(true)}
+      >
+        <Eye className="w-3 h-3" />
+        View
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{workerName}</DialogTitle>
+            <DialogDescription className="text-xs text-white/40 font-mono">
+              {runId}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto -mx-6 px-6 pb-4">
+            {loading && (
+              <div className="flex items-center gap-2 text-sm text-white/50">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading...
+              </div>
+            )}
+            {error && (
+              <div className="text-sm text-[#FF453A]">
+                Failed to load: {error}
+              </div>
+            )}
+            {run && <RunOutputView run={run} />}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function RunOutputView({ run }: { run: AgentRunDetail }) {
+  const finished = run.finishedAt ? new Date(run.finishedAt) : null;
+  const started = run.startedAt ? new Date(run.startedAt) : null;
+  const durationMs = finished && started ? finished.getTime() - started.getTime() : null;
+
+  const output = run.outputJson;
+  const summary = useMemo(() => extractRunSummary(output), [output]);
+
+  let prettyOutput: string;
+  try {
+    prettyOutput = JSON.stringify(output, null, 2);
+  } catch {
+    prettyOutput = String(output);
+  }
+  const truncated = prettyOutput.length > 200_000;
+  const displayed = truncated ? `${prettyOutput.slice(0, 200_000)}\n...[truncated]` : prettyOutput;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3 text-[11px] text-white/50">
+        <span>
+          Status: <span className="text-white/80">{run.status}</span>
+        </span>
+        {finished && (
+          <span>
+            Finished: <span className="text-white/80">{finished.toLocaleString()}</span>
+          </span>
+        )}
+        {durationMs !== null && (
+          <span>
+            Duration: <span className="text-white/80">{(durationMs / 1000).toFixed(1)}s</span>
+          </span>
+        )}
+        {typeof run.costTokens === "number" && run.costTokens > 0 && (
+          <span>
+            Tokens: <span className="text-white/80">{run.costTokens.toLocaleString()}</span>
+          </span>
+        )}
+      </div>
+
+      {summary.length > 0 && (
+        <div className="rounded-lg border border-white/10 bg-white/3 p-3 space-y-1.5">
+          {summary.map((row) => (
+            <div key={row.label} className="flex items-baseline gap-2 text-xs">
+              <span className="text-white/50 min-w-[120px]">{row.label}</span>
+              <span className="text-white/90 break-all">{row.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {run.artifactUrl && (
+        <a
+          href={run.artifactUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-[#0A84FF] hover:underline"
+        >
+          <ExternalLink className="w-3 h-3" />
+          {run.artifactUrl}
+        </a>
+      )}
+
+      <div>
+        <div className="text-[11px] uppercase tracking-wide text-white/40 mb-1.5">
+          Raw output
+        </div>
+        <pre className="text-[11px] leading-relaxed bg-black/40 border border-white/5 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all max-h-[50vh] overflow-y-auto font-mono text-white/80">
+          {displayed}
+        </pre>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Pull a few human-readable rows out of an AgentRun.outputJson so the
+ * dialog leads with useful facts (counts, costs, slugs) before the raw
+ * JSON dump. Worker-agnostic: walks the top-level fields and surfaces
+ * primitives + array lengths.
+ */
+function extractRunSummary(output: unknown): Array<{ label: string; value: string }> {
+  if (!output || typeof output !== "object") return [];
+  const o = output as Record<string, unknown>;
+  const rows: Array<{ label: string; value: string }> = [];
+  const seenLabels = new Set<string>();
+  const push = (label: string, value: string) => {
+    if (seenLabels.has(label)) return;
+    seenLabels.add(label);
+    rows.push({ label, value });
+  };
+
+  if (typeof o.skipped === "boolean" && o.skipped) {
+    push("skipped", "true");
+    if (typeof o.reason === "string") push("reason", o.reason);
+  }
+  if (typeof o.count === "number") push("count", String(o.count));
+  if (typeof o.costUsdCents === "number") {
+    push("cost", `$${(o.costUsdCents / 100).toFixed(4)}`);
+  }
+  if (typeof o.leadScore === "number") push("leadScore", String(o.leadScore));
+  if (typeof o.summary === "string") {
+    push("summary", o.summary.length > 240 ? `${o.summary.slice(0, 240)}...` : o.summary);
+  }
+  if (typeof o.reviewsAnalyzedCount === "number") {
+    push("reviewsAnalyzed", String(o.reviewsAnalyzedCount));
+  }
+  for (const [k, v] of Object.entries(o)) {
+    if (Array.isArray(v) && rows.length < 12) push(`${k}.length`, String(v.length));
+  }
+  return rows;
+}
+
 function ExportMenu({
   runId,
   formats,
-  tr,
 }: {
   runId: string;
   formats: string[];
-  tr: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -558,7 +791,7 @@ function ExportMenu({
         onClick={() => setOpen((v) => !v)}
       >
         <Download className="w-3 h-3" />
-        {tr ? "Export" : "Export"}
+        Export
       </Button>
       {open && (
         <div

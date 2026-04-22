@@ -28,11 +28,11 @@ interface OfferContext {
 const TONE_OPTIONS = ["friendly", "professional", "direct", "casual", "warm"];
 const LENGTH_OPTIONS = ["very short", "short", "medium", "long"];
 const LANGUAGE_OPTIONS = [
-  { value: "tr", label: "Türkçe" },
   { value: "en", label: "English" },
   { value: "es", label: "Español" },
   { value: "de", label: "Deutsch" },
   { value: "fr", label: "Français" },
+  { value: "tr", label: "Türkçe" },
 ];
 const OBJECTIVE_OPTIONS = [
   "Book a 15-min call",
@@ -51,7 +51,7 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
     objective: "",
     tone: "",
     length: "",
-    language: "tr",
+    language: "en",
     senderName: "",
     conversionLink: "",
   });
@@ -70,12 +70,12 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
           objective: d.objective ?? "",
           tone: d.tone ?? "",
           length: d.length ?? "",
-          language: d.language ?? "tr",
+          language: d.language ?? "en",
           senderName: d.senderName ?? "",
           conversionLink: d.conversionLink ?? "",
         }),
       )
-      .catch(() => toast.error("Offer context yüklenemedi"))
+      .catch(() => toast.error("Couldn't load offer context"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -92,13 +92,13 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        toast.error(err.error || "Kaydedilemedi");
+        toast.error(err.error || "Couldn't save");
         return;
       }
-      toast.success("Offer context güncellendi. Bir sonraki mockup ve mesajda devreye girer.");
+      toast.success("Offer context updated. It'll kick in on your next mockup and message.");
     } catch (err) {
       console.error("Offer save error:", err);
-      toast.error("Bir hata oluştu");
+      toast.error("Something went wrong");
     } finally {
       setSaving(false);
     }
@@ -107,7 +107,7 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
   if (loading) {
     return (
       <Card>
-        <CardContent className="py-12 text-center text-white/40 text-sm">Yükleniyor...</CardContent>
+        <CardContent className="py-12 text-center text-white/40 text-sm">Loading...</CardContent>
       </Card>
     );
   }
@@ -120,28 +120,28 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
           My Offer
         </CardTitle>
         <CardDescription>
-          Bu workspace ne satıyor? AI mockup, opener ve sales angle bu bilgilere göre kişiselleşir.
-          Her mesajda kullanıcının kendi sesi ve fiyat çıpası geçer.
+          What does this workspace sell? The AI mockup, opener, and sales angle all personalize
+          based on this. Your own voice and price anchor flow through every message.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={save} className="space-y-5 max-w-2xl">
           <Field
-            label="Teklif adı"
-            help="Örn: Yerel İşletme Web Paketi, Klaviyo Email Setup, Vasarn Phone Repair Site Setup."
+            label="Offer name"
+            help="e.g. Local Business Web Package, Klaviyo Email Setup, Phone Repair Site Setup."
           >
             <Input
               value={data.offerName ?? ""}
               onChange={(e) => update("offerName")(e.target.value)}
               disabled={!canEdit}
               maxLength={80}
-              placeholder="Yerel İşletme Web Paketi"
+              placeholder="Local Business Web Package"
             />
           </Field>
 
           <Field
-            label="Değer önerisi (value proposition)"
-            help="Bir cümlede, ne sattığını ve müşteriye ne kazandırdığını anlat. Mockup hero'su ve email opener bu cümleye göre yazılır."
+            label="Value proposition"
+            help="In one sentence: what you sell and what the customer gets out of it. The mockup hero and email opener are written around this line."
           >
             <textarea
               value={data.valueProposition ?? ""}
@@ -149,14 +149,14 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
               disabled={!canEdit}
               maxLength={500}
               rows={3}
-              placeholder="Yerel hizmet işletmeleri için 1 sayfalık, mobile-first, online randevu özellikli web sitesi. Booking dakikalar içinde, 14 gün içinde canlı."
+              placeholder="One-page, mobile-first website with online booking for local service businesses. Bookings in minutes, live within 14 days."
               className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
             />
           </Field>
 
           <Field
-            label="Sosyal kanıt"
-            help="Hangi referanslar / sayılar / case study'ler güvenilirlik ekliyor?"
+            label="Social proof"
+            help="Which references, numbers, or case studies add credibility?"
           >
             <textarea
               value={data.socialProof ?? ""}
@@ -164,14 +164,14 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
               disabled={!canEdit}
               maxLength={400}
               rows={2}
-              placeholder="120+ teslim edilmiş site, ortalama 14 gün lansman, 4.8/5 müşteri puanı."
+              placeholder="120+ sites delivered, 14-day average launch, 4.8/5 customer rating."
               className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
             />
           </Field>
 
           <Field
             label="Hook / opening line"
-            help="Mesajın ilk satırında geçecek dikkat çekici cümle."
+            help="The attention-grabbing first sentence of your message."
           >
             <textarea
               value={data.offerHook ?? ""}
@@ -179,57 +179,57 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
               disabled={!canEdit}
               maxLength={300}
               rows={2}
-              placeholder="Sitenizin mobile load time'ını ölçtüm, 4.8sn. Booking butonu yok. Size 1 sayfalık taslak hazırladım."
+              placeholder="Measured your site's mobile load time — 4.8s, no booking button. Put together a 1-page draft for you."
               className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
             />
           </Field>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Mesaj hedefi" help="Reply geldiğinde ne istiyorsun?">
+            <Field label="Message goal" help="What do you want when they reply?">
               <select
                 value={data.objective ?? ""}
                 onChange={(e) => update("objective")(e.target.value)}
                 disabled={!canEdit}
                 className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
               >
-                <option value="">Seç...</option>
+                <option value="">Select...</option>
                 {OBJECTIVE_OPTIONS.map((o) => (
                   <option key={o} value={o}>{o}</option>
                 ))}
               </select>
             </Field>
 
-            <Field label="Ton" help="Mesaj tonu">
+            <Field label="Tone" help="How the message should read">
               <select
                 value={data.tone ?? ""}
                 onChange={(e) => update("tone")(e.target.value)}
                 disabled={!canEdit}
                 className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
               >
-                <option value="">Seç...</option>
+                <option value="">Select...</option>
                 {TONE_OPTIONS.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
             </Field>
 
-            <Field label="Uzunluk">
+            <Field label="Length">
               <select
                 value={data.length ?? ""}
                 onChange={(e) => update("length")(e.target.value)}
                 disabled={!canEdit}
                 className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
               >
-                <option value="">Seç...</option>
+                <option value="">Select...</option>
                 {LENGTH_OPTIONS.map((l) => (
                   <option key={l} value={l}>{l}</option>
                 ))}
               </select>
             </Field>
 
-            <Field label="Dil">
+            <Field label="Language">
               <select
-                value={data.language ?? "tr"}
+                value={data.language ?? "en"}
                 onChange={(e) => update("language")(e.target.value)}
                 disabled={!canEdit}
                 className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
@@ -242,17 +242,17 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Gönderen adı" help="Email imzasında çıkacak isim">
+            <Field label="Sender name" help="The name that appears in the email signature">
               <Input
                 value={data.senderName ?? ""}
                 onChange={(e) => update("senderName")(e.target.value)}
                 disabled={!canEdit}
                 maxLength={80}
-                placeholder="Mert Acar"
+                placeholder="Jane Doe"
               />
             </Field>
 
-            <Field label="Conversion linki" help="CTA tıklandığında nereye gitsin?">
+            <Field label="Conversion link" help="Where should the CTA send them?">
               <Input
                 value={data.conversionLink ?? ""}
                 onChange={(e) => update("conversionLink")(e.target.value)}
@@ -267,17 +267,17 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
             <Button type="submit" disabled={!canEdit || saving}>
               {saving ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Kaydediliyor...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4" /> Kaydet
+                  <Save className="w-4 h-4" /> Save
                 </>
               )}
             </Button>
             {!canEdit && (
               <span className="text-xs text-white/40">
-                Sadece OWNER ve ADMIN düzenleyebilir.
+                Only Owners and Admins can edit.
               </span>
             )}
           </div>

@@ -44,6 +44,71 @@ pilotlayıp ölçtükten sonra yapılacak.
 - Pilot ölçüm planı: 30 müşteriye sun, video gönderen vs göndermeyen kohort
   reply rate karşılaştır. Lift > 1.5x ise lead detail'e prominent buton koy.
 
+## 5. AI Core + pgvector + Apify — orchestration platformu
+
+**Karar:** Butun AI parcalari tek bir orchestrator + pgvector tabanli
+semantic memory + Apify external data source katmani altinda toplandi.
+Pinecone yerine Supabase pgvector (zaten Supabase'deyiz, tek sistem,
+Prisma transaction atomikligi); legacy worker'lar registry'e tasindi
+(yerleri korundu); Apify 9 actor'lu "enrichment" worker grubu olarak
+registry'e baglandi.
+
+**Gerekce:**
+- Dagilmislik: 7 BullMQ kuyrugu -> 1 (`ai-runs`). 2 state modeli
+  (legacy `Lead.*Status` vs `AgentRun`) -> `AgentRun + PlannerSession`.
+- Baglamsizlik: Her worker ayni `SemanticMemory` substrate'inden okur
+  ve yazar. Copilot artik "top 30 by recency" yerine semantic
+  retrieval kullaniyor. Opener writer few-shot olarak gecmis basarili
+  opener'lari cekiyor (learning loop).
+- Yuzeyselkalma: Apify ile lead basi ~$1-2 karsiliginda 500 review,
+  tam Instagram/Facebook/TikTok profili, SERP rank, rakip ad arsivi,
+  LinkedIn hiring sinyali, Reddit itibari memory'e giriyor.
+- AI Receptionist Builder gercek deliverable olarak shippable:
+  `APIFY_WEB_CRAWL_DEEP -> PROSPECT_KB_CHUNK memory -> receptionist
+  kb_json export` Synthflow/Retell panosuna yuklenebiliyor.
+
+**Implementation:**
+- [`prisma/schema.prisma`](prisma/schema.prisma) — yeni modeller
+  (`SemanticMemory`, `PlannerSession`), 9 yeni `AgentWorkerKind`,
+  `MemoryKind`/`PlannerStatus`/`PlannerTrigger` enumlari.
+- [`prisma/migrations/add_pgvector_extension.sql`](prisma/migrations/add_pgvector_extension.sql) — extension install.
+- [`prisma/migrations/add_ai_core.sql`](prisma/migrations/add_ai_core.sql) — vector(768) kolonu + HNSW cosine index.
+- [`src/lib/ai-core/`](src/lib/ai-core) — memory facade, embed helper,
+  event bus, chains (DAG), planner, orchestrator, router (copilot
+  function-calling), sentinels.
+- [`src/lib/agent-workers/`](src/lib/agent-workers) — legacy worker
+  wrappers (website-auditor, review-analyst, sales-opportunity-scorer,
+  social-scraper, email-verifier, opener-writer, inbox-reply-attributor)
+  + `apify/` klasoru 9 Apify wrapper.
+- [`src/lib/apify.ts`](src/lib/apify.ts) — Apify REST client + webhook
+  secret verify.
+- [`src/app/api/planner/`](src/app/api/planner) — start / [id] / bulk
+  endpoint'leri.
+- [`src/app/api/webhooks/apify/route.ts`](src/app/api/webhooks/apify/route.ts) — async actor callback.
+- [`src/app/api/leads/[id]/lookalikes/route.ts`](src/app/api/leads/[id]/lookalikes/route.ts) — semantic k-NN.
+- [`src/app/api/leads/[id]/mark-outcome/route.ts`](src/app/api/leads/[id]/mark-outcome/route.ts) — learning loop tetikleyici.
+- [`src/components/app/planner-actions.tsx`](src/components/app/planner-actions.tsx) — UI panel.
+- [`scripts/check-pgvector.ts`](scripts/check-pgvector.ts) — deploy
+  oncesi migration dogrulama.
+
+**Vector DB secimi: pgvector vs Pinecone.**  Onerilen secim **pgvector**'du
+ve uygulanan da bu. Nedenleri:
+- Supabase uzerinde built-in, ek servis/fatura yok.
+- Prisma transaction icinde `SemanticMemory` row + embed atomik yazilabilir.
+- HNSW index `vector_cosine_ops` ile cosine similarity direkt SQL.
+- Gemini `text-embedding-004` 768 dim, pgvector 2000 dim limitinin altinda.
+- Tenant izolasyonu `workspace_id` filter ile saglaniyor; Pinecone'un
+  namespace modeli ile islevsel olarak esdeger.
+- 5M+ vector'e cikinca Pinecone'a mal olmadan geciste de kolay: embedding
+  vendor lock-in yok.
+
+**Big-bang degil, 7 fazli tek sprint.** Her faz bir commit/logical
+unit olarak uygulandi: Foundation -> Planner -> Queues -> Copilot ->
+UI -> Learning loop -> Apify. Legacy BullMQ kuyruklari (`discovery`,
+`crawl`, `analyze`, `review-analysis`, `email-verification`,
+`inbox-sync`) suan canli akista; kapatma bir sonraki release'e
+birakildi (sifir-downtime tasinma icin).
+
 ## 4. Mapileads competitive monitoring cadence
 
 **Karar:** Çınar haftalık `/last30days mapileads` çalıştıracak. İlk Pazartesi

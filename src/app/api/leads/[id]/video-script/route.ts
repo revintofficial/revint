@@ -2,8 +2,8 @@
  * P2.1 - Personalized video script generator (pilot endpoint).
  *
  * POST: returns a 30-second video script for screen-sharing the mockup.
- * Pilot için hazır; production tier gating P1'e taşınmadan açılmasın diye
- * şu an quota olarak normal AI credit kullanıyor.
+ * Ready for pilot; until production tier gating lands in P1, this currently
+ * uses a normal AI credit as its quota unit.
  */
 
 import { NextResponse } from "next/server";
@@ -47,7 +47,7 @@ export async function POST(
     }
     if (!lead.watchlistItem?.websitePlan) {
       return NextResponse.json(
-        { error: "Önce mockup oluşturun, sonra video script'i çıkarın." },
+        { error: "Create a mockup first, then generate the video script." },
         { status: 422 },
       );
     }
@@ -61,31 +61,31 @@ export async function POST(
     const topPain =
       ((ri?.painPhrases as string[] | undefined) || [])[0]
       ?? ((lead.salesOpportunity?.likelyPainPoints as string[] | undefined) || [])[0]
-      ?? "Online randevu yok";
+      ?? "No online booking";
 
     const auditIssues = audit
       ? [
-          !audit.https && "HTTPS yok",
-          !audit.mobileFriendlyGuess && "mobile uyumsuz",
-          !audit.hasBookingSystem && "online booking yok",
-          audit.loadTimeMs && audit.loadTimeMs > 3000 && `${(audit.loadTimeMs / 1000).toFixed(1)}sn yavaş`,
+          !audit.https && "no HTTPS",
+          !audit.mobileFriendlyGuess && "not mobile friendly",
+          !audit.hasBookingSystem && "no online booking",
+          audit.loadTimeMs && audit.loadTimeMs > 3000 && `${(audit.loadTimeMs / 1000).toFixed(1)}s slow load`,
         ]
           .filter(Boolean)
-          .join(", ") || "küçük UX iyileştirmeleri"
-      : "audit yapılmamış";
+          .join(", ") || "minor UX improvements"
+      : "audit not run";
 
     const filled = VIDEO_SCRIPT_PROMPT
       .replaceAll("{business_name}", lead.businessName)
       .replaceAll("{address}", lead.formattedAddress)
       .replaceAll("{top_pain}", topPain)
       .replaceAll("{audit_issues}", auditIssues)
-      .replaceAll("{mockup_solution}", topPain + " sorununu çözen yeni hero ve booking widget")
-      .replaceAll("{offer_value_proposition}", ws.valueProposition || "Modern yerel işletme web sitesi")
-      .replaceAll("{offer_hook}", ws.offerHook || "Mevcut sitenizdeki üç sorunu gösteren bir taslak hazırladım")
+      .replaceAll("{mockup_solution}", "a new hero and booking widget that solves the " + topPain + " problem")
+      .replaceAll("{offer_value_proposition}", ws.valueProposition || "Modern website for local businesses")
+      .replaceAll("{offer_hook}", ws.offerHook || "I put together a draft that shows three issues on your current site")
       .replaceAll("{conversion_link}", ws.conversionLink || "leadac.ai")
       .replaceAll("{workspace_objective}", ws.objective || "Book a 15-min call")
       .replaceAll("{workspace_tone}", ws.tone || "friendly")
-      .replaceAll("{workspace_language}", ws.language || "tr");
+      .replaceAll("{workspace_language}", ws.language || "en");
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {

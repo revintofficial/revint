@@ -29,11 +29,11 @@ export async function transcribeAudioWithGemini(
   });
 
   const langHint = language
-    ? ` Yanit ${language} dilinde olsun.`
-    : " Yanit konusulan dilin orijinalinde olsun.";
+    ? ` Return the transcript in ${language}.`
+    : " Return the transcript in the original spoken language.";
 
-  const prompt = `Bu sesi yaziya dök. Sadece transkripsiyonu ver, baska aciklama yok.${langHint}
-Eger ses anlasilmiyorsa "[anlasilmadi]" yaz. Eger sessizse "[sessiz]" yaz.`;
+  const prompt = `Transcribe this audio. Return only the transcript, no commentary.${langHint}
+If the audio is unintelligible, output "[unintelligible]". If it is silent, output "[silent]".`;
 
   const result = await model.generateContent([
     { text: prompt },

@@ -73,7 +73,7 @@ export async function GET(
         sections: wm.sectionsJson as unknown as WebsiteMockupSections,
         workspaceName: wm.lead.workspace.name,
         branding,
-        lang: wm.lead.workspace.language ?? "tr",
+        lang: wm.lead.workspace.language ?? "en",
       });
     }
 

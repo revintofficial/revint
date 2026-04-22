@@ -8,8 +8,9 @@
  * their metadata without pulling Gemini prompt bundles into the API
  * route bundle graph.
  *
- * Labels in both English and Turkish. The UI picks the right one based
- * on `workspace.language`.
+ * Labels are English-first. Turkish fields (`displayNameTr`,
+ * `descriptionTr`) are retained in the type shape for backward
+ * compatibility but the UI no longer reads them.
  */
 import type { AgentWorkerKind, Plan } from "@/generated/prisma/client";
 import type {
@@ -17,16 +18,28 @@ import type {
   AgentWorkerContext,
   AgentWorkerOutput,
   AgentWorkerRun,
+  MemoryWrite,
 } from "./types";
 
-type AgentWorkerMeta = Omit<AgentWorker, "run"> & {
+/**
+ * Shape that a worker's impl module must export. `run` is required;
+ * `memoryWrites` is optional and returned by modules that produce
+ * SemanticMemory side effects. Registry callers don't observe the
+ * module shape directly - they go through `resolveWorker(kind)`.
+ */
+interface WorkerModule {
+  run: AgentWorkerRun;
+  memoryWrites?: (output: unknown, ctx: AgentWorkerContext) => MemoryWrite[] | Promise<MemoryWrite[]>;
+}
+
+type AgentWorkerMeta = Omit<AgentWorker, "run" | "memoryWrites"> & {
   // Dynamic import path (relative to this file). The import is cached
   // on first call.
-  implModule?: () => Promise<{ run: AgentWorkerRun }>;
+  implModule?: () => Promise<WorkerModule>;
 };
 
 const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
-  // -------- Grup A: Intelligence (auto-run on ingest, legacy workers) --------
+  // -------- Grup A: Intelligence (migrated to AI Core registry) --------
   WEBSITE_AUDITOR: {
     kind: "WEBSITE_AUDITOR",
     group: "intelligence",
@@ -35,8 +48,9 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     description: "Crawls the lead's site with Playwright and records booking, mobile, speed, schema, and security signals.",
     descriptionTr: "Playwright ile lead'in sitesini tarar; randevu, mobil, hiz, schema ve guvenlik sinyallerini kaydeder.",
     minPlan: "FREE",
-    phase1Enabled: false,
+    phase1Enabled: true,
     estimatedDurationMs: 15000,
+    implModule: () => import("./website-auditor").then((m) => ({ run: m.run })),
   },
   REVIEW_ANALYST: {
     kind: "REVIEW_ANALYST",
@@ -46,8 +60,9 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     description: "Aggregates up to 50 Google reviews into KPI bars (weakness / strength / pain phrases).",
     descriptionTr: "50 Google yorumunu KPI cubuklarina cevirir (zayif yon / guclu yon / aci ifadeleri).",
     minPlan: "FREE",
-    phase1Enabled: false,
+    phase1Enabled: true,
     estimatedDurationMs: 20000,
+    implModule: () => import("./review-analyst").then((m) => ({ run: m.run })),
   },
   SALES_OPPORTUNITY_SCORER: {
     kind: "SALES_OPPORTUNITY_SCORER",
@@ -57,19 +72,22 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     description: "0-100 opportunity score plus suggested offer and best sales angle.",
     descriptionTr: "0-100 firsat skoru, onerilen paket ve en iyi satis acisi.",
     minPlan: "FREE",
-    phase1Enabled: false,
+    phase1Enabled: true,
     estimatedDurationMs: 12000,
+    implModule: () =>
+      import("./sales-opportunity-scorer").then((m) => ({ run: m.run })),
   },
   SOCIAL_SCRAPER: {
     kind: "SOCIAL_SCRAPER",
     group: "intelligence",
     displayName: "Social Scraper",
     displayNameTr: "Sosyal Profil Toplayici",
-    description: "Discovers Instagram, Facebook, LinkedIn, TikTok profiles and follower counts.",
-    descriptionTr: "Instagram, Facebook, LinkedIn, TikTok profillerini ve takipci sayilarini bulur.",
+    description: "Discovers Instagram, Facebook, LinkedIn, TikTok profiles and follower counts (links-from-site). For deep profile data use APIFY_* social workers.",
+    descriptionTr: "Instagram, Facebook, LinkedIn, TikTok profillerini bulur (siteden link cikarma). Derin profil datasi icin APIFY_* sosyal worker'larini kullan.",
     minPlan: "FREE",
-    phase1Enabled: false,
+    phase1Enabled: true,
     estimatedDurationMs: 8000,
+    implModule: () => import("./social-scraper").then((m) => ({ run: m.run })),
   },
   EMAIL_VERIFIER: {
     kind: "EMAIL_VERIFIER",
@@ -79,8 +97,9 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     description: "ZeroBounce verification for every contact email on the lead's site.",
     descriptionTr: "Sitede bulunan her iletisim email'i icin ZeroBounce dogrulama.",
     minPlan: "PRO",
-    phase1Enabled: false,
+    phase1Enabled: true,
     estimatedDurationMs: 3000,
+    implModule: () => import("./email-verifier").then((m) => ({ run: m.run })),
   },
 
   // -------- Grup B: Pitch (agency-facing artifacts, sent to prospects) --------
@@ -100,7 +119,7 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     group: "pitch",
     displayName: "Website Mockup Generator",
     displayNameTr: "Website Mockup Uretici",
-    description: "Real single-page landing site in landing-page quality. Shareable at /m/{slug} as a preview the prospect can open on their phone.",
+    description: "Production-quality single-page landing site, shareable at /m/{slug} so the prospect can open the preview on their phone.",
     descriptionTr: "Gercek landing page kalitesinde tek-sayfa site. /m/{slug} adresinde onizleme olarak paylasilir, prospect telefonundan acar.",
     minPlan: "FREE",
     phase1Enabled: true,
@@ -113,11 +132,16 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     group: "pitch",
     displayName: "Opener Writer",
     displayNameTr: "Acilis Mesaji Yazici",
-    description: "Personalized cold-email or WhatsApp first message grounded in the lead's pain points.",
-    descriptionTr: "Lead'in aci noktalarina dayali kisisellestirilmis cold-email veya WhatsApp ilk mesaji.",
+    description: "Personalized cold-email or WhatsApp first message grounded in the lead's pain points, augmented with the workspace's past winning openers via few-shot retrieval from SemanticMemory.",
+    descriptionTr: "Lead'in aci noktalarina dayali kisisellestirilmis cold-email veya WhatsApp ilk mesaji. Workspace'in gecmiste cevap alan opener'larindan few-shot retrieval ile ses ogrenmesi.",
     minPlan: "FREE",
-    phase1Enabled: false,
+    phase1Enabled: true,
     estimatedDurationMs: 8000,
+    memoryReads: [
+      { kinds: ["OPENER_SUCCESS"], topK: 5, scope: "workspace" },
+      { kinds: ["LEAD_PROFILE"], topK: 1, scope: "lead" },
+    ],
+    implModule: () => import("./opener-writer").then((m) => ({ run: m.run })),
   },
   VIDEO_SCRIPT_WRITER: {
     kind: "VIDEO_SCRIPT_WRITER",
@@ -148,14 +172,15 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     group: "deliverable",
     displayName: "AI Receptionist Builder",
     displayNameTr: "AI Resepsiyonist Kurucu",
-    description: "Voice agent config (Synthflow / Retell / Vapi) with greeting, FAQ, hours, booking flow tuned to the lead's business.",
-    descriptionTr: "Synthflow / Retell / Vapi uyumlu sesli ajan config'i - karsilama, SSS, calisma saatleri, randevu akisi lead'e ozel.",
+    description: "Voice agent config (Synthflow / Retell / Vapi) with greeting, FAQ, hours, booking flow tuned to the lead's business. When APIFY_WEB_CRAWL_DEEP has populated PROSPECT_KB_CHUNK memory, the FAQs and services are grounded in the prospect's own site content.",
+    descriptionTr: "Synthflow / Retell / Vapi uyumlu sesli ajan config'i. APIFY_WEB_CRAWL_DEEP PROSPECT_KB_CHUNK bellegini doldurduysa SSS ve servisler prospect'in kendi site icerigine dayali.",
     // LAUNCH: temporarily open to FREE tier (normally PRO+). Flip back
     // to "PRO" in registry + quota.ts when first 30-day usage stabilises.
     minPlan: "FREE",
     phase1Enabled: true,
     estimatedDurationMs: 40000,
-    exportFormats: ["synthflow", "retell", "vapi", "ghl", "json"],
+    exportFormats: ["synthflow", "retell", "vapi", "ghl", "json", "kb_json"],
+    memoryReads: [{ kinds: ["PROSPECT_KB_CHUNK"], topK: 30, scope: "lead" }],
     implModule: () => import("./ai-receptionist").then((m) => ({ run: m.run })),
   },
   REVIEW_REPLY_AGENT: {
@@ -228,11 +253,13 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     group: "ops",
     displayName: "Inbox Reply Attributor",
     displayNameTr: "Gelen Kutusu Eslestirici",
-    description: "Matches Gmail / Outlook inbound replies to sent openers and advances the pipeline stage.",
-    descriptionTr: "Gmail / Outlook gelen cevaplarini gonderilen openerlarla eslestirir, pipeline asamasini ilerletir.",
+    description: "Matches Gmail / Outlook inbound replies to sent openers and advances the pipeline stage. Phase 1: reads the current status so the learning-loop sentinel can write OPENER_SUCCESS/FAILURE memory.",
+    descriptionTr: "Gmail / Outlook gelen cevaplarini gonderilen openerlarla eslestirir, pipeline asamasini ilerletir. Faz 1: sadece mevcut statusu okur, sentinel OPENER_SUCCESS/FAILURE memory'i yazar.",
     minPlan: "PRO",
-    phase1Enabled: false,
+    phase1Enabled: true,
     estimatedDurationMs: 5000,
+    implModule: () =>
+      import("./inbox-reply-attributor").then((m) => ({ run: m.run })),
   },
   OUTREACH_SENDER: {
     kind: "OUTREACH_SENDER",
@@ -255,6 +282,123 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO_TEAM",
     phase1Enabled: false,
     estimatedDurationMs: 0,
+  },
+
+  // -------- Grup E: Enrichment (Apify external data sources) --------
+  // Each Apify worker hits a remote actor, chunks + upserts results
+  // into SemanticMemory (under the appropriate MemoryKind), and
+  // persists the raw artifact to AgentRun.outputJson. All are
+  // opt-in: chains include them only under user_deep_research or
+  // user_receptionist_with_kb. Every FREE workspace has $0 budget;
+  // paid tiers accrue costUsdCents against a monthly cap checked in
+  // `src/lib/agent-workers/quota.ts`.
+  APIFY_GMAPS_DEEP: {
+    kind: "APIFY_GMAPS_DEEP",
+    group: "enrichment",
+    displayName: "Google Maps Deep Scraper",
+    displayNameTr: "Google Maps Derin Tarayici",
+    description: "Pulls up to 500 reviews + emails + 6 social links + photos via Apify compass/crawler-google-places. ~$1-2 per lead.",
+    descriptionTr: "Apify compass/crawler-google-places ile 500 yoruma kadar + emailler + 6 sosyal link + fotograf. Lead basi ~$1-2.",
+    minPlan: "PRO",
+    phase1Enabled: true,
+    estimatedDurationMs: 90000,
+    implModule: () => import("./apify/gmaps-deep").then((m) => ({ run: m.run })),
+  },
+  APIFY_WEB_CRAWL_DEEP: {
+    kind: "APIFY_WEB_CRAWL_DEEP",
+    group: "enrichment",
+    displayName: "Website Deep Crawler",
+    displayNameTr: "Site Derin Tarayici",
+    description: "Crawls the lead's site into markdown chunks suitable for RAG. Populates PROSPECT_KB_CHUNK memory consumed by AI_RECEPTIONIST_BUILDER. ~$0.50 per site.",
+    descriptionTr: "Lead sitesini RAG icin markdown chunklara cevirir. AI_RECEPTIONIST_BUILDER'in kullandigi PROSPECT_KB_CHUNK bellegine yazar. Site basi ~$0.50.",
+    minPlan: "PRO",
+    phase1Enabled: true,
+    estimatedDurationMs: 120000,
+    implModule: () => import("./apify/web-crawl-deep").then((m) => ({ run: m.run })),
+  },
+  APIFY_INSTAGRAM_DEEP: {
+    kind: "APIFY_INSTAGRAM_DEEP",
+    group: "enrichment",
+    displayName: "Instagram Deep Scraper",
+    displayNameTr: "Instagram Derin Tarayici",
+    description: "Profile info + recent posts + engagement via Apify instagram-scraper. ~$0.003 per post.",
+    descriptionTr: "Apify instagram-scraper ile profil + son postlar + engagement. Post basi ~$0.003.",
+    minPlan: "PRO",
+    phase1Enabled: true,
+    estimatedDurationMs: 60000,
+    implModule: () => import("./apify/instagram-deep").then((m) => ({ run: m.run })),
+  },
+  APIFY_FACEBOOK_DEEP: {
+    kind: "APIFY_FACEBOOK_DEEP",
+    group: "enrichment",
+    displayName: "Facebook Deep Scraper",
+    displayNameTr: "Facebook Derin Tarayici",
+    description: "Posts + engagement from Apify facebook-posts-scraper. ~$0.002 per post.",
+    descriptionTr: "Apify facebook-posts-scraper ile postlar + engagement. Post basi ~$0.002.",
+    minPlan: "PRO",
+    phase1Enabled: true,
+    estimatedDurationMs: 60000,
+    implModule: () => import("./apify/facebook-deep").then((m) => ({ run: m.run })),
+  },
+  APIFY_TIKTOK_DEEP: {
+    kind: "APIFY_TIKTOK_DEEP",
+    group: "enrichment",
+    displayName: "TikTok Deep Scraper",
+    displayNameTr: "TikTok Derin Tarayici",
+    description: "Videos + engagement from Apify clockworks/tiktok-scraper. ~$0.003 per video.",
+    descriptionTr: "Apify clockworks/tiktok-scraper ile videolar + engagement. Video basi ~$0.003.",
+    minPlan: "PRO",
+    phase1Enabled: true,
+    estimatedDurationMs: 60000,
+    implModule: () => import("./apify/tiktok-deep").then((m) => ({ run: m.run })),
+  },
+  APIFY_SERP_RANK: {
+    kind: "APIFY_SERP_RANK",
+    group: "enrichment",
+    displayName: "SERP Rank Tracker",
+    displayNameTr: "SERP Sira Takibi",
+    description: "Where this lead ranks for target keywords via Apify google-search-scraper. Pitch angle fuel.",
+    descriptionTr: "Apify google-search-scraper ile lead'in hedef kelimelerdeki sirasi. Pitch acisi icin yakit.",
+    minPlan: "PRO",
+    phase1Enabled: true,
+    estimatedDurationMs: 45000,
+    implModule: () => import("./apify/serp-rank").then((m) => ({ run: m.run })),
+  },
+  APIFY_COMPETITOR_ADS: {
+    kind: "APIFY_COMPETITOR_ADS",
+    group: "enrichment",
+    displayName: "Competitor Ads Scanner",
+    displayNameTr: "Rakip Reklam Tarayicisi",
+    description: "Facebook/Instagram ad library scan via Apify curious_coder/facebook-ads-library-scraper.",
+    descriptionTr: "Apify curious_coder/facebook-ads-library-scraper ile Facebook/Instagram reklam kutuphanesi taramasi.",
+    minPlan: "PRO",
+    phase1Enabled: true,
+    estimatedDurationMs: 60000,
+    implModule: () => import("./apify/competitor-ads").then((m) => ({ run: m.run })),
+  },
+  APIFY_LINKEDIN_COMPANY: {
+    kind: "APIFY_LINKEDIN_COMPANY",
+    group: "enrichment",
+    displayName: "LinkedIn Company Scraper",
+    displayNameTr: "LinkedIn Sirket Tarayicisi",
+    description: "Company employees + hiring signals via HarvestAPI actors. Growing businesses = budget.",
+    descriptionTr: "HarvestAPI actor'leri ile sirket calisanlari + ise alim sinyalleri. Buyuyen is = butce.",
+    minPlan: "PRO_TEAM",
+    phase1Enabled: true,
+    estimatedDurationMs: 75000,
+    implModule: () => import("./apify/linkedin-company").then((m) => ({ run: m.run })),
+  },
+  APIFY_REDDIT_MENTIONS: {
+    kind: "APIFY_REDDIT_MENTIONS",
+    group: "enrichment",
+    displayName: "Reddit Mentions Scanner",
+    displayNameTr: "Reddit Mention Tarayicisi",
+    description: "Business reputation scan via Apify trudax/reddit-scraper-lite.",
+    descriptionTr: "Apify trudax/reddit-scraper-lite ile itibar taramasi.",
+    minPlan: "PRO",
+    phase1Enabled: true,
+    estimatedDurationMs: 45000,
+    implModule: () => import("./apify/reddit-mentions").then((m) => ({ run: m.run })),
   },
 };
 
@@ -301,21 +445,42 @@ export function planMeetsMinimum(plan: Plan, minPlan: Plan): boolean {
 }
 
 /**
- * Dynamic import + cache of a worker's `run` handler. Throws if the
- * worker is not yet implemented (Phase 2 / 3 placeholders).
+ * Dynamic import + cache of a worker's module. Throws if the worker
+ * is not yet implemented (Phase 2 / 3 placeholders).
  */
-const runCache = new Map<AgentWorkerKind, AgentWorkerRun>();
+const moduleCache = new Map<AgentWorkerKind, WorkerModule>();
 
-export async function resolveWorkerRun(kind: AgentWorkerKind): Promise<AgentWorkerRun> {
-  const cached = runCache.get(kind);
+async function resolveModule(kind: AgentWorkerKind): Promise<WorkerModule> {
+  const cached = moduleCache.get(kind);
   if (cached) return cached;
   const m = meta[kind];
   if (!m.implModule) {
     throw new Error(`Worker ${kind} is not yet implemented (phase 2/3 placeholder)`);
   }
   const mod = await m.implModule();
-  runCache.set(kind, mod.run);
+  moduleCache.set(kind, mod);
+  return mod;
+}
+
+export async function resolveWorkerRun(kind: AgentWorkerKind): Promise<AgentWorkerRun> {
+  const mod = await resolveModule(kind);
   return mod.run;
+}
+
+/**
+ * Returns the memoryWrites callback for a worker, or undefined if
+ * the worker does not write semantic memory. Uses the same lazy-import
+ * + cache as `resolveWorkerRun`.
+ */
+export async function resolveMemoryWrites(
+  kind: AgentWorkerKind,
+): Promise<WorkerModule["memoryWrites"] | undefined> {
+  try {
+    const mod = await resolveModule(kind);
+    return mod.memoryWrites;
+  } catch {
+    return undefined;
+  }
 }
 
 /**

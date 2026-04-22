@@ -17,11 +17,88 @@
  *      worker process writes back to `AgentRun` (SUCCEEDED / FAILED)
  *      and sets `artifactUrl` if the output is publicly shareable.
  */
-import type { AgentWorkerKind, Plan, Lead, Workspace, WebsiteAudit, ReviewAnalysis, SalesOpportunity } from "@/generated/prisma/client";
+import type { AgentWorkerKind, Plan, Lead, Workspace, WebsiteAudit, ReviewAnalysis, SalesOpportunity, MemoryKind } from "@/generated/prisma/client";
 
-export type AgentWorkerGroup = "intelligence" | "pitch" | "deliverable" | "ops";
+export type AgentWorkerGroup = "intelligence" | "pitch" | "deliverable" | "ops" | "enrichment";
 
-export type AgentExportFormat = "synthflow" | "retell" | "vapi" | "ghl" | "n8n" | "make" | "html" | "zip" | "json";
+export type AgentExportFormat =
+  | "synthflow"
+  | "retell"
+  | "vapi"
+  | "ghl"
+  | "n8n"
+  | "make"
+  | "html"
+  | "zip"
+  | "json"
+  // Knowledge-base export: a flat list of { chunk_id, text, embedding,
+  // metadata } entries suitable for uploading to a 3rd-party RAG store
+  // (Synthflow KB, Retell KB, Vapi custom docs, etc.). Produced when
+  // a worker has accumulated PROSPECT_KB_CHUNK memory for its lead.
+  | "kb_json";
+
+/**
+ * Event names the planner can react to. Keep in sync with
+ * `src/lib/ai-core/chains.ts` CHAINS keys; the type exists at this
+ * layer so workers can declare sub-event emissions without pulling
+ * the chains module into their bundle graph.
+ */
+export type EventKind =
+  | "lead_created"
+  | "inbox_reply_received"
+  | "user_one_click_pitch"
+  | "user_deep_research"
+  | "user_receptionist_with_kb"
+  | "user_bulk_pitch";
+
+export interface MemorySpec {
+  kinds: MemoryKind[];
+  /**
+   * How many memory hits to pre-fetch for this spec. Default 10.
+   */
+  topK?: number;
+  /**
+   * `"workspace"`: search across the entire workspace.
+   * `"lead"`: restrict to memories attached to `ctx.leadId`.
+   */
+  scope: "workspace" | "lead";
+  /**
+   * Minimum cosine similarity. Default 0 (return topK regardless).
+   */
+  minSimilarity?: number;
+}
+
+export interface MemoryHit {
+  id: string;
+  kind: MemoryKind;
+  leadId: string | null;
+  refType: string | null;
+  refId: string | null;
+  text: string;
+  metadata: Record<string, unknown>;
+  similarity: number;
+  createdAt: Date;
+}
+
+/**
+ * A pending memory write returned from a worker's `memoryWrites`
+ * callback. The executor upserts these rows + embeds them after the
+ * worker finishes successfully.
+ */
+export interface MemoryWrite {
+  kind: MemoryKind;
+  text: string;
+  leadId?: string | null;
+  refType?: string | null;
+  refId?: string | null;
+  metadata?: Record<string, unknown>;
+  /**
+   * When true, the executor skips embedding (row is stored as
+   * searchable-by-refId only, not by semantic similarity). Useful for
+   * structured data that makes no sense to embed.
+   */
+  skipEmbed?: boolean;
+}
 
 /**
  * Context passed to every worker at invocation time. The worker resolver
@@ -59,6 +136,28 @@ export interface AgentWorkerContext {
     | "socialProof"
     | "branding"
   >;
+  /**
+   * Pre-fetched SemanticMemory hits based on this worker's `memoryReads`
+   * declaration. When a worker declares multiple `MemorySpec`s the
+   * hits are concatenated in the order specified. Workers should rely
+   * on the metadata + kind fields to disambiguate rather than positional
+   * indexing.
+   */
+  memory: MemoryHit[];
+  /**
+   * PlannerSession id when this run was scheduled as part of a DAG.
+   * Null for legacy one-shot runs. Workers rarely need this; it is
+   * primarily a hook for observability.
+   */
+  plannerSessionId: string | null;
+  /**
+   * Emits a sub-event during the run. The planner picks this up and
+   * can schedule a follow-up chain (e.g. inside OPENER_WRITER we emit
+   * `"user_one_click_pitch"` to trigger mockup + video script siblings).
+   * Fire-and-forget semantics; the promise resolves when the event is
+   * accepted, not when downstream work completes.
+   */
+  emit: (event: EventKind, payload?: Record<string, unknown>) => Promise<void>;
 }
 
 /**
@@ -82,9 +181,15 @@ export interface AgentWorkerOutput {
    */
   artifactUrl?: string | null;
   /**
-   * Approximate token cost for tier metering.
+   * Approximate token cost for tier metering (Gemini LLM calls).
    */
   costTokens?: number;
+  /**
+   * USD-denominated external cost in cents. Primarily Apify actor
+   * runs; always 0 for pure Gemini workers. Separate from costTokens
+   * so the UI can split "AI spend" from "data spend".
+   */
+  costUsdCents?: number;
 }
 
 export interface AgentWorker {
@@ -113,6 +218,30 @@ export interface AgentWorker {
    * lead response, booking widget).
    */
   exportFormats?: AgentExportFormat[];
+  /**
+   * AI Core - declarative memory inputs. The orchestrator pre-fetches
+   * these before calling `run()` and populates `ctx.memory`. Keep the
+   * declaration here (not inside the run handler) so the planner can
+   * reason about memory dependencies before scheduling.
+   */
+  memoryReads?: MemorySpec[];
+  /**
+   * AI Core - memory writes produced from the run output. Called by
+   * the executor AFTER the worker succeeds; each returned entry is
+   * upserted into SemanticMemory and embedded. Workers that don't
+   * produce semantic memory leave this unset.
+   */
+  memoryWrites?: (
+    output: unknown,
+    ctx: AgentWorkerContext,
+  ) => MemoryWrite[] | Promise<MemoryWrite[]>;
+  /**
+   * AI Core - DAG ordering hint for `chains.ts`. If set, the planner
+   * will not schedule this worker until every dependency has a
+   * SUCCEEDED AgentRun for the same lead. Does NOT replace chain
+   * definitions; it is a safety net for ad-hoc runs.
+   */
+  dependsOn?: AgentWorkerKind[];
   /**
    * Lazy loader for the worker implementation module. Returns the
    * default export which must be a function of signature:

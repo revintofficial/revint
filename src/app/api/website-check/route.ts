@@ -149,87 +149,87 @@ function analyzeHtml(html: string, url: string): ContentAnalysis {
 
   if (htmlSize > 20000) {
     score += 10;
-    signals.push({ label: "HTML Boyutu", status: "good", detail: `${(htmlSize / 1024).toFixed(0)} KB - Kapsamli icerik` });
+    signals.push({ label: "HTML Size", status: "good", detail: `${(htmlSize / 1024).toFixed(0)} KB - Comprehensive content` });
   } else if (htmlSize > 5000) {
     score += 5;
-    signals.push({ label: "HTML Boyutu", status: "warning", detail: `${(htmlSize / 1024).toFixed(0)} KB - Orta duzey icerik` });
+    signals.push({ label: "HTML Size", status: "warning", detail: `${(htmlSize / 1024).toFixed(0)} KB - Moderate content` });
   } else {
-    signals.push({ label: "HTML Boyutu", status: "bad", detail: `${(htmlSize / 1024).toFixed(0)} KB - Cok az icerik` });
+    signals.push({ label: "HTML Size", status: "bad", detail: `${(htmlSize / 1024).toFixed(0)} KB - Very little content` });
   }
 
   if (wordCount > 300) {
     score += 15;
-    signals.push({ label: "Kelime Sayisi", status: "good", detail: `${wordCount} kelime - Zengin icerik` });
+    signals.push({ label: "Word Count", status: "good", detail: `${wordCount} words - Rich content` });
   } else if (wordCount > 100) {
     score += 8;
-    signals.push({ label: "Kelime Sayisi", status: "warning", detail: `${wordCount} kelime - Az icerik` });
+    signals.push({ label: "Word Count", status: "warning", detail: `${wordCount} words - Thin content` });
   } else {
-    signals.push({ label: "Kelime Sayisi", status: "bad", detail: `${wordCount} kelime - Cok yetersiz` });
+    signals.push({ label: "Word Count", status: "bad", detail: `${wordCount} words - Very insufficient` });
   }
 
   if (imageCount > 5) {
     score += 10;
-    signals.push({ label: "Gorseller", status: "good", detail: `${imageCount} gorsel bulundu` });
+    signals.push({ label: "Images", status: "good", detail: `${imageCount} images found` });
   } else if (imageCount > 0) {
     score += 5;
-    signals.push({ label: "Gorseller", status: "warning", detail: `Sadece ${imageCount} gorsel` });
+    signals.push({ label: "Images", status: "warning", detail: `Only ${imageCount} image(s)` });
   } else {
-    signals.push({ label: "Gorseller", status: "bad", detail: "Hic gorsel yok" });
+    signals.push({ label: "Images", status: "bad", detail: "No images at all" });
   }
 
   if (hasTitle && titleText.length > 5) {
     score += 5;
     signals.push({ label: "Title", status: "good", detail: titleText });
   } else {
-    signals.push({ label: "Title", status: "bad", detail: hasTitle ? "Cok kisa title" : "Title yok" });
+    signals.push({ label: "Title", status: "bad", detail: hasTitle ? "Title is too short" : "No title tag" });
   }
 
   if (hasMetaDesc) {
     score += 5;
-    signals.push({ label: "Meta Description", status: "good", detail: "Mevcut" });
+    signals.push({ label: "Meta Description", status: "good", detail: "Present" });
   } else {
-    signals.push({ label: "Meta Description", status: "bad", detail: "Eksik" });
+    signals.push({ label: "Meta Description", status: "bad", detail: "Missing" });
   }
 
   if (hasNav) {
     score += 8;
-    signals.push({ label: "Navigasyon", status: "good", detail: "Menu yapisi var" });
+    signals.push({ label: "Navigation", status: "good", detail: "Menu structure present" });
   } else {
-    signals.push({ label: "Navigasyon", status: "bad", detail: "Menu yapisi yok" });
+    signals.push({ label: "Navigation", status: "bad", detail: "No menu structure" });
   }
 
   if (hasFooter) {
     score += 5;
-    signals.push({ label: "Footer", status: "good", detail: "Footer bolumu var" });
+    signals.push({ label: "Footer", status: "good", detail: "Footer section present" });
   } else {
-    signals.push({ label: "Footer", status: "warning", detail: "Footer yok" });
+    signals.push({ label: "Footer", status: "warning", detail: "No footer" });
   }
 
   if (hasH1 && hasH2) {
     score += 8;
-    signals.push({ label: "Baslik Yapisi", status: "good", detail: "H1 ve H2 mevcut" });
+    signals.push({ label: "Heading Structure", status: "good", detail: "H1 and H2 present" });
   } else if (hasH1) {
     score += 4;
-    signals.push({ label: "Baslik Yapisi", status: "warning", detail: "Sadece H1 var" });
+    signals.push({ label: "Heading Structure", status: "warning", detail: "Only H1 present" });
   } else {
-    signals.push({ label: "Baslik Yapisi", status: "bad", detail: "Baslik yapisi eksik" });
+    signals.push({ label: "Heading Structure", status: "bad", detail: "Heading structure missing" });
   }
 
   if (hasForms) {
     score += 7;
-    signals.push({ label: "Form / Iletisim", status: "good", detail: "Form elementi mevcut" });
+    signals.push({ label: "Form / Contact", status: "good", detail: "Form element present" });
   } else {
-    signals.push({ label: "Form / Iletisim", status: "warning", detail: "Form bulunamadi" });
+    signals.push({ label: "Form / Contact", status: "warning", detail: "No form found" });
   }
 
   if (internalLinkCount > 10) {
     score += 8;
-    signals.push({ label: "Dahili Linkler", status: "good", detail: `${internalLinkCount} link - Cok sayfali site` });
+    signals.push({ label: "Internal Links", status: "good", detail: `${internalLinkCount} links - Multi-page site` });
   } else if (internalLinkCount > 3) {
     score += 4;
-    signals.push({ label: "Dahili Linkler", status: "warning", detail: `${internalLinkCount} link` });
+    signals.push({ label: "Internal Links", status: "warning", detail: `${internalLinkCount} links` });
   } else {
-    signals.push({ label: "Dahili Linkler", status: "bad", detail: `Sadece ${internalLinkCount} link` });
+    signals.push({ label: "Internal Links", status: "bad", detail: `Only ${internalLinkCount} link(s)` });
   }
 
   if (hasOpenGraph) { score += 3; }
@@ -239,31 +239,31 @@ function analyzeHtml(html: string, url: string): ContentAnalysis {
 
   const technicalFeatures = [hasOpenGraph, hasFavicon, hasViewport, hasStructuredData, hasCustomCss, hasJs].filter(Boolean).length;
   if (technicalFeatures >= 4) {
-    signals.push({ label: "Teknik Kalite", status: "good", detail: `${technicalFeatures}/6 teknik ozellik mevcut` });
+    signals.push({ label: "Technical Quality", status: "good", detail: `${technicalFeatures}/6 technical features present` });
     score += 5;
   } else if (technicalFeatures >= 2) {
-    signals.push({ label: "Teknik Kalite", status: "warning", detail: `${technicalFeatures}/6 teknik ozellik` });
+    signals.push({ label: "Technical Quality", status: "warning", detail: `${technicalFeatures}/6 technical features` });
   } else {
-    signals.push({ label: "Teknik Kalite", status: "bad", detail: `${technicalFeatures}/6 teknik ozellik - Cok zayif` });
+    signals.push({ label: "Technical Quality", status: "bad", detail: `${technicalFeatures}/6 technical features - Very weak` });
   }
 
   if (hasPlaceholder) {
     score -= 20;
-    signals.push({ label: "Placeholder Icerik", status: "bad", detail: "Lorem ipsum veya placeholder metin tespit edildi" });
+    signals.push({ label: "Placeholder Content", status: "bad", detail: "Lorem ipsum or placeholder text detected" });
   }
 
   if (isParked) {
     score -= 30;
-    signals.push({ label: "Park Edilmis Domain", status: "bad", detail: "Bu domain park sayfasi olabilir" });
+    signals.push({ label: "Parked Domain", status: "bad", detail: "This domain appears to be a parking page" });
   }
 
   if (isComingSoon) {
     score -= 15;
-    signals.push({ label: "Coming Soon", status: "bad", detail: "Site henuz yayinda degil" });
+    signals.push({ label: "Coming Soon", status: "bad", detail: "Site is not live yet" });
   }
 
   if (builderDetected) {
-    signals.push({ label: "Site Builder", status: "warning", detail: `${builderDetected} ile olusturulmus` });
+    signals.push({ label: "Site Builder", status: "warning", detail: `Built with ${builderDetected}` });
   }
 
   score = Math.max(0, Math.min(100, score));
@@ -275,22 +275,22 @@ function analyzeHtml(html: string, url: string): ContentAnalysis {
 
   if (isParked) {
     verdict = "placeholder";
-    summary = "Bu domain park edilmis durumda. Aktif bir website bulunmuyor. Yeni site teklifi icin cok uygun bir hedef.";
+    summary = "This domain is parked. There is no active website. An excellent target for a new site pitch.";
   } else if (isComingSoon || (wordCount < 50 && !hasNav)) {
     verdict = "placeholder";
-    summary = "Site henuz gelistirilmemis veya placeholder asamasinda. Icerik yok denecek kadar az. Profesyonel web tasarim teklifi icin ideal.";
+    summary = "Site is not yet developed or is still at a placeholder stage. Content is nearly nonexistent. Ideal target for a professional web design pitch.";
   } else if (hasPlaceholder && wordCount < 150) {
     verdict = "placeholder";
-    summary = "Placeholder icerik tespit edildi. Site bir sablon uzerinde kurulmus ama ozellesitirilmemis. Web gelistirme hizmeti icin uygun hedef.";
+    summary = "Placeholder content detected. The site is built on a template but not customized. A good target for a web development offer.";
   } else if (score < 35) {
     verdict = "basic";
-    summary = "Temel duzeyde bir website. Icerik az, teknik altyapi zayif. Ciddi bir yeniden tasarim veya gelistirme teklifi sunulabilir.";
+    summary = "Basic-level website. Thin content and weak technical foundation. A serious redesign or rebuild offer is a good fit.";
   } else if (score < 65) {
     verdict = "basic";
-    summary = "Orta duzeyde bir website. Bazi temel ozellikler mevcut ama profesyonel bir site icin yetersiz. Iyilestirme ve modernizasyon teklifi sunulabilir.";
+    summary = "Mid-level website. Some basics are in place but it falls short of a professional site. A polish and modernization offer would land well.";
   } else {
     verdict = "developed";
-    summary = "Ciddi sekilde gelistirilmis bir website. Zengin icerik, iyi teknik altyapi ve profesyonel yapilandirma mevcut. Bakim/guncelleme veya ozel ozellik teklifleri daha uygun.";
+    summary = "Well-developed website. Rich content, solid technical foundation, and professional structure. Maintenance, updates, or specialized feature offers are a better fit than a rebuild.";
   }
 
   return {
@@ -347,8 +347,8 @@ export async function POST(request: Request) {
           reachable: false,
           verdict: "unreachable",
           score: 0,
-          signals: [{ label: "Erisim", status: "bad", detail: `HTTP ${response.status} - Site erisilemedi` }],
-          summary: `Website HTTP ${response.status} hatasi dondu. Site erisime kapali veya mevcut degil.`,
+          signals: [{ label: "Access", status: "bad", detail: `HTTP ${response.status} - Site unreachable` }],
+          summary: `Website returned HTTP ${response.status}. The site is unreachable or does not exist.`,
           htmlSize: 0,
           wordCount: 0,
           imageCount: 0,
@@ -367,15 +367,15 @@ export async function POST(request: Request) {
     } catch (fetchError) {
       clearTimeout(timeout);
       const errorMessage =
-        fetchError instanceof Error ? fetchError.message : "Bilinmeyen hata";
+        fetchError instanceof Error ? fetchError.message : "Unknown error";
 
       return NextResponse.json({
         url,
         reachable: false,
         verdict: "unreachable",
         score: 0,
-        signals: [{ label: "Erisim", status: "bad", detail: `Baglanti hatasi: ${errorMessage}` }],
-        summary: `Website'e erisilemedi: ${errorMessage}. DNS hatasi, sunucu kapali veya SSL sorunu olabilir.`,
+        signals: [{ label: "Access", status: "bad", detail: `Connection error: ${errorMessage}` }],
+        summary: `Could not reach the website: ${errorMessage}. Likely a DNS error, server down, or SSL issue.`,
         htmlSize: 0,
         wordCount: 0,
         imageCount: 0,

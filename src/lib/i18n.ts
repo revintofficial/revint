@@ -1,25 +1,24 @@
 /**
- * P2.3 - Multi-language email + mockup support.
+ * Multi-language support for prompts, emails, and mockup copy.
  *
- * Workspace.language (P0.2'de eklendi) prompt'lara şu sırayla iniyor:
- *   - WebsitePlan prompt'ı: {my_offer} bloğunda "Dil: {language}" satırı ile
- *   - SalesOpportunity prompt'ı (analyze worker): henüz Türkçe hardcoded;
- *     `localizeAnalysisPrompt` ile multi-language hale getiriyoruz
- *   - Video script prompt'ı: {workspace_language} placeholder ile
- *   - Co-pilot prompt'ı: kullanıcı dilinden otomatik
+ * Workspace.language flows into prompts in this order:
+ *   - WebsitePlan prompt: via the {my_offer} block "Language: {language}" line
+ *   - SalesOpportunity prompt (analyze worker): via languagePreamble()
+ *   - Video script prompt: via {workspace_language} placeholder
+ *   - Co-pilot prompt: auto-detected from the user's language
  *
- * Desteklenen diller: tr (default), en, es, de, fr, it, pt.
+ * Supported languages: en (default), tr, es, de, fr, it, pt.
  *
- * `priceCurrency` mockup pricing önerilerinde kullanılıyor; £ Londra default,
- * TR'de ₺, ABD/CA'da $, AB'de €.
+ * `priceCurrency` is used in mockup pricing suggestions. Default is £ for
+ * en (London), ₺ for tr, € for most of the EU, $ otherwise.
  */
 
-export const SUPPORTED_LANGUAGES = ["tr", "en", "es", "de", "fr", "it", "pt"] as const;
+export const SUPPORTED_LANGUAGES = ["en", "tr", "es", "de", "fr", "it", "pt"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
-  tr: "Türkçe",
   en: "English",
+  tr: "Türkçe",
   es: "Español",
   de: "Deutsch",
   fr: "Français",
@@ -28,8 +27,8 @@ export const LANGUAGE_LABELS: Record<SupportedLanguage, string> = {
 };
 
 export const LANGUAGE_INSTRUCTIONS: Record<SupportedLanguage, string> = {
-  tr: "Yanit ve cikti dili: Turkce. Dogal, konusma dilinde Turkce kullan, jenerik ceviri kokmasin.",
   en: "Output language: English. Use natural, conversational English. No translation artifacts.",
+  tr: "Yanit ve cikti dili: Turkce. Dogal, konusma dilinde Turkce kullan, jenerik ceviri kokmasin.",
   es: "Idioma de salida: Español. Usa español natural y conversacional.",
   de: "Ausgabesprache: Deutsch. Verwende naturliches, gesprochenes Deutsch.",
   fr: "Langue de sortie: Français. Utilise un français naturel et conversationnel.",
@@ -38,8 +37,8 @@ export const LANGUAGE_INSTRUCTIONS: Record<SupportedLanguage, string> = {
 };
 
 export const PRICE_CURRENCY: Record<SupportedLanguage, string> = {
-  tr: "₺",
   en: "£",
+  tr: "₺",
   es: "€",
   de: "€",
   fr: "€",
@@ -54,14 +53,14 @@ export const PRICE_CURRENCY: Record<SupportedLanguage, string> = {
 export function languagePreamble(language: string | null | undefined): string {
   const lang = (SUPPORTED_LANGUAGES as readonly string[]).includes(language ?? "")
     ? (language as SupportedLanguage)
-    : "tr";
+    : "en";
   return LANGUAGE_INSTRUCTIONS[lang];
 }
 
 export function priceCurrency(language: string | null | undefined): string {
   const lang = (SUPPORTED_LANGUAGES as readonly string[]).includes(language ?? "")
     ? (language as SupportedLanguage)
-    : "tr";
+    : "en";
   return PRICE_CURRENCY[lang];
 }
 
@@ -79,7 +78,7 @@ export function pickLang<T extends Record<string, string>>(
   language: string | null | undefined,
   labels: T & { tr: string; en: string },
 ): string {
-  const lang = (language ?? "tr").toLowerCase();
+  const lang = (language ?? "en").toLowerCase();
   if (lang in labels) return labels[lang as keyof T];
   return labels.en;
 }
@@ -112,4 +111,3 @@ export const AGENT_WORKER_LABELS = {
     en: "Upgrade required",
   },
 } as const;
-

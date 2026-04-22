@@ -21,7 +21,7 @@ export function NearbyToggle({ active, onToggle }: Props) {
 
   const enable = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
-      toast.error("Bu cihaz konum desteği vermiyor.");
+      toast.error("This device doesn't support location services.");
       return;
     }
     setLoading(true);
@@ -32,7 +32,7 @@ export function NearbyToggle({ active, onToggle }: Props) {
       },
       (err) => {
         setLoading(false);
-        toast.error(`Konum alınamadı: ${err.message}`);
+        toast.error(`Couldn't get location: ${err.message}`);
       },
       { enableHighAccuracy: true, timeout: 10_000 },
     );
@@ -41,7 +41,7 @@ export function NearbyToggle({ active, onToggle }: Props) {
   if (active) {
     return (
       <Button size="sm" variant="outline" onClick={() => onToggle(null)} className="gap-1.5">
-        <MapPin className="w-3.5 h-3.5 text-[#A5B4FC]" /> Yakındaki kapalı
+        <MapPin className="w-3.5 h-3.5 text-[#A5B4FC]" /> Nearby: off
       </Button>
     );
   }
@@ -49,7 +49,7 @@ export function NearbyToggle({ active, onToggle }: Props) {
   return (
     <Button size="sm" variant="outline" onClick={enable} disabled={loading} className="gap-1.5">
       {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MapPin className="w-3.5 h-3.5" />}
-      Yakınımdaki leadler
+      Leads near me
     </Button>
   );
 }

@@ -40,7 +40,7 @@ export async function POST(
       return NextResponse.json(
         {
           error: "no_reviews",
-          message: "Bu lead için henüz Google yorumu yok. Önce review fetch et.",
+          message: "No Google reviews yet for this lead. Fetch reviews first.",
         },
         { status: 422 },
       );

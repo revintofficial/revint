@@ -1,13 +1,14 @@
 /**
  * P0.7 - Voice notes light UI.
  *
- * Lead detail sayfasında "30 saniye ses notu" butonu. Saha satışçısı tabletini
- * açıp ziyaret sonrası "Calvin Klein cleaners, sahibi reddi vermedi, fiyatı yüksek
- * buldu, 2 ay sonra tekrar" → kayıt → otomatik transkribe → lead'e bağlı not.
+ * "30-second voice note" button on the lead detail page. Field rep opens their
+ * tablet after a visit, records something like "Calvin Klein cleaners, owner
+ * didn't say no, thought price was high, follow up in 2 months" → recording →
+ * auto-transcribed → note attached to the lead.
  *
  * Browser MediaRecorder API + WebM/MP4 → POST /api/leads/[id]/voice-notes →
- * Gemini transcription → VoiceNote tablosuna yaz + WatchlistItem.pipelineNotes'a
- * append.
+ * Gemini transcription → write to VoiceNote table + append to
+ * WatchlistItem.pipelineNotes.
  */
 
 "use client";
@@ -99,7 +100,7 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
       }, MAX_RECORD_SEC * 1000);
     } catch (err) {
       console.error("Mic permission error:", err);
-      toast.error("Mikrofon erişimi reddedildi.");
+      toast.error("Microphone access denied.");
     }
   };
 
@@ -124,7 +125,7 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
         "webm";
       fd.append("audio", blob, `voice-note.${ext}`);
       fd.append("durationSec", String(durationSec));
-      fd.append("language", navigator.language?.split("-")[0] || "tr");
+      fd.append("language", navigator.language?.split("-")[0] || "en");
 
       const res = await fetch(`/api/leads/${leadId}/voice-notes`, {
         method: "POST",
@@ -133,17 +134,17 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         if (res.status === 402) {
-          toast.error(err.message || "AI quota dolu.");
+          toast.error(err.message || "AI quota reached.");
         } else {
-          toast.error(err.error || "Ses notu kaydedilemedi.");
+          toast.error(err.error || "Couldn't save voice note.");
         }
         return;
       }
-      toast.success("Ses notu transkribe edildi ve lead'e eklendi.");
+      toast.success("Voice note transcribed and added to the lead.");
       await fetchNotes();
     } catch (err) {
       console.error("Upload failed:", err);
-      toast.error("Yükleme başarısız.");
+      toast.error("Upload failed.");
     } finally {
       setUploading(false);
     }
@@ -160,7 +161,7 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-white/50">
-            Bu tarayıcı ses kaydını desteklemiyor. Mobil Safari/Chrome ile dene.
+            This browser doesn't support audio recording. Try mobile Safari or Chrome.
           </p>
         </CardContent>
       </Card>
@@ -176,24 +177,24 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
             Voice notes
           </CardTitle>
           <p className="text-xs text-white/30 mt-1">
-            Saha ziyareti sonrası 30 saniye konuş, otomatik transkripsiyon lead notlarına eklenir.
+            Talk for 30 seconds after a field visit — the transcript is auto-attached to the lead's notes.
           </p>
         </div>
         {!recording ? (
           <Button size="sm" onClick={start} disabled={uploading}>
             {uploading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Yükleniyor...
+                <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
               </>
             ) : (
               <>
-                <Mic className="w-4 h-4" /> Kaydı başlat
+                <Mic className="w-4 h-4" /> Start recording
               </>
             )}
           </Button>
         ) : (
           <Button size="sm" variant="destructive" onClick={stop}>
-            <Square className="w-4 h-4" /> Durdur ({elapsed}sn)
+            <Square className="w-4 h-4" /> Stop ({elapsed}s)
           </Button>
         )}
       </CardHeader>
@@ -202,15 +203,15 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
           <div className="rounded-xl bg-[#FF453A]/10 border border-[#FF453A]/30 p-3 mb-3 flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-[#FF453A] animate-pulse" />
             <span className="text-sm text-[#FF453A] font-medium">
-              Kayıt: {elapsed}sn / {MAX_RECORD_SEC}sn
+              Recording: {elapsed}s / {MAX_RECORD_SEC}s
             </span>
           </div>
         )}
 
         {loading ? (
-          <p className="text-sm text-white/40">Yükleniyor...</p>
+          <p className="text-sm text-white/40">Loading...</p>
         ) : notes.length === 0 ? (
-          <p className="text-sm text-white/40">Henüz ses notu yok.</p>
+          <p className="text-sm text-white/40">No voice notes yet.</p>
         ) : (
           <div className="space-y-2">
             {notes.map((n) => (
@@ -220,22 +221,22 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
               >
                 <div className="flex items-center justify-between text-xs text-white/40 mb-1.5">
                   <span>
-                    {new Date(n.createdAt).toLocaleString()} · {n.durationSec}sn
+                    {new Date(n.createdAt).toLocaleString()} · {n.durationSec}s
                     {n.language && ` · ${n.language}`}
                   </span>
                   <button
                     type="button"
-                    aria-label="Sil"
+                    aria-label="Delete"
                     className="opacity-50 hover:opacity-100 hover:text-[#FF453A]"
                     onClick={async () => {
-                      if (!confirm("Sil?")) return;
+                      if (!confirm("Delete this voice note?")) return;
                       const res = await fetch(`/api/voice-notes/${n.id}`, {
                         method: "DELETE",
                       });
                       if (res.ok) {
                         setNotes((ns) => ns.filter((x) => x.id !== n.id));
                       } else {
-                        toast.error("Silinemedi.");
+                        toast.error("Couldn't delete.");
                       }
                     }}
                   >
@@ -243,7 +244,7 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
                   </button>
                 </div>
                 <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">
-                  {n.transcript || "[boş transkripsiyon]"}
+                  {n.transcript || "[empty transcript]"}
                 </p>
               </div>
             ))}

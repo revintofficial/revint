@@ -4,6 +4,8 @@ import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { PLANS, planAllowsAdditionalSeat } from "@/lib/plans";
 import { logger } from "@/lib/logger";
+import { sendEmailAsync } from "@/lib/email/send";
+import { TeamInviteEmail } from "@/lib/email/templates/team-invite";
 
 export async function POST(request: Request) {
   try {
@@ -21,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "seat_limit_reached",
-          message: `${plan.name} planı ${plan.maxSeats} seat'e sınırlı (şu an ${currentSeats} kullanılıyor). Pro Team ya da Agency'ye yükseltin.`,
+          message: `${plan.name} plan is limited to ${plan.maxSeats} seats (${currentSeats} currently in use). Upgrade to Pro Team or Agency.`,
           currentSeats,
           maxSeats: plan.maxSeats,
           planName: plan.name,
@@ -88,6 +90,32 @@ export async function POST(request: Request) {
         userId: existing.id,
         role: "MEMBER",
       },
+    });
+
+    // Branded supplement to the Supabase invite email. Fire-and-forget so
+    // a Resend outage never blocks a successful invite.
+    const inviterName = session.user.fullName || session.user.email;
+    // Pull workspace.language so a TR-configured workspace keeps its invite
+    // in Turkish even though the product default is now English.
+    const wsLang = await prisma.workspace
+      .findUnique({
+        where: { id: session.workspaceId },
+        select: { language: true },
+      })
+      .then((w) => (w?.language === "tr" ? "tr" : "en"));
+    sendEmailAsync({
+      to: cleanEmail,
+      subject: TeamInviteEmail.buildSubject(session.workspace.name, wsLang),
+      react: TeamInviteEmail({
+        inviterName,
+        workspaceName: session.workspace.name,
+        role: "MEMBER",
+        locale: wsLang,
+      }),
+      tags: [
+        { name: "type", value: "team_invite" },
+        { name: "workspace_id", value: session.workspaceId },
+      ],
     });
 
     return NextResponse.json({

@@ -35,8 +35,8 @@ import {
 } from "@/lib/agent-workers/lead-response";
 
 describe("AI Workers - registry", () => {
-  it("has 19 workers registered", () => {
-    expect(listWorkers()).toHaveLength(19);
+  it("has 28 workers registered (19 core + 9 Apify enrichment)", () => {
+    expect(listWorkers()).toHaveLength(28);
   });
 
   it("every registered worker has both EN and TR labels", () => {
@@ -48,14 +48,23 @@ describe("AI Workers - registry", () => {
     }
   });
 
-  it("phase1Enabled=true only for the four Phase 1 deliverables", () => {
-    const enabled = listWorkers().filter((w) => w.phase1Enabled).map((w) => w.kind).sort();
-    expect(enabled).toEqual([
-      "AI_RECEPTIONIST_BUILDER",
-      "LEAD_RESPONSE_AGENT",
-      "REVIEW_REPLY_AGENT",
-      "WEBSITE_MOCKUP_GENERATOR",
-    ]);
+  it("phase1Enabled covers every AI Core-registered worker", () => {
+    // After AI Core migration every worker with an implModule is
+    // phase1Enabled. The four original deliverables are still here
+    // alongside legacy intelligence wrappers and Apify enrichment.
+    const enabled = listWorkers().filter((w) => w.phase1Enabled).map((w) => w.kind);
+    // Core deliverables must stay enabled:
+    expect(enabled).toContain("AI_RECEPTIONIST_BUILDER");
+    expect(enabled).toContain("REVIEW_REPLY_AGENT");
+    expect(enabled).toContain("LEAD_RESPONSE_AGENT");
+    expect(enabled).toContain("WEBSITE_MOCKUP_GENERATOR");
+    // Intelligence wrappers migrated in Faz C:
+    expect(enabled).toContain("WEBSITE_AUDITOR");
+    expect(enabled).toContain("REVIEW_ANALYST");
+    expect(enabled).toContain("SALES_OPPORTUNITY_SCORER");
+    // Apify enrichment (Faz G):
+    expect(enabled).toContain("APIFY_GMAPS_DEEP");
+    expect(enabled).toContain("APIFY_WEB_CRAWL_DEEP");
   });
 
   it("planMeetsMinimum respects plan ordering", () => {
@@ -260,7 +269,7 @@ describe("AI Workers - review reply exporters", () => {
   const artifact: ReviewReplyArtifact = {
     businessName: "Acme",
     leadId: "lead_1",
-    language: "tr",
+    language: "en",
     tone_spec: { voice_descriptor: "warm", dos: ["be specific"], donts: ["never apologize"] },
     variables: ["reviewer_first_name"],
     templates: {

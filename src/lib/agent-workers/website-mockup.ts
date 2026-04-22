@@ -73,7 +73,7 @@ export const run: AgentWorkerRun = async (ctx) => {
     strengthPhrases,
     workspaceOfferName: ctx.workspace.offerName ?? null,
     workspaceValueProposition: ctx.workspace.valueProposition ?? null,
-    language: ctx.workspace.language ?? "tr",
+    language: ctx.workspace.language ?? "en",
   };
 
   const prompt = buildWebsiteMockupPrompt(promptInput);
@@ -110,7 +110,7 @@ export const run: AgentWorkerRun = async (ctx) => {
     sections,
     workspaceName: ctx.workspace.name,
     branding,
-    lang: ctx.workspace.language ?? "tr",
+    lang: ctx.workspace.language ?? "en",
   });
 
   // Upsert a single WebsiteMockup per lead: re-generate overwrites the

@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "copilot_quota",
-          message: `Co-pilot günlük limit doldu (${err.used}/${err.limit}). Yarın sıfırlanır ya da plan yükselt.`,
+          message: `Co-pilot daily limit reached (${err.used}/${err.limit}). Resets tomorrow or upgrade your plan.`,
           used: err.used,
           limit: err.limit,
           upgradeUrl: "/app/settings/billing",

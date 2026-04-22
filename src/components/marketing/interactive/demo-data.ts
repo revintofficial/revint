@@ -191,7 +191,7 @@ export const SMMA_LEADS: DemoLead[] = [
   },
 ];
 
-export const HOME_CITIES = ["Brooklyn, NY", "London E14", "İstanbul / Beyoğlu"];
+export const HOME_CITIES = ["Brooklyn, NY", "London E14", "London / Hackney"];
 export const HOME_NICHES = ["Italian restaurants", "Cafés", "Dental"];
 
 export const AGENCY_CITIES = ["Manhattan, NY", "Brooklyn, NY", "Queens, NY"];

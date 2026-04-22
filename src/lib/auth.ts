@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { sendEmailAsync } from "@/lib/email/send";
+import { WelcomeEmail } from "@/lib/email/templates/welcome";
 
 /** Cookie storing the user's selected workspace id (non-httpOnly for client reads). */
 export const ACTIVE_WORKSPACE_COOKIE = "leadac_active_workspace_id";
@@ -101,6 +103,21 @@ export async function requireUser(): Promise<AuthedSession> {
       where: { userId: dbUser.id, workspaceId: workspace.id },
       include: { workspace: true },
     });
+
+    // Fire-and-forget welcome email on first workspace creation. Never blocks
+    // the auth flow even if Resend is misconfigured.
+    if (dbUser.email && !dbUser.email.endsWith("@user.local")) {
+      sendEmailAsync({
+        to: dbUser.email,
+        subject: WelcomeEmail.buildSubject(dbUser.fullName, "en"),
+        react: WelcomeEmail({
+          fullName: dbUser.fullName,
+          workspaceName: workspace.name,
+          locale: "en",
+        }),
+        tags: [{ name: "type", value: "welcome" }],
+      });
+    }
   }
 
   const cookieStore = await cookies();

@@ -27,61 +27,61 @@
  * "wait time 90%" means 90% of negative reviews mention wait time.
  */
 
-export const REVIEW_ANALYSIS_SYSTEM_CONTEXT = `Sen profesyonel bir Customer Insight analistisin. Yerel hizmet işletmelerinin Google Maps yorumlarını okuyup, satış ekibi için hızlıca aksiyona dönüştürülebilir KPI bar formatında özet çıkarıyorsun.
+export const REVIEW_ANALYSIS_SYSTEM_CONTEXT = `You are a professional Customer Insight analyst. You read Google Maps reviews of local service businesses and produce an actionable KPI-bar summary that a sales team can act on in seconds.
 
-Çalışma prensipleri:
-- Her zaman ham yorumlardan kanıt göster, hayal etme
-- Tekrarlayan şikayetleri grupla (örn: "wait time", "rude staff", "expensive")
-- Tekrarlayan övgüleri grupla (örn: "fast service", "friendly staff", "good prices")
-- Pozitif yorumlardan SWITCH SIGNAL ara: "X yıllarca kullandık ama Y, Z'ye geçtik" pattern'i. Bu rakipten kaçan müşteri sinyalidir
-- Lead score = bu işletmenin satış için sıcaklığı (yüksek skor = bizim çözümümüz onların problemini çözer)
-- Asla %100 vermek için sayıyı şişirme, %30 ise %30 yaz
-- Türkçe konuşan işletme yorumları için Türkçe çıktı, İngilizce için İngilizce`;
+Working principles:
+- Always ground every finding in the raw reviews. Never invent anything.
+- Cluster repeated complaints into short labels (e.g. "wait time", "rude staff", "expensive").
+- Cluster repeated praise into short labels (e.g. "fast service", "friendly staff", "good prices").
+- In positive reviews, look for SWITCH SIGNALS — patterns like "we used X for years but then moved to Y/Z". Those mark customers who have defected from a competitor.
+- leadScore = how hot this business is as a sales prospect (higher = our offer clearly solves their pain).
+- Do not inflate percentages. If something appears in 30% of negative reviews, write 30, not 100.
+- Follow the language instruction at the top of the prompt. Default output language is English.`;
 
 export const REVIEW_ANALYSIS_PROMPT_TEMPLATE = `${REVIEW_ANALYSIS_SYSTEM_CONTEXT}
 
 ---
 
-İşletme: {business_name}
-Adres: {address}
-Genel Puan: {rating}/5 ({review_count} yorum)
-Bizim ürünümüz: {our_offer}
+Business: {business_name}
+Address: {address}
+Overall rating: {rating}/5 ({review_count} reviews)
+Our product/offer: {our_offer}
 
-Aşağıda en güncel {reviews_count} Google Maps yorumu var. Bunları analiz et.
+Below are the {reviews_count} most recent Google Maps reviews. Analyse them.
 
 ---
 {reviews}
 ---
 
-Çıktıyı SADECE GEÇERLİ JSON formatında ver. Markdown blokları yok, açıklama yok, sadece JSON.
+Return ONLY valid JSON. No markdown fences, no commentary, just JSON.
 
-Şema:
+Schema:
 {
-  "reviewsAnalyzedCount": <integer, kaç yorum analiz ettin>,
+  "reviewsAnalyzedCount": <integer, how many reviews you actually analysed>,
   "weaknessKpis": [
-    { "label": "<2-4 kelime şikayet etiketi>", "percent": <0-100 negatif yorumlardaki payı>, "examples": ["<gerçek alıntı 1>", "<gerçek alıntı 2>"] }
+    { "label": "<2-4 word complaint label>", "percent": <0-100 share of negative reviews>, "examples": ["<verbatim quote 1>", "<verbatim quote 2>"] }
   ],
   "strengthKpis": [
-    { "label": "<2-4 kelime övgü etiketi>", "percent": <0-100 pozitif yorumlardaki payı>, "examples": ["<gerçek alıntı 1>", "<gerçek alıntı 2>"] }
+    { "label": "<2-4 word praise label>", "percent": <0-100 share of positive reviews>, "examples": ["<verbatim quote 1>", "<verbatim quote 2>"] }
   ],
   "sentimentBreakdown": { "positive": <0-1>, "neutral": <0-1>, "negative": <0-1> },
-  "painPhrases": ["<3-5 kısa pain phrase, müşterinin ağzından>"],
-  "strengthPhrases": ["<3-5 kısa övgü phrase>"],
+  "painPhrases": ["<3-5 short pain phrases, in the customer's own voice>"],
+  "strengthPhrases": ["<3-5 short praise phrases>"],
   "switchSignals": [
-    { "from": "<önceki rakip / çözüm>", "to": "<bu işletme>", "reason": "<neden değişti>" }
+    { "from": "<previous competitor / solution>", "to": "<this business>", "reason": "<why they switched>" }
   ],
-  "leadScore": <0-100, bu işletme bizim ürünümüz için ne kadar sıcak prospect>,
-  "summary": "<1-2 cümle, satış ekibi için hızlı özet>"
+  "leadScore": <0-100, how hot this business is as a prospect for our offer>,
+  "summary": "<1-2 sentences, a quick brief for the sales team>"
 }
 
-Kurallar:
-- weaknessKpis maksimum 5 madde, en sık tekrarlayanlar önde
-- strengthKpis maksimum 5 madde, en sık tekrarlayanlar önde
-- examples gerçek yorum alıntısı olmalı, 80 karakteri geçmemeli
-- sentimentBreakdown toplamı 1.0 olmalı (yuvarlamada ufak sapma kabul)
-- switchSignals boş array olabilir, zorla pattern üretme
-- leadScore: bizim "{our_offer}" tarif ettiğimiz çözümün adresleyebileceği sorunlar yüksekse skor yüksek
-- summary Türkçe işletme için Türkçe, İngilizce için İngilizce`;
+Rules:
+- weaknessKpis: max 5 items, most frequent first.
+- strengthKpis: max 5 items, most frequent first.
+- examples must be real verbatim quotes, each under 80 characters.
+- sentimentBreakdown values must sum to ~1.0 (minor rounding is fine).
+- switchSignals may be an empty array — do not force a pattern that is not there.
+- leadScore: if "{our_offer}" can plausibly address the complaints we see, score higher.
+- summary stays in the output language specified at the top of the prompt.`;
 
 export interface ReviewAnalysisOutput {
   reviewsAnalyzedCount: number;

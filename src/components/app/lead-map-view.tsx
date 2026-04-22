@@ -41,13 +41,13 @@ export function LeadMapView({ lat, lng, title, address }: Props) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-[#A5B4FC]" /> Konum
+          <MapPin className="w-5 h-5 text-[#A5B4FC]" /> Location
         </CardTitle>
         <p className="text-xs text-white/40 mt-1 truncate">{address}</p>
       </CardHeader>
       <CardContent className="p-0">
         <iframe
-          title={`${title} konumu`}
+          title={`${title} location`}
           src={osmUrl}
           className="w-full h-64 border-0"
           loading="lazy"
@@ -55,7 +55,7 @@ export function LeadMapView({ lat, lng, title, address }: Props) {
         <div className="flex flex-wrap gap-2 p-3 border-t border-white/10">
           <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
             <Button size="sm" variant="outline" className="gap-1.5">
-              <Navigation className="w-3.5 h-3.5" /> Yol tarifi
+              <Navigation className="w-3.5 h-3.5" /> Directions
             </Button>
           </a>
           <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer">

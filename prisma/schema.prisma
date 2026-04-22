@@ -93,7 +93,9 @@ enum Role {
 // Group A (Intelligence): auto-run on lead ingest; Grup B (Pitch):
 // agency-facing artifacts sent to prospects; Grup C (Deliverable):
 // ready-to-install config packs for the prospect's own stack (Synthflow,
-// Retell, GHL, etc.); Grup D (Ops): platform-level ongoing work.
+// Retell, GHL, etc.); Grup D (Ops): platform-level ongoing work;
+// Grup E (Enrichment): Apify-backed external data sources that feed
+// SemanticMemory for every other worker to retrieve.
 enum AgentWorkerKind {
   // Grup A - Intelligence
   WEBSITE_AUDITOR
@@ -118,6 +120,56 @@ enum AgentWorkerKind {
   INBOX_REPLY_ATTRIBUTOR
   OUTREACH_SENDER
   CONTAINMENT_RATE_TRACKER
+  // Grup E - Enrichment (Apify-backed external data sources)
+  APIFY_GMAPS_DEEP
+  APIFY_WEB_CRAWL_DEEP
+  APIFY_INSTAGRAM_DEEP
+  APIFY_FACEBOOK_DEEP
+  APIFY_TIKTOK_DEEP
+  APIFY_SERP_RANK
+  APIFY_COMPETITOR_ADS
+  APIFY_LINKEDIN_COMPANY
+  APIFY_REDDIT_MENTIONS
+}
+
+// AI Core - semantic memory kind taxonomy. Every SemanticMemory row
+// carries one of these labels so retrieval queries can filter down to
+// the right substrate (lead profile embeddings vs opener successes vs
+// Apify-sourced social posts).
+enum MemoryKind {
+  // Foundational kinds written by native workers
+  LEAD_PROFILE
+  REVIEW_CHUNK
+  VOICE_NOTE
+  OPENER_SUCCESS
+  OPENER_FAILURE
+  MOCKUP_SECTION
+  WORKSPACE_OFFER
+  WORKSPACE_PERSONA
+  PROSPECT_KB_CHUNK
+  COPILOT_TURN
+  // Apify enrichment kinds
+  SOCIAL_POST
+  SERP_SNAPSHOT
+  COMPETITOR_AD
+  HIRING_SIGNAL
+  REDDIT_MENTION
+}
+
+enum PlannerStatus {
+  PLANNING
+  EXECUTING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PlannerTrigger {
+  EVENT
+  USER_COPILOT
+  USER_BUTTON
+  USER_BULK
+  USER_DEEP_RESEARCH
 }
 
 enum AgentRunStatus {
@@ -175,7 +227,7 @@ model Workspace {
   objective        String? @map("objective")
   tone             String? @map("tone")
   length           String? @map("length")
-  language         String  @default("tr") @map("language")
+  language         String  @default("en") @map("language")
   senderName       String? @map("sender_name")
   conversionLink   String? @map("conversion_link")
 
@@ -190,6 +242,8 @@ model Workspace {
   copilotMessages CopilotMessage[]
   agentRuns       AgentRun[]
   websiteMockups  WebsiteMockup[]
+  semanticMemory  SemanticMemory[]
+  plannerSessions PlannerSession[]
 
   @@map("workspaces")
 }
@@ -243,6 +297,8 @@ model Lead {
   voiceNotes       VoiceNote[]
   agentRuns        AgentRun[]
   websiteMockups   WebsiteMockup[]
+  semanticMemory   SemanticMemory[]
+  plannerSessions  PlannerSession[]
 
   // placeId scoped per workspace so two workspaces can independently track the same business
   @@unique([workspaceId, placeId])
@@ -519,26 +575,38 @@ model CopilotMessage {
 // when the worker produces a shareable public link (e.g. a WebsiteMockup
 // slug becomes /m/{slug}). errorMsg captures the failure message for UI.
 model AgentRun {
-  id          String          @id @default(cuid())
-  workspaceId String          @map("workspace_id")
-  leadId      String?         @map("lead_id")
-  userId      String?         @map("user_id") @db.Uuid
-  workerKind  AgentWorkerKind @map("worker_kind")
-  status      AgentRunStatus  @default(PENDING)
-  inputsJson  Json            @default("{}") @map("inputs_json")
-  outputJson  Json?           @map("output_json")
-  artifactUrl String?         @map("artifact_url")
-  costTokens  Int             @default(0) @map("cost_tokens")
-  errorMsg    String?         @map("error_msg") @db.Text
-  startedAt   DateTime?       @map("started_at")
-  finishedAt  DateTime?       @map("finished_at")
-  createdAt   DateTime        @default(now()) @map("created_at")
+  id               String          @id @default(cuid())
+  workspaceId      String          @map("workspace_id")
+  leadId           String?         @map("lead_id")
+  userId           String?         @map("user_id") @db.Uuid
+  workerKind       AgentWorkerKind @map("worker_kind")
+  status           AgentRunStatus  @default(PENDING)
+  inputsJson       Json            @default("{}") @map("inputs_json")
+  outputJson       Json?           @map("output_json")
+  artifactUrl      String?         @map("artifact_url")
+  costTokens       Int             @default(0) @map("cost_tokens")
+  // USD-denominated external cost (primarily Apify actor runs). Gemini
+  // usage continues to flow through costTokens; keeping them separate
+  // means the UI can split "AI model spend" from "data enrichment spend".
+  costUsdCents     Int             @default(0) @map("cost_usd_cents")
+  // DAG coordination. When set, this run was scheduled as part of a
+  // PlannerSession; parentRunId points at an upstream run whose output
+  // we depended on. Both are nullable so legacy single-shot runs stay
+  // working.
+  parentRunId      String?         @map("parent_run_id")
+  plannerSessionId String?         @map("planner_session_id")
+  errorMsg         String?         @map("error_msg") @db.Text
+  startedAt        DateTime?       @map("started_at")
+  finishedAt       DateTime?       @map("finished_at")
+  createdAt        DateTime        @default(now()) @map("created_at")
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  lead      Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead           Lead?           @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  plannerSession PlannerSession? @relation(fields: [plannerSessionId], references: [id], onDelete: SetNull)
 
   @@index([workspaceId, workerKind, createdAt])
   @@index([leadId, workerKind])
+  @@index([plannerSessionId])
   @@map("agent_runs")
 }
 
@@ -574,4 +642,64 @@ model WebsiteMockup {
   @@index([leadId])
   @@index([workspaceId])
   @@map("website_mockups")
+}
+
+// AI Core - semantic memory substrate. Every worker reads/writes here
+// through `src/lib/ai-core/memory.ts`. `embedding` is a pgvector
+// vector(768) column populated by Gemini text-embedding-004; an HNSW
+// index on `embedding vector_cosine_ops` is created via a raw SQL
+// migration (see prisma/migrations/add_ai_core.sql). `metadata` carries
+// kind-specific extras (e.g. social platform, SERP query, reply outcome).
+model SemanticMemory {
+  id          String                      @id @default(cuid())
+  workspaceId String                      @map("workspace_id")
+  kind        MemoryKind
+  leadId      String?                     @map("lead_id")
+  // Free-form reference back to the source domain object. `refType` is
+  // a string rather than an enum so new kinds (e.g. pointing at
+  // `WebsiteMockup`) don't require a migration. Pair it with `refId`.
+  refType     String?                     @map("ref_type")
+  refId       String?                     @map("ref_id")
+  text        String                      @db.Text
+  // Nullable so an upsert can create the row first and enqueue an embed
+  // job that populates the vector asynchronously.
+  embedding   Unsupported("vector(768)")?
+  metadata    Json                        @default("{}")
+  createdAt   DateTime                    @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead      Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, kind])
+  @@index([leadId])
+  @@index([workspaceId, refType, refId])
+  @@map("semantic_memory")
+}
+
+// AI Core - planner session. One row per orchestration invocation. The
+// `plan` JSON is an array of steps `[{ stepId, workerKind, dependsOn[],
+// status, inputs?, optional? }]` populated by `src/lib/ai-core/planner.ts`
+// and advanced by `src/lib/ai-core/orchestrator.ts`. Every AgentRun
+// spawned from a session carries `plannerSessionId` back here so the
+// UI can render the DAG as a single entity.
+model PlannerSession {
+  id          String         @id @default(cuid())
+  workspaceId String         @map("workspace_id")
+  userId      String?        @map("user_id") @db.Uuid
+  leadId      String?        @map("lead_id")
+  goal        String         @db.Text
+  plan        Json
+  status      PlannerStatus  @default(PLANNING)
+  triggeredBy PlannerTrigger @map("triggered_by")
+  errorMsg    String?        @map("error_msg") @db.Text
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  runs      AgentRun[]
+  Lead      Lead?      @relation(fields: [leadId], references: [id])
+
+  @@index([workspaceId, status])
+  @@index([leadId])
+  @@map("planner_sessions")
 }

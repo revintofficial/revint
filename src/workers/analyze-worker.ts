@@ -8,6 +8,7 @@ import {
 import type { WebsiteFeatures } from "../types";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
+import { notifyHotLead } from "../lib/email/notifications";
 import IORedis from "ioredis";
 
 interface AnalyzeJobData {
@@ -52,7 +53,7 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
         lead.reviewCount,
         lead.websiteUrl,
         features,
-        lead.workspace.language ?? "tr",
+        lead.workspace.language ?? "en",
       );
     } catch (aiError) {
       logger.warn("worker.analyze.gemini_failed", { leadId, err: aiError });
@@ -60,11 +61,11 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
       analysis = {
         opportunity_score: deterministicScore,
         reason_codes: reasons,
-        why_good_target: "AI analiz yapilamadi. Deterministik skor kullanildi.",
-        likely_pain_points: reasons.map(reasonToTurkish),
-        best_sales_angle: "Dijital varliklarini guclendirebilecekleri bir teklif sunun.",
+        why_good_target: "AI analysis was unavailable; falling back to the deterministic score.",
+        likely_pain_points: reasons.map(reasonToEnglish),
+        best_sales_angle: "Offer to strengthen their digital presence where the deterministic signals are weakest.",
         suggested_offer: offer,
-        personalized_first_message: `Merhaba, ${lead.businessName} icin profesyonel bir web sitesi olusturmak ister misiniz?`,
+        personalized_first_message: `Hi ${lead.businessName} team - would you be open to a quick look at a modern website concept we put together for a business like yours?`,
         expected_price_band: estimatePriceBand(offer),
       };
     }
@@ -111,6 +112,22 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
       data: { analyzeStatus: "ANALYZED" },
     });
 
+    // Fire hot-lead alert. Cooldowns are enforced in the notifier so a bulk
+    // discovery run doesn't email the owner once per lead. Failures are
+    // swallowed via sendEmailAsync — analyze pipeline must not be blocked.
+    try {
+      await notifyHotLead({
+        workspaceId: lead.workspaceId,
+        leadId,
+        businessName: lead.businessName,
+        score: Math.min(finalScore, 100),
+        city: lead.borough ?? null,
+        reasonSummary: mergedReasons.slice(0, 3).map(reasonToEnglish).join(", ") || null,
+      });
+    } catch (notifyErr) {
+      logger.warn("worker.analyze.notify_failed", { leadId, err: notifyErr });
+    }
+
     logger.info("worker.analyze.done", {
       leadId,
       businessName: lead.businessName,
@@ -126,21 +143,21 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
   }
 }
 
-function reasonToTurkish(code: string): string {
+function reasonToEnglish(code: string): string {
   const map: Record<string, string> = {
-    no_website: "Web sitesi bulunmuyor",
-    poor_mobile: "Mobil uyumluluk zayif",
-    no_booking: "Online randevu sistemi yok",
-    no_whatsapp: "WhatsApp iletisim butonu yok",
-    no_https: "SSL sertifikasi (HTTPS) eksik",
-    weak_seo: "SEO optimizasyonu zayif",
-    slow_site: "Site yuklenmesi cok yavas",
-    no_ecommerce: "Online satis altyapisi yok",
-    site_unreachable: "Web sitesine ulasilamiyor",
-    services_unclear: "Sunulan hizmetler net degil",
-    high_rating_weak_site: "Yuksek puanli ama dijital varligi zayif",
-    good_rating: "Iyi puanli isletme",
-    uncrawled_website: "Web sitesi henuz analiz edilmedi",
+    no_website: "No website found",
+    poor_mobile: "Poor mobile experience",
+    no_booking: "No online booking system",
+    no_whatsapp: "No WhatsApp contact button",
+    no_https: "Missing SSL certificate (HTTPS)",
+    weak_seo: "Weak SEO optimization",
+    slow_site: "Site loads very slowly",
+    no_ecommerce: "No online sales infrastructure",
+    site_unreachable: "Website is unreachable",
+    services_unclear: "Services offered are unclear",
+    high_rating_weak_site: "High ratings but weak digital presence",
+    good_rating: "Well-reviewed business",
+    uncrawled_website: "Website has not been crawled yet",
   };
   return map[code] || code;
 }

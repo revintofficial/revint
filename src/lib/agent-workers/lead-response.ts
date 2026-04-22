@@ -57,7 +57,7 @@ export const run: AgentWorkerRun = async (ctx) => {
     workspaceOfferName: ctx.workspace.offerName ?? null,
     workspaceValueProposition: ctx.workspace.valueProposition ?? null,
     workspaceTone: ctx.workspace.tone,
-    language: ctx.workspace.language ?? "tr",
+    language: ctx.workspace.language ?? "en",
   };
 
   const prompt = buildLeadResponsePrompt(promptInput);
@@ -80,9 +80,9 @@ export const run: AgentWorkerRun = async (ctx) => {
   const artifact: LeadResponseArtifact = {
     businessName: lead.businessName,
     leadId: lead.id,
-    language: ctx.workspace.language ?? "tr",
+    language: ctx.workspace.language ?? "en",
     ...parsed,
-    setup_markdown: buildSetupMarkdown(parsed, lead.businessName, ctx.workspace.language ?? "tr"),
+    setup_markdown: buildSetupMarkdown(parsed, lead.businessName, ctx.workspace.language ?? "en"),
   };
 
   const costTokens = Math.ceil((prompt.length + text.length) / 4);

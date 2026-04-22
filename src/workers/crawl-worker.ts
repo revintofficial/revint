@@ -4,11 +4,16 @@ import { getEmailVerificationQueue } from "../lib/queues";
 import { isVerificationConfigured } from "../lib/email-verification";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
+import { notifyBookingDetected } from "../lib/email/notifications";
 import IORedis from "ioredis";
 
 interface CrawlJobData {
   leadId: string;
   websiteUrl: string;
+}
+
+interface CrawlFeaturesWithExtras {
+  bookingProvider?: string | null;
 }
 
 async function processCrawl(job: Job<CrawlJobData>) {
@@ -84,6 +89,31 @@ async function processCrawl(job: Job<CrawlJobData>) {
       where: { id: leadId },
       data: { crawlStatus: "CRAWLED" },
     });
+
+    // Fire booking-detected alert when we find an embedded booking system.
+    // This is *negative* signal for the "modernize" pitch segment, so the
+    // email prompts the owner to pursue a different angle. Cooldown is
+    // enforced in the notifier.
+    const bookingProvider =
+      (featuresWithExtras as CrawlFeaturesWithExtras).bookingProvider ?? null;
+    if (features.hasBookingSystem && bookingProvider) {
+      try {
+        const lead = await prisma.lead.findUnique({
+          where: { id: leadId },
+          select: { workspaceId: true, businessName: true },
+        });
+        if (lead) {
+          await notifyBookingDetected({
+            workspaceId: lead.workspaceId,
+            leadId,
+            businessName: lead.businessName,
+            provider: bookingProvider,
+          });
+        }
+      } catch (notifyErr) {
+        logger.warn("worker.crawl.notify_booking_failed", { leadId, err: notifyErr });
+      }
+    }
 
     // P0.4 - auto-enqueue email verification when ZeroBounce is configured.
     if (contactEmails.length > 0 && isVerificationConfigured()) {
