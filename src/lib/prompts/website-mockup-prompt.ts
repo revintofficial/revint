@@ -32,7 +32,10 @@ export interface WebsiteMockupService {
 export interface WebsiteMockupTestimonial {
   body: string;
   attribution: string;
-  rating: number;
+  // null when Gemini did not return a valid rating in [1,5] - the
+  // template renders no stars in that case rather than fabricating a
+  // 5-star rating (see website-mockup.ts clampRating).
+  rating: number | null;
 }
 
 export interface WebsiteMockupTheme {

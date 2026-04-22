@@ -94,8 +94,16 @@ function makeLeadRow(overrides: Record<string, unknown> = {}) {
     updatedAt: new Date(),
     workspace: { offerName: "Local SEO", valueProposition: "Be found" },
     googleReviews: [
-      makeReview({ rating: 2, text: "Slow response", authorName: "Bob" }),
-      makeReview({ rating: 5, text: "Amazing!", authorName: "Alice" }),
+      makeReview({
+        rating: 2,
+        text: "Had slow response times getting back to me",
+        authorName: "Bob",
+      }),
+      makeReview({
+        rating: 5,
+        text: "Amazing friendly techs, very quick",
+        authorName: "Alice",
+      }),
     ],
     ...overrides,
   };

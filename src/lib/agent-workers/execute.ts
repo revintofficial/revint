@@ -75,6 +75,7 @@ export async function executeAgentRun(runId: string): Promise<void> {
       workspaceId: run.workspaceId,
       plan: workspace.plan,
       kind: run.workerKind,
+      leadId: run.leadId,
     });
     if (!quota.allowed) {
       throw new QuotaExceededError(quota.used, quota.limit, run.workerKind);
@@ -136,21 +137,24 @@ export async function executeAgentRun(runId: string): Promise<void> {
     // Post-run memory writes. The worker's impl module may export a
     // `memoryWrites` callback; we resolve it lazily (same cache as
     // the run handler) and invoke with the run output + context.
-    try {
-      const memoryWritesFn = await resolveMemoryWrites(run.workerKind);
-      if (memoryWritesFn) {
-        const writes = await memoryWritesFn(result.output, ctx);
-        if (writes && writes.length > 0) {
-          await persistMemoryWrites(run.workspaceId, writes);
-        }
+    //
+    // A memory-write failure is treated the same as a worker failure:
+    // the run is marked FAILED and no orchestrator advance is fired
+    // for SUCCEEDED state. Memory is load-bearing (downstream workers
+    // read it via memoryReads; the learning loop reads OPENER_SUCCESS),
+    // so a silent memory gap would surface as a quality regression
+    // weeks later with no diagnostic trail. Better to fail loud now.
+    //
+    // The worker's primary artifact is still preserved in the worker
+    // output: if a reviewer needs to inspect a FAILED run to recover
+    // the Gemini response, it is available in AgentRun.errorMsg as a
+    // short note and the worker logger has the full payload.
+    const memoryWritesFn = await resolveMemoryWrites(run.workerKind);
+    if (memoryWritesFn) {
+      const writes = await memoryWritesFn(result.output, ctx);
+      if (writes && writes.length > 0) {
+        await persistMemoryWrites(run.workspaceId, writes);
       }
-    } catch (err) {
-      // Memory write failures don't fail the run itself; log and
-      // move on. The worker's primary artifact already exists.
-      logger.warn("agent_run.memory_writes_failed", {
-        runId,
-        err: err instanceof Error ? err.message : String(err),
-      });
     }
 
     await prisma.agentRun.update({
@@ -172,7 +176,9 @@ export async function executeAgentRun(runId: string): Promise<void> {
       cents: result.costUsdCents ?? 0,
     });
 
-    // Notify planner if this run belongs to a session.
+    // Notify planner if this run belongs to a session. notifyOrchestrator
+    // throws on failure (swallowing would leave the session stuck
+    // EXECUTING forever with no downstream advance call).
     if (run.plannerSessionId) {
       await notifyOrchestrator(run.plannerSessionId);
     }
@@ -205,6 +211,22 @@ export async function executeAgentRun(runId: string): Promise<void> {
  * When the worker lacks a leadId but declares `scope: "lead"`, the
  * spec silently returns zero hits rather than throwing; this keeps
  * chains that invoke workers without a lead (bulk ops) working.
+ *
+ * Similarity semantics: this path does NOT have a vector query (the
+ * registry's MemorySpec is static - it declares kinds and scope, not
+ * a query text), so results are ordered by recency rather than
+ * semantic similarity. To avoid lying to callers, we emit
+ * `similarity: null` on these hits. Workers that need a real
+ * similarity ranking (OPENER_WRITER, copilot) call `memoryQuery`
+ * separately with a query text; `ctx.memory` is only useful as
+ * "recent context" not "most semantically relevant context".
+ *
+ * Failures here throw instead of being swallowed per-spec. A silent
+ * empty `ctx.memory` would cause OPENER_WRITER / receptionist / etc.
+ * to produce subtly worse outputs without any signal that retrieval
+ * broke. If `memory` is load-bearing for the worker, the worker
+ * should validate non-empty itself; the executor's job is to report
+ * the failure rather than hide it.
  */
 async function fetchMemoryReads(args: {
   workspaceId: string;
@@ -213,62 +235,40 @@ async function fetchMemoryReads(args: {
 }): Promise<MemoryHit[]> {
   if (!args.specs || args.specs.length === 0) return [];
 
-  const { query } = await import("@/lib/ai-core/memory");
   const hits: MemoryHit[] = [];
 
   for (const spec of args.specs) {
-    // For "lead" scope with no leadId, skip rather than error.
     if (spec.scope === "lead" && !args.leadId) continue;
 
-    try {
-      // When we have neither a vector nor free-text (the registry
-      // declared the spec statically), we fall back to fetching the
-      // N most-recent rows of the requested kinds for the lead.
-      // Semantic search without a query vector makes no sense, so
-      // this "recent-first" fallback is the right default for
-      // pre-fetch-then-augment workflows.
-      const topK = spec.topK ?? 10;
-      const rows = await (async () => {
-        if (spec.scope === "lead" && args.leadId) {
-          return prisma.semanticMemory.findMany({
-            where: {
-              workspaceId: args.workspaceId,
-              leadId: args.leadId,
-              kind: { in: spec.kinds },
-            },
-            orderBy: { createdAt: "desc" },
-            take: topK,
-          });
-        }
-        return prisma.semanticMemory.findMany({
-          where: {
+    const topK = spec.topK ?? 10;
+    const where =
+      spec.scope === "lead" && args.leadId
+        ? {
+            workspaceId: args.workspaceId,
+            leadId: args.leadId,
+            kind: { in: spec.kinds },
+          }
+        : {
             workspaceId: args.workspaceId,
             kind: { in: spec.kinds },
-          },
-          orderBy: { createdAt: "desc" },
-          take: topK,
-        });
-      })();
+          };
+    const rows = await prisma.semanticMemory.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: topK,
+    });
 
-      for (const r of rows) {
-        hits.push({
-          id: r.id,
-          kind: r.kind,
-          leadId: r.leadId,
-          refType: r.refType,
-          refId: r.refId,
-          text: r.text,
-          metadata: (r.metadata ?? {}) as Record<string, unknown>,
-          similarity: 1, // no vector query here, similarity not meaningful
-          createdAt: r.createdAt,
-        });
-      }
-      // Silence unused-import warning for `query`: the copilot path
-      // uses it separately with a real vector.
-      void query;
-    } catch (err) {
-      logger.warn("agent_run.memory_read_failed", {
-        err: err instanceof Error ? err.message : String(err),
+    for (const r of rows) {
+      hits.push({
+        id: r.id,
+        kind: r.kind,
+        leadId: r.leadId,
+        refType: r.refType,
+        refId: r.refId,
+        text: r.text,
+        metadata: (r.metadata ?? {}) as Record<string, unknown>,
+        similarity: null,
+        createdAt: r.createdAt,
       });
     }
   }
@@ -281,6 +281,13 @@ async function fetchMemoryReads(args: {
  * insert (unless `skipEmbed`). We use upsert semantics keyed on
  * refType+refId so re-running a worker overwrites rather than
  * accumulating duplicates.
+ *
+ * A persist failure is surfaced to the caller (not swallowed per-write)
+ * so the outer executor can flip the run to FAILED. If we swallowed
+ * here, one worker run could partially write memory (some rows land,
+ * others don't) and still report SUCCEEDED - exactly the "silent data
+ * corruption" scenario we are trying to eliminate. All-or-nothing is
+ * safer than partial-success-looks-like-full-success.
  */
 async function persistMemoryWrites(
   workspaceId: string,
@@ -288,26 +295,19 @@ async function persistMemoryWrites(
 ): Promise<void> {
   const { upsertAndEmbed, upsert } = await import("@/lib/ai-core/memory");
   for (const w of writes) {
-    try {
-      const args = {
-        workspaceId,
-        kind: w.kind,
-        text: w.text,
-        leadId: w.leadId ?? null,
-        refType: w.refType ?? null,
-        refId: w.refId ?? null,
-        metadata: w.metadata ?? {},
-      };
-      if (w.skipEmbed) {
-        await upsert(args);
-      } else {
-        await upsertAndEmbed(args);
-      }
-    } catch (err) {
-      logger.warn("agent_run.memory_write_failed", {
-        kind: w.kind,
-        err: err instanceof Error ? err.message : String(err),
-      });
+    const args = {
+      workspaceId,
+      kind: w.kind,
+      text: w.text,
+      leadId: w.leadId ?? null,
+      refType: w.refType ?? null,
+      refId: w.refId ?? null,
+      metadata: w.metadata ?? {},
+    };
+    if (w.skipEmbed) {
+      await upsert(args);
+    } else {
+      await upsertAndEmbed(args);
     }
   }
 }
@@ -316,15 +316,15 @@ async function persistMemoryWrites(
  * Enqueues an orchestrator_advance job for the planner session this
  * run belongs to. Lazy-imported to keep `execute.ts` free of a
  * direct dependency on the orchestrator.
+ *
+ * We do NOT swallow failures here: if the queue is unreachable AND
+ * the enqueueAdvance fallback-to-inline path also throws, the session
+ * would otherwise be stuck EXECUTING forever with no caller coming
+ * back to advance it. Throwing here lets executeAgentRun mark the
+ * run FAILED, which in turn triggers a dev alert and the session can
+ * be manually retried.
  */
 async function notifyOrchestrator(sessionId: string): Promise<void> {
-  try {
-    const { enqueueAdvance } = await import("@/lib/ai-core/orchestrator");
-    await enqueueAdvance(sessionId);
-  } catch (err) {
-    logger.warn("agent_run.orchestrator_notify_failed", {
-      sessionId,
-      err: err instanceof Error ? err.message : String(err),
-    });
-  }
+  const { enqueueAdvance } = await import("@/lib/ai-core/orchestrator");
+  await enqueueAdvance(sessionId);
 }

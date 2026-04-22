@@ -235,25 +235,26 @@ describe("SALES_OPPORTUNITY_SCORER - missing websiteAudit", () => {
   });
 });
 
-describe("SALES_OPPORTUNITY_SCORER - Gemini fallback", () => {
-  it("falls back to deterministic analysis when Gemini throws (does NOT re-throw)", async () => {
+describe("SALES_OPPORTUNITY_SCORER - Gemini error handling", () => {
+  it("re-throws when Gemini fails so the run is marked FAILED and no synthetic analysis is written", async () => {
+    // Previously the scorer silently fabricated a placeholder
+    // 'AI analysis' when Gemini threw and wrote it into
+    // SalesOpportunity as if real. That behaviour is gone: a Gemini
+    // failure is a real failure, the run surfaces it, and the
+    // existing SalesOpportunity row (if any) stays intact.
     prismaMock.lead.findUniqueOrThrow.mockResolvedValue(makeLeadRow());
     analyzeLeadWithGeminiMock.mockRejectedValue(new Error("gemini 500"));
 
-    const result = await run(makeCtx());
-    expect(prismaMock.salesOpportunity.upsert).toHaveBeenCalledTimes(1);
-    const upsertArgs = prismaMock.salesOpportunity.upsert.mock.calls[0][0];
-    expect(upsertArgs.create.whyGoodTarget).toMatch(/AI analysis|deterministic/i);
+    await expect(run(makeCtx())).rejects.toThrow(/gemini 500/);
+    expect(prismaMock.salesOpportunity.upsert).not.toHaveBeenCalled();
 
     const statuses = prismaMock.lead.update.mock.calls.map(
       (c) => (c[0] as { data: { analyzeStatus: string } }).data.analyzeStatus,
     );
-    // ANALYZING -> ANALYZED; no FAILED because the gemini error is
-    // swallowed internally.
-    expect(statuses).toEqual(["ANALYZING", "ANALYZED"]);
-
-    const out = result.output as { opportunityScore: number };
-    expect(typeof out.opportunityScore).toBe("number");
+    // ANALYZING -> FAILED (the catch block runs because the worker
+    // rethrows the Gemini error instead of silently substituting
+    // placeholder copy).
+    expect(statuses).toEqual(["ANALYZING", "FAILED"]);
   });
 
   it("re-throws on unexpected errors (e.g. lead lookup fails) and marks analyzeStatus=FAILED", async () => {

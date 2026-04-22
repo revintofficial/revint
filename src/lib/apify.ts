@@ -111,17 +111,38 @@ export async function runSync<T = unknown>(
   const items = (await res.json()) as T[];
 
   // `run-sync-get-dataset-items` doesn't return cost in the body.
-  // Fetch the latest run for this actor to read stats. We accept
-  // this as best-effort - failure to read cost is not fatal.
+  // We MUST fetch the latest run stats to record costUsdCents: a
+  // silent 0 here means the quota helper sums "free" runs and the
+  // workspace's Apify USD cap never trips. If the stats fetch fails
+  // we surface the error (caller can decide whether to retry or flip
+  // the run to FAILED); we do NOT silently proceed with cost=0.
+  //
+  // One retry with linear backoff handles the race where the
+  // dataset is available before the run-status row has caught up.
   const runId = res.headers.get("x-apify-pagination-run-id") ?? "";
   let costUsdCents = 0;
   if (runId) {
     try {
       const stats = await fetchRun(runId);
       costUsdCents = stats.costUsdCents;
-    } catch {
-      /* swallow; cost unknown */
+    } catch (err) {
+      logger.warn("apify.run_sync.stats_fetch_retrying", {
+        actorId,
+        runId,
+        err: err instanceof Error ? err.message : String(err),
+      });
+      await new Promise((r) => setTimeout(r, 1500));
+      const stats = await fetchRun(runId);
+      costUsdCents = stats.costUsdCents;
     }
+  } else {
+    // No runId in response headers means Apify did not follow its
+    // documented response shape. Refuse to pretend cost=0 - throw so
+    // the caller surfaces the anomaly and we can debug the actor.
+    throw new ApifyRunError(
+      `Apify ${actorId} returned 200 but no x-apify-pagination-run-id header; cannot record cost`,
+      "MISSING_RUN_ID",
+    );
   }
 
   return {

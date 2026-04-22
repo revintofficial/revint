@@ -106,11 +106,41 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       leadScore: analysis.leadScore,
     });
 
+    // Ground the pain/strength phrases against the source review
+    // text. Gemini occasionally paraphrases or invents phrases that
+    // don't appear in any review, and poisoned memory is worse than
+    // missing memory (OPENER_WRITER then uses the fabricated phrase
+    // in cold outreach). We normalize both sides (lowercase, strip
+    // punctuation, collapse whitespace) and require at least 3
+    // consecutive words of the phrase to appear in at least one
+    // review. Phrases that fail are dropped from memoryWrites with a
+    // log line; the ReviewAnalysis row still holds the raw Gemini
+    // output because the UI shows them separately.
+    const corpusNormalized = lead.googleReviews
+      .map((r) => normalizeForGrounding(r.text ?? ""))
+      .filter(Boolean);
+    const painsGrounded = (analysis.painPhrases as unknown[])
+      .filter((x): x is string => typeof x === "string")
+      .filter((p) => isGroundedInCorpus(p, corpusNormalized));
+    const strengthsGrounded = (analysis.strengthPhrases as unknown[])
+      .filter((x): x is string => typeof x === "string")
+      .filter((p) => isGroundedInCorpus(p, corpusNormalized));
+
+    logger.info("agent_workers.review_analyst.grounding", {
+      leadId,
+      painTotal: (analysis.painPhrases ?? []).length,
+      painGrounded: painsGrounded.length,
+      strengthTotal: (analysis.strengthPhrases ?? []).length,
+      strengthGrounded: strengthsGrounded.length,
+    });
+
     return {
       output: {
         leadScore: analysis.leadScore,
-        painPhrases: analysis.painPhrases,
-        strengthPhrases: analysis.strengthPhrases,
+        // The *grounded* arrays are what flows into memoryWrites; the
+        // UI-facing ReviewAnalysis row still carries raw Gemini data.
+        painPhrases: painsGrounded,
+        strengthPhrases: strengthsGrounded,
         summary: analysis.summary,
         reviewsAnalyzedCount: analysis.reviewsAnalyzedCount,
       },
@@ -179,3 +209,37 @@ export const memoryWrites = (
 
   return writes;
 };
+
+/**
+ * Strips punctuation, lowercases, and collapses whitespace so
+ * substring comparisons are tolerant to typography differences
+ * between Gemini's paraphrase and the raw review text.
+ */
+function normalizeForGrounding(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\p{Diacritic}]/gu, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Returns true when any 3-word window of `phrase` appears as a
+ * contiguous substring in any normalized review. 3 words is long
+ * enough to rule out coincidental matches ('the service') but short
+ * enough to accept paraphrasing of longer phrases.
+ */
+function isGroundedInCorpus(phrase: string, corpus: string[]): boolean {
+  const tokens = normalizeForGrounding(phrase).split(" ").filter(Boolean);
+  if (tokens.length === 0) return false;
+  if (tokens.length <= 2) {
+    return corpus.some((c) => c.includes(tokens.join(" ")));
+  }
+  for (let i = 0; i <= tokens.length - 3; i++) {
+    const window = tokens.slice(i, i + 3).join(" ");
+    if (corpus.some((c) => c.includes(window))) return true;
+  }
+  return false;
+}

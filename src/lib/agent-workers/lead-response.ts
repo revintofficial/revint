@@ -140,8 +140,16 @@ function parseLeadResponseJson(text: string) {
       ? (parsed.followup_cadence as unknown[])
           .filter((f): f is Record<string, unknown> => !!f && typeof f === "object")
           .map((f) => ({
-            delay_hours: Number(f.delay_hours ?? 0),
-            channel: (String(f.channel ?? "sms") as "sms" | "email" | "chat"),
+            // Cadence hours are bounded to [0, 720] (30 days). Gemini
+            // occasionally emits 9999 or similarly absurd values,
+            // which then get exported into GHL/n8n and fire a
+            // follow-up in 2027. Cap into a realistic window; values
+            // above the cap snap to the cap rather than throw, since
+            // the worker artifact is otherwise usable.
+            delay_hours: clampDelayHours(f.delay_hours),
+            // Only known channels. Unknown strings used to flow into
+            // downstream exports producing invalid GHL configs.
+            channel: normalizeChannel(f.channel),
             template: String(f.template ?? ""),
           }))
           .filter((f) => f.template)
@@ -165,6 +173,23 @@ function parseLeadResponseJson(text: string) {
 function toStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
   return (v as unknown[]).filter((x): x is string => typeof x === "string");
+}
+
+const MAX_DELAY_HOURS = 24 * 30; // 30 days
+
+function clampDelayHours(v: unknown): number {
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  if (n > MAX_DELAY_HOURS) return MAX_DELAY_HOURS;
+  return Math.round(n);
+}
+
+const ALLOWED_CHANNELS = new Set(["sms", "email", "chat"]);
+
+function normalizeChannel(v: unknown): "sms" | "email" | "chat" {
+  const s = typeof v === "string" ? v.toLowerCase().trim() : "";
+  if (ALLOWED_CHANNELS.has(s)) return s as "sms" | "email" | "chat";
+  return "sms";
 }
 
 // --- Exporters -------------------------------------------------------

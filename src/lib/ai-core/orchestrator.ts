@@ -22,6 +22,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { getAgentRunsQueue } from "@/lib/queues";
+import { computeIdempotencyKey } from "@/lib/agent-workers/idempotency";
 import { SENTINEL_STEPS } from "./chains";
 import type { PersistedPlan, PersistedPlanStep } from "./planner";
 import type { AgentWorkerKind, PlannerStatus } from "@/generated/prisma/client";
@@ -74,27 +75,26 @@ export async function enqueueAdvance(sessionId: string): Promise<void> {
 }
 
 /**
- * Hashes a session id into a 64-bit integer for `pg_advisory_lock`.
- * We hash into the upper and lower 32 bits separately and then OR
- * them into a signed bigint, because Postgres advisory locks take a
- * single `bigint` key. Two sessions colliding to the same key is
- * harmless (the second just waits/backs off) but very unlikely.
+ * Namespace identifier for advisory locks owned by the orchestrator,
+ * used as the first key of pg_try_advisory_lock(int4, int4). Arbitrary
+ * constant; picked so it is stable and unlikely to collide with other
+ * callers of advisory locks in the same database.
  */
-function sessionAdvisoryLockKey(sessionId: string): bigint {
-  let a = 5381 | 0;
-  let b = 0 | 0;
+const ORCHESTRATOR_LOCK_NAMESPACE = 0x4F524348; // "ORCH"
+
+/**
+ * Hashes a session id into a signed 32-bit integer for the second key
+ * argument of `pg_try_advisory_lock(int4, int4)`. A collision means
+ * two unrelated sessions briefly serialize on the same lock -- harmless,
+ * just a momentary wait while one releases. The (namespace, id) pair
+ * makes real collisions astronomically unlikely.
+ */
+function sessionLockId(sessionId: string): number {
+  let h = 5381 | 0;
   for (let i = 0; i < sessionId.length; i++) {
-    a = (Math.imul(33, a) + sessionId.charCodeAt(i)) | 0;
-    b = (Math.imul(31, b) ^ sessionId.charCodeAt(i)) | 0;
+    h = (Math.imul(33, h) ^ sessionId.charCodeAt(i)) | 0;
   }
-  // Pack [a, b] into a signed 64-bit integer.
-  const hi = BigInt(a) & 0xffffffffn;
-  const lo = BigInt(b) & 0xffffffffn;
-  const unsigned = (hi << 32n) | lo;
-  // Convert to signed bigint if the top bit is set.
-  return unsigned >= 0x8000000000000000n
-    ? unsigned - 0x10000000000000000n
-    : unsigned;
+  return h;
 }
 
 /**
@@ -113,9 +113,10 @@ function sessionAdvisoryLockKey(sessionId: string): bigint {
  * jobs -- duplicate Apify spend, duplicate memory writes.
  */
 export async function advance(sessionId: string): Promise<AdvanceResult> {
-  const lockKey = sessionAdvisoryLockKey(sessionId);
+  const key1 = ORCHESTRATOR_LOCK_NAMESPACE;
+  const key2 = sessionLockId(sessionId);
   const lockRows = await prisma.$queryRaw<Array<{ got: boolean }>>`
-    SELECT pg_try_advisory_lock(${lockKey}::bigint) AS got
+    SELECT pg_try_advisory_lock(${key1}::int4, ${key2}::int4) AS got
   `;
   const gotLock = lockRows[0]?.got === true;
   if (!gotLock) {
@@ -135,7 +136,7 @@ export async function advance(sessionId: string): Promise<AdvanceResult> {
   try {
     return await advanceLocked(sessionId);
   } finally {
-    await prisma.$executeRaw`SELECT pg_advisory_unlock(${lockKey}::bigint)`;
+    await prisma.$executeRaw`SELECT pg_advisory_unlock(${key1}::int4, ${key2}::int4)`;
   }
 }
 
@@ -214,17 +215,69 @@ async function advanceLocked(sessionId: string): Promise<AdvanceResult> {
         continue;
       }
 
-      const run = await prisma.agentRun.create({
-        data: {
-          workspaceId: session.workspaceId,
-          leadId: session.leadId,
-          userId: session.userId,
-          workerKind: step.workerKind as AgentWorkerKind,
-          status: "PENDING",
-          inputsJson: (step.inputs ?? {}) as never,
-          plannerSessionId: session.id,
+      // Derive an idempotency key so a retry of advance() cannot
+      // schedule the same step twice (defence in depth vs the
+      // advisory lock: the lock is advisory, the unique index is
+      // authoritative).
+      const idempotencyKey = computeIdempotencyKey({
+        workspaceId: session.workspaceId,
+        workerKind: step.workerKind as AgentWorkerKind,
+        leadId: session.leadId,
+        inputs: {
+          ...step.inputs,
+          // Include sessionId + stepId so two parallel sessions for
+          // the same workspace+kind+lead (e.g. user_one_click_pitch
+          // invoked twice in rapid succession) can each create their
+          // own AgentRun rather than the second silently joining the
+          // first one's pending work.
+          __sessionId: session.id,
+          __stepId: step.stepId,
         },
       });
+
+      // Try-create; on unique-index conflict, reuse the existing row.
+      // We cannot use Prisma's `upsert` here because we do not know
+      // the existing row's id up front.
+      let run: { id: string };
+      try {
+        run = await prisma.agentRun.create({
+          data: {
+            workspaceId: session.workspaceId,
+            leadId: session.leadId,
+            userId: session.userId,
+            workerKind: step.workerKind as AgentWorkerKind,
+            status: "PENDING",
+            inputsJson: (step.inputs ?? {}) as never,
+            plannerSessionId: session.id,
+            idempotencyKey,
+          },
+          select: { id: true },
+        });
+      } catch (err) {
+        if (
+          err &&
+          typeof err === "object" &&
+          "code" in err &&
+          (err as { code?: string }).code === "P2002"
+        ) {
+          const existing = await prisma.agentRun.findFirst({
+            where: {
+              workspaceId: session.workspaceId,
+              idempotencyKey,
+            },
+            select: { id: true },
+          });
+          if (!existing) throw err;
+          run = existing;
+          logger.info("orchestrator.reused_existing_run", {
+            runId: run.id,
+            stepId: step.stepId,
+          });
+        } else {
+          throw err;
+        }
+      }
+
       step.runId = run.id;
       step.status = "RUNNING";
 

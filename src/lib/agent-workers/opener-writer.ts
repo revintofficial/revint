@@ -20,7 +20,6 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { query as memoryQuery } from "@/lib/ai-core/memory";
 import type {
-  AgentWorkerContext,
   AgentWorkerOutput,
   AgentWorkerRun,
   MemorySpec,
@@ -57,21 +56,27 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     ? `${lead.businessName} ${lead.primaryType ?? ""} ${painPhrases.slice(0, 5).join("; ")}`
     : `${lead.businessName} ${lead.primaryType ?? ""} ${opp?.bestSalesAngle ?? ""}`;
 
+  // Few-shot retrieval for opener voice. A failure here would silently
+  // degrade output quality (opener generated with zero examples), so
+  // we let it throw: executor marks the run FAILED and the retry path
+  // (or a human) gets a visible signal. The previous swallow-and-log
+  // behaviour is exactly the 'silent quality drift' the P1 audit
+  // called out.
   let successExamples: Array<{ text: string; similarity: number }> = [];
-  try {
-    const hits = await memoryQuery({
-      workspaceId: ctx.workspaceId,
-      kinds: ["OPENER_SUCCESS"],
-      text: painQueryText,
-      topK: 5,
-      minSimilarity: 0.3,
-    });
-    successExamples = hits.map((h) => ({ text: h.text, similarity: h.similarity }));
-  } catch (err) {
-    logger.warn("opener_writer.memory_retrieval_failed", {
-      err: err instanceof Error ? err.message : String(err),
-    });
-  }
+  const hits = await memoryQuery({
+    workspaceId: ctx.workspaceId,
+    kinds: ["OPENER_SUCCESS"],
+    text: painQueryText,
+    topK: 5,
+    minSimilarity: 0.3,
+  });
+  successExamples = hits.map((h) => ({
+    text: h.text,
+    // memoryQuery with a text query always returns a real similarity
+    // score; the null case only happens for the executor's static
+    // pre-fetch path in fetchMemoryReads.
+    similarity: h.similarity ?? 0,
+  }));
 
   // Get the mockup slug if one exists, so the opener can embed it.
   const mockup = await prisma.websiteMockup.findFirst({

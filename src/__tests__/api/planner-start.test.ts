@@ -42,13 +42,30 @@ vi.mock("@/lib/ai-core/events", () => ({
 }));
 
 const mockLeadFindUnique = vi.fn();
+const mockWorkspaceFindUniqueOrThrow = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     lead: {
       findUnique: (...args: unknown[]) => mockLeadFindUnique(...args),
     },
+    workspace: {
+      findUniqueOrThrow: (...args: unknown[]) =>
+        mockWorkspaceFindUniqueOrThrow(...args),
+    },
   },
 }));
+
+const mockAssertWorkerQuota = vi.fn();
+vi.mock("@/lib/agent-workers/quota", async () => {
+  const actual =
+    await vi.importActual<typeof import("@/lib/agent-workers/quota")>(
+      "@/lib/agent-workers/quota",
+    );
+  return {
+    ...actual,
+    assertWorkerQuota: (...args: unknown[]) => mockAssertWorkerQuota(...args),
+  };
+});
 
 import { POST } from "@/app/api/planner/start/route";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
@@ -67,6 +84,14 @@ describe("POST /api/planner/start", () => {
     vi.clearAllMocks();
     mockEmit.mockResolvedValue("session_123");
     mockLeadFindUnique.mockResolvedValue({ workspaceId: "ws_test" });
+    mockWorkspaceFindUniqueOrThrow.mockResolvedValue({ plan: "PRO" });
+    mockAssertWorkerQuota.mockResolvedValue({
+      allowed: true,
+      used: 0,
+      limit: 100,
+      remaining: 100,
+      resetAt: null,
+    });
   });
 
   it("returns 401 when requireUser throws UnauthorizedError", async () => {

@@ -1,13 +1,15 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 const mockAgentRunFindUnique = vi.fn();
-const mockAgentRunUpdate = vi.fn();
+const mockAgentRunUpdateMany = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     agentRun: {
       findUnique: (...args: unknown[]) => mockAgentRunFindUnique(...args),
-      update: (...args: unknown[]) => mockAgentRunUpdate(...args),
+      // The route now uses updateMany so concurrent webhook deliveries
+      // can race at the DB and the loser becomes a no-op (count=0).
+      updateMany: (...args: unknown[]) => mockAgentRunUpdateMany(...args),
     },
   },
 }));
@@ -69,7 +71,9 @@ describe("POST /api/webhooks/apify", () => {
     vi.clearAllMocks();
     mockVerifyWebhookSecret.mockReturnValue(true);
     mockAgentRunFindUnique.mockResolvedValue(null);
-    mockAgentRunUpdate.mockResolvedValue({});
+    // Default to 'this delivery owned the transition' so tests that
+    // don't set up the race explicitly see the normal update path.
+    mockAgentRunUpdateMany.mockResolvedValue({ count: 1 });
     mockFetchRun.mockResolvedValue({
       runId: "apify_run_1",
       items: [{ foo: "bar" }],
@@ -100,7 +104,7 @@ describe("POST /api/webhooks/apify", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toMatch(/agentRunId/);
-    expect(mockAgentRunUpdate).not.toHaveBeenCalled();
+    expect(mockAgentRunUpdateMany).not.toHaveBeenCalled();
   });
 
   it("returns 404 when the agentRunId is unknown", async () => {
@@ -112,7 +116,7 @@ describe("POST /api/webhooks/apify", () => {
       }),
     );
     expect(res.status).toBe(404);
-    expect(mockAgentRunUpdate).not.toHaveBeenCalled();
+    expect(mockAgentRunUpdateMany).not.toHaveBeenCalled();
   });
 
   it("persists costUsdCents from the fetched Apify run on the AgentRun row", async () => {
@@ -137,9 +141,11 @@ describe("POST /api/webhooks/apify", () => {
     );
     expect(res.status).toBe(200);
 
-    expect(mockAgentRunUpdate).toHaveBeenCalledTimes(1);
-    const updateArg = mockAgentRunUpdate.mock.calls[0][0];
-    expect(updateArg.where).toEqual({ id: "run_ok" });
+    expect(mockAgentRunUpdateMany).toHaveBeenCalledTimes(1);
+    const updateArg = mockAgentRunUpdateMany.mock.calls[0][0];
+    expect(updateArg.where.id).toBe("run_ok");
+    // Race-safe filter: only transition non-terminal rows.
+    expect(updateArg.where.status).toEqual({ in: ["PENDING", "RUNNING"] });
     expect(updateArg.data.costUsdCents).toBe(137);
     expect(updateArg.data.status).toBe("SUCCEEDED");
   });
@@ -166,7 +172,7 @@ describe("POST /api/webhooks/apify", () => {
     );
     expect(res.status).toBe(200);
 
-    const updateArg = mockAgentRunUpdate.mock.calls[0][0];
+    const updateArg = mockAgentRunUpdateMany.mock.calls[0][0];
     expect(updateArg.data.status).toBe("FAILED");
   });
 

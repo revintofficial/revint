@@ -55,8 +55,15 @@ const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
     salesOpportunity: {
       update: vi.fn().mockResolvedValue({}),
+      findUnique: vi.fn().mockResolvedValue(null),
     },
     websiteMockup: {
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
+    // OPENER_WRITER reads the last-successful AgentRun for this lead
+    // to detect a manual edit. Default to "no prior run" so tests
+    // exercise the happy overwrite path unless they override it.
+    agentRun: {
       findFirst: vi.fn().mockResolvedValue(null),
     },
   },
