@@ -28,6 +28,68 @@ interface AdItem {
   ad_snapshot_url?: string;
 }
 
+/**
+ * Resolves a 2-letter ISO country code for the Meta Ad Library query.
+ *
+ * Priority:
+ *   1. Last comma-separated token of `formattedAddress` if it maps to
+ *      a known country name or code.
+ *   2. Explicit hint in the lead's `primaryType`/borough (e.g. an
+ *      obviously London borough implies GB).
+ *   3. Workspace language mapping (en -> GB, tr -> TR, etc.).
+ *   4. `ALL` as the final fallback (Ad Library accepts "ALL").
+ */
+function resolveAdLibraryCountry(
+  address: string | null,
+  borough: string | null,
+  workspaceLanguage: string | null,
+): string {
+  const addr = (address ?? "").trim();
+  if (addr) {
+    const last = addr
+      .split(",")
+      .map((s) => s.trim())
+      .pop();
+    if (last) {
+      const up = last.toUpperCase();
+      const KNOWN: Record<string, string> = {
+        "UNITED KINGDOM": "GB",
+        "UNITED KINGDOM OF GREAT BRITAIN AND NORTHERN IRELAND": "GB",
+        UK: "GB",
+        GB: "GB",
+        ENGLAND: "GB",
+        SCOTLAND: "GB",
+        WALES: "GB",
+        "NORTHERN IRELAND": "GB",
+        "UNITED STATES": "US",
+        USA: "US",
+        US: "US",
+        TURKEY: "TR",
+        TURKIYE: "TR",
+        TR: "TR",
+        CANADA: "CA",
+        CA: "CA",
+        AUSTRALIA: "AU",
+        AU: "AU",
+        GERMANY: "DE",
+        DE: "DE",
+        FRANCE: "FR",
+        FR: "FR",
+        SPAIN: "ES",
+        ES: "ES",
+        ITALY: "IT",
+        IT: "IT",
+        NETHERLANDS: "NL",
+        NL: "NL",
+      };
+      if (KNOWN[up]) return KNOWN[up];
+    }
+  }
+  if (borough) return "GB";
+  if (workspaceLanguage === "tr") return "TR";
+  return "ALL";
+}
+
 export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   if (!ctx.lead) throw new Error("APIFY_COMPETITOR_ADS requires a lead context");
   if (!isConfigured()) {
@@ -42,10 +104,16 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     ? `${lead.primaryType} ${lead.borough}`
     : lead.primaryType;
 
+  const country = resolveAdLibraryCountry(
+    lead.formattedAddress,
+    lead.borough,
+    ctx.workspace.language ?? null,
+  );
+
   const input = {
     urls: [
       {
-        url: `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=TR&q=${encodeURIComponent(searchText)}&sort_data[direction]=desc&sort_data[mode]=relevancy_monthly_grouped`,
+        url: `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country}&q=${encodeURIComponent(searchText)}&sort_data[direction]=desc&sort_data[mode]=relevancy_monthly_grouped`,
       },
     ],
     maxAds: MAX_ADS,
@@ -58,6 +126,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
 
   logger.info("apify.competitor_ads.done", {
     leadId: lead.id,
+    country,
     ads: ads.length,
     costCents: result.costUsdCents,
   });
@@ -65,6 +134,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   return {
     output: {
       searchText,
+      country,
       ads: ads.map((a) => ({
         id: a.ad_archive_id,
         pageName: a.page_name,
