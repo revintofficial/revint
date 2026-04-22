@@ -74,11 +74,72 @@ export async function enqueueAdvance(sessionId: string): Promise<void> {
 }
 
 /**
+ * Hashes a session id into a 64-bit integer for `pg_advisory_lock`.
+ * We hash into the upper and lower 32 bits separately and then OR
+ * them into a signed bigint, because Postgres advisory locks take a
+ * single `bigint` key. Two sessions colliding to the same key is
+ * harmless (the second just waits/backs off) but very unlikely.
+ */
+function sessionAdvisoryLockKey(sessionId: string): bigint {
+  let a = 5381 | 0;
+  let b = 0 | 0;
+  for (let i = 0; i < sessionId.length; i++) {
+    a = (Math.imul(33, a) + sessionId.charCodeAt(i)) | 0;
+    b = (Math.imul(31, b) ^ sessionId.charCodeAt(i)) | 0;
+  }
+  // Pack [a, b] into a signed 64-bit integer.
+  const hi = BigInt(a) & 0xffffffffn;
+  const lo = BigInt(b) & 0xffffffffn;
+  const unsigned = (hi << 32n) | lo;
+  // Convert to signed bigint if the top bit is set.
+  return unsigned >= 0x8000000000000000n
+    ? unsigned - 0x10000000000000000n
+    : unsigned;
+}
+
+/**
  * Runs one iteration of the DAG walk. Safe to call repeatedly; each
  * invocation schedules any newly-ready steps and updates session
  * status when the graph terminates.
+ *
+ * Concurrency: `advance()` takes a Postgres session-level advisory
+ * lock keyed on the sessionId before reading the plan. Concurrent
+ * advance calls for the same session serialize on this lock; callers
+ * that find the lock already held return immediately as no-op
+ * (a later advance triggered by the still-running call will re-read
+ * the up-to-date plan and pick up where we left off). Without this
+ * two advance calls could both observe a PENDING step whose deps are
+ * satisfied, both insert an AgentRun row, and both enqueue BullMQ
+ * jobs -- duplicate Apify spend, duplicate memory writes.
  */
 export async function advance(sessionId: string): Promise<AdvanceResult> {
+  const lockKey = sessionAdvisoryLockKey(sessionId);
+  const lockRows = await prisma.$queryRaw<Array<{ got: boolean }>>`
+    SELECT pg_try_advisory_lock(${lockKey}::bigint) AS got
+  `;
+  const gotLock = lockRows[0]?.got === true;
+  if (!gotLock) {
+    logger.info("orchestrator.advance_skipped_locked", { sessionId });
+    const existing = await prisma.plannerSession.findUnique({
+      where: { id: sessionId },
+      select: { status: true },
+    });
+    return {
+      sessionId,
+      status: existing?.status ?? "EXECUTING",
+      scheduled: [],
+      completed: false,
+    };
+  }
+
+  try {
+    return await advanceLocked(sessionId);
+  } finally {
+    await prisma.$executeRaw`SELECT pg_advisory_unlock(${lockKey}::bigint)`;
+  }
+}
+
+async function advanceLocked(sessionId: string): Promise<AdvanceResult> {
   const session = await prisma.plannerSession.findUnique({
     where: { id: sessionId },
     select: {
