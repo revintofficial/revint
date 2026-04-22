@@ -241,6 +241,28 @@ export class ApifyBudgetExceededError extends Error {
   }
 }
 
+export class PerLeadDailyCapExceededError extends Error {
+  leadId: string;
+  used: number;
+  limit: number;
+  status = 402;
+  constructor(leadId: string, used: number, limit: number) {
+    super(`Daily per-lead cap exceeded for lead ${leadId}: ${used}/${limit}`);
+    this.leadId = leadId;
+    this.used = used;
+    this.limit = limit;
+  }
+}
+
+/**
+ * Per-lead per-day AI run cap. Protects against a single lead
+ * getting stuck in a retry loop or a UI bug firing the same chain
+ * repeatedly, draining the workspace's monthly Apify/Gemini budget.
+ * Gemini-only workers share this cap because a runaway loop on them
+ * still costs real tokens.
+ */
+const PER_LEAD_DAILY_CAP = 50;
+
 /**
  * Returns the monthly limit for a worker at the given plan, resolving
  * UNLIMITED to the soft hard cap.
@@ -259,6 +281,12 @@ export async function checkWorkerQuota(args: {
   workspaceId: string;
   plan: Plan;
   kind: AgentWorkerKind;
+  /**
+   * When provided, the per-lead daily cap is also evaluated. Callers
+   * from lead-scoped flows (planner chains, lead detail buttons) pass
+   * this; workspace-scoped flows (copilot) leave it out.
+   */
+  leadId?: string | null;
 }): Promise<QuotaCheckResult> {
   const worker = getWorker(args.kind);
   if (!worker) {
@@ -301,6 +329,26 @@ export async function checkWorkerQuota(args: {
     resetAt: ws.cycleResetAt,
   };
 
+  // Per-lead daily cap. A runaway retry loop or UI bug firing the
+  // same chain repeatedly on one lead would otherwise burn the whole
+  // workspace monthly budget on a single place. Counted across ALL
+  // worker kinds for the lead (not per-kind) so spreading runs
+  // across kinds cannot bypass it.
+  if (args.leadId) {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const leadUsed = await prisma.agentRun.count({
+      where: {
+        workspaceId: args.workspaceId,
+        leadId: args.leadId,
+        status: { in: ["PENDING", "RUNNING", "SUCCEEDED"] },
+        createdAt: { gte: since },
+      },
+    });
+    if (leadUsed >= PER_LEAD_DAILY_CAP) {
+      base.allowed = false;
+    }
+  }
+
   // Apify kinds: second gate on USD budget. Summed across ALL Apify
   // kinds in the same cycle; one workspace cannot bypass the cap by
   // spreading runs across actor types. Only SUCCEEDED rows carry a
@@ -337,6 +385,7 @@ export async function assertWorkerQuota(args: {
   workspaceId: string;
   plan: Plan;
   kind: AgentWorkerKind;
+  leadId?: string | null;
 }): Promise<QuotaCheckResult> {
   const worker = getWorker(args.kind);
   if (!worker) {
@@ -357,6 +406,26 @@ export async function assertWorkerQuota(args: {
       quota.apifyCentsUsed >= quota.apifyCentsLimit
     ) {
       throw new ApifyBudgetExceededError(quota.apifyCentsUsed, quota.apifyCentsLimit);
+    }
+    // Distinguish per-lead daily cap so the UI can say "this lead
+    // reached its daily AI budget; try another one or wait 24h".
+    if (args.leadId) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const leadUsed = await prisma.agentRun.count({
+        where: {
+          workspaceId: args.workspaceId,
+          leadId: args.leadId,
+          status: { in: ["PENDING", "RUNNING", "SUCCEEDED"] },
+          createdAt: { gte: since },
+        },
+      });
+      if (leadUsed >= PER_LEAD_DAILY_CAP) {
+        throw new PerLeadDailyCapExceededError(
+          args.leadId,
+          leadUsed,
+          PER_LEAD_DAILY_CAP,
+        );
+      }
     }
     throw new QuotaExceededError(quota.used, quota.limit, args.kind);
   }

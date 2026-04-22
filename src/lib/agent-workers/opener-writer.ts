@@ -20,7 +20,6 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { query as memoryQuery } from "@/lib/ai-core/memory";
 import type {
-  AgentWorkerContext,
   AgentWorkerOutput,
   AgentWorkerRun,
   MemorySpec,

@@ -27,6 +27,7 @@ import {
   PlanTooLowError,
   QuotaExceededError,
   ApifyBudgetExceededError,
+  PerLeadDailyCapExceededError,
 } from "@/lib/agent-workers/quota";
 import type { EventKind } from "@/lib/agent-workers/types";
 import type { AgentWorkerKind } from "@/generated/prisma/client";
@@ -114,6 +115,7 @@ export const POST = withAuth(async (session, req: Request) => {
         workspaceId: session.workspaceId,
         plan: workspace.plan,
         kind,
+        leadId,
       });
     } catch (err) {
       if (err instanceof PlanTooLowError) {
@@ -132,6 +134,17 @@ export const POST = withAuth(async (session, req: Request) => {
             error: "apify_budget_exhausted",
             usedCents: err.usedCents,
             limitCents: err.limitCents,
+          },
+          { status: 402 },
+        );
+      }
+      if (err instanceof PerLeadDailyCapExceededError) {
+        return NextResponse.json(
+          {
+            error: "per_lead_daily_cap_exceeded",
+            leadId: err.leadId,
+            used: err.used,
+            limit: err.limit,
           },
           { status: 402 },
         );

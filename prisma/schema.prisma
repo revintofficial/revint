@@ -595,6 +595,17 @@ model AgentRun {
   // working.
   parentRunId      String?         @map("parent_run_id")
   plannerSessionId String?         @map("planner_session_id")
+  // Deterministic hash of (workspaceId, workerKind, leadId, inputs).
+  // When two callers try to enqueue the same work concurrently the
+  // second one collides on the unique index and must re-use the
+  // existing row instead of creating a duplicate. BullMQ job ids
+  // also derive from this so retries cannot land twice.
+  // The unique index on (workspace_id, idempotency_key) is created
+  // as a partial index (WHERE idempotency_key IS NOT NULL) in
+  // prisma/migrations/add_agent_run_idempotency_key.sql so legacy
+  // rows with NULL keys do not collide. Prisma cannot express the
+  // WHERE clause so we run it out of band after `prisma db push`.
+  idempotencyKey   String?         @map("idempotency_key")
   errorMsg         String?         @map("error_msg") @db.Text
   startedAt        DateTime?       @map("started_at")
   finishedAt       DateTime?       @map("finished_at")

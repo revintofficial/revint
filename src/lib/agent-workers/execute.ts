@@ -75,6 +75,7 @@ export async function executeAgentRun(runId: string): Promise<void> {
       workspaceId: run.workspaceId,
       plan: workspace.plan,
       kind: run.workerKind,
+      leadId: run.leadId,
     });
     if (!quota.allowed) {
       throw new QuotaExceededError(quota.used, quota.limit, run.workerKind);

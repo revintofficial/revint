@@ -15,10 +15,11 @@
  * ingestion pipeline that predates AI Core; their migration into
  * chains happens in a follow-up PR.
  */
-import { Worker, type Job } from "bullmq";
+import { Worker, type Job, UnrecoverableError } from "bullmq";
 import IORedis from "ioredis";
 import { logger } from "../lib/logger";
 import { executeAgentRun } from "../lib/agent-workers/execute";
+import { isRetryable } from "../lib/agent-workers/errors";
 
 type AgentRunJob =
   | { type: "agent_run"; runId: string }
@@ -42,7 +43,19 @@ async function processJob(job: Job<AgentRunJob>) {
       return;
     }
     logger.info("worker.ai_runs.agent_run.starting", { runId });
-    await executeAgentRun(runId);
+    try {
+      await executeAgentRun(runId);
+    } catch (err) {
+      if (!isRetryable(err)) {
+        // Surface as UnrecoverableError so BullMQ stops retrying
+        // schema / quota / grounding failures that would just fail
+        // again with the same payload. The AgentRun row is already
+        // marked FAILED by executeAgentRun before it rethrows.
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new UnrecoverableError(`permanent: ${msg}`);
+      }
+      throw err;
+    }
     return { runId };
   }
 
@@ -119,6 +132,14 @@ export function startAgentRunWorker() {
     // waiting, so they don't consume a Gemini slot.
     concurrency: 5,
     limiter: { max: 60, duration: 60000 },
+    // Default job options for jobs we enqueue internally that don't
+    // set their own (orchestrator + event emit paths). Permanent
+    // errors throw UnrecoverableError which short-circuits retries
+    // regardless of `attempts`.
+    settings: {
+      backoffStrategy: (attemptsMade: number) =>
+        Math.min(60000, 1000 * Math.pow(2, attemptsMade)),
+    },
   });
 
   worker.on("completed", (job) => {
