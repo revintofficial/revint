@@ -233,6 +233,9 @@ function parseSections(text: string): WebsiteMockupSections {
         ? {
             body: String(testimonial.body),
             attribution: String(testimonial.attribution ?? ""),
+            // Rating may be null when Gemini returned a non-numeric or
+            // out-of-range value; the template renders no stars in
+            // that case rather than inventing a fake 5-star rating.
             rating: clampRating(testimonial.rating),
           }
         : null,
@@ -255,8 +258,16 @@ function parseSections(text: string): WebsiteMockupSections {
   };
 }
 
-function clampRating(v: unknown): number {
+/**
+ * Accepts only a numeric rating in [1, 5]. Garbage / missing values
+ * return null rather than silently snapping to 5 - a fake 5-star
+ * testimonial rendered on the prospect's /m/{slug} page is a trust
+ * issue (they'll notice their real rating differs). Returns integer
+ * stars; callers that want decimals can substitute their own clamp.
+ */
+function clampRating(v: unknown): number | null {
   const n = typeof v === "number" ? v : parseFloat(String(v));
-  if (!Number.isFinite(n)) return 5;
-  return Math.max(4, Math.min(5, Math.round(n)));
+  if (!Number.isFinite(n)) return null;
+  if (n < 1 || n > 5) return null;
+  return Math.round(n);
 }

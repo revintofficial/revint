@@ -256,12 +256,15 @@ function renderServiceCard(
 }
 
 function renderTestimonial(
-  t: { body: string; attribution: string; rating: number },
+  t: { body: string; attribution: string; rating: number | null },
   _theme: { accent: string; border: string; panel: string; muted: string; text: string },
 ): string {
-  const stars = "★".repeat(Math.max(0, Math.min(5, Math.round(t.rating)))) + "☆".repeat(5 - Math.max(0, Math.min(5, Math.round(t.rating))));
+  const starsHtml =
+    typeof t.rating === "number"
+      ? `<div class="stars" style="margin-bottom:14px">${"★".repeat(Math.max(0, Math.min(5, Math.round(t.rating))))}${"☆".repeat(5 - Math.max(0, Math.min(5, Math.round(t.rating))))}</div>`
+      : "";
   return `<div class="quote">
-    <div class="stars" style="margin-bottom:14px">${stars}</div>
+    ${starsHtml}
     <p>"${escapeHtml(t.body)}"</p>
     <div class="who">- ${escapeHtml(t.attribution)}</div>
   </div>`;
