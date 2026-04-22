@@ -68,10 +68,28 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ error: "AgentRun not found" }, { status: 404 });
   }
 
-  // Fetch the actor's full output + stats. Failure to do so downgrades
-  // to a best-effort status update.
+  // Idempotency: Apify retries webhooks on transient delivery failures
+  // and sometimes duplicates deliveries. If the run is already in a
+  // terminal state we must not overwrite its output / cost / finishedAt,
+  // and we must not re-enqueue orchestrator advance (duplicate DAG
+  // step execution risk).
+  if (run.status === "SUCCEEDED" || run.status === "FAILED" || run.status === "CANCELLED") {
+    logger.info("apify.webhook.dedupe_terminal", {
+      agentRunId,
+      apifyRunId,
+      existingStatus: run.status,
+    });
+    return NextResponse.json({ ok: true, deduped: true });
+  }
+
+  // Fetch the actor's full output + stats. Failure to call Apify's API
+  // is NOT the same as the actor run itself failing; if we cannot tell
+  // whether the actor succeeded, we must not flip this AgentRun to
+  // FAILED (that would cascade up the DAG and cancel downstream work).
+  // Leave the run RUNNING so a later retry of the same webhook -- or a
+  // manual cron reconciliation -- can resolve it.
   let costUsdCents = 0;
-  let status: "SUCCEEDED" | "FAILED" = "SUCCEEDED";
+  let status: "SUCCEEDED" | "FAILED" | null = null;
   let outputJson: unknown = null;
 
   if (apifyRunId) {
@@ -79,18 +97,36 @@ export async function POST(req: Request): Promise<Response> {
       const apifyResult = await fetchRun(apifyRunId);
       costUsdCents = apifyResult.costUsdCents;
       outputJson = { apifyRunId, items: apifyResult.items.slice(0, 500) };
-      if (apifyResult.status !== "SUCCEEDED") status = "FAILED";
+      status = apifyResult.status === "SUCCEEDED" ? "SUCCEEDED" : "FAILED";
     } catch (err) {
       logger.warn("apify.webhook.fetch_run_failed", {
         apifyRunId,
         err: err instanceof Error ? err.message : String(err),
       });
-      status = "FAILED";
+      // Leave status unresolved; 202 so Apify retries per its webhook
+      // retry policy.
+      return NextResponse.json(
+        { ok: false, retryable: true, reason: "apify_fetch_failed" },
+        { status: 202 },
+      );
     }
+  } else {
+    // No apifyRunId in payload -- we cannot correlate. Don't touch the
+    // AgentRun; return 400 so the caller knows the payload is bad.
+    return NextResponse.json(
+      { error: "resource.id missing; cannot correlate run" },
+      { status: 400 },
+    );
   }
 
-  await prisma.agentRun.update({
-    where: { id: agentRunId },
+  // Conditional update: only transition from non-terminal state so
+  // two concurrent webhook deliveries for the same run race at the DB
+  // and the second one is a no-op.
+  const updated = await prisma.agentRun.updateMany({
+    where: {
+      id: agentRunId,
+      status: { in: ["PENDING", "RUNNING"] },
+    },
     data: {
       status,
       finishedAt: new Date(),
@@ -98,6 +134,11 @@ export async function POST(req: Request): Promise<Response> {
       outputJson: outputJson as never,
     },
   });
+
+  if (updated.count === 0) {
+    logger.info("apify.webhook.race_lost", { agentRunId, apifyRunId });
+    return NextResponse.json({ ok: true, deduped: true });
+  }
 
   if (run.plannerSessionId) {
     await enqueueAdvance(run.plannerSessionId);

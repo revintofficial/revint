@@ -27,11 +27,15 @@ import type { EventKind } from "@/lib/agent-workers/types";
 // `lead_created` and `inbox_reply_received` are emitted by server-side
 // code only; exposing them here would let a client trigger the full
 // intelligence chain on any lead id.
+//
+// `user_bulk_pitch` is intentionally NOT here: bulk fan-out goes through
+// /api/planner/bulk (one PlannerSession per lead), because no chain in
+// chains.ts is registered for `user_bulk_pitch` and emitting it would
+// throw "no chain registered".
 const USER_EVENTS: ReadonlySet<EventKind> = new Set<EventKind>([
   "user_one_click_pitch",
   "user_deep_research",
   "user_receptionist_with_kb",
-  "user_bulk_pitch",
 ]);
 
 export const POST = withAuth(async (session, req: Request) => {
@@ -55,24 +59,20 @@ export const POST = withAuth(async (session, req: Request) => {
     );
   }
 
-  // Lead-scoped events all require a leadId belonging to the caller's
-  // workspace; the one exception (`user_bulk_pitch`) takes a list via
-  // `inputs.leadIds` and each one is validated during orchestration.
-  const needsLead = event !== "user_bulk_pitch";
-  if (needsLead) {
-    if (!leadId) {
-      return NextResponse.json({ error: "leadId required" }, { status: 400 });
-    }
-    const lead = await prisma.lead.findUnique({
-      where: { id: leadId },
-      select: { workspaceId: true },
-    });
-    if (!lead || lead.workspaceId !== session.workspaceId) {
-      return NextResponse.json(
-        { error: "Lead not found in workspace" },
-        { status: 403 },
-      );
-    }
+  // All events here are lead-scoped; leadId must exist in the caller's
+  // workspace. Bulk fan-out is handled by /api/planner/bulk.
+  if (!leadId) {
+    return NextResponse.json({ error: "leadId required" }, { status: 400 });
+  }
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+    select: { workspaceId: true },
+  });
+  if (!lead || lead.workspaceId !== session.workspaceId) {
+    return NextResponse.json(
+      { error: "Lead not found in workspace" },
+      { status: 403 },
+    );
   }
 
   try {

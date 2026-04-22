@@ -70,6 +70,22 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   };
 };
 
+/**
+ * Stable refId for FB posts (see instagram-deep for rationale). When
+ * Apify omits postId we fall back to the post URL, then to a hash of
+ * the caption, so retries upsert rather than insert.
+ */
+function fbRefId(
+  leadId: string,
+  p: { id?: string; url?: string; text?: string },
+): string {
+  if (p.id) return `${leadId}:fb:${p.id}`;
+  if (p.url) return `${leadId}:fb:url:${p.url}`;
+  let h = 0;
+  for (let i = 0; i < (p.text?.length ?? 0); i++) h = Math.imul(31, h) + p.text!.charCodeAt(i) | 0;
+  return `${leadId}:fb:txt:${(h >>> 0).toString(36)}`;
+}
+
 export const memoryWrites = (
   output: unknown,
   ctx: AgentWorkerContext,
@@ -85,7 +101,7 @@ export const memoryWrites = (
       text: p.text,
       leadId: ctx.leadId,
       refType: "social_post:facebook",
-      refId: p.id ? `${ctx.leadId}:fb:${p.id}` : undefined,
+      refId: fbRefId(ctx.leadId!, p),
       metadata: {
         platform: "facebook",
         url: p.url,

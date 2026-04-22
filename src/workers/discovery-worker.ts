@@ -2,6 +2,7 @@ import { Worker, type Job } from "bullmq";
 import { discoverLeads, extractBoroughFromAddress } from "../lib/google-places";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
+import { emit } from "../lib/ai-core/events";
 import IORedis from "ioredis";
 
 interface DiscoveryJobData {
@@ -47,7 +48,7 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
     const detectedBorough = extractBoroughFromAddress(address) || borough.name;
     const websiteUrl = place.websiteUri || null;
 
-    await prisma.lead.create({
+    const lead = await prisma.lead.create({
       data: {
         workspaceId,
         placeId,
@@ -68,7 +69,20 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
         crawlStatus: websiteUrl ? "PENDING" : "NO_WEBSITE",
         analyzeStatus: "PENDING",
       },
+      select: { id: true },
     });
+
+    // Kick off the AI Core `lead_created` chain (auditor + review +
+    // scorer + sentinel embed). Failure to start the chain must not
+    // roll back the lead row, so we swallow but log loudly.
+    try {
+      await emit("lead_created", { workspaceId, leadId: lead.id });
+    } catch (err) {
+      logger.error("worker.discovery.emit_lead_created_failed", {
+        leadId: lead.id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
     created++;
   }
 

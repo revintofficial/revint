@@ -109,16 +109,59 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   const result = await model.generateContent(prompt);
   const message = result.response.text().trim();
 
-  // Persist back to SalesOpportunity so existing UI surfaces pick it up.
-  await prisma.salesOpportunity.update({
-    where: { leadId: lead.id },
-    data: { personalizedFirstMessage: message },
-  });
+  // Before overwriting SalesOpportunity.personalizedFirstMessage, check
+  // whether the user manually edited the previously generated opener.
+  // We detect this by comparing the currently stored value against the
+  // output of the most recent successful OPENER_WRITER run for the same
+  // lead: if they differ, the user edited the field since last run and
+  // we must not blow away their copy. The newly generated message is
+  // still returned in `output` so the UI can offer it as an alternative.
+  const existingOpp = opp?.personalizedFirstMessage
+    ? { personalizedFirstMessage: opp.personalizedFirstMessage }
+    : await prisma.salesOpportunity.findUnique({
+        where: { leadId: lead.id },
+        select: { personalizedFirstMessage: true },
+      });
+
+  let preservedManualEdit = false;
+  if (existingOpp?.personalizedFirstMessage) {
+    const lastAiRun = await prisma.agentRun.findFirst({
+      where: {
+        leadId: lead.id,
+        workerKind: "OPENER_WRITER",
+        status: "SUCCEEDED",
+        id: { not: ctx.runId },
+      },
+      orderBy: { finishedAt: "desc" },
+      select: { outputJson: true },
+    });
+    const lastAiMessage = (lastAiRun?.outputJson as { message?: unknown } | null)?.message;
+    const lastAiMessageStr = typeof lastAiMessage === "string" ? lastAiMessage : null;
+    if (
+      lastAiMessageStr !== null &&
+      lastAiMessageStr !== existingOpp.personalizedFirstMessage
+    ) {
+      preservedManualEdit = true;
+    }
+  }
+
+  if (preservedManualEdit) {
+    logger.info("opener_writer.preserved_manual_edit", {
+      leadId: lead.id,
+      runId: ctx.runId,
+    });
+  } else {
+    await prisma.salesOpportunity.update({
+      where: { leadId: lead.id },
+      data: { personalizedFirstMessage: message },
+    });
+  }
 
   logger.info("opener_writer.done", {
     leadId: lead.id,
     fewShotCount: successExamples.length,
     charLen: message.length,
+    preservedManualEdit,
   });
 
   return {
@@ -126,6 +169,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       message,
       fewShotCount: successExamples.length,
       mockupUrl: mockup?.slug ? `/m/${mockup.slug}` : null,
+      preservedManualEdit,
     },
     costTokens: Math.ceil((prompt.length + message.length) / 4),
   };

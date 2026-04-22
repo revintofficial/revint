@@ -48,8 +48,7 @@ export type EventKind =
   | "inbox_reply_received"
   | "user_one_click_pitch"
   | "user_deep_research"
-  | "user_receptionist_with_kb"
-  | "user_bulk_pitch";
+  | "user_receptionist_with_kb";
 
 export interface MemorySpec {
   kinds: MemoryKind[];

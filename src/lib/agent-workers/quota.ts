@@ -8,12 +8,19 @@
  *   2. Worker process (agent-run-worker.ts at job start) - prevents
  *      bypass if someone enqueues a job through a different path.
  *
- * Counter semantics: we count `AgentRun` rows with status != FAILED
- * and status != CANCELLED, scoped to `(workspaceId, workerKind)` and
- * created within the current Stripe billing cycle. Cycle reset is
- * aligned with `workspace.cycleResetAt` (already tracked for the
- * lead-discovery quota) so users see one consistent "resets on X"
+ * Counter semantics: we count `AgentRun` rows in a terminal billable
+ * state (SUCCEEDED) plus currently-enqueued work (PENDING/RUNNING) up
+ * to a short grace window; older PENDING/RUNNING rows that have been
+ * stuck are ignored so a crashed worker cannot silently drain a
+ * workspace's quota. Scoped to `(workspaceId, workerKind)` and created
+ * within the current Stripe billing cycle. Cycle reset is aligned with
+ * `workspace.cycleResetAt` so users see one consistent "resets on X"
  * message across every meter.
+ *
+ * Why not just count SUCCEEDED: that races with in-flight runs --
+ * between assertWorkerQuota() and the actual run finishing the same
+ * workspace can double-book capacity. We therefore also count
+ * PENDING/RUNNING rows younger than `PENDING_GRACE_MS`.
  */
 import type { AgentWorkerKind, Plan } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -129,6 +136,16 @@ const LAUNCH_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
 const LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = LAUNCH_POLICY
   ? LAUNCH_LIMITS
   : CONSERVATIVE_LIMITS;
+
+/**
+ * Grace window for counting in-flight (PENDING/RUNNING) agent runs
+ * against the quota. Rows older than this are assumed to be stuck
+ * (queue or worker crashed without cleaning up) and excluded from the
+ * counter, so a crashed worker cannot silently drain a workspace's
+ * monthly budget. One hour is safely larger than any single worker's
+ * wall clock time (Apify actors top out at ~15 minutes).
+ */
+const PENDING_GRACE_MS = 60 * 60 * 1000;
 
 // Upper bound for UNLIMITED - real quota check still counts but this
 // keeps one runaway workspace from exhausting Gemini quota. Above this
@@ -260,12 +277,19 @@ export async function checkWorkerQuota(args: {
     select: { cycleResetAt: true },
   });
 
+  const pendingCutoff = new Date(Date.now() - PENDING_GRACE_MS);
   const used = await prisma.agentRun.count({
     where: {
       workspaceId: args.workspaceId,
       workerKind: args.kind,
-      status: { notIn: ["FAILED", "CANCELLED"] },
       createdAt: { gte: ws.cycleResetAt },
+      OR: [
+        { status: "SUCCEEDED" },
+        // In-flight work counts only while fresh. Stuck PENDING/RUNNING
+        // rows (worker crashed, queue paused) are ignored so the same
+        // stuck row cannot burn the quota forever.
+        { status: { in: ["PENDING", "RUNNING"] }, createdAt: { gte: pendingCutoff } },
+      ],
     },
   });
 
@@ -279,14 +303,17 @@ export async function checkWorkerQuota(args: {
 
   // Apify kinds: second gate on USD budget. Summed across ALL Apify
   // kinds in the same cycle; one workspace cannot bypass the cap by
-  // spreading runs across actor types.
+  // spreading runs across actor types. Only SUCCEEDED rows carry a
+  // real costUsdCents value (set on completion), so restricting to
+  // SUCCEEDED both aligns with billing truth and avoids the stuck-row
+  // quota drain described above.
   if (isApifyKind(args.kind)) {
     const apifyLimitCents = MONTHLY_APIFY_USD_CENTS[args.plan] ?? 0;
     const sum = await prisma.agentRun.aggregate({
       where: {
         workspaceId: args.workspaceId,
         workerKind: { in: Array.from(APIFY_KINDS) },
-        status: { notIn: ["FAILED", "CANCELLED"] },
+        status: "SUCCEEDED",
         createdAt: { gte: ws.cycleResetAt },
       },
       _sum: { costUsdCents: true },

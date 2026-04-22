@@ -11,6 +11,7 @@ import {
 import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
 import { getDiscoveryQueue } from "@/lib/queues";
 import { logger } from "@/lib/logger";
+import { emit } from "@/lib/ai-core/events";
 
 // Vercel serverless function config.
 // - nodejs runtime: Prisma + BullMQ need a full Node runtime (no Edge).
@@ -121,7 +122,7 @@ export async function POST(request: Request) {
 
       const address = place.formattedAddress || "";
       const websiteUrl = place.websiteUri || null;
-      await prisma.lead.create({
+      const lead = await prisma.lead.create({
         data: {
           workspaceId,
           placeId: place.id,
@@ -142,8 +143,21 @@ export async function POST(request: Request) {
           crawlStatus: websiteUrl ? "PENDING" : "NO_WEBSITE",
           analyzeStatus: "PENDING",
         },
+        select: { id: true },
       });
       await recordLeadsCreated(workspaceId, 1);
+
+      // Fire the AI Core `lead_created` chain. Emit failure should
+      // never surface to the HTTP caller (the row is already committed);
+      // loud log + swallow so one bad emit does not kill the batch.
+      try {
+        await emit("lead_created", { workspaceId, leadId: lead.id });
+      } catch (err) {
+        logger.error("api.discovery.emit_lead_created_failed", {
+          leadId: lead.id,
+          err: err instanceof Error ? err.message : String(err),
+        });
+      }
       created++;
     }
 

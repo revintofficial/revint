@@ -80,6 +80,32 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   };
 };
 
+/**
+ * Derives a stable refId for a memory write even when the scraped
+ * post lacks an explicit `id`. Returning undefined would make
+ * memory.upsert treat the write as "always insert", so every run
+ * would duplicate the row. Order of preference:
+ *   1. Apify's post id (most stable).
+ *   2. Post URL (stable per Instagram media permalink).
+ *   3. Deterministic hash of the caption (last-resort, avoids dupes
+ *      on retry of the same scrape).
+ */
+function igRefId(
+  leadId: string,
+  p: { id?: string; url?: string; caption?: string },
+): string {
+  if (p.id) return `${leadId}:ig:${p.id}`;
+  if (p.url) return `${leadId}:ig:url:${p.url}`;
+  const h = hashString(p.caption ?? "");
+  return `${leadId}:ig:cap:${h}`;
+}
+
+function hashString(s: string): string {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+  return (h >>> 0).toString(36);
+}
+
 export const memoryWrites = (
   output: unknown,
   ctx: AgentWorkerContext,
@@ -95,7 +121,7 @@ export const memoryWrites = (
       text: p.caption ?? "",
       leadId: ctx.leadId,
       refType: "social_post:instagram",
-      refId: p.id ? `${ctx.leadId}:ig:${p.id}` : undefined,
+      refId: igRefId(ctx.leadId!, p),
       metadata: {
         platform: "instagram",
         url: p.url,

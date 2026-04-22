@@ -79,3 +79,4 @@ amplify.yml
 /video/node_modules
 /video/out
 
+tmp-artifacts/

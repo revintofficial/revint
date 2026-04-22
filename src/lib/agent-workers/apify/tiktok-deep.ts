@@ -75,6 +75,20 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   };
 };
 
+/**
+ * Stable refId for TT videos (see instagram-deep for rationale).
+ */
+function ttRefId(
+  leadId: string,
+  v: { id?: string; url?: string; text?: string },
+): string {
+  if (v.id) return `${leadId}:tt:${v.id}`;
+  if (v.url) return `${leadId}:tt:url:${v.url}`;
+  let h = 0;
+  for (let i = 0; i < (v.text?.length ?? 0); i++) h = Math.imul(31, h) + v.text!.charCodeAt(i) | 0;
+  return `${leadId}:tt:txt:${(h >>> 0).toString(36)}`;
+}
+
 export const memoryWrites = (
   output: unknown,
   ctx: AgentWorkerContext,
@@ -90,7 +104,7 @@ export const memoryWrites = (
       text: v.text,
       leadId: ctx.leadId,
       refType: "social_post:tiktok",
-      refId: v.id ? `${ctx.leadId}:tt:${v.id}` : undefined,
+      refId: ttRefId(ctx.leadId!, v),
       metadata: {
         platform: "tiktok",
         url: v.url,
