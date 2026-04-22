@@ -78,8 +78,6 @@ function eventToTrigger(event: EventKind): PlannerTrigger {
       return "USER_BUTTON";
     case "user_deep_research":
       return "USER_DEEP_RESEARCH";
-    case "user_bulk_pitch":
-      return "USER_BULK";
     case "lead_created":
     case "inbox_reply_received":
     default:
@@ -100,8 +98,6 @@ function humanGoal(event: EventKind, payload: EventPayload): string {
       return `Deep research enrichment${lead}`;
     case "user_receptionist_with_kb":
       return `AI receptionist with knowledge base${lead}`;
-    case "user_bulk_pitch":
-      return `Bulk pitch pack (workspace=${payload.workspaceId})`;
     default:
       return `Run chain ${event}${lead}`;
   }

@@ -140,15 +140,13 @@ describe("POST /api/planner/start", () => {
     );
   });
 
-  it("user_bulk_pitch does NOT require leadId at the top level", async () => {
-    mockEmit.mockResolvedValueOnce("session_bulk");
+  it("rejects user_bulk_pitch (bulk goes through /api/planner/bulk)", async () => {
     const res = await POST(
       makeRequest({ event: "user_bulk_pitch", inputs: { leadIds: ["l1", "l2"] } }),
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.sessionId).toBe("session_bulk");
-    expect(mockLeadFindUnique).not.toHaveBeenCalled();
-    expect(mockEmit).toHaveBeenCalledTimes(1);
+    expect(body.error).toMatch(/Unknown or disallowed event/);
+    expect(mockEmit).not.toHaveBeenCalled();
   });
 });
