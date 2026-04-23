@@ -8,6 +8,7 @@ let reviewAnalysisQueue: Queue | null = null;
 let emailVerificationQueue: Queue | null = null;
 let inboxSyncQueue: Queue | null = null;
 let agentRunsQueue: Queue | null = null;
+let seoOpsQueue: Queue | null = null;
 
 export function getDiscoveryQueue(): Queue {
   if (!discoveryQueue) {
@@ -63,4 +64,20 @@ export function getAgentRunsQueue(): Queue {
     agentRunsQueue = new Queue("agent-runs", { connection: getRedis() });
   }
   return agentRunsQueue;
+}
+
+/**
+ * Enterprise SEO ops queue. Carries:
+ *   - `gsc-ingest`      — pulls yesterday's GSC query/page metrics
+ *   - `broken-links`    — weekly scan of the sitemap for 4xx/5xx
+ *   - `indexnow-ping`   — submits a URL batch to the IndexNow network
+ *
+ * Schedules (repeat jobs) are registered in src/workers/seo-ops-worker.ts
+ * on boot, so a single supervisor restart is enough to reinstall them.
+ */
+export function getSeoOpsQueue(): Queue {
+  if (!seoOpsQueue) {
+    seoOpsQueue = new Queue("seo-ops", { connection: getRedis() });
+  }
+  return seoOpsQueue;
 }

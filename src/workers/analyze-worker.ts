@@ -9,6 +9,7 @@ import type { WebsiteFeatures } from "../types";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { notifyHotLead } from "../lib/email/notifications";
+import { pingIndexNowForLead } from "../lib/seo/indexnow";
 import IORedis from "ioredis";
 
 interface AnalyzeJobData {
@@ -127,6 +128,12 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
     } catch (notifyErr) {
       logger.warn("worker.analyze.notify_failed", { leadId, err: notifyErr });
     }
+
+    // Enterprise SEO: push the new /b/{city}/{business} URL (plus parent
+    // city/niche hubs) to IndexNow so Bing and Yandex reindex within
+    // minutes. Fire-and-forget, gated inside the helper on the public
+    // profile flag + evidence floor.
+    void pingIndexNowForLead(leadId);
 
     logger.info("worker.analyze.done", {
       leadId,

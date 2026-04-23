@@ -13,6 +13,7 @@ import {
   LeadCardList,
   CrossLinkBlock,
   FaqBlock,
+  DirectAnswer,
 } from "@/components/public-directory/directory-shell";
 import {
   getPublicCities,
@@ -129,6 +130,13 @@ export default async function CityPage({
         title={`Local businesses in ${city.cityName}`}
         intro={`${businesses.length} audited local-service businesses in ${city.cityName}. Every profile below includes a website audit, Google rating, and contact details. Data refreshes weekly.`}
       >
+        <DirectAnswer>
+          There are {businesses.length} audited local-service businesses in
+          the Leadac AI directory for {city.cityName}, each with a website
+          audit, Google rating, and contact details. Listings refresh weekly
+          from live Google Maps data.
+        </DirectAnswer>
+
         <LeadCardList items={businesses} />
 
         <CrossLinkBlock

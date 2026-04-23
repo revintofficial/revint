@@ -11,6 +11,8 @@ import {
 } from "@/components/seo/json-ld";
 import { buildRootMetadata } from "@/lib/seo/metadata";
 import { WebVitalsReporter } from "@/components/seo/web-vitals-reporter";
+import { PostHogProvider } from "@/components/analytics/posthog-provider";
+import { Suspense } from "react";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -47,6 +49,9 @@ export default function RootLayout({
         <Toaster />
         <PWARegister />
         <WebVitalsReporter />
+        <Suspense fallback={null}>
+          <PostHogProvider />
+        </Suspense>
       </body>
     </html>
   );

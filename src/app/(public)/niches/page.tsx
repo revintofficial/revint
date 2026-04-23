@@ -4,10 +4,13 @@ import {
   breadcrumbSchema,
   collectionPageSchema,
   itemListSchema,
+  faqSchema,
 } from "@/components/seo/json-ld";
 import {
   DirectoryShell,
   CrossLinkBlock,
+  DirectAnswer,
+  FaqBlock,
 } from "@/components/public-directory/directory-shell";
 import { getPublicNiches } from "@/lib/seo/programmatic";
 
@@ -19,6 +22,24 @@ export const metadata = buildMetadata({
   description:
     "Audited local-service businesses grouped by niche — phone repair, HVAC, plumbing, dental, locksmiths, opticians, and more. Each listing includes a website audit.",
 });
+
+const FAQS = [
+  {
+    question: "Which niches work best for local outbound?",
+    answer:
+      "Niches with visible website quality gaps, reasonable willingness-to-pay, and enough density per postcode to iterate on. Phone repair, dental clinics, opticians, HVAC, driving instructors, and mobile mechanics all score well; restaurants, hair salons, and gyms are saturated or chain-dominated.",
+  },
+  {
+    question: "How many niches does Leadac AI cover?",
+    answer:
+      "We index any local-service vertical that has at least three audited businesses in any single city. The list grows as our agency customers run discovery in new verticals.",
+  },
+  {
+    question: "Can I cross a niche with a specific city?",
+    answer:
+      "Yes. Every niche page has a 'by city' cross-link block; open any niche-city page (e.g., phone-repair in London) to see the focused list and the FAQ specific to that combination.",
+  },
+];
 
 export default async function NichesIndexPage() {
   const niches = await getPublicNiches();
@@ -48,12 +69,19 @@ export default async function NichesIndexPage() {
           { name: "Niches", url: "/niches" },
         ])}
       />
+      <JsonLd data={faqSchema(FAQS)} />
 
       <DirectoryShell
         eyebrow="Directory"
         title={`Local business directory by niche (${niches.length} niches)`}
         intro="Every niche below has at least three audited businesses. Drill into a niche to see the list, or cross a niche with a city for a focused view."
       >
+        <DirectAnswer>
+          The Leadac AI directory indexes {niches.length} local-service
+          niches — each with at least three audited businesses.
+          Intersect a niche with a city for the highest-intent view.
+        </DirectAnswer>
+
         <CrossLinkBlock
           title="Browse by niche"
           links={niches.map((n) => ({
@@ -71,6 +99,8 @@ export default async function NichesIndexPage() {
             { label: "Comparison pages", href: "/compare" },
           ]}
         />
+
+        <FaqBlock items={FAQS} />
       </DirectoryShell>
     </>
   );

@@ -8,6 +8,7 @@ import { startAnalyzeWorker } from "./analyze-worker";
 import { startReviewAnalysisWorker } from "./review-analysis-worker";
 import { startEmailVerificationWorker } from "./email-verification-worker";
 import { startAgentRunWorker } from "./agent-run-worker";
+import { startSeoOpsWorker } from "./seo-ops-worker";
 import { logger } from "../lib/logger";
 
 logger.info("worker.supervisor.starting");
@@ -18,6 +19,7 @@ const analyzeWorker = startAnalyzeWorker();
 const reviewAnalysisWorker = startReviewAnalysisWorker();
 const emailVerificationWorker = startEmailVerificationWorker();
 const agentRunWorker = startAgentRunWorker();
+const seoOpsWorker = startSeoOpsWorker();
 
 logger.info("worker.supervisor.started");
 
@@ -30,6 +32,7 @@ async function shutdown() {
     reviewAnalysisWorker.close(),
     emailVerificationWorker.close(),
     agentRunWorker.close(),
+    seoOpsWorker.close(),
   ]);
   process.exit(0);
 }

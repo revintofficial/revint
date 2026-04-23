@@ -13,6 +13,7 @@ import {
   LeadCardList,
   CrossLinkBlock,
   FaqBlock,
+  DirectAnswer,
 } from "@/components/public-directory/directory-shell";
 import {
   getPublicNiches,
@@ -131,6 +132,14 @@ export default async function NichePage({
         title={`${niche.nicheName} — ${businesses.length} audited businesses`}
         intro={`${businesses.length} ${niche.nicheName.toLowerCase()} businesses with verified contact details, Google ratings, and a 20-signal website audit on each one. Refreshed weekly.`}
       >
+        <DirectAnswer>
+          The Leadac AI {niche.nicheName.toLowerCase()} directory currently
+          lists {businesses.length} audited businesses worldwide, each with a
+          verified website audit, Google rating, and contact details.
+          Browse by city below, or open an individual profile for the full
+          20-signal audit report.
+        </DirectAnswer>
+
         <LeadCardList items={businesses} />
 
         <CrossLinkBlock

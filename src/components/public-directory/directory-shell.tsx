@@ -59,6 +59,35 @@ export function DirectoryShell({
   );
 }
 
+/**
+ * DirectAnswer — answer-engine-ready one-sentence direct answer block.
+ * Render at the top of any content-heavy page so AI search engines can
+ * extract the single sentence without ambiguity.
+ */
+export function DirectAnswer({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <p
+      style={{
+        padding: "16px 20px",
+        marginBottom: 28,
+        background: "rgba(165,180,252,0.08)",
+        border: "0.5px solid rgba(165,180,252,0.18)",
+        borderRadius: 10,
+        color: "rgba(237,237,240,0.88)",
+        fontSize: 15,
+        lineHeight: 1.55,
+      }}
+    >
+      <strong style={{ color: "#ffffff" }}>Short answer:</strong>{" "}
+      {children}
+    </p>
+  );
+}
+
 export function LeadCardList({ items }: { items: PublicLeadCard[] }) {
   if (items.length === 0) {
     return (

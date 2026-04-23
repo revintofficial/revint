@@ -37,9 +37,11 @@ export const SITE = {
     "https://twitter.com/leadac_ai",
     "https://www.linkedin.com/company/leadac-ai",
     "https://github.com/leadac-ai",
+    "https://www.crunchbase.com/organization/leadac-ai",
     "https://www.producthunt.com/products/leadac-ai",
     "https://www.g2.com/products/leadac-ai",
     "https://www.capterra.com/p/leadac-ai",
+    "https://alternativeto.net/software/leadac-ai/",
   ] as const,
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
