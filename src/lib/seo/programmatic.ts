@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { slugify, slugWithSuffix } from "@/lib/slug";
-import type { Lead, SalesOpportunity, WebsiteAudit } from "@prisma/client";
+import type { Lead, SalesOpportunity, WebsiteAudit } from "@/generated/prisma/client";
 
 /**
  * Data access layer for programmatic directory pages.
