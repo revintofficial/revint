@@ -12,8 +12,14 @@ export default async function MarketingLayout({
   const rewardfulKey = process.env.NEXT_PUBLIC_REWARDFUL_API_KEY;
   return (
     <div className="min-h-screen flex flex-col bg-black text-white relative overflow-x-clip">
+      {/* Preconnect hints for deferred assets. These are cheap (<100 bytes
+          each) and give the hero video + Rewardful script a head start
+          without blocking LCP. */}
+      <link rel="dns-prefetch" href="https://u1core-dev.com" />
+      <link rel="preconnect" href="https://u1core-dev.com" crossOrigin="" />
       {rewardfulKey && (
         <>
+          <link rel="dns-prefetch" href="https://r.wdfl.co" />
           <Script id="rewardful-init" strategy="beforeInteractive">
             {`(function(w,r){w._rwq=r;w[r]=w[r]||function(){(w[r].q=w[r].q||[]).push(arguments)}})(window,'rewardful');`}
           </Script>

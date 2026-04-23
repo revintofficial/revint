@@ -2,10 +2,16 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/marketing/auth-form";
 import { getOptionalUser } from "@/lib/auth";
+import { buildMetadata } from "@/lib/seo/metadata";
 
-export const metadata = {
+export const metadata = buildMetadata({
+  path: "/signup",
   title: "Sign up — Leadac AI",
-};
+  description:
+    "Start free. 50 fresh Google Maps leads, a 20-signal audit on every site, and 3 per-lead website plans. No credit card.",
+  index: false,
+  follow: true,
+});
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 

@@ -1,4 +1,11 @@
-export const metadata = { title: "Terms — Leadac AI" };
+import { buildMetadata } from "@/lib/seo/metadata";
+
+export const metadata = buildMetadata({
+  path: "/legal/terms",
+  title: "Terms of Service — Leadac AI",
+  description:
+    "Terms of service for Leadac AI — acceptable use, subscription terms, data ownership, and how we handle the leads you pull through the platform.",
+});
 
 export default function TermsPage() {
   return (

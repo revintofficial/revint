@@ -29,7 +29,7 @@ const STATUS_ICON = {
 
 const STATUS_COLOR = {
   good: "#34D399",
-  bad: "#F87171",
+  bad: "#FB7185",
   warning: "#F59E0B",
 } as const;
 
@@ -122,7 +122,7 @@ export function LeadCardLive({
             >
               <Sparkles
                 className="w-2.5 h-2.5 inline -mt-0.5 mr-1"
-                style={{ color: "#A5B4FC" }}
+                style={{ color: "#C49AFF" }}
               />
               {lead.pitch}
             </p>
@@ -154,7 +154,7 @@ export function LeadCardLive({
                 borderTop: "0.5px solid rgba(255,255,255,0.05)",
               }}
             >
-              <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-[#A5B4FC] mt-3 mb-2">
+              <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-[#C49AFF] mt-3 mb-2">
                 Audit signals
               </p>
               <ul className="space-y-1.5">

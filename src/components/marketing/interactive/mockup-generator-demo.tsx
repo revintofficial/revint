@@ -19,7 +19,7 @@ interface MockupGeneratorDemoProps {
 }
 
 const PALETTES = [
-  { primary: "#5E6AD2", accent: "#A5B4FC", text: "#FFFFFF", bg1: "#0F1024", bg2: "#1B1D3A" },
+  { primary: "#8B5CF6", accent: "#C49AFF", text: "#FFFFFF", bg1: "#1A0F2E", bg2: "#2B1845" },
   { primary: "#34D399", accent: "#86EFAC", text: "#04221A", bg1: "#0F2A21", bg2: "#173B30" },
   { primary: "#F59E0B", accent: "#FCD34D", text: "#1F1404", bg1: "#241704", bg2: "#3A2710" },
 ];
@@ -80,7 +80,7 @@ export function MockupGeneratorDemo({
             "linear-gradient(180deg, rgba(32,32,36,0.92) 0%, rgba(22,22,26,0.96) 100%)",
           border: "0.5px solid rgba(255,255,255,0.09)",
           boxShadow:
-            "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(49,46,129,0.25)",
+            "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(94,35,201,0.25)",
         }}
       >
         {/* Top bar */}
@@ -152,7 +152,7 @@ export function MockupGeneratorDemo({
                     className="absolute inset-0 rounded-full"
                     style={{
                       background:
-                        "conic-gradient(from 0deg, rgba(94,106,210,0), rgba(94,106,210,0.9))",
+                        "conic-gradient(from 0deg, rgba(139,92,246,0), rgba(139,92,246,0.9))",
                     }}
                     animate={reduce ? {} : { rotate: 360 }}
                     transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
@@ -171,7 +171,7 @@ export function MockupGeneratorDemo({
                   {[0, 1, 2].map((i) => (
                     <motion.div
                       key={i}
-                      className="w-1.5 h-1.5 rounded-full bg-[#A5B4FC]"
+                      className="w-1.5 h-1.5 rounded-full bg-[#C49AFF]"
                       animate={
                         reduce
                           ? {}

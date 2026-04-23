@@ -47,7 +47,7 @@ export function TabletFrame({
         className="hidden sm:block absolute -inset-10 -z-10 rounded-[48px] opacity-60 blur-3xl"
         style={{
           background:
-            "radial-gradient(closest-side, rgba(94,106,210,0.28), transparent 70%)",
+            "radial-gradient(closest-side, rgba(139,92,246,0.28), transparent 70%)",
         }}
       />
 
@@ -61,7 +61,7 @@ export function TabletFrame({
           background:
             "linear-gradient(160deg, #2A2A2E 0%, #18181B 35%, #0F0F12 100%)",
           boxShadow:
-            "0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 0.5px rgba(255,255,255,0.05), 0 24px 60px rgba(0,0,0,0.55), 0 80px 200px rgba(49,46,129,0.25)",
+            "0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 0.5px rgba(255,255,255,0.05), 0 24px 60px rgba(0,0,0,0.55), 0 80px 200px rgba(94,35,201,0.25)",
         }}
       >
         {/* Camera dot (landscape: top-center; portrait: top-center vertical) */}

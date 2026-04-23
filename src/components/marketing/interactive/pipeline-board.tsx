@@ -78,7 +78,7 @@ export function PipelineBoard({
           "linear-gradient(180deg, rgba(32,32,36,0.92) 0%, rgba(22,22,26,0.96) 100%)",
         border: "0.5px solid rgba(255,255,255,0.09)",
         boxShadow:
-          "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(49,46,129,0.25)",
+          "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(94,35,201,0.25)",
       }}
     >
       <div
@@ -148,18 +148,18 @@ export function PipelineBoard({
                     background: completed
                       ? "rgba(52,211,153,0.14)"
                       : current
-                        ? "rgba(94,106,210,0.18)"
+                        ? "rgba(139,92,246,0.18)"
                         : "rgba(255,255,255,0.04)",
                     color: completed
                       ? "#34D399"
                       : current
-                        ? "#C7CCFF"
+                        ? "#C49AFF"
                         : "rgba(255,255,255,0.45)",
                     border: current
-                      ? "0.5px solid rgba(94,106,210,0.55)"
+                      ? "0.5px solid rgba(139,92,246,0.55)"
                       : "0.5px solid transparent",
                     boxShadow: current
-                      ? "0 0 0 3px rgba(94,106,210,0.12)"
+                      ? "0 0 0 3px rgba(139,92,246,0.12)"
                       : "none",
                   }}
                 >
@@ -169,8 +169,8 @@ export function PipelineBoard({
                     <span
                       className="w-3 h-3 rounded-full inline-block"
                       style={{
-                        border: `1.5px solid ${current ? "#A5B4FC" : "rgba(255,255,255,0.25)"}`,
-                        background: current ? "#5E6AD2" : "transparent",
+                        border: `1.5px solid ${current ? "#C49AFF" : "rgba(255,255,255,0.25)"}`,
+                        background: current ? "#8B5CF6" : "transparent",
                       }}
                     />
                   )}
@@ -209,7 +209,7 @@ export function PipelineBoard({
               border: "0.5px solid rgba(255,255,255,0.07)",
             }}
           >
-            <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-[#A5B4FC] mb-1.5">
+            <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-[#C49AFF] mb-1.5">
               {STEPS[step].label}
             </p>
             <p className="text-[13px] text-white/85">

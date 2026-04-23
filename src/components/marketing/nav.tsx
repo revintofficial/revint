@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -46,16 +46,15 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
       }}
     >
       <div className="max-w-6xl mx-auto px-5 sm:px-6 h-14 flex items-center">
-        <Link href="/" className="flex items-center gap-2 mr-8 group" aria-label="Leadac AI home">
+        <Link href="/" className="flex items-center mr-8 group" aria-label="Leadac AI home">
           <Image
             src="/logo.png"
-            alt=""
-            width={28}
-            height={28}
+            alt="Leadac AI"
+            width={44}
+            height={44}
             priority
-            className="w-7 h-7 object-contain transition-transform group-hover:scale-105"
+            className="w-11 h-11 object-contain transition-transform group-hover:scale-105"
           />
-          <span className="text-[15px] font-semibold tracking-tight">Leadac AI</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-[13px]" aria-label="Marketing navigation">
@@ -117,33 +116,58 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
           {signedIn ? (
             <Link
               href="/app/dashboard"
-              className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium text-white"
+              className="inline-flex items-center gap-1.5 pl-3.5 pr-1 py-1 rounded-full text-[12.5px] font-medium text-white"
               style={{
-                background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
-                boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 6px 18px rgba(49,46,129,0.4)",
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(199, 120, 255, 0.28)",
+                boxShadow: "0 6px 18px rgba(124,58,237,0.25)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
               }}
             >
-              Open app →
+              Open app
+              <span
+                className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #A875FF, #7C3AED)",
+                  boxShadow: "0 4px 10px rgba(124,58,237,0.45)",
+                }}
+                aria-hidden
+              >
+                →
+              </span>
             </Link>
           ) : (
             <>
               <Link
                 href="/login"
-                className="hidden sm:inline-block px-3 py-1.5 rounded-lg text-[12.5px] text-white/70 hover:text-white"
+                className="hidden sm:inline-block px-3 py-1.5 rounded-full text-[12.5px] text-white/70 hover:text-white"
               >
                 Log in
               </Link>
               <Link
                 href="/signup"
-                className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium text-white"
+                className="inline-flex items-center gap-1.5 pl-3.5 pr-1 py-1 rounded-full text-[12.5px] font-semibold text-[#0F0A1F]"
                 style={{
-                  background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                  background: "rgba(255,255,255,0.94)",
+                  border: "1px solid rgba(255,255,255,0.3)",
                   boxShadow:
-                    "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 6px 18px rgba(49,46,129,0.4)",
+                    "0 1px 0 rgba(255,255,255,0.9) inset, 0 8px 22px rgba(124,58,237,0.35)",
                 }}
               >
                 Start free
+                <span
+                  className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #A875FF, #7C3AED)",
+                    boxShadow: "0 4px 10px rgba(124,58,237,0.45)",
+                  }}
+                  aria-hidden
+                >
+                  →
+                </span>
               </Link>
             </>
           )}

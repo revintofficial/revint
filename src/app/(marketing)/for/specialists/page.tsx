@@ -66,10 +66,13 @@ const COPY: VerticalCopy = {
   },
 };
 
-export const metadata = {
+import { buildMetadata } from "@/lib/seo/metadata";
+
+export const metadata = buildMetadata({
+  path: "/for/specialists",
   title: COPY.metaTitle,
   description: COPY.metaDescription,
-};
+});
 
 export default function SpecialistsPage() {
   return <SpecialistsLanding copy={COPY} />;

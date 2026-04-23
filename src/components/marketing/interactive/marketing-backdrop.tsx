@@ -20,7 +20,7 @@ export function MarketingBackdrop({
         style={{
           opacity: intensity,
           background:
-            "radial-gradient(closest-side, rgba(94,106,210,0.55), transparent)",
+            "radial-gradient(closest-side, rgba(139,92,246,0.55), transparent)",
         }}
       />
       <div

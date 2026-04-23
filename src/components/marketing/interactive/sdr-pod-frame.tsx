@@ -44,7 +44,7 @@ export function SdrPodFrame({
         className="hidden sm:block absolute -inset-12 -z-10 rounded-[60px] opacity-65 blur-3xl"
         style={{
           background:
-            "radial-gradient(closest-side, rgba(94,106,210,0.32), transparent 72%)",
+            "radial-gradient(closest-side, rgba(139,92,246,0.32), transparent 72%)",
         }}
       />
 
@@ -54,7 +54,7 @@ export function SdrPodFrame({
           tilt="right"
           url={leftUrl}
           tab={leftTab}
-          accent="#A5B4FC"
+          accent="#C49AFF"
         >
           {leftScreen}
         </Monitor>

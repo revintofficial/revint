@@ -1,4 +1,11 @@
-export const metadata = { title: "Privacy — Leadac AI" };
+import { buildMetadata } from "@/lib/seo/metadata";
+
+export const metadata = buildMetadata({
+  path: "/legal/privacy",
+  title: "Privacy Policy — Leadac AI",
+  description:
+    "Privacy policy for Leadac AI — what we store, how we handle public business data from Google Maps, and how workspaces keep their pipeline private.",
+});
 
 export default function PrivacyPage() {
   return (

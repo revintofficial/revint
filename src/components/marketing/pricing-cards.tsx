@@ -155,21 +155,21 @@ export function PricingCards({ ctaHref = "/signup", carryIntentToSignup = true }
               className="relative p-6 rounded-2xl flex flex-col"
               style={{
                 background: isHighlight
-                  ? "linear-gradient(180deg, rgba(94,106,210,0.14), rgba(28,28,30,0.6))"
+                  ? "linear-gradient(180deg, rgba(139,92,246,0.16), rgba(28,28,30,0.62))"
                   : "rgba(28,28,30,0.5)",
                 border: isHighlight
-                  ? "0.5px solid rgba(94,106,210,0.45)"
+                  ? "0.5px solid rgba(168,117,255,0.50)"
                   : "0.5px solid rgba(255,255,255,0.07)",
-                boxShadow: isHighlight ? "0 24px 60px rgba(67,56,202,0.22)" : "none",
+                boxShadow: isHighlight ? "0 24px 60px rgba(124,58,237,0.28)" : "none",
               }}
             >
               {isHighlight && (
                 <span
                   className="absolute -top-2.5 left-6 px-2 py-0.5 rounded-md text-[10.5px] font-semibold"
                   style={{
-                    background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                    background: "linear-gradient(135deg, #A875FF, #7C3AED)",
                     color: "white",
-                    boxShadow: "0 4px 12px rgba(49,46,129,0.45)",
+                    boxShadow: "0 4px 12px rgba(124,58,237,0.5)",
                   }}
                 >
                   Most popular
@@ -204,10 +204,10 @@ export function PricingCards({ ctaHref = "/signup", carryIntentToSignup = true }
                 style={
                   isHighlight
                     ? {
-                        background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                        background: "linear-gradient(135deg, #A875FF, #7C3AED)",
                         color: "white",
                         boxShadow:
-                          "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 8px 24px rgba(49,46,129,0.45)",
+                          "0 1px 0 rgba(255,255,255,0.25) inset, 0 0 0 0.5px rgba(168,117,255,0.7), 0 8px 24px rgba(124,58,237,0.55)",
                       }
                     : id === "FREE"
                     ? {
@@ -242,7 +242,7 @@ export function PricingCards({ ctaHref = "/signup", carryIntentToSignup = true }
                   <li key={f} className="flex items-start gap-2">
                     <Check
                       className="w-3.5 h-3.5 mt-0.5 shrink-0"
-                      style={{ color: isHighlight ? "#A5B4FC" : "rgba(52, 211, 153, 0.95)" }}
+                      style={{ color: isHighlight ? "#C49AFF" : "rgba(52, 211, 153, 0.95)" }}
                     />
                     <span className="text-white/75">{f}</span>
                   </li>

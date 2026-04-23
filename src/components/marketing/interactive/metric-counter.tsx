@@ -18,7 +18,7 @@ export function MetricCounter({
   prefix = "",
   suffix = "",
   duration = 1400,
-  accent = "#A5B4FC",
+  accent = "#C49AFF",
 }: MetricCounterProps) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });

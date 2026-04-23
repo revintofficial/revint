@@ -131,7 +131,7 @@ export function DiscoveryDemo({
         className="absolute left-1/2 -translate-x-1/2 -top-20 w-[110%] h-[320px] -z-10 pointer-events-none blur-3xl opacity-60"
         style={{
           background:
-            "radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.28), rgba(94,106,210,0.18) 40%, transparent 70%)",
+            "radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.28), rgba(139,92,246,0.18) 40%, transparent 70%)",
         }}
       />
 
@@ -145,7 +145,7 @@ export function DiscoveryDemo({
             "0 1px 0 rgba(255,255,255,0.08) inset",
             "0 24px 60px rgba(0,0,0,0.55)",
             "0 60px 140px rgba(0,0,0,0.55)",
-            "0 80px 200px rgba(49,46,129,0.3)",
+            "0 80px 200px rgba(94,35,201,0.3)",
           ].join(", "),
         }}
       >
@@ -200,13 +200,13 @@ export function DiscoveryDemo({
                       style={{
                         background:
                           c === city
-                            ? "rgba(94,106,210,0.16)"
+                            ? "rgba(139,92,246,0.16)"
                             : "rgba(255,255,255,0.03)",
                         border:
                           c === city
-                            ? "0.5px solid rgba(94,106,210,0.45)"
+                            ? "0.5px solid rgba(139,92,246,0.45)"
                             : "0.5px solid rgba(255,255,255,0.06)",
-                        color: c === city ? "#C7CCFF" : "rgba(255,255,255,0.65)",
+                        color: c === city ? "#C49AFF" : "rgba(255,255,255,0.65)",
                       }}
                     >
                       {c}
@@ -233,13 +233,13 @@ export function DiscoveryDemo({
                       style={{
                         background:
                           n === niche
-                            ? "rgba(94,106,210,0.16)"
+                            ? "rgba(139,92,246,0.16)"
                             : "rgba(255,255,255,0.03)",
                         border:
                           n === niche
-                            ? "0.5px solid rgba(94,106,210,0.45)"
+                            ? "0.5px solid rgba(139,92,246,0.45)"
                             : "0.5px solid rgba(255,255,255,0.06)",
-                        color: n === niche ? "#C7CCFF" : "rgba(255,255,255,0.65)",
+                        color: n === niche ? "#C49AFF" : "rgba(255,255,255,0.65)",
                       }}
                     >
                       {n}
@@ -255,9 +255,9 @@ export function DiscoveryDemo({
                 // which is the user's escape hatch if the demo ever gets stuck.
                 className="px-3.5 py-2 rounded-lg text-[12.5px] font-semibold text-white inline-flex items-center justify-center gap-1.5"
                 style={{
-                  background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                  background: "linear-gradient(180deg, #8B5CF6, #5E23C9)",
                   boxShadow:
-                    "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 6px 18px rgba(49,46,129,0.4)",
+                    "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(124,58,237,0.7), 0 6px 18px rgba(94,35,201,0.4)",
                 }}
               >
                 {phase === "running" ? (
@@ -315,7 +315,7 @@ export function DiscoveryDemo({
                   className="h-full rounded-full"
                   style={{
                     background:
-                      "linear-gradient(90deg, #5E6AD2, #8B5CF6, #5E6AD2)",
+                      "linear-gradient(90deg, #8B5CF6, #C49AFF, #8B5CF6)",
                     backgroundSize: "200% 100%",
                   }}
                   initial={{ width: "0%", backgroundPosition: "0% 0%" }}

@@ -20,7 +20,7 @@ export function ValidationQuote({
   upvotes,
   comments,
   href,
-  accent = "#A5B4FC",
+  accent = "#C49AFF",
 }: ValidationQuoteProps) {
   const reduce = useReducedMotion();
 

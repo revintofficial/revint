@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { ArrowRight, DollarSign, Megaphone, Award, Download } from "lucide-react";
+import { buildMetadata } from "@/lib/seo/metadata";
 
-export const metadata = {
+export const metadata = buildMetadata({
+  path: "/partners",
   title: "Partner program — Leadac AI",
   description:
     "Refer agencies and SDRs to Leadac AI. 30% recurring commission for the lifetime of every paid customer you bring in.",
-};
+});
 
 const TIERS = [
   {

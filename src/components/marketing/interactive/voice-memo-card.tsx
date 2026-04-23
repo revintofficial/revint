@@ -91,7 +91,7 @@ export function VoiceMemoCard({
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
-        <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC]">
+        <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-[#C49AFF]">
           Voice Memos
         </p>
         <span className="text-[10.5px] text-white/40">Just now</span>
@@ -119,7 +119,7 @@ export function VoiceMemoCard({
                 style={{
                   height: `${Math.max(8, amp * 100)}%`,
                   background: passed
-                    ? "linear-gradient(180deg, #C7CCFF, #5E6AD2)"
+                    ? "linear-gradient(180deg, #C49AFF, #8B5CF6)"
                     : "rgba(255,255,255,0.18)",
                 }}
               />
@@ -143,9 +143,9 @@ export function VoiceMemoCard({
             }}
             className="w-7 h-7 rounded-full flex items-center justify-center transition-colors"
             style={{
-              background: "rgba(94,106,210,0.18)",
-              border: "0.5px solid rgba(94,106,210,0.4)",
-              color: "#C7CCFF",
+              background: "rgba(139,92,246,0.18)",
+              border: "0.5px solid rgba(139,92,246,0.4)",
+              color: "#C49AFF",
             }}
           >
             {playing ? (
@@ -172,7 +172,7 @@ export function VoiceMemoCard({
         }}
       >
         <div className="flex items-center gap-1.5 mb-2">
-          <Mic className="w-3 h-3 text-[#A5B4FC]" />
+          <Mic className="w-3 h-3 text-[#C49AFF]" />
           <span className="text-[10px] uppercase tracking-[0.12em] font-semibold text-white/55">
             Auto-transcribed
           </span>
@@ -188,9 +188,9 @@ export function VoiceMemoCard({
         <span
           className="px-2 py-0.5 rounded-md font-medium"
           style={{
-            background: "rgba(94,106,210,0.14)",
-            border: "0.5px solid rgba(94,106,210,0.3)",
-            color: "#C7CCFF",
+            background: "rgba(139,92,246,0.14)",
+            border: "0.5px solid rgba(139,92,246,0.3)",
+            color: "#C49AFF",
           }}
         >
           {attachedTo}

@@ -519,14 +519,12 @@ export default function LeadDetailPage({
       <HeroBand
         lead={lead}
         analyzing={analyzing}
-        copied={copied}
         contentCheckLoading={contentCheckLoading}
-        websiteSearchLoading={websiteSearchLoading}
+        dossierLoading={dossierLoading}
         onAnalyze={runAnalyze}
         onCrawl={runCrawl}
-        onCopy={copyOutreachMessage}
         onContentCheck={runContentCheck}
-        onWebsiteSearch={runWebsiteSearch}
+        onDossier={generateDossier}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -573,7 +571,6 @@ export default function LeadDetailPage({
                   }}
                 />
               )}
-              {!opp && <EmptyAnalysisCard analyzing={analyzing} onAnalyze={runAnalyze} />}
             </TabsContent>
 
             <TabsContent value="website" className="space-y-5">
@@ -651,7 +648,13 @@ export default function LeadDetailPage({
                   </CardContent>
                 </Card>
               ) : (
-                <EmptyAnalysisCard analyzing={analyzing} onAnalyze={runAnalyze} />
+                <Card>
+                  <CardContent className="py-10 text-center">
+                    <p className="text-[14px] text-white/55">
+                      Outreach tracking unlocks once an AI dossier has been generated for this lead.
+                    </p>
+                  </CardContent>
+                </Card>
               )}
               <Card>
                 <CardHeader>
@@ -672,25 +675,21 @@ export default function LeadDetailPage({
 function HeroBand({
   lead,
   analyzing,
-  copied,
   contentCheckLoading,
-  websiteSearchLoading,
+  dossierLoading,
   onAnalyze,
   onCrawl,
-  onCopy,
   onContentCheck,
-  onWebsiteSearch,
+  onDossier,
 }: {
   lead: LeadDetail;
   analyzing: boolean;
-  copied: boolean;
   contentCheckLoading: boolean;
-  websiteSearchLoading: boolean;
+  dossierLoading: boolean;
   onAnalyze: () => void;
   onCrawl: () => void;
-  onCopy: () => void;
   onContentCheck: () => void;
-  onWebsiteSearch: () => void;
+  onDossier: () => void;
 }) {
   const opp = lead.salesOpportunity;
   const score = opp?.opportunityScore ?? null;
@@ -705,31 +704,11 @@ function HeroBand({
       ? "text-[#FF9F0A]"
       : "text-[#FF453A]";
 
-  const nba = (() => {
-    if (lead.hasWebsite && lead.crawlStatus !== "CRAWLED") {
-      return { type: "crawl" as const, label: "Scan Website", icon: Globe, onClick: onCrawl };
-    }
-    if (lead.crawlStatus === "CRAWLED" && lead.analyzeStatus !== "ANALYZED") {
-      return { type: "analyze" as const, label: "Run AI Analysis", icon: Bot, onClick: onAnalyze };
-    }
-    if (lead.analyzeStatus === "ANALYZED" && opp?.personalizedFirstMessage) {
-      return { type: "copy" as const, label: copied ? "Copied" : "Copy Message", icon: copied ? Check : Copy, onClick: onCopy };
-    }
-    if (!lead.hasWebsite && !lead.websiteUrl) {
-      return { type: "search" as const, label: "Find Website", icon: Search, onClick: onWebsiteSearch };
-    }
-    if (lead.analyzeStatus === "ANALYZED") {
-      return { type: "reanalyze" as const, label: "Re-analyze", icon: RefreshCw, onClick: onAnalyze };
-    }
-    return { type: "analyze" as const, label: "Run AI Analysis", icon: Bot, onClick: onAnalyze };
+  const appleMapsUrl = (() => {
+    if (lead.sourceLat == null || lead.sourceLng == null) return null;
+    const q = encodeURIComponent(lead.businessName);
+    return `https://maps.apple.com/?q=${q}&ll=${lead.sourceLat},${lead.sourceLng}`;
   })();
-
-  const loadingPrimary =
-    (nba.type === "analyze" || nba.type === "reanalyze") && analyzing
-      ? true
-      : nba.type === "search" && websiteSearchLoading
-      ? true
-      : false;
 
   const chips: { label: string; icon?: typeof Star }[] = [];
   if (lead.borough) chips.push({ label: lead.borough });
@@ -814,15 +793,6 @@ function HeroBand({
         />
 
         <div className="flex flex-wrap items-center gap-2 mt-6 pt-5 border-t border-white/8">
-          <Button
-            onClick={nba.onClick}
-            disabled={loadingPrimary}
-            className="h-11 rounded-full px-5 gap-2"
-          >
-            {loadingPrimary ? <Loader2 className="w-4 h-4 animate-spin" /> : <nba.icon className="w-4 h-4" />}
-            {loadingPrimary ? "Working..." : nba.label}
-          </Button>
-
           {lead.googleMapsUri && (
             <a href={lead.googleMapsUri} target="_blank" rel="noopener noreferrer">
               <Button size="sm" variant="outline" className="h-11 rounded-full px-4 gap-1.5">
@@ -832,30 +802,13 @@ function HeroBand({
             </a>
           )}
 
-          {lead.websiteUrl && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onContentCheck}
-              disabled={contentCheckLoading}
-              className="h-11 rounded-full px-4 gap-1.5"
-            >
-              {contentCheckLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanSearch className="w-4 h-4" />}
-              Content Check
-            </Button>
-          )}
-
-          {nba.type !== "analyze" && nba.type !== "reanalyze" && lead.analyzeStatus !== "ANALYZED" && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAnalyze}
-              disabled={analyzing}
-              className="h-11 rounded-full px-4 gap-1.5"
-            >
-              {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-              AI Analysis
-            </Button>
+          {appleMapsUrl && (
+            <a href={appleMapsUrl} target="_blank" rel="noopener noreferrer">
+              <Button size="sm" variant="outline" className="h-11 rounded-full px-4 gap-1.5">
+                <MapPin className="w-4 h-4" />
+                Apple Maps
+              </Button>
+            </a>
           )}
 
           <HeroSocialBadges
@@ -866,7 +819,17 @@ function HeroBand({
 
         <HeroDirectoryBadges links={lead.discoveredLinks ?? []} />
 
-        <HeroAgentBar leadId={lead.id} />
+        <HeroAgentBar
+          leadId={lead.id}
+          hasWebsite={!!lead.websiteUrl}
+          analyzing={analyzing}
+          contentCheckLoading={contentCheckLoading}
+          dossierLoading={dossierLoading}
+          onCrawl={onCrawl}
+          onContentCheck={onContentCheck}
+          onAnalyze={onAnalyze}
+          onDossier={onDossier}
+        />
       </div>
     </div>
   );
@@ -1068,48 +1031,50 @@ function HeroDirectoryBadges({ links }: { links: DiscoveredLink[] }) {
   );
 }
 
-type HeroAgentKind =
-  | "WEBSITE_MOCKUP_GENERATOR"
-  | "AI_RECEPTIONIST_BUILDER"
-  | "REVIEW_REPLY_AGENT"
-  | "LEAD_RESPONSE_AGENT";
-
-interface HeroAgentDef {
-  kind: HeroAgentKind;
-  label: string;
-  icon: typeof Sparkles;
-  hint: string;
-}
-
-const HERO_AGENTS: HeroAgentDef[] = [
-  { kind: "WEBSITE_MOCKUP_GENERATOR", label: "Website Mockup", icon: Globe, hint: "Generate a one-page preview of the site you'd build." },
-  { kind: "AI_RECEPTIONIST_BUILDER", label: "AI Receptionist", icon: Phone, hint: "Build the lead's receptionist bot from their site KB." },
-  { kind: "REVIEW_REPLY_AGENT", label: "Review Replies", icon: Star, hint: "50-response pool with approval rules for Google Business." },
-  { kind: "LEAD_RESPONSE_AGENT", label: "Lead Response", icon: Zap, hint: "60-second inbound lead reply flow (SMS/email triggers)." },
-];
-
 type AgentRunState = "idle" | "running" | "done" | "failed";
 
-function HeroAgentBar({ leadId }: { leadId: string }) {
-  const [state, setState] = useState<Record<HeroAgentKind, AgentRunState>>({
-    WEBSITE_MOCKUP_GENERATOR: "idle",
-    AI_RECEPTIONIST_BUILDER: "idle",
-    REVIEW_REPLY_AGENT: "idle",
-    LEAD_RESPONSE_AGENT: "idle",
-  });
-  const pollersRef = useRef<Map<HeroAgentKind, number>>(new Map());
+// Deep Scan is the only worker-backed action in the hero bar - it kicks off
+// APIFY_WEB_CRAWL_DEEP which runs async on a BullMQ worker and is polled via
+// /api/agent-runs/:id. The other three actions reuse handlers that already
+// exist on the lead page (crawl, content-check, dossier generation) so they
+// keep the parent's loading state as the source of truth.
+const DEEP_SCAN_KIND = "APIFY_WEB_CRAWL_DEEP" as const;
+
+function HeroAgentBar({
+  leadId,
+  hasWebsite,
+  analyzing,
+  contentCheckLoading,
+  dossierLoading,
+  onCrawl,
+  onContentCheck,
+  onAnalyze,
+  onDossier,
+}: {
+  leadId: string;
+  hasWebsite: boolean;
+  analyzing: boolean;
+  contentCheckLoading: boolean;
+  dossierLoading: boolean;
+  onCrawl: () => void;
+  onContentCheck: () => void;
+  onAnalyze: () => void;
+  onDossier: () => void;
+}) {
+  const [deepScanState, setDeepScanState] = useState<AgentRunState>("idle");
+  const pollerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const pollers = pollersRef.current;
     return () => {
-      for (const id of pollers.values()) window.clearInterval(id);
-      pollers.clear();
+      if (pollerRef.current != null) {
+        window.clearInterval(pollerRef.current);
+        pollerRef.current = null;
+      }
     };
   }, []);
 
-  const pollRun = useCallback((kind: HeroAgentKind, runId: string) => {
-    const existing = pollersRef.current.get(kind);
-    if (existing) window.clearInterval(existing);
+  const pollRun = useCallback((runId: string) => {
+    if (pollerRef.current != null) window.clearInterval(pollerRef.current);
     const intervalId = window.setInterval(async () => {
       try {
         const res = await fetch(`/api/agent-runs/${runId}`, { cache: "no-store" });
@@ -1117,71 +1082,116 @@ function HeroAgentBar({ leadId }: { leadId: string }) {
         const run = await res.json();
         if (run.status === "SUCCEEDED" || run.status === "FAILED" || run.status === "CANCELLED") {
           window.clearInterval(intervalId);
-          pollersRef.current.delete(kind);
-          const next: AgentRunState =
-            run.status === "SUCCEEDED" ? "done" : "failed";
-          setState((prev) => ({ ...prev, [kind]: next }));
+          pollerRef.current = null;
+          const next: AgentRunState = run.status === "SUCCEEDED" ? "done" : "failed";
+          setDeepScanState(next);
           if (run.status === "SUCCEEDED") {
-            toast.success(`${kind.replaceAll("_", " ").toLowerCase()} finished.`);
+            toast.success("Deep scan finished.");
           } else if (run.status === "FAILED") {
-            toast.error(
-              `${kind.replaceAll("_", " ").toLowerCase()} failed: ${run.errorMsg ?? "unknown error"}`,
-            );
+            toast.error(`Deep scan failed: ${run.errorMsg ?? "unknown error"}`);
           }
         }
       } catch (err) {
         console.error("HeroAgentBar poll error:", err);
       }
     }, 2000);
-    pollersRef.current.set(kind, intervalId);
+    pollerRef.current = intervalId;
   }, []);
 
-  const trigger = useCallback(
-    async (kind: HeroAgentKind) => {
-      setState((prev) => ({ ...prev, [kind]: "running" }));
-      try {
-        const res = await fetch(`/api/leads/${leadId}/workers/${kind}`, { method: "POST" });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          setState((prev) => ({ ...prev, [kind]: "idle" }));
-          if (res.status === 402) {
-            toast.error(err.message || "Plan or quota insufficient.");
-          } else {
-            toast.error(err.error || `Failed to start (${res.status})`);
-          }
-          return;
+  const triggerDeepScan = useCallback(async () => {
+    setDeepScanState("running");
+    try {
+      const res = await fetch(`/api/leads/${leadId}/workers/${DEEP_SCAN_KIND}`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setDeepScanState("idle");
+        if (res.status === 402) {
+          toast.error(err.message || "Plan or quota insufficient.");
+        } else {
+          toast.error(err.error || `Failed to start (${res.status})`);
         }
-        const { runId } = await res.json();
-        pollRun(kind, runId);
-      } catch (err) {
-        console.error("HeroAgentBar trigger error:", err);
-        setState((prev) => ({ ...prev, [kind]: "idle" }));
-        toast.error("Connection error");
+        return;
       }
+      const { runId } = await res.json();
+      pollRun(runId);
+    } catch (err) {
+      console.error("HeroAgentBar trigger error:", err);
+      setDeepScanState("idle");
+      toast.error("Connection error");
+    }
+  }, [leadId, pollRun]);
+
+  interface Action {
+    key: string;
+    label: string;
+    icon: typeof Sparkles;
+    hint: string;
+    onClick: () => void;
+    busy: boolean;
+    disabled?: boolean;
+    state?: AgentRunState;
+  }
+
+  const actions: Action[] = [
+    {
+      key: "deep-scan",
+      label: "Deep Scan",
+      icon: Sparkles,
+      hint: "Full Apify crawl of the lead's site into searchable knowledge chunks.",
+      onClick: triggerDeepScan,
+      busy: deepScanState === "running",
+      disabled: !hasWebsite,
+      state: deepScanState,
     },
-    [leadId, pollRun],
-  );
+    {
+      key: "content-check",
+      label: "Content Check",
+      icon: ScanSearch,
+      hint: "Quick audit of the lead's homepage content quality.",
+      onClick: onContentCheck,
+      busy: contentCheckLoading,
+      disabled: !hasWebsite,
+    },
+    {
+      key: "scan-website",
+      label: "Scan Website",
+      icon: Globe,
+      hint: "Run the standard Playwright website auditor.",
+      onClick: onCrawl,
+      busy: false,
+      disabled: !hasWebsite,
+    },
+    {
+      key: "ai-dossier",
+      label: "AI Dossier Analyze",
+      icon: Bot,
+      hint: "Generate the full AI dossier and refresh the opportunity analysis.",
+      onClick: () => {
+        onDossier();
+        onAnalyze();
+      },
+      busy: dossierLoading || analyzing,
+    },
+  ];
 
   return (
     <div className="flex flex-wrap items-center gap-2 mt-3">
       <span className="text-[11px] uppercase tracking-[0.08em] text-white/30 mr-0.5">Run agent</span>
-      {HERO_AGENTS.map((a) => {
-        const s = state[a.kind];
-        const running = s === "running";
-        const done = s === "done";
-        const failed = s === "failed";
-        const Icon = running ? Loader2 : done ? Check : failed ? AlertTriangle : a.icon;
+      {actions.map((a) => {
+        const done = a.state === "done";
+        const failed = a.state === "failed";
+        const Icon = a.busy ? Loader2 : done ? Check : failed ? AlertTriangle : a.icon;
         return (
           <Button
-            key={a.kind}
+            key={a.key}
             size="sm"
             variant="outline"
-            onClick={() => trigger(a.kind)}
-            disabled={running}
+            onClick={a.onClick}
+            disabled={a.busy || a.disabled}
             title={a.hint}
             className="h-9 rounded-full px-3 gap-1.5 text-[12px]"
           >
-            <Icon className={`w-3.5 h-3.5 ${running ? "animate-spin" : ""}`} />
+            <Icon className={`w-3.5 h-3.5 ${a.busy ? "animate-spin" : ""}`} />
             {a.label}
             {done && <span className="ml-0.5 text-[10px] text-[#30D158]">done</span>}
             {failed && <span className="ml-0.5 text-[10px] text-[#FF453A]">failed</span>}
@@ -1397,26 +1407,6 @@ function PersonalizedMessageCard({
           <div className="absolute left-0 top-5 bottom-5 w-[2px] rounded-full bg-[#0A84FF]" />
           <p className="text-[15px] leading-[1.65] text-white/85 whitespace-pre-wrap">{message}</p>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function EmptyAnalysisCard({ analyzing, onAnalyze }: { analyzing: boolean; onAnalyze: () => void }) {
-  return (
-    <Card>
-      <CardContent className="py-14 flex flex-col items-center text-center">
-        <div className="w-14 h-14 rounded-full bg-[#0A84FF]/10 flex items-center justify-center mb-4">
-          <Bot className="w-7 h-7 text-[#0A84FF]" />
-        </div>
-        <p className="text-[17px] font-semibold text-white">No AI analysis yet</p>
-        <p className="text-[14px] text-white/55 mt-1 max-w-sm">
-          Run the AI to score this lead, surface pain points and draft a personalized first message.
-        </p>
-        <Button onClick={onAnalyze} disabled={analyzing} className="mt-5 h-11 rounded-full px-5 gap-2">
-          {analyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-          {analyzing ? "Analyzing..." : "Analyze Now"}
-        </Button>
       </CardContent>
     </Card>
   );

@@ -1,29 +1,30 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Oswald } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { PWARegister } from "@/components/app/pwa-register";
+import {
+  JsonLd,
+  organizationSchema,
+  websiteSchema,
+  softwareApplicationSchema,
+} from "@/components/seo/json-ld";
+import { buildRootMetadata } from "@/lib/seo/metadata";
+import { WebVitalsReporter } from "@/components/seo/web-vitals-reporter";
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Leadac AI — Find local businesses that need a new website",
-  description:
-    "Discover local businesses with weak or missing websites, get AI-powered pitches, and close web design deals.",
-  manifest: "/manifest.json",
-  applicationName: "Leadac AI",
-  appleWebApp: {
-    capable: true,
-    title: "Leadac AI",
-    statusBarStyle: "black-translucent",
-  },
-  formatDetection: {
-    telephone: false,
-  },
-};
+const oswald = Oswald({
+  variable: "--font-oswald",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+export const metadata: Metadata = buildRootMetadata();
 
 export const viewport: Viewport = {
   themeColor: "#5E6AD2",
@@ -37,11 +38,15 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`}>
+    <html lang="en" className={`${inter.variable} ${oswald.variable} h-full`}>
       <body className="min-h-full text-white antialiased font-sans">
+        <JsonLd data={organizationSchema()} id="ld-organization" />
+        <JsonLd data={websiteSchema()} id="ld-website" />
+        <JsonLd data={softwareApplicationSchema()} id="ld-software" />
         {children}
         <Toaster />
         <PWARegister />
+        <WebVitalsReporter />
       </body>
     </html>
   );

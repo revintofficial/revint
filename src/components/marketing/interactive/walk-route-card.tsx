@@ -78,7 +78,7 @@ export function WalkRouteCard({
       {/* Header */}
       <div className="relative flex items-start justify-between mb-1">
         <div>
-          <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC] mb-1">
+          <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-[#C49AFF] mb-1">
             Next door
           </p>
           <h3 className="text-[14.5px] sm:text-[16px] font-semibold tracking-tight text-white/95 leading-snug">
@@ -88,9 +88,9 @@ export function WalkRouteCard({
         <div
           className="flex items-center gap-1 px-2 py-1 rounded-md text-[10.5px] font-medium"
           style={{
-            background: "rgba(94,106,210,0.14)",
-            border: "0.5px solid rgba(94,106,210,0.3)",
-            color: "#C7CCFF",
+            background: "rgba(139,92,246,0.14)",
+            border: "0.5px solid rgba(139,92,246,0.3)",
+            color: "#C49AFF",
           }}
         >
           <Footprints className="w-3 h-3" />
@@ -106,7 +106,7 @@ export function WalkRouteCard({
           className="absolute left-[14px] top-3 bottom-3 w-px"
           style={{
             background:
-              "linear-gradient(180deg, rgba(94,106,210,0.55), rgba(94,106,210,0.1))",
+              "linear-gradient(180deg, rgba(139,92,246,0.55), rgba(139,92,246,0.1))",
           }}
         />
 
@@ -137,9 +137,9 @@ export function WalkRouteCard({
                     <div
                       className="w-7 h-7 rounded-full flex items-center justify-center"
                       style={{
-                        background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                        background: "linear-gradient(180deg, #8B5CF6, #5E23C9)",
                         boxShadow:
-                          "0 0 0 0.5px rgba(199,204,255,0.5), 0 4px 12px rgba(49,46,129,0.45)",
+                          "0 0 0 0.5px rgba(196,154,255,0.5), 0 4px 12px rgba(94,35,201,0.45)",
                       }}
                     >
                       <Navigation className="w-3.5 h-3.5 text-white -translate-y-px" />
@@ -149,7 +149,7 @@ export function WalkRouteCard({
                         aria-hidden
                         className="absolute inset-0 rounded-full animate-ping"
                         style={{
-                          background: "rgba(94,106,210,0.4)",
+                          background: "rgba(139,92,246,0.4)",
                           animationDuration: "2.4s",
                         }}
                       />
@@ -218,17 +218,17 @@ export function WalkRouteCard({
 // Audit score is "points broken" - lower = healthier site, higher = bigger
 // opportunity for the crew. We tint by opportunity, not by health.
 function scoreBg(s: number): string {
-  if (s >= 50) return "rgba(248,113,113,0.14)";
+  if (s >= 50) return "rgba(251,113,133,0.14)";
   if (s >= 40) return "rgba(251,191,36,0.14)";
-  return "rgba(94,106,210,0.14)";
+  return "rgba(139,92,246,0.14)";
 }
 function scoreBorder(s: number): string {
-  if (s >= 50) return "rgba(248,113,113,0.32)";
+  if (s >= 50) return "rgba(251,113,133,0.32)";
   if (s >= 40) return "rgba(251,191,36,0.32)";
-  return "rgba(94,106,210,0.32)";
+  return "rgba(139,92,246,0.32)";
 }
 function scoreFg(s: number): string {
   if (s >= 50) return "#FCA5A5";
   if (s >= 40) return "#FCD34D";
-  return "#C7CCFF";
+  return "#C49AFF";
 }

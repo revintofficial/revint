@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { slugify, extractIdSuffix } from "@/lib/slug";
+import { buildMetadata, SITE } from "@/lib/seo/metadata";
+import {
+  JsonLd,
+  breadcrumbSchema,
+} from "@/components/seo/json-ld";
 
 /**
  * Public lead profile pages.
@@ -64,36 +69,25 @@ export async function generateMetadata({
   const resolved = await params;
   const lead = await loadLead(resolved);
   if (!lead) {
-    return { title: "Business not found", robots: { index: false, follow: false } };
+    return buildMetadata({
+      path: `/b/${resolved.citySlug}/${resolved.businessSlug}`,
+      title: "Business not found",
+      description: "This business profile is no longer available.",
+      index: false,
+      follow: false,
+    });
   }
   const city = lead.borough || "London";
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://leadac.ai";
-  const canonical = `${baseUrl}/b/${resolved.citySlug}/${resolved.businessSlug}`;
-  const title = `${lead.businessName} - ${city}`;
+  const title = `${lead.businessName} — ${city}`;
   const description =
     lead.salesOpportunity?.whyGoodTarget?.slice(0, 160) ||
     `${lead.businessName} in ${city}. Website audit, services, and contact info.`;
 
-  return {
+  return buildMetadata({
+    path: `/b/${resolved.citySlug}/${resolved.businessSlug}`,
     title,
     description,
-    alternates: { canonical },
-    robots: { index: true, follow: true },
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      url: canonical,
-      siteName: "Leadac AI",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-    },
-  };
+  });
 }
 
 export default async function PublicLeadProfile({
@@ -110,14 +104,9 @@ export default async function PublicLeadProfile({
   const reviews = lead.googleReviews;
   const city = lead.borough || "London";
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    "https://leadac.ai";
+  const baseUrl = SITE.url;
   const canonical = `${baseUrl}/b/${resolved.citySlug}/${resolved.businessSlug}`;
 
-  // Schema.org LocalBusiness JSON-LD. Stripped down because we don't want to
-  // claim opening hours we don't actually have; only ship facts the audit
-  // verified.
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
@@ -136,43 +125,46 @@ export default async function PublicLeadProfile({
             "@type": "AggregateRating",
             ratingValue: lead.rating,
             reviewCount: lead.reviewCount ?? 0,
+            bestRating: 5,
+            worstRating: 1,
           },
         }
       : {}),
+    ...(reviews.length > 0
+      ? {
+          review: reviews
+            .filter((r) => r.text && r.text.length > 0)
+            .slice(0, 3)
+            .map((r) => ({
+              "@type": "Review",
+              reviewRating: {
+                "@type": "Rating",
+                ratingValue: r.rating,
+                bestRating: 5,
+                worstRating: 1,
+              },
+              reviewBody: r.text,
+              datePublished: r.publishTime
+                ? new Date(r.publishTime).toISOString()
+                : undefined,
+            })),
+        }
+      : {}),
+    isPartOf: { "@id": `${baseUrl}/#website` },
+    provider: { "@id": `${baseUrl}/#organization` },
   };
 
-  // Separate BreadcrumbList document. Google recommends a dedicated graph
-  // node rather than nesting.
-  const breadcrumbJsonLd: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: baseUrl },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: city,
-        item: `${baseUrl}/b/${resolved.citySlug}`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
-        name: lead.businessName,
-        item: canonical,
-      },
-    ],
-  };
+  const breadcrumbJsonLd = breadcrumbSchema([
+    { name: "Home", url: baseUrl },
+    { name: "Cities", url: `/cities` },
+    { name: city, url: `/cities/${resolved.citySlug}` },
+    { name: lead.businessName, url: canonical },
+  ]);
 
   return (
     <div style={pageStyles.body}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
+      <JsonLd data={jsonLd} id="ld-localbusiness" />
+      <JsonLd data={breadcrumbJsonLd} id="ld-breadcrumb" />
 
       <div style={pageStyles.wrap}>
         <p style={pageStyles.lede}>{city}</p>
@@ -243,6 +235,28 @@ export default async function PublicLeadProfile({
           </section>
         )}
 
+        <nav style={pageStyles.crosslinks} aria-label="Related directories">
+          <a href={`/cities/${resolved.citySlug}`} style={pageStyles.crossLink}>
+            More businesses in {city} →
+          </a>
+          {lead.primaryType && (
+            <a
+              href={`/niches/${slugify(lead.primaryType)}`}
+              style={pageStyles.crossLink}
+            >
+              More {lead.primaryType} listings →
+            </a>
+          )}
+          {lead.primaryType && (
+            <a
+              href={`/niches/${slugify(lead.primaryType)}/${resolved.citySlug}`}
+              style={pageStyles.crossLink}
+            >
+              {lead.primaryType} in {city} →
+            </a>
+          )}
+        </nav>
+
         <p style={pageStyles.footer}>
           Profile compiled by {lead.workspace.name} via Leadac AI.
         </p>
@@ -300,6 +314,21 @@ const pageStyles = {
   list: { margin: 0, paddingLeft: 22, fontSize: 15 } as const,
   review: { padding: "12px 0", borderTop: "0.5px solid rgba(255,255,255,0.06)" } as const,
   reviewMeta: { fontSize: 12, color: "rgba(237,237,240,0.55)", margin: "0 0 6px" } as const,
+  crosslinks: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 8,
+    padding: "20px 24px",
+    marginTop: 24,
+    background: "rgba(18,18,20,0.6)",
+    border: "0.5px solid rgba(255,255,255,0.06)",
+    borderRadius: 12,
+  } as const,
+  crossLink: {
+    color: "#a5b4fc",
+    fontSize: 14,
+    textDecoration: "none",
+  } as const,
   footer: {
     marginTop: 48,
     paddingTop: 20,

@@ -2,11 +2,14 @@ import Link from "next/link";
 import { PricingCards } from "@/components/marketing/pricing-cards";
 import { Faq } from "@/components/marketing/faq";
 import { ArrowRight } from "lucide-react";
+import { buildMetadata } from "@/lib/seo/metadata";
 
-export const metadata = {
+export const metadata = buildMetadata({
+  path: "/pricing",
   title: "Pricing — Leadac AI",
-  description: "Simple, fair pricing. Start free. Upgrade when you start closing.",
-};
+  description:
+    "Simple, fair pricing. Start free with 50 leads. Pro $79/mo, Agency $249/mo. One booked call in this market pays for itself 1–5×.",
+});
 
 export default function PricingPage() {
   return (

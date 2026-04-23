@@ -44,8 +44,8 @@ export function BeforeAfterSplit({
         transition={{ type: "spring", stiffness: 220, damping: 28 }}
       >
         <div className="flex items-center gap-2 mb-2.5">
-          <AlertOctagon className="w-4 h-4 text-[#F87171]" />
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#F87171]">
+          <AlertOctagon className="w-4 h-4 text-[#FB7185]" />
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#FB7185]">
             {beforeLabel}
           </p>
         </div>
@@ -54,7 +54,7 @@ export function BeforeAfterSplit({
           style={{
             background:
               "linear-gradient(180deg, rgba(40,28,30,0.5), rgba(28,18,22,0.55))",
-            border: "0.5px solid rgba(248,113,113,0.18)",
+            border: "0.5px solid rgba(251,113,133,0.18)",
           }}
         >
           <div
@@ -89,9 +89,9 @@ export function BeforeAfterSplit({
                   style={{
                     background:
                       row.pitchedBy >= 10
-                        ? "rgba(248,113,113,0.14)"
+                        ? "rgba(251,113,133,0.14)"
                         : "rgba(245,158,11,0.14)",
-                    color: row.pitchedBy >= 10 ? "#F87171" : "#F59E0B",
+                    color: row.pitchedBy >= 10 ? "#FB7185" : "#F59E0B",
                   }}
                 >
                   {row.pitchedBy}×
@@ -114,11 +114,11 @@ export function BeforeAfterSplit({
           transition={{ delay: 0.2, type: "spring", stiffness: 220, damping: 22 }}
           className="w-10 h-10 rounded-full flex items-center justify-center"
           style={{
-            background: "rgba(94,106,210,0.16)",
-            border: "0.5px solid rgba(94,106,210,0.4)",
+            background: "rgba(139,92,246,0.16)",
+            border: "0.5px solid rgba(139,92,246,0.4)",
           }}
         >
-          <ArrowRight className="w-4 h-4 text-[#A5B4FC]" />
+          <ArrowRight className="w-4 h-4 text-[#C49AFF]" />
         </motion.div>
       </div>
 
