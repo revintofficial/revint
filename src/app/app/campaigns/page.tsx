@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Megaphone, ArrowRight, Star, Check, Zap } from "lucide-react";
+import { Megaphone, ArrowRight, Star, Check, Zap, Package, Settings } from "lucide-react";
 
 interface Campaign {
   id: string;
@@ -16,6 +16,15 @@ interface Campaign {
   leadCount: number;
   filter: Record<string, string>;
   color: string;
+}
+
+interface ServicePackage {
+  id: string;
+  name: string;
+  priceLabel: string;
+  features: string[];
+  isPopular: boolean;
+  sortOrder: number;
 }
 
 const colorMap: Record<string, string> = {
@@ -34,19 +43,22 @@ const badgeMap: Record<string, "destructive" | "warning" | "success" | "secondar
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [packages, setPackages] = useState<ServicePackage[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/campaigns")
-      .then((r) => {
-        if (!r.ok) throw new Error(`API ${r.status}`);
-        return r.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) setCampaigns(data);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch("/api/campaigns")
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []),
+      fetch("/api/workspace/packages")
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []),
+    ]).then(([c, p]) => {
+      if (Array.isArray(c)) setCampaigns(c);
+      if (Array.isArray(p)) setPackages(p);
+      setLoading(false);
+    });
   }, []);
 
   if (loading) {
@@ -109,42 +121,73 @@ export default function CampaignsPage() {
         </div>
       )}
 
+      {/* Service Packages */}
       <Card>
         <CardHeader>
-          <CardTitle>Service Packages</CardTitle>
-          <CardDescription>Suggested package tiers for each lead</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Service Packages</CardTitle>
+              <CardDescription>Suggested package tiers for each lead</CardDescription>
+            </div>
+            <Link href="/app/settings/packages">
+              <Button variant="ghost" size="sm" className="text-white/40 hover:text-white/70 gap-1.5">
+                <Settings className="w-3.5 h-3.5" />
+                Manage
+              </Button>
+            </Link>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 hover:shadow-md transition-shadow">
-              <h3 className="font-semibold text-lg text-white">Starter</h3>
-              <p className="text-2xl font-bold text-white mt-1">&pound;500-800</p>
-              <ul className="mt-4 space-y-2 text-sm text-white/60">
-                {["Mobile-friendly single page site", "Contact form", "Google Maps integration", "Basic SEO"].map((item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-[#30D158] shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
+          {packages.length === 0 ? (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-8 text-center space-y-3">
+              <Package className="w-10 h-10 text-white/20 mx-auto" />
+              <p className="text-sm text-white/50">No service packages defined yet.</p>
+              <Link href="/app/settings/packages">
+                <Button size="sm" variant="outline">
+                  <Star className="w-3.5 h-3.5" />
+                  Add Service Packages
+                </Button>
+              </Link>
             </div>
-            <div className="rounded-2xl border-2 border-[#007AFF]/30 bg-[#0A84FF]/[0.03] p-5 relative hover:shadow-md transition-shadow">
-              <Badge className="absolute -top-2.5 right-4 bg-[#0A84FF] text-white border-transparent">
-                <Star className="w-3 h-3 mr-1" />
-                Popular
-              </Badge>
-              <h3 className="font-semibold text-lg text-white">Growth</h3>
-              <p className="text-2xl font-bold text-[#0A84FF] mt-1">&pound;800-1500</p>
-              <ul className="mt-4 space-y-2 text-sm text-white/60">
-                {["Multi-page professional site", "Online booking system", "WhatsApp integration", "Local SEO optimization", "Google reviews widget", "Online sales infrastructure"].map((item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-[#0A84FF] shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {packages.map((pkg) => (
+                <div
+                  key={pkg.id}
+                  className={`rounded-2xl p-5 hover:shadow-md transition-shadow relative ${
+                    pkg.isPopular
+                      ? "border-2 border-[#007AFF]/30 bg-[#0A84FF]/3"
+                      : "border border-white/10 bg-white/5"
+                  }`}
+                >
+                  {pkg.isPopular && (
+                    <Badge className="absolute -top-2.5 right-4 bg-[#0A84FF] text-white border-transparent">
+                      <Star className="w-3 h-3 mr-1" />
+                      Popular
+                    </Badge>
+                  )}
+                  <h3 className="font-semibold text-lg text-white">{pkg.name}</h3>
+                  <p className={`text-2xl font-bold mt-1 ${pkg.isPopular ? "text-[#0A84FF]" : "text-white"}`}>
+                    {pkg.priceLabel}
+                  </p>
+                  {pkg.features.length > 0 && (
+                    <ul className="mt-4 space-y-2 text-sm text-white/60">
+                      {pkg.features.map((item) => (
+                        <li key={item} className="flex items-center gap-2">
+                          {pkg.isPopular ? (
+                            <Zap className="w-4 h-4 text-[#0A84FF] shrink-0" />
+                          ) : (
+                            <Check className="w-4 h-4 text-[#30D158] shrink-0" />
+                          )}
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

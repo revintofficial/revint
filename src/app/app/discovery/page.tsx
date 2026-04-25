@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -13,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DEFAULT_LOCATIONS, DEFAULT_SEARCH_QUERIES } from "@/lib/constants";
+import { COUNTRIES } from "@/lib/countries";
+import { DEFAULT_SEARCH_QUERIES } from "@/lib/constants";
 import { NICHES } from "@/lib/niches";
 import { toast } from "sonner";
 import {
@@ -26,16 +26,9 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-interface DiscoveryResult {
-  borough: string;
-  query: string;
-  created: number;
-  skipped: number;
-}
-
 export default function DiscoveryPage() {
-  const [selectedLocation, setSelectedLocation] = useState("");
-  const [customLocation, setCustomLocation] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [city, setCity] = useState("");
   const [selectedQuery, setSelectedQuery] = useState("");
   const [customQuery, setCustomQuery] = useState("");
   const [running, setRunning] = useState(false);
@@ -46,9 +39,18 @@ export default function DiscoveryPage() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const effectiveLocation = customLocation || selectedLocation;
+  // Pre-fill country from workspace settings
+  useEffect(() => {
+    fetch("/api/workspace/country")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.country) setSelectedCountry(d.country);
+      })
+      .catch(() => null);
+  }, []);
+
   const effectiveQuery = customQuery || selectedQuery;
-  const canRun = effectiveLocation && effectiveQuery;
+  const canRun = selectedCountry && city.trim() && effectiveQuery;
 
   const runDiscovery = async () => {
     if (!canRun || running) return;
@@ -56,10 +58,6 @@ export default function DiscoveryPage() {
     setSingleResult(null);
     setError(null);
 
-    // Hard client-side cap so the button never stays on "Searching…" forever.
-    // Google Places + Vercel function timeout should be well under this; if
-    // we hit 90s something is actually broken and the user deserves an error
-    // instead of an infinite spinner.
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 90_000);
 
@@ -69,7 +67,8 @@ export default function DiscoveryPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           searchQuery: effectiveQuery,
-          boroughName: effectiveLocation,
+          boroughName: city.trim(),
+          country: selectedCountry,
         }),
         signal: controller.signal,
       });
@@ -112,7 +111,7 @@ export default function DiscoveryPage() {
     <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
       <PageHeader
         title="Discover"
-        subtitle="Find local businesses that need your web design services"
+        subtitle="Find local businesses that need your services — anywhere in the world"
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -125,37 +124,47 @@ export default function DiscoveryPage() {
               </div>
               <div>
                 <CardTitle>Find Businesses</CardTitle>
-                <CardDescription>Search by location and business type</CardDescription>
+                <CardDescription>Search by country, city, and business type</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Country */}
             <div>
-              <label className="text-[13px] font-medium text-white/50 mb-1.5 block">Location</label>
-              <Select value={selectedLocation} onValueChange={(v) => { setSelectedLocation(v); setCustomLocation(""); }}>
+              <label className="text-[13px] font-medium text-white/50 mb-1.5 block">Country</label>
+              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose an area..." />
+                  <SelectValue placeholder="Select a country…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DEFAULT_LOCATIONS.map((b) => (
-                    <SelectItem key={b.name} value={b.name}>
+                  {COUNTRIES.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-3 h-3 text-white/30" />
-                        {b.name}
+                        <Globe className="w-3 h-3 text-white/30" />
+                        {c.name}
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Input
-                type="text"
-                placeholder="or type any city / area"
-                value={customLocation}
-                onChange={(e) => { setCustomLocation(e.target.value); setSelectedLocation(""); }}
-                className="mt-2"
-              />
             </div>
 
+            {/* City */}
+            <div>
+              <label className="text-[13px] font-medium text-white/50 mb-1.5 block">City / Area</label>
+              <Input
+                type="text"
+                placeholder="e.g. Manchester, Istanbul, New York"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+              />
+              <p className="text-[11px] text-white/35 mt-1.5 flex items-center gap-1">
+                <MapPin className="w-3 h-3 inline" />
+                Type any city, district, or neighbourhood
+              </p>
+            </div>
+
+            {/* Niche */}
             <div>
               <label className="text-[13px] font-medium text-white/50 mb-1.5 block">Niche pack (recommended)</label>
               <Select
@@ -217,7 +226,7 @@ export default function DiscoveryPage() {
 
             {!canRun && !running && (
               <p className="text-xs text-white/30 text-center">
-                Select both a location and business type to start
+                Select a country, enter a city, and choose a business type to start
               </p>
             )}
 

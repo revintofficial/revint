@@ -16,19 +16,25 @@ import type { AgentWorkerKind, Plan } from "@/generated/prisma/client";
 import type {
   AgentWorker,
   AgentWorkerContext,
+  AgentWorkerFinalize,
   AgentWorkerOutput,
   AgentWorkerRun,
+  AgentWorkerStart,
   MemoryWrite,
 } from "./types";
 
 /**
- * Shape that a worker's impl module must export. `run` is required;
- * `memoryWrites` is optional and returned by modules that produce
- * SemanticMemory side effects. Registry callers don't observe the
- * module shape directly - they go through `resolveWorker(kind)`.
+ * Shape that a worker's impl module must export. At least one of `run`
+ * (sync mode) or `start` + `finalize` (async-apify mode) must be
+ * present. `memoryWrites` is optional and returned by modules that
+ * produce SemanticMemory side effects. Registry callers don't
+ * observe the module shape directly - they go through the resolvers
+ * (`resolveWorkerRun`, `resolveWorkerStart`, etc.).
  */
 interface WorkerModule {
-  run: AgentWorkerRun;
+  run?: AgentWorkerRun;
+  start?: AgentWorkerStart;
+  finalize?: AgentWorkerFinalize;
   memoryWrites?: (output: unknown, ctx: AgentWorkerContext) => MemoryWrite[] | Promise<MemoryWrite[]>;
 }
 
@@ -361,8 +367,20 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     descriptionTr: "Apify google-search-scraper ile lead'in hedef kelimelerdeki sirasi. Pitch acisi icin yakit.",
     minPlan: "PRO",
     phase1Enabled: true,
-    estimatedDurationMs: 45000,
-    implModule: () => import("./apify/serp-rank").then((m) => ({ run: m.run })),
+    // 90s estimate -> 180s outer deadline (Math.min(90*3, 180) caps
+    // at 180s) when the executor falls back to the sync `run()` path.
+    // The async-apify path uses Apify's actor timeout (180s) plus the
+    // webhook round-trip; the executor's deadline does not apply to
+    // async runs because they finish via webhook callback.
+    estimatedDurationMs: 90000,
+    mode: "async-apify",
+    implModule: () =>
+      import("./apify/serp-rank").then((m) => ({
+        run: m.run,
+        start: m.start,
+        finalize: m.finalize,
+        memoryWrites: m.memoryWrites,
+      })),
   },
   APIFY_COMPETITOR_ADS: {
     kind: "APIFY_COMPETITOR_ADS",
@@ -462,9 +480,33 @@ async function resolveModule(kind: AgentWorkerKind): Promise<WorkerModule> {
   return mod;
 }
 
-export async function resolveWorkerRun(kind: AgentWorkerKind): Promise<AgentWorkerRun> {
+export async function resolveWorkerRun(kind: AgentWorkerKind): Promise<AgentWorkerRun | undefined> {
   const mod = await resolveModule(kind);
   return mod.run;
+}
+
+/**
+ * Returns the worker's `start(ctx)` callback used by async-apify
+ * workers to kick off an actor run + webhook. Returns undefined for
+ * sync-mode workers; callers must fall back to `resolveWorkerRun`.
+ */
+export async function resolveWorkerStart(
+  kind: AgentWorkerKind,
+): Promise<AgentWorkerStart | undefined> {
+  const mod = await resolveModule(kind);
+  return mod.start;
+}
+
+/**
+ * Returns the worker's `finalize(ctx, payload)` callback invoked by
+ * the Apify webhook handler when the actor run completes. Returns
+ * undefined for sync-mode workers (they have no webhook step).
+ */
+export async function resolveWorkerFinalize(
+  kind: AgentWorkerKind,
+): Promise<AgentWorkerFinalize | undefined> {
+  const mod = await resolveModule(kind);
+  return mod.finalize;
 }
 
 /**
@@ -501,5 +543,10 @@ export async function runWorker(
   ctx: AgentWorkerContext,
 ): Promise<AgentWorkerOutput> {
   const run = await resolveWorkerRun(kind);
+  if (!run) {
+    throw new Error(
+      `Worker ${kind} has no sync run() handler; it is async-apify-only and must be invoked via start()`,
+    );
+  }
   return run(ctx);
 }

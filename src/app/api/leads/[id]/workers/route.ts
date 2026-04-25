@@ -19,6 +19,19 @@ import { listWorkers, planMeetsMinimum } from "@/lib/agent-workers/registry";
 import { getLimit } from "@/lib/agent-workers/quota";
 import type { AgentWorkerKind } from "@/generated/prisma/client";
 
+/**
+ * Matches the watchdog rule used by GET /api/agent-runs/[id]:
+ *   - Sync runs (no `mode: "async-apify"` in inputsJson):
+ *     mark FAILED after 3 minutes - the executor process has died.
+ *   - Async-apify runs (Apify webhook callbacks):
+ *     mark FAILED after 10 minutes - we wait long enough for the
+ *     actor + cold-start + webhook delivery to complete. This must
+ *     stay in lockstep with `isAsyncRun` in the per-run handler so
+ *     the two endpoints don't disagree about what a stuck run is.
+ */
+const SYNC_WATCHDOG_MS = 3 * 60 * 1000;
+const ASYNC_WATCHDOG_MS = 10 * 60 * 1000;
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -40,26 +53,59 @@ export async function GET(
       select: { cycleResetAt: true, plan: true },
     });
 
-    // Lazy watchdog: mark any PENDING/RUNNING runs older than 3 minutes
-    // as FAILED before building the response. This ensures the workers
-    // panel always shows accurate state without a separate cron job.
-    const staleWatchdogBefore = new Date(Date.now() - 3 * 60 * 1000);
-    const watchdogCount = await prisma.agentRun.updateMany({
-      where: {
-        workspaceId: session.workspaceId,
-        leadId,
-        status: { in: ["PENDING", "RUNNING"] },
-        createdAt: { lt: staleWatchdogBefore },
-      },
-      data: {
-        status: "FAILED",
-        finishedAt: new Date(),
-        errorMsg: "watchdog: run exceeded 3-minute deadline without completing",
-      },
-    });
-    if (watchdogCount.count > 0) {
+    // Lazy watchdog: mark stuck PENDING/RUNNING runs as FAILED before
+    // building the response. Two passes so async-apify runs (which
+    // legitimately stay RUNNING for up to 10 minutes while Apify
+    // works through its actor queue + webhook delivery) are not
+    // killed by the strict 3-minute rule that sync runs need.
+    //
+    // Selection: async runs are identified by `inputsJson.mode =
+    // "async-apify"` set by the executor in `src/lib/agent-workers/execute.ts`.
+    // Anything without that marker is treated as sync (the strict
+    // default).
+    const now = Date.now();
+    const syncWatchdogCutoff = new Date(now - SYNC_WATCHDOG_MS);
+    const asyncWatchdogCutoff = new Date(now - ASYNC_WATCHDOG_MS);
+
+    const [syncReap, asyncReap] = await Promise.all([
+      prisma.agentRun.updateMany({
+        where: {
+          workspaceId: session.workspaceId,
+          leadId,
+          status: { in: ["PENDING", "RUNNING"] },
+          createdAt: { lt: syncWatchdogCutoff },
+          // Postgres JSONB equality: filter to rows whose mode is
+          // NOT "async-apify". Rows with no mode set fall into this
+          // bucket because `path: ["mode"]` returns null.
+          NOT: { inputsJson: { path: ["mode"], equals: "async-apify" } },
+        },
+        data: {
+          status: "FAILED",
+          finishedAt: new Date(),
+          errorMsg: "watchdog: run exceeded 3-minute deadline without completing",
+        },
+      }),
+      prisma.agentRun.updateMany({
+        where: {
+          workspaceId: session.workspaceId,
+          leadId,
+          status: { in: ["PENDING", "RUNNING"] },
+          createdAt: { lt: asyncWatchdogCutoff },
+          inputsJson: { path: ["mode"], equals: "async-apify" },
+        },
+        data: {
+          status: "FAILED",
+          finishedAt: new Date(),
+          errorMsg:
+            "watchdog: async Apify run exceeded 10-minute deadline without webhook callback",
+        },
+      }),
+    ]);
+    const reapTotal = syncReap.count + asyncReap.count;
+    if (reapTotal > 0) {
       logger.warn("api.agent_run.watchdog_batch_failed", {
-        count: watchdogCount.count,
+        sync: syncReap.count,
+        async: asyncReap.count,
         leadId,
       });
     }

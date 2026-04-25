@@ -14,6 +14,24 @@ import { NextResponse } from "next/server";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import type { Prisma } from "@/generated/prisma/client";
+
+/**
+ * True when the AgentRun was scheduled as an async-apify run, i.e.
+ * the executor's `start(ctx)` path persisted `mode: "async-apify"`
+ * (and an `apifyRunId`) into `inputsJson`. Async runs use a longer
+ * watchdog deadline because their completion is gated on Apify's
+ * actor + webhook round-trip rather than our own process staying
+ * alive. We treat malformed JSON as "sync" - that keeps the strict
+ * 3-minute watchdog as the safe default.
+ */
+function isAsyncRun(inputsJson: Prisma.JsonValue | null | undefined): boolean {
+  if (!inputsJson || typeof inputsJson !== "object" || Array.isArray(inputsJson)) {
+    return false;
+  }
+  const obj = inputsJson as Record<string, unknown>;
+  return obj.mode === "async-apify" && typeof obj.apifyRunId === "string";
+}
 
 export async function GET(
   _request: Request,
@@ -31,6 +49,7 @@ export async function GET(
         leadId: true,
         workerKind: true,
         status: true,
+        inputsJson: true,
         outputJson: true,
         artifactUrl: true,
         errorMsg: true,
@@ -44,22 +63,39 @@ export async function GET(
       return NextResponse.json({ error: "Run not found" }, { status: 404 });
     }
 
-    // Lazy watchdog: if the run is still PENDING/RUNNING but was
-    // created more than 3 minutes ago, the worker process almost
-    // certainly crashed or the Gemini call hung past every deadline.
-    // Flip it to FAILED here so the UI stops showing the infinite
-    // spinner and the user can retry. This is the cheapest possible
-    // watchdog - zero extra infrastructure, triggered by normal
-    // polling that the UI is already doing every 2 seconds.
+    // Lazy watchdog: if the run is still PENDING/RUNNING but its
+    // deadline has passed, flip it to FAILED so the UI stops showing
+    // the infinite spinner and the user can retry. This is the
+    // cheapest possible watchdog - zero extra infrastructure,
+    // triggered by normal polling that the UI is already doing
+    // every 2 seconds.
+    //
+    // Sync runs (Gemini calls, in-process scrapers, sync Apify):
+    //   3 minutes is a comfortable ceiling - the executor's own
+    //   outer deadline is 180s and the worker process's lockDuration
+    //   is 240s, so anything older has definitely crashed.
+    //
+    // Async-apify runs (mode set in inputsJson by the executor's
+    // start() path): up to 10 minutes. Apify's actor timeout is
+    // 180s and the webhook handler runs after that, but cold-start
+    // queues + retry backoff can stretch the round-trip well past
+    // 3 minutes for first-of-day runs. Killing too aggressively
+    // would mark genuinely-in-flight runs as FAILED while the
+    // webhook is still about to land.
     if (run.status === "PENDING" || run.status === "RUNNING") {
       const ageMs = Date.now() - new Date(run.createdAt).getTime();
-      if (ageMs > 3 * 60 * 1000) {
+      const isAsync = isAsyncRun(run.inputsJson);
+      const deadlineMs = isAsync ? 10 * 60 * 1000 : 3 * 60 * 1000;
+      if (ageMs > deadlineMs) {
+        const errorMsg = isAsync
+          ? "watchdog: async Apify run exceeded 10-minute deadline without webhook callback"
+          : "watchdog: run exceeded 3-minute deadline without completing";
         const updated = await prisma.agentRun.update({
           where: { id: run.id },
           data: {
             status: "FAILED",
             finishedAt: new Date(),
-            errorMsg: "watchdog: run exceeded 3-minute deadline without completing",
+            errorMsg,
           },
           select: {
             id: true,
@@ -67,6 +103,7 @@ export async function GET(
             leadId: true,
             workerKind: true,
             status: true,
+            inputsJson: true,
             outputJson: true,
             artifactUrl: true,
             errorMsg: true,
@@ -80,6 +117,8 @@ export async function GET(
           runId: run.id,
           workerKind: run.workerKind,
           ageMs,
+          isAsync,
+          deadlineMs,
         });
         return NextResponse.json(updated);
       }

@@ -14,14 +14,27 @@
  * `lead_created` chain - businesses without a crawlable website still
  * get their socials populated because Google indexes the profiles
  * directly.
+ *
+ * Execution mode: async-apify. Apify google-search-scraper regularly
+ * exceeds Vercel's 60s function deadline (especially with cold
+ * actor starts), so the worker exports `start(ctx)` to kick the
+ * actor off with a webhook callback and `finalize(ctx, payload)` to
+ * run the post-processing once Apify reports back via the
+ * `/api/webhooks/apify` endpoint. A `run(ctx)` shim is also exported
+ * as a sync fallback for environments without a public webhook
+ * ingress (typical local dev without a tunnel).
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { isConfigured, runSync } from "@/lib/apify";
+import { isConfigured, runAsync, runSync } from "@/lib/apify";
+import { getAppBaseUrl } from "@/lib/email/from";
 import type {
   AgentWorkerContext,
+  AgentWorkerFinalize,
   AgentWorkerOutput,
   AgentWorkerRun,
+  AgentWorkerStart,
+  ApifyFinalizePayload,
   MemoryWrite,
 } from "../types";
 
@@ -59,31 +72,121 @@ const SOCIAL_HOSTS: Array<{
   { key: "twitter", test: (h) => h === "twitter.com" || h.endsWith(".twitter.com") || h === "x.com" || h.endsWith(".x.com") },
 ];
 
-export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
-  if (!ctx.lead) throw new Error("APIFY_SERP_RANK requires a lead context");
-  if (!isConfigured()) {
-    return { output: { skipped: true, reason: "apify_not_configured" }, costUsdCents: 0 };
-  }
-  const lead = ctx.lead;
-
-  const queries = buildQueries(lead);
-  if (queries.length === 0) {
-    return { output: { skipped: true, reason: "no_queries" }, costUsdCents: 0 };
-  }
-
-  const input = {
+/**
+ * Builds the Apify input shared between the sync and async paths.
+ * Returns null when the lead has no usable queries (no business
+ * name, no primary type) - the caller short-circuits with a
+ * skipped result so we never charge Apify for an empty-query run.
+ */
+function buildActorInput(
+  ctx: AgentWorkerContext,
+): { queries: string[]; input: Record<string, unknown> } | null {
+  if (!ctx.lead) return null;
+  const queries = buildQueries(ctx.lead);
+  if (queries.length === 0) return null;
+  const input: Record<string, unknown> = {
     queries: queries.join("\n"),
     resultsPerPage: 10,
     maxPagesPerQuery: 1,
     languageCode: ctx.workspace.language ?? "en",
     countryCode: "gb",
   };
+  return { queries, input };
+}
 
-  const result = await runSync<SerpResult>(ACTOR_ID, input, { timeoutSec: 120 });
+/**
+ * Async-apify kickoff. Schedules the actor with a webhook pointing at
+ * `/api/webhooks/apify`; the webhook handler calls `finalize` below
+ * once the actor finishes. Used by the executor whenever the
+ * deployment has a public webhook ingress (i.e. NEXT_PUBLIC_APP_URL
+ * or VERCEL_URL is set).
+ */
+export const start: AgentWorkerStart = async (ctx) => {
+  if (!ctx.lead) throw new Error("APIFY_SERP_RANK requires a lead context");
+  if (!isConfigured()) {
+    return {
+      skipped: true,
+      reason: "apify_not_configured",
+      output: { skipped: true, reason: "apify_not_configured" },
+    };
+  }
+  const built = buildActorInput(ctx);
+  if (!built) {
+    return {
+      skipped: true,
+      reason: "no_queries",
+      output: { skipped: true, reason: "no_queries" },
+    };
+  }
 
+  const baseUrl = getAppBaseUrl();
+  const webhookUrl = `${baseUrl}/api/webhooks/apify`;
+
+  const { runId } = await runAsync(ACTOR_ID, built.input, {
+    webhookUrl,
+    webhookSecret: process.env.APIFY_WEBHOOK_SECRET,
+    agentRunId: ctx.runId,
+    timeoutSec: 180,
+  });
+
+  logger.info("apify.serp_rank.started", {
+    leadId: ctx.lead.id,
+    queries: built.queries.length,
+    apifyRunId: runId,
+  });
+
+  return { apifyRunId: runId };
+};
+
+/**
+ * Async-apify finalizer. Called by `/api/webhooks/apify` after Apify
+ * reports the actor finished. Receives the dataset items and the
+ * resolved cost; produces the same AgentWorkerOutput shape that the
+ * sync `run()` path returns.
+ */
+export const finalize: AgentWorkerFinalize = async (ctx, payload) => {
+  return processItems(ctx, payload.items as SerpResult[], payload.costUsdCents);
+};
+
+/**
+ * Sync fallback. Used when the executor cannot reach a public
+ * webhook URL (local dev without a tunnel, NEXT_PUBLIC_APP_URL
+ * unset). Same blocking shape as before this worker switched to
+ * async mode; the only behavioural difference is that here we
+ * forward the timeout to runSync so Apify aborts the actor at 180s
+ * even on long-running queries.
+ */
+export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
+  if (!ctx.lead) throw new Error("APIFY_SERP_RANK requires a lead context");
+  if (!isConfigured()) {
+    return { output: { skipped: true, reason: "apify_not_configured" }, costUsdCents: 0 };
+  }
+  const built = buildActorInput(ctx);
+  if (!built) {
+    return { output: { skipped: true, reason: "no_queries" }, costUsdCents: 0 };
+  }
+
+  const result = await runSync<SerpResult>(ACTOR_ID, built.input, { timeoutSec: 120 });
+  return processItems(ctx, result.items, result.costUsdCents);
+};
+
+/**
+ * Pure post-processing: turn Apify dataset items into the
+ * AgentWorkerOutput shape (snapshots, harvested socials, audit-row
+ * merge). Shared between the sync `run()` and the async `finalize()`
+ * paths so the output stays bit-for-bit identical regardless of
+ * which transport delivered the items.
+ */
+async function processItems(
+  ctx: AgentWorkerContext,
+  items: SerpResult[],
+  costUsdCents: number,
+): Promise<AgentWorkerOutput> {
+  if (!ctx.lead) throw new Error("processItems requires a lead context");
+  const lead = ctx.lead;
   const leadDomain = lead.websiteUrl ? domainOf(lead.websiteUrl) : null;
 
-  const snapshots = result.items
+  const snapshots = items
     .filter((s) => s.searchQuery?.term && Array.isArray(s.organicResults))
     .map((s) => {
       const rankedPosition =
@@ -100,10 +203,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       };
     });
 
-  // Harvest social-profile URLs from every organic result (not only
-  // the top-5 used in snapshots) so we don't miss an Instagram that
-  // Google pinned at position 7 for the business-name query.
-  const harvestedSocials = harvestSocials(result.items);
+  const harvestedSocials = harvestSocials(items);
   const mergedSocials = await mergeSocialProfiles(lead.id, lead.websiteUrl, harvestedSocials);
 
   logger.info("apify.serp_rank.done", {
@@ -111,7 +211,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     queries: snapshots.length,
     socialsFound: Object.keys(harvestedSocials).length,
     socialsMerged: mergedSocials,
-    costCents: result.costUsdCents,
+    costCents: costUsdCents,
   });
 
   return {
@@ -119,11 +219,11 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       snapshots,
       socialProfilesFound: harvestedSocials,
       socialProfilesMerged: mergedSocials,
-      costUsdCents: result.costUsdCents,
+      costUsdCents,
     },
-    costUsdCents: result.costUsdCents,
+    costUsdCents,
   };
-};
+}
 
 export const memoryWrites = (
   output: unknown,

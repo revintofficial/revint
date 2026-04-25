@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { AppShell } from "@/components/app/app-shell";
 import { getOptionalUser } from "@/lib/auth";
 import { getUsage } from "@/lib/quotas";
+import { prisma } from "@/lib/prisma";
 
 export default async function AppLayout({
   children,
@@ -10,6 +12,29 @@ export default async function AppLayout({
 }) {
   const session = await getOptionalUser();
   if (!session) redirect("/login");
+
+  // Redirect workspace owners who haven't completed onboarding to the wizard.
+  // Skip if the workspace already has leads — that means it's an existing
+  // workspace that pre-dates the onboarding flow; auto-mark it complete.
+  if (session.role === "OWNER" && !session.workspace.onboardingCompletedAt) {
+    const headersList = await headers();
+    const pathname = headersList.get("x-pathname") ?? "";
+    if (!pathname.startsWith("/app/onboarding")) {
+      // Check if workspace has existing leads (pre-onboarding workspace).
+      const leadCount = await prisma.lead.count({
+        where: { workspaceId: session.workspaceId },
+      });
+      if (leadCount > 0) {
+        // Silently mark complete so the gate doesn't fire again.
+        await prisma.workspace.update({
+          where: { id: session.workspaceId },
+          data: { onboardingCompletedAt: new Date() },
+        });
+      } else {
+        redirect("/app/onboarding");
+      }
+    }
+  }
 
   const usage = await getUsage(session.workspaceId).catch(() => null);
 

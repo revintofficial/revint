@@ -1,15 +1,25 @@
+/**
+ * Unit tests for POST /api/webhooks/apify.
+ *
+ * After the move to `mode: "async-apify"` workers, the route's job
+ * narrowed to: verify secret -> validate payload -> dedupe terminal
+ * runs -> fetch the Apify run -> dispatch into
+ * `finalizeApifyAgentRun(runId, payload)`. The actual persistence
+ * (status flip, costUsdCents, memoryWrites, orchestrator advance)
+ * lives in `finalizeApifyAgentRun` itself; tests for that behavior
+ * belong next to the executor.
+ *
+ * So these tests focus on the routing contract and stub
+ * `finalizeApifyAgentRun` to assert it received the right payload.
+ */
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 
 const mockAgentRunFindUnique = vi.fn();
-const mockAgentRunUpdateMany = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     agentRun: {
       findUnique: (...args: unknown[]) => mockAgentRunFindUnique(...args),
-      // The route now uses updateMany so concurrent webhook deliveries
-      // can race at the DB and the loser becomes a no-op (count=0).
-      updateMany: (...args: unknown[]) => mockAgentRunUpdateMany(...args),
     },
   },
 }));
@@ -21,27 +31,10 @@ vi.mock("@/lib/apify", () => ({
   verifyWebhookSecret: (...args: unknown[]) => mockVerifyWebhookSecret(...args),
 }));
 
-const mockQueueAdd = vi.fn();
-vi.mock("@/lib/queues", () => ({
-  getAgentRunsQueue: () => ({ add: mockQueueAdd }),
+const mockFinalizeApifyAgentRun = vi.fn();
+vi.mock("@/lib/agent-workers/execute", () => ({
+  finalizeApifyAgentRun: (...args: unknown[]) => mockFinalizeApifyAgentRun(...args),
 }));
-
-// The route calls enqueueAdvance() which internally calls
-// getAgentRunsQueue().add(...). We leave the real impl in place for that
-// particular assertion; mocking it would lose the queue integration we
-// want to exercise.
-vi.mock("@/lib/ai-core/orchestrator", async () => {
-  const { getAgentRunsQueue } = await import("@/lib/queues");
-  return {
-    enqueueAdvance: async (sessionId: string): Promise<void> => {
-      const queue = getAgentRunsQueue();
-      await queue.add(
-        `advance:${sessionId}`,
-        { type: "orchestrator_advance", sessionId },
-      );
-    },
-  };
-});
 
 vi.mock("@/lib/logger", () => ({
   logger: {
@@ -71,9 +64,6 @@ describe("POST /api/webhooks/apify", () => {
     vi.clearAllMocks();
     mockVerifyWebhookSecret.mockReturnValue(true);
     mockAgentRunFindUnique.mockResolvedValue(null);
-    // Default to 'this delivery owned the transition' so tests that
-    // don't set up the race explicitly see the normal update path.
-    mockAgentRunUpdateMany.mockResolvedValue({ count: 1 });
     mockFetchRun.mockResolvedValue({
       runId: "apify_run_1",
       items: [{ foo: "bar" }],
@@ -81,6 +71,7 @@ describe("POST /api/webhooks/apify", () => {
       durationMs: 1234,
       status: "SUCCEEDED",
     });
+    mockFinalizeApifyAgentRun.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -97,6 +88,7 @@ describe("POST /api/webhooks/apify", () => {
     const body = await res.json();
     expect(body.error).toMatch(/invalid secret/i);
     expect(mockAgentRunFindUnique).not.toHaveBeenCalled();
+    expect(mockFinalizeApifyAgentRun).not.toHaveBeenCalled();
   });
 
   it("returns 400 when userData.agentRunId is missing", async () => {
@@ -104,7 +96,15 @@ describe("POST /api/webhooks/apify", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toMatch(/agentRunId/);
-    expect(mockAgentRunUpdateMany).not.toHaveBeenCalled();
+    expect(mockFinalizeApifyAgentRun).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when resource.id (apifyRunId) is missing", async () => {
+    const res = await POST(
+      makeRequest({ userData: { agentRunId: "run_1" } }),
+    );
+    expect(res.status).toBe(400);
+    expect(mockFinalizeApifyAgentRun).not.toHaveBeenCalled();
   });
 
   it("returns 404 when the agentRunId is unknown", async () => {
@@ -116,18 +116,61 @@ describe("POST /api/webhooks/apify", () => {
       }),
     );
     expect(res.status).toBe(404);
-    expect(mockAgentRunUpdateMany).not.toHaveBeenCalled();
+    expect(mockFinalizeApifyAgentRun).not.toHaveBeenCalled();
   });
 
-  it("persists costUsdCents from the fetched Apify run on the AgentRun row", async () => {
+  it("dedupes terminal runs without dispatching to finalize", async () => {
+    mockAgentRunFindUnique.mockResolvedValueOnce({
+      id: "run_terminal",
+      status: "SUCCEEDED",
+      plannerSessionId: null,
+      workerKind: "APIFY_SERP_RANK",
+    });
+
+    const res = await POST(
+      makeRequest({
+        userData: { agentRunId: "run_terminal" },
+        resource: { id: "apify_run_1" },
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.deduped).toBe(true);
+    expect(mockFetchRun).not.toHaveBeenCalled();
+    expect(mockFinalizeApifyAgentRun).not.toHaveBeenCalled();
+  });
+
+  it("returns 202 retryable when fetchRun fails - keeps the run RUNNING for next delivery", async () => {
+    mockAgentRunFindUnique.mockResolvedValueOnce({
+      id: "run_fetch_fail",
+      status: "RUNNING",
+      plannerSessionId: null,
+      workerKind: "APIFY_SERP_RANK",
+    });
+    mockFetchRun.mockRejectedValueOnce(new Error("apify 503"));
+
+    const res = await POST(
+      makeRequest({
+        userData: { agentRunId: "run_fetch_fail" },
+        resource: { id: "apify_run_fetch_fail" },
+      }),
+    );
+    expect(res.status).toBe(202);
+    const body = await res.json();
+    expect(body).toMatchObject({ ok: false, retryable: true });
+    expect(mockFinalizeApifyAgentRun).not.toHaveBeenCalled();
+  });
+
+  it("dispatches to finalizeApifyAgentRun with the Apify run payload on success", async () => {
     mockAgentRunFindUnique.mockResolvedValueOnce({
       id: "run_ok",
       status: "RUNNING",
       plannerSessionId: null,
+      workerKind: "APIFY_SERP_RANK",
     });
     mockFetchRun.mockResolvedValueOnce({
       runId: "apify_run_cost",
-      items: [],
+      items: [{ x: 1 }, { x: 2 }],
       costUsdCents: 137,
       durationMs: 500,
       status: "SUCCEEDED",
@@ -141,20 +184,23 @@ describe("POST /api/webhooks/apify", () => {
     );
     expect(res.status).toBe(200);
 
-    expect(mockAgentRunUpdateMany).toHaveBeenCalledTimes(1);
-    const updateArg = mockAgentRunUpdateMany.mock.calls[0][0];
-    expect(updateArg.where.id).toBe("run_ok");
-    // Race-safe filter: only transition non-terminal rows.
-    expect(updateArg.where.status).toEqual({ in: ["PENDING", "RUNNING"] });
-    expect(updateArg.data.costUsdCents).toBe(137);
-    expect(updateArg.data.status).toBe("SUCCEEDED");
+    expect(mockFinalizeApifyAgentRun).toHaveBeenCalledTimes(1);
+    const [runId, payload] = mockFinalizeApifyAgentRun.mock.calls[0];
+    expect(runId).toBe("run_ok");
+    expect(payload).toMatchObject({
+      apifyRunId: "apify_run_cost",
+      items: [{ x: 1 }, { x: 2 }],
+      costUsdCents: 137,
+      status: "SUCCEEDED",
+    });
   });
 
-  it("marks the AgentRun FAILED when Apify reports a non-succeeded status", async () => {
+  it("forwards a non-succeeded Apify status verbatim to finalizeApifyAgentRun", async () => {
     mockAgentRunFindUnique.mockResolvedValueOnce({
       id: "run_fail",
       status: "RUNNING",
       plannerSessionId: null,
+      workerKind: "APIFY_SERP_RANK",
     });
     mockFetchRun.mockResolvedValueOnce({
       runId: "apify_run_fail",
@@ -172,40 +218,8 @@ describe("POST /api/webhooks/apify", () => {
     );
     expect(res.status).toBe(200);
 
-    const updateArg = mockAgentRunUpdateMany.mock.calls[0][0];
-    expect(updateArg.data.status).toBe("FAILED");
-  });
-
-  it("enqueues orchestrator_advance for the session when the run succeeds", async () => {
-    mockAgentRunFindUnique.mockResolvedValueOnce({
-      id: "run_with_session",
-      status: "RUNNING",
-      plannerSessionId: "sess_advance",
-    });
-    mockFetchRun.mockResolvedValueOnce({
-      runId: "apify_ok",
-      items: [],
-      costUsdCents: 10,
-      durationMs: 200,
-      status: "SUCCEEDED",
-    });
-
-    const res = await POST(
-      makeRequest({
-        userData: { agentRunId: "run_with_session" },
-        resource: { id: "apify_ok" },
-      }),
-    );
-    expect(res.status).toBe(200);
-
-    expect(mockQueueAdd).toHaveBeenCalledTimes(1);
-    const [jobName, payload] = mockQueueAdd.mock.calls[0];
-    expect(jobName).toMatch(/advance:sess_advance/);
-    expect(payload).toEqual(
-      expect.objectContaining({
-        type: "orchestrator_advance",
-        sessionId: "sess_advance",
-      }),
-    );
+    const [, payload] = mockFinalizeApifyAgentRun.mock.calls[0];
+    expect(payload.status).toBe("FAILED");
+    expect(payload.costUsdCents).toBe(5);
   });
 });

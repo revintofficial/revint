@@ -1,6 +1,8 @@
 /**
- * P0.2 - "My offer" form. Edits the 10 workspace-level offer context fields.
+ * P0.2 - "My offer" form. Edits the workspace-level offer context fields.
  * Drives both SalesOpportunity and WebsitePlan prompt personalization.
+ *
+ * OfferFields is also imported by the onboarding wizard.
  */
 
 "use client";
@@ -12,28 +14,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Save, Sparkles } from "lucide-react";
 
-interface OfferContext {
-  offerName: string | null;
-  valueProposition: string | null;
-  socialProof: string | null;
-  offerHook: string | null;
-  objective: string | null;
-  tone: string | null;
-  length: string | null;
-  language: string | null;
-  senderName: string | null;
-  conversionLink: string | null;
-  niche: string | null;
+export interface OfferContext {
+  offerName: string;
+  valueProposition: string;
+  socialProof: string;
+  offerHook: string;
+  objective: string;
+  tone: string;
+  length: string;
+  language: string;
+  senderName: string;
+  conversionLink: string;
+  niche: string;
 }
 
-const NICHE_OPTIONS = [
+export const NICHE_OPTIONS = [
   { value: "WEB_AGENCY", label: "Web / Marketing Agency (default)" },
   { value: "RESTAURANT_TECH", label: "Restaurant Tech (QR menu / digital ordering)" },
   { value: "DENTAL", label: "Dental (coming soon)" },
   { value: "REAL_ESTATE", label: "Real Estate (coming soon)" },
 ];
 
-const RESTAURANT_TECH_DEFAULTS = {
+export const RESTAURANT_TECH_DEFAULTS = {
   offerName: "QR Menu & Digital Ordering",
   valueProposition:
     "We replace paper menus with a QR code that lets guests browse, order, and pay from their phone — driving higher spend per table and faster table turns.",
@@ -41,16 +43,16 @@ const RESTAURANT_TECH_DEFAULTS = {
     "Checked your site and noticed you don't have a QR menu yet — put together a quick demo for you.",
 };
 
-const TONE_OPTIONS = ["friendly", "professional", "direct", "casual", "warm"];
-const LENGTH_OPTIONS = ["very short", "short", "medium", "long"];
-const LANGUAGE_OPTIONS = [
+export const TONE_OPTIONS = ["friendly", "professional", "direct", "casual", "warm"];
+export const LENGTH_OPTIONS = ["very short", "short", "medium", "long"];
+export const LANGUAGE_OPTIONS = [
   { value: "en", label: "English" },
   { value: "es", label: "Español" },
   { value: "de", label: "Deutsch" },
   { value: "fr", label: "Français" },
   { value: "tr", label: "Türkçe" },
 ];
-const OBJECTIVE_OPTIONS = [
+export const OBJECTIVE_OPTIONS = [
   "Book a 15-min call",
   "Get a reply",
   "Send the mockup link",
@@ -58,20 +60,210 @@ const OBJECTIVE_OPTIONS = [
   "Schedule on-site visit",
 ];
 
+export const EMPTY_OFFER: OfferContext = {
+  offerName: "",
+  valueProposition: "",
+  socialProof: "",
+  offerHook: "",
+  objective: "",
+  tone: "",
+  length: "",
+  language: "en",
+  senderName: "",
+  conversionLink: "",
+  niche: "WEB_AGENCY",
+};
+
+// ---------------------------------------------------------------------------
+// Shared field renderer used by both the settings form and the onboarding step
+// ---------------------------------------------------------------------------
+
+export function OfferFields({
+  data,
+  onChange,
+  disabled = false,
+}: {
+  data: OfferContext;
+  onChange: (next: OfferContext) => void;
+  disabled?: boolean;
+}) {
+  const update = (k: keyof OfferContext) => (v: string) =>
+    onChange({ ...data, [k]: v });
+
+  const handleNicheChange = (newNiche: string) => {
+    const next: OfferContext = { ...data, niche: newNiche };
+    if (newNiche === "RESTAURANT_TECH") {
+      if (!data.offerName) next.offerName = RESTAURANT_TECH_DEFAULTS.offerName;
+      if (!data.valueProposition) next.valueProposition = RESTAURANT_TECH_DEFAULTS.valueProposition;
+      if (!data.offerHook) next.offerHook = RESTAURANT_TECH_DEFAULTS.offerHook;
+    }
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-5">
+      <Field
+        label="Niche"
+        help="Select what your workspace sells. The AI analysis, reason codes, and openers all adapt to your niche."
+      >
+        <select
+          value={data.niche}
+          onChange={(e) => handleNicheChange(e.target.value)}
+          disabled={disabled}
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
+        >
+          {NICHE_OPTIONS.map((n) => (
+            <option key={n.value} value={n.value}>{n.label}</option>
+          ))}
+        </select>
+      </Field>
+
+      <Field
+        label="Offer name"
+        help="e.g. Local Business Web Package, Klaviyo Email Setup, Phone Repair Site Setup."
+      >
+        <Input
+          value={data.offerName}
+          onChange={(e) => update("offerName")(e.target.value)}
+          disabled={disabled}
+          maxLength={80}
+          placeholder="Local Business Web Package"
+        />
+      </Field>
+
+      <Field
+        label="Value proposition"
+        help="In one sentence: what you sell and what the customer gets out of it."
+      >
+        <textarea
+          value={data.valueProposition}
+          onChange={(e) => update("valueProposition")(e.target.value)}
+          disabled={disabled}
+          maxLength={500}
+          rows={3}
+          placeholder="One-page, mobile-first website with online booking for local service businesses. Bookings in minutes, live within 14 days."
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
+        />
+      </Field>
+
+      <Field
+        label="Social proof"
+        help="Which references, numbers, or case studies add credibility?"
+      >
+        <textarea
+          value={data.socialProof}
+          onChange={(e) => update("socialProof")(e.target.value)}
+          disabled={disabled}
+          maxLength={400}
+          rows={2}
+          placeholder="120+ sites delivered, 14-day average launch, 4.8/5 customer rating."
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
+        />
+      </Field>
+
+      <Field
+        label="Hook / opening line"
+        help="The attention-grabbing first sentence of your message."
+      >
+        <textarea
+          value={data.offerHook}
+          onChange={(e) => update("offerHook")(e.target.value)}
+          disabled={disabled}
+          maxLength={300}
+          rows={2}
+          placeholder="Measured your site's mobile load time — 4.8s, no booking button. Put together a 1-page draft for you."
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
+        />
+      </Field>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Field label="Message goal" help="What do you want when they reply?">
+          <select
+            value={data.objective}
+            onChange={(e) => update("objective")(e.target.value)}
+            disabled={disabled}
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
+          >
+            <option value="">Select...</option>
+            {OBJECTIVE_OPTIONS.map((o) => (
+              <option key={o} value={o}>{o}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Tone" help="How the message should read">
+          <select
+            value={data.tone}
+            onChange={(e) => update("tone")(e.target.value)}
+            disabled={disabled}
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
+          >
+            <option value="">Select...</option>
+            {TONE_OPTIONS.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Length">
+          <select
+            value={data.length}
+            onChange={(e) => update("length")(e.target.value)}
+            disabled={disabled}
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
+          >
+            <option value="">Select...</option>
+            {LENGTH_OPTIONS.map((l) => (
+              <option key={l} value={l}>{l}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Language">
+          <select
+            value={data.language}
+            onChange={(e) => update("language")(e.target.value)}
+            disabled={disabled}
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
+          >
+            {LANGUAGE_OPTIONS.map((l) => (
+              <option key={l.value} value={l.value}>{l.label}</option>
+            ))}
+          </select>
+        </Field>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Field label="Sender name" help="The name that appears in the email signature">
+          <Input
+            value={data.senderName}
+            onChange={(e) => update("senderName")(e.target.value)}
+            disabled={disabled}
+            maxLength={80}
+            placeholder="Jane Doe"
+          />
+        </Field>
+
+        <Field label="Conversion link" help="Where should the CTA send them?">
+          <Input
+            value={data.conversionLink}
+            onChange={(e) => update("conversionLink")(e.target.value)}
+            disabled={disabled}
+            maxLength={300}
+            placeholder="https://leadac.ai/demo"
+          />
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Settings page wrapper — loads data from API and wraps OfferFields with save
+// ---------------------------------------------------------------------------
+
 export function OfferForm({ canEdit }: { canEdit: boolean }) {
-  const [data, setData] = useState<OfferContext>({
-    offerName: "",
-    valueProposition: "",
-    socialProof: "",
-    offerHook: "",
-    objective: "",
-    tone: "",
-    length: "",
-    language: "en",
-    senderName: "",
-    conversionLink: "",
-    niche: "WEB_AGENCY",
-  });
+  const [data, setData] = useState<OfferContext>(EMPTY_OFFER);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -96,22 +288,6 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
       .catch(() => toast.error("Couldn't load offer context"))
       .finally(() => setLoading(false));
   }, []);
-
-  const update = (k: keyof OfferContext) => (v: string) => setData((d) => ({ ...d, [k]: v }));
-
-  const handleNicheChange = (newNiche: string) => {
-    setData((d) => {
-      const next = { ...d, niche: newNiche };
-      // Pre-fill offer fields with FineDine defaults when switching to RESTAURANT_TECH
-      // and the current fields are still empty / default.
-      if (newNiche === "RESTAURANT_TECH") {
-        if (!d.offerName) next.offerName = RESTAURANT_TECH_DEFAULTS.offerName;
-        if (!d.valueProposition) next.valueProposition = RESTAURANT_TECH_DEFAULTS.valueProposition;
-        if (!d.offerHook) next.offerHook = RESTAURANT_TECH_DEFAULTS.offerHook;
-      }
-      return next;
-    });
-  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,161 +333,10 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={save} className="space-y-5 max-w-2xl">
-          <Field
-            label="Niche"
-            help="Select what your workspace sells. The AI analysis, reason codes, and openers all adapt to your niche."
-          >
-            <select
-              value={data.niche ?? "WEB_AGENCY"}
-              onChange={(e) => handleNicheChange(e.target.value)}
-              disabled={!canEdit}
-              className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
-            >
-              {NICHE_OPTIONS.map((n) => (
-                <option key={n.value} value={n.value}>{n.label}</option>
-              ))}
-            </select>
-          </Field>
+        <form onSubmit={save} className="max-w-2xl">
+          <OfferFields data={data} onChange={setData} disabled={!canEdit} />
 
-          <Field
-            label="Offer name"
-            help="e.g. Local Business Web Package, Klaviyo Email Setup, Phone Repair Site Setup."
-          >
-            <Input
-              value={data.offerName ?? ""}
-              onChange={(e) => update("offerName")(e.target.value)}
-              disabled={!canEdit}
-              maxLength={80}
-              placeholder="Local Business Web Package"
-            />
-          </Field>
-
-          <Field
-            label="Value proposition"
-            help="In one sentence: what you sell and what the customer gets out of it. The mockup hero and email opener are written around this line."
-          >
-            <textarea
-              value={data.valueProposition ?? ""}
-              onChange={(e) => update("valueProposition")(e.target.value)}
-              disabled={!canEdit}
-              maxLength={500}
-              rows={3}
-              placeholder="One-page, mobile-first website with online booking for local service businesses. Bookings in minutes, live within 14 days."
-              className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
-            />
-          </Field>
-
-          <Field
-            label="Social proof"
-            help="Which references, numbers, or case studies add credibility?"
-          >
-            <textarea
-              value={data.socialProof ?? ""}
-              onChange={(e) => update("socialProof")(e.target.value)}
-              disabled={!canEdit}
-              maxLength={400}
-              rows={2}
-              placeholder="120+ sites delivered, 14-day average launch, 4.8/5 customer rating."
-              className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
-            />
-          </Field>
-
-          <Field
-            label="Hook / opening line"
-            help="The attention-grabbing first sentence of your message."
-          >
-            <textarea
-              value={data.offerHook ?? ""}
-              onChange={(e) => update("offerHook")(e.target.value)}
-              disabled={!canEdit}
-              maxLength={300}
-              rows={2}
-              placeholder="Measured your site's mobile load time — 4.8s, no booking button. Put together a 1-page draft for you."
-              className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
-            />
-          </Field>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Message goal" help="What do you want when they reply?">
-              <select
-                value={data.objective ?? ""}
-                onChange={(e) => update("objective")(e.target.value)}
-                disabled={!canEdit}
-                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
-              >
-                <option value="">Select...</option>
-                {OBJECTIVE_OPTIONS.map((o) => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Tone" help="How the message should read">
-              <select
-                value={data.tone ?? ""}
-                onChange={(e) => update("tone")(e.target.value)}
-                disabled={!canEdit}
-                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
-              >
-                <option value="">Select...</option>
-                {TONE_OPTIONS.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Length">
-              <select
-                value={data.length ?? ""}
-                onChange={(e) => update("length")(e.target.value)}
-                disabled={!canEdit}
-                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
-              >
-                <option value="">Select...</option>
-                {LENGTH_OPTIONS.map((l) => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Language">
-              <select
-                value={data.language ?? "en"}
-                onChange={(e) => update("language")(e.target.value)}
-                disabled={!canEdit}
-                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
-              >
-                {LANGUAGE_OPTIONS.map((l) => (
-                  <option key={l.value} value={l.value}>{l.label}</option>
-                ))}
-              </select>
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Sender name" help="The name that appears in the email signature">
-              <Input
-                value={data.senderName ?? ""}
-                onChange={(e) => update("senderName")(e.target.value)}
-                disabled={!canEdit}
-                maxLength={80}
-                placeholder="Jane Doe"
-              />
-            </Field>
-
-            <Field label="Conversion link" help="Where should the CTA send them?">
-              <Input
-                value={data.conversionLink ?? ""}
-                onChange={(e) => update("conversionLink")(e.target.value)}
-                disabled={!canEdit}
-                maxLength={300}
-                placeholder="https://leadac.ai/demo"
-              />
-            </Field>
-          </div>
-
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex items-center gap-3 pt-5">
             <Button type="submit" disabled={!canEdit || saving}>
               {saving ? (
                 <>
@@ -335,7 +360,7 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
   );
 }
 
-function Field({
+export function Field({
   label,
   help,
   children,

@@ -22,16 +22,44 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { runWorker, getWorker, resolveMemoryWrites } from "./registry";
+import {
+  runWorker,
+  getWorker,
+  resolveMemoryWrites,
+  resolveWorkerStart,
+  resolveWorkerFinalize,
+} from "./registry";
 import { checkWorkerQuota, QuotaExceededError } from "./quota";
 import { RetryableError } from "./errors";
+import { getAppBaseUrl } from "@/lib/email/from";
 import type {
   AgentWorkerContext,
+  ApifyFinalizePayload,
   EventKind,
   MemoryHit,
   MemorySpec,
   MemoryWrite,
 } from "./types";
+import type { AgentRun } from "@/generated/prisma/client";
+
+/**
+ * Returns true when the deployment has a public webhook ingress
+ * (Apify can call us back). False on local dev without a tunnel:
+ * `getAppBaseUrl()` falls back to `http://localhost:3000` and Apify
+ * can't reach that. The executor uses this to decide between the
+ * async-apify webhook path and the sync `run()` fallback.
+ */
+function hasPublicWebhookIngress(): boolean {
+  const url = getAppBaseUrl();
+  try {
+    const u = new URL(url);
+    if (u.hostname === "localhost" || u.hostname === "127.0.0.1") return false;
+    if (u.hostname.endsWith(".local")) return false;
+    return u.protocol === "https:" || u.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
 
 export async function executeAgentRun(runId: string): Promise<void> {
   const run = await prisma.agentRun.findUnique({ where: { id: runId } });
@@ -52,29 +80,12 @@ export async function executeAgentRun(runId: string): Promise<void> {
   }
 
   try {
-    const workspace = await prisma.workspace.findUniqueOrThrow({
-      where: { id: run.workspaceId },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        plan: true,
-        language: true,
-        tone: true,
-        offerName: true,
-        valueProposition: true,
-        offerHook: true,
-        objective: true,
-        senderName: true,
-        conversionLink: true,
-        socialProof: true,
-        branding: true,
-      },
-    });
+    const workerMeta = getWorker(run.workerKind);
+    const ctx = await hydrateContext(run);
 
     const quota = await checkWorkerQuota({
       workspaceId: run.workspaceId,
-      plan: workspace.plan,
+      plan: ctx.workspace.plan,
       kind: run.workerKind,
       leadId: run.leadId,
     });
@@ -82,56 +93,87 @@ export async function executeAgentRun(runId: string): Promise<void> {
       throw new QuotaExceededError(quota.used, quota.limit, run.workerKind);
     }
 
-    const lead = run.leadId
-      ? await prisma.lead.findUnique({
-          where: { id: run.leadId },
-          include: {
-            websiteAudit: true,
-            salesOpportunity: true,
-            reviewAnalysis: true,
+    // Async-apify mode: kick off the actor with a webhook callback and
+    // return without flipping the AgentRun to a terminal state. The
+    // `/api/webhooks/apify` handler imports the worker's `finalize()`
+    // when Apify reports back, builds the AgentWorkerOutput, persists
+    // memory writes, and transitions the row to SUCCEEDED.
+    //
+    // Why we do this instead of awaiting runSync: Vercel caps every
+    // function at 60s (see vercel.json) and `apify/google-search-scraper`
+    // regularly takes longer than that with cold starts. Awaiting
+    // would leave the run RUNNING when Vercel tears down the
+    // function, and the lazy 3-minute watchdog would mark it FAILED
+    // with no diagnostic. The async path sidesteps the deadline by
+    // not requiring our process to stay alive.
+    //
+    // Local dev / no public webhook ingress: fall back to sync mode.
+    // The worker still exports a sync `run()` adapter so dev machines
+    // without an ngrok tunnel keep working without code changes.
+    if (workerMeta?.mode === "async-apify" && hasPublicWebhookIngress()) {
+      const start = await resolveWorkerStart(run.workerKind);
+      if (!start) {
+        throw new Error(
+          `Worker ${run.workerKind} declared mode="async-apify" but module exports no start() handler`,
+        );
+      }
+      const startResult = await start(ctx);
+
+      if ("skipped" in startResult) {
+        // No actor was scheduled (no token, no queries). Resolve the
+        // run inline as SUCCEEDED with the skip reason recorded in
+        // outputJson; downstream chains will see it the same way they
+        // see any other zero-cost completion.
+        await prisma.agentRun.update({
+          where: { id: runId },
+          data: {
+            status: "SUCCEEDED",
+            finishedAt: new Date(),
+            outputJson: (startResult.output ?? {
+              skipped: true,
+              reason: startResult.reason,
+            }) as never,
+            costTokens: 0,
+            costUsdCents: 0,
           },
-        })
-      : null;
+        });
+        logger.info("agent_run.execute.async_skipped", {
+          runId,
+          kind: run.workerKind,
+          reason: startResult.reason,
+        });
+        if (run.plannerSessionId) await notifyOrchestrator(run.plannerSessionId);
+        return;
+      }
 
-    // Pre-fetch declarative memory reads. The worker definition in
-    // the registry declares kinds + scope; we resolve them here so
-    // each worker's `run()` handler stays pure.
-    const workerMeta = getWorker(run.workerKind);
-    const memory: MemoryHit[] = await fetchMemoryReads({
-      workspaceId: run.workspaceId,
-      leadId: run.leadId,
-      specs: workerMeta?.memoryReads,
-    });
-
-    // Sub-event emitter. Workers that want to trigger a downstream
-    // chain (e.g. the opener writer auto-triggering a video script)
-    // call `ctx.emit(event, payload)`. We lazy-import to avoid a
-    // circular dep through the planner.
-    const emit = async (
-      event: EventKind,
-      payload: Record<string, unknown> = {},
-    ): Promise<void> => {
-      const { emit: busEmit } = await import("@/lib/ai-core/events");
-      await busEmit(event, {
-        workspaceId: run.workspaceId,
-        leadId: run.leadId ?? null,
-        userId: run.userId ?? null,
-        ...payload,
+      // Persist the apifyRunId on inputsJson so the watchdog can
+      // distinguish "still waiting on Apify webhook" from "executor
+      // crashed", and the webhook handler can correlate by either
+      // userData.agentRunId (primary) or by AgentRun.id directly.
+      const existingInputs = (run.inputsJson ?? {}) as Record<string, unknown>;
+      await prisma.agentRun.update({
+        where: { id: runId },
+        data: {
+          status: "RUNNING",
+          startedAt: run.startedAt ?? new Date(),
+          inputsJson: {
+            ...existingInputs,
+            mode: "async-apify",
+            apifyRunId: startResult.apifyRunId,
+            apifyStartedAt: new Date().toISOString(),
+          } as never,
+          costUsdCents: startResult.costEstimateUsdCents ?? 0,
+        },
       });
-    };
-
-    const ctx: AgentWorkerContext = {
-      runId,
-      workspaceId: run.workspaceId,
-      workspacePlan: workspace.plan,
-      leadId: run.leadId,
-      userId: run.userId,
-      lead,
-      workspace,
-      memory,
-      plannerSessionId: run.plannerSessionId,
-      emit,
-    };
+      logger.info("agent_run.execute.async_kickoff", {
+        runId,
+        kind: run.workerKind,
+        apifyRunId: startResult.apifyRunId,
+      });
+      // No memoryWrites, no orchestrator advance, no SUCCEEDED flip.
+      // Webhook owns those transitions.
+      return;
+    }
 
     // Outer deadline: 3× the worker's estimated duration, capped at
     // 180 seconds. This catches the case where the inner Gemini timeout
@@ -349,4 +391,200 @@ async function persistMemoryWrites(
 async function notifyOrchestrator(sessionId: string): Promise<void> {
   const { enqueueAdvance } = await import("@/lib/ai-core/orchestrator");
   await enqueueAdvance(sessionId);
+}
+
+/**
+ * Hydrates an AgentWorkerContext from a persisted AgentRun row. Used
+ * by both `executeAgentRun` (sync entry point) and
+ * `finalizeApifyAgentRun` (webhook entry point) so the context shape
+ * the worker sees never differs between the two paths.
+ *
+ * The workspace + lead reads are eager because every worker reads
+ * `ctx.workspace` (for branding/plan/language) and most workers read
+ * `ctx.lead` (for primaryType/businessName). Memory pre-fetch follows
+ * the worker's `memoryReads` declaration; workers without one get an
+ * empty array.
+ */
+async function hydrateContext(run: AgentRun): Promise<AgentWorkerContext> {
+  const workspace = await prisma.workspace.findUniqueOrThrow({
+    where: { id: run.workspaceId },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      plan: true,
+      language: true,
+      tone: true,
+      offerName: true,
+      valueProposition: true,
+      offerHook: true,
+      objective: true,
+      senderName: true,
+      conversionLink: true,
+      socialProof: true,
+      branding: true,
+    },
+  });
+
+  const lead = run.leadId
+    ? await prisma.lead.findUnique({
+        where: { id: run.leadId },
+        include: {
+          websiteAudit: true,
+          salesOpportunity: true,
+          reviewAnalysis: true,
+        },
+      })
+    : null;
+
+  const workerMeta = getWorker(run.workerKind);
+  const memory: MemoryHit[] = await fetchMemoryReads({
+    workspaceId: run.workspaceId,
+    leadId: run.leadId,
+    specs: workerMeta?.memoryReads,
+  });
+
+  const emit = async (
+    event: EventKind,
+    payload: Record<string, unknown> = {},
+  ): Promise<void> => {
+    const { emit: busEmit } = await import("@/lib/ai-core/events");
+    await busEmit(event, {
+      workspaceId: run.workspaceId,
+      leadId: run.leadId ?? null,
+      userId: run.userId ?? null,
+      ...payload,
+    });
+  };
+
+  return {
+    runId: run.id,
+    workspaceId: run.workspaceId,
+    workspacePlan: workspace.plan,
+    leadId: run.leadId,
+    userId: run.userId,
+    lead,
+    workspace,
+    memory,
+    plannerSessionId: run.plannerSessionId,
+    emit,
+  };
+}
+
+/**
+ * Webhook entry point for async-apify workers. Called by the Apify
+ * webhook handler after the actor finishes; mirrors the
+ * post-`runWorker` block of `executeAgentRun`:
+ *   1. Resolve the worker's `finalize(ctx, payload)` callback.
+ *   2. Build AgentWorkerContext from the persisted AgentRun row.
+ *   3. Persist memoryWrites returned by the worker.
+ *   4. Flip the AgentRun to SUCCEEDED with the produced output.
+ *   5. Enqueue an orchestrator_advance if the run belongs to a session.
+ *
+ * Idempotency is the caller's responsibility: the webhook handler
+ * uses a conditional updateMany to ensure two concurrent webhook
+ * deliveries can't both run finalize. By the time we land here the
+ * row is still in PENDING/RUNNING.
+ *
+ * On Apify-reported failure (`payload.status !== "SUCCEEDED"`), we
+ * skip finalize entirely and mark the row FAILED with a clear
+ * diagnostic. We still record `costUsdCents` so quota math reflects
+ * actor runs that consumed compute even when the dataset came back
+ * empty.
+ */
+export async function finalizeApifyAgentRun(
+  runId: string,
+  payload: ApifyFinalizePayload,
+): Promise<void> {
+  const run = await prisma.agentRun.findUnique({ where: { id: runId } });
+  if (!run) {
+    logger.warn("agent_run.finalize.missing", { runId });
+    return;
+  }
+  if (run.status !== "PENDING" && run.status !== "RUNNING") {
+    logger.warn("agent_run.finalize.not_runnable", { runId, status: run.status });
+    return;
+  }
+
+  if (payload.status !== "SUCCEEDED") {
+    await prisma.agentRun.update({
+      where: { id: runId },
+      data: {
+        status: "FAILED",
+        finishedAt: new Date(),
+        costUsdCents: payload.costUsdCents,
+        errorMsg: `apify_actor_${payload.status.toLowerCase()}: actor returned ${payload.status} after ${payload.items.length} item(s)`,
+      },
+    });
+    if (run.plannerSessionId) {
+      await notifyOrchestrator(run.plannerSessionId);
+    }
+    return;
+  }
+
+  try {
+    const finalize = await resolveWorkerFinalize(run.workerKind);
+    if (!finalize) {
+      throw new Error(
+        `Worker ${run.workerKind} declared mode="async-apify" but module exports no finalize() handler`,
+      );
+    }
+
+    const ctx = await hydrateContext(run);
+    const result = await finalize(ctx, payload);
+
+    const memoryWritesFn = await resolveMemoryWrites(run.workerKind);
+    if (memoryWritesFn) {
+      const writes = await memoryWritesFn(result.output, ctx);
+      if (writes && writes.length > 0) {
+        await persistMemoryWrites(run.workspaceId, writes);
+      }
+    }
+
+    await prisma.agentRun.update({
+      where: { id: runId },
+      data: {
+        status: "SUCCEEDED",
+        finishedAt: new Date(),
+        outputJson: result.output as never,
+        artifactUrl: result.artifactUrl ?? null,
+        costTokens: result.costTokens ?? 0,
+        // Prefer the cost reported by Apify (payload.costUsdCents)
+        // over whatever the worker recomputed; the webhook payload is
+        // sourced directly from `usageTotalUsd` and is the source of
+        // truth for billing.
+        costUsdCents: payload.costUsdCents || result.costUsdCents || 0,
+      },
+    });
+
+    logger.info("agent_run.finalize.done", {
+      runId,
+      kind: run.workerKind,
+      apifyRunId: payload.apifyRunId,
+      cents: payload.costUsdCents,
+    });
+
+    if (run.plannerSessionId) {
+      await notifyOrchestrator(run.plannerSessionId);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error("agent_run.finalize.failed", {
+      runId,
+      kind: run.workerKind,
+      err: msg,
+    });
+    await prisma.agentRun.update({
+      where: { id: runId },
+      data: {
+        status: "FAILED",
+        finishedAt: new Date(),
+        costUsdCents: payload.costUsdCents,
+        errorMsg: msg.slice(0, 2000),
+      },
+    });
+    if (run.plannerSessionId) {
+      await notifyOrchestrator(run.plannerSessionId);
+    }
+  }
 }

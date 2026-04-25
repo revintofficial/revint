@@ -89,7 +89,17 @@ export const runSync = vi.fn(
 );
 
 export const runAsync = vi.fn(
-  async (): Promise<{ runId: string; statusUrl: string }> => {
+  async (
+    _actorId: string,
+    _input: unknown,
+    _opts: {
+      webhookUrl: string;
+      webhookSecret?: string;
+      agentRunId: string;
+      timeoutSec?: number;
+      memoryMbytes?: number;
+    },
+  ): Promise<{ runId: string; statusUrl: string }> => {
     return {
       runId: "apify_run_mock",
       statusUrl: "https://api.apify.com/v2/actor-runs/apify_run_mock",
@@ -97,15 +107,17 @@ export const runAsync = vi.fn(
   },
 );
 
-export const fetchRun = vi.fn(async (): Promise<ApifyRunResult<unknown>> => {
-  return {
-    runId: "apify_run_mock",
-    items: nextItems,
-    costUsdCents: nextCost,
-    durationMs: nextDuration,
-    status: nextStatus,
-  };
-});
+export const fetchRun = vi.fn(
+  async (_runId: string): Promise<ApifyRunResult<unknown>> => {
+    return {
+      runId: "apify_run_mock",
+      items: nextItems,
+      costUsdCents: nextCost,
+      durationMs: nextDuration,
+      status: nextStatus,
+    };
+  },
+);
 
 export function verifyWebhookSecret(headers: Headers): boolean {
   const expected = process.env.APIFY_WEBHOOK_SECRET;

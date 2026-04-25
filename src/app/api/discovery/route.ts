@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { discoverLeads, extractBoroughFromAddress } from "@/lib/google-places";
-import { LONDON_BOROUGHS, SEARCH_QUERIES } from "@/types";
+import { discoverLeads } from "@/lib/google-places";
+import { SEARCH_QUERIES } from "@/types";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import {
   assertCanCreateLeads,
@@ -44,16 +44,24 @@ export async function POST(request: Request) {
     // 3 queries sequentially inside the HTTP handler, with 1s sleeps and
     // per-place DB writes - guaranteed Vercel timeout at any real scale.
     if (runAll) {
+      // Fetch the workspace country to pass along to the bulk worker.
+      const ws = await prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { country: true },
+      });
+      const workspaceCountry = ws?.country ?? undefined;
+
       const queue = getDiscoveryQueue();
-      const jobs: { borough: string; query: string }[] = [];
-      for (const borough of LONDON_BOROUGHS.slice(0, 5)) {
+      const jobs: { city: string; query: string }[] = [];
+      const defaultCities = ["London", "Manchester", "Birmingham", "Leeds", "Glasgow"];
+      for (const city of defaultCities.slice(0, 5)) {
         for (const query of SEARCH_QUERIES.slice(0, 3)) {
           await queue.add(
             "discover",
-            { workspaceId, searchQuery: query, borough, radiusMeters },
+            { workspaceId, searchQuery: query, city, country: workspaceCountry, radiusMeters },
             { removeOnComplete: 100, removeOnFail: 50 },
           );
-          jobs.push({ borough: borough.name, query });
+          jobs.push({ city, query });
         }
       }
       return NextResponse.json(
@@ -75,23 +83,31 @@ export async function POST(request: Request) {
       );
     }
 
-    const matched = LONDON_BOROUGHS.find(
-      (b) => b.name.toLowerCase() === boroughName.toLowerCase()
-    );
-    const borough: { name: string; lat: number; lng: number } = matched
-      ? { name: matched.name, lat: matched.lat, lng: matched.lng }
-      : { name: boroughName, lat: 0, lng: 0 };
+    // Resolve workspace country for the query context when not passed explicitly.
+    const countryFromBody: string | undefined = body.country;
+    let country = countryFromBody;
+    if (!country) {
+      const ws = await prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { country: true },
+      });
+      country = ws?.country ?? undefined;
+    }
+
+    const location = { name: boroughName, country };
 
     const t0 = Date.now();
     logger.info("api.discovery.places_start", {
       workspaceId,
       searchQuery,
-      boroughName: borough.name,
+      location: boroughName,
+      country,
     });
-    const places = await discoverLeads(searchQuery, borough, radiusMeters);
+    const places = await discoverLeads(searchQuery, location, radiusMeters);
     logger.info("api.discovery.places_done", {
       workspaceId,
       count: places.length,
+      location: boroughName,
       ms: Date.now() - t0,
     });
 
@@ -128,7 +144,7 @@ export async function POST(request: Request) {
           placeId: place.id,
           businessName: place.displayName?.text || "Unknown",
           formattedAddress: address,
-          borough: extractBoroughFromAddress(address) || borough.name,
+          borough: boroughName,
           phone: place.nationalPhoneNumber || null,
           websiteUrl,
           hasWebsite: !!websiteUrl,
@@ -137,9 +153,9 @@ export async function POST(request: Request) {
           reviewCount: place.userRatingCount || null,
           businessStatus: place.businessStatus || null,
           primaryType: place.primaryType || null,
-          sourceQuery: `${searchQuery} in ${borough.name}`,
-          sourceLat: borough.lat,
-          sourceLng: borough.lng,
+          sourceQuery: `${searchQuery} in ${boroughName}`,
+          sourceLat: undefined,
+          sourceLng: undefined,
           crawlStatus: websiteUrl ? "PENDING" : "NO_WEBSITE",
           analyzeStatus: "PENDING",
         },

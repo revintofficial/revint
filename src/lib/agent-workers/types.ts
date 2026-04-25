@@ -199,6 +199,74 @@ export interface AgentWorkerOutput {
   costUsdCents?: number;
 }
 
+/**
+ * Execution mode for a worker.
+ *
+ *  - `"sync"` (default): the worker exports a single `run(ctx)` that
+ *    is awaited inline by the executor. Suitable for Gemini calls,
+ *    in-process scrapers, and short Apify actors that finish under
+ *    the serverless function deadline.
+ *  - `"async-apify"`: the worker exports `start(ctx)` + `finalize(ctx,
+ *    apifyResult)`. `start` kicks off an Apify actor with a webhook
+ *    pointing at `/api/webhooks/apify` and returns immediately. The
+ *    webhook handler later resolves the worker module, calls
+ *    `finalize`, and persists the AgentWorkerOutput. This is the
+ *    only mode that survives Vercel's 60s function deadline for
+ *    long-running Apify actors (SERP, deep social, gmaps).
+ *
+ *    For environments where `getAppBaseUrl()` returns a localhost URL
+ *    (no public webhook ingress), the executor falls back to sync
+ *    mode using the worker's optional `run(ctx)` adapter, so dev
+ *    machines without a tunnel still see results.
+ */
+export type AgentWorkerMode = "sync" | "async-apify";
+
+/**
+ * Dataset items + cost surfaced by an Apify actor run. Same shape
+ * as `ApifyRunResult` but trimmed to what `finalize` callbacks need.
+ */
+export interface ApifyFinalizePayload {
+  apifyRunId: string;
+  items: unknown[];
+  costUsdCents: number;
+  status: "SUCCEEDED" | "FAILED" | "TIMED_OUT" | "ABORTED";
+}
+
+/**
+ * Outcome of a worker's `start(ctx)` kickoff. Either we successfully
+ * scheduled an Apify actor (`apifyRunId` set) or we decided not to
+ * run at all (`skipped: true` -- e.g. APIFY_TOKEN missing, lead has
+ * no queries to run). The executor terminates the AgentRun with
+ * SUCCEEDED + the skip reason instead of waiting for a webhook
+ * callback that will never arrive.
+ */
+export type AgentWorkerStartResult =
+  | {
+      apifyRunId: string;
+      /**
+       * Optional cost estimate in USD cents recorded immediately on
+       * the AgentRun. The webhook handler overwrites this with the
+       * actual usage when Apify reports back, but recording an
+       * estimate up-front means quota math works even if the webhook
+       * is delayed or never arrives.
+       */
+      costEstimateUsdCents?: number;
+    }
+  | {
+      skipped: true;
+      reason: string;
+      output?: unknown;
+    };
+
+export type AgentWorkerStart = (
+  ctx: AgentWorkerContext,
+) => Promise<AgentWorkerStartResult>;
+
+export type AgentWorkerFinalize = (
+  ctx: AgentWorkerContext,
+  payload: ApifyFinalizePayload,
+) => Promise<AgentWorkerOutput>;
+
 export interface AgentWorker {
   kind: AgentWorkerKind;
   group: AgentWorkerGroup;
@@ -207,6 +275,14 @@ export interface AgentWorker {
   description: string;
   descriptionTr: string;
   minPlan: Plan;
+  /**
+   * Execution mode. Defaults to `"sync"` when omitted. Async-apify
+   * workers MUST export `start` + `finalize`; sync workers MUST
+   * export `run`. Workers can export both: that lets the executor
+   * fall back to sync when no public webhook URL is available
+   * (typical local dev without a tunnel).
+   */
+  mode?: AgentWorkerMode;
   /**
    * When true, invocations write to `AgentRun` and go through the
    * agent-runs queue. Phase 1 only has 4 workers true here (the new

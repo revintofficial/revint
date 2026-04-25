@@ -1,10 +1,14 @@
 /**
  * POST /api/webhooks/apify
  *
- * Callback endpoint Apify POSTs to when an actor run finishes. Only
- * used by workers that call `apify.runAsync()` (long-running Maps /
- * site-crawl jobs). Sync-run workers finish inside the worker
- * process and have no webhook path.
+ * Callback endpoint Apify POSTs to when an actor run finishes. Used
+ * by every async-apify worker (declared via `mode: "async-apify"` in
+ * `src/lib/agent-workers/registry.ts`). The webhook handler is the
+ * counterpart to the worker's `start(ctx)` call: where `start`
+ * schedules the actor + returns immediately, this endpoint receives
+ * the actor's dataset and drives the worker's `finalize(ctx, payload)`
+ * to produce the AgentWorkerOutput, persist memoryWrites, and flip
+ * the AgentRun row to SUCCEEDED.
  *
  * Payload (partial):
  *   {
@@ -17,22 +21,29 @@
  *   1. Verify webhook secret header.
  *   2. Extract agentRunId from `userData`.
  *   3. Fetch the run + dataset via `fetchRun(runId)`.
- *   4. Persist `costUsdCents` and output to AgentRun row.
- *   5. Enqueue an orchestrator_advance if the run belongs to a session.
+ *   4. Dispatch to `finalizeApifyAgentRun(agentRunId, payload)` which
+ *      hydrates ctx, runs the worker's finalize, and persists output
+ *      + memory + status.
+ *   5. The orchestrator advance is enqueued inside finalizeApifyAgentRun;
+ *      we don't duplicate it here.
  *
- * We intentionally do NOT call the worker's `memoryWrites` callback
- * here because async Apify workers need to hydrate the ctx themselves;
- * follow-up work should either (a) re-use the executor's post-run
- * pipeline by having the worker run a sync step on webhook receipt,
- * or (b) dispatch a small per-kind handler. For the current set of
- * async-capable workers none exists yet, so this webhook is wired up
- * but inactive; sync mode handles all current Apify workers.
+ * Idempotency: Apify retries webhooks; finalizeApifyAgentRun guards
+ * against re-running a terminal AgentRun, and concurrent deliveries
+ * race on the AgentRun status check. Returning `{ deduped: true }`
+ * for the loser is safe and stops Apify's retry loop.
  */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { fetchRun, verifyWebhookSecret } from "@/lib/apify";
-import { enqueueAdvance } from "@/lib/ai-core/orchestrator";
+import { finalizeApifyAgentRun } from "@/lib/agent-workers/execute";
+
+export const runtime = "nodejs";
+// Apify webhook delivery is fast; we only need enough headroom for
+// the dataset fetch + finalize. 60s matches the rest of the API
+// surface and keeps Apify's webhook retry policy (it gives up after
+// a few minutes of HTTP 5xx) from running into our own deadline.
+export const maxDuration = 60;
 
 export async function POST(req: Request): Promise<Response> {
   if (!verifyWebhookSecret(req.headers)) {
@@ -58,10 +69,16 @@ export async function POST(req: Request): Promise<Response> {
     logger.warn("apify.webhook.no_agent_run_id", { apifyRunId, eventType });
     return NextResponse.json({ error: "userData.agentRunId missing" }, { status: 400 });
   }
+  if (!apifyRunId) {
+    return NextResponse.json(
+      { error: "resource.id missing; cannot correlate run" },
+      { status: 400 },
+    );
+  }
 
   const run = await prisma.agentRun.findUnique({
     where: { id: agentRunId },
-    select: { id: true, status: true, plannerSessionId: true },
+    select: { id: true, status: true, plannerSessionId: true, workerKind: true },
   });
   if (!run) {
     logger.warn("apify.webhook.run_not_found", { agentRunId });
@@ -88,62 +105,40 @@ export async function POST(req: Request): Promise<Response> {
   // FAILED (that would cascade up the DAG and cancel downstream work).
   // Leave the run RUNNING so a later retry of the same webhook -- or a
   // manual cron reconciliation -- can resolve it.
-  let costUsdCents = 0;
-  let status: "SUCCEEDED" | "FAILED" | null = null;
-  let outputJson: unknown = null;
-
-  if (apifyRunId) {
-    try {
-      const apifyResult = await fetchRun(apifyRunId);
-      costUsdCents = apifyResult.costUsdCents;
-      outputJson = { apifyRunId, items: apifyResult.items.slice(0, 500) };
-      status = apifyResult.status === "SUCCEEDED" ? "SUCCEEDED" : "FAILED";
-    } catch (err) {
-      logger.warn("apify.webhook.fetch_run_failed", {
-        apifyRunId,
-        err: err instanceof Error ? err.message : String(err),
-      });
-      // Leave status unresolved; 202 so Apify retries per its webhook
-      // retry policy.
-      return NextResponse.json(
-        { ok: false, retryable: true, reason: "apify_fetch_failed" },
-        { status: 202 },
-      );
-    }
-  } else {
-    // No apifyRunId in payload -- we cannot correlate. Don't touch the
-    // AgentRun; return 400 so the caller knows the payload is bad.
+  let apifyResult: Awaited<ReturnType<typeof fetchRun>>;
+  try {
+    apifyResult = await fetchRun(apifyRunId);
+  } catch (err) {
+    logger.warn("apify.webhook.fetch_run_failed", {
+      apifyRunId,
+      err: err instanceof Error ? err.message : String(err),
+    });
     return NextResponse.json(
-      { error: "resource.id missing; cannot correlate run" },
-      { status: 400 },
+      { ok: false, retryable: true, reason: "apify_fetch_failed" },
+      { status: 202 },
     );
   }
 
-  // Conditional update: only transition from non-terminal state so
-  // two concurrent webhook deliveries for the same run race at the DB
-  // and the second one is a no-op.
-  const updated = await prisma.agentRun.updateMany({
-    where: {
-      id: agentRunId,
-      status: { in: ["PENDING", "RUNNING"] },
-    },
-    data: {
-      status,
-      finishedAt: new Date(),
-      costUsdCents,
-      outputJson: outputJson as never,
-    },
+  // Dispatch into the AI Core executor. finalizeApifyAgentRun:
+  //   - Resolves the worker module, calls its `finalize(ctx, payload)`
+  //   - Persists memoryWrites
+  //   - Sets AgentRun.status = SUCCEEDED with the produced output
+  //   - Enqueues an orchestrator_advance when the run is part of a
+  //     planner session
+  // It also handles the FAILED case (apifyResult.status !== SUCCEEDED)
+  // by flipping the row to FAILED with a clear errorMsg.
+  await finalizeApifyAgentRun(agentRunId, {
+    apifyRunId,
+    items: apifyResult.items,
+    costUsdCents: apifyResult.costUsdCents,
+    status: apifyResult.status,
   });
 
-  if (updated.count === 0) {
-    logger.info("apify.webhook.race_lost", { agentRunId, apifyRunId });
-    return NextResponse.json({ ok: true, deduped: true });
-  }
-
-  if (run.plannerSessionId) {
-    await enqueueAdvance(run.plannerSessionId);
-  }
-
-  logger.info("apify.webhook.done", { agentRunId, apifyRunId, status, costUsdCents });
+  logger.info("apify.webhook.done", {
+    agentRunId,
+    apifyRunId,
+    status: apifyResult.status,
+    costUsdCents: apifyResult.costUsdCents,
+  });
   return NextResponse.json({ ok: true });
 }

@@ -239,6 +239,14 @@ model Workspace {
   conversionLink   String? @map("conversion_link")
   niche            WorkspaceNiche @default(WEB_AGENCY) @map("niche")
 
+  // Workspace country (ISO-3166-1 alpha-2, e.g. "GB", "US"). Used to scope
+  // Discovery queries globally instead of defaulting to London boroughs.
+  country String? @map("country")
+
+  // Set when the owner completes the onboarding wizard. Null means the owner
+  // is still being redirected into the flow on each dashboard visit.
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -252,6 +260,7 @@ model Workspace {
   websiteMockups  WebsiteMockup[]
   semanticMemory  SemanticMemory[]
   plannerSessions PlannerSession[]
+  servicePackages ServicePackage[]
 
   @@map("workspaces")
 }
@@ -721,4 +730,24 @@ model PlannerSession {
   @@index([workspaceId, status])
   @@index([leadId])
   @@map("planner_sessions")
+}
+
+// Editable service package tiers shown in Campaigns → Service Packages and
+// seeded during onboarding. Each workspace configures its own packages.
+// Features is a Postgres text[] column rendered as a checklist in the UI.
+model ServicePackage {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  name        String
+  priceLabel  String   @map("price_label")
+  features    String[] @map("features")
+  isPopular   Boolean  @default(false) @map("is_popular")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, sortOrder])
+  @@map("service_packages")
 }

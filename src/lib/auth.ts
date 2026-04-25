@@ -35,6 +35,8 @@ export interface AuthedSession {
     name: string;
     slug: string;
     plan: "FREE" | "PRO" | "PRO_TEAM" | "AGENCY";
+    country: string | null;
+    onboardingCompletedAt: Date | null;
   };
   role: "OWNER" | "ADMIN" | "MEMBER";
 }
@@ -145,6 +147,8 @@ export async function requireUser(): Promise<AuthedSession> {
       name: membership.workspace.name,
       slug: membership.workspace.slug,
       plan: membership.workspace.plan,
+      country: membership.workspace.country,
+      onboardingCompletedAt: membership.workspace.onboardingCompletedAt,
     },
     role: membership.role,
   };

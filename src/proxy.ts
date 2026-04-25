@@ -39,6 +39,11 @@ export async function proxy(request: NextRequest) {
     !isRedirect &&
     !LOCALE_SKIP_PREFIXES.some((p) => pathname.startsWith(p));
 
+  // Always forward the request pathname so server-component layouts can
+  // read it via headers(). Used by the onboarding gate in app/app/layout.tsx
+  // to distinguish /app/onboarding from other /app/* routes without a loop.
+  res.headers.set("x-pathname", request.nextUrl.pathname);
+
   if (shouldNegotiate) {
     const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value;
     const resolved =

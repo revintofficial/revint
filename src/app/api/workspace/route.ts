@@ -4,11 +4,29 @@ import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { parseBranding, planAllowsWhiteLabel } from "@/lib/branding";
 import { logger } from "@/lib/logger";
 
+export async function GET() {
+  try {
+    const { workspaceId } = await requireUser();
+    const ws = await prisma.workspace.findUniqueOrThrow({
+      where: { id: workspaceId },
+      select: { id: true, name: true, slug: true, plan: true, country: true, onboardingCompletedAt: true },
+    });
+    return NextResponse.json(ws);
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    logger.error("api.workspace.get_error", { err: error });
+    return NextResponse.json({ error: "Failed to fetch workspace" }, { status: 500 });
+  }
+}
+
 interface PatchBody {
   name?: string;
   slug?: string;
   branding?: unknown;
   publicProfilesEnabled?: boolean;
+  country?: string | null;
 }
 
 export async function PATCH(request: Request) {
@@ -55,6 +73,18 @@ export async function PATCH(request: Request) {
 
     if (body.publicProfilesEnabled !== undefined) {
       updates.publicProfilesEnabled = !!body.publicProfilesEnabled;
+    }
+
+    if (body.country !== undefined) {
+      if (body.country === null || body.country === "") {
+        updates.country = null;
+      } else if (typeof body.country === "string") {
+        const clean = body.country.trim().toUpperCase().slice(0, 2);
+        if (!/^[A-Z]{2}$/.test(clean)) {
+          return NextResponse.json({ error: "country must be a valid ISO-2 code" }, { status: 400 });
+        }
+        updates.country = clean;
+      }
     }
 
     if (Object.keys(updates).length === 0) {

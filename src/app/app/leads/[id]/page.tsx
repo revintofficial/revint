@@ -48,6 +48,7 @@ import {
   Mail,
   MessageCircle,
   X,
+  Wrench,
 } from "lucide-react";
 
 interface ContentCheckSignal {
@@ -770,6 +771,23 @@ function HeroBand({
                 </span>
               ))}
             </div>
+
+            {lead.websiteAudit?.servicesDetected && lead.websiteAudit.servicesDetected.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.08em] text-white/40 mr-1">
+                  <Wrench className="w-3 h-3" />
+                  Services
+                </span>
+                {lead.websiteAudit.servicesDetected.map((s) => (
+                  <span
+                    key={s}
+                    className="inline-flex items-center rounded-full bg-[#0A84FF]/12 border border-[#0A84FF]/25 px-2.5 py-0.5 text-[12px] text-[#9EC9FF] capitalize"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-5 md:flex-col md:items-end md:gap-2 shrink-0">

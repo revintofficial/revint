@@ -157,18 +157,25 @@ export async function getPlaceReviews(placeId: string): Promise<PlaceReview[]> {
 
 export async function discoverLeads(
   searchQuery: string,
-  borough: { name: string; lat: number; lng: number },
+  location: { name: string; country?: string; lat?: number; lng?: number },
   radiusMeters = 5000
 ): Promise<PlaceResult[]> {
   const allPlaces: PlaceResult[] = [];
+  const countryPart = location.country ? `, ${location.country}` : "";
   const query: DiscoveryQuery = {
-    textQuery: `${searchQuery} in ${borough.name} London`,
-    locationBias: {
-      circle: {
-        center: { latitude: borough.lat, longitude: borough.lng },
-        radius: radiusMeters,
-      },
-    },
+    textQuery: `${searchQuery} in ${location.name}${countryPart}`,
+    // Only attach a lat/lng bias when both coordinates are truthy — passing
+    // 0,0 would bias results towards the Gulf of Guinea.
+    ...(location.lat && location.lng
+      ? {
+          locationBias: {
+            circle: {
+              center: { latitude: location.lat, longitude: location.lng },
+              radius: radiusMeters,
+            },
+          },
+        }
+      : {}),
   };
 
   let pageToken: string | undefined;

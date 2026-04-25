@@ -128,30 +128,57 @@ export async function POST(
     });
 
     // Auto-cancel any stuck runs for this (lead, worker) combo before
-    // creating a new one. A run is "stuck" if it sits PENDING or
-    // RUNNING longer than 180 seconds - aligned with the 180s outer
-    // deadline in executeAgentRun so legitimate inflight jobs aren't
-    // touched prematurely. The lazy watchdog in GET /api/agent-runs/[id]
-    // and GET /api/leads/[id]/workers handles cleanup outside the
-    // retry path; this keeps the quota counter honest on retry.
-    const staleBefore = new Date(Date.now() - 180 * 1000);
-    const cancelled = await prisma.agentRun.updateMany({
-      where: {
-        workspaceId: session.workspaceId,
-        leadId,
-        workerKind: kind,
-        status: { in: ["PENDING", "RUNNING"] },
-        createdAt: { lt: staleBefore },
-      },
-      data: {
-        status: "CANCELLED",
-        finishedAt: new Date(),
-        errorMsg: "Cancelled: run exceeded 3 minute deadline and was auto-reset on retry.",
-      },
-    });
-    if (cancelled.count > 0) {
+    // creating a new one. "Stuck" = status PENDING/RUNNING past the
+    // mode-appropriate deadline:
+    //   - sync workers: 180s (matches executor's outer deadline)
+    //   - async-apify workers: 600s (matches the lazy watchdog in
+    //     GET /api/leads/[id]/workers; Apify cold starts + webhook
+    //     round-trip occasionally need ~6 min)
+    // Without the async carve-out, hitting "Run again" after only a
+    // few minutes would auto-cancel a still-in-flight Apify webhook
+    // and the user would never see the original results land.
+    const now = Date.now();
+    const syncCancelCutoff = new Date(now - 180 * 1000);
+    const asyncCancelCutoff = new Date(now - 600 * 1000);
+
+    const [syncCancelled, asyncCancelled] = await Promise.all([
+      prisma.agentRun.updateMany({
+        where: {
+          workspaceId: session.workspaceId,
+          leadId,
+          workerKind: kind,
+          status: { in: ["PENDING", "RUNNING"] },
+          createdAt: { lt: syncCancelCutoff },
+          NOT: { inputsJson: { path: ["mode"], equals: "async-apify" } },
+        },
+        data: {
+          status: "CANCELLED",
+          finishedAt: new Date(),
+          errorMsg: "Cancelled: run exceeded 3 minute deadline and was auto-reset on retry.",
+        },
+      }),
+      prisma.agentRun.updateMany({
+        where: {
+          workspaceId: session.workspaceId,
+          leadId,
+          workerKind: kind,
+          status: { in: ["PENDING", "RUNNING"] },
+          createdAt: { lt: asyncCancelCutoff },
+          inputsJson: { path: ["mode"], equals: "async-apify" },
+        },
+        data: {
+          status: "CANCELLED",
+          finishedAt: new Date(),
+          errorMsg:
+            "Cancelled: async Apify run exceeded 10 minute deadline and was auto-reset on retry.",
+        },
+      }),
+    ]);
+    const cancelledTotal = syncCancelled.count + asyncCancelled.count;
+    if (cancelledTotal > 0) {
       logger.info("api.agent_run.stale_cancelled", {
-        count: cancelled.count,
+        sync: syncCancelled.count,
+        async: asyncCancelled.count,
         kind,
         leadId,
       });
