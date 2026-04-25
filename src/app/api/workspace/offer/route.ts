@@ -31,10 +31,13 @@ export const OFFER_FIELDS = [
   "language",
   "senderName",
   "conversionLink",
+  "niche",
 ] as const;
 
 type OfferField = (typeof OFFER_FIELDS)[number];
 type OfferPayload = Partial<Record<OfferField, string | null>>;
+
+const VALID_NICHES = ["WEB_AGENCY", "RESTAURANT_TECH", "DENTAL", "REAL_ESTATE"] as const;
 
 const STRING_LIMITS: Record<OfferField, number> = {
   offerName: 80,
@@ -47,6 +50,7 @@ const STRING_LIMITS: Record<OfferField, number> = {
   language: 8,
   senderName: 80,
   conversionLink: 300,
+  niche: 30,
 };
 
 export async function GET() {
@@ -65,6 +69,7 @@ export async function GET() {
         language: true,
         senderName: true,
         conversionLink: true,
+        niche: true,
       },
     });
     return NextResponse.json(ws);
@@ -135,6 +140,12 @@ export async function PATCH(request: Request) {
           );
         }
       }
+      if (field === "niche" && !VALID_NICHES.includes(trimmed as typeof VALID_NICHES[number])) {
+        return NextResponse.json(
+          { error: `niche must be one of: ${VALID_NICHES.join(", ")}` },
+          { status: 400 },
+        );
+      }
       updates[field] = trimmed;
     }
 
@@ -156,6 +167,7 @@ export async function PATCH(request: Request) {
         language: true,
         senderName: true,
         conversionLink: true,
+        niche: true,
       },
     });
     return NextResponse.json(updated);

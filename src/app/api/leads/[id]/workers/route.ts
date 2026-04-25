@@ -40,6 +40,30 @@ export async function GET(
       select: { cycleResetAt: true, plan: true },
     });
 
+    // Lazy watchdog: mark any PENDING/RUNNING runs older than 3 minutes
+    // as FAILED before building the response. This ensures the workers
+    // panel always shows accurate state without a separate cron job.
+    const staleWatchdogBefore = new Date(Date.now() - 3 * 60 * 1000);
+    const watchdogCount = await prisma.agentRun.updateMany({
+      where: {
+        workspaceId: session.workspaceId,
+        leadId,
+        status: { in: ["PENDING", "RUNNING"] },
+        createdAt: { lt: staleWatchdogBefore },
+      },
+      data: {
+        status: "FAILED",
+        finishedAt: new Date(),
+        errorMsg: "watchdog: run exceeded 3-minute deadline without completing",
+      },
+    });
+    if (watchdogCount.count > 0) {
+      logger.warn("api.agent_run.watchdog_batch_failed", {
+        count: watchdogCount.count,
+        leadId,
+      });
+    }
+
     // Recent runs for this lead (capped so one hot lead can't balloon
     // the response). 50 is more than enough to surface "latest run per
     // worker kind" across 19 worker kinds.

@@ -24,6 +24,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { runWorker, getWorker, resolveMemoryWrites } from "./registry";
 import { checkWorkerQuota, QuotaExceededError } from "./quota";
+import { RetryableError } from "./errors";
 import type {
   AgentWorkerContext,
   EventKind,
@@ -132,7 +133,28 @@ export async function executeAgentRun(runId: string): Promise<void> {
       emit,
     };
 
-    const result = await runWorker(run.workerKind, ctx);
+    // Outer deadline: 3× the worker's estimated duration, capped at
+    // 180 seconds. This catches the case where the inner Gemini timeout
+    // fires but the AbortController race resolves with an error that
+    // takes longer to propagate, or when an Apify actor hangs past its
+    // own declared timeoutSec. Any worker that breaches this deadline
+    // throws RetryableError so BullMQ re-queues rather than dropping.
+    const workerDeadlineMs = Math.min(
+      (workerMeta?.estimatedDurationMs ?? 60_000) * 3,
+      180_000,
+    );
+    const deadlinePromise = new Promise<never>((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new RetryableError(
+              `worker_deadline_exceeded: ${run.workerKind} exceeded ${workerDeadlineMs}ms outer deadline`,
+            ),
+          ),
+        workerDeadlineMs,
+      ),
+    );
+    const result = await Promise.race([runWorker(run.workerKind, ctx), deadlinePromise]);
 
     // Post-run memory writes. The worker's impl module may export a
     // `memoryWrites` callback; we resolve it lazily (same cache as

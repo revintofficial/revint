@@ -15,6 +15,7 @@
  *   6. Return { output, artifactUrl }
  */
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
 import { prisma } from "@/lib/prisma";
 import {
   buildWebsiteMockupPrompt,
@@ -90,7 +91,10 @@ export const run: AgentWorkerRun = async (ctx) => {
     },
   });
 
-  const result = await model.generateContent(prompt);
+  const result = await generateWithTimeout(model, prompt, {
+    timeoutMs: WORKER_TIMEOUTS.WEBSITE_MOCKUP_GENERATOR,
+    label: "website_mockup",
+  });
   const text = result.response.text();
   const sections = parseSections(text);
 

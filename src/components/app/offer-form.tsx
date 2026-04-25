@@ -23,7 +23,23 @@ interface OfferContext {
   language: string | null;
   senderName: string | null;
   conversionLink: string | null;
+  niche: string | null;
 }
+
+const NICHE_OPTIONS = [
+  { value: "WEB_AGENCY", label: "Web / Marketing Agency (default)" },
+  { value: "RESTAURANT_TECH", label: "Restaurant Tech (QR menu / digital ordering)" },
+  { value: "DENTAL", label: "Dental (coming soon)" },
+  { value: "REAL_ESTATE", label: "Real Estate (coming soon)" },
+];
+
+const RESTAURANT_TECH_DEFAULTS = {
+  offerName: "QR Menu & Digital Ordering",
+  valueProposition:
+    "We replace paper menus with a QR code that lets guests browse, order, and pay from their phone — driving higher spend per table and faster table turns.",
+  offerHook:
+    "Checked your site and noticed you don't have a QR menu yet — put together a quick demo for you.",
+};
 
 const TONE_OPTIONS = ["friendly", "professional", "direct", "casual", "warm"];
 const LENGTH_OPTIONS = ["very short", "short", "medium", "long"];
@@ -54,6 +70,7 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
     language: "en",
     senderName: "",
     conversionLink: "",
+    niche: "WEB_AGENCY",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,6 +90,7 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
           language: d.language ?? "en",
           senderName: d.senderName ?? "",
           conversionLink: d.conversionLink ?? "",
+          niche: d.niche ?? "WEB_AGENCY",
         }),
       )
       .catch(() => toast.error("Couldn't load offer context"))
@@ -80,6 +98,20 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
   }, []);
 
   const update = (k: keyof OfferContext) => (v: string) => setData((d) => ({ ...d, [k]: v }));
+
+  const handleNicheChange = (newNiche: string) => {
+    setData((d) => {
+      const next = { ...d, niche: newNiche };
+      // Pre-fill offer fields with FineDine defaults when switching to RESTAURANT_TECH
+      // and the current fields are still empty / default.
+      if (newNiche === "RESTAURANT_TECH") {
+        if (!d.offerName) next.offerName = RESTAURANT_TECH_DEFAULTS.offerName;
+        if (!d.valueProposition) next.valueProposition = RESTAURANT_TECH_DEFAULTS.valueProposition;
+        if (!d.offerHook) next.offerHook = RESTAURANT_TECH_DEFAULTS.offerHook;
+      }
+      return next;
+    });
+  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +158,22 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
       </CardHeader>
       <CardContent>
         <form onSubmit={save} className="space-y-5 max-w-2xl">
+          <Field
+            label="Niche"
+            help="Select what your workspace sells. The AI analysis, reason codes, and openers all adapt to your niche."
+          >
+            <select
+              value={data.niche ?? "WEB_AGENCY"}
+              onChange={(e) => handleNicheChange(e.target.value)}
+              disabled={!canEdit}
+              className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
+            >
+              {NICHE_OPTIONS.map((n) => (
+                <option key={n.value} value={n.value}>{n.label}</option>
+              ))}
+            </select>
+          </Field>
+
           <Field
             label="Offer name"
             help="e.g. Local Business Web Package, Klaviyo Email Setup, Phone Repair Site Setup."

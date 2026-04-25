@@ -16,6 +16,7 @@
  * picks it up without any further wiring.
  */
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { query as memoryQuery } from "@/lib/ai-core/memory";
@@ -111,7 +112,10 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     generationConfig: { maxOutputTokens: 512, temperature: 0.7 },
   });
 
-  const result = await model.generateContent(prompt);
+  const result = await generateWithTimeout(model, prompt, {
+    timeoutMs: WORKER_TIMEOUTS.OPENER_WRITER,
+    label: "opener_writer",
+  });
   const message = result.response.text().trim();
 
   // Before overwriting SalesOpportunity.personalizedFirstMessage, check

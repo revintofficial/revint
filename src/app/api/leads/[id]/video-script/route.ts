@@ -8,6 +8,7 @@
 
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { VIDEO_SCRIPT_PROMPT } from "@/lib/prompts/video-script-prompt";
@@ -97,7 +98,10 @@ export async function POST(
       generationConfig: { maxOutputTokens: 512, temperature: 0.5 },
     });
 
-    const result = await model.generateContent(filled);
+    const result = await generateWithTimeout(model, filled, {
+      timeoutMs: WORKER_TIMEOUTS.VIDEO_SCRIPT_WRITER,
+      label: "video_script",
+    });
     const script = result.response.text().trim();
 
     await recordAiUsed(session.workspaceId, 1);

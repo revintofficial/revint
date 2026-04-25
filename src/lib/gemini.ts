@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
 import type { GeminiAnalysis, WebsiteFeatures, AuditChecklistResult } from "@/types";
 import { WEBSITE_PLAN_SYSTEM_CONTEXT, WEBSITE_PLAN_TEMPLATE } from "./prompts/website-plan-prompt";
 import { REVIEW_ANALYSIS_PROMPT_TEMPLATE, type ReviewAnalysisOutput } from "./prompts/review-analysis-prompt";
@@ -180,8 +181,49 @@ export interface WebsitePlanInput {
   offer?: WorkspaceOfferContext | null;
 }
 
-const ANALYSIS_PROMPT = `You are a lead analyst for a web design agency that sells websites to phone repair shops.
-Analyze the following phone repair business and produce a JSON assessment.
+/** Builds a niche-aware analysis prompt. Defaults to WEB_AGENCY behaviour. */
+function buildAnalysisPrompt(
+  niche: string | null,
+  offerName: string | null,
+  valueProposition: string | null,
+): string {
+  const isRestaurant = niche === "RESTAURANT_TECH";
+
+  const industryContext = isRestaurant
+    ? `You are a lead analyst for a restaurant-tech company that sells QR menu and digital ordering solutions to restaurants, cafes, and hotels. Your product helps venues replace paper menus with QR-code digital menus, enable online reservations, and integrate delivery platforms — turning passive menus into revenue tools.`
+    : `You are a lead analyst for a web design agency that sells websites and digital marketing to local service businesses.`;
+
+  const offerContext =
+    offerName || valueProposition
+      ? `\nYour offer: ${[offerName, valueProposition].filter(Boolean).join(" — ")}`
+      : "";
+
+  const reasonCodesGuidance = isRestaurant
+    ? `- reason_codes: string[] — use restaurant-specific codes:
+  "no_qr_menu" (no QR / digital menu detected),
+  "pdf_menu_only" (PDF menu found but no interactive QR menu),
+  "no_reservation" (no online reservation system),
+  "no_delivery_integration" (no delivery platform embed),
+  "chain_detected" (part of a chain — may already have central tech),
+  "hotel_property" (hotel restaurant — higher deal value),
+  "high_review_volume" (many reviews = high footfall = strong ROI case),
+  "no_website" (no site at all),
+  "poor_mobile" (poor mobile UX),
+  "no_whatsapp" (no WhatsApp contact)`
+    : `- reason_codes: string[] — e.g. "no_website", "poor_mobile", "no_booking", "no_whatsapp", "weak_seo", "no_https", "slow_site", "no_ecommerce", "high_rating_weak_site"`;
+
+  const offerLevels = isRestaurant
+    ? `- suggested_offer: "starter" | "growth" | "sales"
+  (starter = basic QR menu setup,
+   growth = QR menu + online reservation + delivery integration,
+   sales = growth + loyalty program + table management + analytics dashboard)`
+    : `- suggested_offer: "starter" | "growth" | "sales"
+  (starter = basic mobile site,
+   growth = site + booking + whatsapp + local SEO,
+   sales = growth + inventory showcase + review embedding + lead capture)`;
+
+  return `${industryContext}${offerContext}
+Analyze the following business and produce a JSON assessment.
 
 Business Information:
 - Name: {business_name}
@@ -192,15 +234,23 @@ Business Information:
 
 Based on this information, produce a JSON object with these exact fields:
 - opportunity_score: number 0-100 (higher = better sales opportunity)
-- reason_codes: string[] (e.g. "no_website", "poor_mobile", "no_booking", "no_whatsapp", "weak_seo", "no_https", "slow_site", "no_ecommerce", "high_rating_weak_site")
-- why_good_target: string (1-2 sentences explaining why this business is a good target)
-- likely_pain_points: string[] (list of likely pain points)
+${reasonCodesGuidance}
+- why_good_target: string (1-2 sentences explaining why this business is a good target for YOUR offer)
+- likely_pain_points: string[] (list of likely pain points relevant to your offer)
 - best_sales_angle: string (the best sales angle for approaching this business, 1 sentence)
-- suggested_offer: "starter" | "growth" | "sales" (starter = basic mobile site, growth = site + booking + whatsapp + local SEO, sales = growth + inventory showcase + review embedding + lead capture)
+${offerLevels}
 - personalized_first_message: string (a personalized cold outreach message for WhatsApp/email, friendly and professional, max 3 sentences)
 - expected_price_band: string (e.g. "£500-800", "£800-1500", "£1500-3000")
 
 Respond ONLY with valid JSON, no markdown, no explanation.`;
+}
+
+export interface AnalysisWorkspaceContext {
+  niche?: string | null;
+  offerName?: string | null;
+  valueProposition?: string | null;
+  language?: string | null;
+}
 
 export async function analyzeLeadWithGemini(
   businessName: string,
@@ -210,14 +260,23 @@ export async function analyzeLeadWithGemini(
   websiteUrl: string | null,
   features: WebsiteFeatures | null,
   /** P2.3 - workspace.language injection. Defaults to 'en'; explicit TR workspaces still get TR output via languagePreamble. */
-  language: string | null = "en"
+  language: string | null = "en",
+  /** Niche + offer context for targeted analysis. Defaults to WEB_AGENCY behaviour. */
+  workspaceCtx: AnalysisWorkspaceContext = {}
 ): Promise<GeminiAnalysis> {
   const client = getClient();
   const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  const prompt = `${languagePreamble(language)}
+  const effectiveLanguage = workspaceCtx.language ?? language;
+  const analysisPrompt = buildAnalysisPrompt(
+    workspaceCtx.niche ?? null,
+    workspaceCtx.offerName ?? null,
+    workspaceCtx.valueProposition ?? null,
+  );
 
-${ANALYSIS_PROMPT}`
+  const prompt = `${languagePreamble(effectiveLanguage)}
+
+${analysisPrompt}`
     .replace("{business_name}", businessName)
     .replace("{address}", address)
     .replace("{rating}", rating?.toString() ?? "N/A")
@@ -228,7 +287,10 @@ ${ANALYSIS_PROMPT}`
       features ? JSON.stringify(features, null, 2) : "No website to analyze"
     );
 
-  const result = await model.generateContent(prompt);
+  const result = await generateWithTimeout(model, prompt, {
+    timeoutMs: WORKER_TIMEOUTS.SALES_OPPORTUNITY_SCORER,
+    label: "analyze_lead",
+  });
   const text = result.response.text();
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -305,7 +367,10 @@ export async function generateWebsitePlan(input: WebsitePlanInput): Promise<stri
     .replace("{review_intelligence}", reviewIntelligenceText)
     .replace("{my_offer}", offerText);
 
-  const result = await model.generateContent(prompt);
+  const result = await generateWithTimeout(model, prompt, {
+    timeoutMs: WORKER_TIMEOUTS.WEBSITE_PLAN_GENERATOR,
+    label: "website_plan",
+  });
   const text = result.response.text();
 
   return text.replace(/^```markdown\n?/i, "").replace(/\n?```$/i, "").trim();
@@ -427,7 +492,10 @@ export async function analyzeReviewsWithGemini(input: {
     .replace("{our_offer}", input.ourOffer || "Our offer: AI-assisted appointment-setting SaaS for local service businesses.")
     .replace("{reviews}", reviewsText);
 
-  const result = await model.generateContent(prompt);
+  const result = await generateWithTimeout(model, prompt, {
+    timeoutMs: WORKER_TIMEOUTS.REVIEW_ANALYST,
+    label: "review_analyst",
+  });
   const finishReason = result.response.candidates?.[0]?.finishReason;
   if (finishReason && finishReason !== "STOP") {
     logger.warn("review_analyst.gemini_finish_reason", { finishReason });
@@ -563,7 +631,10 @@ ${JSON.stringify(payload, null, 2)}
 
 Return Markdown only. No code fences, no preamble, no commentary.`;
 
-  const result = await model.generateContent(prompt);
+  const result = await generateWithTimeout(model, prompt, {
+    timeoutMs: WORKER_TIMEOUTS.LEAD_DOSSIER,
+    label: "lead_dossier",
+  });
   const text = result.response.text();
   return text
     .replace(/^\s*```(?:markdown|md)?\s*/i, "")

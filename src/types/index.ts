@@ -68,6 +68,15 @@ export interface WebsiteFeatures {
   // Extracted contact + integrations (used for outreach export and segmentation)
   contactEmails: string[];
   bookingProvider: string | null;
+
+  // Restaurant niche signals (populated by extractor when patterns match)
+  hasQrMenu?: boolean;
+  hasOnlineReservation?: boolean;
+  hasDeliveryIntegration?: boolean;
+  /** e.g. "FineDine" | "MenuTiger" | "Flipdish" — first matched tool name */
+  detectedMenuTool?: string | null;
+  menuUrl?: string | null;
+
   // P0.5 - expanded social profile scraping
   socialProfiles?: {
     instagram: string | null;

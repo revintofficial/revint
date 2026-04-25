@@ -9,6 +9,7 @@
  * the per-platform JSON shape on demand.
  */
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
 import { prisma } from "@/lib/prisma";
 import { safeParseGeminiJson } from "@/lib/gemini";
 import { logger } from "@/lib/logger";
@@ -172,7 +173,10 @@ export const run: AgentWorkerRun = async (ctx) => {
     },
   });
 
-  const result = await model.generateContent(prompt);
+  const result = await generateWithTimeout(model, prompt, {
+    timeoutMs: WORKER_TIMEOUTS.AI_RECEPTIONIST_BUILDER,
+    label: "ai_receptionist",
+  });
   const finishReason = result.response.candidates?.[0]?.finishReason;
   if (finishReason && finishReason !== "STOP") {
     logger.warn("ai_receptionist.gemini_finish_reason", { finishReason, runId: ctx.runId });

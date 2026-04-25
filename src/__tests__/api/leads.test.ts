@@ -109,7 +109,9 @@ describe("/api/leads GET", () => {
     );
   });
 
-  it("passes search filter with OR conditions for businessName, address, phone", async () => {
+  it("passes search filter with AND-of-ORs conditions per term", async () => {
+    // The route splits multi-word queries into terms and AND-joins them.
+    // "Fix My Phone" → AND: [{ OR: [businessName Fix...] }, { OR: [... My] }, { OR: [... Phone] }]
     mockFindMany.mockResolvedValue([mockLeads[0]]);
     mockCount.mockResolvedValue(1);
 
@@ -120,17 +122,18 @@ describe("/api/leads GET", () => {
     expect(data.leads).toHaveLength(1);
 
     const calledWhere = mockFindMany.mock.calls[0][0].where;
-    expect(calledWhere.OR).toBeDefined();
-    expect(calledWhere.OR).toHaveLength(3);
-    expect(calledWhere.OR[0]).toEqual({
-      businessName: { contains: "Fix My Phone", mode: "insensitive" },
+    // Multi-word search uses AND so every term must appear somewhere
+    expect(calledWhere.AND).toBeDefined();
+    expect(calledWhere.AND).toHaveLength(3); // "Fix", "My", "Phone"
+    // Each AND entry is itself an OR across fields
+    expect(calledWhere.AND[0].OR[0]).toEqual({
+      businessName: { contains: "Fix", mode: "insensitive" },
     });
-    expect(calledWhere.OR[1]).toEqual({
-      formattedAddress: { contains: "Fix My Phone", mode: "insensitive" },
+    expect(calledWhere.AND[0].OR[1]).toEqual({
+      formattedAddress: { contains: "Fix", mode: "insensitive" },
     });
-    expect(calledWhere.OR[2]).toEqual({
-      phone: { contains: "Fix My Phone" },
-    });
+    // "Phone" has no digits so no phone contains check
+    expect(calledWhere.AND[2].OR).toHaveLength(2);
   });
 
   it("search is case-insensitive for businessName and address", async () => {
@@ -140,8 +143,9 @@ describe("/api/leads GET", () => {
     await GET(makeRequest({ search: "fix my phone" }));
 
     const calledWhere = mockFindMany.mock.calls[0][0].where;
-    expect(calledWhere.OR[0].businessName.mode).toBe("insensitive");
-    expect(calledWhere.OR[1].formattedAddress.mode).toBe("insensitive");
+    // Each term's OR clause has case-insensitive mode
+    expect(calledWhere.AND[0].OR[0].businessName.mode).toBe("insensitive");
+    expect(calledWhere.AND[0].OR[1].formattedAddress.mode).toBe("insensitive");
   });
 
   it("applies borough filter correctly", async () => {
@@ -169,8 +173,9 @@ describe("/api/leads GET", () => {
 
     const calledWhere = mockFindMany.mock.calls[0][0].where;
     expect(calledWhere.borough).toBe("Greenwich");
-    expect(calledWhere.OR).toBeDefined();
-    expect(calledWhere.OR[0].businessName.contains).toBe("phone");
+    // Single-word search → AND with 1 entry, each entry is an OR
+    expect(calledWhere.AND).toBeDefined();
+    expect(calledWhere.AND[0].OR[0].businessName.contains).toBe("phone");
   });
 
   it("applies hasWebsite=true filter", async () => {

@@ -16,7 +16,8 @@ function boolStatus(val: boolean): "pass" | "fail" {
 
 export function runAuditChecklist(
   features: WebsiteFeatures | null,
-  hasWebsite: boolean
+  hasWebsite: boolean,
+  niche?: string | null
 ): AuditChecklistResult {
   const seo: CheckResult[] = [];
   const performance: CheckResult[] = [];
@@ -149,6 +150,39 @@ export function runAuditChecklist(
   const noSemanticIssue = !features.accessibilityIssues.some((i) => i.includes("semantic"));
   accessibility.push(check("accessibility", "Semantic HTML", boolStatus(noSemanticIssue), "important",
     "Use semantic elements such as <header>, <nav>, <main>, <footer>, and <article>."));
+
+  // ===== RESTAURANT NICHE CHECKS (only when niche === RESTAURANT_TECH) =====
+  if (niche === "RESTAURANT_TECH") {
+    ux.push(check(
+      "ux",
+      "QR menu / digital menu",
+      features.hasQrMenu ? "pass" : "fail",
+      "critical",
+      features.hasQrMenu
+        ? `QR menu detected${features.detectedMenuTool ? ` (${features.detectedMenuTool})` : ""}.`
+        : "No QR menu detected — primary sales opportunity. Customers expect to scan and order instantly.",
+    ));
+
+    ux.push(check(
+      "ux",
+      "Online reservation system",
+      features.hasOnlineReservation ? "pass" : "fail",
+      "important",
+      features.hasOnlineReservation
+        ? "Online reservation integration found."
+        : "No online reservation system. Add OpenTable, SevenRooms, or a similar integration to reduce no-shows.",
+    ));
+
+    ux.push(check(
+      "ux",
+      "Delivery platform integration",
+      features.hasDeliveryIntegration ? "pass" : "fail",
+      "nice_to_have",
+      features.hasDeliveryIntegration
+        ? "Delivery platform embed detected."
+        : "No delivery platform link found. Consider embedding Deliveroo, Uber Eats, or a local equivalent.",
+    ));
+  }
 
   // ===== UX CHECKS =====
   ux.push(check("ux", "Mobile friendly", boolStatus(features.mobileFriendlyGuess), "critical",

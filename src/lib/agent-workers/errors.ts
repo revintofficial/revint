@@ -50,9 +50,21 @@ export function isRetryable(err: unknown): boolean {
   if (err instanceof PermanentError) return false;
   if (err instanceof RetryableError) return true;
 
-  // Known permanent cases by name / message.
   if (err instanceof Error) {
     const msg = err.message.toLowerCase();
+    const name = err.name?.toLowerCase() ?? "";
+
+    // --- Explicit retryable patterns ---
+    // Timeout from generateWithTimeout AbortController wrapper.
+    if (msg.includes("gemini timeout")) return true;
+    // Outer deadline fired inside executeAgentRun.
+    if (msg.includes("worker_deadline_exceeded")) return true;
+    // Native AbortError from Node fetch / AbortController.
+    if (name === "aborterror" || msg.includes("the operation was aborted") || msg.includes("aborted")) return true;
+    // Network transients.
+    if (msg.includes("socket hang up") || msg.includes("econnreset") || msg.includes("enotfound")) return true;
+
+    // --- Explicit permanent patterns ---
     if (msg.includes("schema") && msg.includes("violation")) return false;
     if (msg.includes("quota exceeded")) return false;
     if (msg.includes("plan too low")) return false;

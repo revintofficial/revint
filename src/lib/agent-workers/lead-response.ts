@@ -6,6 +6,7 @@
  * n8n workflow JSON, or Make.com scenario JSON on request.
  */
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
 import {
   buildLeadResponsePrompt,
   type LeadResponsePromptInput,
@@ -73,7 +74,10 @@ export const run: AgentWorkerRun = async (ctx) => {
     },
   });
 
-  const result = await model.generateContent(prompt);
+  const result = await generateWithTimeout(model, prompt, {
+    timeoutMs: WORKER_TIMEOUTS.LEAD_RESPONSE_AGENT,
+    label: "lead_response",
+  });
   const text = result.response.text();
   const parsed = parseLeadResponseJson(text);
 

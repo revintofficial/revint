@@ -194,7 +194,15 @@ interface LeadDetail {
     pageCount?: number;
     socialProfiles?: HeroSocialProfiles | null;
     contactEmails?: string[] | null;
+    rawFeaturesJson?: {
+      hasQrMenu?: boolean;
+      hasOnlineReservation?: boolean;
+      hasDeliveryIntegration?: boolean;
+      detectedMenuTool?: string | null;
+      menuUrl?: string | null;
+    } | null;
   } | null;
+  workspace?: { niche: string } | null;
   salesOpportunity: {
     opportunityScore: number;
     reasonCodes: string[];
@@ -574,6 +582,9 @@ export default function LeadDetailPage({
             </TabsContent>
 
             <TabsContent value="website" className="space-y-5">
+              {lead.workspace?.niche === "RESTAURANT_TECH" && audit && (
+                <RestaurantSignalsCard features={audit.rawFeaturesJson ?? null} />
+              )}
               {audit ? (
                 <>
                   <WebsiteStatsRow audit={audit} auditCounts={auditCounts} />
@@ -2118,5 +2129,76 @@ function InfoRow({ label, value }: { label: string; value: ReactNode }) {
       <span className="text-[13px] text-white/55">{label}</span>
       <span className="text-[13px] font-medium text-right max-w-[60%] text-white/90">{value}</span>
     </div>
+  );
+}
+
+function RestaurantSignalsCard({
+  features,
+}: {
+  features: {
+    hasQrMenu?: boolean;
+    hasOnlineReservation?: boolean;
+    hasDeliveryIntegration?: boolean;
+    detectedMenuTool?: string | null;
+    menuUrl?: string | null;
+  } | null;
+}) {
+  const signals = [
+    {
+      label: "QR Menu",
+      present: !!features?.hasQrMenu,
+      detail: features?.detectedMenuTool
+        ? `Detected: ${features.detectedMenuTool}`
+        : "Not detected — primary sales opportunity",
+      priority: "critical" as const,
+    },
+    {
+      label: "Online Reservation",
+      present: !!features?.hasOnlineReservation,
+      detail: features?.hasOnlineReservation
+        ? "Reservation system found"
+        : "No reservation integration",
+      priority: "important" as const,
+    },
+    {
+      label: "Delivery Integration",
+      present: !!features?.hasDeliveryIntegration,
+      detail: features?.hasDeliveryIntegration
+        ? "Delivery platform link found"
+        : "No delivery platform embed",
+      priority: "nice_to_have" as const,
+    },
+  ];
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-[15px] flex items-center gap-2">
+          <span className="text-lg">🍽</span>
+          Restaurant Tech Signals
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {signals.map((s) => (
+          <div key={s.label} className="flex items-start gap-3">
+            <div className="mt-0.5 shrink-0">
+              {s.present ? (
+                <CircleCheck className="w-4 h-4 text-emerald-400" />
+              ) : s.priority === "critical" ? (
+                <CircleX className="w-4 h-4 text-red-400" />
+              ) : s.priority === "important" ? (
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Info className="w-4 h-4 text-white/30" />
+              )}
+            </div>
+            <div>
+              <p className="text-[13px] font-medium text-white/90">{s.label}</p>
+              <p className="text-[12px] text-white/50">{s.detail}</p>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

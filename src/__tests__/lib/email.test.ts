@@ -68,11 +68,22 @@ describe("email/from", () => {
 });
 
 describe("email/client dev stub", () => {
+  // Import the module once at describe scope to avoid re-evaluation cost.
+  // Use resetResendClient() to clear the cached singleton between tests
+  // instead of vi.resetModules() + dynamic re-import, which can timeout
+  // in jsdom when the Resend package initialises its internal fetch layer.
+  let clientMod: typeof import("@/lib/email/client");
+
+  beforeEach(async () => {
+    clientMod = await import("@/lib/email/client");
+    clientMod.resetResendClient();
+  });
+
   it("falls back to stub when RESEND_API_KEY is unset in development", async () => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("RESEND_API_KEY", "");
-    const mod = await import("@/lib/email/client");
-    const client = mod.getResend();
+    clientMod.resetResendClient(); // clear after env stub
+    const client = clientMod.getResend();
     type SendFn = (input: unknown) => Promise<{
       data: { id: string } | null;
       error: unknown;
@@ -91,8 +102,8 @@ describe("email/client dev stub", () => {
   it("throws in production when the API key is missing", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("RESEND_API_KEY", "");
-    const mod = await import("@/lib/email/client");
-    expect(() => mod.getResend()).toThrow(/RESEND_API_KEY/);
+    clientMod.resetResendClient();
+    expect(() => clientMod.getResend()).toThrow(/RESEND_API_KEY/);
   });
 });
 

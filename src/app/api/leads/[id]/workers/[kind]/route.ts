@@ -129,13 +129,12 @@ export async function POST(
 
     // Auto-cancel any stuck runs for this (lead, worker) combo before
     // creating a new one. A run is "stuck" if it sits PENDING or
-    // RUNNING longer than 90 seconds - that's ~2.5x the slowest
-    // Gemini worker's estimated duration (AI Receptionist at 40s),
-    // so legitimate inflight jobs aren't touched. This handles
-    // dev-server restarts and BullMQ worker crashes that leave runs
-    // orphaned without requiring manual DB cleanup, and keeps the
-    // quota counter honest (stale rows no longer burn limit).
-    const staleBefore = new Date(Date.now() - 90 * 1000);
+    // RUNNING longer than 180 seconds - aligned with the 180s outer
+    // deadline in executeAgentRun so legitimate inflight jobs aren't
+    // touched prematurely. The lazy watchdog in GET /api/agent-runs/[id]
+    // and GET /api/leads/[id]/workers handles cleanup outside the
+    // retry path; this keeps the quota counter honest on retry.
+    const staleBefore = new Date(Date.now() - 180 * 1000);
     const cancelled = await prisma.agentRun.updateMany({
       where: {
         workspaceId: session.workspaceId,

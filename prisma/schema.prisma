@@ -69,6 +69,13 @@ enum Plan {
   AGENCY
 }
 
+enum WorkspaceNiche {
+  WEB_AGENCY      // default — generic web/marketing agency
+  RESTAURANT_TECH // QR menu / digital ordering (FineDine, MenuTiger, etc.)
+  DENTAL          // reserved
+  REAL_ESTATE     // reserved
+}
+
 enum EmailProvider {
   GMAIL
   OUTLOOK
@@ -230,6 +237,7 @@ model Workspace {
   language         String  @default("en") @map("language")
   senderName       String? @map("sender_name")
   conversionLink   String? @map("conversion_link")
+  niche            WorkspaceNiche @default(WEB_AGENCY) @map("niche")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

@@ -31,8 +31,14 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
       where: { id: leadId },
       include: {
         websiteAudit: true,
-        // P2.3 - read workspace.language so AI analysis answers in the right language.
-        workspace: { select: { language: true } },
+        workspace: {
+          select: {
+            language: true,
+            niche: true,
+            offerName: true,
+            valueProposition: true,
+          },
+        },
       },
     });
 
@@ -55,6 +61,12 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
         lead.websiteUrl,
         features,
         lead.workspace.language ?? "en",
+        {
+          niche: lead.workspace.niche,
+          offerName: lead.workspace.offerName,
+          valueProposition: lead.workspace.valueProposition,
+          language: lead.workspace.language,
+        },
       );
     } catch (aiError) {
       logger.warn("worker.analyze.gemini_failed", { leadId, err: aiError });

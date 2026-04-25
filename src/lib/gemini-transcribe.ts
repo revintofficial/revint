@@ -10,6 +10,7 @@
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
 
 function getClient() {
   const key = process.env.GEMINI_API_KEY;
@@ -35,15 +36,21 @@ export async function transcribeAudioWithGemini(
   const prompt = `Transcribe this audio. Return only the transcript, no commentary.${langHint}
 If the audio is unintelligible, output "[unintelligible]". If it is silent, output "[silent]".`;
 
-  const result = await model.generateContent([
-    { text: prompt },
+  const result = await generateWithTimeout(
+    model,
     {
-      inlineData: {
-        data: audio.toString("base64"),
-        mimeType,
-      },
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            { inlineData: { data: audio.toString("base64"), mimeType } },
+          ],
+        },
+      ],
     },
-  ]);
+    { timeoutMs: WORKER_TIMEOUTS.TRANSCRIBE, label: "transcribe" },
+  );
 
   return result.response.text().trim();
 }

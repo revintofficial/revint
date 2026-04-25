@@ -23,6 +23,7 @@ export async function GET(
         googleReviews: { orderBy: { publishTime: "desc" } },
         reviewAnalysis: true,
         voiceNotes: { orderBy: { createdAt: "desc" }, take: 50 },
+        workspace: { select: { niche: true } },
       },
     });
 

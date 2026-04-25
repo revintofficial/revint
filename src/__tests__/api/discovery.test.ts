@@ -111,14 +111,21 @@ describe("/api/discovery POST", () => {
     expect(data.error).toContain("searchQuery and boroughName are required");
   });
 
-  it("returns 400 for unknown borough", async () => {
+  it("accepts unknown borough and proceeds with the search (lat/lng falls back to 0,0)", async () => {
+    // Route no longer rejects unknown boroughs — it falls back to lat:0,lng:0
+    // so existing custom-city workflows keep working.
     const res = await POST(
       makeRequest({ searchQuery: "phone repair", boroughName: "FakeBorough" })
     );
     const data = await res.json();
 
-    expect(res.status).toBe(400);
-    expect(data.error).toContain("not found");
+    expect(res.status).toBe(200);
+    expect(data.success).toBe(true);
+    expect(mockDiscoverLeads).toHaveBeenCalledWith(
+      "phone repair",
+      expect.objectContaining({ name: "FakeBorough" }),
+      expect.any(Number),
+    );
   });
 
   it("calls discoverLeads with correct query and borough", async () => {

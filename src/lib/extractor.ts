@@ -3,6 +3,52 @@ import * as cheerio from "cheerio";
 import { detectBookingProvider, extractContactEmails } from "@/lib/audit/booking-detection";
 import { extractSocialProfiles } from "@/lib/audit/social-scraper";
 
+// Restaurant niche: QR menu provider patterns (href + HTML matches)
+const QR_MENU_PATTERNS: { pattern: string; label: string }[] = [
+  { pattern: "finedinemenu", label: "FineDine" },
+  { pattern: "menutiger", label: "MenuTiger" },
+  { pattern: "flipmenu", label: "Flipmenu" },
+  { pattern: "plumqr", label: "PlumQR" },
+  { pattern: "glorifood", label: "Gloriafood" },
+  { pattern: "flipdish", label: "Flipdish" },
+  { pattern: "yoello", label: "Yoello" },
+  { pattern: "tableqr", label: "TableQR" },
+  { pattern: "qr-menu", label: "QR Menu" },
+  { pattern: "qrmenu", label: "QR Menu" },
+  { pattern: "digitalmenu", label: "Digital Menu" },
+  { pattern: "e-menu", label: "E-Menu" },
+  { pattern: "emenu", label: "E-Menu" },
+];
+
+const RESERVATION_PATTERNS = [
+  "opentable",
+  "sevenrooms",
+  "resy.com",
+  "bookatable",
+  "quandoo",
+  "fork.com",
+  "yelp.com/reservations",
+  "tablein",
+  "tablecheck",
+  "eat-app",
+  "restobooking",
+];
+
+const DELIVERY_PATTERNS = [
+  "deliveroo",
+  "ubereats",
+  "uber-eats",
+  "justeat",
+  "getir",
+  "yemeksepeti",
+  "talabat",
+  "doordash",
+  "grubhub",
+  "wolt",
+  "bolt food",
+  "foodpanda",
+];
+
 const SERVICE_KEYWORDS = [
   "repair", "fix", "screen", "battery", "unlock", "accessories",
   "buy", "sell", "trade", "refurbished", "case", "charger",
@@ -290,6 +336,28 @@ export function extractFeatures(html: string, url: string): WebsiteFeatures {
     }
   });
 
+  // Restaurant niche signals — zero extra HTTP cost, pure regex over already-fetched HTML
+  let hasQrMenu = false;
+  let detectedMenuTool: string | null = null;
+  let menuUrl: string | null = null;
+  for (const { pattern, label } of QR_MENU_PATTERNS) {
+    if (fullHtml.includes(pattern)) {
+      hasQrMenu = true;
+      detectedMenuTool = label;
+      // Try to surface a direct menu link
+      const menuLink = allLinks.find(
+        (l) =>
+          l.href.toLowerCase().includes(pattern) ||
+          l.text.toLowerCase().includes("menu")
+      );
+      if (menuLink) menuUrl = menuLink.href;
+      break;
+    }
+  }
+
+  const hasOnlineReservation = RESERVATION_PATTERNS.some((p) => fullHtml.includes(p));
+  const hasDeliveryIntegration = DELIVERY_PATTERNS.some((p) => fullHtml.includes(p));
+
   // Booking provider + contact emails (used for outreach + segmentation)
   const linksForDetection = allLinks.map((l) => ({ href: l.href }));
   const bookingProvider = detectBookingProvider({ html, links: linksForDetection });
@@ -323,6 +391,11 @@ export function extractFeatures(html: string, url: string): WebsiteFeatures {
     contactEmails,
     bookingProvider,
     socialProfiles,
+    hasQrMenu,
+    detectedMenuTool,
+    menuUrl,
+    hasOnlineReservation,
+    hasDeliveryIntegration,
 
     hasOpenGraph,
     hasTwitterCards,

@@ -44,6 +44,47 @@ export async function GET(
       return NextResponse.json({ error: "Run not found" }, { status: 404 });
     }
 
+    // Lazy watchdog: if the run is still PENDING/RUNNING but was
+    // created more than 3 minutes ago, the worker process almost
+    // certainly crashed or the Gemini call hung past every deadline.
+    // Flip it to FAILED here so the UI stops showing the infinite
+    // spinner and the user can retry. This is the cheapest possible
+    // watchdog - zero extra infrastructure, triggered by normal
+    // polling that the UI is already doing every 2 seconds.
+    if (run.status === "PENDING" || run.status === "RUNNING") {
+      const ageMs = Date.now() - new Date(run.createdAt).getTime();
+      if (ageMs > 3 * 60 * 1000) {
+        const updated = await prisma.agentRun.update({
+          where: { id: run.id },
+          data: {
+            status: "FAILED",
+            finishedAt: new Date(),
+            errorMsg: "watchdog: run exceeded 3-minute deadline without completing",
+          },
+          select: {
+            id: true,
+            workspaceId: true,
+            leadId: true,
+            workerKind: true,
+            status: true,
+            outputJson: true,
+            artifactUrl: true,
+            errorMsg: true,
+            costTokens: true,
+            startedAt: true,
+            finishedAt: true,
+            createdAt: true,
+          },
+        });
+        logger.warn("api.agent_run.watchdog_failed", {
+          runId: run.id,
+          workerKind: run.workerKind,
+          ageMs,
+        });
+        return NextResponse.json(updated);
+      }
+    }
+
     return NextResponse.json(run);
   } catch (err) {
     if (err instanceof UnauthorizedError) {

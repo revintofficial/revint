@@ -132,10 +132,19 @@ export function startAgentRunWorker() {
     // waiting, so they don't consume a Gemini slot.
     concurrency: 5,
     limiter: { max: 60, duration: 60000 },
-    // Default job options for jobs we enqueue internally that don't
-    // set their own (orchestrator + event emit paths). Permanent
-    // errors throw UnrecoverableError which short-circuits retries
-    // regardless of `attempts`.
+    // Lock duration: how long BullMQ holds the job lock before
+    // assuming the worker is dead. Must be > the longest possible job
+    // duration (180s outer deadline). 240s = 4 min gives 60s buffer.
+    // Without this, a process restart mid-job can cause the job to
+    // be stalled and re-queued while the original is still running,
+    // leading to duplicate execution.
+    lockDuration: 240_000,
+    // How often BullMQ checks for stalled jobs. 30s means a dead
+    // worker is detected within 30s of its lock expiry.
+    stalledInterval: 30_000,
+    // Allow at most 1 stall per job before marking it failed. Without
+    // this, a stuck job can stall indefinitely across restarts.
+    maxStalledCount: 1,
     settings: {
       backoffStrategy: (attemptsMade: number) =>
         Math.min(60000, 1000 * Math.pow(2, attemptsMade)),
