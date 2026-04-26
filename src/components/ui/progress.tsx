@@ -18,12 +18,12 @@ const Progress = forwardRef<HTMLDivElement, ProgressProps>(
         aria-valuemin={0}
         aria-valuemax={max}
         className={cn("relative h-2 w-full overflow-hidden rounded-full", className)}
-        style={{ backgroundColor: "rgba(235, 235, 245, 0.1)" }}
+        style={{ backgroundColor: "var(--leadac-hover)" }}
         {...props}
       >
         <div
-          className="h-full rounded-full transition-all duration-500 ease-out bg-[#0A84FF]"
-          style={{ width: `${percentage}%` }}
+          className="h-full rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${percentage}%`, backgroundColor: "var(--leadac-500)" }}
         />
       </div>
     );
@@ -60,8 +60,8 @@ function CircularProgress({
       className={cn("transform -rotate-90", className)}
       {...props}
     >
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(235, 235, 245, 0.1)" strokeWidth={strokeWidth} />
-      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#0A84FF" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.5s ease-out" }} />
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="hsl(var(--leadac-h) var(--leadac-ns) 14%)" strokeWidth={strokeWidth} />
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="hsl(var(--leadac-h) var(--leadac-s) 50%)" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.5s ease-out" }} />
     </svg>
   );
 }

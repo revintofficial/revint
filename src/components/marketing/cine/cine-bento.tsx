@@ -112,8 +112,8 @@ function BentoIcon({ name }: { name: CineIconName }) {
       className="w-12 h-12 rounded-2xl flex items-center justify-center"
       style={{
         background:
-          "linear-gradient(135deg, rgba(196, 154, 255, 0.22), rgba(139, 92, 246, 0.12))",
-        border: "1px solid rgba(139, 92, 246, 0.25)",
+          "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 78% / 0.22), hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12))",
+        border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.25)",
         color: "var(--vx-purple-700)",
       }}
     >

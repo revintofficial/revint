@@ -143,7 +143,7 @@ export function SmmaLanding({ copy }: { copy: VerticalCopy }) {
 
           <RevealOnScroll>
             <div className="text-center mt-20 mb-10">
-              <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC] mb-1.5">
+              <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300) mb-1.5">
                 The swap
               </p>
               <p className="text-[20px] sm:text-[24px] font-semibold tracking-tight">
@@ -161,7 +161,7 @@ export function SmmaLanding({ copy }: { copy: VerticalCopy }) {
         <div className="max-w-7xl mx-auto px-5 sm:px-6">
           <RevealOnScroll>
             <div className="text-center mb-16 sm:mb-20 max-w-3xl mx-auto">
-              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
                 Your morning at the laptop
               </p>
               <h2
@@ -178,7 +178,7 @@ export function SmmaLanding({ copy }: { copy: VerticalCopy }) {
           {copy.proofPoints.length > 4 && (
             <RevealOnScroll>
               <div className="mt-20 max-w-3xl mx-auto">
-                <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC] mb-3">
+                <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300) mb-3">
                   And the rest of the day
                 </p>
                 <ul className="space-y-2">
@@ -187,11 +187,11 @@ export function SmmaLanding({ copy }: { copy: VerticalCopy }) {
                       key={i}
                       className="flex items-start gap-2.5 p-3 rounded-xl text-[13.5px] text-white/70 leading-relaxed"
                       style={{
-                        background: "rgba(28,28,30,0.5)",
+                        background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
                         border: "0.5px solid rgba(255,255,255,0.07)",
                       }}
                     >
-                      <span className="w-1 h-1 rounded-full bg-[#A5B4FC] mt-2 shrink-0" />
+                      <span className="w-1 h-1 rounded-full bg-(--leadac-300) mt-2 shrink-0" />
                       {p}
                     </li>
                   ))}
@@ -237,12 +237,12 @@ function StopwatchSwap() {
         style={{
           background:
             "linear-gradient(180deg, rgba(40,28,30,0.4), rgba(28,18,22,0.3))",
-          border: "0.5px solid rgba(248,113,113,0.18)",
+          border: "0.5px solid hsl(4 62% 70% / 0.18)",
         }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <Clock className="w-4 h-4 text-[#F87171]" />
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#F87171]">
+          <Clock className="w-4 h-4 text-[hsl(4 62% 70%)]" />
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[hsl(4 62% 70%)]">
             Manual prospecting
           </p>
         </div>
@@ -250,7 +250,7 @@ function StopwatchSwap() {
         <div className="flex items-baseline gap-2 mb-1">
           <span
             className="text-[64px] sm:text-[80px] font-semibold leading-none tabular-nums"
-            style={{ letterSpacing: "-0.04em", color: "#FCA5A5" }}
+            style={{ letterSpacing: "-0.04em", color: "hsl(4 42% 72%)" }}
           >
             8h
           </span>
@@ -271,7 +271,7 @@ function StopwatchSwap() {
             "Find emails, send (30 min)",
           ].map((line) => (
             <li key={line} className="flex items-center gap-2">
-              <span className="w-1 h-1 rounded-full bg-[#F87171]/60" />
+              <span className="w-1 h-1 rounded-full bg-[hsl(4 62% 70%)]/60" />
               {line}
             </li>
           ))}
@@ -284,14 +284,14 @@ function StopwatchSwap() {
         style={{
           background:
             "linear-gradient(180deg, rgba(28,30,46,0.55), rgba(20,22,36,0.45))",
-          border: "0.5px solid rgba(94,106,210,0.32)",
+          border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.32)",
           boxShadow:
-            "0 24px 60px rgba(0,0,0,0.45), 0 80px 200px rgba(49,46,129,0.22)",
+            "0 24px 60px rgba(0,0,0,0.45), 0 80px 200px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.22)",
         }}
       >
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-4 h-4 text-[#A5B4FC]" />
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#A5B4FC]">
+          <Sparkles className="w-4 h-4 text-(--leadac-300)" />
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-(--leadac-300)">
             With Leadac AI
           </p>
         </div>
@@ -302,7 +302,7 @@ function StopwatchSwap() {
             style={{
               letterSpacing: "-0.04em",
               backgroundImage:
-                "linear-gradient(120deg, #FFFFFF 0%, #C7CCFF 45%, #5E6AD2 100%)",
+                "linear-gradient(120deg, #FFFFFF 0%, hsl(var(--leadac-h) var(--leadac-s) 88%) 45%, hsl(var(--leadac-h) var(--leadac-s) 50%) 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
@@ -330,7 +330,7 @@ function StopwatchSwap() {
               className="flex items-center justify-between gap-2"
             >
               <span className="flex items-center gap-2">
-                <Icon className="w-3 h-3 text-[#A5B4FC]" />
+                <Icon className="w-3 h-3 text-(--leadac-300)" />
                 {label}
               </span>
               <span className="text-white/40 tabular-nums">{t}</span>

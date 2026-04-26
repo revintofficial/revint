@@ -12,6 +12,6 @@ export default function Image() {
     subtitle:
       "Pro $79/mo, Agency $249/mo. One booked call in this market pays for itself 1–5×.",
     badge: "Pricing",
-    accent: "#FBBF24",
+    accent: "hsl(38 70% 52%)",
   });
 }

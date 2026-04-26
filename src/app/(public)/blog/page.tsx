@@ -110,7 +110,7 @@ export default function BlogIndexPage() {
             lineHeight: 1.6,
           }}
         >
-          Want Leadac AI in your pipeline? <Link href="/signup" style={{ color: "#A5B4FC" }}>Start free</Link> — 20 leads, no card.
+          Want Leadac AI in your pipeline? <Link href="/signup" style={{ color: "var(--leadac-300)" }}>Start free</Link> — 20 leads, no card.
         </div>
       </section>
     </>

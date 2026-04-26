@@ -18,7 +18,7 @@ export function MetricCounter({
   prefix = "",
   suffix = "",
   duration = 1400,
-  accent = "#C49AFF",
+  accent = "var(--leadac-300)",
 }: MetricCounterProps) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-60px" });
@@ -47,7 +47,7 @@ export function MetricCounter({
       className="p-6 rounded-2xl"
       style={{
         background:
-          "linear-gradient(180deg, rgba(28,28,30,0.6), rgba(20,20,22,0.4))",
+          "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.6), hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.4))",
         border: "0.5px solid rgba(255,255,255,0.08)",
       }}
     >

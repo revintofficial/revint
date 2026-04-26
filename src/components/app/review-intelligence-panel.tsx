@@ -141,7 +141,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#A5B4FC]" />
+            <Sparkles className="w-5 h-5 text-(--leadac-300)" />
             Review Intelligence
           </CardTitle>
         </CardHeader>
@@ -157,7 +157,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#A5B4FC]" />
+            <Sparkles className="w-5 h-5 text-(--leadac-300)" />
             Review Intelligence
           </CardTitle>
         </CardHeader>
@@ -175,7 +175,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#A5B4FC]" />
+            <Sparkles className="w-5 h-5 text-(--leadac-300)" />
             Review Intelligence
           </CardTitle>
         </CardHeader>
@@ -191,7 +191,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#A5B4FC]" />
+            <Sparkles className="w-5 h-5 text-(--leadac-300)" />
             Review Intelligence
           </CardTitle>
           <Button size="sm" onClick={runAnalysis} disabled={running || status === "ANALYZING"}>
@@ -222,7 +222,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#A5B4FC]" />
+            <Sparkles className="w-5 h-5 text-(--leadac-300)" />
             Review Intelligence
           </CardTitle>
           <p className="text-xs text-white/30 mt-1">
@@ -261,7 +261,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
         {analysis.weaknessKpis.length > 0 && (
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <TrendingDown className="w-3.5 h-3.5 text-[#FF453A]" /> What customers complain about
+              <TrendingDown className="w-3.5 h-3.5 text-[hsl(4_62%_54%)]" /> What customers complain about
             </p>
             <div className="space-y-2">
               {analysis.weaknessKpis.map((k) => (
@@ -274,7 +274,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
         {analysis.strengthKpis.length > 0 && (
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-[#34D399]" /> What customers praise
+              <TrendingUp className="w-3.5 h-3.5 text-[hsl(152_48%_50%)]" /> What customers praise
             </p>
             <div className="space-y-2">
               {analysis.strengthKpis.map((k) => (
@@ -287,7 +287,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
         {analysis.switchSignals.length > 0 && (
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <ArrowRight className="w-3.5 h-3.5 text-[#A5B4FC]" /> Competitor switch signals
+              <ArrowRight className="w-3.5 h-3.5 text-(--leadac-300)" /> Competitor switch signals
             </p>
             <div className="space-y-2">
               {analysis.switchSignals.map((s, i) => (
@@ -321,7 +321,7 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
         {analysis.strengthPhrases.length > 0 && (
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <Star className="w-3.5 h-3.5 text-[#FBBF24]" /> Most common praise
+              <Star className="w-3.5 h-3.5 text-[hsl(38_70%_52%)]" /> Most common praise
             </p>
             <div className="flex flex-wrap gap-1.5">
               {analysis.strengthPhrases.map((p) => (
@@ -338,8 +338,8 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
 }
 
 function KpiBarRow({ kpi, variant }: { kpi: KpiBar; variant: "weakness" | "strength" }) {
-  const color = variant === "weakness" ? "#FF453A" : "#34D399";
-  const bg = variant === "weakness" ? "rgba(255,69,58,0.12)" : "rgba(52,211,153,0.12)";
+  const color = variant === "weakness" ? "hsl(4 62% 54%)" : "hsl(152 48% 50%)";
+  const bg = variant === "weakness" ? "hsl(4 62% 54% / 0.12)" : "hsl(152 48% 50% / 0.12)";
   const percent = Math.max(0, Math.min(100, kpi.percent));
   return (
     <div>
@@ -370,9 +370,9 @@ function SentimentBar({ breakdown }: { breakdown: SentimentBreakdown }) {
     <div>
       <p className="text-[13px] font-medium text-white/60 mb-2">Sentiment breakdown</p>
       <div className="flex h-2 rounded-full overflow-hidden bg-white/5">
-        <div className="bg-[#34D399]" style={{ width: `${pos}%` }} />
+        <div className="bg-[hsl(152_48%_50%)]" style={{ width: `${pos}%` }} />
         <div className="bg-white/30" style={{ width: `${neu}%` }} />
-        <div className="bg-[#FF453A]" style={{ width: `${neg}%` }} />
+        <div className="bg-[hsl(4_62%_54%)]" style={{ width: `${neg}%` }} />
       </div>
       <div className="flex justify-between text-[11px] text-white/45 mt-1.5">
         <span>{pos}% positive</span>

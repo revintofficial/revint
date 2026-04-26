@@ -122,7 +122,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[440px] rounded-full opacity-25 blur-3xl"
-          style={{ background: "radial-gradient(closest-side, rgba(94,106,210,0.55), transparent)" }}
+          style={{ background: "radial-gradient(closest-side, hsl(var(--leadac-h) var(--leadac-s) 60% / 0.55), transparent)" }}
         />
       </div>
 
@@ -153,9 +153,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
             <div
               className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11.5px]"
               style={{
-                background: "rgba(94,106,210,0.12)",
-                border: "0.5px solid rgba(94,106,210,0.32)",
-                color: "#A5B4FC",
+                background: "hsl(var(--leadac-h) var(--leadac-s) 60% / 0.12)",
+                border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.32)",
+                color: "var(--leadac-300)",
               }}
             >
               <Check className="w-3 h-3" />
@@ -167,7 +167,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <div
           className="rounded-2xl p-6"
           style={{
-            background: "rgba(20,20,22,0.85)",
+            background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.85)",
             border: "0.5px solid rgba(255,255,255,0.08)",
             backdropFilter: "saturate(180%) blur(20px)",
           }}
@@ -177,11 +177,11 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               <div
                 className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center"
                 style={{
-                  background: "rgba(48, 209, 88, 0.12)",
-                  border: "0.5px solid rgba(48, 209, 88, 0.3)",
+                  background: "hsl(152 48% 50% / 0.12)",
+                  border: "0.5px solid hsl(152 48% 50% / 0.3)",
                 }}
               >
-                <Mail className="w-5 h-5 text-[#30D158]" />
+                <Mail className="w-5 h-5 text-[hsl(152_48%_50%)]" />
               </div>
               <h2 className="text-[17px] font-semibold mb-1.5">Check your email</h2>
               <p className="text-[13px] text-white/55 leading-relaxed">
@@ -194,7 +194,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   setMagicSent(false);
                   setError(null);
                 }}
-                className="mt-5 text-[12px] text-[#A5B4FC] hover:underline"
+                className="mt-5 text-[12px] text-(--leadac-300) hover:underline"
               >
                 Use a different email
               </button>
@@ -235,7 +235,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   className="flex-1 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all"
                   style={{
                     background: tab === "password" ? "rgba(255,255,255,0.08)" : "transparent",
-                    color: tab === "password" ? "white" : "rgba(235,235,245,0.5)",
+                    color: tab === "password" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.5)",
                   }}
                   role="tab"
                   aria-selected={tab === "password"}
@@ -247,7 +247,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   className="flex-1 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all"
                   style={{
                     background: tab === "magic" ? "rgba(255,255,255,0.08)" : "transparent",
-                    color: tab === "magic" ? "white" : "rgba(235,235,245,0.5)",
+                    color: tab === "magic" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.5)",
                   }}
                   role="tab"
                   aria-selected={tab === "magic"}
@@ -310,9 +310,9 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   <div
                     className="flex items-start gap-2 px-3 py-2 rounded-lg text-[12px]"
                     style={{
-                      background: "rgba(255,69,58,0.08)",
-                      border: "0.5px solid rgba(255,69,58,0.25)",
-                      color: "#FF6961",
+                      background: "hsl(4 62% 54% / 0.08)",
+                      border: "0.5px solid hsl(4 62% 54% / 0.25)",
+                      color: "hsl(4 42% 72%)",
                     }}
                     role="alert"
                   >
@@ -352,7 +352,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               Already have an account?{" "}
               <Link
                 href={`/login${params.toString() ? `?${params.toString()}` : ""}`}
-                className="text-[#A5B4FC] hover:underline"
+                className="text-(--leadac-300) hover:underline"
               >
                 Log in
               </Link>
@@ -362,7 +362,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               New to Leadac AI?{" "}
               <Link
                 href={`/signup${params.toString() ? `?${params.toString()}` : ""}`}
-                className="text-[#A5B4FC] hover:underline"
+                className="text-(--leadac-300) hover:underline"
               >
                 Create an account
               </Link>

@@ -28,10 +28,10 @@ interface ServicePackage {
 }
 
 const colorMap: Record<string, string> = {
-  red: "#FF3B30",
-  orange: "#FF9500",
-  yellow: "#FF9500",
-  green: "#34C759",
+  red: "var(--leadac-error)",
+  orange: "var(--leadac-warning)",
+  yellow: "var(--leadac-warning)",
+  green: "var(--leadac-success)",
 };
 
 const badgeMap: Record<string, "destructive" | "warning" | "success" | "secondary"> = {
@@ -90,7 +90,7 @@ export default function CampaignsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {campaigns.map((campaign, index) => {
-            const accentColor = colorMap[campaign.color] || "#86868b";
+            const accentColor = colorMap[campaign.color] || "var(--leadac-muted)";
             return (
               <Card
                 key={campaign.id}
@@ -109,7 +109,7 @@ export default function CampaignsPage() {
                 </CardHeader>
                 <CardContent>
                   <Link href={`/app/leads?${new URLSearchParams(campaign.filter).toString()}`}>
-                    <Button variant="outline" className="w-full group-hover:border-[#007AFF]/30 group-hover:text-[#0A84FF] transition-colors">
+                    <Button variant="outline" className="w-full group-hover:border-(--leadac-500)/30 group-hover:text-(--leadac-500) transition-colors">
                       View Leads
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                     </Button>
@@ -156,18 +156,18 @@ export default function CampaignsPage() {
                   key={pkg.id}
                   className={`rounded-2xl p-5 hover:shadow-md transition-shadow relative ${
                     pkg.isPopular
-                      ? "border-2 border-[#007AFF]/30 bg-[#0A84FF]/3"
+                      ? "border-2 border-(--leadac-500)/30 bg-(--leadac-500)/3"
                       : "border border-white/10 bg-white/5"
                   }`}
                 >
                   {pkg.isPopular && (
-                    <Badge className="absolute -top-2.5 right-4 bg-[#0A84FF] text-white border-transparent">
+                    <Badge className="absolute -top-2.5 right-4 bg-(--leadac-500) text-white border-transparent">
                       <Star className="w-3 h-3 mr-1" />
                       Popular
                     </Badge>
                   )}
                   <h3 className="font-semibold text-lg text-white">{pkg.name}</h3>
-                  <p className={`text-2xl font-bold mt-1 ${pkg.isPopular ? "text-[#0A84FF]" : "text-white"}`}>
+                  <p className={`text-2xl font-bold mt-1 ${pkg.isPopular ? "text-(--leadac-500)" : "text-white"}`}>
                     {pkg.priceLabel}
                   </p>
                   {pkg.features.length > 0 && (
@@ -175,9 +175,9 @@ export default function CampaignsPage() {
                       {pkg.features.map((item) => (
                         <li key={item} className="flex items-center gap-2">
                           {pkg.isPopular ? (
-                            <Zap className="w-4 h-4 text-[#0A84FF] shrink-0" />
+                            <Zap className="w-4 h-4 text-(--leadac-500) shrink-0" />
                           ) : (
-                            <Check className="w-4 h-4 text-[#30D158] shrink-0" />
+                            <Check className="w-4 h-4 text-[hsl(152_48%_50%)] shrink-0" />
                           )}
                           {item}
                         </li>

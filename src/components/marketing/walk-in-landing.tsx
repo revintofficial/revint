@@ -113,10 +113,10 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
             style={{
               background: "rgba(255, 255, 255, 0.04)",
               border: "0.5px solid rgba(255, 255, 255, 0.1)",
-              color: "rgba(235, 235, 245, 0.85)",
+              color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.85)",
             }}
           >
-            <TabletIcon className="w-3 h-3 text-[#A5B4FC]" />
+            <TabletIcon className="w-3 h-3 text-(--leadac-300)" />
             <span>{copy.eyebrow}</span>
           </div>
 
@@ -130,7 +130,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
               className="bg-clip-text text-transparent"
               style={{
                 backgroundImage:
-                  "linear-gradient(120deg, #FFFFFF 0%, #C7CCFF 45%, #5E6AD2 100%)",
+                  "linear-gradient(120deg, #FFFFFF 0%, hsl(var(--leadac-h) var(--leadac-s) 88%) 45%, hsl(var(--leadac-h) var(--leadac-s) 50%) 100%)",
               }}
             >
               {copy.h1Highlight}
@@ -146,9 +146,9 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
               href="/signup"
               className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
               style={{
-                background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
                 boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
+                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.45)",
               }}
             >
               {copy.primaryCta}
@@ -192,7 +192,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
         <div className="max-w-6xl mx-auto px-5 sm:px-6">
           <RevealOnScroll>
             <div className="text-center mb-14 max-w-3xl mx-auto">
-              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
                 Reality on the doorstep
               </p>
               <h2
@@ -213,18 +213,18 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
                     className="p-6 rounded-2xl h-full group transition-transform duration-300 hover:-translate-y-0.5"
                     style={{
                       background:
-                        "linear-gradient(180deg, rgba(28,28,30,0.6), rgba(20,20,22,0.4))",
+                        "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.6), hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.4))",
                       border: "0.5px solid rgba(255,255,255,0.08)",
                     }}
                   >
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
                       style={{
-                        background: "rgba(94, 106, 210, 0.12)",
-                        border: "0.5px solid rgba(94, 106, 210, 0.28)",
+                        background: "hsl(var(--leadac-h) var(--leadac-s) 60% / 0.12)",
+                        border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.28)",
                       }}
                     >
-                      <Icon className="w-5 h-5" style={{ color: "#A5B4FC" }} />
+                      <Icon className="w-5 h-5" style={{ color: "var(--leadac-300)" }} />
                     </div>
                     <h3 className="text-[18px] font-semibold mb-2 tracking-tight">
                       {p.title}
@@ -241,7 +241,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
           {/* THE SWAP: paper brochure vs iPad */}
           <RevealOnScroll>
             <div className="text-center mb-10">
-              <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC] mb-1.5">
+              <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300) mb-1.5">
                 The swap
               </p>
               <p className="text-[20px] sm:text-[24px] font-semibold tracking-tight">
@@ -263,7 +263,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
         <div className="max-w-7xl mx-auto px-5 sm:px-6">
           <RevealOnScroll>
             <div className="text-center mb-16 sm:mb-20 max-w-3xl mx-auto">
-              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
                 One morning, one tablet
               </p>
               <h2
@@ -285,7 +285,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
         <div className="max-w-6xl mx-auto px-5 sm:px-6">
           <RevealOnScroll>
             <div className="text-center mb-14 max-w-3xl mx-auto">
-              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
                 End of the day
               </p>
               <h2
@@ -303,11 +303,11 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
                 className="p-7 sm:p-9 rounded-2xl h-full"
                 style={{
                   background:
-                    "linear-gradient(180deg, rgba(28,28,30,0.6), rgba(20,20,22,0.4))",
+                    "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.6), hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.4))",
                   border: "0.5px solid rgba(255,255,255,0.08)",
                 }}
               >
-                <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC] mb-3">
+                <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300) mb-3">
                   Pro Team
                 </p>
                 <p
@@ -331,7 +331,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
                       key={line}
                       className="flex items-start gap-2.5 text-[13.5px] text-white/75 leading-relaxed"
                     >
-                      <CheckCircle2 className="w-4 h-4 text-[#A5B4FC] shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-4 h-4 text-(--leadac-300) shrink-0 mt-0.5" />
                       {line}
                     </li>
                   ))}
@@ -339,7 +339,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
 
                 <Link
                   href="/pricing"
-                  className="inline-flex items-center gap-1.5 text-[13.5px] font-medium text-[#C7CCFF] hover:text-white group"
+                  className="inline-flex items-center gap-1.5 text-[13.5px] font-medium text-(--leadac-200) hover:text-white group"
                 >
                   See full pricing
                   <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -385,7 +385,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
         <div className="max-w-6xl mx-auto px-5 sm:px-6">
           <RevealOnScroll>
             <div className="text-center mb-14">
-              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
                 Pricing
               </p>
               <h2
@@ -430,7 +430,7 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
           className="absolute inset-0 -z-10 opacity-40"
           style={{
             background:
-              "radial-gradient(ellipse at center, rgba(94,106,210,0.28), transparent 60%)",
+              "radial-gradient(ellipse at center, hsl(var(--leadac-h) var(--leadac-s) 60% / 0.28), transparent 60%)",
           }}
         />
         {/* Ghost iPad silhouette */}
@@ -462,9 +462,9 @@ export function WalkInLanding({ copy }: { copy: VerticalCopy }) {
               href="/signup"
               className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
               style={{
-                background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
                 boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
+                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.45)",
               }}
             >
               Start free, no card
@@ -497,8 +497,8 @@ function BrochureVsTablet({
       {/* BEFORE: paper brochure */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <AlertOctagon className="w-4 h-4 text-[#F87171]" />
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#F87171]">
+          <AlertOctagon className="w-4 h-4 text-[hsl(4 62% 70%)]" />
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[hsl(4 62% 70%)]">
             {beforeLabel}
           </p>
         </div>
@@ -588,8 +588,8 @@ function BrochureVsTablet({
       {/* AFTER: iPad with mockup */}
       <div>
         <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-4 h-4 text-[#A5B4FC]" />
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#A5B4FC]">
+          <Sparkles className="w-4 h-4 text-(--leadac-300)" />
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-(--leadac-300)">
             {afterLabel}
           </p>
         </div>

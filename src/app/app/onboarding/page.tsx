@@ -93,7 +93,7 @@ function PackageEditor({
           size="icon"
           onClick={() => onChange({ ...pkg, isPopular: !pkg.isPopular })}
           title="Mark as Popular"
-          className={pkg.isPopular ? "text-[#0A84FF]" : "text-white/30 hover:text-white/60"}
+          className={pkg.isPopular ? "text-(--leadac-500)" : "text-white/30 hover:text-white/60"}
         >
           <Star className="w-4 h-4" fill={pkg.isPopular ? "currentColor" : "none"} />
         </Button>
@@ -101,7 +101,7 @@ function PackageEditor({
           variant="ghost"
           size="icon"
           onClick={onRemove}
-          className="text-[#FF453A]/60 hover:text-[#FF453A]"
+          className="text-[hsl(4_62%_54%)]/60 hover:text-[hsl(4_62%_54%)]"
         >
           <Trash2 className="w-4 h-4" />
         </Button>
@@ -115,7 +115,7 @@ function PackageEditor({
         <p className="text-[11px] text-white/40 uppercase tracking-wide font-medium">Features</p>
         {pkg.features.map((feat, i) => (
           <div key={i} className="flex items-center gap-2">
-            <Check className="w-3.5 h-3.5 text-[#30D158] shrink-0" />
+            <Check className="w-3.5 h-3.5 text-[hsl(152_48%_50%)] shrink-0" />
             <Input
               value={feat}
               onChange={(e) => updateFeature(i, e.target.value)}
@@ -126,7 +126,7 @@ function PackageEditor({
               variant="ghost"
               size="icon"
               onClick={() => onChange({ ...pkg, features: pkg.features.filter((_, fi) => fi !== i) })}
-              className="shrink-0 text-white/30 hover:text-[#FF453A]"
+              className="shrink-0 text-white/30 hover:text-[hsl(4_62%_54%)]"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
@@ -230,7 +230,8 @@ export default function OnboardingPage() {
     });
     setSaving(false);
     if (!res.ok) {
-      toast.error("Failed to save offer context");
+      const err = await res.json().catch(() => ({})) as { error?: string; detail?: string };
+      toast.error(err.detail || err.error || "Failed to save offer context");
       return false;
     }
     return true;
@@ -388,16 +389,16 @@ export default function OnboardingPage() {
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                   s.number < step
-                    ? "bg-[#30D158] text-white"
+                    ? "bg-[hsl(152_48%_50%)] text-white"
                     : s.number === step
-                      ? "bg-[#0A84FF] text-white"
+                      ? "bg-(--leadac-500) text-white"
                       : "bg-white/10 text-white/30"
                 }`}
               >
                 {s.number < step ? <Check className="w-3.5 h-3.5" /> : s.number}
               </div>
               {s.number < 6 && (
-                <div className={`w-6 h-0.5 rounded-full transition-all ${s.number < step ? "bg-[#30D158]" : "bg-white/15"}`} />
+                <div className={`w-6 h-0.5 rounded-full transition-all ${s.number < step ? "bg-[hsl(152_48%_50%)]" : "bg-white/15"}`} />
               )}
             </div>
           ))}
@@ -480,7 +481,7 @@ export default function OnboardingPage() {
             {/* ---- Step 3: My Offer ---- */}
             {step === 3 && (
               <div className="space-y-5">
-                <div className="flex items-center gap-2 text-[#A5B4FC] text-sm">
+                <div className="flex items-center gap-2 text-(--leadac-300) text-sm">
                   <Sparkles className="w-4 h-4" />
                   <span>These fields personalize every AI mockup and message.</span>
                 </div>
@@ -498,7 +499,7 @@ export default function OnboardingPage() {
             {step === 4 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-sm text-white/50">
-                  <Package className="w-4 h-4 text-[#A5B4FC]" />
+                  <Package className="w-4 h-4 text-(--leadac-300)" />
                   Add the service tiers you pitch to clients. You can edit these later.
                 </div>
 
@@ -546,7 +547,7 @@ export default function OnboardingPage() {
             {step === 5 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-sm text-white/50">
-                  <Users className="w-4 h-4 text-[#A5B4FC]" />
+                  <Users className="w-4 h-4 text-(--leadac-300)" />
                   Teammates will receive an email invite to join your workspace.
                 </div>
 
@@ -567,7 +568,7 @@ export default function OnboardingPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => setInviteEmails(inviteEmails.filter((_, fi) => fi !== i))}
-                        className="text-white/30 hover:text-[#FF453A] shrink-0"
+                        className="text-white/30 hover:text-[hsl(4_62%_54%)] shrink-0"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -662,14 +663,14 @@ export default function OnboardingPage() {
                   <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-1.5">
                     {effectiveNiche && (
                       <div className="flex items-center gap-2 text-sm">
-                        <Search className="w-4 h-4 text-[#0A84FF]" />
+                        <Search className="w-4 h-4 text-(--leadac-500)" />
                         <span className="text-white/50">Looking for:</span>
                         <span className="font-medium text-white">{effectiveNiche}</span>
                       </div>
                     )}
                     {city && (
                       <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-[#0A84FF]" />
+                        <MapPin className="w-4 h-4 text-(--leadac-500)" />
                         <span className="text-white/50">In:</span>
                         <span className="font-medium text-white">{city}</span>
                       </div>

@@ -49,12 +49,59 @@ const DELIVERY_PATTERNS = [
   "foodpanda",
 ];
 
-const SERVICE_KEYWORDS = [
-  "repair", "fix", "screen", "battery", "unlock", "accessories",
-  "buy", "sell", "trade", "refurbished", "case", "charger",
-  "iphone", "samsung", "huawei", "pixel", "ipad", "tablet",
-  "laptop", "macbook", "data recovery", "water damage",
-];
+/**
+ * Keyword sets scoped to specific business niches.
+ * Keys are lowercase GMaps/discovery type strings (or comma-separated aliases).
+ * Only the matching set is tested against the page body so we never surface
+ * phone-repair words on a plumber's site (or vice-versa).
+ */
+const NICHE_SERVICE_KEYWORDS: Record<string, string[]> = {
+  // Phone / electronics repair & retail
+  "phone_repair,electronics_repair,electronics_store,mobile_phone_repair,cell_phone_store": [
+    "repair", "fix", "screen", "battery", "unlock", "accessories",
+    "buy", "sell", "trade", "refurbished", "case", "charger",
+    "iphone", "samsung", "huawei", "pixel", "ipad", "tablet",
+    "laptop", "macbook", "data recovery", "water damage",
+  ],
+  // Plumbing / gas / heating
+  "plumber,plumbing,gas_installer,heating_contractor": [
+    "boiler", "drain", "pipe", "leak", "radiator", "hot water",
+    "central heating", "gas", "blocked drain", "burst pipe",
+    "installation", "maintenance", "emergency", "24/7",
+  ],
+  // Electrician
+  "electrician,electrical_contractor": [
+    "wiring", "fuse", "socket", "lighting", "consumer unit",
+    "rewire", "inspection", "certificate", "installation",
+    "fault finding", "emergency", "24/7",
+  ],
+  // Restaurant / café / food
+  "restaurant,cafe,bakery,food": [
+    "dine in", "takeaway", "delivery", "reservation", "menu",
+    "breakfast", "lunch", "dinner", "catering", "vegan", "vegetarian",
+  ],
+  // Hair / beauty / barber
+  "hair_salon,beauty_salon,barber,spa": [
+    "haircut", "colour", "highlights", "balayage", "wax",
+    "facial", "manicure", "pedicure", "massage", "eyelash",
+    "appointment", "walk-in",
+  ],
+  // Dental / medical
+  "dentist,dental_clinic,doctor,medical_clinic": [
+    "appointment", "consultation", "implant", "whitening", "cleaning",
+    "check-up", "emergency", "braces", "invisalign",
+  ],
+  // Cleaning services
+  "cleaning_service,house_cleaning,commercial_cleaning": [
+    "deep clean", "end of tenancy", "carpet cleaning", "office cleaning",
+    "oven clean", "window cleaning", "regular clean",
+  ],
+  // Automotive / garage
+  "car_repair,auto_repair,mechanic,mot": [
+    "service", "repair", "mot", "tyres", "brakes", "exhaust",
+    "oil change", "diagnostics", "bodywork", "valeting",
+  ],
+};
 
 const BOOKING_KEYWORDS = [
   "book", "appointment", "schedule", "reserve", "booking",
@@ -75,7 +122,19 @@ const CSS_FRAMEWORKS: [string, string][] = [
   ["semantic-ui", "semantic"],
 ];
 
-export function extractFeatures(html: string, url: string): WebsiteFeatures {
+/** Return the keyword list for a given business type, or [] if unrecognised. */
+function getServiceKeywords(businessType?: string | null): string[] {
+  if (!businessType) return [];
+  const needle = businessType.toLowerCase().trim();
+  for (const [keyStr, keywords] of Object.entries(NICHE_SERVICE_KEYWORDS)) {
+    if (keyStr.split(",").some((k) => needle.includes(k) || k.includes(needle))) {
+      return keywords;
+    }
+  }
+  return [];
+}
+
+export function extractFeatures(html: string, url: string, businessType?: string | null): WebsiteFeatures {
   const $ = cheerio.load(html);
   const bodyText = $("body").text().toLowerCase();
   const fullHtml = html.toLowerCase();
@@ -130,7 +189,8 @@ export function extractFeatures(html: string, url: string): WebsiteFeatures {
       $('input[type="tel"]').length > 0 ||
       $("textarea").length > 0);
 
-  const servicesDetected = SERVICE_KEYWORDS.filter((k) => bodyText.includes(k));
+  const serviceKeywords = getServiceKeywords(businessType);
+  const servicesDetected = serviceKeywords.filter((k) => bodyText.includes(k));
 
   const ctaLinks = allLinks.filter((l) => {
     const t = l.text.toLowerCase();

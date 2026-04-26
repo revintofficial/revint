@@ -19,9 +19,9 @@ interface MockupGeneratorDemoProps {
 }
 
 const PALETTES = [
-  { primary: "#8B5CF6", accent: "#C49AFF", text: "#FFFFFF", bg1: "#1A0F2E", bg2: "#2B1845" },
-  { primary: "#34D399", accent: "#86EFAC", text: "#04221A", bg1: "#0F2A21", bg2: "#173B30" },
-  { primary: "#F59E0B", accent: "#FCD34D", text: "#1F1404", bg1: "#241704", bg2: "#3A2710" },
+  { primary: "hsl(var(--leadac-h) var(--leadac-s) 50%)", accent: "var(--leadac-300)", text: "#FFFFFF", bg1: "#1A0F2E", bg2: "#2B1845" },
+  { primary: "hsl(152 48% 50%)", accent: "hsl(152 28% 70%)", text: "#04221A", bg1: "#0F2A21", bg2: "#173B30" },
+  { primary: "#F59E0B", accent: "hsl(38 70% 60%)", text: "#1F1404", bg1: "#241704", bg2: "#3A2710" },
 ];
 
 export function MockupGeneratorDemo({
@@ -80,7 +80,7 @@ export function MockupGeneratorDemo({
             "linear-gradient(180deg, rgba(32,32,36,0.92) 0%, rgba(22,22,26,0.96) 100%)",
           border: "0.5px solid rgba(255,255,255,0.09)",
           boxShadow:
-            "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(94,35,201,0.25)",
+            "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.25)",
         }}
       >
         {/* Top bar */}
@@ -100,7 +100,7 @@ export function MockupGeneratorDemo({
                 border: "0.5px solid rgba(167,139,250,0.35)",
               }}
             >
-              <Wand2 className="w-3 h-3 text-[#C4B5FD]" />
+              <Wand2 className="w-3 h-3 text-[hsl(var(--leadac-h) var(--leadac-s) 78%)]" />
             </div>
             <div className="min-w-0">
               <p className="text-[11.5px] font-medium text-white truncate">
@@ -144,7 +144,7 @@ export function MockupGeneratorDemo({
                 className="absolute inset-0 flex flex-col items-center justify-center gap-3"
                 style={{
                   background:
-                    "linear-gradient(180deg, rgba(20,20,22,0.95), rgba(16,16,20,0.98))",
+                    "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.95), rgba(16,16,20,0.98))",
                 }}
               >
                 <div className="relative w-12 h-12">
@@ -152,7 +152,7 @@ export function MockupGeneratorDemo({
                     className="absolute inset-0 rounded-full"
                     style={{
                       background:
-                        "conic-gradient(from 0deg, rgba(139,92,246,0), rgba(139,92,246,0.9))",
+                        "conic-gradient(from 0deg, hsl(var(--leadac-h) var(--leadac-s) 50% / 0), hsl(var(--leadac-h) var(--leadac-s) 50% / 0.9))",
                     }}
                     animate={reduce ? {} : { rotate: 360 }}
                     transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
@@ -161,7 +161,7 @@ export function MockupGeneratorDemo({
                     className="absolute inset-1 rounded-full flex items-center justify-center"
                     style={{ background: "#16161A" }}
                   >
-                    <Wand2 className="w-4 h-4 text-[#C4B5FD]" />
+                    <Wand2 className="w-4 h-4 text-[hsl(var(--leadac-h) var(--leadac-s) 78%)]" />
                   </div>
                 </div>
                 <p className="text-[12px] text-white/55 font-medium">
@@ -171,7 +171,7 @@ export function MockupGeneratorDemo({
                   {[0, 1, 2].map((i) => (
                     <motion.div
                       key={i}
-                      className="w-1.5 h-1.5 rounded-full bg-[#C49AFF]"
+                      className="w-1.5 h-1.5 rounded-full bg-(--leadac-300)"
                       animate={
                         reduce
                           ? {}

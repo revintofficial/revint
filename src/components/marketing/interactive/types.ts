@@ -20,9 +20,9 @@ export interface DemoAuditSignal {
 }
 
 export function scoreColor(s: number) {
-  if (s >= 85) return "#FB7185";
-  if (s >= 70) return "#F59E0B";
-  return "#8B5CF6";
+  if (s >= 85) return "hsl(4 62% 70%)";
+  if (s >= 70) return "hsl(38 70% 52%)";
+  return "hsl(var(--leadac-h) var(--leadac-s) 50%)";
 }
 
 export const DEFAULT_SIGNALS: DemoAuditSignal[] = [

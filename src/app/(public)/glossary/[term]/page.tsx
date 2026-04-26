@@ -195,7 +195,7 @@ export default async function GlossaryTermPage({
         <section style={{ marginTop: 48, fontSize: 14 }}>
           <Link
             href="/glossary"
-            style={{ color: "#A5B4FC", textDecoration: "none" }}
+            style={{ color: "var(--leadac-300)", textDecoration: "none" }}
           >
             Browse the full glossary ({GLOSSARY_TERMS.length} terms) →
           </Link>

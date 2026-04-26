@@ -44,7 +44,7 @@ export function SdrPodFrame({
         className="hidden sm:block absolute -inset-12 -z-10 rounded-[60px] opacity-65 blur-3xl"
         style={{
           background:
-            "radial-gradient(closest-side, rgba(139,92,246,0.32), transparent 72%)",
+            "radial-gradient(closest-side, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.32), transparent 72%)",
         }}
       />
 
@@ -54,11 +54,11 @@ export function SdrPodFrame({
           tilt="right"
           url={leftUrl}
           tab={leftTab}
-          accent="#C49AFF"
+          accent="var(--leadac-300)"
         >
           {leftScreen}
         </Monitor>
-        <Monitor tilt="left" url={rightUrl} tab={rightTab} accent="#86EFAC">
+        <Monitor tilt="left" url={rightUrl} tab={rightTab} accent="hsl(152 28% 70%)">
           {rightScreen}
         </Monitor>
       </div>
@@ -160,7 +160,7 @@ function Monitor({
               style={{
                 background: "rgba(0,0,0,0.35)",
                 border: "0.5px solid rgba(255,255,255,0.06)",
-                color: "rgba(235,235,245,0.65)",
+                color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.65)",
               }}
             >
               {url}

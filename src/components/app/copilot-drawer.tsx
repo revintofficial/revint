@@ -91,8 +91,8 @@ export function CopilotDrawer() {
         onClick={() => setOpen(true)}
         className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-40 w-11 h-11 sm:w-12 sm:h-12 rounded-full text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105"
         style={{
-          background: "linear-gradient(135deg, #5E6AD2, #3730A3)",
-          boxShadow: "0 12px 32px rgba(49,46,129,0.5)",
+          background: "linear-gradient(135deg, var(--leadac-500), var(--leadac-700))",
+          boxShadow: "0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.5)",
           marginBottom: "env(safe-area-inset-bottom)",
         }}
         aria-label="Open AI co-pilot"
@@ -106,13 +106,13 @@ export function CopilotDrawer() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="bg-[#0E0E10] border border-white/10 w-full sm:w-[420px] sm:h-[640px] rounded-t-2xl sm:rounded-2xl sm:mr-5 flex flex-col shadow-2xl safe-pb"
+            className="bg-(--leadac-surface) border border-white/10 w-full sm:w-[420px] sm:h-[640px] rounded-t-2xl sm:rounded-2xl sm:mr-5 flex flex-col shadow-2xl safe-pb"
             onClick={(e) => e.stopPropagation()}
             style={{ maxHeight: "92dvh" }}
           >
             <div className="flex items-center justify-between p-4 border-b border-white/10">
               <div className="flex items-center gap-2">
-                <Bot className="w-5 h-5 text-[#A5B4FC]" />
+                <Bot className="w-5 h-5 text-(--leadac-300)" />
                 <h3 className="text-sm font-semibold">Sales co-pilot</h3>
               </div>
               <button
@@ -149,7 +149,7 @@ export function CopilotDrawer() {
                     <div
                       className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                         m.role === "USER"
-                          ? "bg-[#5E6AD2]/30 border border-[#5E6AD2]/40 text-white"
+                          ? "bg-(--leadac-500)/30 border border-(--leadac-500)/40 text-white"
                           : "bg-white/5 border border-white/10 text-white/85 whitespace-pre-wrap"
                       }`}
                     >
@@ -180,7 +180,7 @@ export function CopilotDrawer() {
                 }}
                 placeholder="Ask something about your leads..."
                 rows={1}
-                className="flex-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50 resize-none"
+                className="flex-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-(--leadac-500)/50 resize-none"
                 disabled={sending}
               />
               <button
@@ -188,7 +188,7 @@ export function CopilotDrawer() {
                 disabled={sending || !input.trim()}
                 className="rounded-xl px-3 text-white disabled:opacity-40"
                 style={{
-                  background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                  background: "linear-gradient(180deg, var(--leadac-500), var(--leadac-700))",
                 }}
               >
                 <Send className="w-4 h-4" />

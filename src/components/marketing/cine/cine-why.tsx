@@ -72,8 +72,8 @@ export function CineWhy({ eyebrow, headline, sub, reasons }: Props) {
                 <div
                   className="w-11 h-11 rounded-xl flex items-center justify-center"
                   style={{
-                    background: "rgba(139, 92, 246, 0.10)",
-                    border: "1px solid rgba(139, 92, 246, 0.18)",
+                    background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)",
+                    border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18)",
                     color: "var(--vx-purple-700)",
                   }}
                 >

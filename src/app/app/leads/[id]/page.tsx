@@ -519,7 +519,7 @@ export default function LeadDetailPage({
     <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-5">
       <Link
         href="/app/leads"
-        className="inline-flex items-center gap-1 text-[13px] text-white/40 hover:text-[#0A84FF] transition-colors"
+        className="inline-flex items-center gap-1 text-[13px] text-white/40 hover:text-(--leadac-500) transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Leads
@@ -711,10 +711,10 @@ function HeroBand({
     score == null
       ? "text-white/40"
       : score >= 60
-      ? "text-[#30D158]"
+      ? "text-[hsl(152_48%_50%)]"
       : score >= 35
-      ? "text-[#FF9F0A]"
-      : "text-[#FF453A]";
+      ? "text-[hsl(38_70%_52%)]"
+      : "text-[hsl(4_62%_54%)]";
 
   const appleMapsUrl = (() => {
     if (lead.sourceLat == null || lead.sourceLng == null) return null;
@@ -731,7 +731,7 @@ function HeroBand({
     <div
       className="relative overflow-hidden rounded-[28px] glass-card"
       style={{
-        background: "rgba(28, 28, 30, 0.68)",
+        background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.68)",
       }}
     >
       <div
@@ -739,7 +739,7 @@ function HeroBand({
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at top right, rgba(10,132,255,0.18), transparent 55%), radial-gradient(ellipse at bottom left, rgba(48,209,88,0.08), transparent 60%)",
+            "radial-gradient(ellipse at top right, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18), transparent 55%), radial-gradient(ellipse at bottom left, hsl(152 48% 50% / 0.08), transparent 60%)",
         }}
       />
       <div className="relative p-5 sm:p-7 md:p-8">
@@ -755,7 +755,7 @@ function HeroBand({
             <div className="flex flex-wrap items-center gap-2 mt-4">
               {lead.rating != null && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1 text-[13px] text-white/85">
-                  <Star className="w-3.5 h-3.5 text-[#FFD60A] fill-[#FFD60A]" />
+                  <Star className="w-3.5 h-3.5 text-[hsl(38_70%_52%)] fill-[hsl(38_70%_52%)]" />
                   {lead.rating.toFixed(1)}
                   {lead.reviewCount != null && (
                     <span className="text-white/50">({lead.reviewCount})</span>
@@ -781,7 +781,7 @@ function HeroBand({
                 {lead.websiteAudit.servicesDetected.map((s) => (
                   <span
                     key={s}
-                    className="inline-flex items-center rounded-full bg-[#0A84FF]/12 border border-[#0A84FF]/25 px-2.5 py-0.5 text-[12px] text-[#9EC9FF] capitalize"
+                    className="inline-flex items-center rounded-full bg-(--leadac-500)/12 border border-(--leadac-500)/25 px-2.5 py-0.5 text-[12px] text-(--leadac-200) capitalize"
                   >
                     {s}
                   </span>
@@ -983,7 +983,7 @@ const DIRECTORY_META: Record<
   pinterest: { label: "Pinterest", dot: "#E60023", category: "social" },
   reddit: { label: "Reddit", dot: "#FF4500", category: "social" },
   yell: { label: "Yell", dot: "#FFD100", category: "directory" },
-  bark: { label: "Bark", dot: "#30D158", category: "directory" },
+  bark: { label: "Bark", dot: "hsl(152 48% 50%)", category: "directory" },
   checkatrade: { label: "Checkatrade", dot: "#F8A01B", category: "directory" },
   trustatrader: { label: "TrustATrader", dot: "#0083C1", category: "directory" },
   yellowpages: { label: "Yellow Pages", dot: "#FFD100", category: "directory" },
@@ -1222,8 +1222,8 @@ function HeroAgentBar({
           >
             <Icon className={`w-3.5 h-3.5 ${a.busy ? "animate-spin" : ""}`} />
             {a.label}
-            {done && <span className="ml-0.5 text-[10px] text-[#30D158]">done</span>}
-            {failed && <span className="ml-0.5 text-[10px] text-[#FF453A]">failed</span>}
+            {done && <span className="ml-0.5 text-[10px] text-[hsl(152_48%_50%)]">done</span>}
+            {failed && <span className="ml-0.5 text-[10px] text-[hsl(4_62%_54%)]">failed</span>}
           </Button>
         );
       })}
@@ -1255,7 +1255,7 @@ function IdentityRail({
               {lead.phone ? (
                 <a
                   href={`tel:${lead.phone}`}
-                  className="inline-flex items-center gap-1.5 text-[14px] font-medium text-white hover:text-[#0A84FF] transition-colors"
+                  className="inline-flex items-center gap-1.5 text-[14px] font-medium text-white hover:text-(--leadac-500) transition-colors"
                 >
                   <Phone className="w-3.5 h-3.5 text-white/40" />
                   {lead.phone}
@@ -1272,7 +1272,7 @@ function IdentityRail({
                     href={lead.websiteUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[14px] font-medium text-[#0A84FF] hover:underline truncate"
+                    className="text-[14px] font-medium text-(--leadac-500) hover:underline truncate"
                   >
                     {lead.websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}
                   </a>
@@ -1295,7 +1295,7 @@ function IdentityRail({
                   type="button"
                   onClick={onWebsiteSearch}
                   disabled={websiteSearchLoading}
-                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#0A84FF] hover:underline disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-(--leadac-500) hover:underline disabled:opacity-50"
                 >
                   {websiteSearchLoading ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1313,7 +1313,7 @@ function IdentityRail({
                   href={lead.googleMapsUri}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#0A84FF] hover:underline"
+                  className="inline-flex items-center gap-1.5 text-[14px] font-medium text-(--leadac-500) hover:underline"
                 >
                   Open
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -1395,9 +1395,9 @@ function RailRow({ label, children }: { label: string; children: ReactNode }) {
 
 function StatusDot({ status, children }: { status: "ok" | "pending" | "bad"; children: ReactNode }) {
   const color =
-    status === "ok" ? "bg-[#30D158]" : status === "bad" ? "bg-[#FF453A]" : "bg-white/35";
+    status === "ok" ? "bg-[hsl(152_48%_50%)]" : status === "bad" ? "bg-[hsl(4_62%_54%)]" : "bg-white/35";
   const text =
-    status === "ok" ? "text-[#30D158]" : status === "bad" ? "text-[#FF453A]" : "text-white/70";
+    status === "ok" ? "text-[hsl(152_48%_50%)]" : status === "bad" ? "text-[hsl(4_62%_54%)]" : "text-white/70";
   return (
     <span className={`inline-flex items-center gap-1.5 text-[13px] font-medium ${text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${color}`} />
@@ -1419,7 +1419,7 @@ function PersonalizedMessageCard({
     <Card className="relative">
       <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between space-y-0 pb-3">
         <CardTitle className="text-[17px] flex items-center gap-2">
-          <FileText className="w-4 h-4 text-[#0A84FF]" />
+          <FileText className="w-4 h-4 text-(--leadac-500)" />
           Personalized Message
         </CardTitle>
         <Button
@@ -1433,7 +1433,7 @@ function PersonalizedMessageCard({
       </CardHeader>
       <CardContent>
         <div className="relative rounded-2xl bg-white/5 border border-white/8 p-5 pl-6">
-          <div className="absolute left-0 top-5 bottom-5 w-[2px] rounded-full bg-[#0A84FF]" />
+          <div className="absolute left-0 top-5 bottom-5 w-[2px] rounded-full bg-(--leadac-500)" />
           <p className="text-[15px] leading-[1.65] text-white/85 whitespace-pre-wrap">{message}</p>
         </div>
       </CardContent>
@@ -1529,11 +1529,11 @@ function StatTile({
 }) {
   const color =
     accent === "ok"
-      ? "text-[#30D158]"
+      ? "text-[hsl(152_48%_50%)]"
       : accent === "warn"
-      ? "text-[#FF9F0A]"
+      ? "text-[hsl(38_70%_52%)]"
       : accent === "bad"
-      ? "text-[#FF453A]"
+      ? "text-[hsl(4_62%_54%)]"
       : "text-white";
   return (
     <div className="rounded-2xl bg-white/5 border border-white/8 p-4 text-center">
@@ -1631,7 +1631,7 @@ function AuditAccordion({ audit }: { audit: NonNullable<LeadDetail["websiteAudit
                   <p className="text-[12px] text-white/40 uppercase tracking-[0.06em] mb-1.5">Accessibility Issues</p>
                   <ul className="space-y-1">
                     {audit.accessibilityIssues.map((issue, i) => (
-                      <li key={i} className="text-[14px] text-[#FF453A] flex items-start gap-1.5">
+                      <li key={i} className="text-[14px] text-[hsl(4_62%_54%)] flex items-start gap-1.5">
                         <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                         {issue}
                       </li>
@@ -1644,7 +1644,7 @@ function AuditAccordion({ audit }: { audit: NonNullable<LeadDetail["websiteAudit
                   <p className="text-[12px] text-white/40 uppercase tracking-[0.06em] mb-1.5">Performance Hints</p>
                   <ul className="space-y-1">
                     {audit.performanceHints.map((hint, i) => (
-                      <li key={i} className="text-[14px] text-[#FF9F0A] flex items-start gap-1.5">
+                      <li key={i} className="text-[14px] text-[hsl(38_70%_52%)] flex items-start gap-1.5">
                         <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                         {hint}
                       </li>
@@ -1690,9 +1690,9 @@ function AuditGroup({
 
 function ContentCheckCard({ result, onClose }: { result: ContentCheckResult; onClose: () => void }) {
   const verdictConfig: Record<string, { label: string; color: string; bg: string; Icon: typeof CircleX }> = {
-    placeholder: { label: "Placeholder / Empty Site", color: "text-[#FF453A]", bg: "bg-[#FF453A]/6 border-[#FF453A]/20", Icon: CircleX },
-    basic: { label: "Basic Site", color: "text-[#FF9F0A]", bg: "bg-[#FF9500]/6 border-[#FF9F0A]/20", Icon: AlertTriangle },
-    developed: { label: "Developed Site", color: "text-[#30D158]", bg: "bg-[#30D158]/6 border-[#30D158]/20", Icon: CircleCheck },
+    placeholder: { label: "Placeholder / Empty Site", color: "text-[hsl(4_62%_54%)]", bg: "bg-[hsl(4_62%_54%)]/6 border-[hsl(4_62%_54%)]/20", Icon: CircleX },
+    basic: { label: "Basic Site", color: "text-[hsl(38_70%_52%)]", bg: "bg-[hsl(38_70%_52%)]/6 border-[hsl(38_70%_52%)]/20", Icon: AlertTriangle },
+    developed: { label: "Developed Site", color: "text-[hsl(152_48%_50%)]", bg: "bg-[hsl(152_48%_50%)]/6 border-[hsl(152_48%_50%)]/20", Icon: CircleCheck },
     unreachable: { label: "Unreachable", color: "text-white/60", bg: "bg-white/5 border-white/10", Icon: CircleX },
   };
 
@@ -1702,7 +1702,7 @@ function ContentCheckCard({ result, onClose }: { result: ContentCheckResult; onC
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="text-[17px] flex items-center gap-2">
-          <ScanSearch className="w-4 h-4 text-[#0A84FF]" />
+          <ScanSearch className="w-4 h-4 text-(--leadac-500)" />
           Content Check Result
         </CardTitle>
         <button type="button" onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors rounded-lg p-1 hover:bg-white/10">
@@ -1737,9 +1737,9 @@ function ContentCheckCard({ result, onClose }: { result: ContentCheckResult; onC
         </div>
 
         {result.builderDetected && (
-          <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-[#0A84FF]/6 border border-[#007AFF]/20">
-            <Info className="w-4 h-4 text-[#0A84FF] shrink-0" />
-            <span className="text-sm text-[#0A84FF]">Built with <strong>{result.builderDetected}</strong></span>
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-(--leadac-500)/6 border border-(--leadac-500)/20">
+            <Info className="w-4 h-4 text-(--leadac-500) shrink-0" />
+            <span className="text-sm text-(--leadac-500)">Built with <strong>{result.builderDetected}</strong></span>
           </div>
         )}
 
@@ -1748,7 +1748,7 @@ function ContentCheckCard({ result, onClose }: { result: ContentCheckResult; onC
           {result.signals.map((signal, i) => (
             <div key={i} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
               <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${signal.status === "good" ? "bg-[#30D158]" : signal.status === "warning" ? "bg-[#FF9500]" : "bg-[#FF453A]"}`} />
+                <div className={`w-2 h-2 rounded-full ${signal.status === "good" ? "bg-[hsl(152_48%_50%)]" : signal.status === "warning" ? "bg-[hsl(38_70%_52%)]" : "bg-[hsl(4_62%_54%)]"}`} />
                 <span className="text-sm font-medium text-white/75">{signal.label}</span>
               </div>
               <span className="text-sm text-white/50 text-right max-w-[55%] truncate">{signal.detail}</span>
@@ -1765,7 +1765,7 @@ function WebsiteSearchCard({ result, onClose }: { result: WebsiteSearchResult; o
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="text-[17px] flex items-center gap-2">
-          <Globe className="w-4 h-4 text-[#FF9F0A]" />
+          <Globe className="w-4 h-4 text-[hsl(38_70%_52%)]" />
           Website Search Results
         </CardTitle>
         <button type="button" onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors rounded-lg p-1 hover:bg-white/10">
@@ -1775,19 +1775,19 @@ function WebsiteSearchCard({ result, onClose }: { result: WebsiteSearchResult; o
       <CardContent className="space-y-4">
         {result.found ? (
           <>
-            <div className="rounded-2xl border border-[#30D158]/20 bg-[#30D158]/6 p-4">
+            <div className="rounded-2xl border border-[hsl(152_48%_50%)]/20 bg-[hsl(152_48%_50%)]/6 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <CircleCheck className="w-5 h-5 text-[#30D158]" />
-                <p className="font-semibold text-[#30D158]">{result.websites.length} website(s) found!</p>
+                <CircleCheck className="w-5 h-5 text-[hsl(152_48%_50%)]" />
+                <p className="font-semibold text-[hsl(152_48%_50%)]">{result.websites.length} website(s) found!</p>
               </div>
-              <p className="text-sm text-[#30D158]">The first match was saved to the lead automatically.</p>
+              <p className="text-sm text-[hsl(152_48%_50%)]">The first match was saved to the lead automatically.</p>
             </div>
             <div className="space-y-2">
               {result.websites.map((website, i) => (
                 <div key={i} className="rounded-2xl border border-white/10 p-3 hover:bg-white/5 transition-all">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <a href={website.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-[#0A84FF] hover:underline break-all">{website.url}</a>
+                      <a href={website.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-(--leadac-500) hover:underline break-all">{website.url}</a>
                       {website.title && <p className="text-xs text-white/50 mt-0.5 truncate">{website.title}</p>}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
@@ -1892,7 +1892,7 @@ function WebsitePlanSection({
         >
           <div className="min-w-0">
             <CardTitle className="text-[17px] flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#0A84FF] shrink-0" />
+              <FileText className="w-4 h-4 text-(--leadac-500) shrink-0" />
               AI Website Plan
             </CardTitle>
             <p className="text-[12px] text-white/40 mt-1">{summaryLine}</p>
@@ -1981,7 +1981,7 @@ function DossierSection({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <CardTitle className="text-[17px] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#0A84FF]" />
+              <Sparkles className="w-4 h-4 text-(--leadac-500)" />
               AI Dossier
             </CardTitle>
             <p className="text-[12px] text-white/40 mt-1 max-w-xl">
@@ -2037,7 +2037,7 @@ function DossierSection({
       {loading && !hasContent && (
         <CardContent>
           <div className="py-10 flex flex-col items-center justify-center text-center gap-2">
-            <Loader2 className="w-5 h-5 text-[#0A84FF] animate-spin" />
+            <Loader2 className="w-5 h-5 text-(--leadac-500) animate-spin" />
             <p className="text-[13px] text-white/55">
               Gathering raw agent data and sending it to Gemini 2.5 Flash...
             </p>
@@ -2111,7 +2111,7 @@ function HeroContactBar({
           title={`Call ${phone}`}
           className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] text-white/85 hover:bg-white/10 hover:border-white/20 hover:text-white transition-colors"
         >
-          <Phone className="w-3.5 h-3.5 text-[#0A84FF]" />
+          <Phone className="w-3.5 h-3.5 text-(--leadac-500)" />
           <span className="truncate max-w-[200px]">{phone}</span>
         </a>
       )}
@@ -2133,7 +2133,7 @@ function HeroContactBar({
           title={`Email ${primaryEmail}`}
           className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] text-white/85 hover:bg-white/10 hover:border-white/20 hover:text-white transition-colors"
         >
-          <Mail className="w-3.5 h-3.5 text-[#FF9F0A]" />
+          <Mail className="w-3.5 h-3.5 text-[hsl(38_70%_52%)]" />
           <span className="truncate max-w-[240px]">{primaryEmail}</span>
         </a>
       )}

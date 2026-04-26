@@ -327,7 +327,7 @@ function PairComparison({
         >
           <strong>Short answer:</strong> {a.name}: {a.bestFor} {b.name}:{" "}
           {b.bestFor} Neither handles local-service discovery with per-lead
-          audits; that's where <a href="/" style={{ color: "#A5B4FC" }}>Leadac AI</a>{" "}
+          audits; that's where <a href="/" style={{ color: "var(--leadac-300)" }}>Leadac AI</a>{" "}
           fits.
         </p>
 

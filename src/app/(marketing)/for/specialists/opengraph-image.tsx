@@ -12,6 +12,6 @@ export default function Image() {
     subtitle:
       "You have the vertical skill. Leadac gives you the client-acquisition muscle — postcode, niche, 47 audited leads, sent.",
     badge: "Specialists",
-    accent: "#34D399",
+    accent: "hsl(152 48% 50%)",
   });
 }

@@ -20,7 +20,7 @@ export function ValidationQuote({
   upvotes,
   comments,
   href,
-  accent = "#C49AFF",
+  accent = "var(--leadac-300)",
 }: ValidationQuoteProps) {
   const reduce = useReducedMotion();
 
@@ -29,7 +29,7 @@ export function ValidationQuote({
       className="relative px-5 py-5 rounded-2xl text-left h-full"
       style={{
         background:
-          "linear-gradient(180deg, rgba(28,28,30,0.6), rgba(20,20,22,0.45))",
+          "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.6), hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.45))",
         border: "0.5px solid rgba(255,255,255,0.08)",
         boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset",
       }}

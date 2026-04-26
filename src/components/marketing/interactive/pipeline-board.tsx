@@ -78,7 +78,7 @@ export function PipelineBoard({
           "linear-gradient(180deg, rgba(32,32,36,0.92) 0%, rgba(22,22,26,0.96) 100%)",
         border: "0.5px solid rgba(255,255,255,0.09)",
         boxShadow:
-          "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(94,35,201,0.25)",
+          "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.25)",
       }}
     >
       <div
@@ -146,20 +146,20 @@ export function PipelineBoard({
                   className="flex items-center gap-1.5 rounded-full transition-all px-3 py-1.5 text-[11.5px] font-medium whitespace-nowrap"
                   style={{
                     background: completed
-                      ? "rgba(52,211,153,0.14)"
+                      ? "hsl(152 48% 50% / 0.14)"
                       : current
-                        ? "rgba(139,92,246,0.18)"
+                        ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18)"
                         : "rgba(255,255,255,0.04)",
                     color: completed
-                      ? "#34D399"
+                      ? "hsl(152 48% 50%)"
                       : current
-                        ? "#C49AFF"
+                        ? "var(--leadac-300)"
                         : "rgba(255,255,255,0.45)",
                     border: current
-                      ? "0.5px solid rgba(139,92,246,0.55)"
+                      ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.55)"
                       : "0.5px solid transparent",
                     boxShadow: current
-                      ? "0 0 0 3px rgba(139,92,246,0.12)"
+                      ? "0 0 0 3px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)"
                       : "none",
                   }}
                 >
@@ -169,8 +169,8 @@ export function PipelineBoard({
                     <span
                       className="w-3 h-3 rounded-full inline-block"
                       style={{
-                        border: `1.5px solid ${current ? "#C49AFF" : "rgba(255,255,255,0.25)"}`,
-                        background: current ? "#8B5CF6" : "transparent",
+                        border: `1.5px solid ${current ? "var(--leadac-300)" : "rgba(255,255,255,0.25)"}`,
+                        background: current ? "hsl(var(--leadac-h) var(--leadac-s) 50%)" : "transparent",
                       }}
                     />
                   )}
@@ -184,7 +184,7 @@ export function PipelineBoard({
                   >
                     <motion.div
                       className="h-full rounded-full"
-                      style={{ background: "rgba(52,211,153,0.55)" }}
+                      style={{ background: "hsl(152 48% 50% / 0.55)" }}
                       initial={false}
                       animate={{ width: i < step ? "100%" : "0%" }}
                       transition={{ duration: 0.4, ease: "easeOut" }}
@@ -209,7 +209,7 @@ export function PipelineBoard({
               border: "0.5px solid rgba(255,255,255,0.07)",
             }}
           >
-            <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-[#C49AFF] mb-1.5">
+            <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-(--leadac-300) mb-1.5">
               {STEPS[step].label}
             </p>
             <p className="text-[13px] text-white/85">
@@ -222,9 +222,9 @@ export function PipelineBoard({
                 transition={{ delay: 0.15, type: "spring", stiffness: 260, damping: 22 }}
                 className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold"
                 style={{
-                  background: "rgba(52,211,153,0.14)",
-                  border: "0.5px solid rgba(52,211,153,0.32)",
-                  color: "#34D399",
+                  background: "hsl(152 48% 50% / 0.14)",
+                  border: "0.5px solid hsl(152 48% 50% / 0.32)",
+                  color: "hsl(152 48% 50%)",
                 }}
               >
                 <Trophy className="w-3 h-3" />

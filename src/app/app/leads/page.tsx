@@ -457,7 +457,7 @@ function LeadsPageContent() {
         {loading ? (
           <Card>
             <CardContent className="p-8 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-6 h-6 text-[#0A84FF] animate-spin" />
+              <Loader2 className="w-6 h-6 text-(--leadac-500) animate-spin" />
               <p className="text-sm text-white/30">Loading...</p>
             </CardContent>
           </Card>
@@ -484,7 +484,7 @@ function LeadsPageContent() {
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/app/leads/${lead.id}`}
-                      className="font-medium text-white hover:text-[#0A84FF] transition-colors text-[15px] leading-snug break-words"
+                      className="font-medium text-white hover:text-(--leadac-500) transition-colors text-[15px] leading-snug break-words"
                     >
                       {lead.businessName}
                     </Link>
@@ -547,7 +547,7 @@ function LeadsPageContent() {
                   )}
                   {watchlistLeadIds.has(lead.id) ? (
                     <Link href={`/app/deals?lead=${lead.id}`}>
-                      <Button size="sm" variant="ghost" className="h-8 px-2 gap-1 text-[11px] text-[#FF9F0A] hover:text-[#FF9F0A]">
+                      <Button size="sm" variant="ghost" className="h-8 px-2 gap-1 text-[11px] text-[hsl(38_70%_52%)] hover:text-[hsl(38_70%_52%)]">
                         <BookmarkCheck className="w-3 h-3" />
                         Saved
                       </Button>
@@ -635,7 +635,7 @@ function LeadsPageContent() {
                 <tr>
                   <td colSpan={5} className="p-8">
                     <div className="flex flex-col items-center justify-center gap-3">
-                      <Loader2 className="w-6 h-6 text-[#0A84FF] animate-spin" />
+                      <Loader2 className="w-6 h-6 text-(--leadac-500) animate-spin" />
                       <p className="text-sm text-white/30">Loading...</p>
                     </div>
                   </td>
@@ -663,7 +663,7 @@ function LeadsPageContent() {
                     <td className="p-3">
                       <Link
                         href={`/app/leads/${lead.id}`}
-                        className="font-medium text-white hover:text-[#0A84FF] transition-colors"
+                        className="font-medium text-white hover:text-(--leadac-500) transition-colors"
                       >
                         {lead.businessName}
                       </Link>
@@ -675,13 +675,13 @@ function LeadsPageContent() {
                       {lead.hasWebsite ? (
                         <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
                           <div className="flex items-center gap-1.5" title="Has website">
-                            <CircleCheck className="w-4 h-4 shrink-0 text-[#30D158]" aria-hidden />
+                            <CircleCheck className="w-4 h-4 shrink-0 text-[hsl(152_48%_50%)]" aria-hidden />
                             <Badge variant="success">Yes</Badge>
                           </div>
                           <button
                             onClick={(e) => { e.preventDefault(); runContentCheck(lead); }}
                             disabled={contentCheckLoading && contentCheckLeadId === lead.id}
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-[#007AFF]/20 bg-[#0A84FF]/[0.06] text-[#0A84FF] hover:bg-[#0A84FF]/10 transition-colors disabled:opacity-50 w-fit"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-(--leadac-500)/20 bg-(--leadac-500)/[0.06] text-(--leadac-500) hover:bg-(--leadac-500)/10 transition-colors disabled:opacity-50 w-fit"
                           >
                             {contentCheckLoading && contentCheckLeadId === lead.id ? (
                               <Loader2 className="w-2.5 h-2.5 animate-spin" />
@@ -694,13 +694,13 @@ function LeadsPageContent() {
                       ) : (
                         <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
                           <div className="flex items-center gap-1.5" title="No website">
-                            <CircleX className="w-4 h-4 shrink-0 text-[#FF453A]" aria-hidden />
+                            <CircleX className="w-4 h-4 shrink-0 text-[hsl(4_62%_54%)]" aria-hidden />
                             <Badge variant="destructive">No</Badge>
                           </div>
                           <button
                             onClick={(e) => { e.preventDefault(); runWebsiteSearch(lead); }}
                             disabled={websiteSearchLoading && websiteSearchLeadId === lead.id}
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-[#FF9F0A]/20 bg-[#FF9500]/[0.06] text-[#FF9F0A] hover:bg-[#FF9500]/10 transition-colors disabled:opacity-50 w-fit"
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-[hsl(38_70%_52%)]/20 bg-[hsl(38_70%_52%)]/[0.06] text-[hsl(38_70%_52%)] hover:bg-[hsl(38_70%_52%)]/10 transition-colors disabled:opacity-50 w-fit"
                           >
                             {websiteSearchLoading && websiteSearchLeadId === lead.id ? (
                               <Loader2 className="w-2.5 h-2.5 animate-spin" />
@@ -733,7 +733,7 @@ function LeadsPageContent() {
                       <div className="flex flex-wrap gap-1">
                         {watchlistLeadIds.has(lead.id) ? (
                           <Link href={`/app/deals?lead=${lead.id}`}>
-                            <Button size="sm" variant="ghost" className="text-[#FF9F0A] hover:text-[#FF9F0A] h-8 px-2 gap-1">
+                            <Button size="sm" variant="ghost" className="text-[hsl(38_70%_52%)] hover:text-[hsl(38_70%_52%)] h-8 px-2 gap-1">
                               <BookmarkCheck className="w-4 h-4 shrink-0" />
                               Open Deal
                             </Button>
@@ -820,7 +820,7 @@ function LeadsPageContent() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ScanSearch className="w-5 h-5 text-[#0A84FF]" />
+              <ScanSearch className="w-5 h-5 text-(--leadac-500)" />
               Content Check Result
             </DialogTitle>
             <DialogDescription>
@@ -829,7 +829,7 @@ function LeadsPageContent() {
           </DialogHeader>
           {contentCheckLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 text-[#0A84FF] animate-spin" />
+              <Loader2 className="w-8 h-8 text-(--leadac-500) animate-spin" />
               <p className="text-sm text-white/30 mt-3">Analyzing website...</p>
             </div>
           ) : contentCheckResult ? (
@@ -851,7 +851,7 @@ function LeadsPageContent() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Globe className="w-5 h-5 text-[#FF9F0A]" />
+              <Globe className="w-5 h-5 text-[hsl(38_70%_52%)]" />
               Website Search Result
             </DialogTitle>
             <DialogDescription>
@@ -862,7 +862,7 @@ function LeadsPageContent() {
           </DialogHeader>
           {websiteSearchLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 text-[#FF9F0A] animate-spin" />
+              <Loader2 className="w-8 h-8 text-[hsl(38_70%_52%)] animate-spin" />
               <p className="text-sm text-white/30 mt-3">Searching for website...</p>
               <p className="text-xs text-white/20 mt-1">Running domain guess and Google search...</p>
             </div>
@@ -880,7 +880,7 @@ function LeadsPageContent() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Bookmark className="w-5 h-5 text-[#0A84FF]" />
+              <Bookmark className="w-5 h-5 text-(--leadac-500)" />
               Add to Shortlist
             </DialogTitle>
             <DialogDescription>
@@ -934,9 +934,9 @@ function LeadsPageContent() {
 
 function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
   const verdictConfig: Record<string, { label: string; color: string; bg: string }> = {
-    placeholder: { label: "Placeholder / Empty Site", color: "text-[#FF453A]", bg: "bg-[#FF453A]/[0.06] border-[#FF453A]/20" },
-    basic: { label: "Basic Website", color: "text-[#FF9F0A]", bg: "bg-[#FF9500]/[0.06] border-[#FF9F0A]/20" },
-    developed: { label: "Developed Website", color: "text-[#30D158]", bg: "bg-[#30D158]/[0.06] border-[#30D158]/20" },
+    placeholder: { label: "Placeholder / Empty Site", color: "text-[hsl(4_62%_54%)]", bg: "bg-[hsl(4_62%_54%)]/[0.06] border-[hsl(4_62%_54%)]/20" },
+    basic: { label: "Basic Website", color: "text-[hsl(38_70%_52%)]", bg: "bg-[hsl(38_70%_52%)]/[0.06] border-[hsl(38_70%_52%)]/20" },
+    developed: { label: "Developed Website", color: "text-[hsl(152_48%_50%)]", bg: "bg-[hsl(152_48%_50%)]/[0.06] border-[hsl(152_48%_50%)]/20" },
     unreachable: { label: "Unreachable", color: "text-white/60", bg: "bg-white/5 border-white/10" },
   };
 
@@ -949,7 +949,7 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
           <p className={`font-semibold text-lg ${config.color}`}>{config.label}</p>
           <div className="flex items-center gap-1.5">
             <span className="text-sm text-white/50">Score:</span>
-            <span className={`text-lg font-bold ${result.score >= 65 ? "text-[#30D158]" : result.score >= 35 ? "text-[#FF9F0A]" : "text-[#FF453A]"}`}>
+            <span className={`text-lg font-bold ${result.score >= 65 ? "text-[hsl(152_48%_50%)]" : result.score >= 35 ? "text-[hsl(38_70%_52%)]" : "text-[hsl(4_62%_54%)]"}`}>
               {result.score}
             </span>
             <span className="text-xs text-white/30">/100</span>
@@ -973,9 +973,9 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
       </div>
 
       {result.builderDetected && (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[#0A84FF]/[0.06] border border-[#007AFF]/20">
-          <Info className="w-4 h-4 text-[#0A84FF] shrink-0" />
-          <span className="text-sm text-[#0A84FF]">Built with <strong>{result.builderDetected}</strong></span>
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-(--leadac-500)/[0.06] border border-(--leadac-500)/20">
+          <Info className="w-4 h-4 text-(--leadac-500) shrink-0" />
+          <span className="text-sm text-(--leadac-500)">Built with <strong>{result.builderDetected}</strong></span>
         </div>
       )}
 
@@ -984,7 +984,7 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
         {result.signals.map((signal, i) => (
           <div key={i} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
             <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${signal.status === "good" ? "bg-[#30D158]" : signal.status === "warning" ? "bg-[#FF9500]" : "bg-[#FF453A]"}`} />
+              <div className={`w-1.5 h-1.5 rounded-full ${signal.status === "good" ? "bg-[hsl(152_48%_50%)]" : signal.status === "warning" ? "bg-[hsl(38_70%_52%)]" : "bg-[hsl(4_62%_54%)]"}`} />
               <span className="text-xs font-medium text-white/70">{signal.label}</span>
             </div>
             <span className="text-xs text-white/50 text-right max-w-[55%] truncate">{signal.detail}</span>
@@ -1000,14 +1000,14 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
     <div className="space-y-4 pt-2">
       {result.found ? (
         <>
-          <div className="rounded-xl border border-[#30D158]/20 bg-[#30D158]/[0.06] p-4">
+          <div className="rounded-xl border border-[hsl(152_48%_50%)]/20 bg-[hsl(152_48%_50%)]/[0.06] p-4">
             <div className="flex items-center gap-2 mb-2">
-              <CircleCheck className="w-5 h-5 text-[#30D158]" />
-              <p className="font-semibold text-[#30D158]">
+              <CircleCheck className="w-5 h-5 text-[hsl(152_48%_50%)]" />
+              <p className="font-semibold text-[hsl(152_48%_50%)]">
                 {result.websites.length} website(s) found!
               </p>
             </div>
-            <p className="text-sm text-[#30D158]">
+            <p className="text-sm text-[hsl(152_48%_50%)]">
               Website(s) found online that were not listed in Google Places. The first match was saved to the lead automatically.
             </p>
           </div>
@@ -1021,7 +1021,7 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
                       href={website.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm font-medium text-[#0A84FF] hover:underline break-all"
+                      className="text-sm font-medium text-(--leadac-500) hover:underline break-all"
                     >
                       {website.url}
                     </a>

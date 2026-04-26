@@ -109,7 +109,7 @@ function PackageCard({ pkg, canEdit, onUpdate, onDelete }: PackageCardProps) {
     <div
       className={`rounded-2xl border p-5 space-y-4 transition-all ${
         pkg.isPopular
-          ? "border-[#007AFF]/30 bg-[#0A84FF]/3"
+          ? "border-(--leadac-500)/30 bg-(--leadac-500)/3"
           : "border-white/10 bg-white/5"
       }`}
     >
@@ -140,7 +140,7 @@ function PackageCard({ pkg, canEdit, onUpdate, onDelete }: PackageCardProps) {
             onClick={togglePopular}
             disabled={!canEdit}
             title={pkg.isPopular ? "Remove Popular badge" : "Mark as Popular"}
-            className={pkg.isPopular ? "text-[#0A84FF]" : "text-white/30 hover:text-white/60"}
+            className={pkg.isPopular ? "text-(--leadac-500)" : "text-white/30 hover:text-white/60"}
           >
             <Star className="w-4 h-4" fill={pkg.isPopular ? "currentColor" : "none"} />
           </Button>
@@ -150,7 +150,7 @@ function PackageCard({ pkg, canEdit, onUpdate, onDelete }: PackageCardProps) {
             onClick={remove}
             disabled={!canEdit || deleting}
             title="Delete package"
-            className="text-[#FF453A]/60 hover:text-[#FF453A]"
+            className="text-[hsl(4_62%_54%)]/60 hover:text-[hsl(4_62%_54%)]"
           >
             {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
           </Button>
@@ -162,7 +162,7 @@ function PackageCard({ pkg, canEdit, onUpdate, onDelete }: PackageCardProps) {
         <p className="text-[11.5px] text-white/40 font-medium uppercase tracking-wide">Features</p>
         {features.map((feat, i) => (
           <div key={i} className="flex items-center gap-2">
-            <Check className="w-3.5 h-3.5 text-[#30D158] shrink-0" />
+            <Check className="w-3.5 h-3.5 text-[hsl(152_48%_50%)] shrink-0" />
             <Input
               value={feat}
               onChange={(e) => updateFeature(i, e.target.value)}
@@ -175,7 +175,7 @@ function PackageCard({ pkg, canEdit, onUpdate, onDelete }: PackageCardProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => removeFeature(i)}
-                className="shrink-0 text-white/30 hover:text-[#FF453A]"
+                className="shrink-0 text-white/30 hover:text-[hsl(4_62%_54%)]"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
@@ -266,7 +266,7 @@ export function PackagesForm({ canEdit }: { canEdit: boolean }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Package className="w-5 h-5 text-[#A5B4FC]" />
+          <Package className="w-5 h-5 text-(--leadac-300)" />
           Service Packages
         </CardTitle>
         <CardDescription>

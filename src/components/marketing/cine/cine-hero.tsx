@@ -104,6 +104,10 @@ export function CineHero({
       {/* Background film. Deferred: source is attached after first paint so
           the <h1> wins LCP. mix-blend-lighten lets the dark hero base bleed
           through; on lg+ we let the video render straight. */}
+      {/* Hue-rotate shifts the source video (purple ~270°) to the active
+          brand hue (--leadac-h). Saturate compensates for muddiness that
+          hue-rotate can introduce on already-saturated frames. The whole
+          chain runs on the GPU; theme changes flow through with no JS. */}
       <video
         ref={videoRef}
         autoPlay
@@ -115,6 +119,8 @@ export function CineHero({
         className="absolute bottom-0 left-0 w-full h-auto object-cover mix-blend-lighten lg:mix-blend-normal pointer-events-none z-0 opacity-90"
         style={{
           aspectRatio: "16/9",
+          filter:
+            "saturate(1.1) hue-rotate(calc(var(--leadac-h) * 1deg - 270deg))",
           maskImage:
             "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.35) 8%, black 22%, black 100%)",
           WebkitMaskImage:
@@ -131,7 +137,7 @@ export function CineHero({
         className="absolute inset-0 z-[1] pointer-events-none"
         style={{
           background:
-            "linear-gradient(90deg, rgba(8,4,20,0.75) 0%, rgba(8,4,20,0.55) 35%, rgba(8,4,20,0.25) 70%, rgba(8,4,20,0.05) 100%)",
+            "linear-gradient(90deg, hsl(var(--leadac-h) 60% 5% / 0.75) 0%, hsl(var(--leadac-h) 60% 5% / 0.55) 35%, hsl(var(--leadac-h) 60% 5% / 0.25) 70%, hsl(var(--leadac-h) 60% 5% / 0.05) 100%)",
         }}
       />
       <div
@@ -139,7 +145,7 @@ export function CineHero({
         className="absolute inset-x-0 top-0 h-40 z-[1] pointer-events-none"
         style={{
           background:
-            "linear-gradient(180deg, rgba(8,4,20,0.85) 0%, rgba(8,4,20,0) 100%)",
+            "linear-gradient(180deg, hsl(var(--leadac-h) 60% 5% / 0.85) 0%, hsl(var(--leadac-h) 60% 5% / 0) 100%)",
         }}
       />
 
@@ -163,7 +169,7 @@ export function CineHero({
               className="inline-flex items-center gap-2 rounded-full pl-1.5 pr-4 py-1.5 mb-8 text-[11.5px] text-white/80"
               style={{
                 background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(199, 120, 255, 0.25)",
+                border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 68% / 0.25)",
                 backdropFilter: "blur(18px)",
                 WebkitBackdropFilter: "blur(18px)",
               }}
@@ -174,7 +180,7 @@ export function CineHero({
                   background:
                     "linear-gradient(135deg, var(--vx-purple-400), var(--vx-purple-600))",
                   color: "white",
-                  boxShadow: "0 0 12px rgba(168,117,255,0.5)",
+                  boxShadow: "0 0 12px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.5)",
                 }}
               >
                 <Sparkles className="w-2.5 h-2.5" />

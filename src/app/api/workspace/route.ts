@@ -39,11 +39,21 @@ export async function PATCH(request: Request) {
 
     const updates: Record<string, unknown> = {};
 
-    if (body.name !== undefined || body.slug !== undefined) {
-      if (!body.name?.trim() || !body.slug?.trim()) {
-        return NextResponse.json({ error: "Name and slug are required" }, { status: 400 });
+    if (body.name !== undefined) {
+      if (!body.name.trim()) {
+        return NextResponse.json({ error: "Name is required" }, { status: 400 });
+      }
+      updates.name = body.name.trim();
+    }
+
+    if (body.slug !== undefined) {
+      if (!body.slug.trim()) {
+        return NextResponse.json({ error: "Slug is required" }, { status: 400 });
       }
       const cleanSlug = body.slug.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 32);
+      if (!cleanSlug) {
+        return NextResponse.json({ error: "Slug is required" }, { status: 400 });
+      }
 
       if (cleanSlug !== session.workspace.slug) {
         const exists = await prisma.workspace.findUnique({ where: { slug: cleanSlug } });
@@ -52,7 +62,6 @@ export async function PATCH(request: Request) {
         }
       }
 
-      updates.name = body.name.trim();
       updates.slug = cleanSlug;
     }
 

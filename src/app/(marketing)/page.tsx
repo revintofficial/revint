@@ -333,7 +333,7 @@ export default function LandingPage() {
               className="rounded-full px-4 py-1.5 text-[11.5px] font-medium"
               style={{
                 background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(199, 120, 255, 0.28)",
+                border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 68% / 0.28)",
                 color: "rgba(255,255,255,0.85)",
               }}
             >
@@ -381,7 +381,7 @@ export default function LandingPage() {
               className="rounded-full px-4 py-1.5 text-[11.5px] font-medium"
               style={{
                 background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(199, 120, 255, 0.28)",
+                border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 68% / 0.28)",
                 color: "rgba(255,255,255,0.85)",
               }}
             >
@@ -412,15 +412,15 @@ export default function LandingPage() {
                   className="w-10 h-10 rounded-xl flex items-center justify-center"
                   style={{
                     background:
-                      "linear-gradient(135deg, rgba(196,154,255,0.25), rgba(139,92,246,0.15))",
-                    border: "1px solid rgba(168,117,255,0.35)",
-                    color: "#C49AFF",
+                      "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 78% / 0.25), hsl(var(--leadac-h) var(--leadac-s) 50% / 0.15))",
+                    border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.35)",
+                    color: "var(--leadac-300)",
                   }}
                   aria-hidden
                 >
                   <Sparkles className="w-4.5 h-4.5" />
                 </div>
-                <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-[#C49AFF]">
+                <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300)">
                   Copilot
                 </p>
               </div>
@@ -442,7 +442,7 @@ export default function LandingPage() {
                   >
                     <code
                       className="text-[12px] font-mono shrink-0"
-                      style={{ color: "#C49AFF" }}
+                      style={{ color: "var(--leadac-300)" }}
                     >
                       {t.name}
                     </code>
@@ -469,15 +469,15 @@ export default function LandingPage() {
                   className="w-10 h-10 rounded-xl flex items-center justify-center"
                   style={{
                     background:
-                      "linear-gradient(135deg, rgba(196,154,255,0.25), rgba(139,92,246,0.15))",
-                    border: "1px solid rgba(168,117,255,0.35)",
-                    color: "#C49AFF",
+                      "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 78% / 0.25), hsl(var(--leadac-h) var(--leadac-s) 50% / 0.15))",
+                    border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.35)",
+                    color: "var(--leadac-300)",
                   }}
                   aria-hidden
                 >
                   <Sparkles className="w-4.5 h-4.5" />
                 </div>
-                <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-[#C49AFF]">
+                <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300)">
                   Learning loop
                 </p>
               </div>
@@ -499,7 +499,7 @@ export default function LandingPage() {
                   >
                     <code
                       className="text-[12px] font-mono shrink-0"
-                      style={{ color: "#C49AFF" }}
+                      style={{ color: "var(--leadac-300)" }}
                     >
                       {m.name}
                     </code>
@@ -537,7 +537,7 @@ export default function LandingPage() {
               className="rounded-full px-4 py-1.5 text-[11.5px] font-medium"
               style={{
                 background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(199, 120, 255, 0.28)",
+                border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 68% / 0.28)",
                 color: "rgba(255,255,255,0.85)",
               }}
             >

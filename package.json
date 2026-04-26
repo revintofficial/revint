@@ -20,7 +20,7 @@
     "db:check-pgvector": "tsx scripts/check-pgvector.ts",
     "icons:generate": "tsx scripts/generate-pwa-icons.ts",
     "seo:validate": "tsx scripts/seo-validate.ts",
-    "postinstall": "npx prisma generate",
+    "postinstall": "npx prisma generate && npx playwright install chromium --with-deps",
     "video:seed": "tsx prisma/scripts/seed-video-demo.ts",
     "video:capture": "tsx scripts/capture/run-all.ts",
     "video:capture:audit": "tsx scripts/capture/scenarios/04-audit-morph.ts",

@@ -20,7 +20,7 @@ export type OgTemplateProps = {
 };
 
 export function renderOgImage(props: OgTemplateProps) {
-  const { title, eyebrow, subtitle, badge, accent = "#A5B4FC" } = props;
+  const { title, eyebrow, subtitle, badge, accent = "hsl(248 62% 78%)" } = props;
 
   return new ImageResponse(
     (
@@ -74,7 +74,7 @@ export function renderOgImage(props: OgTemplateProps) {
                 width: 40,
                 height: 40,
                 borderRadius: 10,
-                background: `linear-gradient(135deg, ${accent} 0%, #5E6AD2 100%)`,
+                background: `linear-gradient(135deg, ${accent} 0%, hsl(248 62% 50%) 100%)`,
                 display: "flex",
               }}
             />

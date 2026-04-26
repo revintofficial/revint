@@ -21,7 +21,7 @@ const DropdownMenuContent = React.forwardRef<
         className
       )}
       style={{
-        background: "rgba(28, 28, 30, 0.95)",
+        background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.95)",
         backdropFilter: "saturate(180%) blur(20px)",
         border: "0.5px solid rgba(255, 255, 255, 0.12)",
         boxShadow: "0 16px 48px rgba(0, 0, 0, 0.35)",
@@ -67,7 +67,7 @@ const DropdownMenuSeparator = React.forwardRef<
   <DropdownMenuPrimitive.Separator
     ref={ref}
     className={cn("-mx-1 my-1 h-px", className)}
-    style={{ backgroundColor: "rgba(84, 84, 88, 0.35)" }}
+    style={{ backgroundColor: "hsl(var(--leadac-h) var(--leadac-ns) 35% / 0.35)" }}
     {...props}
   />
 ));

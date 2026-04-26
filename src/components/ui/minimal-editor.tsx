@@ -67,7 +67,7 @@ export function MinimalEditor({
 function MinimalToolbar({ editor }: { editor: Editor }) {
   const btn = (active: boolean) =>
     `p-1.5 rounded-md transition-colors ${
-      active ? "bg-[#0A84FF]/15 text-[#0A84FF]" : "text-white/50 hover:bg-white/10 hover:text-white/80"
+      active ? "bg-(--leadac-500)/15 text-(--leadac-300)" : "text-white/50 hover:bg-white/10 hover:text-white/80"
     }`;
 
   return (

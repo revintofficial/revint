@@ -22,10 +22,10 @@ export interface UserMenuProps {
 }
 
 const PLAN_BADGE: Record<UserMenuProps["workspace"]["plan"], { label: string; color: string }> = {
-  FREE: { label: "Free", color: "rgba(235, 235, 245, 0.55)" },
-  PRO: { label: "Pro Solo", color: "#0A84FF" },
-  PRO_TEAM: { label: "Pro Team", color: "#5E6AD2" },
-  AGENCY: { label: "Agency", color: "#BF5AF2" },
+  FREE: { label: "Free", color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)" },
+  PRO: { label: "Pro Solo", color: "var(--leadac-500)" },
+  PRO_TEAM: { label: "Pro Team", color: "var(--leadac-500)" },
+  AGENCY: { label: "Agency", color: "var(--leadac-400)" },
 };
 
 function initials(nameOrEmail: string) {
@@ -53,12 +53,12 @@ export function UserMenu({ user, workspace, role, collapsed }: UserMenuProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className={`flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A84FF] ${collapsed ? "md:justify-center md:px-1" : ""}`}
+          className={`flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--leadac-500) ${collapsed ? "md:justify-center md:px-1" : ""}`}
           aria-label="Open account menu"
         >
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold text-white shrink-0"
-            style={{ background: "linear-gradient(135deg, #0A84FF, #5E5CE6)" }}
+            style={{ background: "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 42%))" }}
           >
             {user.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -120,7 +120,7 @@ export function UserMenu({ user, workspace, role, collapsed }: UserMenuProps) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={signOut} className="cursor-pointer text-[#FF453A]">
+        <DropdownMenuItem onSelect={signOut} className="cursor-pointer text-[hsl(4_62%_54%)]">
           <LogOut className="w-3.5 h-3.5 mr-2" />
           Sign out
         </DropdownMenuItem>

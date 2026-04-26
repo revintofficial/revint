@@ -21,7 +21,7 @@ export function PageHeader({ title, subtitle, actions, breadcrumb, className }: 
           {subtitle && (
             <p
               className="text-[13.5px] sm:text-[15px] mt-1"
-              style={{ color: "rgba(235, 235, 245, 0.6)" }}
+              style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.6)" }}
             >
               {subtitle}
             </p>

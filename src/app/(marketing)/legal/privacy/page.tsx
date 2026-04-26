@@ -41,7 +41,7 @@ export default function PrivacyPage() {
         <h2 className="text-[18px] font-semibold text-white mt-6">Your rights</h2>
         <p>
           Email{" "}
-          <a href="mailto:hello@leadac.ai" className="text-[#A5B4FC] hover:underline">
+          <a href="mailto:hello@leadac.ai" className="text-(--leadac-300) hover:underline">
             hello@leadac.ai
           </a>{" "}
           to request a full export or deletion of your account and data.

@@ -55,7 +55,7 @@ export function CineFaq({ eyebrow, headline, sub, contactCta, items }: Props) {
               style={{
                 background: "white",
                 color: "var(--vx-purple-700)",
-                border: "1px solid rgba(139, 92, 246, 0.30)",
+                border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.30)",
               }}
             >
               {contactCta.label}

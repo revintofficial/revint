@@ -131,7 +131,7 @@ export function DiscoveryDemo({
         className="absolute left-1/2 -translate-x-1/2 -top-20 w-[110%] h-[320px] -z-10 pointer-events-none blur-3xl opacity-60"
         style={{
           background:
-            "radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.28), rgba(139,92,246,0.18) 40%, transparent 70%)",
+            "radial-gradient(ellipse at 50% 0%, rgba(167,139,250,0.28), hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18) 40%, transparent 70%)",
         }}
       />
 
@@ -145,7 +145,7 @@ export function DiscoveryDemo({
             "0 1px 0 rgba(255,255,255,0.08) inset",
             "0 24px 60px rgba(0,0,0,0.55)",
             "0 60px 140px rgba(0,0,0,0.55)",
-            "0 80px 200px rgba(94,35,201,0.3)",
+            "0 80px 200px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.3)",
           ].join(", "),
         }}
       >
@@ -200,13 +200,13 @@ export function DiscoveryDemo({
                       style={{
                         background:
                           c === city
-                            ? "rgba(139,92,246,0.16)"
+                            ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16)"
                             : "rgba(255,255,255,0.03)",
                         border:
                           c === city
-                            ? "0.5px solid rgba(139,92,246,0.45)"
+                            ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45)"
                             : "0.5px solid rgba(255,255,255,0.06)",
-                        color: c === city ? "#C49AFF" : "rgba(255,255,255,0.65)",
+                        color: c === city ? "var(--leadac-300)" : "rgba(255,255,255,0.65)",
                       }}
                     >
                       {c}
@@ -233,13 +233,13 @@ export function DiscoveryDemo({
                       style={{
                         background:
                           n === niche
-                            ? "rgba(139,92,246,0.16)"
+                            ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16)"
                             : "rgba(255,255,255,0.03)",
                         border:
                           n === niche
-                            ? "0.5px solid rgba(139,92,246,0.45)"
+                            ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45)"
                             : "0.5px solid rgba(255,255,255,0.06)",
-                        color: n === niche ? "#C49AFF" : "rgba(255,255,255,0.65)",
+                        color: n === niche ? "var(--leadac-300)" : "rgba(255,255,255,0.65)",
                       }}
                     >
                       {n}
@@ -255,9 +255,9 @@ export function DiscoveryDemo({
                 // which is the user's escape hatch if the demo ever gets stuck.
                 className="px-3.5 py-2 rounded-lg text-[12.5px] font-semibold text-white inline-flex items-center justify-center gap-1.5"
                 style={{
-                  background: "linear-gradient(180deg, #8B5CF6, #5E23C9)",
+                  background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
                   boxShadow:
-                    "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(124,58,237,0.7), 0 6px 18px rgba(94,35,201,0.4)",
+                    "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.7), 0 6px 18px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.4)",
                 }}
               >
                 {phase === "running" ? (
@@ -291,7 +291,7 @@ export function DiscoveryDemo({
               )}
               {phase === "done" && (
                 <>
-                  <CheckCircle2 className="w-3 h-3 text-[#34D399]" />
+                  <CheckCircle2 className="w-3 h-3 text-[hsl(152_48%_50%)]" />
                   {visibleCount} of {leads.length} loaded
                 </>
               )}
@@ -315,7 +315,7 @@ export function DiscoveryDemo({
                   className="h-full rounded-full"
                   style={{
                     background:
-                      "linear-gradient(90deg, #8B5CF6, #C49AFF, #8B5CF6)",
+                      "linear-gradient(90deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 78%), hsl(var(--leadac-h) var(--leadac-s) 50%))",
                     backgroundSize: "200% 100%",
                   }}
                   initial={{ width: "0%", backgroundPosition: "0% 0%" }}
@@ -378,11 +378,11 @@ export function DiscoveryDemo({
               transition={{ delay: 0.2 }}
               className="mt-4 px-3 py-2.5 rounded-xl flex items-center gap-2"
               style={{
-                background: "rgba(52, 211, 153, 0.07)",
-                border: "0.5px solid rgba(52, 211, 153, 0.2)",
+                background: "hsl(152 48% 50% / 0.07)",
+                border: "0.5px solid hsl(152 48% 50% / 0.2)",
               }}
             >
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[hsl(152_48%_50%)] shrink-0" />
               <p className="text-[11.5px] text-white/75">
                 <span className="font-semibold text-white">Next step:</span>{" "}
                 {caption ??

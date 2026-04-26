@@ -41,7 +41,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   });
 
   try {
-    const features = await crawlWebsite(lead.websiteUrl);
+    const features = await crawlWebsite(lead.websiteUrl, lead.primaryType ?? undefined);
     const featuresWithExtras = features as typeof features & {
       contactEmails?: string[];
       socialProfiles?: Record<string, string | null>;

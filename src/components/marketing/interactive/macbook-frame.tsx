@@ -47,7 +47,7 @@ export function MacBookFrame({
         className="hidden sm:block absolute -inset-10 -z-10 rounded-[48px] opacity-60 blur-3xl"
         style={{
           background:
-            "radial-gradient(closest-side, rgba(139,92,246,0.28), transparent 70%)",
+            "radial-gradient(closest-side, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.28), transparent 70%)",
         }}
       />
 
@@ -59,7 +59,7 @@ export function MacBookFrame({
           background:
             "linear-gradient(180deg, #2A2A2E 0%, #1A1A1D 50%, #0F0F12 100%)",
           boxShadow:
-            "0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 0.5px rgba(255,255,255,0.05), 0 24px 60px rgba(0,0,0,0.55), 0 80px 200px rgba(94,35,201,0.22)",
+            "0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 0.5px rgba(255,255,255,0.05), 0 24px 60px rgba(0,0,0,0.55), 0 80px 200px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.22)",
         }}
       >
         {/* Camera notch */}
@@ -135,7 +135,7 @@ export function MacBookFrame({
                 style={{
                   background: "rgba(0,0,0,0.35)",
                   border: "0.5px solid rgba(255,255,255,0.08)",
-                  color: "rgba(235,235,245,0.7)",
+                  color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.7)",
                 }}
               >
                 <svg
@@ -168,9 +168,9 @@ export function MacBookFrame({
               <div
                 className="hidden md:block text-[10.5px] font-medium px-2 py-0.5 rounded"
                 style={{
-                  background: "rgba(139,92,246,0.14)",
-                  color: "#C49AFF",
-                  border: "0.5px solid rgba(139,92,246,0.3)",
+                  background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.14)",
+                  color: "var(--leadac-300)",
+                  border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.3)",
                 }}
               >
                 {tabLabel}

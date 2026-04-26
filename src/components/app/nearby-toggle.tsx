@@ -41,7 +41,7 @@ export function NearbyToggle({ active, onToggle }: Props) {
   if (active) {
     return (
       <Button size="sm" variant="outline" onClick={() => onToggle(null)} className="gap-1.5">
-        <MapPin className="w-3.5 h-3.5 text-[#A5B4FC]" /> Nearby: off
+        <MapPin className="w-3.5 h-3.5 text-(--leadac-300)" /> Nearby: off
       </Button>
     );
   }

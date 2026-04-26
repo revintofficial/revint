@@ -47,26 +47,26 @@ export function UpgradeBanner({ usage }: UpgradeBannerProps) {
       <div
         className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
         style={{
-          background: isHard ? "rgba(255, 69, 58, 0.08)" : "rgba(255, 159, 10, 0.07)",
-          border: `0.5px solid ${isHard ? "rgba(255, 69, 58, 0.25)" : "rgba(255, 159, 10, 0.2)"}`,
+          background: isHard ? "hsl(4 62% 54% / 0.08)" : "hsl(38 70% 52% / 0.07)",
+          border: `0.5px solid ${isHard ? "hsl(4 62% 54% / 0.25)" : "hsl(38 70% 52% / 0.2)"}`,
         }}
       >
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-          style={{ background: isHard ? "rgba(255, 69, 58, 0.15)" : "rgba(255, 159, 10, 0.15)" }}
+          style={{ background: isHard ? "hsl(4 62% 54% / 0.15)" : "hsl(38 70% 52% / 0.15)" }}
         >
           <Sparkles
             className="w-3.5 h-3.5"
-            style={{ color: isHard ? "#FF453A" : "#FF9F0A" }}
+            style={{ color: isHard ? "hsl(4 62% 54%)" : "hsl(38 70% 52%)" }}
           />
         </div>
-        <p className="flex-1 text-[12.5px]" style={{ color: "rgba(235, 235, 245, 0.85)" }}>
+        <p className="flex-1 text-[12.5px]" style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.85)" }}>
           {message}
         </p>
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="flex items-center gap-1 text-[12px] font-semibold text-[#0A84FF] hover:text-[#64D2FF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A84FF] rounded px-1"
+          className="flex items-center gap-1 text-[12px] font-semibold text-(--leadac-500) hover:text-(--leadac-300) focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--leadac-500) rounded px-1"
           aria-haspopup="dialog"
           aria-expanded={modalOpen}
         >

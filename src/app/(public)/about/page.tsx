@@ -56,7 +56,7 @@ export default function AboutIndexPage() {
           }}
         >
           We write occasionally at{" "}
-          <Link href="/blog" style={{ color: "#A5B4FC" }}>
+          <Link href="/blog" style={{ color: "var(--leadac-300)" }}>
             the blog
           </Link>
           .

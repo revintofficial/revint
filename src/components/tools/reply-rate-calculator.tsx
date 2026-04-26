@@ -341,7 +341,7 @@ export default function ReplyRateCalculator() {
             type="submit"
             style={{
               padding: "10px 22px",
-              background: "#A5B4FC",
+              background: "var(--leadac-300)",
               color: "#0b0b0d",
               border: "none",
               borderRadius: 8,
@@ -358,7 +358,7 @@ export default function ReplyRateCalculator() {
             style={{
               marginTop: 12,
               fontSize: 13,
-              color: "#A5B4FC",
+              color: "var(--leadac-300)",
             }}
           >
             Sent — check your inbox.
@@ -369,7 +369,7 @@ export default function ReplyRateCalculator() {
             style={{
               marginTop: 12,
               fontSize: 13,
-              color: "#fca5a5",
+              color: "hsl(4 42% 72%)",
             }}
           >
             Something went wrong. Try again in a moment.

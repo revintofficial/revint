@@ -151,7 +151,7 @@ function SceneText({
     <div>
       {scene.eyebrow && (
         <div className="flex items-center gap-3 mb-3">
-          <span className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-[#C49AFF]">
+          <span className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300)">
             {scene.eyebrow}
           </span>
           {index !== undefined && total !== undefined && (

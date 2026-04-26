@@ -100,7 +100,7 @@ export function OpenerComposer({
                 "linear-gradient(180deg, rgba(32,32,36,0.92) 0%, rgba(22,22,26,0.96) 100%)",
               border: "0.5px solid rgba(255,255,255,0.09)",
               boxShadow:
-                "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(94,35,201,0.25)",
+                "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.25)",
             }
       }
     >
@@ -114,7 +114,7 @@ export function OpenerComposer({
         }}
       >
         <div className="flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-[#C49AFF]" />
+          <Sparkles className="w-3.5 h-3.5 text-(--leadac-300)" />
           <p className="text-[11.5px] font-medium text-white">
             AI-drafted opener
           </p>
@@ -148,7 +148,7 @@ export function OpenerComposer({
         {typed}
         {!done && !reduce && (
           <motion.span
-            className="inline-block w-[7px] h-[14px] ml-0.5 -mb-0.5 bg-[#C49AFF] align-middle"
+            className="inline-block w-[7px] h-[14px] ml-0.5 -mb-0.5 bg-(--leadac-300) align-middle"
             animate={{ opacity: [1, 0, 1] }}
             transition={{ duration: 0.9, repeat: Infinity }}
           />
@@ -178,9 +178,9 @@ export function OpenerComposer({
               exit={{ opacity: 0 }}
               className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold inline-flex items-center gap-1.5"
               style={{
-                background: "rgba(52,211,153,0.14)",
-                border: "0.5px solid rgba(52,211,153,0.32)",
-                color: "#34D399",
+                background: "hsl(152 48% 50% / 0.14)",
+                border: "0.5px solid hsl(152 48% 50% / 0.32)",
+                color: "hsl(152 48% 50%)",
               }}
             >
               <Check className="w-3.5 h-3.5" />
@@ -196,9 +196,9 @@ export function OpenerComposer({
               onClick={() => setSent(true)}
               className="px-3 py-1.5 rounded-lg text-[11.5px] font-semibold text-white inline-flex items-center gap-1.5 disabled:opacity-50"
               style={{
-                background: "linear-gradient(180deg, #8B5CF6, #5E23C9)",
+                background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
                 boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(124,58,237,0.6)",
+                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.6)",
               }}
             >
               <Send className="w-3 h-3" />

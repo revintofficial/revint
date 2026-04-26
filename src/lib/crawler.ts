@@ -38,7 +38,7 @@ function extractSecurityHeaders(headers: Record<string, string>): SecurityHeader
   };
 }
 
-export async function crawlWebsite(url: string): Promise<WebsiteFeatures> {
+export async function crawlWebsite(url: string, businessType?: string | null): Promise<WebsiteFeatures> {
   const browser = await getBrowser();
   let page: Page | null = null;
 
@@ -78,7 +78,7 @@ export async function crawlWebsite(url: string): Promise<WebsiteFeatures> {
 
     const html = await page.content();
 
-    const features = extractFeatures(html, url);
+    const features = extractFeatures(html, url, businessType);
     features.loadTimeMs = loadTimeMs;
     features.securityHeaders = securityHeaders;
     features.consoleErrors = consoleErrors.slice(0, 10);

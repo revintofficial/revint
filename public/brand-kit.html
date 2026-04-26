@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Leadac AI — Brand Kit</title>
+<style>
+  :root {
+    /* Aktif tema: Burnt Amber (38°, 78%) */
+    --h: 38;
+    --s: 78%;
+    --ns: 7%;
+    --nts: 10%;
+
+    --p-100: hsl(var(--h) var(--s) 88%);
+    --p-200: hsl(var(--h) var(--s) 78%);
+    --p-300: hsl(var(--h) var(--s) 68%);
+    --p-400: hsl(var(--h) var(--s) 58%);
+    --p-500: hsl(var(--h) var(--s) 50%);
+    --p-600: hsl(var(--h) var(--s) 42%);
+    --p-700: hsl(var(--h) var(--s) 34%);
+    --p-800: hsl(var(--h) var(--s) 26%);
+    --p-900: hsl(var(--h) var(--s) 18%);
+
+    --bg:      hsl(var(--h) var(--ns) 5%);
+    --surface: hsl(var(--h) var(--ns) 8%);
+    --card:    hsl(var(--h) var(--ns) 11%);
+    --hover:   hsl(var(--h) var(--ns) 14%);
+    --border:  hsl(var(--h) var(--ns) 18%);
+
+    --t-1: hsl(var(--h) var(--nts) 92%);
+    --t-2: hsl(var(--h) var(--nts) 70%);
+    --t-3: hsl(var(--h) var(--nts) 50%);
+    --t-muted: hsl(var(--h) var(--nts) 38%);
+
+    --success: hsl(152 48% 50%);
+    --warning: hsl(38 70% 52%);
+    --error:   hsl(4 62% 54%);
+
+    --glow: 0 0 32px hsl(var(--h) var(--s) 50% / 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--t-1);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 64px 32px 120px;
+  }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    padding: 64px 56px;
+    border-radius: 28px;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 80% 20%, hsl(var(--h) var(--s) 50% / 0.25), transparent 55%),
+      radial-gradient(circle at 10% 90%, hsl(var(--h) var(--s) 26% / 0.4), transparent 55%),
+      var(--surface);
+    border: 1px solid var(--border);
+    margin-bottom: 64px;
+  }
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: hsl(var(--h) var(--s) 50% / 0.12);
+    color: var(--p-200);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    border: 1px solid hsl(var(--h) var(--s) 50% / 0.25);
+  }
+  .hero-eyebrow::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--p-500);
+    box-shadow: 0 0 12px var(--p-500);
+  }
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    line-height: 1.05;
+    margin: 0 0 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    max-width: 18ch;
+  }
+  .hero h1 .accent {
+    background: linear-gradient(135deg, var(--p-300) 0%, var(--p-500) 60%, var(--p-700) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p {
+    font-size: 17px;
+    color: var(--t-2);
+    max-width: 60ch;
+    margin: 0;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 32px;
+    margin-top: 36px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--t-3);
+  }
+  .hero-meta strong {
+    display: block;
+    color: var(--t-1);
+    font-size: 18px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    margin-top: 4px;
+  }
+
+  /* SECTIONS */
+  section { margin-bottom: 72px; }
+  h2 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    letter-spacing: -0.015em;
+  }
+  h2 .num {
+    color: var(--t-muted);
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 14px;
+    font-weight: 400;
+    margin-right: 12px;
+  }
+  .lede {
+    color: var(--t-2);
+    font-size: 15px;
+    margin: 0 0 28px;
+    max-width: 70ch;
+  }
+
+  /* HERO BRAND COLOR — giant card */
+  .star {
+    background: linear-gradient(135deg, var(--p-400) 0%, var(--p-600) 100%);
+    border-radius: 24px;
+    padding: 56px 48px;
+    color: var(--bg);
+    box-shadow: var(--glow);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 32px;
+    align-items: end;
+  }
+  .star .label {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+    margin-bottom: 16px;
+  }
+  .star .name {
+    font-size: 36px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+  }
+  .star .codes {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 15px;
+    line-height: 1.9;
+    opacity: 0.85;
+  }
+  .star .codes strong {
+    display: inline-block;
+    width: 56px;
+    opacity: 0.6;
+    font-weight: 500;
+  }
+
+  /* SCALE GRID */
+  .scale {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+  }
+  .swatch {
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--card);
+    border: 1px solid var(--border);
+    transition: transform 0.18s ease, border-color 0.18s ease;
+    cursor: pointer;
+  }
+  .swatch:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--h) var(--s) 50% / 0.4);
+  }
+  .swatch .chip {
+    height: 96px;
+    position: relative;
+  }
+  .swatch .chip.ring::after {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    pointer-events: none;
+  }
+  .swatch .meta {
+    padding: 14px 16px 16px;
+  }
+  .swatch .role {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--t-3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+  .swatch .hex {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 14px;
+    color: var(--t-1);
+  }
+  .swatch .rgb {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: var(--t-muted);
+    margin-top: 4px;
+  }
+
+  /* USE-CASE CARDS */
+  .channels {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .channel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px 24px 20px;
+  }
+  .channel h3 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .channel .sub {
+    color: var(--t-3);
+    font-size: 13px;
+    margin: 0 0 18px;
+  }
+  .channel ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .channel li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 13.5px;
+    color: var(--t-2);
+  }
+  .channel li:last-child { border-bottom: 0; }
+  .channel li .pin {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .channel li code {
+    margin-left: auto;
+    font-size: 11.5px;
+    color: var(--t-muted);
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  /* DO / DONT */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
+  .case {
+    border-radius: 18px;
+    padding: 28px 28px 24px;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+  .case.do {
+    border-color: hsl(152 48% 50% / 0.3);
+    background: linear-gradient(180deg, hsl(152 48% 50% / 0.06), var(--card));
+  }
+  .case.dont {
+    border-color: hsl(4 62% 54% / 0.3);
+    background: linear-gradient(180deg, hsl(4 62% 54% / 0.06), var(--card));
+  }
+  .case .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .case.do .tag { background: hsl(152 48% 50% / 0.15); color: var(--success); }
+  .case.dont .tag { background: hsl(4 62% 54% / 0.15); color: var(--error); }
+  .case h3 { margin: 0 0 6px; font-size: 18px; }
+  .case p { color: var(--t-2); margin: 0 0 16px; font-size: 14px; }
+  .preview {
+    border-radius: 12px;
+    padding: 20px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+  }
+
+  /* CTA mockup */
+  .mock-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    background: var(--p-500);
+    color: var(--bg);
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 999px;
+    border: none;
+    box-shadow: var(--glow);
+    cursor: pointer;
+  }
+  .mock-cta-bad {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    background: var(--warning);
+    color: var(--bg);
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 999px;
+    border: none;
+  }
+  .mock-card {
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-top: 12px;
+  }
+  .mock-card .lbl { font-size: 11px; color: var(--t-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .mock-card .val { font-size: 22px; font-weight: 700; color: var(--p-300); margin-top: 4px; font-family: "SF Mono", Menlo, Consolas, monospace; }
+
+  /* Social mockup */
+  .social-mock {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 16px;
+    background: var(--bg);
+    padding: 32px 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    position: relative;
+  }
+  .social-mock::before {
+    content: "";
+    position: absolute;
+    inset: -50% -20% auto auto;
+    width: 70%;
+    height: 70%;
+    background: radial-gradient(circle, hsl(var(--h) var(--s) 50% / 0.5), transparent 65%);
+    filter: blur(40px);
+    pointer-events: none;
+  }
+  .social-mock .top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--t-3);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    z-index: 1;
+    position: relative;
+  }
+  .social-mock .top .dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    background: var(--p-500);
+    box-shadow: 0 0 12px var(--p-500);
+  }
+  .social-mock h4 {
+    font-size: clamp(20px, 3vw, 28px);
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+    z-index: 1;
+    position: relative;
+  }
+  .social-mock h4 .accent { color: var(--p-300); }
+  .social-mock .foot {
+    color: var(--t-3);
+    font-size: 12px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    z-index: 1;
+    position: relative;
+  }
+
+  /* email signature mockup */
+  .sig {
+    background: white;
+    color: #1E1D1A;
+    padding: 22px 24px;
+    border-radius: 12px;
+    font-family: -apple-system, sans-serif;
+    font-size: 13px;
+  }
+  .sig .name { font-weight: 700; font-size: 16px; color: #1E1D1A; }
+  .sig .role { color: #6B6357; font-size: 12px; margin: 2px 0 8px; }
+  .sig .row { display: flex; align-items: center; gap: 10px; margin-top: 6px; color: #6B6357; }
+  .sig .logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #E39A1C;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .sig a { color: #9A6913; text-decoration: none; }
+  .sig a:hover { text-decoration: underline; }
+
+  /* Footer notes */
+  .note {
+    margin-top: 16px;
+    padding: 16px 18px;
+    background: hsl(var(--h) var(--s) 50% / 0.06);
+    border: 1px solid hsl(var(--h) var(--s) 50% / 0.18);
+    border-radius: 12px;
+    font-size: 13.5px;
+    color: var(--t-2);
+  }
+  .note strong { color: var(--p-200); }
+  .warn {
+    background: hsl(4 62% 54% / 0.06);
+    border-color: hsl(4 62% 54% / 0.25);
+  }
+  .warn strong { color: var(--error); }
+
+  .copy-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--p-500);
+    color: var(--bg);
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    box-shadow: var(--glow);
+    z-index: 100;
+  }
+  .copy-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* PRINT / PDF EXPORT */
+  @media print {
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
+    @page {
+      size: A4;
+      margin: 14mm 10mm;
+    }
+    html, body {
+      background: var(--bg) !important;
+    }
+    .wrap {
+      max-width: 100% !important;
+      padding: 0 !important;
+    }
+    .copy-toast { display: none !important; }
+    section {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      margin-bottom: 36px !important;
+    }
+    .hero {
+      break-after: page;
+      page-break-after: always;
+      padding: 36px 32px !important;
+      margin-bottom: 0 !important;
+    }
+    .star {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      padding: 32px !important;
+    }
+    .scale, .channels {
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 10px !important;
+    }
+    .compare {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      grid-template-columns: 1fr 1fr !important;
+    }
+    .case {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      padding: 18px !important;
+    }
+    .swatch {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .swatch .chip { height: 64px !important; }
+    .channel { padding: 16px !important; }
+    .channel li { padding: 5px 0 !important; font-size: 12px !important; }
+    h2 { font-size: 22px !important; margin-top: 0 !important; }
+    .hero h1 { font-size: 40px !important; }
+    .hero p { font-size: 14px !important; }
+    .social-mock { aspect-ratio: 4/3 !important; }
+    section h2 { break-after: avoid; page-break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <span class="hero-eyebrow">Brand Kit · Leadac AI</span>
+    <h1>Yeni renkler. <span class="accent">Tek hue, tek skala, her yerde aynı.</span></h1>
+    <p>
+      Bu kit, Leadac AI'in tüm marka iletişiminde kullanılacak resmi renk paletidir.
+      Sosyal post, ad creative, e-mail imzası, sunum, broşür — hangi mecra olursa
+      olsun bu sayfadaki kodlardan çık.
+    </p>
+    <div class="hero-meta">
+      <div>Aktif tema<strong>Burnt Amber</strong></div>
+      <div>HSL formülü<strong>hsl(38° 78% L%)</strong></div>
+      <div>Asıl renk<strong>#E39A1C</strong></div>
+    </div>
+  </header>
+
+  <!-- ★ PRIMARY -->
+  <section>
+    <h2><span class="num">01</span>Asıl marka rengi</h2>
+    <p class="lede">
+      <strong>Sadece bunu hatırla yeter:</strong> her yerde bu renk. Logo zemini,
+      CTA butonu, link, vurgu, hashtag, video lower-third, brand mention.
+    </p>
+    <div class="star">
+      <div>
+        <div class="label">Leadac Amber · Primary 500 ★</div>
+        <h3 class="name">#E39A1C</h3>
+        <div class="codes">
+          <div><strong>HEX</strong> #E39A1C</div>
+          <div><strong>RGB</strong> 227, 154, 28</div>
+          <div><strong>HSL</strong> hsl(38 78% 50%)</div>
+          <div><strong>CMYK</strong> 0, 32, 88, 11 (print)</div>
+          <div><strong>PMS</strong> ~137 C (Pantone Gold)</div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <strong>İpucu:</strong> Renk kodlarına tıklarsan otomatik panoya kopyalanır.
+      Figma'ya, Canva'ya, Photoshop'a yapıştırabilirsin.
+    </div>
+  </section>
+
+  <!-- 02 Primary scale -->
+  <section>
+    <h2><span class="num">02</span>Açık → Koyu skala</h2>
+    <p class="lede">
+      Asıl renk (500) etrafında 9 adımlı sistematik skala. Background gradient,
+      hover state, dark mode tone'u, ikon outline gibi detaylar için kullan.
+      İçinden hangisini seçtiğin önemli değil — hepsi aynı aileden.
+    </p>
+    <div class="scale">
+      <div class="swatch" data-copy="#F8E7C9">
+        <div class="chip" style="background: #F8E7C9"></div>
+        <div class="meta"><div class="role">Primary 100 · pale</div><div class="hex">#F8E7C9</div><div class="rgb">rgb(248, 231, 201)</div></div>
+      </div>
+      <div class="swatch" data-copy="#F3D39B">
+        <div class="chip" style="background: #F3D39B"></div>
+        <div class="meta"><div class="role">Primary 200</div><div class="hex">#F3D39B</div><div class="rgb">rgb(243, 211, 155)</div></div>
+      </div>
+      <div class="swatch" data-copy="#EDBE6E">
+        <div class="chip" style="background: #EDBE6E"></div>
+        <div class="meta"><div class="role">Primary 300</div><div class="hex">#EDBE6E</div><div class="rgb">rgb(237, 190, 110)</div></div>
+      </div>
+      <div class="swatch" data-copy="#E7AA40">
+        <div class="chip" style="background: #E7AA40"></div>
+        <div class="meta"><div class="role">Primary 400</div><div class="hex">#E7AA40</div><div class="rgb">rgb(231, 170, 64)</div></div>
+      </div>
+      <div class="swatch" data-copy="#E39A1C" style="border-color: hsl(var(--h) var(--s) 50% / 0.45);">
+        <div class="chip ring" style="background: #E39A1C; box-shadow: 0 0 32px hsl(38 78% 50% / 0.4);"></div>
+        <div class="meta"><div class="role" style="color: var(--p-300);">Primary 500 ★ Brand</div><div class="hex">#E39A1C</div><div class="rgb">rgb(227, 154, 28)</div></div>
+      </div>
+      <div class="swatch" data-copy="#BF8118">
+        <div class="chip" style="background: #BF8118"></div>
+        <div class="meta"><div class="role">Primary 600</div><div class="hex">#BF8118</div><div class="rgb">rgb(191, 129, 24)</div></div>
+      </div>
+      <div class="swatch" data-copy="#9A6913">
+        <div class="chip" style="background: #9A6913"></div>
+        <div class="meta"><div class="role">Primary 700</div><div class="hex">#9A6913</div><div class="rgb">rgb(154, 105, 19)</div></div>
+      </div>
+      <div class="swatch" data-copy="#76500F">
+        <div class="chip" style="background: #76500F"></div>
+        <div class="meta"><div class="role">Primary 800</div><div class="hex">#76500F</div><div class="rgb">rgb(118, 80, 15)</div></div>
+      </div>
+      <div class="swatch" data-copy="#52370A">
+        <div class="chip" style="background: #52370A"></div>
+        <div class="meta"><div class="role">Primary 900 · darkest</div><div class="hex">#52370A</div><div class="rgb">rgb(82, 55, 10)</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 NEUTRAL -->
+  <section>
+    <h2><span class="num">03</span>Nötr sistem (zemin & yazı)</h2>
+    <p class="lede">
+      Tam siyah/beyaz kullanma. Bunlar "warm dark" nötrler — amber'le harmonize
+      olacak şekilde tonlandı. Sosyal post background, sunum slaytı, video matte.
+    </p>
+    <div class="scale">
+      <div class="swatch" data-copy="#0E0D0C">
+        <div class="chip" style="background: #0E0D0C; border-bottom: 1px solid var(--border);"></div>
+        <div class="meta"><div class="role">BG · deepest</div><div class="hex">#0E0D0C</div><div class="rgb">Tam siyah yerine bunu kullan</div></div>
+      </div>
+      <div class="swatch" data-copy="#161513">
+        <div class="chip" style="background: #161513"></div>
+        <div class="meta"><div class="role">Surface</div><div class="hex">#161513</div><div class="rgb">Slide bg, video matte</div></div>
+      </div>
+      <div class="swatch" data-copy="#1E1D1A">
+        <div class="chip" style="background: #1E1D1A"></div>
+        <div class="meta"><div class="role">Card</div><div class="hex">#1E1D1A</div><div class="rgb">Card / panel bg</div></div>
+      </div>
+      <div class="swatch" data-copy="#312F2B">
+        <div class="chip" style="background: #312F2B"></div>
+        <div class="meta"><div class="role">Border</div><div class="hex">#312F2B</div><div class="rgb">Divider, outline</div></div>
+      </div>
+      <div class="swatch" data-copy="#EDEBE9">
+        <div class="chip" style="background: #EDEBE9"></div>
+        <div class="meta"><div class="role">Text 1 · headline</div><div class="hex">#EDEBE9</div><div class="rgb">Kırık beyaz, ana yazı</div></div>
+      </div>
+      <div class="swatch" data-copy="#BAB5AB">
+        <div class="chip" style="background: #BAB5AB"></div>
+        <div class="meta"><div class="role">Text 2 · body</div><div class="hex">#BAB5AB</div><div class="rgb">Body copy</div></div>
+      </div>
+      <div class="swatch" data-copy="#8C8373">
+        <div class="chip" style="background: #8C8373"></div>
+        <div class="meta"><div class="role">Text 3 · muted</div><div class="hex">#8C8373</div><div class="rgb">Caption, label</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 SEMANTIC -->
+  <section>
+    <h2><span class="num">04</span>Status renkleri</h2>
+    <p class="lede">
+      Sadece state göstermek için (success / uyarı / hata). Marka iletişiminde
+      genelde kullanma — "kırmızı = kötü" hissi vermesin.
+    </p>
+    <div class="scale">
+      <div class="swatch" data-copy="#42BD84">
+        <div class="chip" style="background: #42BD84"></div>
+        <div class="meta"><div class="role">Success</div><div class="hex">#42BD84</div><div class="rgb">"Booked", "Sent", ✓</div></div>
+      </div>
+      <div class="swatch" data-copy="#DA9B2F">
+        <div class="chip" style="background: #DA9B2F"></div>
+        <div class="meta"><div class="role">Warning ⚠</div><div class="hex">#DA9B2F</div><div class="rgb">Brand'e çok yakın — dikkat</div></div>
+      </div>
+      <div class="swatch" data-copy="#D24B41">
+        <div class="chip" style="background: #D24B41"></div>
+        <div class="meta"><div class="role">Error</div><div class="hex">#D24B41</div><div class="rgb">"Failed", error toast</div></div>
+      </div>
+    </div>
+    <div class="note warn">
+      <strong>Önemli:</strong> Aktif tema amber olduğu için <code>#E39A1C</code> (brand)
+      ile <code>#DA9B2F</code> (warning) çok yakın. Aynı görsel/postta
+      <em>ikisini birden kullanma</em>. Tek bir post'ta sadece marka rengi
+      olsun, status renklerini ürün dashboard'ı dışında tutmaya çalış.
+    </div>
+  </section>
+
+  <!-- 05 CHANNEL KIT -->
+  <section>
+    <h2><span class="num">05</span>Kanal-bazlı kullanım</h2>
+    <p class="lede">
+      Hangi mecrada hangi rengi kullan. Tıkla, hex'i kopyala, çalış.
+    </p>
+    <div class="channels">
+
+      <div class="channel">
+        <h3>Instagram / X / LinkedIn post</h3>
+        <p class="sub">Square veya 4:5 görsel</p>
+        <ul>
+          <li><span class="pin" style="background:#0E0D0C"></span> Background <code>#0E0D0C</code></li>
+          <li><span class="pin" style="background:#EDEBE9"></span> Headline <code>#EDEBE9</code></li>
+          <li><span class="pin" style="background:#BAB5AB"></span> Body <code>#BAB5AB</code></li>
+          <li><span class="pin" style="background:#E39A1C"></span> Vurgu kelime <code>#E39A1C</code></li>
+          <li><span class="pin" style="background:#EDBE6E"></span> Hashtag <code>#EDBE6E</code></li>
+        </ul>
+      </div>
+
+      <div class="channel">
+        <h3>Pitch deck / Sunum</h3>
+        <p class="sub">Keynote, Figma slide, Google Slides</p>
+        <ul>
+          <li><span class="pin" style="background:#0E0D0C"></span> Master BG <code>#0E0D0C</code></li>
+          <li><span class="pin" style="background:#1E1D1A"></span> Card BG <code>#1E1D1A</code></li>
+          <li><span class="pin" style="background:#EDEBE9"></span> H1 / başlık <code>#EDEBE9</code></li>
+          <li><span class="pin" style="background:#BAB5AB"></span> Body <code>#BAB5AB</code></li>
+          <li><span class="pin" style="background:#E39A1C"></span> Chart highlight, KPI <code>#E39A1C</code></li>
+          <li><span class="pin" style="background:#312F2B"></span> Border <code>#312F2B</code></li>
+        </ul>
+      </div>
+
+      <div class="channel">
+        <h3>Ad creative · paid</h3>
+        <p class="sub">Meta, LinkedIn, Google Display</p>
+        <ul>
+          <li><span class="pin" style="background:#E39A1C"></span> CTA buton <code>#E39A1C</code></li>
+          <li><span class="pin" style="background:#0E0D0C"></span> Buton üstü yazı <code>#0E0D0C</code></li>
+          <li><span class="pin" style="background:#161513"></span> Frame/canvas <code>#161513</code></li>
+          <li><span class="pin" style="background:#EDEBE9"></span> Headline <code>#EDEBE9</code></li>
+          <li><span class="pin" style="background:#EDBE6E"></span> Sayı vurgusu <code>#EDBE6E</code></li>
+        </ul>
+      </div>
+
+      <div class="channel">
+        <h3>E-mail imza</h3>
+        <p class="sub">Beyaz tema · light mode</p>
+        <ul>
+          <li><span class="pin" style="background:#FFFFFF"></span> BG <code>#FFFFFF</code></li>
+          <li><span class="pin" style="background:#1E1D1A"></span> İsim <code>#1E1D1A</code></li>
+          <li><span class="pin" style="background:#6B6357"></span> Title / role <code>#6B6357</code></li>
+          <li><span class="pin" style="background:#9A6913"></span> Link rengi <code>#9A6913</code></li>
+          <li><span class="pin" style="background:#E39A1C"></span> Logo bg <code>#E39A1C</code></li>
+        </ul>
+      </div>
+
+      <div class="channel">
+        <h3>Print · kartvizit, broşür</h3>
+        <p class="sub">CMYK / spot color</p>
+        <ul>
+          <li><span class="pin" style="background:#FFFFFF"></span> Background <code>#FFFFFF</code></li>
+          <li><span class="pin" style="background:#1E1D1A"></span> Primary metin <code>#1E1D1A</code></li>
+          <li><span class="pin" style="background:#E39A1C"></span> Accent <code>#E39A1C</code></li>
+          <li><span class="pin" style="background:#E39A1C"></span> Pantone Gold ~137 C</li>
+        </ul>
+      </div>
+
+      <div class="channel">
+        <h3>Video · YouTube, reel, story</h3>
+        <p class="sub">Lower-third, intro, transition</p>
+        <ul>
+          <li><span class="pin" style="background:#0E0D0C"></span> Bar/lower-third bg <code>#0E0D0C</code></li>
+          <li><span class="pin" style="background:#E39A1C"></span> Aksan çizgi, isim <code>#E39A1C</code></li>
+          <li><span class="pin" style="background:#EDEBE9"></span> Yazı <code>#EDEBE9</code></li>
+          <li><span class="pin" style="background:#EDBE6E"></span> İkon highlight <code>#EDBE6E</code></li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 06 LIVE EXAMPLES -->
+  <section>
+    <h2><span class="num">06</span>Canlı örnekler</h2>
+    <p class="lede">
+      Aynı kompozisyonun "doğru" ve "yanlış" hâli.
+    </p>
+
+    <div class="compare">
+
+      <div class="case do">
+        <div class="tag">Böyle yap</div>
+        <h3>Tek aksan · temiz hiyerarşi</h3>
+        <p>Marka rengi sadece tıklanabilir/önemli unsurda. Background nötr, yazı kırık beyaz.</p>
+        <div class="preview">
+          <div class="social-mock">
+            <div class="top"><div class="dot"></div>Leadac AI</div>
+            <h4>47 audited leads<br /><span class="accent">5 dakikada.</span></h4>
+            <div class="foot">leadac.ai</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="case dont">
+        <div class="tag">Bunu yapma</div>
+        <h3>Renk kakofonisi</h3>
+        <p>Brand rengi + warning + primary 700 yan yana. Göz nereye bakacağını şaşırır, "hata mı, başarı mı" karışır.</p>
+        <div class="preview">
+          <div class="social-mock" style="background: linear-gradient(180deg, #DA9B2F 0%, #E39A1C 50%, #9A6913 100%);">
+            <div class="top" style="color: rgba(0,0,0,0.6);"><div class="dot" style="background:#D24B41; box-shadow:none;"></div>Leadac AI</div>
+            <h4 style="color:#1E1D1A;">47 audited leads <span style="color:#42BD84;">5 dakikada.</span></h4>
+            <div class="foot" style="color: rgba(0,0,0,0.5);">leadac.ai</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="case do">
+        <div class="tag">Böyle yap</div>
+        <h3>CTA buton</h3>
+        <p>Brand rengi sadece butonda. Glow ile premium hissi.</p>
+        <div class="preview" style="display:flex; align-items:center; justify-content:center; padding:32px;">
+          <button class="mock-cta">Get free audit →</button>
+        </div>
+      </div>
+
+      <div class="case dont">
+        <div class="tag">Bunu yapma</div>
+        <h3>Yanlış renk seçimi</h3>
+        <p>Warning rengi (#DA9B2F) brand'e çok yakın görünür ama "uyarı" hissi verir. CTA için kullanma.</p>
+        <div class="preview" style="display:flex; align-items:center; justify-content:center; padding:32px;">
+          <button class="mock-cta-bad">Get free audit →</button>
+        </div>
+      </div>
+
+      <div class="case do">
+        <div class="tag">Böyle yap</div>
+        <h3>E-mail imzası</h3>
+        <p>Light tema, logo bg brand rengi, link primary 700.</p>
+        <div class="preview" style="background: white;">
+          <div class="sig">
+            <table style="border:0;"><tr>
+              <td style="padding-right:14px; vertical-align:top;">
+                <div class="logo">L</div>
+              </td>
+              <td>
+                <div class="name">Mert Keser</div>
+                <div class="role">Founder · Leadac AI</div>
+                <div class="row"><span>📧</span><a href="#">mert@leadac.ai</a></div>
+                <div class="row"><span>🌐</span><a href="#">leadac.ai</a></div>
+              </td>
+            </tr></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="case do">
+        <div class="tag">Böyle yap</div>
+        <h3>KPI / metric vurgu</h3>
+        <p>Sayıyı primary 300 ile vurgula — yumuşak, okunaklı, brand'i hatırlatır.</p>
+        <div class="preview">
+          <div class="mock-card">
+            <div class="lbl">Reply rate</div>
+            <div class="val">+ 4.2 ×</div>
+          </div>
+          <div class="mock-card">
+            <div class="lbl">Booked calls / week</div>
+            <div class="val">12</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 07 RULES -->
+  <section>
+    <h2><span class="num">07</span>5 altın kural</h2>
+    <ol style="font-size:15px; color: var(--t-2); line-height: 1.8; padding-left: 20px;">
+      <li>Bir post'ta <strong>tek aksan rengi</strong>. Brand 500 yeterli. Diğerleri nötr olsun.</li>
+      <li>Saf siyah <code>#000</code> veya saf beyaz <code>#FFF</code> kullanma. Bu kitteki nötrleri kullan — sıcak ton korunur.</li>
+      <li><strong>Status renkleri sosyal post'ta yok.</strong> Success/warning/error sadece dashboard içinde.</li>
+      <li>Brand rengi background olarak kullanılırsa üstündeki yazı <code>#0E0D0C</code> olsun, beyaz değil. Kontrast daha temiz çıkar.</li>
+      <li>Renk kodu hatırlamak istemezsen şu üçü yeter:
+        <ul>
+          <li>Brand: <code>#E39A1C</code></li>
+          <li>BG: <code>#0E0D0C</code></li>
+          <li>Yazı: <code>#EDEBE9</code></li>
+        </ul>
+      </li>
+    </ol>
+  </section>
+
+  <footer style="margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border); color: var(--t-muted); font-size: 13px;">
+    Leadac AI Brand Kit · v1.0 · {Tema: Burnt Amber 38° / 78%} · Tema değişirse bu sayfa güncellenmez,
+    yeni paleti <code>node scripts/print-brand-palette.cjs</code> ile alabilirsin.
+  </footer>
+
+</div>
+
+<div class="copy-toast" id="toast">Kopyalandı</div>
+
+<script>
+  document.querySelectorAll(".swatch[data-copy]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const code = el.dataset.copy;
+      navigator.clipboard.writeText(code).then(() => {
+        const t = document.getElementById("toast");
+        t.textContent = code + " kopyalandı";
+        t.classList.add("show");
+        clearTimeout(t._timer);
+        t._timer = setTimeout(() => t.classList.remove("show"), 1400);
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

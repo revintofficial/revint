@@ -21,8 +21,8 @@ export function SettingsNav() {
       <nav
         className="inline-flex items-center gap-1 p-1 rounded-xl mx-4 sm:mx-0 whitespace-nowrap"
         style={{
-          background: "rgba(28, 28, 30, 0.5)",
-          border: "0.5px solid rgba(255, 255, 255, 0.06)",
+          background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
+          border: "0.5px solid hsl(0 0% 100% / 0.06)",
         }}
         aria-label="Settings sections"
       >
@@ -33,10 +33,10 @@ export function SettingsNav() {
               key={t.href}
               href={t.href}
               aria-current={isActive ? "page" : undefined}
-              className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A84FF] shrink-0"
+              className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--leadac-500) shrink-0"
               style={{
-                background: isActive ? "rgba(10, 132, 255, 0.15)" : "transparent",
-                color: isActive ? "white" : "rgba(235, 235, 245, 0.65)",
+                background: isActive ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.15)" : "transparent",
+                color: isActive ? "white" : "var(--leadac-text-2)",
               }}
             >
               {t.label}

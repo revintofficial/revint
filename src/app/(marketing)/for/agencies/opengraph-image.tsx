@@ -12,6 +12,6 @@ export default function Image() {
     subtitle:
       "Replace the saturated Apollo dump with postcode + niche discovery and a per-lead website plan you attach to the first reply.",
     badge: "Agencies",
-    accent: "#A5B4FC",
+    accent: "hsl(248 62% 78%)",
   });
 }

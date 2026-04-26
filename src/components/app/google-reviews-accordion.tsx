@@ -89,7 +89,7 @@ export function GoogleReviewsAccordion({ leadId }: { leadId: string }) {
               <ChevronDown className="w-5 h-5 text-white/30 shrink-0" />
             )}
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <MessageSquare className="w-5 h-5 text-[#0A84FF] shrink-0" />
+              <MessageSquare className="w-5 h-5 text-(--leadac-500) shrink-0" />
               Google Reviews
             </CardTitle>
             {loaded && reviews.length > 0 && (
@@ -179,7 +179,7 @@ function StarRating({ rating }: { rating: number }) {
         <Star
           key={star}
           className={`w-3.5 h-3.5 ${
-            star <= rating ? "text-[#FF9F0A] fill-[#FF9500]" : "text-white/20"
+            star <= rating ? "text-[hsl(38_70%_52%)] fill-[hsl(38_70%_52%)]" : "text-white/20"
           }`}
         />
       ))}

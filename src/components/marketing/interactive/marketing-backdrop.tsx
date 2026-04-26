@@ -20,7 +20,7 @@ export function MarketingBackdrop({
         style={{
           opacity: intensity,
           background:
-            "radial-gradient(closest-side, rgba(139,92,246,0.55), transparent)",
+            "radial-gradient(closest-side, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.55), transparent)",
         }}
       />
       <div
@@ -28,7 +28,7 @@ export function MarketingBackdrop({
         style={{
           opacity: intensity * 0.7,
           background:
-            "radial-gradient(closest-side, rgba(139,92,246,0.4), transparent)",
+            "radial-gradient(closest-side, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.4), transparent)",
         }}
       />
       <div

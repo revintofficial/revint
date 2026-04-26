@@ -17,7 +17,7 @@ const Separator = React.forwardRef<
       orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]",
       className
     )}
-    style={{ backgroundColor: "rgba(84, 84, 88, 0.35)" }}
+    style={{ backgroundColor: "hsl(var(--leadac-h) var(--leadac-ns) 35% / 0.35)" }}
     {...props}
   />
 ));

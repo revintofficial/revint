@@ -29,7 +29,7 @@ const oswald = Oswald({
 export const metadata: Metadata = buildRootMetadata();
 
 export const viewport: Viewport = {
-  themeColor: "#5E6AD2",
+  themeColor: "var(--leadac-500)",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

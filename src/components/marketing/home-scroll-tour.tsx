@@ -35,9 +35,9 @@ const SCENES: ScrollScene[] = [
       <div className="rounded-2xl p-4" style={{
         background: "linear-gradient(180deg, rgba(32,32,36,0.92), rgba(22,22,26,0.96))",
         border: "0.5px solid rgba(255,255,255,0.09)",
-        boxShadow: "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(94,35,201,0.25)",
+        boxShadow: "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.25)",
       }}>
-        <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-[#C49AFF] mb-3 px-1">
+        <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-(--leadac-300) mb-3 px-1">
           Lead detail · click to expand
         </p>
         <LeadCardLive lead={FEATURED_LEAD} defaultExpanded />

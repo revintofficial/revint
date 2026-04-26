@@ -27,8 +27,8 @@ export function BrandingForm({
   role,
 }: Props) {
   const [logoUrl, setLogoUrl] = useState(initialBranding.logoUrl ?? "");
-  const [primaryColor, setPrimaryColor] = useState(initialBranding.primaryColor ?? "#5e6ad2");
-  const [accentColor, setAccentColor] = useState(initialBranding.accentColor ?? "#a5b4fc");
+  const [primaryColor, setPrimaryColor] = useState(initialBranding.primaryColor ?? "hsl(var(--leadac-h) var(--leadac-s) 50%)");
+  const [accentColor, setAccentColor] = useState(initialBranding.accentColor ?? "hsl(var(--leadac-h) var(--leadac-s) 78%)");
   const [footerText, setFooterText] = useState(initialBranding.footerText ?? "");
   const [hideCredit, setHideCredit] = useState(initialBranding.hideLeadacCredit);
   const [publicProfiles, setPublicProfiles] = useState(initialPublicProfilesEnabled);
@@ -106,7 +106,7 @@ export function BrandingForm({
                 </p>
                 <Link
                   href="/app/settings/billing"
-                  className="text-[12px] text-[#A5B4FC] hover:underline mt-2 inline-block"
+                  className="text-[12px] text-(--leadac-300) hover:underline mt-2 inline-block"
                 >
                   Upgrade to Agency →
                 </Link>
@@ -143,7 +143,7 @@ export function BrandingForm({
                     value={primaryColor}
                     onChange={(e) => setPrimaryColor(e.target.value)}
                     disabled={!canEdit}
-                    placeholder="#5e6ad2"
+                    placeholder="hsl(var(--leadac-h) var(--leadac-s) 50%)"
                   />
                 </div>
               </div>
@@ -161,7 +161,7 @@ export function BrandingForm({
                     value={accentColor}
                     onChange={(e) => setAccentColor(e.target.value)}
                     disabled={!canEdit}
-                    placeholder="#a5b4fc"
+                    placeholder="hsl(var(--leadac-h) var(--leadac-s) 78%)"
                   />
                 </div>
               </div>

@@ -278,7 +278,7 @@ const pageStyles = {
     fontSize: 11,
     textTransform: "uppercase" as const,
     letterSpacing: "0.12em",
-    color: "#a5b4fc",
+    color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
     fontWeight: 600,
     margin: "0 0 12px",
   } as const,
@@ -300,7 +300,7 @@ const pageStyles = {
     fontSize: 14,
     margin: "0 0 36px",
   } as const,
-  metaLink: { color: "#a5b4fc", textDecoration: "none" } as const,
+  metaLink: { color: "hsl(var(--leadac-h) var(--leadac-s) 78%)", textDecoration: "none" } as const,
   metaPlain: { color: "rgba(237,237,240,0.55)" } as const,
   section: {
     marginBottom: 32,
@@ -325,7 +325,7 @@ const pageStyles = {
     borderRadius: 12,
   } as const,
   crossLink: {
-    color: "#a5b4fc",
+    color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
     fontSize: 14,
     textDecoration: "none",
   } as const,

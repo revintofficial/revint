@@ -66,7 +66,7 @@ export function CineProcess({ eyebrow, headline, sub, steps }: Props) {
             className="hidden lg:block absolute top-[56px] left-[6%] right-[6%] h-px"
             style={{
               background:
-                "linear-gradient(to right, transparent, rgba(139, 92, 246, 0.35), transparent)",
+                "linear-gradient(to right, transparent, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35), transparent)",
             }}
           />
 
@@ -87,8 +87,8 @@ export function CineProcess({ eyebrow, headline, sub, steps }: Props) {
               <div
                 className="relative z-10 w-[72px] h-[72px] rounded-full flex items-center justify-center bg-white"
                 style={{
-                  border: "1px solid rgba(139, 92, 246, 0.25)",
-                  boxShadow: "0 8px 28px rgba(124, 58, 237, 0.18)",
+                  border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.25)",
+                  boxShadow: "0 8px 28px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.18)",
                 }}
               >
                 <span

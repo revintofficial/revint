@@ -110,7 +110,7 @@ export function OfferFields({
           value={data.niche}
           onChange={(e) => handleNicheChange(e.target.value)}
           disabled={disabled}
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--leadac-500)/50"
         >
           {NICHE_OPTIONS.map((n) => (
             <option key={n.value} value={n.value}>{n.label}</option>
@@ -142,7 +142,7 @@ export function OfferFields({
           maxLength={500}
           rows={3}
           placeholder="One-page, mobile-first website with online booking for local service businesses. Bookings in minutes, live within 14 days."
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-(--leadac-500)/50"
         />
       </Field>
 
@@ -157,7 +157,7 @@ export function OfferFields({
           maxLength={400}
           rows={2}
           placeholder="120+ sites delivered, 14-day average launch, 4.8/5 customer rating."
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-(--leadac-500)/50"
         />
       </Field>
 
@@ -172,7 +172,7 @@ export function OfferFields({
           maxLength={300}
           rows={2}
           placeholder="Measured your site's mobile load time — 4.8s, no booking button. Put together a 1-page draft for you."
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#5E6AD2]/50"
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-(--leadac-500)/50"
         />
       </Field>
 
@@ -182,7 +182,7 @@ export function OfferFields({
             value={data.objective}
             onChange={(e) => update("objective")(e.target.value)}
             disabled={disabled}
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--leadac-500)/50"
           >
             <option value="">Select...</option>
             {OBJECTIVE_OPTIONS.map((o) => (
@@ -196,7 +196,7 @@ export function OfferFields({
             value={data.tone}
             onChange={(e) => update("tone")(e.target.value)}
             disabled={disabled}
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--leadac-500)/50"
           >
             <option value="">Select...</option>
             {TONE_OPTIONS.map((t) => (
@@ -210,7 +210,7 @@ export function OfferFields({
             value={data.length}
             onChange={(e) => update("length")(e.target.value)}
             disabled={disabled}
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--leadac-500)/50"
           >
             <option value="">Select...</option>
             {LENGTH_OPTIONS.map((l) => (
@@ -224,7 +224,7 @@ export function OfferFields({
             value={data.language}
             onChange={(e) => update("language")(e.target.value)}
             disabled={disabled}
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#5E6AD2]/50"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--leadac-500)/50"
           >
             {LANGUAGE_OPTIONS.map((l) => (
               <option key={l.value} value={l.value}>{l.label}</option>
@@ -324,7 +324,7 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-[#A5B4FC]" />
+          <Sparkles className="w-5 h-5 text-(--leadac-300)" />
           My Offer
         </CardTitle>
         <CardDescription>

@@ -358,7 +358,7 @@ export function AiWorkersPanel({ leadId }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#0A84FF]" />
+            <Sparkles className="w-5 h-5 text-(--leadac-500)" />
             AI Workers
           </CardTitle>
         </CardHeader>
@@ -382,7 +382,7 @@ export function AiWorkersPanel({ leadId }: Props) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#0A84FF] shrink-0" />
+              <Sparkles className="w-5 h-5 text-(--leadac-500) shrink-0" />
               AI Workers
             </CardTitle>
             <p className="text-xs text-white/30 mt-1">
@@ -461,7 +461,7 @@ function WorkerRow({
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-3">
       <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 text-[#0A84FF]">
+        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 text-(--leadac-500)">
           <Icon className="w-4 h-4" />
         </div>
         <div className="min-w-0 flex-1">
@@ -497,13 +497,13 @@ function WorkerRow({
               </div>
               <p className="text-xs text-white/50 mt-1 leading-relaxed">{desc}</p>
               {failed && latest?.errorMsg && (
-                <p className="text-[11px] text-[#FF453A] mt-1 flex items-start gap-1">
+                <p className="text-[11px] text-[hsl(4_62%_54%)] mt-1 flex items-start gap-1">
                   <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
                   {latest.errorMsg}
                 </p>
               )}
               {stuck && (
-                <p className="text-[11px] text-[#FF9F0A] mt-1 flex items-start gap-1">
+                <p className="text-[11px] text-[hsl(38_70%_52%)] mt-1 flex items-start gap-1">
                   <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
                   Generation has been waiting over 2 minutes. Click &quot;Force retry&quot; to restart.
                 </p>
@@ -649,7 +649,7 @@ function ViewRunButton({
               </div>
             )}
             {error && (
-              <div className="text-sm text-[#FF453A]">
+              <div className="text-sm text-[hsl(4_62%_54%)]">
                 Failed to load: {error}
               </div>
             )}
@@ -717,7 +717,7 @@ function RunOutputView({ run }: { run: AgentRunDetail }) {
           href={run.artifactUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs text-[#0A84FF] hover:underline"
+          className="inline-flex items-center gap-1.5 text-xs text-(--leadac-500) hover:underline"
         >
           <ExternalLink className="w-3 h-3" />
           {run.artifactUrl}
@@ -795,7 +795,7 @@ function ExportMenu({
       </Button>
       {open && (
         <div
-          className="absolute right-0 mt-1 z-20 rounded-lg border border-white/10 bg-[#121214] p-1 min-w-[140px] shadow-xl"
+          className="absolute right-0 mt-1 z-20 rounded-lg border border-white/10 bg-(--leadac-card) p-1 min-w-[140px] shadow-xl"
           onMouseLeave={() => setOpen(false)}
         >
           {formats.map((f) => (

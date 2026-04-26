@@ -66,7 +66,7 @@ export function EmailAccountsPanel({ accounts: initial }: { accounts: Account[] 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mail className="w-5 h-5 text-[#A5B4FC]" /> Email accounts
+            <Mail className="w-5 h-5 text-(--leadac-300)" /> Email accounts
           </CardTitle>
           <CardDescription>
             Send openers directly from Leadac AI. CSV export for Smartlead/Instantly
@@ -125,7 +125,7 @@ export function EmailAccountsPanel({ accounts: initial }: { accounts: Account[] 
                     onClick={() => disconnect(a.id)}
                     disabled={busy === a.id}
                   >
-                    <Trash2 className="w-3.5 h-3.5 text-[#FF453A]" />
+                    <Trash2 className="w-3.5 h-3.5 text-[hsl(4_62%_54%)]" />
                   </Button>
                 </div>
               ))}

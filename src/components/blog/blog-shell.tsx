@@ -70,7 +70,7 @@ export function PostMetaRow({
     >
       <Link
         href={author.url ?? `/about/${author.slug}`}
-        style={{ color: "#A5B4FC", textDecoration: "none" }}
+        style={{ color: "var(--leadac-300)", textDecoration: "none" }}
       >
         {author.name}
       </Link>
@@ -200,7 +200,7 @@ export function PostCitations({
           <li key={c.url} style={{ padding: "6px 0", color: "rgba(237,237,240,0.75)" }}>
             <a
               href={c.url}
-              style={{ color: "#A5B4FC", textDecoration: "underline" }}
+              style={{ color: "var(--leadac-300)", textDecoration: "underline" }}
               rel="nofollow noopener"
               target="_blank"
             >

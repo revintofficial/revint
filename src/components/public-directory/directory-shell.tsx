@@ -26,7 +26,7 @@ export function DirectoryShell({
           fontSize: 11,
           textTransform: "uppercase",
           letterSpacing: "0.12em",
-          color: "#a5b4fc",
+          color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
           fontWeight: 600,
           margin: "0 0 12px",
         }}
@@ -222,7 +222,7 @@ export function CrossLinkBlock({
             <Link
               href={l.href}
               style={{
-                color: "#a5b4fc",
+                color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
                 fontSize: 14,
                 textDecoration: "none",
               }}

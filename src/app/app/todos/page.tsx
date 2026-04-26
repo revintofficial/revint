@@ -11,11 +11,11 @@ import { Plus, Trash2, CheckSquare, X } from "lucide-react";
 type Todo = { id: string; text: string; done: boolean; column: string };
 
 const ACCENT_COLORS = [
-  "#007AFF",
-  "#34C759",
-  "#FF9500",
-  "#FF3B30",
-  "#5AC8FA",
+  "var(--leadac-500)",
+  "var(--leadac-success)",
+  "var(--leadac-warning)",
+  "var(--leadac-error)",
+  "var(--leadac-300)",
 ];
 
 const STORAGE_KEY = "todo-columns";
@@ -222,7 +222,7 @@ export default function TodosPage() {
                       {columns.length > 1 && (
                         <button
                           onClick={() => removeColumn(colName)}
-                          className="text-white/20 hover:text-[#FF453A] transition-colors rounded p-0.5"
+                          className="text-white/20 hover:text-[hsl(4_62%_54%)] transition-colors rounded p-0.5"
                           title={`Remove ${colName} column`}
                         >
                           <X className="w-3.5 h-3.5" />
@@ -272,7 +272,7 @@ export default function TodosPage() {
                               type="checkbox"
                               checked={todo.done}
                               onChange={() => toggleTodo(key, todo.id)}
-                              className="peer h-4 w-4 rounded border-[rgba(84,84,88,0.35)] text-[#0A84FF] focus:ring-[#0A84FF]/40 transition-all"
+                              className="peer h-4 w-4 rounded border-[hsl(var(--leadac-h) var(--leadac-ns) 35% / 0.35)] text-(--leadac-500) focus:ring-(--leadac-500)/40 transition-all"
                             />
                           </div>
                           <span
@@ -286,7 +286,7 @@ export default function TodosPage() {
                         <button
                           type="button"
                           onClick={() => removeTodo(key, todo.id)}
-                          className="shrink-0 rounded-lg p-1 text-white/20 hover:bg-[#FF453A]/10 hover:text-[#FF453A] transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
+                          className="shrink-0 rounded-lg p-1 text-white/20 hover:bg-[hsl(4_62%_54%)]/10 hover:text-[hsl(4_62%_54%)] transition-all opacity-0 group-hover:opacity-100 focus:opacity-100"
                           aria-label="Delete task"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

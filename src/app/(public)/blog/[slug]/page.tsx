@@ -188,7 +188,7 @@ export default async function BlogPostPage({
               href={post.author.url}
               style={{
                 fontSize: 13,
-                color: "#A5B4FC",
+                color: "var(--leadac-300)",
                 textDecoration: "none",
                 fontWeight: 600,
               }}
@@ -250,7 +250,7 @@ export default async function BlogPostPage({
           line-height: 1.7;
         }
         .prose-body a {
-          color: #A5B4FC;
+          color: hsl(var(--leadac-h) var(--leadac-s) 78%);
           text-decoration: underline;
           text-underline-offset: 2px;
         }
@@ -275,7 +275,7 @@ export default async function BlogPostPage({
           margin: 24px 0;
           padding: 18px 24px;
           background: #121214;
-          border-left: 3px solid #A5B4FC;
+          border-left: 3px solid hsl(var(--leadac-h) var(--leadac-s) 78%);
           border-radius: 0 8px 8px 0;
           color: rgba(237,237,240,0.85);
           font-size: 15px;

@@ -86,7 +86,7 @@ export function PricingCards({ ctaHref = "/signup", carryIntentToSignup = true }
             className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all"
             style={{
               background: cycle === "monthly" ? "rgba(255,255,255,0.08)" : "transparent",
-              color: cycle === "monthly" ? "white" : "rgba(235,235,245,0.55)",
+              color: cycle === "monthly" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
             }}
           >
             Monthly
@@ -98,15 +98,15 @@ export function PricingCards({ ctaHref = "/signup", carryIntentToSignup = true }
             className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all flex items-center gap-1.5"
             style={{
               background: cycle === "annual" ? "rgba(255,255,255,0.08)" : "transparent",
-              color: cycle === "annual" ? "white" : "rgba(235,235,245,0.55)",
+              color: cycle === "annual" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
             }}
           >
             Annual
             <span
               className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
               style={{
-                background: "rgba(48,209,88,0.18)",
-                color: "#5EE6A1",
+                background: "hsl(152 48% 50% / 0.18)",
+                color: "hsl(152 28% 70%)",
               }}
             >
               -{ANNUAL_DISCOUNT_PCT}%
@@ -132,7 +132,7 @@ export function PricingCards({ ctaHref = "/signup", carryIntentToSignup = true }
               className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all"
               style={{
                 background: currency === c ? "rgba(255,255,255,0.08)" : "transparent",
-                color: currency === c ? "white" : "rgba(235,235,245,0.55)",
+                color: currency === c ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
               }}
             >
               {CURRENCY_LABEL[c]}
@@ -155,21 +155,21 @@ export function PricingCards({ ctaHref = "/signup", carryIntentToSignup = true }
               className="relative p-6 rounded-2xl flex flex-col"
               style={{
                 background: isHighlight
-                  ? "linear-gradient(180deg, rgba(139,92,246,0.16), rgba(28,28,30,0.62))"
-                  : "rgba(28,28,30,0.5)",
+                  ? "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16), hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.62))"
+                  : "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
                 border: isHighlight
-                  ? "0.5px solid rgba(168,117,255,0.50)"
+                  ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.50)"
                   : "0.5px solid rgba(255,255,255,0.07)",
-                boxShadow: isHighlight ? "0 24px 60px rgba(124,58,237,0.28)" : "none",
+                boxShadow: isHighlight ? "0 24px 60px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.28)" : "none",
               }}
             >
               {isHighlight && (
                 <span
                   className="absolute -top-2.5 left-6 px-2 py-0.5 rounded-md text-[10.5px] font-semibold"
                   style={{
-                    background: "linear-gradient(135deg, #A875FF, #7C3AED)",
+                    background: "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
                     color: "white",
-                    boxShadow: "0 4px 12px rgba(124,58,237,0.5)",
+                    boxShadow: "0 4px 12px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.5)",
                   }}
                 >
                   Most popular
@@ -204,10 +204,10 @@ export function PricingCards({ ctaHref = "/signup", carryIntentToSignup = true }
                 style={
                   isHighlight
                     ? {
-                        background: "linear-gradient(135deg, #A875FF, #7C3AED)",
+                        background: "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
                         color: "white",
                         boxShadow:
-                          "0 1px 0 rgba(255,255,255,0.25) inset, 0 0 0 0.5px rgba(168,117,255,0.7), 0 8px 24px rgba(124,58,237,0.55)",
+                          "0 1px 0 rgba(255,255,255,0.25) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.7), 0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.55)",
                       }
                     : id === "FREE"
                     ? {
@@ -242,7 +242,7 @@ export function PricingCards({ ctaHref = "/signup", carryIntentToSignup = true }
                   <li key={f} className="flex items-start gap-2">
                     <Check
                       className="w-3.5 h-3.5 mt-0.5 shrink-0"
-                      style={{ color: isHighlight ? "#C49AFF" : "rgba(52, 211, 153, 0.95)" }}
+                      style={{ color: isHighlight ? "var(--leadac-300)" : "hsl(152 48% 50% / 0.95)" }}
                     />
                     <span className="text-white/75">{f}</span>
                   </li>

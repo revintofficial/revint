@@ -16,7 +16,7 @@ export interface UsageBadgeProps {
 function bar(used: number, limit: number) {
   const pct = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
   const color =
-    pct >= 90 ? "#FF453A" : pct >= 70 ? "#FF9F0A" : "#0A84FF";
+    pct >= 90 ? "hsl(4 62% 54%)" : pct >= 70 ? "hsl(38 70% 52%)" : "var(--leadac-500)";
   return { pct, color };
 }
 
@@ -27,7 +27,7 @@ export function UsageBadge({ usage }: UsageBadgeProps) {
   return (
     <Link
       href="/app/settings/billing"
-      className="block rounded-lg p-2.5 hover:bg-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#0A84FF]"
+      className="block rounded-lg p-2.5 hover:bg-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
       style={{
         background: "rgba(255, 255, 255, 0.025)",
         border: "0.5px solid rgba(255, 255, 255, 0.06)",
@@ -39,15 +39,15 @@ export function UsageBadge({ usage }: UsageBadgeProps) {
           {usage.planName} plan
         </span>
         {usage.plan === "FREE" && (
-          <span className="text-[10px] font-medium text-[#0A84FF]">Upgrade →</span>
+          <span className="text-[10px] font-medium text-(--leadac-500)">Upgrade →</span>
         )}
       </div>
 
       <div className="space-y-1.5">
         <div>
           <div className="flex items-center justify-between text-[10.5px] mb-0.5">
-            <span style={{ color: "rgba(235, 235, 245, 0.55)" }}>Leads</span>
-            <span style={{ color: "rgba(235, 235, 245, 0.7)" }}>
+            <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)" }}>Leads</span>
+            <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.7)" }}>
               {usage.leadsUsed.toLocaleString()} / {usage.leadsLimit.toLocaleString()}
             </span>
           </div>
@@ -63,8 +63,8 @@ export function UsageBadge({ usage }: UsageBadgeProps) {
         </div>
         <div>
           <div className="flex items-center justify-between text-[10.5px] mb-0.5">
-            <span style={{ color: "rgba(235, 235, 245, 0.55)" }}>AI credits</span>
-            <span style={{ color: "rgba(235, 235, 245, 0.7)" }}>
+            <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)" }}>AI credits</span>
+            <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.7)" }}>
               {usage.aiUsed.toLocaleString()} / {usage.aiLimit.toLocaleString()}
             </span>
           </div>

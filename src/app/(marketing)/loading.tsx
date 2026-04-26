@@ -11,7 +11,7 @@ export default function MarketingLoading() {
           height: 32,
           borderRadius: "50%",
           border: "2px solid rgba(255,255,255,0.08)",
-          borderTopColor: "#A5B4FC",
+          borderTopColor: "var(--leadac-300)",
           animation: "spin 0.9s linear infinite",
         }}
       />

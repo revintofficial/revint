@@ -53,13 +53,13 @@ export function Faq() {
             key={qa.q}
             className="rounded-xl overflow-hidden"
             style={{
-              background: "rgba(28,28,30,0.5)",
+              background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
               border: "0.5px solid rgba(255,255,255,0.07)",
             }}
           >
             <button
               onClick={() => setOpen(isOpen ? null : i)}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#5E6AD2]"
+              className="w-full flex items-center justify-between gap-3 px-4 py-3.5 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
               aria-expanded={isOpen}
             >
               <span className="text-[14px] font-medium text-white">{qa.q}</span>

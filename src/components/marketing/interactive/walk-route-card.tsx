@@ -78,7 +78,7 @@ export function WalkRouteCard({
       {/* Header */}
       <div className="relative flex items-start justify-between mb-1">
         <div>
-          <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-[#C49AFF] mb-1">
+          <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300) mb-1">
             Next door
           </p>
           <h3 className="text-[14.5px] sm:text-[16px] font-semibold tracking-tight text-white/95 leading-snug">
@@ -88,9 +88,9 @@ export function WalkRouteCard({
         <div
           className="flex items-center gap-1 px-2 py-1 rounded-md text-[10.5px] font-medium"
           style={{
-            background: "rgba(139,92,246,0.14)",
-            border: "0.5px solid rgba(139,92,246,0.3)",
-            color: "#C49AFF",
+            background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.14)",
+            border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.3)",
+            color: "var(--leadac-300)",
           }}
         >
           <Footprints className="w-3 h-3" />
@@ -106,7 +106,7 @@ export function WalkRouteCard({
           className="absolute left-[14px] top-3 bottom-3 w-px"
           style={{
             background:
-              "linear-gradient(180deg, rgba(139,92,246,0.55), rgba(139,92,246,0.1))",
+              "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.55), hsl(var(--leadac-h) var(--leadac-s) 50% / 0.1))",
           }}
         />
 
@@ -137,9 +137,9 @@ export function WalkRouteCard({
                     <div
                       className="w-7 h-7 rounded-full flex items-center justify-center"
                       style={{
-                        background: "linear-gradient(180deg, #8B5CF6, #5E23C9)",
+                        background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
                         boxShadow:
-                          "0 0 0 0.5px rgba(196,154,255,0.5), 0 4px 12px rgba(94,35,201,0.45)",
+                          "0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 78% / 0.5), 0 4px 12px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.45)",
                       }}
                     >
                       <Navigation className="w-3.5 h-3.5 text-white -translate-y-px" />
@@ -149,7 +149,7 @@ export function WalkRouteCard({
                         aria-hidden
                         className="absolute inset-0 rounded-full animate-ping"
                         style={{
-                          background: "rgba(139,92,246,0.4)",
+                          background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.4)",
                           animationDuration: "2.4s",
                         }}
                       />
@@ -161,7 +161,7 @@ export function WalkRouteCard({
                     style={{
                       background: "rgba(28,28,32,0.95)",
                       border: "0.5px solid rgba(255,255,255,0.12)",
-                      color: "rgba(235,235,245,0.85)",
+                      color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.85)",
                     }}
                   >
                     {i + 1}
@@ -219,16 +219,16 @@ export function WalkRouteCard({
 // opportunity for the crew. We tint by opportunity, not by health.
 function scoreBg(s: number): string {
   if (s >= 50) return "rgba(251,113,133,0.14)";
-  if (s >= 40) return "rgba(251,191,36,0.14)";
-  return "rgba(139,92,246,0.14)";
+  if (s >= 40) return "hsl(38 70% 60% / 0.14)";
+  return "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.14)";
 }
 function scoreBorder(s: number): string {
   if (s >= 50) return "rgba(251,113,133,0.32)";
-  if (s >= 40) return "rgba(251,191,36,0.32)";
-  return "rgba(139,92,246,0.32)";
+  if (s >= 40) return "hsl(38 70% 60% / 0.32)";
+  return "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.32)";
 }
 function scoreFg(s: number): string {
-  if (s >= 50) return "#FCA5A5";
-  if (s >= 40) return "#FCD34D";
-  return "#C49AFF";
+  if (s >= 50) return "hsl(4 42% 72%)";
+  if (s >= 40) return "hsl(38 70% 60%)";
+  return "var(--leadac-300)";
 }

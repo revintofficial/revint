@@ -175,7 +175,8 @@ export async function PATCH(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.workspace.offer_patch_error", { err: error });
-    return NextResponse.json({ error: "Failed to update offer" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : String(error);
+    logger.error("api.workspace.offer_patch_error", { err: error, msg });
+    return NextResponse.json({ error: "Failed to update offer", detail: msg }, { status: 500 });
   }
 }

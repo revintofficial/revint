@@ -27,7 +27,8 @@ async function processCrawl(job: Job<CrawlJobData>) {
   });
 
   try {
-    const features = await crawlWebsite(websiteUrl);
+    const leadForType = await prisma.lead.findUnique({ where: { id: leadId }, select: { primaryType: true } });
+    const features = await crawlWebsite(websiteUrl, leadForType?.primaryType ?? undefined);
 
     const featuresWithExtras = features as typeof features & {
       contactEmails?: string[];

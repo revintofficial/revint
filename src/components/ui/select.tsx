@@ -16,18 +16,18 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm text-white ring-offset-black focus:outline-none focus:ring-2 focus:ring-[#0A84FF]/30 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 transition-colors duration-200",
+      "flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm text-white ring-offset-black focus:outline-none focus:ring-2 focus:ring-(--leadac-500)/30 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 transition-colors duration-200",
       className
     )}
     style={{
-      backgroundColor: "rgba(44, 44, 46, 0.8)",
-      borderColor: "rgba(84, 84, 88, 0.35)",
+      backgroundColor: "var(--leadac-card)",
+      borderColor: "var(--leadac-border)",
     }}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4" style={{ color: "rgba(235, 235, 245, 0.4)" }} />
+      <ChevronDown className="h-4 w-4" style={{ color: "var(--leadac-text-3)" }} />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -47,17 +47,17 @@ const SelectContent = React.forwardRef<
         className
       )}
       style={{
-        background: "rgba(28, 28, 30, 0.95)",
+        background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.95)",
         backdropFilter: "saturate(180%) blur(20px)",
         WebkitBackdropFilter: "saturate(180%) blur(20px)",
-        border: "0.5px solid rgba(255, 255, 255, 0.12)",
+        border: "0.5px solid hsl(0 0% 100% / 0.12)",
         boxShadow: "0 8px 24px 0 rgba(0, 0, 0, 0.35)",
       }}
       position={position}
       {...props}
     >
       <SelectPrimitive.ScrollUpButton className="flex cursor-default items-center justify-center py-1">
-        <ChevronUp className="h-4 w-4" style={{ color: "rgba(235, 235, 245, 0.4)" }} />
+        <ChevronUp className="h-4 w-4" style={{ color: "var(--leadac-text-3)" }} />
       </SelectPrimitive.ScrollUpButton>
       <SelectPrimitive.Viewport
         className={cn(
@@ -69,7 +69,7 @@ const SelectContent = React.forwardRef<
         {children}
       </SelectPrimitive.Viewport>
       <SelectPrimitive.ScrollDownButton className="flex cursor-default items-center justify-center py-1">
-        <ChevronDown className="h-4 w-4" style={{ color: "rgba(235, 235, 245, 0.4)" }} />
+        <ChevronDown className="h-4 w-4" style={{ color: "var(--leadac-text-3)" }} />
       </SelectPrimitive.ScrollDownButton>
     </SelectPrimitive.Content>
   </SelectPrimitive.Portal>
@@ -83,14 +83,14 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-[#0A84FF]/15 focus:text-[#0A84FF] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 transition-colors",
+      "relative flex w-full cursor-default select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-(--leadac-500)/15 focus:text-(--leadac-300) data-[disabled]:pointer-events-none data-[disabled]:opacity-50 transition-colors",
       className
     )}
     {...props}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4 text-[#0A84FF]" />
+        <Check className="h-4 w-4 text-(--leadac-300)" />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

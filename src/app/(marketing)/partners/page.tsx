@@ -60,7 +60,7 @@ export default function PartnersPage() {
             className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[600px] rounded-full opacity-30 blur-3xl"
             style={{
               background:
-                "radial-gradient(closest-side, rgba(94,106,210,0.55), transparent)",
+                "radial-gradient(closest-side, hsl(var(--leadac-h) var(--leadac-s) 60% / 0.55), transparent)",
             }}
           />
         </div>
@@ -71,7 +71,7 @@ export default function PartnersPage() {
             style={{
               background: "rgba(255, 255, 255, 0.04)",
               border: "0.5px solid rgba(255, 255, 255, 0.1)",
-              color: "rgba(235, 235, 245, 0.85)",
+              color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.85)",
             }}
           >
             <span>Partner program</span>
@@ -87,7 +87,7 @@ export default function PartnersPage() {
               className="bg-clip-text text-transparent"
               style={{
                 backgroundImage:
-                  "linear-gradient(120deg, #FFFFFF 0%, #C7CCFF 45%, #5E6AD2 100%)",
+                  "linear-gradient(120deg, #FFFFFF 0%, hsl(var(--leadac-h) var(--leadac-s) 88%) 45%, hsl(var(--leadac-h) var(--leadac-s) 50%) 100%)",
               }}
             >
               Get paid for the lifetime of every signup.
@@ -105,9 +105,9 @@ export default function PartnersPage() {
               href="/signup?ref=partners"
               className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
               style={{
-                background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
                 boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
+                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.45)",
               }}
             >
               Apply to the program
@@ -139,18 +139,18 @@ export default function PartnersPage() {
                   className="p-6 rounded-2xl"
                   style={{
                     background:
-                      "linear-gradient(180deg, rgba(28,28,30,0.6), rgba(20,20,22,0.4))",
+                      "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.6), hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.4))",
                     border: "0.5px solid rgba(255,255,255,0.08)",
                   }}
                 >
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
                     style={{
-                      background: "rgba(94, 106, 210, 0.12)",
-                      border: "0.5px solid rgba(94, 106, 210, 0.28)",
+                      background: "hsl(var(--leadac-h) var(--leadac-s) 60% / 0.12)",
+                      border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.28)",
                     }}
                   >
-                    <Icon className="w-5 h-5" style={{ color: "#A5B4FC" }} />
+                    <Icon className="w-5 h-5" style={{ color: "var(--leadac-300)" }} />
                   </div>
                   <h3 className="text-[18px] font-semibold mb-2 tracking-tight">
                     {t.title}
@@ -167,7 +167,7 @@ export default function PartnersPage() {
       <section id="brand-kit" className="py-24 sm:py-28">
         <div className="max-w-3xl mx-auto px-5 sm:px-6">
           <div className="text-center mb-10">
-            <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+            <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
               Brand kit
             </p>
             <h2
@@ -181,7 +181,7 @@ export default function PartnersPage() {
           <div
             className="rounded-2xl p-6 space-y-4"
             style={{
-              background: "rgba(28,28,30,0.5)",
+              background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
               border: "0.5px solid rgba(255,255,255,0.07)",
             }}
           >
@@ -195,9 +195,9 @@ export default function PartnersPage() {
               href="/brand-kit.zip"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold text-white"
               style={{
-                background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
                 boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 6px 18px rgba(49,46,129,0.4)",
+                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 6px 18px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.4)",
               }}
             >
               <Download className="w-4 h-4" />
@@ -227,7 +227,7 @@ export default function PartnersPage() {
                 key={i}
                 className="p-5 rounded-xl"
                 style={{
-                  background: "rgba(28,28,30,0.5)",
+                  background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
                   border: "0.5px solid rgba(255,255,255,0.07)",
                 }}
               >
@@ -258,9 +258,9 @@ export default function PartnersPage() {
             href="/signup?ref=partners"
             className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5"
             style={{
-              background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+              background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
               boxShadow:
-                "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
+                "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.45)",
             }}
           >
             Apply now

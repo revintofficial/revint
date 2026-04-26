@@ -41,7 +41,7 @@ export function LeadMapView({ lat, lng, title, address }: Props) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-[#A5B4FC]" /> Location
+          <MapPin className="w-5 h-5 text-(--leadac-300)" /> Location
         </CardTitle>
         <p className="text-xs text-white/40 mt-1 truncate">{address}</p>
       </CardHeader>

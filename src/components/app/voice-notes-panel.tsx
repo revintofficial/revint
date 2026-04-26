@@ -155,7 +155,7 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mic className="w-5 h-5 text-[#A5B4FC]" />
+            <Mic className="w-5 h-5 text-(--leadac-300)" />
             Voice notes
           </CardTitle>
         </CardHeader>
@@ -173,7 +173,7 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Mic className="w-5 h-5 text-[#A5B4FC]" />
+            <Mic className="w-5 h-5 text-(--leadac-300)" />
             Voice notes
           </CardTitle>
           <p className="text-xs text-white/30 mt-1">
@@ -200,9 +200,9 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
       </CardHeader>
       <CardContent>
         {recording && (
-          <div className="rounded-xl bg-[#FF453A]/10 border border-[#FF453A]/30 p-3 mb-3 flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#FF453A] animate-pulse" />
-            <span className="text-sm text-[#FF453A] font-medium">
+          <div className="rounded-xl bg-[hsl(4_62%_54%)]/10 border border-[hsl(4_62%_54%)]/30 p-3 mb-3 flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-[hsl(4_62%_54%)] animate-pulse" />
+            <span className="text-sm text-[hsl(4_62%_54%)] font-medium">
               Recording: {elapsed}s / {MAX_RECORD_SEC}s
             </span>
           </div>
@@ -227,7 +227,7 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
                   <button
                     type="button"
                     aria-label="Delete"
-                    className="opacity-50 hover:opacity-100 hover:text-[#FF453A]"
+                    className="opacity-50 hover:opacity-100 hover:text-[hsl(4_62%_54%)]"
                     onClick={async () => {
                       if (!confirm("Delete this voice note?")) return;
                       const res = await fetch(`/api/voice-notes/${n.id}`, {

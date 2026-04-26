@@ -28,9 +28,9 @@ const STATUS_ICON = {
 } as const;
 
 const STATUS_COLOR = {
-  good: "#34D399",
-  bad: "#FB7185",
-  warning: "#F59E0B",
+  good: "hsl(152 48% 50%)",
+  bad: "hsl(4 62% 70%)",
+  warning: "hsl(38 70% 52%)",
 } as const;
 
 export function LeadCardLive({
@@ -81,7 +81,7 @@ export function LeadCardLive({
           <div className="flex items-center gap-2 mb-0.5">
             <h4 className="text-[13.5px] font-semibold truncate">{lead.name}</h4>
             <div className="flex items-center gap-0.5 text-[11px] text-white/55">
-              <Star className="w-3 h-3 text-[#FFD60A] fill-[#FFD60A]" />
+              <Star className="w-3 h-3 text-[hsl(38_70%_52%)] fill-[hsl(38_70%_52%)]" />
               <span className="tabular-nums">{lead.rating.toFixed(1)}</span>
               <span className="text-white/30">·</span>
               <span className="tabular-nums">{lead.reviewCount}</span>
@@ -105,9 +105,9 @@ export function LeadCardLive({
                   key={i}
                   className="px-1.5 py-0.5 rounded text-[10px]"
                   style={{
-                    background: "rgba(255, 69, 58, 0.1)",
+                    background: "hsl(4 62% 54% / 0.1)",
                     color: "rgba(255, 100, 92, 0.95)",
-                    border: "0.5px solid rgba(255, 69, 58, 0.18)",
+                    border: "0.5px solid hsl(4 62% 54% / 0.18)",
                   }}
                 >
                   {i}
@@ -118,11 +118,11 @@ export function LeadCardLive({
           {!compact && (
             <p
               className="text-[11.5px] italic leading-snug"
-              style={{ color: "rgba(235, 235, 245, 0.6)" }}
+              style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.6)" }}
             >
               <Sparkles
                 className="w-2.5 h-2.5 inline -mt-0.5 mr-1"
-                style={{ color: "#C49AFF" }}
+                style={{ color: "var(--leadac-300)" }}
               />
               {lead.pitch}
             </p>
@@ -154,7 +154,7 @@ export function LeadCardLive({
                 borderTop: "0.5px solid rgba(255,255,255,0.05)",
               }}
             >
-              <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-[#C49AFF] mt-3 mb-2">
+              <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-(--leadac-300) mt-3 mb-2">
                 Audit signals
               </p>
               <ul className="space-y-1.5">

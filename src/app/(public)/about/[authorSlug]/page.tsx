@@ -115,7 +115,7 @@ export default async function AuthorPage({
             {author.links?.twitter && (
               <a
                 href={author.links.twitter}
-                style={{ color: "#A5B4FC", textDecoration: "none" }}
+                style={{ color: "var(--leadac-300)", textDecoration: "none" }}
                 rel="me noopener"
                 target="_blank"
               >
@@ -125,7 +125,7 @@ export default async function AuthorPage({
             {author.links?.linkedin && (
               <a
                 href={author.links.linkedin}
-                style={{ color: "#A5B4FC", textDecoration: "none" }}
+                style={{ color: "var(--leadac-300)", textDecoration: "none" }}
                 rel="me noopener"
                 target="_blank"
               >
@@ -166,7 +166,7 @@ export default async function AuthorPage({
           </div>
         )}
         <div style={{ marginTop: 40, fontSize: 14 }}>
-          <Link href="/blog" style={{ color: "#A5B4FC", textDecoration: "none" }}>
+          <Link href="/blog" style={{ color: "var(--leadac-300)", textDecoration: "none" }}>
             ← Back to blog
           </Link>
         </div>

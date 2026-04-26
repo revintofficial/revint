@@ -119,8 +119,8 @@ export default function DiscoveryPage() {
         <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#0A84FF]/10 flex items-center justify-center">
-                <Search className="w-5 h-5 text-[#0A84FF]" />
+              <div className="w-10 h-10 rounded-xl bg-(--leadac-500)/10 flex items-center justify-center">
+                <Search className="w-5 h-5 text-(--leadac-500)" />
               </div>
               <div>
                 <CardTitle>Find Businesses</CardTitle>
@@ -231,15 +231,15 @@ export default function DiscoveryPage() {
             )}
 
             {error && (
-              <div className="rounded-xl bg-[#FF453A]/[0.06] border border-[#FF453A]/20 p-4 text-sm text-[#FF453A] flex items-start gap-2">
+              <div className="rounded-xl bg-[hsl(4_62%_54%)]/[0.06] border border-[hsl(4_62%_54%)]/20 p-4 text-sm text-[hsl(4_62%_54%)] flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                 <div><strong>Error:</strong> {error}</div>
               </div>
             )}
 
             {singleResult && (
-              <div className="rounded-xl bg-[#30D158]/[0.06] border border-[#30D158]/20 p-4 text-sm space-y-1.5">
-                <div className="flex items-center gap-2 text-[#30D158] font-medium">
+              <div className="rounded-xl bg-[hsl(152_48%_50%)]/[0.06] border border-[hsl(152_48%_50%)]/20 p-4 text-sm space-y-1.5">
+                <div className="flex items-center gap-2 text-[hsl(152_48%_50%)] font-medium">
                   <CheckCircle2 className="w-4 h-4" />
                   Search complete!
                 </div>
@@ -249,7 +249,7 @@ export default function DiscoveryPage() {
                     <p className="text-[11px] text-white/30">Found</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-lg font-semibold text-[#30D158]">{singleResult.created}</p>
+                    <p className="text-lg font-semibold text-[hsl(152_48%_50%)]">{singleResult.created}</p>
                     <p className="text-[11px] text-white/30">New</p>
                   </div>
                   <div className="text-center">
@@ -266,8 +266,8 @@ export default function DiscoveryPage() {
         <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#FF9500]/10 flex items-center justify-center">
-                <Globe className="w-5 h-5 text-[#FF9F0A]" />
+              <div className="w-10 h-10 rounded-xl bg-[hsl(38_70%_52%)]/10 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-[hsl(38_70%_52%)]" />
               </div>
               <div>
                 <CardTitle>Processing Queue</CardTitle>

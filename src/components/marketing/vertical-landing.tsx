@@ -84,7 +84,7 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
             style={{
               background: "rgba(255, 255, 255, 0.04)",
               border: "0.5px solid rgba(255, 255, 255, 0.1)",
-              color: "rgba(235, 235, 245, 0.85)",
+              color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.85)",
             }}
           >
             <span>{copy.eyebrow}</span>
@@ -100,7 +100,7 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
               className="bg-clip-text text-transparent"
               style={{
                 backgroundImage:
-                  "linear-gradient(120deg, #FFFFFF 0%, #C7CCFF 45%, #5E6AD2 100%)",
+                  "linear-gradient(120deg, #FFFFFF 0%, hsl(var(--leadac-h) var(--leadac-s) 88%) 45%, hsl(var(--leadac-h) var(--leadac-s) 50%) 100%)",
               }}
             >
               {copy.h1Highlight}
@@ -116,9 +116,9 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
               href="/signup"
               className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
               style={{
-                background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
                 boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
+                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.45)",
               }}
             >
               {copy.primaryCta}
@@ -160,7 +160,7 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
         <div className="max-w-6xl mx-auto px-5 sm:px-6">
           <RevealOnScroll>
             <div className="text-center mb-14 max-w-3xl mx-auto">
-              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
                 What Leadac AI fixes
               </p>
               <h2
@@ -181,18 +181,18 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
                     className="p-6 rounded-2xl h-full group transition-transform duration-300 hover:-translate-y-0.5"
                     style={{
                       background:
-                        "linear-gradient(180deg, rgba(28,28,30,0.6), rgba(20,20,22,0.4))",
+                        "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.6), hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.4))",
                       border: "0.5px solid rgba(255,255,255,0.08)",
                     }}
                   >
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
                       style={{
-                        background: "rgba(94, 106, 210, 0.12)",
-                        border: "0.5px solid rgba(94, 106, 210, 0.28)",
+                        background: "hsl(var(--leadac-h) var(--leadac-s) 60% / 0.12)",
+                        border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.28)",
                       }}
                     >
-                      <Icon className="w-5 h-5" style={{ color: "#A5B4FC" }} />
+                      <Icon className="w-5 h-5" style={{ color: "var(--leadac-300)" }} />
                     </div>
                     <h3 className="text-[18px] font-semibold mb-2 tracking-tight">
                       {p.title}
@@ -208,7 +208,7 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
 
           <RevealOnScroll>
             <div className="text-center mb-8">
-              <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC] mb-1.5">
+              <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300) mb-1.5">
                 The swap
               </p>
               <p className="text-[20px] sm:text-[24px] font-semibold tracking-tight">
@@ -230,7 +230,7 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
         <div className="max-w-7xl mx-auto px-5 sm:px-6">
           <RevealOnScroll>
             <div className="text-center mb-16 sm:mb-20 max-w-3xl mx-auto">
-              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
                 What your week looks like
               </p>
               <h2
@@ -247,7 +247,7 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
           {copy.proofPoints.length > 4 && (
             <RevealOnScroll>
               <div className="mt-20 max-w-3xl mx-auto">
-                <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC] mb-3">
+                <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300) mb-3">
                   And the rest
                 </p>
                 <ul className="space-y-2">
@@ -256,11 +256,11 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
                       key={i}
                       className="flex items-start gap-2.5 p-3 rounded-xl text-[13.5px] text-white/70 leading-relaxed"
                       style={{
-                        background: "rgba(28,28,30,0.5)",
+                        background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
                         border: "0.5px solid rgba(255,255,255,0.07)",
                       }}
                     >
-                      <span className="w-1 h-1 rounded-full bg-[#A5B4FC] mt-2 shrink-0" />
+                      <span className="w-1 h-1 rounded-full bg-(--leadac-300) mt-2 shrink-0" />
                       {p}
                     </li>
                   ))}
@@ -292,7 +292,7 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
         <div className="max-w-6xl mx-auto px-5 sm:px-6">
           <RevealOnScroll>
             <div className="text-center mb-14">
-              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
                 Pricing
               </p>
               <h2
@@ -337,7 +337,7 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
           className="absolute inset-0 -z-10 opacity-40"
           style={{
             background:
-              "radial-gradient(ellipse at center, rgba(94,106,210,0.28), transparent 60%)",
+              "radial-gradient(ellipse at center, hsl(var(--leadac-h) var(--leadac-s) 60% / 0.28), transparent 60%)",
           }}
         />
         <div className="max-w-3xl mx-auto px-5 sm:px-6 text-center">
@@ -357,9 +357,9 @@ export function VerticalLanding({ copy }: { copy: VerticalCopy }) {
               href="/signup"
               className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
               style={{
-                background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
                 boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
+                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.45)",
               }}
             >
               Start free, no card
@@ -396,10 +396,10 @@ function visualForScene(
               "linear-gradient(180deg, rgba(32,32,36,0.92) 0%, rgba(22,22,26,0.96) 100%)",
             border: "0.5px solid rgba(255,255,255,0.09)",
             boxShadow:
-              "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px rgba(49,46,129,0.25)",
+              "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.25)",
           }}
         >
-          <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-[#A5B4FC] mb-3">
+          <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-(--leadac-300) mb-3">
             Lead detail
           </p>
           <LeadCardLive lead={lead} defaultExpanded />

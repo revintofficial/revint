@@ -114,9 +114,9 @@ export function UpgradeModal({
           <div className="flex items-center gap-2.5 mb-1">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: "rgba(94,106,210,0.18)", border: "0.5px solid rgba(94,106,210,0.35)" }}
+              style={{ background: "hsl(var(--leadac-h) var(--leadac-s) 60% / 0.18)", border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.35)" }}
             >
-              <Sparkles className="w-4 h-4 text-[#A5B4FC]" />
+              <Sparkles className="w-4 h-4 text-(--leadac-300)" />
             </div>
             <DialogTitle className="text-[18px]">{headline}</DialogTitle>
           </div>
@@ -134,7 +134,7 @@ export function UpgradeModal({
               className="px-2.5 py-1 rounded-md text-[11.5px] font-medium transition-all"
               style={{
                 background: cycle === "monthly" ? "rgba(255,255,255,0.08)" : "transparent",
-                color: cycle === "monthly" ? "white" : "rgba(235,235,245,0.55)",
+                color: cycle === "monthly" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
               }}
             >
               Monthly
@@ -144,13 +144,13 @@ export function UpgradeModal({
               className="px-2.5 py-1 rounded-md text-[11.5px] font-medium transition-all flex items-center gap-1"
               style={{
                 background: cycle === "annual" ? "rgba(255,255,255,0.08)" : "transparent",
-                color: cycle === "annual" ? "white" : "rgba(235,235,245,0.55)",
+                color: cycle === "annual" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
               }}
             >
               Annual
               <span
                 className="text-[9.5px] font-semibold px-1 py-0.5 rounded"
-                style={{ background: "rgba(48,209,88,0.2)", color: "#5EE6A1" }}
+                style={{ background: "hsl(152 48% 50% / 0.2)", color: "hsl(152 28% 70%)" }}
               >
                 -{ANNUAL_DISCOUNT_PCT}%
               </span>
@@ -167,7 +167,7 @@ export function UpgradeModal({
                 className="px-2.5 py-1 rounded-md text-[11px] font-medium transition-all"
                 style={{
                   background: currency === c ? "rgba(255,255,255,0.08)" : "transparent",
-                  color: currency === c ? "white" : "rgba(235,235,245,0.55)",
+                  color: currency === c ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
                 }}
               >
                 {c === "USD" ? "USD ($)" : "GBP (£)"}
@@ -189,10 +189,10 @@ export function UpgradeModal({
                 className="relative p-4 rounded-xl flex flex-col"
                 style={{
                   background: isHighlight
-                    ? "linear-gradient(180deg, rgba(94,106,210,0.14), rgba(28,28,30,0.5))"
-                    : "rgba(28,28,30,0.5)",
+                    ? "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 60% / 0.14), hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5))"
+                    : "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
                   border: isHighlight
-                    ? "0.5px solid rgba(94,106,210,0.45)"
+                    ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.45)"
                     : "0.5px solid rgba(255,255,255,0.06)",
                 }}
               >
@@ -200,7 +200,7 @@ export function UpgradeModal({
                   <span
                     className="absolute -top-2 left-4 px-1.5 py-0.5 rounded text-[9.5px] font-semibold"
                     style={{
-                      background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                      background: "linear-gradient(180deg, var(--leadac-500), var(--leadac-700))",
                       color: "white",
                     }}
                   >
@@ -226,7 +226,7 @@ export function UpgradeModal({
                 <ul className="space-y-1.5 text-[11.5px] mb-3 flex-1">
                   {p.features.slice(0, 3).map((f) => (
                     <li key={f} className="flex items-start gap-1.5">
-                      <Check className="w-3 h-3 mt-0.5 shrink-0 text-[#30D158]" />
+                      <Check className="w-3 h-3 mt-0.5 shrink-0 text-[hsl(152_48%_50%)]" />
                       <span className="text-white/70">{f}</span>
                     </li>
                   ))}
@@ -237,9 +237,9 @@ export function UpgradeModal({
                   disabled={busy === id || redirecting}
                   className="w-full"
                   style={isHighlight ? {
-                    background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+                    background: "linear-gradient(180deg, var(--leadac-500), var(--leadac-700))",
                     color: "white",
-                    boxShadow: "0 1px 0 rgba(255,255,255,0.15) inset, 0 8px 20px rgba(49,46,129,0.4)",
+                    boxShadow: "0 1px 0 rgba(255,255,255,0.15) inset, 0 8px 20px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.4)",
                   } : undefined}
                 >
                   {busy === id ? (

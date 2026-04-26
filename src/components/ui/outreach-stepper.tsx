@@ -39,11 +39,11 @@ export function OutreachStepper({
                   compact ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-xs"
                 } font-medium ${
                   isCompleted
-                    ? "bg-[#30D158]/10 text-[#30D158]"
+                    ? "bg-[hsl(152_48%_50%/0.14)] text-[hsl(152_28%_70%)]"
                     : isCurrent
-                      ? "bg-[#0A84FF]/10 text-[#0A84FF] ring-2 ring-[#0A84FF]/20"
+                      ? "bg-(--leadac-500)/15 text-(--leadac-300) ring-2 ring-(--leadac-500)/25"
                       : isNext
-                        ? "bg-white/10 text-white/70 hover:bg-[#0A84FF]/[0.06] hover:text-[#0A84FF] cursor-pointer"
+                        ? "bg-white/10 text-white/70 hover:bg-(--leadac-500)/10 hover:text-(--leadac-300) cursor-pointer"
                         : "bg-white/5 text-white/30"
                 } ${isLost ? "bg-white/5 text-white/30" : ""}`}
                 title={canClick ? `Advance to ${OUTREACH_LABELS[step]}` : OUTREACH_LABELS[step]}
@@ -52,14 +52,14 @@ export function OutreachStepper({
                   <Check className={compact ? "w-3 h-3" : "w-3.5 h-3.5"} />
                 ) : (
                   <span className={`${compact ? "w-3 h-3" : "w-3.5 h-3.5"} rounded-full border-2 inline-block ${
-                    isCurrent ? "border-[#0A84FF] bg-[#0A84FF]" : "border-current"
+                    isCurrent ? "border-(--leadac-400) bg-(--leadac-400)" : "border-current"
                   }`} />
                 )}
                 <span className={compact ? "hidden sm:inline" : ""}>{OUTREACH_LABELS[step]}</span>
               </button>
               {i < STEPS.length - 1 && (
                 <div className={`h-0.5 flex-1 mx-1 rounded-full transition-all ${
-                  isCompleted ? "bg-[#30D158]/30" : "bg-white/15"
+                  isCompleted ? "bg-[hsl(152_48%_50%/0.3)]" : "bg-white/15"
                 }`} />
               )}
             </div>
@@ -71,7 +71,7 @@ export function OutreachStepper({
         <button
           onClick={() => !disabled && onStatusChange("LOST")}
           disabled={disabled}
-          className="flex items-center gap-1 text-xs text-white/30 hover:text-[#FF453A] transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 text-xs text-white/30 hover:text-[hsl(4_42%_72%)] transition-colors disabled:opacity-50"
         >
           <X className="w-3 h-3" />
           Mark as Lost
@@ -79,7 +79,12 @@ export function OutreachStepper({
       )}
 
       {isLost && (
-        <div className="flex items-center gap-1.5 text-xs font-medium text-[#FF453A] bg-[#FF453A]/[0.06] rounded-full px-3 py-1.5 w-fit">
+        <div className="flex items-center gap-1.5 text-xs font-medium rounded-full px-3 py-1.5 w-fit"
+          style={{
+            color: "hsl(4 42% 72%)",
+            backgroundColor: "hsl(4 62% 54% / 0.14)",
+          }}
+        >
           <X className="w-3.5 h-3.5" />
           Lost
         </div>

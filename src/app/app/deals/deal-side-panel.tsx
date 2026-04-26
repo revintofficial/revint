@@ -44,11 +44,11 @@ const OFFER_PACKAGES: {
     price: "£500–800",
     description: "Single page, mobile-friendly",
     cls: {
-      selected: "border-[#30D158] bg-[#30D158]/10 ring-2 ring-[#30D158]/20",
-      hover: "hover:border-[#30D158]/40 hover:bg-[#30D158]/5",
-      dot: "bg-[#30D158]",
-      label: "text-[#30D158]",
-      price: "text-[#30D158]",
+      selected: "border-[hsl(152_48%_50%)] bg-[hsl(152_48%_50%)]/10 ring-2 ring-[hsl(152_48%_50%)]/20",
+      hover: "hover:border-[hsl(152_48%_50%)]/40 hover:bg-[hsl(152_48%_50%)]/5",
+      dot: "bg-[hsl(152_48%_50%)]",
+      label: "text-[hsl(152_48%_50%)]",
+      price: "text-[hsl(152_48%_50%)]",
     },
   },
   {
@@ -57,11 +57,11 @@ const OFFER_PACKAGES: {
     price: "£800–1500",
     description: "Multi-page, SEO, online sales",
     cls: {
-      selected: "border-[#007AFF] bg-[#0A84FF]/10 ring-2 ring-[#0A84FF]/20",
-      hover: "hover:border-[#007AFF]/40 hover:bg-[#0A84FF]/5",
-      dot: "bg-[#0A84FF]",
-      label: "text-[#0A84FF]",
-      price: "text-[#0A84FF]",
+      selected: "border-(--leadac-500) bg-(--leadac-500)/10 ring-2 ring-(--leadac-500)/20",
+      hover: "hover:border-(--leadac-500)/40 hover:bg-(--leadac-500)/5",
+      dot: "bg-(--leadac-500)",
+      label: "text-(--leadac-500)",
+      price: "text-(--leadac-500)",
     },
   },
 ];
@@ -188,7 +188,7 @@ export function DealSidePanel({
       <aside
         role="dialog"
         aria-label={`Deal details for ${item.lead.businessName}`}
-        className={`fixed top-0 right-0 z-50 h-dvh w-full sm:w-[480px] bg-[#0B0B0F] border-l border-white/10 shadow-2xl transition-transform duration-200 ${
+        className={`fixed top-0 right-0 z-50 h-dvh w-full sm:w-[480px] bg-(--leadac-card) border-l border-white/10 shadow-2xl transition-transform duration-200 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -197,7 +197,7 @@ export function DealSidePanel({
             <div className="min-w-0 flex-1">
               <Link
                 href={`/app/leads/${item.lead.id}`}
-                className="text-base font-semibold text-white hover:text-[#0A84FF] transition-colors"
+                className="text-base font-semibold text-white hover:text-(--leadac-500) transition-colors"
               >
                 {item.lead.businessName}
               </Link>
@@ -225,7 +225,7 @@ export function DealSidePanel({
                   </span>
                 )}
                 {saveStatus === "saved" && (
-                  <span className="text-[11px] text-[#30D158]">saved</span>
+                  <span className="text-[11px] text-[hsl(152_48%_50%)]">saved</span>
                 )}
               </div>
             </div>
@@ -259,7 +259,7 @@ export function DealSidePanel({
                     href={item.lead.googleMapsUri}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-[#0A84FF] hover:underline"
+                    className="inline-flex items-center gap-1.5 text-(--leadac-500) hover:underline"
                   >
                     <MapPin className="w-3.5 h-3.5 shrink-0" />
                     Open in Google Maps
@@ -378,7 +378,7 @@ export function DealSidePanel({
               variant="ghost"
               size="sm"
               onClick={() => setRemoveOpen(true)}
-              className="text-[#FF453A] hover:text-[#FF453A] hover:bg-[#FF453A]/10"
+              className="text-[hsl(4_62%_54%)] hover:text-[hsl(4_62%_54%)] hover:bg-[hsl(4_62%_54%)]/10"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Remove

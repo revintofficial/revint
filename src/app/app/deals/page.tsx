@@ -31,10 +31,10 @@ import type { PipelineStage, DealItem } from "./types";
 
 const STAGES: { id: PipelineStage; label: string; accent: string }[] = [
   { id: "NEW", label: "New", accent: "text-white/60" },
-  { id: "REACHED_OUT", label: "Reached Out", accent: "text-[#0A84FF]" },
-  { id: "IN_TALKS", label: "In Talks", accent: "text-[#FF9F0A]" },
-  { id: "WON", label: "Won", accent: "text-[#30D158]" },
-  { id: "LOST", label: "Lost", accent: "text-[#FF453A]" },
+  { id: "REACHED_OUT", label: "Reached Out", accent: "text-(--leadac-500)" },
+  { id: "IN_TALKS", label: "In Talks", accent: "text-[hsl(38_70%_52%)]" },
+  { id: "WON", label: "Won", accent: "text-[hsl(152_48%_50%)]" },
+  { id: "LOST", label: "Lost", accent: "text-[hsl(4_62%_54%)]" },
 ];
 
 export default function DealsPage() {
@@ -264,7 +264,7 @@ function DealsBoard() {
               </p>
               <Link
                 href="/app/leads"
-                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A84FF] hover:bg-[#0063D1] text-white text-sm font-medium transition-colors"
+                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--leadac-500) hover:bg-(--leadac-600) text-white text-sm font-medium transition-colors"
               >
                 <Star className="w-4 h-4" />
                 Go to Leads
@@ -328,7 +328,7 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       className={`flex flex-col rounded-2xl border bg-white/[0.02] transition-colors ${
-        isOver ? "border-[#0A84FF]/40 bg-[#0A84FF]/[0.04]" : "border-white/10"
+        isOver ? "border-(--leadac-500)/40 bg-(--leadac-500)/[0.04]" : "border-white/10"
       }`}
     >
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/5">
@@ -403,7 +403,7 @@ function SortableCard({
         e.stopPropagation();
         onClick();
       }}
-      className={`cursor-grab active:cursor-grabbing ${highlighted ? "ring-2 ring-[#0A84FF]/50 rounded-xl" : ""}`}
+      className={`cursor-grab active:cursor-grabbing ${highlighted ? "ring-2 ring-(--leadac-500)/50 rounded-xl" : ""}`}
     >
       <DealCard item={item} />
     </div>
@@ -417,9 +417,9 @@ function DealCard({ item, dragging }: { item: DealItem; dragging?: boolean }) {
     score == null
       ? "text-white/30 bg-white/5"
       : score >= 60
-        ? "text-[#30D158] bg-[#30D158]/10"
+        ? "text-[hsl(152_48%_50%)] bg-[hsl(152_48%_50%)]/10"
         : score >= 35
-          ? "text-[#FF9F0A] bg-[#FF9500]/10"
+          ? "text-[hsl(38_70%_52%)] bg-[hsl(38_70%_52%)]/10"
           : "text-white/50 bg-white/5";
 
   const relUpdated = relativeTime(item.updatedAt || item.createdAt);
@@ -429,10 +429,10 @@ function DealCard({ item, dragging }: { item: DealItem; dragging?: boolean }) {
     <div
       className={`rounded-xl border p-2.5 space-y-1.5 transition-shadow ${
         dragging
-          ? "border-[#0A84FF]/50 bg-[#0B0B0F] shadow-lg shadow-black/40"
+          ? "border-(--leadac-500)/50 bg-(--leadac-card) shadow-lg shadow-black/40"
           : hasBuiltSite
-            ? "border-[#30D158]/40 bg-[#30D158]/10 hover:border-[#30D158]/60"
-            : "border-white/10 bg-[#0B0B0F] hover:border-white/20"
+            ? "border-[hsl(152_48%_50%)]/40 bg-[hsl(152_48%_50%)]/10 hover:border-[hsl(152_48%_50%)]/60"
+            : "border-white/10 bg-(--leadac-card) hover:border-white/20"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -453,10 +453,10 @@ function DealCard({ item, dragging }: { item: DealItem; dragging?: boolean }) {
             <Badge
               className={
                 item.selectedOffer === "STARTER"
-                  ? "bg-[#30D158]/10 text-[#30D158] border-[#30D158]/20 text-[10px] px-1.5 py-0"
+                  ? "bg-[hsl(152_48%_50%)]/10 text-[hsl(152_48%_50%)] border-[hsl(152_48%_50%)]/20 text-[10px] px-1.5 py-0"
                   : item.selectedOffer === "GROWTH"
-                    ? "bg-[#0A84FF]/10 text-[#0A84FF] border-[#007AFF]/20 text-[10px] px-1.5 py-0"
-                    : "bg-[#AF52DE]/10 text-[#AF52DE] text-[10px] px-1.5 py-0"
+                    ? "bg-(--leadac-500)/10 text-(--leadac-500) border-(--leadac-500)/20 text-[10px] px-1.5 py-0"
+                    : "bg-(--leadac-400)/10 text-(--leadac-300) text-[10px] px-1.5 py-0"
               }
             >
               {item.selectedOffer}

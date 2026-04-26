@@ -81,7 +81,7 @@ function TestimonialCard({ t }: { t: CineTestimonial }) {
           style={{
             background:
               "linear-gradient(135deg, var(--vx-purple-400), var(--vx-purple-700))",
-            boxShadow: "0 4px 12px rgba(124,58,237,0.28)",
+            boxShadow: "0 4px 12px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.28)",
           }}
         />
         <div className="min-w-0">

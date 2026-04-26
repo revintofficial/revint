@@ -44,8 +44,8 @@ export function BeforeAfterSplit({
         transition={{ type: "spring", stiffness: 220, damping: 28 }}
       >
         <div className="flex items-center gap-2 mb-2.5">
-          <AlertOctagon className="w-4 h-4 text-[#FB7185]" />
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#FB7185]">
+          <AlertOctagon className="w-4 h-4 text-[hsl(4_62%_70%)]" />
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[hsl(4_62%_70%)]">
             {beforeLabel}
           </p>
         </div>
@@ -90,8 +90,8 @@ export function BeforeAfterSplit({
                     background:
                       row.pitchedBy >= 10
                         ? "rgba(251,113,133,0.14)"
-                        : "rgba(245,158,11,0.14)",
-                    color: row.pitchedBy >= 10 ? "#FB7185" : "#F59E0B",
+                        : "hsl(38 70% 52% / 0.14)",
+                    color: row.pitchedBy >= 10 ? "hsl(4 62% 70%)" : "hsl(38 70% 52%)",
                   }}
                 >
                   {row.pitchedBy}×
@@ -114,11 +114,11 @@ export function BeforeAfterSplit({
           transition={{ delay: 0.2, type: "spring", stiffness: 220, damping: 22 }}
           className="w-10 h-10 rounded-full flex items-center justify-center"
           style={{
-            background: "rgba(139,92,246,0.16)",
-            border: "0.5px solid rgba(139,92,246,0.4)",
+            background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16)",
+            border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.4)",
           }}
         >
-          <ArrowRight className="w-4 h-4 text-[#C49AFF]" />
+          <ArrowRight className="w-4 h-4 text-(--leadac-300)" />
         </motion.div>
       </div>
 
@@ -130,8 +130,8 @@ export function BeforeAfterSplit({
         transition={{ type: "spring", stiffness: 220, damping: 28, delay: 0.1 }}
       >
         <div className="flex items-center gap-2 mb-2.5">
-          <Sparkles className="w-4 h-4 text-[#34D399]" />
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#34D399]">
+          <Sparkles className="w-4 h-4 text-[hsl(152_48%_50%)]" />
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[hsl(152_48%_50%)]">
             {afterLabel}
           </p>
         </div>

@@ -94,7 +94,7 @@ export default function PublicDirectoryLayout({
               href="/signup"
               style={{
                 fontSize: 13,
-                color: "#A5B4FC",
+                color: "var(--leadac-300)",
                 textDecoration: "none",
                 fontWeight: 600,
               }}

@@ -38,15 +38,15 @@ const DialogContent = React.forwardRef<
         className
       )}
       style={{
-        background: "rgba(28, 28, 30, 0.95)",
+        background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.95)",
         backdropFilter: "saturate(180%) blur(30px)",
-        border: "0.5px solid rgba(255, 255, 255, 0.12)",
+        border: "0.5px solid hsl(0 0% 100% / 0.12)",
         boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3)",
       }}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 opacity-70 transition-all hover:opacity-100 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#0A84FF]/50 focus:ring-offset-2 focus:ring-offset-black disabled:pointer-events-none text-white">
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 opacity-70 transition-all hover:opacity-100 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-(--leadac-500)/50 focus:ring-offset-2 focus:ring-offset-black disabled:pointer-events-none text-white">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -85,7 +85,7 @@ const DialogDescription = React.forwardRef<
   <DialogPrimitive.Description
     ref={ref}
     className={cn("text-sm", className)}
-    style={{ color: "rgba(235, 235, 245, 0.6)" }}
+    style={{ color: "var(--leadac-text-2)" }}
     {...props}
   />
 ));

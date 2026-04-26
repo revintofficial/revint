@@ -147,7 +147,7 @@ export function SpecialistsLanding({ copy }: { copy: VerticalCopy }) {
 
           <RevealOnScroll>
             <div className="text-center mt-20 mb-10">
-              <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC] mb-1.5">
+              <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300) mb-1.5">
                 The swap
               </p>
               <p className="text-[20px] sm:text-[24px] font-semibold tracking-tight">
@@ -165,7 +165,7 @@ export function SpecialistsLanding({ copy }: { copy: VerticalCopy }) {
         <div className="max-w-7xl mx-auto px-5 sm:px-6">
           <RevealOnScroll>
             <div className="text-center mb-16 sm:mb-20 max-w-3xl mx-auto">
-              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+              <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
                 One MacBook, two tabs
               </p>
               <h2
@@ -182,7 +182,7 @@ export function SpecialistsLanding({ copy }: { copy: VerticalCopy }) {
           {copy.proofPoints.length > 4 && (
             <RevealOnScroll>
               <div className="mt-20 max-w-3xl mx-auto">
-                <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC] mb-3">
+                <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300) mb-3">
                   And the rest of the operator stack
                 </p>
                 <ul className="space-y-2">
@@ -191,11 +191,11 @@ export function SpecialistsLanding({ copy }: { copy: VerticalCopy }) {
                       key={i}
                       className="flex items-start gap-2.5 p-3 rounded-xl text-[13.5px] text-white/70 leading-relaxed"
                       style={{
-                        background: "rgba(28,28,30,0.5)",
+                        background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
                         border: "0.5px solid rgba(255,255,255,0.07)",
                       }}
                     >
-                      <span className="w-1 h-1 rounded-full bg-[#A5B4FC] mt-2 shrink-0" />
+                      <span className="w-1 h-1 rounded-full bg-(--leadac-300) mt-2 shrink-0" />
                       {p}
                     </li>
                   ))}
@@ -241,7 +241,7 @@ function ExecutorOperatorSwap() {
         background:
           "linear-gradient(180deg, rgba(20,20,24,1) 0%, rgba(14,14,18,1) 100%)",
         boxShadow:
-          "0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 0.5px rgba(255,255,255,0.05), 0 24px 60px rgba(0,0,0,0.55), 0 80px 200px rgba(49,46,129,0.22)",
+          "0 1px 0 rgba(255,255,255,0.06) inset, 0 0 0 0.5px rgba(255,255,255,0.05), 0 24px 60px rgba(0,0,0,0.55), 0 80px 200px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.22)",
       }}
     >
       {/* Browser chrome */}
@@ -321,8 +321,8 @@ function ExecutorOperatorSwap() {
           }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <Layers className="w-3.5 h-3.5 text-[#A5B4FC]" />
-            <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-[#A5B4FC]">
+            <Layers className="w-3.5 h-3.5 text-(--leadac-300)" />
+            <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300)">
               The new tab
             </p>
           </div>
@@ -342,7 +342,7 @@ function ExecutorOperatorSwap() {
               { label: "Pipeline + voice notes built in", icon: Layers },
             ].map(({ label, icon: Icon }) => (
               <li key={label} className="flex items-center gap-2">
-                <Icon className="w-3 h-3 text-[#A5B4FC]" />
+                <Icon className="w-3 h-3 text-(--leadac-300)" />
                 {label}
               </li>
             ))}
@@ -379,14 +379,14 @@ function Tab({
     >
       <SubIcon
         className="w-3 h-3"
-        style={{ color: active ? "#A5B4FC" : "rgba(235,235,245,0.45)" }}
+        style={{ color: active ? "var(--leadac-300)" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.45)" }}
       />
       <span
         className="text-[11.5px] font-medium"
         style={{
           color: active
-            ? "rgba(235,235,245,0.95)"
-            : "rgba(235,235,245,0.55)",
+            ? "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.95)"
+            : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
         }}
       >
         {label}
@@ -394,7 +394,7 @@ function Tab({
       <span
         className="text-[9.5px] uppercase tracking-[0.14em] font-semibold"
         style={{
-          color: active ? "#A5B4FC" : "rgba(235,235,245,0.3)",
+          color: active ? "var(--leadac-300)" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.3)",
         }}
       >
         {sub}

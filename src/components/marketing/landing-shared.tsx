@@ -55,11 +55,11 @@ export function MarketingHero({
           style={{
             background: "rgba(255, 255, 255, 0.04)",
             border: "0.5px solid rgba(255, 255, 255, 0.1)",
-            color: "rgba(235, 235, 245, 0.85)",
+            color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.85)",
           }}
         >
           {EyebrowIcon ? (
-            <EyebrowIcon className="w-3 h-3 text-[#A5B4FC]" />
+            <EyebrowIcon className="w-3 h-3 text-(--leadac-300)" />
           ) : null}
           <span>{eyebrow}</span>
         </div>
@@ -74,7 +74,7 @@ export function MarketingHero({
             className="bg-clip-text text-transparent"
             style={{
               backgroundImage:
-                "linear-gradient(120deg, #FFFFFF 0%, #C7CCFF 45%, #5E6AD2 100%)",
+                "linear-gradient(120deg, #FFFFFF 0%, hsl(var(--leadac-h) var(--leadac-s) 88%) 45%, hsl(var(--leadac-h) var(--leadac-s) 50%) 100%)",
             }}
           >
             {h1Highlight}
@@ -90,9 +90,9 @@ export function MarketingHero({
             href="/signup"
             className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
             style={{
-              background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+              background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
               boxShadow:
-                "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
+                "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.45)",
             }}
           >
             {primaryCta}
@@ -130,7 +130,7 @@ export function PainsSection({ eyebrow, heading, pains }: PainsSectionProps) {
   return (
     <RevealOnScroll>
       <div className="text-center mb-14 max-w-3xl mx-auto">
-        <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+        <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
           {eyebrow}
         </p>
         <h2
@@ -150,18 +150,18 @@ export function PainsSection({ eyebrow, heading, pains }: PainsSectionProps) {
                 className="p-6 rounded-2xl h-full group transition-transform duration-300 hover:-translate-y-0.5"
                 style={{
                   background:
-                    "linear-gradient(180deg, rgba(28,28,30,0.6), rgba(20,20,22,0.4))",
+                    "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.6), hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.4))",
                   border: "0.5px solid rgba(255,255,255,0.08)",
                 }}
               >
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
                   style={{
-                    background: "rgba(94, 106, 210, 0.12)",
-                    border: "0.5px solid rgba(94, 106, 210, 0.28)",
+                    background: "hsl(var(--leadac-h) var(--leadac-s) 60% / 0.12)",
+                    border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.28)",
                   }}
                 >
-                  <Icon className="w-5 h-5" style={{ color: "#A5B4FC" }} />
+                  <Icon className="w-5 h-5" style={{ color: "var(--leadac-300)" }} />
                 </div>
                 <h3 className="text-[18px] font-semibold mb-2 tracking-tight">
                   {p.title}
@@ -205,7 +205,7 @@ export function PricingSection() {
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
         <RevealOnScroll>
           <div className="text-center mb-14">
-            <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-[#A5B4FC] mb-3">
+            <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
               Pricing
             </p>
             <h2
@@ -268,7 +268,7 @@ export function ClosingCta({
         className="absolute inset-0 -z-10 opacity-40"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(94,106,210,0.28), transparent 60%)",
+            "radial-gradient(ellipse at center, hsl(var(--leadac-h) var(--leadac-s) 60% / 0.28), transparent 60%)",
         }}
       />
       <div className="max-w-3xl mx-auto px-5 sm:px-6 text-center relative">
@@ -288,9 +288,9 @@ export function ClosingCta({
             href="/signup"
             className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
             style={{
-              background: "linear-gradient(180deg, #4F5BD6, #3730A3)",
+              background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
               boxShadow:
-                "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px rgba(67,56,202,0.7), 0 12px 32px rgba(49,46,129,0.45)",
+                "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.45)",
             }}
           >
             {ctaLabel}
