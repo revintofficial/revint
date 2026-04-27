@@ -218,6 +218,23 @@ async function advanceLocked(sessionId: string): Promise<AdvanceResult> {
   // and no further work is scheduled.
   const hardFailure = plan.some((s) => s.status === "FAILED" && !s.optional);
 
+  // Stale-run guard: snapshot the lead's current `subNicheVersion`
+  // once per advance() so every AgentRun we schedule below records
+  // the version at enqueue time. The executor compares this snapshot
+  // with the live value; mismatches mean a manual override (or a
+  // re-classification) bumped the slug after the run was queued, so
+  // the run would be working from stale sub-niche context. The
+  // executor early-exits stale runs with SUCCEEDED + reason instead
+  // of letting them overwrite fresh data.
+  const subNicheVersionSnapshot = session.leadId
+    ? (
+        await prisma.lead.findUnique({
+          where: { id: session.leadId },
+          select: { subNicheVersion: true },
+        })
+      )?.subNicheVersion ?? null
+    : null;
+
   // Step 3: schedule ready steps when no hard failure.
   if (!hardFailure) {
     for (const step of plan) {
@@ -273,6 +290,7 @@ async function advanceLocked(sessionId: string): Promise<AdvanceResult> {
             inputsJson: (step.inputs ?? {}) as never,
             plannerSessionId: session.id,
             idempotencyKey,
+            inputSubNicheVersion: subNicheVersionSnapshot,
           },
           select: { id: true },
         });
@@ -410,6 +428,99 @@ function extractSentinel(step: PersistedPlanStep): string | null {
   const inp = step.inputs as Record<string, unknown> | undefined;
   const sentinel = inp?.__sentinel;
   return typeof sentinel === "string" ? sentinel : null;
+}
+
+/**
+ * Stuck-session recovery.
+ *
+ * Finds PlannerSession rows that are still EXECUTING but have no
+ * in-flight (PENDING / RUNNING) AgentRun and have not been touched
+ * for `staleAfterMs`. Re-enqueues an `orchestrator_advance` job for
+ * each so the DAG walker reconciles step status from agent_runs and
+ * schedules whatever is now ready (typically the next layer that
+ * was waiting on a step whose completion advance was dropped).
+ *
+ * Why this exists: the post-run `safeNotifyOrchestrator` hook in
+ * `executeAgentRun` is best-effort - if Redis is briefly unreachable,
+ * the worker process dies between two writes, or the `agent-runs`
+ * BullMQ queue loses a job, the session gets stuck waiting for an
+ * advance that will never come. The agent_runs themselves are
+ * already terminal (SUCCEEDED / FAILED) - the session.plan JSON is
+ * just stale. advance() is idempotent (advisory-locked + reads truth
+ * from agent_runs) so re-enqueuing is safe.
+ *
+ * Scoping: workspaceId is optional. Worker-process callers leave it
+ * undefined to scan globally; an API endpoint scoping to the caller's
+ * workspace must always pass it through.
+ */
+export async function recoverStuckSessions(opts: {
+  staleAfterMs?: number;
+  limit?: number;
+  workspaceId?: string;
+} = {}): Promise<{ recovered: number; sessionIds: string[] }> {
+  const staleAfterMs = opts.staleAfterMs ?? 2 * 60 * 1000;
+  const limit = opts.limit ?? 100;
+  const staleBefore = new Date(Date.now() - staleAfterMs);
+
+  const workspaceFilter = opts.workspaceId ? { workspaceId: opts.workspaceId } : {};
+
+  // Pull candidate sessions first (status + age), then filter out the
+  // ones that still have in-flight runs in JS land. This avoids a
+  // LATERAL / NOT EXISTS subquery and keeps the implementation
+  // portable across drivers.
+  const candidates = await prisma.plannerSession.findMany({
+    where: {
+      status: "EXECUTING",
+      updatedAt: { lt: staleBefore },
+      ...workspaceFilter,
+    },
+    select: { id: true },
+    take: limit,
+    orderBy: { updatedAt: "asc" },
+  });
+
+  if (candidates.length === 0) {
+    return { recovered: 0, sessionIds: [] };
+  }
+
+  const inFlight = await prisma.agentRun.groupBy({
+    by: ["plannerSessionId"],
+    where: {
+      plannerSessionId: { in: candidates.map((c) => c.id) },
+      status: { in: ["PENDING", "RUNNING"] },
+    },
+    _count: { _all: true },
+  });
+  const inFlightIds = new Set(
+    inFlight.map((r) => r.plannerSessionId).filter((v): v is string => v !== null),
+  );
+
+  const toRecover = candidates.filter((c) => !inFlightIds.has(c.id));
+
+  for (const s of toRecover) {
+    try {
+      await enqueueAdvance(s.id);
+    } catch (err) {
+      logger.error("orchestrator.recover_stuck_enqueue_failed", {
+        sessionId: s.id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  if (toRecover.length > 0) {
+    logger.info("orchestrator.recover_stuck_sessions", {
+      workspaceId: opts.workspaceId ?? null,
+      candidateCount: candidates.length,
+      recovered: toRecover.length,
+      staleAfterMs,
+    });
+  }
+
+  return {
+    recovered: toRecover.length,
+    sessionIds: toRecover.map((s) => s.id),
+  };
 }
 
 /**

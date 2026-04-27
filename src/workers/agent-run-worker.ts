@@ -122,6 +122,82 @@ async function processEmbedJob(memoryId: string): Promise<void> {
   logger.info("worker.ai_runs.embed.done", { memoryId });
 }
 
+/**
+ * Periodic watchdog that reconciles stuck PlannerSession rows.
+ *
+ * Why we need this in addition to the lazy per-AgentRun watchdog in
+ * `GET /api/agent-runs/[id]`: the lazy watchdog only fires when
+ * something fetches the run row, and it only handles AgentRuns - not
+ * the PlannerSession layer. If the worker process is killed between
+ * "AgentRun.status = SUCCEEDED" and `safeNotifyOrchestrator` (or if
+ * Redis briefly drops the orchestrator_advance job), the session
+ * sits in EXECUTING forever with all its agent_runs already terminal.
+ *
+ * Symptom this prevents (observed on workspace
+ * 5496e39e-cc76-41bd-b18b-f1128fb9e41b on 2026-04-27): 91 leads
+ * discovered, ~330 worker runs completed, then the worker process
+ * exited mid-batch. Score + dossier never enqueued because the
+ * advance job was lost; only 2 of 91 leads ended up fully analyzed.
+ * On worker restart, this watchdog picks up where the lost advance
+ * left off.
+ */
+interface StuckSessionWatchdog {
+  close: () => void;
+}
+
+function startStuckSessionWatchdog(): StuckSessionWatchdog {
+  // Stale-after window: a session that hasn't moved for 2 minutes
+  // with no in-flight runs is, by definition, stuck. The
+  // orchestrator's advance() is idempotent so a false positive (we
+  // re-advance a session that was about to advance anyway) is a
+  // no-op via the advisory lock.
+  const staleAfterMs = 2 * 60 * 1000;
+  // Tick interval: 60 seconds. Long enough to not thrash the DB,
+  // short enough that the human-perceived stall is bounded by ~3
+  // minutes total (2-min staleness + 1-min tick).
+  const tickIntervalMs = 60 * 1000;
+
+  const tick = async () => {
+    try {
+      const { recoverStuckSessions } = await import("../lib/ai-core/orchestrator");
+      const { recovered, sessionIds } = await recoverStuckSessions({
+        staleAfterMs,
+        limit: 50,
+      });
+      if (recovered > 0) {
+        logger.info("worker.ai_runs.watchdog_recovered_sessions", {
+          count: recovered,
+          sessionIds,
+        });
+      }
+    } catch (err) {
+      logger.error("worker.ai_runs.watchdog_tick_failed", {
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
+  // Initial tick is delayed so the worker has time to fully boot
+  // before we start scanning. After the first tick, run on a fixed
+  // interval - setInterval is fine here because tick() is awaited
+  // inside the closure and any overlap is harmless (advance() is
+  // advisory-locked).
+  const initialDelay = setTimeout(() => {
+    void tick();
+  }, 30_000);
+
+  const interval = setInterval(() => {
+    void tick();
+  }, tickIntervalMs);
+
+  return {
+    close: () => {
+      clearTimeout(initialDelay);
+      clearInterval(interval);
+    },
+  };
+}
+
 export function startAgentRunWorker() {
   const connection = new IORedis(process.env.REDIS_URL || "redis://localhost:6379", {
     maxRetriesPerRequest: null,
@@ -152,6 +228,14 @@ export function startAgentRunWorker() {
         Math.min(60000, 1000 * Math.pow(2, attemptsMade)),
     },
   });
+
+  const watchdogHandle = startStuckSessionWatchdog();
+
+  const baseClose = worker.close.bind(worker);
+  worker.close = async (force?: boolean) => {
+    watchdogHandle.close();
+    return baseClose(force);
+  };
 
   worker.on("completed", (job) => {
     logger.info("worker.ai_runs.job_completed", { jobId: job.id });
