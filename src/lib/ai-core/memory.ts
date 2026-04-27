@@ -45,6 +45,18 @@ export interface MemoryUpsertInput {
    * `upsertAndEmbed`).
    */
   embedding?: number[];
+  /**
+   * Niche pack slug this row belongs to. For hybrid niches we tag with
+   * the most specific slug available — typically the lead's
+   * `subNicheSlug` ("fnb-bar-club") or its parent ("fnb"). For
+   * niche-agnostic rows (WORKSPACE_OFFER, COPILOT_TURN) leave null.
+   *
+   * The DB unique key is (workspaceId, refType, refId, nicheScope), so
+   * the same `(refType, refId)` pair can co-exist under multiple
+   * scopes. That is what powers the asymmetric dual-write of positive
+   * signals into both child and parent — see `upsertWithNicheScopes`.
+   */
+  nicheScope?: string | null;
 }
 
 export interface MemoryHit {
@@ -57,6 +69,7 @@ export interface MemoryHit {
   metadata: Record<string, unknown>;
   similarity: number;
   createdAt: Date;
+  nicheScope: string | null;
 }
 
 export interface MemoryQueryInput {
@@ -82,6 +95,13 @@ export interface MemoryQueryInput {
    * `1 - distance`, so values near 1 are the strongest matches.
    */
   minSimilarity?: number;
+  /**
+   * Restricts retrieval to a specific niche pack scope (e.g.
+   * "fnb-bar-club" or "fnb"). When omitted, all scopes are searched —
+   * including null-scope rows. Use `queryWithNicheUnion` for the
+   * common child + parent weighted blend.
+   */
+  nicheScope?: string | null;
 }
 
 export class MemoryError extends Error {}
@@ -104,10 +124,11 @@ export async function upsert(input: MemoryUpsertInput): Promise<string> {
   const metadata = (input.metadata ?? {}) as Record<string, unknown>;
 
   // Upsert path for rows with refType+refId: look up an existing row
-  // in the same workspace and replace its content. The DB has a
-  // unique constraint on (workspaceId, refType, refId) so two
-  // concurrent callers never end up with duplicate rows; the loser
-  // retries the lookup and updates the winner's row.
+  // in the same workspace + scope and replace its content. The DB has
+  // a unique constraint on (workspaceId, refType, refId, nicheScope)
+  // so concurrent callers within the same scope never produce
+  // duplicates; cross-scope writes (child vs parent) coexist as
+  // separate rows by design — see `upsertWithNicheScopes`.
   if (input.refType && input.refId) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const existing = await prisma.semanticMemory.findFirst({
@@ -115,6 +136,10 @@ export async function upsert(input: MemoryUpsertInput): Promise<string> {
           workspaceId: input.workspaceId,
           refType: input.refType,
           refId: input.refId,
+          // findFirst with `null` here matches scope-null rows; with a
+          // string it matches that exact scope. Either way we are
+          // matching the unique key for this specific scope only.
+          nicheScope: input.nicheScope ?? null,
         },
         select: { id: true },
       });
@@ -127,6 +152,7 @@ export async function upsert(input: MemoryUpsertInput): Promise<string> {
             leadId: input.leadId ?? null,
             text: input.text,
             metadata: metadata as never,
+            nicheScope: input.nicheScope ?? null,
           },
         });
         if (input.embedding) {
@@ -145,6 +171,7 @@ export async function upsert(input: MemoryUpsertInput): Promise<string> {
             refId: input.refId,
             text: input.text,
             metadata: metadata as never,
+            nicheScope: input.nicheScope ?? null,
           },
           select: { id: true },
         });
@@ -174,6 +201,7 @@ export async function upsert(input: MemoryUpsertInput): Promise<string> {
       refId: input.refId ?? null,
       text: input.text,
       metadata: metadata as never,
+      nicheScope: input.nicheScope ?? null,
     },
     select: { id: true },
   });
@@ -258,6 +286,17 @@ export async function query(input: MemoryQueryInput): Promise<MemoryHit[]> {
     whereParts.push(`lead_id = $${params.length}`);
   }
 
+  // Filter by nicheScope when supplied. We accept the value `null`
+  // explicitly to mean "rows with no scope" (e.g. WORKSPACE_OFFER).
+  if (input.nicheScope !== undefined) {
+    if (input.nicheScope === null) {
+      whereParts.push(`niche_scope IS NULL`);
+    } else {
+      params.push(input.nicheScope);
+      whereParts.push(`niche_scope = $${params.length}`);
+    }
+  }
+
   // embedding IS NOT NULL prevents rows whose embed job hasn't yet
   // completed from polluting results with zero-similarity matches.
   whereParts.push(`embedding IS NOT NULL`);
@@ -274,6 +313,7 @@ export async function query(input: MemoryQueryInput): Promise<MemoryHit[]> {
       lead_id      AS "leadId",
       ref_type     AS "refType",
       ref_id       AS "refId",
+      niche_scope  AS "nicheScope",
       text,
       metadata,
       created_at   AS "createdAt",
@@ -290,6 +330,7 @@ export async function query(input: MemoryQueryInput): Promise<MemoryHit[]> {
     leadId: string | null;
     refType: string | null;
     refId: string | null;
+    nicheScope: string | null;
     text: string;
     metadata: Record<string, unknown>;
     createdAt: Date;
@@ -304,11 +345,165 @@ export async function query(input: MemoryQueryInput): Promise<MemoryHit[]> {
       leadId: r.leadId,
       refType: r.refType,
       refId: r.refId,
+      nicheScope: r.nicheScope,
       text: r.text,
       metadata: (r.metadata ?? {}) as Record<string, unknown>,
       similarity: Number(r.similarity),
       createdAt: r.createdAt,
     }));
+}
+
+/**
+ * Positive memory kinds — written to BOTH child and parent niche
+ * scopes when the lead has a sub-niche tagged. Day-one of a brand-new
+ * sub-niche the child bucket is empty; weighted union retrieval
+ * blends in successful patterns from sibling sub-niches via the
+ * parent scope so the opener writer / mockup composer has fuel.
+ */
+const POSITIVE_DUAL_WRITE_KINDS: ReadonlySet<MemoryKind> = new Set<MemoryKind>([
+  "OPENER_SUCCESS",
+  "MOCKUP_SECTION",
+  "LEAD_PROFILE",
+]);
+
+/**
+ * Negative memory kinds — written to the CHILD scope only. A failure
+ * in fnb-bar-club isn't necessarily a failure in fnb-cafe-bakery, so
+ * we don't pollute the parent retrieval pool with it. The retrieval
+ * helper still surfaces these failures within the originating sub-
+ * niche so its own future runs learn from the mistake.
+ */
+const NEGATIVE_CHILD_ONLY_KINDS: ReadonlySet<MemoryKind> = new Set<MemoryKind>([
+  "OPENER_FAILURE",
+]);
+
+/**
+ * Asymmetric dual-write helper. Given the lead's child slug + parent
+ * slug, picks the right scope set based on the memory kind:
+ *
+ *   - Positive kind + child + parent → writes 2 rows (child, parent)
+ *   - Positive kind + only parent (lead unclassified) → writes 1 (parent)
+ *   - Negative kind + child → writes 1 (child) — no parent pollution
+ *   - Negative kind + no child → writes 1 (parent) as a soft fallback
+ *   - Niche-agnostic kind (callers pass nicheScopes empty) → writes 1
+ *     row with `nicheScope = null`.
+ *
+ * Each scope row is upserted independently; if one write fails the
+ * others still complete. Returns the set of memory ids written.
+ */
+export async function upsertWithNicheScopes(
+  base: Omit<MemoryUpsertInput, "nicheScope">,
+  scopes: { childSlug?: string | null; parentSlug?: string | null },
+): Promise<string[]> {
+  const targets: Array<string | null> = [];
+  const child = scopes.childSlug ?? null;
+  const parent = scopes.parentSlug ?? null;
+
+  if (POSITIVE_DUAL_WRITE_KINDS.has(base.kind)) {
+    if (child) targets.push(child);
+    if (parent && parent !== child) targets.push(parent);
+  } else if (NEGATIVE_CHILD_ONLY_KINDS.has(base.kind)) {
+    if (child) targets.push(child);
+    else if (parent) targets.push(parent);
+  } else {
+    // Generic kind (LEAD_PROFILE non-niche, COPILOT_TURN, etc.) —
+    // write into the most specific scope the caller provided. Falls
+    // back to scope-null when the lead has neither.
+    if (child) targets.push(child);
+    else if (parent) targets.push(parent);
+    else targets.push(null);
+  }
+
+  if (targets.length === 0) targets.push(null);
+
+  const ids: string[] = [];
+  for (const scope of targets) {
+    const id = await upsert({ ...base, nicheScope: scope });
+    ids.push(id);
+  }
+  return ids;
+}
+
+/**
+ * Embed-then-dual-write convenience for the asymmetric strategy. Same
+ * scope semantics as `upsertWithNicheScopes`; embeds the text once
+ * and reuses the vector across all scope-rows.
+ */
+export async function upsertAndEmbedWithNicheScopes(
+  base: Omit<MemoryUpsertInput, "embedding" | "nicheScope">,
+  scopes: { childSlug?: string | null; parentSlug?: string | null },
+): Promise<string[]> {
+  const vector = await embed(base.text);
+  return upsertWithNicheScopes({ ...base, embedding: vector }, scopes);
+}
+
+/**
+ * Weighted-union retrieval across child + parent niche scopes. Runs
+ * two cosine-similarity scans (one per scope), multiplies the parent
+ * scores by `parentWeight` (default 0.5 — child wins ties), de-dupes
+ * by row id (the same row can show up if a positive signal was
+ * dual-written and matches both queries), and returns the top-K
+ * blend.
+ *
+ * Use this for vertical-aware retrieval (opener writer, mockup
+ * composer) where the child scope is the source of truth but you
+ * want graceful degradation when the child is sparse.
+ */
+export async function queryWithNicheUnion(input: {
+  workspaceId: string;
+  kinds?: MemoryKind[];
+  text?: string;
+  vector?: number[];
+  childSlug: string | null;
+  parentSlug: string | null;
+  topK?: number;
+  parentWeight?: number;
+  leadId?: string | null;
+  minSimilarity?: number;
+}): Promise<MemoryHit[]> {
+  const topK = input.topK ?? 10;
+  const parentWeight = input.parentWeight ?? 0.5;
+
+  // Embed once and reuse — the second scope query gets the same
+  // vector for free.
+  let vector = input.vector;
+  if (!vector) {
+    if (!input.text) {
+      throw new MemoryError(
+        "queryWithNicheUnion requires either `vector` or `text`",
+      );
+    }
+    vector = await embed(input.text);
+  }
+
+  const baseQuery: Omit<MemoryQueryInput, "nicheScope"> = {
+    workspaceId: input.workspaceId,
+    kinds: input.kinds,
+    vector,
+    topK,
+    leadId: input.leadId,
+    minSimilarity: input.minSimilarity,
+  };
+
+  const childHits = input.childSlug
+    ? await query({ ...baseQuery, nicheScope: input.childSlug })
+    : [];
+  const parentHits = input.parentSlug && input.parentSlug !== input.childSlug
+    ? await query({ ...baseQuery, nicheScope: input.parentSlug })
+    : [];
+
+  const merged = new Map<string, MemoryHit>();
+  for (const hit of childHits) {
+    merged.set(hit.id, hit);
+  }
+  for (const hit of parentHits) {
+    if (merged.has(hit.id)) continue; // dual-written row already counted at full weight
+    merged.set(hit.id, { ...hit, similarity: hit.similarity * parentWeight });
+  }
+
+  return Array.from(merged.values())
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, topK);
 }
 
 /**

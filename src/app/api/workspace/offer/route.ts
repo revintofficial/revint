@@ -20,6 +20,8 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { internalError } from "@/lib/api-errors";
+import { getChildrenOf, verticalRootForWorkspace } from "@/lib/niches";
+import type { WorkspaceNiche } from "@/generated/prisma";
 
 export const OFFER_FIELDS = [
   "offerName",
@@ -36,7 +38,11 @@ export const OFFER_FIELDS = [
 ] as const;
 
 type OfferField = (typeof OFFER_FIELDS)[number];
-type OfferPayload = Partial<Record<OfferField, string | null>>;
+// targetSubNiches is a string[] not a string, so it lives outside the
+// generic OfferPayload type that maps every field to "string | null".
+type OfferPayload = Partial<Record<OfferField, string | null>> & {
+  targetSubNiches?: string[] | null;
+};
 
 const VALID_NICHES = ["WEB_AGENCY", "RESTAURANT_TECH", "DENTAL", "REAL_ESTATE"] as const;
 
@@ -71,6 +77,7 @@ export async function GET() {
         senderName: true,
         conversionLink: true,
         niche: true,
+        targetSubNiches: true,
       },
     });
     return NextResponse.json(ws);
@@ -94,7 +101,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = (await request.json()) as OfferPayload;
-    const updates: Record<string, string | null> = {};
+    const updates: Record<string, string | string[] | null> = {};
 
     for (const field of OFFER_FIELDS) {
       if (!(field in body)) continue;
@@ -150,6 +157,69 @@ export async function PATCH(request: Request) {
       updates[field] = trimmed;
     }
 
+    // targetSubNiches: string[] of slugs that must belong to the workspace's
+    // current parent vertical (post-update if niche is in the patch, else the
+    // workspace's existing niche). Bad slugs are rejected outright instead of
+    // silently dropped — a stale slug in this list would skew Discovery and
+    // the classifier prior in the wrong direction.
+    if ("targetSubNiches" in body) {
+      const raw = body.targetSubNiches;
+      if (raw === null || raw === undefined) {
+        updates.targetSubNiches = [];
+      } else if (!Array.isArray(raw)) {
+        return NextResponse.json(
+          { error: "targetSubNiches must be an array of slug strings" },
+          { status: 400 },
+        );
+      } else {
+        const cleaned = Array.from(
+          new Set(
+            raw
+              .filter((s): s is string => typeof s === "string")
+              .map((s) => s.trim())
+              .filter(Boolean),
+          ),
+        );
+        if (cleaned.length > 50) {
+          return NextResponse.json(
+            { error: "targetSubNiches has too many entries (max 50)" },
+            { status: 400 },
+          );
+        }
+        if (cleaned.length > 0) {
+          // Resolve the effective parent vertical for validation. If the
+          // PATCH switches niche, validate against the new niche; otherwise
+          // load the existing one.
+          let effectiveNiche = updates.niche as string | undefined;
+          if (!effectiveNiche) {
+            const existing = await prisma.workspace.findUnique({
+              where: { id: session.workspaceId },
+              select: { niche: true },
+            });
+            effectiveNiche = existing?.niche;
+          }
+          const verticalRoot = effectiveNiche
+            ? verticalRootForWorkspace(effectiveNiche as WorkspaceNiche)
+            : null;
+          const allowed = new Set(
+            verticalRoot ? getChildrenOf(verticalRoot).map((p) => p.slug) : [],
+          );
+          const bad = cleaned.filter((s) => !allowed.has(s));
+          if (bad.length > 0) {
+            return NextResponse.json(
+              {
+                error: "invalid_sub_niche_slugs",
+                invalid: bad,
+                allowed: Array.from(allowed),
+              },
+              { status: 400 },
+            );
+          }
+        }
+        updates.targetSubNiches = cleaned;
+      }
+    }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
@@ -169,6 +239,7 @@ export async function PATCH(request: Request) {
         senderName: true,
         conversionLink: true,
         niche: true,
+        targetSubNiches: true,
       },
     });
     return NextResponse.json(updated);

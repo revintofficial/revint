@@ -185,6 +185,12 @@ export async function POST(
       });
     }
 
+    // Snapshot subNicheVersion so the executor can detect a stale
+    // ad-hoc run created before a manual override bumped the lead.
+    const versionedLead = await prisma.lead.findUnique({
+      where: { id: leadId },
+      select: { subNicheVersion: true },
+    });
     const run = await prisma.agentRun.create({
       data: {
         workspaceId: session.workspaceId,
@@ -193,6 +199,7 @@ export async function POST(
         workerKind: kind,
         status: "PENDING",
         inputsJson: {},
+        inputSubNicheVersion: versionedLead?.subNicheVersion ?? null,
       },
       select: { id: true, createdAt: true, workerKind: true, status: true },
     });

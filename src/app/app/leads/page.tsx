@@ -1,6 +1,14 @@
 "use client";
 
-import { Suspense, useEffect, useState, useCallback, useRef } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -11,39 +19,57 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { DEFAULT_LOCATIONS } from "@/lib/constants";
-import { OUTREACH_LABELS, CRAWL_LABELS } from "@/lib/labels";
 import { toast } from "sonner";
 import {
-  Search,
-  Globe,
   Bookmark,
-  BookmarkCheck,
-  Phone,
   Bot,
-  Loader2,
-  ScanSearch,
   CircleCheck,
   CircleX,
+  Globe,
   Info,
-  ChevronLeft,
-  ChevronRight,
+  Loader2,
+  ScanSearch,
   Users,
-  MapPin,
 } from "lucide-react";
+import {
+  DEFAULT_LEADS_FILTERS,
+  type LeadListItem,
+  type LeadsFilters,
+  useLeadsQuery,
+} from "@/components/app/leads/useLeadsQuery";
+import { LeadFiltersBar } from "@/components/app/leads/LeadFiltersBar";
+import { LeadCard } from "@/components/app/leads/LeadCard";
+import { LeadTableView } from "@/components/app/leads/LeadTableView";
+import { LeadCardsGrid } from "@/components/app/leads/LeadCardsGrid";
+import { LeadActionBar } from "@/components/app/leads/LeadActionBar";
+import {
+  type LeadsView,
+  parseLeadsView,
+} from "@/components/app/leads/useLeadsView";
+
+// Map + Kanban are heavy (Leaflet ~40KB, dnd-kit) and only loaded
+// when the user actually switches into those views. SSR is disabled
+// because Leaflet hits `window` on import.
+const LeadMapMulti = dynamic(
+  () => import("@/components/app/leads/LeadMapMulti"),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[600px] rounded-2xl" />,
+  },
+);
+const LeadKanbanLite = dynamic(
+  () => import("@/components/app/leads/LeadKanbanLite"),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[600px] rounded-2xl" />,
+  },
+);
 
 interface ContentCheckSignal {
   label: string;
@@ -82,44 +108,82 @@ interface WebsiteSearchResult {
   searchedCount: number;
 }
 
-interface Lead {
-  id: string;
-  businessName: string;
-  formattedAddress: string;
-  borough: string | null;
-  phone: string | null;
-  websiteUrl: string | null;
-  hasWebsite: boolean;
-  rating: number | null;
-  reviewCount: number | null;
-  googleMapsUri: string | null;
-  crawlStatus: string;
-  analyzeStatus: string;
-  salesOpportunity: {
-    opportunityScore: number;
-    suggestedOffer: string;
-    status: string;
-    reasonCodes: string[];
-  } | null;
-}
+const STORAGE_KEY = "leads-filters-v2";
+const DENSITY_KEY = "leads-density";
 
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
-const STORAGE_KEY = "leads-filters";
-
-function getSavedFilters() {
+function getSavedState<T>(key: string): T | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const raw = sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * Read URL search params + sessionStorage and produce the initial
+ * LeadsFilters used on first render. URL wins when present so deep
+ * links are honoured.
+ */
+function buildInitialFilters(
+  searchParams: URLSearchParams,
+  saved: Partial<LeadsFilters> | null,
+): LeadsFilters {
+  const urlNonEmpty = Array.from(searchParams.entries()).length > 0;
+  const source: Partial<LeadsFilters> = urlNonEmpty
+    ? {
+        search: searchParams.get("search") ?? "",
+        borough: searchParams.get("borough") ?? "all",
+        hasWebsite:
+          (searchParams.get("hasWebsite") as "all" | "true" | "false") ?? "all",
+        statuses: (searchParams.get("status") ?? "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        niche: searchParams.get("niche") ?? "all",
+        subNiche: searchParams.get("subNiche") ?? "all",
+        minScore: parseInt(searchParams.get("minScore") ?? "0") || 0,
+        maxScore: parseInt(searchParams.get("maxScore") ?? "100") || 100,
+        sortBy: searchParams.get("sortBy") ?? "createdAt",
+        page: parseInt(searchParams.get("page") ?? "1") || 1,
+        userLat: searchParams.has("userLat")
+          ? parseFloat(searchParams.get("userLat") ?? "")
+          : null,
+        userLng: searchParams.has("userLng")
+          ? parseFloat(searchParams.get("userLng") ?? "")
+          : null,
+        withinMiles: searchParams.has("withinMiles")
+          ? parseFloat(searchParams.get("withinMiles") ?? "")
+          : null,
+      }
+    : saved ?? {};
+  return { ...DEFAULT_LEADS_FILTERS, ...source };
+}
+
+function filtersToUrlParams(
+  filters: LeadsFilters,
+  view: LeadsView,
+): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.search) params.set("search", filters.search);
+  if (filters.borough !== "all") params.set("borough", filters.borough);
+  if (filters.hasWebsite !== "all") params.set("hasWebsite", filters.hasWebsite);
+  if (filters.statuses.length) params.set("status", filters.statuses.join(","));
+  if (filters.niche !== "all") params.set("niche", filters.niche);
+  if (filters.subNiche !== "all") params.set("subNiche", filters.subNiche);
+  if (filters.minScore > 0) params.set("minScore", String(filters.minScore));
+  if (filters.maxScore < 100) params.set("maxScore", String(filters.maxScore));
+  if (filters.sortBy !== "createdAt") params.set("sortBy", filters.sortBy);
+  if (filters.page > 1) params.set("page", String(filters.page));
+  if (filters.userLat != null && filters.userLng != null) {
+    params.set("userLat", String(filters.userLat));
+    params.set("userLng", String(filters.userLng));
+  }
+  if (filters.withinMiles != null)
+    params.set("withinMiles", String(filters.withinMiles));
+  if (view !== "table") params.set("view", view);
+  return params;
 }
 
 export default function LeadsPage() {
@@ -142,55 +206,71 @@ function LeadsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const saved = useRef(getSavedFilters()).current;
-  const urlBorough = searchParams.get("borough");
-  const urlHasWebsite = searchParams.get("hasWebsite");
-  const urlSearch = searchParams.get("search");
-  const urlSortBy = searchParams.get("sortBy");
-  const urlPage = searchParams.get("page");
-  const hasUrlParams = !!(urlBorough || urlHasWebsite || urlSearch || urlSortBy || urlPage);
+  const initialFilters = useRef(
+    buildInitialFilters(
+      new URLSearchParams(searchParams?.toString() ?? ""),
+      getSavedState<Partial<LeadsFilters>>(STORAGE_KEY),
+    ),
+  ).current;
 
-  const initBorough = hasUrlParams ? (urlBorough || "all") : (saved?.borough || "all");
-  const initHasWebsite = hasUrlParams ? (urlHasWebsite || "all") : (saved?.hasWebsite || "all");
-  const initSearch = hasUrlParams ? (urlSearch || "") : (saved?.search || "");
-  const initSortBy = hasUrlParams ? (urlSortBy || "createdAt") : (saved?.sortBy || "createdAt");
-  const initPage = hasUrlParams ? parseInt(urlPage || "1") : (saved?.page || 1);
-
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [pagination, setPagination] = useState<Pagination>({
-    page: initPage,
-    limit: 20,
-    total: 0,
-    totalPages: 0,
+  const [filters, setFilters] = useState<LeadsFilters>(initialFilters);
+  const [density, setDensity] = useState<"comfortable" | "compact">(() => {
+    const saved = getSavedState<"comfortable" | "compact">(DENSITY_KEY);
+    return saved === "compact" ? "compact" : "comfortable";
   });
-  const [loading, setLoading] = useState(true);
-  const [borough, setBorough] = useState(initBorough);
-  const [hasWebsite, setHasWebsite] = useState(initHasWebsite);
-  const [search, setSearch] = useState(initSearch);
-  const [debouncedSearch, setDebouncedSearch] = useState(initSearch);
-  const [sortBy, setSortBy] = useState(initSortBy);
-  const [watchlistLeadIds, setWatchlistLeadIds] = useState<Set<string>>(new Set());
-  const [watchlistDialogLead, setWatchlistDialogLead] = useState<Lead | null>(null);
+  const [view, setView] = useState<LeadsView>(() =>
+    parseLeadsView(searchParams?.get("view")),
+  );
+  // Map + kanban benefit from a wider page than the default 20.
+  const pageSize = view === "map" || view === "kanban" ? 100 : 20;
+
+  // Selection state (lead ids selected for bulk action). Cleared when
+  // filters change so a stale set of ids can't leak into the next page
+  // load — matches the "selection persist" UX warning in the plan.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const { leads, pagination, loading, refetch } = useLeadsQuery(
+    filters,
+    pageSize,
+  );
+
+  const [watchlistLeadIds, setWatchlistLeadIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [watchlistDialogLead, setWatchlistDialogLead] =
+    useState<LeadListItem | null>(null);
   const [watchlistSiteUrl, setWatchlistSiteUrl] = useState("");
   const [watchlistNotes, setWatchlistNotes] = useState("");
   const [watchlistSaving, setWatchlistSaving] = useState(false);
-  const [contentCheckLeadId, setContentCheckLeadId] = useState<string | null>(null);
-  const [contentCheckResult, setContentCheckResult] = useState<ContentCheckResult | null>(null);
+
+  const [contentCheckLeadId, setContentCheckLeadId] = useState<string | null>(
+    null,
+  );
+  const [contentCheckResult, setContentCheckResult] =
+    useState<ContentCheckResult | null>(null);
   const [contentCheckLoading, setContentCheckLoading] = useState(false);
-  const [websiteSearchLeadId, setWebsiteSearchLeadId] = useState<string | null>(null);
-  const [websiteSearchResult, setWebsiteSearchResult] = useState<WebsiteSearchResult | null>(null);
+
+  const [websiteSearchLeadId, setWebsiteSearchLeadId] = useState<string | null>(
+    null,
+  );
+  const [websiteSearchResult, setWebsiteSearchResult] =
+    useState<WebsiteSearchResult | null>(null);
   const [websiteSearchLoading, setWebsiteSearchLoading] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const [scanRunning, setScanRunning] = useState(false);
+  const [analyzeRunning, setAnalyzeRunning] = useState(false);
 
   const fetchWatchlistIds = useCallback(async () => {
     try {
       const res = await fetch("/api/watchlist");
       if (!res.ok) return;
       const data = await res.json();
-      const ids = new Set<string>((data.items || []).map((item: { leadId: string }) => item.leadId));
+      const ids = new Set<string>(
+        (data.items || []).map((item: { leadId: string }) => item.leadId),
+      );
       setWatchlistLeadIds(ids);
     } catch {
-      // silently fail
+      // Silent: watchlist sidecar isn't critical for the list to render.
     }
   }, []);
 
@@ -198,93 +278,87 @@ function LeadsPageContent() {
     fetchWatchlistIds();
   }, [fetchWatchlistIds]);
 
+  // Persist filters + sync URL whenever filters or view change.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [debouncedSearch, borough, hasWebsite, sortBy]);
-
-  useEffect(() => {
-    const state = {
-      borough,
-      hasWebsite,
-      search: debouncedSearch,
-      sortBy,
-      page: pagination.page,
-    };
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
-
-    const params = new URLSearchParams();
-    if (borough !== "all") params.set("borough", borough);
-    if (hasWebsite !== "all") params.set("hasWebsite", hasWebsite);
-    if (debouncedSearch) params.set("search", debouncedSearch);
-    if (sortBy !== "createdAt") params.set("sortBy", sortBy);
-    if (pagination.page > 1) params.set("page", pagination.page.toString());
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+    } catch {
+      // ignore quota errors
+    }
+    const params = filtersToUrlParams(filters, view);
     const qs = params.toString();
     router.replace(qs ? `/app/leads?${qs}` : "/app/leads", { scroll: false });
-  }, [debouncedSearch, borough, hasWebsite, sortBy, pagination.page, router]);
-
-  const fetchLeads = useCallback(async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    setLoading(true);
-    const params = new URLSearchParams({
-      page: pagination.page.toString(),
-      limit: "20",
-      sortBy,
-      sortOrder: "desc",
-    });
-    if (borough !== "all") params.set("borough", borough);
-    if (hasWebsite !== "all") params.set("hasWebsite", hasWebsite);
-    if (debouncedSearch) params.set("search", debouncedSearch);
-
-    try {
-      const res = await fetch(`/api/leads?${params}`, {
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        console.error("API error:", res.status);
-        return;
-      }
-      const data = await res.json();
-      setLeads(data.leads || []);
-      setPagination((prev) => data.pagination || prev);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      console.error("Failed to fetch leads:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.page, borough, hasWebsite, debouncedSearch, sortBy]);
+  }, [filters, view, router]);
 
   useEffect(() => {
-    fetchLeads();
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [fetchLeads]);
+    try {
+      sessionStorage.setItem(DENSITY_KEY, JSON.stringify(density));
+    } catch {
+      // ignore
+    }
+  }, [density]);
 
-  const updateStatus = async (leadId: string, status: string) => {
-    await fetch(`/api/leads/${leadId}/status`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+  // Drop selection when filters or pagination changes — a row that's
+  // no longer in the visible set shouldn't continue to count toward
+  // bulk actions silently.
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [
+    filters.search,
+    filters.borough,
+    filters.hasWebsite,
+    filters.statuses,
+    filters.niche,
+    filters.subNiche,
+    filters.minScore,
+    filters.maxScore,
+    filters.sortBy,
+    filters.page,
+  ]);
+
+  const toggleSelect = useCallback((leadId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(leadId)) next.delete(leadId);
+      else next.add(leadId);
+      return next;
     });
-    fetchLeads();
-  };
+  }, []);
 
-  const runContentCheck = async (lead: Lead) => {
+  const togglePageSelect = useCallback(() => {
+    setSelectedIds((prev) => {
+      const allSelected = leads.length > 0 && leads.every((l) => prev.has(l.id));
+      if (allSelected) {
+        const next = new Set(prev);
+        for (const lead of leads) next.delete(lead.id);
+        return next;
+      }
+      const next = new Set(prev);
+      for (const lead of leads) next.add(lead.id);
+      return next;
+    });
+  }, [leads]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  const geoActive =
+    filters.userLat != null && filters.userLng != null;
+
+  const updateStatus = useCallback(
+    async (leadId: string, status: string) => {
+      await fetch(`/api/leads/${leadId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      refetch();
+    },
+    [refetch],
+  );
+
+  const runContentCheck = useCallback(async (lead: LeadListItem) => {
     if (!lead.websiteUrl) return;
     setContentCheckLeadId(lead.id);
     setContentCheckLoading(true);
@@ -295,51 +369,50 @@ function LeadsPageContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: lead.websiteUrl }),
       });
-      if (res.ok) {
-        setContentCheckResult(await res.json());
-      }
+      if (res.ok) setContentCheckResult(await res.json());
     } catch (err) {
       console.error("Content check failed:", err);
     } finally {
       setContentCheckLoading(false);
     }
-  };
+  }, []);
 
-  const runWebsiteSearch = async (lead: Lead) => {
-    setWebsiteSearchLeadId(lead.id);
-    setWebsiteSearchLoading(true);
-    setWebsiteSearchResult(null);
-    try {
-      const res = await fetch("/api/website-search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          businessName: lead.businessName,
-          address: lead.formattedAddress,
-          leadId: lead.id,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setWebsiteSearchResult(data);
-        if (data.found) {
-          fetchLeads();
+  const runWebsiteSearch = useCallback(
+    async (lead: LeadListItem) => {
+      setWebsiteSearchLeadId(lead.id);
+      setWebsiteSearchLoading(true);
+      setWebsiteSearchResult(null);
+      try {
+        const res = await fetch("/api/website-search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            businessName: lead.businessName,
+            address: lead.formattedAddress,
+            leadId: lead.id,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setWebsiteSearchResult(data);
+          if (data.found) refetch();
         }
+      } catch (err) {
+        console.error("Website search failed:", err);
+      } finally {
+        setWebsiteSearchLoading(false);
       }
-    } catch (err) {
-      console.error("Website search failed:", err);
-    } finally {
-      setWebsiteSearchLoading(false);
-    }
-  };
+    },
+    [refetch],
+  );
 
-  const openWatchlistDialog = (lead: Lead) => {
+  const openWatchlistDialog = useCallback((lead: LeadListItem) => {
     setWatchlistDialogLead(lead);
     setWatchlistSiteUrl("");
     setWatchlistNotes("");
-  };
+  }, []);
 
-  const handleAddToWatchlist = async () => {
+  const handleAddToWatchlist = useCallback(async () => {
     if (!watchlistDialogLead) return;
     setWatchlistSaving(true);
     try {
@@ -361,141 +434,153 @@ function LeadsPageContent() {
     } finally {
       setWatchlistSaving(false);
     }
-  };
+  }, [
+    watchlistDialogLead,
+    watchlistSiteUrl,
+    watchlistNotes,
+    fetchWatchlistIds,
+  ]);
+
+  const handleCallStatus = useCallback(
+    (lead: LeadListItem) => {
+      updateStatus(lead.id, "CONTACTED");
+    },
+    [updateStatus],
+  );
+
+  const onPageChange = useCallback((page: number) => {
+    setFilters((prev) => ({ ...prev, page }));
+  }, []);
+
+  const handleScanWebsites = useCallback(async () => {
+    setScanRunning(true);
+    try {
+      const res = await fetch("/api/crawl", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ crawlAll: true }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const reason =
+          body && typeof body === "object" && "error" in body
+            ? String(body.error)
+            : `HTTP ${res.status}`;
+        toast.error(`Scan failed: ${reason}`);
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      if (data && typeof data.crawled === "number") {
+        toast.success(
+          `Scan complete: ${data.crawled} succeeded, ${data.failed ?? 0} failed`,
+        );
+      } else {
+        toast.success("Scan complete");
+      }
+      refetch();
+    } catch (err) {
+      console.error(err);
+      toast.error("Scan failed: network error");
+    } finally {
+      setScanRunning(false);
+    }
+  }, [refetch]);
+
+  const handleAnalyze = useCallback(async () => {
+    setAnalyzeRunning(true);
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analyzeAll: true }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const reason =
+          body && typeof body === "object" && "error" in body
+            ? String(body.error)
+            : `HTTP ${res.status}`;
+        toast.error(`Analysis failed: ${reason}`);
+        return;
+      }
+      const data = await res.json().catch(() => null);
+      if (data && typeof data.analyzed === "number") {
+        toast.success(
+          `Analysis complete: ${data.analyzed} succeeded, ${data.failed ?? 0} failed`,
+        );
+      } else {
+        toast.success("Analysis complete");
+      }
+      refetch();
+    } catch (err) {
+      console.error(err);
+      toast.error("Analysis failed: network error");
+    } finally {
+      setAnalyzeRunning(false);
+    }
+  }, [refetch]);
+
+  const subtitle = useMemo(() => {
+    if (loading && pagination.total === 0) return "Loading…";
+    return `${pagination.total.toLocaleString()} lead${pagination.total === 1 ? "" : "s"} found`;
+  }, [loading, pagination.total]);
 
   return (
     <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
       <PageHeader
         title="Leads"
-        subtitle={`${pagination.total} leads found`}
+        subtitle={subtitle}
         actions={
           <div className="flex gap-2">
             <Button
               size="sm"
               variant="outline"
-              onClick={async () => {
-                try {
-                  const res = await fetch("/api/crawl", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ crawlAll: true }),
-                  });
-                  if (!res.ok) {
-                    const body = await res.json().catch(() => ({}));
-                    const reason = (body && typeof body === "object" && "error" in body)
-                      ? String(body.error)
-                      : `HTTP ${res.status}`;
-                    toast.error(`Scan failed: ${reason}`);
-                    return;
-                  }
-                  const data = await res.json().catch(() => null);
-                  if (data && typeof data.crawled === "number") {
-                    toast.success(`Scan complete: ${data.crawled} succeeded, ${data.failed ?? 0} failed`);
-                  } else {
-                    toast.success("Scan complete");
-                  }
-                  fetchLeads();
-                } catch (err) {
-                  console.error(err);
-                  toast.error("Scan failed: network error");
-                }
-              }}
+              onClick={handleScanWebsites}
+              disabled={scanRunning}
             >
-              <Globe className="w-4 h-4" />
+              {scanRunning ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Globe className="w-4 h-4" />
+              )}
               Scan Websites
             </Button>
-            <Button
-              size="sm"
-              onClick={async () => {
-                try {
-                  const res = await fetch("/api/analyze", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ analyzeAll: true }),
-                  });
-                  if (!res.ok) {
-                    const body = await res.json().catch(() => ({}));
-                    const reason = (body && typeof body === "object" && "error" in body)
-                      ? String(body.error)
-                      : `HTTP ${res.status}`;
-                    toast.error(`Analysis failed: ${reason}`);
-                    return;
-                  }
-                  const data = await res.json().catch(() => null);
-                  if (data && typeof data.analyzed === "number") {
-                    toast.success(`Analysis complete: ${data.analyzed} succeeded, ${data.failed ?? 0} failed`);
-                  } else {
-                    toast.success("Analysis complete");
-                  }
-                  fetchLeads();
-                } catch (err) {
-                  console.error(err);
-                  toast.error("Analysis failed: network error");
-                }
-              }}
-            >
-              <Bot className="w-4 h-4" />
+            <Button size="sm" onClick={handleAnalyze} disabled={analyzeRunning}>
+              {analyzeRunning ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Bot className="w-4 h-4" />
+              )}
               AI Analysis
             </Button>
           </div>
         }
       />
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-              <Input
-                type="text"
-                placeholder="Search businesses..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={borough} onValueChange={setBorough}>
-              <SelectTrigger>
-                <SelectValue placeholder="Location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                {DEFAULT_LOCATIONS.map((loc) => (
-                  <SelectItem key={loc.name} value={loc.name}>
-                    {loc.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={hasWebsite} onValueChange={setHasWebsite}>
-              <SelectTrigger>
-                <SelectValue placeholder="Website" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="true">Has Website</SelectItem>
-                <SelectItem value="false">No Website</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt">Date</SelectItem>
-                <SelectItem value="rating">Rating</SelectItem>
-                <SelectItem value="reviewCount">Reviews</SelectItem>
-                <SelectItem value="businessName">Name</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <LeadFiltersBar
+        filters={filters}
+        setFilters={setFilters}
+        density={density}
+        setDensity={setDensity}
+        view={view}
+        setView={setView}
+        geoActive={geoActive}
+        totalCount={pagination.total}
+      />
 
-      {/* Mobile cards */}
+      <LeadActionBar
+        selectedIds={Array.from(selectedIds)}
+        totalLoaded={leads.length}
+        onClear={clearSelection}
+        onSelectAll={() => {
+          setSelectedIds(new Set(leads.map((l) => l.id)));
+        }}
+        onDone={refetch}
+      />
+
+      {/* Mobile cards (always cards on small screens, regardless of `view`) */}
       <div className="md:hidden space-y-3">
-        {loading ? (
+        {loading && leads.length === 0 ? (
           <Card>
             <CardContent className="p-8 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-6 h-6 text-(--leadac-500) animate-spin" />
@@ -506,8 +591,12 @@ function LeadsPageContent() {
           <Card>
             <CardContent className="p-10 flex flex-col items-center justify-center gap-3 text-center">
               <Users className="w-10 h-10 text-white/20" />
-              <p className="text-sm font-medium text-white/50">No leads yet</p>
-              <p className="text-xs text-white/30">Start by discovering businesses.</p>
+              <p className="text-sm font-medium text-white/50">
+                No leads match these filters
+              </p>
+              <p className="text-xs text-white/30">
+                Try clearing presets or running discovery for more leads.
+              </p>
               <Link href="/app/discovery">
                 <Button size="sm">Go to Discovery</Button>
               </Link>
@@ -515,342 +604,84 @@ function LeadsPageContent() {
           </Card>
         ) : (
           leads.map((lead, index) => (
-            <Card
+            <LeadCard
               key={lead.id}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 30}ms` }}
-            >
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/app/leads/${lead.id}`}
-                      className="font-medium text-white hover:text-(--leadac-500) transition-colors text-[15px] leading-snug break-words"
-                    >
-                      {lead.businessName}
-                    </Link>
-                    <p className="text-xs text-white/30 mt-0.5 line-clamp-2">
-                      {lead.formattedAddress}
-                    </p>
-                  </div>
-                  {lead.salesOpportunity && (
-                    <ScoreBadge score={lead.salesOpportunity.opportunityScore} />
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {lead.hasWebsite ? (
-                    <Badge variant="success" className="text-[10px]">Has site</Badge>
-                  ) : (
-                    <Badge variant="destructive" className="text-[10px]">No site</Badge>
-                  )}
-                  {lead.salesOpportunity ? (
-                    <StatusBadge status={lead.salesOpportunity.status} />
-                  ) : (
-                    <Badge variant="outline" className="text-[10px]">Queued</Badge>
-                  )}
-                  {lead.borough && (
-                    <Badge variant="outline" className="text-[10px]">{lead.borough}</Badge>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 pt-1 border-t border-white/5">
-                  {lead.hasWebsite ? (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 px-2 gap-1 text-[11px]"
-                      onClick={() => runContentCheck(lead)}
-                      disabled={contentCheckLoading && contentCheckLeadId === lead.id}
-                    >
-                      {contentCheckLoading && contentCheckLeadId === lead.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <ScanSearch className="w-3 h-3" />
-                      )}
-                      Check
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 px-2 gap-1 text-[11px]"
-                      onClick={() => runWebsiteSearch(lead)}
-                      disabled={websiteSearchLoading && websiteSearchLeadId === lead.id}
-                    >
-                      {websiteSearchLoading && websiteSearchLeadId === lead.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Globe className="w-3 h-3" />
-                      )}
-                      Find site
-                    </Button>
-                  )}
-                  {watchlistLeadIds.has(lead.id) ? (
-                    <Link href={`/app/deals?lead=${lead.id}`}>
-                      <Button size="sm" variant="ghost" className="h-8 px-2 gap-1 text-[11px] text-[hsl(38_70%_52%)] hover:text-[hsl(38_70%_52%)]">
-                        <BookmarkCheck className="w-3 h-3" />
-                        Open Deal
-                      </Button>
-                    </Link>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 px-2 gap-1 text-[11px]"
-                      onClick={() => openWatchlistDialog(lead)}
-                    >
-                      <Bookmark className="w-3 h-3" />
-                      Shortlist
-                    </Button>
-                  )}
-                  {lead.phone && (
-                    <a href={`tel:${lead.phone}`}>
-                      <Button size="sm" variant="ghost" className="h-8 px-2 gap-1 text-[11px]">
-                        <Phone className="w-3 h-3" />
-                        Call
-                      </Button>
-                    </a>
-                  )}
-                  {lead.googleMapsUri && (
-                    <a href={lead.googleMapsUri} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" variant="ghost" className="h-8 px-2 gap-1 text-[11px]">
-                        <MapPin className="w-3 h-3" />
-                        Map
-                      </Button>
-                    </a>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+              lead={lead}
+              index={index}
+              isWatchlisted={watchlistLeadIds.has(lead.id)}
+              isSelected={selectedIds.has(lead.id)}
+              contentCheckLoading={
+                contentCheckLoading && contentCheckLeadId === lead.id
+              }
+              websiteSearchLoading={
+                websiteSearchLoading && websiteSearchLeadId === lead.id
+              }
+              onContentCheck={runContentCheck}
+              onWebsiteSearch={runWebsiteSearch}
+              onShortlist={openWatchlistDialog}
+              onToggleSelect={toggleSelect}
+            />
           ))
-        )}
-
-        {pagination.totalPages > 1 && !loading && leads.length > 0 && (
-          <div className="flex flex-col gap-2 pt-2">
-            <p className="text-xs text-white/50 text-center">
-              Page {pagination.page} of {pagination.totalPages}
-              <span className="text-white/30 ml-2">({pagination.total} results)</span>
-            </p>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1"
-                disabled={pagination.page <= 1}
-                onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Previous
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
-              >
-                Next
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
         )}
       </div>
 
-      {/* Desktop table */}
-      <Card className="overflow-hidden hidden md:block">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-white/5 bg-white/5">
-                <th className="text-left p-3 text-[13px] font-medium text-white/50">Business</th>
-                <th className="text-left p-3 text-[13px] font-medium text-white/50">Website</th>
-                <th className="text-left p-3 text-[13px] font-medium text-white/50">Score</th>
-                <th className="text-left p-3 text-[13px] font-medium text-white/50">Status</th>
-                <th className="text-left p-3 text-[13px] font-medium text-white/50">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={5} className="p-8">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <Loader2 className="w-6 h-6 text-(--leadac-500) animate-spin" />
-                      <p className="text-sm text-white/30">Loading...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : leads.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="p-12">
-                    <div className="flex flex-col items-center justify-center gap-3">
-                      <Users className="w-10 h-10 text-white/20" />
-                      <p className="text-sm font-medium text-white/50">No leads yet</p>
-                      <p className="text-xs text-white/30">Start by discovering businesses.</p>
-                      <Link href="/app/discovery">
-                        <Button size="sm">Go to Discovery</Button>
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                leads.map((lead, index) => (
-                  <tr
-                    key={lead.id}
-                    className="border-b border-white/5 hover:bg-white/5 transition-colors animate-fade-in-up"
-                    style={{ animationDelay: `${index * 30}ms` }}
-                  >
-                    <td className="p-3">
-                      <Link
-                        href={`/app/leads/${lead.id}`}
-                        className="font-medium text-white hover:text-(--leadac-500) transition-colors"
-                      >
-                        {lead.businessName}
-                      </Link>
-                      <p className="text-xs text-white/30 mt-0.5 truncate max-w-xs">
-                        {lead.formattedAddress}
-                      </p>
-                    </td>
-                    <td className="p-3">
-                      {lead.hasWebsite ? (
-                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
-                          <div className="flex items-center gap-1.5" title="Has website">
-                            <CircleCheck className="w-4 h-4 shrink-0 text-[hsl(152_48%_50%)]" aria-hidden />
-                            <Badge variant="success">Yes</Badge>
-                          </div>
-                          <button
-                            onClick={(e) => { e.preventDefault(); runContentCheck(lead); }}
-                            disabled={contentCheckLoading && contentCheckLeadId === lead.id}
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-(--leadac-500)/20 bg-(--leadac-500)/[0.06] text-(--leadac-500) hover:bg-(--leadac-500)/10 transition-colors disabled:opacity-50 w-fit"
-                          >
-                            {contentCheckLoading && contentCheckLeadId === lead.id ? (
-                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                            ) : (
-                              <ScanSearch className="w-2.5 h-2.5" />
-                            )}
-                            Check
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
-                          <div className="flex items-center gap-1.5" title="No website">
-                            <CircleX className="w-4 h-4 shrink-0 text-[hsl(4_62%_54%)]" aria-hidden />
-                            <Badge variant="destructive">No</Badge>
-                          </div>
-                          <button
-                            onClick={(e) => { e.preventDefault(); runWebsiteSearch(lead); }}
-                            disabled={websiteSearchLoading && websiteSearchLeadId === lead.id}
-                            className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-[hsl(38_70%_52%)]/20 bg-[hsl(38_70%_52%)]/[0.06] text-[hsl(38_70%_52%)] hover:bg-[hsl(38_70%_52%)]/10 transition-colors disabled:opacity-50 w-fit"
-                          >
-                            {websiteSearchLoading && websiteSearchLeadId === lead.id ? (
-                              <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                            ) : (
-                              <Globe className="w-2.5 h-2.5" />
-                            )}
-                            Search
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      {lead.salesOpportunity ? (
-                        <ScoreBadge score={lead.salesOpportunity.opportunityScore} />
-                      ) : (
-                        <span className="text-white/20">-</span>
-                      )}
-                    </td>
-                    <td
-                      className="p-3"
-                      title={`Website scan: ${CRAWL_LABELS[lead.crawlStatus] ?? lead.crawlStatus}`}
-                    >
-                      {lead.salesOpportunity ? (
-                        <StatusBadge status={lead.salesOpportunity.status} />
-                      ) : (
-                        <Badge variant="outline">Queued</Badge>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      <div className="flex flex-wrap gap-1">
-                        {watchlistLeadIds.has(lead.id) ? (
-                          <Link href={`/app/deals?lead=${lead.id}`}>
-                            <Button size="sm" variant="ghost" className="text-[hsl(38_70%_52%)] hover:text-[hsl(38_70%_52%)] h-8 px-2 gap-1">
-                              <BookmarkCheck className="w-4 h-4 shrink-0" />
-                              Open Deal
-                            </Button>
-                          </Link>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 px-2 gap-1"
-                            onClick={() => openWatchlistDialog(lead)}
-                          >
-                            <Bookmark className="w-4 h-4 shrink-0" />
-                            Shortlist
-                          </Button>
-                        )}
-                        {lead.salesOpportunity?.status === "NEW" && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 px-2 gap-1"
-                            onClick={() => updateStatus(lead.id, "CONTACTED")}
-                          >
-                            <Phone className="w-4 h-4 shrink-0" />
-                            Call
-                          </Button>
-                        )}
-                        {lead.googleMapsUri && (
-                          <a href={lead.googleMapsUri} target="_blank" rel="noopener noreferrer">
-                            <Button size="sm" variant="ghost" className="h-8 px-2 gap-1">
-                              <MapPin className="w-4 h-4 shrink-0" />
-                              View
-                            </Button>
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {pagination.totalPages > 1 && (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border-t border-white/5">
-            <p className="text-sm text-white/50 text-center sm:text-left">
-              Page {pagination.page} of {pagination.totalPages}
-              <span className="text-white/30 ml-2">({pagination.total} results)</span>
-            </p>
-            <div className="flex gap-1 justify-center sm:justify-end">
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={pagination.page <= 1}
-                onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Previous
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
-              >
-                Next
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+      {/* Desktop view switcher */}
+      <div className="hidden md:block">
+        {view === "table" && (
+          <LeadTableView
+            leads={leads}
+            loading={loading}
+            pagination={pagination}
+            density={density}
+            watchlistLeadIds={watchlistLeadIds}
+            selectedIds={selectedIds}
+            contentCheckLeadId={contentCheckLeadId}
+            contentCheckLoading={contentCheckLoading}
+            websiteSearchLeadId={websiteSearchLeadId}
+            websiteSearchLoading={websiteSearchLoading}
+            onContentCheck={runContentCheck}
+            onWebsiteSearch={runWebsiteSearch}
+            onShortlist={openWatchlistDialog}
+            onCallStatusChange={handleCallStatus}
+            onToggleSelect={toggleSelect}
+            onTogglePageSelect={togglePageSelect}
+            onPageChange={onPageChange}
+          />
         )}
-      </Card>
+        {view === "cards" && (
+          <LeadCardsGrid
+            leads={leads}
+            loading={loading}
+            pagination={pagination}
+            watchlistLeadIds={watchlistLeadIds}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onShortlist={openWatchlistDialog}
+            onPageChange={onPageChange}
+          />
+        )}
+        {view === "map" && (
+          <LeadMapMulti
+            leads={leads}
+            loading={loading}
+            watchlistLeadIds={watchlistLeadIds}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+          />
+        )}
+        {view === "kanban" && (
+          <LeadKanbanLite
+            leads={leads}
+            loading={loading}
+            onMutate={refetch}
+          />
+        )}
+      </div>
 
-      {/* Content Check Dialog */}
       <Dialog
-        open={!!(contentCheckLeadId && (contentCheckLoading || contentCheckResult))}
+        open={
+          !!(contentCheckLeadId && (contentCheckLoading || contentCheckResult))
+        }
         onOpenChange={(open) => {
           if (!open) {
             setContentCheckLeadId(null);
@@ -879,9 +710,13 @@ function LeadsPageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Website Search Dialog */}
       <Dialog
-        open={!!(websiteSearchLeadId && (websiteSearchLoading || websiteSearchResult))}
+        open={
+          !!(
+            websiteSearchLeadId &&
+            (websiteSearchLoading || websiteSearchResult)
+          )
+        }
         onOpenChange={(open) => {
           if (!open) {
             setWebsiteSearchLeadId(null);
@@ -904,8 +739,12 @@ function LeadsPageContent() {
           {websiteSearchLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="w-8 h-8 text-[hsl(38_70%_52%)] animate-spin" />
-              <p className="text-sm text-white/30 mt-3">Searching for website...</p>
-              <p className="text-xs text-white/20 mt-1">Running domain guess and Google search...</p>
+              <p className="text-sm text-white/30 mt-3">
+                Searching for website...
+              </p>
+              <p className="text-xs text-white/20 mt-1">
+                Running domain guess and Google search...
+              </p>
             </div>
           ) : websiteSearchResult ? (
             <WebsiteSearchPanel result={websiteSearchResult} />
@@ -913,7 +752,6 @@ function LeadsPageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Watchlist Dialog */}
       <Dialog
         open={!!watchlistDialogLead}
         onOpenChange={(open) => !open && setWatchlistDialogLead(null)}
@@ -952,7 +790,10 @@ function LeadsPageContent() {
               />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setWatchlistDialogLead(null)}>
+              <Button
+                variant="outline"
+                onClick={() => setWatchlistDialogLead(null)}
+              >
                 Cancel
               </Button>
               <Button onClick={handleAddToWatchlist} disabled={watchlistSaving}>
@@ -974,23 +815,51 @@ function LeadsPageContent() {
 }
 
 function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
-  const verdictConfig: Record<string, { label: string; color: string; bg: string }> = {
-    placeholder: { label: "Placeholder / Empty Site", color: "text-[hsl(4_62%_54%)]", bg: "bg-[hsl(4_62%_54%)]/[0.06] border-[hsl(4_62%_54%)]/20" },
-    basic: { label: "Basic Website", color: "text-[hsl(38_70%_52%)]", bg: "bg-[hsl(38_70%_52%)]/[0.06] border-[hsl(38_70%_52%)]/20" },
-    developed: { label: "Developed Website", color: "text-[hsl(152_48%_50%)]", bg: "bg-[hsl(152_48%_50%)]/[0.06] border-[hsl(152_48%_50%)]/20" },
-    unreachable: { label: "Unreachable", color: "text-white/60", bg: "bg-white/5 border-white/10" },
+  const verdictConfig: Record<
+    string,
+    { label: string; color: string; bg: string }
+  > = {
+    placeholder: {
+      label: "Placeholder / Empty Site",
+      color: "text-[hsl(4_62%_54%)]",
+      bg: "bg-[hsl(4_62%_54%)]/[0.06] border-[hsl(4_62%_54%)]/20",
+    },
+    basic: {
+      label: "Basic Website",
+      color: "text-[hsl(38_70%_52%)]",
+      bg: "bg-[hsl(38_70%_52%)]/[0.06] border-[hsl(38_70%_52%)]/20",
+    },
+    developed: {
+      label: "Developed Website",
+      color: "text-[hsl(152_48%_50%)]",
+      bg: "bg-[hsl(152_48%_50%)]/[0.06] border-[hsl(152_48%_50%)]/20",
+    },
+    unreachable: {
+      label: "Unreachable",
+      color: "text-white/60",
+      bg: "bg-white/5 border-white/10",
+    },
   };
-
   const config = verdictConfig[result.verdict] || verdictConfig.unreachable;
 
   return (
     <div className="space-y-4 pt-2">
       <div className={`rounded-xl border p-4 ${config.bg}`}>
         <div className="flex items-center justify-between mb-2">
-          <p className={`font-semibold text-lg ${config.color}`}>{config.label}</p>
+          <p className={`font-semibold text-lg ${config.color}`}>
+            {config.label}
+          </p>
           <div className="flex items-center gap-1.5">
             <span className="text-sm text-white/50">Score:</span>
-            <span className={`text-lg font-bold ${result.score >= 65 ? "text-[hsl(152_48%_50%)]" : result.score >= 35 ? "text-[hsl(38_70%_52%)]" : "text-[hsl(4_62%_54%)]"}`}>
+            <span
+              className={`text-lg font-bold ${
+                result.score >= 65
+                  ? "text-[hsl(152_48%_50%)]"
+                  : result.score >= 35
+                  ? "text-[hsl(38_70%_52%)]"
+                  : "text-[hsl(4_62%_54%)]"
+              }`}
+            >
               {result.score}
             </span>
             <span className="text-xs text-white/30">/100</span>
@@ -1006,7 +875,10 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
           { value: result.internalLinkCount, label: "Links" },
           { value: `${(result.htmlSize / 1024).toFixed(0)}`, label: "KB" },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-xl bg-white/5 p-2.5 text-center">
+          <div
+            key={stat.label}
+            className="rounded-xl bg-white/5 p-2.5 text-center"
+          >
             <p className="text-sm font-semibold text-white">{stat.value}</p>
             <p className="text-[10px] text-white/30">{stat.label}</p>
           </div>
@@ -1016,19 +888,38 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
       {result.builderDetected && (
         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-(--leadac-500)/[0.06] border border-(--leadac-500)/20">
           <Info className="w-4 h-4 text-(--leadac-500) shrink-0" />
-          <span className="text-sm text-(--leadac-500)">Built with <strong>{result.builderDetected}</strong></span>
+          <span className="text-sm text-(--leadac-500)">
+            Built with <strong>{result.builderDetected}</strong>
+          </span>
         </div>
       )}
 
       <div className="space-y-1.5 max-h-60 overflow-y-auto">
-        <p className="text-[11px] font-medium text-white/30">Detailed Analysis</p>
+        <p className="text-[11px] font-medium text-white/30">
+          Detailed Analysis
+        </p>
         {result.signals.map((signal, i) => (
-          <div key={i} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
+          <div
+            key={i}
+            className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0"
+          >
             <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${signal.status === "good" ? "bg-[hsl(152_48%_50%)]" : signal.status === "warning" ? "bg-[hsl(38_70%_52%)]" : "bg-[hsl(4_62%_54%)]"}`} />
-              <span className="text-xs font-medium text-white/70">{signal.label}</span>
+              <div
+                className={`w-1.5 h-1.5 rounded-full ${
+                  signal.status === "good"
+                    ? "bg-[hsl(152_48%_50%)]"
+                    : signal.status === "warning"
+                    ? "bg-[hsl(38_70%_52%)]"
+                    : "bg-[hsl(4_62%_54%)]"
+                }`}
+              />
+              <span className="text-xs font-medium text-white/70">
+                {signal.label}
+              </span>
             </div>
-            <span className="text-xs text-white/50 text-right max-w-[55%] truncate">{signal.detail}</span>
+            <span className="text-xs text-white/50 text-right max-w-[55%] truncate">
+              {signal.detail}
+            </span>
           </div>
         ))}
       </div>
@@ -1049,13 +940,17 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
               </p>
             </div>
             <p className="text-sm text-[hsl(152_48%_50%)]">
-              Website(s) found online that were not listed in Google Places. The first match was saved to the lead automatically.
+              Website(s) found online that were not listed in Google Places.
+              The first match was saved to the lead automatically.
             </p>
           </div>
 
           <div className="space-y-2">
             {result.websites.map((website, i) => (
-              <div key={i} className="rounded-xl border border-white/10 p-3 hover:bg-white/5 transition-colors">
+              <div
+                key={i}
+                className="rounded-xl border border-white/10 p-3 hover:bg-white/5 transition-colors"
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <a
@@ -1067,11 +962,19 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
                       {website.url}
                     </a>
                     {website.title && (
-                      <p className="text-xs text-white/50 mt-0.5 truncate">{website.title}</p>
+                      <p className="text-xs text-white/50 mt-0.5 truncate">
+                        {website.title}
+                      </p>
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <Badge variant={website.source === "google_search" ? "secondary" : "outline"}>
+                    <Badge
+                      variant={
+                        website.source === "google_search"
+                          ? "secondary"
+                          : "outline"
+                      }
+                    >
                       {website.source === "google_search" ? "Google" : "Domain"}
                     </Badge>
                     {i === 0 && <Badge variant="success">Saved</Badge>}
@@ -1088,33 +991,19 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
             <p className="font-semibold text-white/60">No website found</p>
           </div>
           <p className="text-sm text-white/50">
-            Searched {result.searchedCount} URLs but could not find an active website for this business. The business may truly have no site — a strong opportunity for a new website pitch.
+            Searched {result.searchedCount} URLs but could not find an active
+            website for this business. The business may truly have no site —
+            a strong opportunity for a new website pitch.
           </p>
         </div>
       )}
 
       <div className="flex items-center justify-between px-1">
-        <p className="text-xs text-white/30">{result.searchedCount} URLs searched</p>
+        <p className="text-xs text-white/30">
+          {result.searchedCount} URLs searched
+        </p>
         <p className="text-xs text-white/30">Domain guess + Google search</p>
       </div>
     </div>
   );
-}
-
-function ScoreBadge({ score }: { score: number }) {
-  const variant = score >= 60 ? "success" : score >= 35 ? "warning" : "secondary";
-  return <Badge variant={variant}>{score}</Badge>;
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const variantMap: Record<string, "default" | "success" | "warning" | "destructive" | "secondary"> = {
-    NEW: "secondary",
-    CONTACTED: "warning",
-    INTERESTED: "warning",
-    MEETING: "default",
-    WON: "success",
-    LOST: "destructive",
-  };
-  const label = OUTREACH_LABELS[status] ?? status;
-  return <Badge variant={variantMap[status] || "secondary"}>{label}</Badge>;
 }

@@ -1,0 +1,104 @@
+---
+description: BullMQ workers — queue layout, idempotency, retries, AI Core hand-off.
+globs:
+  - "src/workers/**"
+  - "src/lib/queues.ts"
+  - "src/lib/redis.ts"
+  - "src/lib/agent-workers/execute.ts"
+  - "src/lib/agent-workers/idempotency.ts"
+alwaysApply: false
+---
+
+# BullMQ workers (`src/workers/**`)
+
+## Process & queues
+
+`npm run workers` runs `src/workers/index.ts` which is a supervisor that boots one BullMQ `Worker` per queue:
+
+| Worker file | Queue | Purpose |
+|---|---|---|
+| `discovery-worker.ts` | discovery jobs | Google Places lead discovery |
+| `crawl-worker.ts` | crawl | Lead website fetch + parse |
+| `analyze-worker.ts` | analyze | Site audit + sales-opportunity scoring |
+| `review-analysis-worker.ts` | review-analysis | Review corpus → pain/strength phrases |
+| `email-verification-worker.ts` | email-verification | SMTP / catch-all verification |
+| `agent-run-worker.ts` | **agent-runs** | AI Core unified queue (see below) |
+| `seo-ops-worker.ts` | seo-ops | Sitemap pings, IndexNow, etc. |
+
+**`agent-runs` is the unified AI Core queue.** Job payload is a discriminated union:
+
+```ts
+type AgentRunJob =
+  | { type: "agent_run"; runId: string }            // executeAgentRun
+  | { type: "orchestrator_advance"; sessionId: string } // chain step
+  | { type: "embed"; memoryId: string }              // re-embed memory row
+  | { runId: string };                               // legacy: inferred as agent_run
+```
+
+**Do not add a new BullMQ queue for AI work.** Add a new `type` to the discriminator above, or wire it into AI Core chains.
+
+## Connection
+
+Single `IORedis` instance per worker process. Read `REDIS_URL` from env. The supervisor boots all workers in-process so they share the connection pool. Worker code sets `process.env.IS_WORKER = "1"` BEFORE importing `../lib/prisma` so the pool sizing helper can downsize the Prisma pool for worker concurrency.
+
+## Idempotency (mandatory)
+
+- **Inbound webhooks** dedupe by event id stored in a unique-keyed log table:
+  - Stripe → `StripeEventLog.id` unique constraint, `P2002` = duplicate.
+  - Apify → `ApifyRun.apifyRunId` unique constraint.
+- **AI work** dedupes via `AgentRun.id`. The job carries `runId`; if the row is already SUCCEEDED, the worker no-ops. See `src/lib/agent-workers/idempotency.ts`.
+- **Memory writes** upsert by `(workspaceId, kind, refType, refId)` when `refId` is provided.
+
+Never rely on "this can't happen twice" — BullMQ retries jobs on transient failures, and `setImmediate` enqueues from API routes can race with deploys.
+
+## Retries
+
+- `RetryableError` (transient: 429s, 5xx, network) → `throw err` → BullMQ backs off and retries.
+- Other errors → wrap in `UnrecoverableError` so BullMQ stops retrying. `executeAgentRun` already marks the `AgentRun` FAILED before throwing.
+- Configure per-job: `attempts`, `backoff: { type: "exponential", delay: 5000 }`, `removeOnComplete`, `removeOnFail` at enqueue site.
+
+## Timeouts
+
+- Set `lockDuration` and `lockRenewTime` on each Worker for long-running Gemini calls; default 30s lock will expire mid-call.
+- Apify long actors: use `mode: "async-apify"` worker — never block the BullMQ worker waiting for Apify. The webhook resumes via `finalize`.
+
+## Concurrency vs Gemini quota
+
+- Gemini Flash QPS limit applies project-wide. Concurrency on `agent-runs` must stay under your tier's QPS cap.
+- For multi-tenant deploys, also throttle by `workspaceId` so one workspace cannot drain the global quota.
+- Apify cost guard: every Apify worker writes `costUsdCents` to `AgentRun`; quota helper sums all Apify kinds in the billing cycle.
+
+## Observability
+
+- Use `logger` from `src/lib/logger.ts`. Log at the start and end of every job: `worker.<queue>.<verb>` style (e.g. `worker.ai_runs.agent_run.starting`).
+- Always include `jobId`, `attempt`, and the primary id (`runId`, `sessionId`, etc.).
+
+## Hand-off from API → worker
+
+```ts
+// API route
+import { addAgentRunJob } from "@/lib/queues";
+await prisma.agentRun.create({ data: { ... status: "PENDING" } });
+await addAgentRunJob({ type: "agent_run", runId });
+```
+
+Or for chains:
+
+```ts
+import { emit } from "@/lib/ai-core/events";
+await emit("user_one_click_pitch", { workspaceId, leadId, userId });
+```
+
+`emit()` creates the `PlannerSession` and enqueues the first `orchestrator_advance` job for you.
+
+## Stuck-job recovery
+
+`POST /api/agent-runs/cleanup-stale` finds `RUNNING` rows older than the grace window and marks them FAILED with a recovery reason. Run via cron in production. Quota helper already ignores stale `PENDING/RUNNING` rows so a crashed worker cannot silently drain a workspace.
+
+## Anti-patterns
+
+- ❌ New queue per worker kind — extend `agent-runs`
+- ❌ `setTimeout(() => doWork(), 0)` from a route to "run later" — enqueue a job
+- ❌ Throwing plain `Error` from a job handler — pick `RetryableError` or wrap in `UnrecoverableError`
+- ❌ Worker reaching into Supabase auth — workers don't have a session; pass `userId` in the job payload
+- ❌ Swallowing errors silently — log + rethrow so BullMQ + the AgentRun status both reflect reality

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { sortByDistance, filterWithinMiles } from "@/lib/geo";
 import { internalError } from "@/lib/api-errors";
+import { getChildrenOf } from "@/lib/niches";
 
 export async function GET(request: Request) {
   try {
@@ -15,6 +16,8 @@ export async function GET(request: Request) {
     const minScore = searchParams.get("minScore");
     const maxScore = searchParams.get("maxScore");
     const status = searchParams.get("status");
+    const niche = searchParams.get("niche");
+    const subNiche = searchParams.get("subNiche");
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
     const search = searchParams.get("search");
@@ -32,11 +35,6 @@ export async function GET(request: Request) {
     if (hasWebsite === "false") where.hasWebsite = false;
 
     if (search) {
-      // Split the query into whitespace-separated terms and AND them together.
-      // Each term must match at least one of businessName / formattedAddress
-      // (or phone if the term looks like digits). This lets "main brooklyn"
-      // find "123 Main St, Brooklyn, NY" even though the literal substring
-      // "main brooklyn" never appears.
       const terms = search.trim().split(/\s+/).filter(Boolean);
       if (terms.length > 0) {
         where.AND = terms.map((term) => {
@@ -53,13 +51,59 @@ export async function GET(request: Request) {
       }
     }
 
+    // Niche / sub-niche filters. When a parent slug is selected without
+    // a sub-niche we also include the parent's children so legacy leads
+    // tagged only with `nicheSlug = "fnb"` still surface alongside their
+    // classified siblings.
+    if (niche && niche !== "all") {
+      const childSlugs = getChildrenOf(niche).map((c) => c.slug);
+      if (subNiche && subNiche !== "all") {
+        where.subNicheSlug = subNiche;
+      } else if (childSlugs.length > 0) {
+        where.OR = [
+          { nicheSlug: niche },
+          { subNicheSlug: { in: childSlugs } },
+        ];
+      } else {
+        where.nicheSlug = niche;
+      }
+    } else if (subNiche && subNiche !== "all") {
+      where.subNicheSlug = subNiche;
+    }
+
+    // Status filter — supports comma-joined multi-select. The special
+    // value "unscored" matches leads without a SalesOpportunity row.
+    let unscoredOnly = false;
+    let salesOppFilter: Record<string, unknown> | undefined;
     if (status && status !== "all") {
-      where.salesOpportunity = { status: status.toUpperCase() };
+      const list = status
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const includesUnscored = list.includes("unscored");
+      const concrete = list
+        .filter((s) => s !== "unscored")
+        .map((s) => s.toUpperCase());
+
+      if (concrete.length > 0 && includesUnscored) {
+        // "Has any of these statuses, OR has no opportunity row at all".
+        const existingOr = (where.OR as Array<Record<string, unknown>> | undefined) ?? [];
+        where.OR = [
+          ...existingOr,
+          { salesOpportunity: { status: { in: concrete } } },
+          { salesOpportunity: null },
+        ];
+      } else if (concrete.length > 0) {
+        salesOppFilter = { status: { in: concrete } };
+      } else if (includesUnscored) {
+        unscoredOnly = true;
+        where.salesOpportunity = null;
+      }
     }
 
     if (minScore || maxScore) {
-      where.salesOpportunity = {
-        ...(where.salesOpportunity as Record<string, unknown> || {}),
+      salesOppFilter = {
+        ...(salesOppFilter ?? {}),
         opportunityScore: {
           ...(minScore ? { gte: parseInt(minScore) } : {}),
           ...(maxScore ? { lte: parseInt(maxScore) } : {}),
@@ -67,9 +111,13 @@ export async function GET(request: Request) {
       };
     }
 
-    // Build orderBy. For score we sort by SalesOpportunity.opportunityScore
-    // (nulls last), falling back to createdAt for ties / leads without an
-    // opportunity row. For nearest we re-sort in app by Haversine.
+    if (salesOppFilter && !unscoredOnly) {
+      where.salesOpportunity = {
+        ...(where.salesOpportunity as Record<string, unknown> | undefined),
+        ...salesOppFilter,
+      };
+    }
+
     type LeadOrderBy = Record<string, unknown>;
     let orderBy: LeadOrderBy | LeadOrderBy[];
     if (sortBy === "score") {
@@ -88,9 +136,6 @@ export async function GET(request: Request) {
     }
 
     const isGeoMode = isNearestSort || Number.isFinite(withinMiles);
-
-    // For geo modes we fetch a wider result then sort/filter/slice in app.
-    // Postgres earthdistance is overkill for a few thousand leads.
     const fetchLimit = isGeoMode ? Math.min(2000, limit * 10) : limit;
     const fetchSkip = isGeoMode ? 0 : (page - 1) * limit;
 
@@ -100,9 +145,7 @@ export async function GET(request: Request) {
         include: {
           websiteAudit: true,
           salesOpportunity: true,
-          // Surface watchlist membership so the command palette can deep-link
-          // into Shortlist / Pipeline views for leads that live there.
-          watchlistItem: { select: { id: true } },
+          watchlistItem: { select: { id: true, pipelineStage: true } },
         },
         orderBy,
         skip: fetchSkip,
@@ -111,19 +154,61 @@ export async function GET(request: Request) {
       prisma.lead.count({ where }),
     ]);
 
-    let leads: typeof allLeads | Array<typeof allLeads[number] & { distanceMiles: number | null }> = allLeads;
+    // Resolve recommendedPackageId → name + priceLabel in a single query
+    // per page so the row badge can render inline. Free-text id =>
+    // missing rows render with packageName = null and the UI hides the
+    // chip.
+    const packageIds = Array.from(
+      new Set(
+        allLeads
+          .map((l) => l.salesOpportunity?.recommendedPackageId)
+          .filter((id): id is string => !!id),
+      ),
+    );
+    const packages = packageIds.length
+      ? await prisma.servicePackage.findMany({
+          where: { workspaceId, id: { in: packageIds } },
+          select: { id: true, name: true, priceLabel: true },
+        })
+      : [];
+    const packageById = new Map(packages.map((p) => [p.id, p]));
+
+    type DecoratedLead = (typeof allLeads)[number] & {
+      salesOpportunity:
+        | (NonNullable<(typeof allLeads)[number]["salesOpportunity"]> & {
+            recommendedPackageName: string | null;
+            recommendedPackagePriceLabel: string | null;
+          })
+        | null;
+    };
+
+    const decorated: DecoratedLead[] = allLeads.map((lead) => {
+      if (!lead.salesOpportunity) return { ...lead, salesOpportunity: null };
+      const pkg = lead.salesOpportunity.recommendedPackageId
+        ? packageById.get(lead.salesOpportunity.recommendedPackageId) ?? null
+        : null;
+      return {
+        ...lead,
+        salesOpportunity: {
+          ...lead.salesOpportunity,
+          recommendedPackageName: pkg?.name ?? null,
+          recommendedPackagePriceLabel: pkg?.priceLabel ?? null,
+        },
+      };
+    });
+
+    let leads:
+      | DecoratedLead[]
+      | Array<DecoratedLead & { distanceMiles: number | null }> = decorated;
     let filteredTotal = dbTotal;
 
     if (hasUserLoc && Number.isFinite(withinMiles)) {
-      leads = filterWithinMiles(allLeads, userLat, userLng, withinMiles);
-      // Once we filter by radius the DB count no longer reflects what the
-      // user actually sees. Use the post-filter length (capped by fetchLimit
-      // - we accept this approximation since fetchLimit is generous).
+      leads = filterWithinMiles(decorated, userLat, userLng, withinMiles);
       filteredTotal = leads.length;
     }
 
     if (isNearestSort) {
-      leads = sortByDistance(leads as typeof allLeads, userLat, userLng);
+      leads = sortByDistance(leads as DecoratedLead[], userLat, userLng);
     }
 
     if (isGeoMode) {

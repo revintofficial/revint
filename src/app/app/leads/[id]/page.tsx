@@ -204,6 +204,18 @@ interface LeadDetail {
     } | null;
   } | null;
   workspace?: { niche: string } | null;
+  // Hybrid-niche fields. `nicheSlug` is the parent (e.g. "fnb"),
+  // `subNicheSlug` is the child (e.g. "fnb-bar-club") chosen by the
+  // SUBVERTICAL_CLASSIFIER worker or by a manual rep override.
+  // `subNicheSource` distinguishes "AUTO" (classifier) from "MANUAL"
+  // (rep). `subNicheConfidence` is only meaningful when source = AUTO;
+  // confidence < 0.7 means the opener pipeline falls back to the
+  // generic parent pitch (see opener-writer.ts).
+  nicheSlug: string | null;
+  subNicheSlug: string | null;
+  subNicheSource: "AUTO" | "MANUAL" | null;
+  subNicheConfidence: number | null;
+  subNicheVersion: number;
   salesOpportunity: {
     opportunityScore: number;
     reasonCodes: string[];
@@ -213,6 +225,14 @@ interface LeadDetail {
     suggestedOffer: string;
     personalizedFirstMessage: string | null;
     expectedPriceBand: string | null;
+    recommendedPackageId: string | null;
+    recommendedPackageReason: string | null;
+    recommendedPackage: {
+      id: string;
+      name: string;
+      priceLabel: string;
+      features: string[];
+    } | null;
     status: string;
   } | null;
   watchlistItem?: {
@@ -621,6 +641,13 @@ export default function LeadDetailPage({
                 onCopy={copyDossier}
                 onToggle={() => setDossierCollapsed((v) => !v)}
               />
+              {opp && (
+                <RecommendedPackageCard
+                  pkg={opp.recommendedPackage}
+                  reason={opp.recommendedPackageReason}
+                  fallbackOffer={opp.suggestedOffer}
+                />
+              )}
               {opp?.personalizedFirstMessage && (
                 <PersonalizedMessageCard
                   message={opp.personalizedFirstMessage}
@@ -635,6 +662,14 @@ export default function LeadDetailPage({
             </TabsContent>
 
             <TabsContent value="website" className="space-y-5">
+              <SubNicheOverride
+                leadId={lead.id}
+                nicheSlug={lead.nicheSlug}
+                subNicheSlug={lead.subNicheSlug}
+                subNicheSource={lead.subNicheSource}
+                subNicheConfidence={lead.subNicheConfidence}
+                onChange={refetchLead}
+              />
               {lead.workspace?.niche === "RESTAURANT_TECH" && audit && (
                 <RestaurantSignalsCard features={audit.rawFeaturesJson ?? null} />
               )}
@@ -719,6 +754,13 @@ export default function LeadDetailPage({
                     </p>
                   </CardContent>
                 </Card>
+              )}
+              {opp && (
+                <RecommendedPackageCard
+                  pkg={opp.recommendedPackage}
+                  reason={opp.recommendedPackageReason}
+                  fallbackOffer={opp.suggestedOffer}
+                />
               )}
               <Card>
                 <CardHeader>
@@ -1455,6 +1497,67 @@ function StatusDot({ status, children }: { status: "ok" | "pending" | "bad"; chi
       <span className={`w-1.5 h-1.5 rounded-full ${color}`} />
       {children}
     </span>
+  );
+}
+
+function RecommendedPackageCard({
+  pkg,
+  reason,
+  fallbackOffer,
+}: {
+  pkg: { id: string; name: string; priceLabel: string; features: string[] } | null;
+  reason: string | null;
+  fallbackOffer: string | null;
+}) {
+  // No analyst-picked package + no legacy enum suggestion -> render
+  // nothing. The legacy enum is shown as a quiet fallback so reps on
+  // workspaces that haven't configured priced tiers yet still see a
+  // tier hint without us pretending we picked one from a price card.
+  if (!pkg && !fallbackOffer) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-[17px] flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-(--leadac-500)" />
+          {pkg ? "Recommended package" : "Recommended tier"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {pkg ? (
+          <>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-[18px] font-semibold tracking-[-0.01em] text-white">{pkg.name}</span>
+              <span className="text-[14px] text-(--leadac-300)">{pkg.priceLabel}</span>
+            </div>
+            {reason && (
+              <p className="text-[14px] leading-[1.6] text-white/75">{reason}</p>
+            )}
+            {pkg.features.length > 0 && (
+              <ul className="flex flex-wrap gap-1.5 pt-1">
+                {pkg.features.slice(0, 6).map((f) => (
+                  <li
+                    key={f}
+                    className="inline-flex items-center rounded-full bg-white/6 border border-white/8 px-2.5 py-0.5 text-[12px] text-white/70"
+                  >
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <div className="space-y-1.5">
+            <span className="inline-flex items-center rounded-full bg-white/8 px-3 py-1 text-[13px] text-white/85 capitalize">
+              {fallbackOffer?.toLowerCase()}
+            </span>
+            <p className="text-[13px] text-white/55">
+              No service packages configured yet. Define them in Settings → Service Packages so the analyst can recommend a specific tier with a price.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -2268,6 +2371,192 @@ function RestaurantSignalsCard({
             </div>
           </div>
         ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+interface SubNicheOption {
+  slug: string;
+  label: string;
+  tagline: string;
+}
+
+/**
+ * SubNicheOverride lets a rep correct the AI classifier's sub-niche
+ * pick. It only renders when the lead has a parent niche with at
+ * least one child (i.e. a hybrid pack like "fnb"). Single-pack
+ * verticals show nothing.
+ *
+ * Confidence < 0.7 with AUTO source surfaces a destructive-tinted
+ * warning so the rep knows the opener is falling back to a generic
+ * pitch. Picking a value (or "Clear") fires PATCH and triggers a
+ * full pipeline re-emit on the server (audit + scorer + opener
+ * + mockup re-run with the new sub-niche).
+ */
+function SubNicheOverride({
+  leadId,
+  nicheSlug,
+  subNicheSlug,
+  subNicheSource,
+  subNicheConfidence,
+  onChange,
+}: {
+  leadId: string;
+  nicheSlug: string | null;
+  subNicheSlug: string | null;
+  subNicheSource: "AUTO" | "MANUAL" | null;
+  subNicheConfidence: number | null;
+  onChange: () => void;
+}) {
+  const [options, setOptions] = useState<SubNicheOption[] | null>(null);
+  const [optionsLoading, setOptionsLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Lazy-load child options on mount. The endpoint returns a slim
+  // shape (slug + label + tagline); we don't ship the full NichePack
+  // including regex literals to the browser.
+  useEffect(() => {
+    if (!nicheSlug) {
+      setOptions([]);
+      return;
+    }
+    let cancelled = false;
+    setOptionsLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/leads/${leadId}/sub-niche`);
+        if (cancelled) return;
+        if (!res.ok) {
+          setOptions([]);
+          return;
+        }
+        const data = (await res.json()) as { options?: SubNicheOption[] };
+        if (cancelled) return;
+        setOptions(Array.isArray(data.options) ? data.options : []);
+      } catch {
+        if (!cancelled) setOptions([]);
+      } finally {
+        if (!cancelled) setOptionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [leadId, nicheSlug]);
+
+  const save = async (rawValue: string) => {
+    // The Select component uses "__none__" as a sentinel for the
+    // "clear override" item because Radix doesn't allow empty-string
+    // values. Translate it back to null at the wire boundary.
+    const next = rawValue === "__none__" ? null : rawValue;
+    if (next === subNicheSlug && subNicheSource === "MANUAL") return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/sub-niche`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subNicheSlug: next }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || `Failed to update sub-niche (${res.status})`);
+        return;
+      }
+      toast.success(
+        next
+          ? "Sub-niche locked in. Re-running opener and mockup..."
+          : "Override cleared. Classifier will re-pick on the next run.",
+      );
+      onChange();
+    } catch (err) {
+      console.error("SubNicheOverride save failed", err);
+      toast.error("Connection error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (options === null) return null;
+  if (options.length === 0) return null;
+
+  const lowConfidence =
+    subNicheSource === "AUTO" &&
+    typeof subNicheConfidence === "number" &&
+    subNicheConfidence < 0.7;
+
+  const currentLabel = subNicheSlug
+    ? options.find((o) => o.slug === subNicheSlug)?.label ?? subNicheSlug
+    : "Not classified yet";
+
+  const badgeVariant: "default" | "success" | "destructive" =
+    subNicheSource === "MANUAL"
+      ? "success"
+      : lowConfidence
+      ? "destructive"
+      : "default";
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-[15px] flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-(--leadac-500)" />
+          Sub-niche
+        </CardTitle>
+        <p className="text-[12px] text-white/40 mt-1">
+          Drives audit checks, opener pitch angle, and mockup template selection.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={badgeVariant}>{currentLabel}</Badge>
+          {subNicheSource === "MANUAL" && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-white/55">
+              <Check className="w-3 h-3 text-[hsl(152_48%_50%)]" />
+              manual override
+            </span>
+          )}
+          {subNicheSource === "AUTO" && typeof subNicheConfidence === "number" && (
+            <span
+              className={`text-[11px] ${
+                lowConfidence ? "text-[hsl(4_62%_54%)]" : "text-white/55"
+              }`}
+            >
+              auto · {Math.round(subNicheConfidence * 100)}% confidence
+            </span>
+          )}
+        </div>
+
+        {lowConfidence && (
+          <div className="rounded-2xl border border-[hsl(4_62%_54%)]/20 bg-[hsl(4_62%_54%)]/6 p-3 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-[hsl(4_62%_54%)] shrink-0 mt-0.5" />
+            <div className="text-[12px] text-white/75 leading-[1.55]">
+              Classifier confidence is below 70%. The opener and audit are
+              falling back to a generic pitch instead of a specialised one.
+              Pick the right sub-niche below to unlock vertical-specific
+              signals.
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={subNicheSlug ?? "__none__"}
+            disabled={saving || optionsLoading}
+            onChange={(e) => save(e.target.value)}
+            className="h-9 rounded-md bg-white/5 border border-white/10 px-3 text-[13px] text-white/85 focus:outline-none focus:border-(--leadac-500)/40 disabled:opacity-60"
+          >
+            <option value="__none__">— Clear / let classifier re-pick —</option>
+            {options.map((o) => (
+              <option key={o.slug} value={o.slug}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          {(saving || optionsLoading) && (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-white/50" />
+          )}
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,0 +1,145 @@
+---
+description: Multi-tenant scope guard — workspaceId on every workspace-owned read/write. Highest-severity bug class.
+globs:
+  - "src/app/api/**/*.ts"
+  - "src/app/**/page.tsx"
+  - "src/app/**/layout.tsx"
+  - "src/lib/**/*.ts"
+  - "src/workers/**/*.ts"
+  - "scripts/**/*.ts"
+alwaysApply: false
+---
+
+# Multi-tenant scope guard
+
+LeadAC is a multi-tenant SaaS. **Cross-tenant data leak is the highest-severity bug class.** Every Prisma query that touches workspace-owned data MUST be scoped by `workspaceId`.
+
+## Trusted source of `workspaceId`
+
+```ts
+import { requireUser } from "@/lib/auth";
+const { workspaceId, role, user } = await requireUser();
+```
+
+`requireUser()`:
+- Reads Supabase session.
+- Resolves the active membership (cookie `leadac_active_workspace_id` if it points to a workspace the user belongs to; otherwise oldest membership).
+- Auto-creates a personal workspace on first sign-in.
+- Throws `UnauthorizedError` (→ 401) if no session.
+
+**Treat `workspaceId` from the request as untrusted.** If a route accepts it from the URL or body, verify membership first:
+
+```ts
+const { user } = await requireUser();
+const member = await prisma.workspaceMember.findUnique({
+  where: { workspaceId_userId: { workspaceId: requestedId, userId: user.id } },
+});
+if (!member) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+```
+
+## Workspace-owned tables (must be scoped)
+
+`Lead`, `WebsiteAudit`, `SalesOpportunity`, `WatchlistItem`, `GoogleReview`, `Mockup`, `WebsiteMockup`, `ReviewAnalysis`, `VoiceNote`, `AgentRun`, `SemanticMemory`, `PlannerSession`, `WorkspaceLeadPipeline`, `ServicePackage`, `TeamTodo`, `EmailAccount`, `CopilotMessage`, `WorkspaceMember`.
+
+## Patterns
+
+### ✅ Direct read
+
+```ts
+await prisma.lead.findMany({ where: { workspaceId } });
+```
+
+### ✅ Single-record read with id (still scope)
+
+```ts
+const lead = await prisma.lead.findFirst({ where: { id: leadId, workspaceId } });
+if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
+```
+
+### ✅ Relation read (parent already scoped)
+
+```ts
+await prisma.websiteAudit.findFirst({
+  where: { lead: { workspaceId } },
+});
+```
+
+### ✅ Update / delete
+
+```ts
+await prisma.lead.update({
+  where: { id: leadId },
+  data: { ... },
+});
+// ❌ Above is unsafe! id alone leaks. Do this instead:
+await prisma.lead.updateMany({
+  where: { id: leadId, workspaceId },
+  data: { ... },
+});
+// or pre-verify with findFirst, then update by id
+```
+
+`updateMany`/`deleteMany` accept compound `where`. `update`/`delete` with a unique selector do not — pre-verify or refactor.
+
+### ✅ Create
+
+```ts
+await prisma.lead.create({
+  data: { workspaceId, businessName, placeId, ... },
+});
+```
+
+### ✅ Aggregation / counts
+
+```ts
+const count = await prisma.lead.count({ where: { workspaceId } });
+```
+
+## Worker context
+
+BullMQ workers don't have a session. Every job payload carries the relevant id (`runId`, `sessionId`, `leadId`); the worker hydrates `workspaceId` from the row and uses it for all subsequent reads/writes. Never trust a `workspaceId` field on the job payload as authoritative — re-derive from the parent row:
+
+```ts
+const run = await prisma.agentRun.findUniqueOrThrow({ where: { id: runId } });
+const workspaceId = run.workspaceId; // trusted because we read it from DB
+```
+
+## Semantic memory
+
+`src/lib/ai-core/memory.ts` enforces `workspaceId` on every read/write at the facade layer. Cross-workspace retrieval is impossible by construction. Never call `prisma.semanticMemory.*` directly — the facade also handles the pgvector raw-SQL literal that Prisma can't generate.
+
+## Public surfaces (the exception)
+
+These are intentionally NOT scoped to the caller — they serve workspace-owned content to the public web:
+
+- `/m/[slug]` — public mockup viewer (scoped by `Mockup.slug` which is unique + opaque)
+- `/[country]/[city]/[niche]/[business]` — public lead profile (only when `Workspace.publicProfilesEnabled`)
+- `/api/health` — no auth
+- `/api/web-vitals` — anonymous beacon
+
+For every other public path, ask: *"can workspace A see workspace B's data through this URL?"* If yes, gate it.
+
+## Webhook bypasses (signature-verified)
+
+- `/api/billing/webhook` — verifies `STRIPE_WEBHOOK_SECRET` signature, idempotency via `StripeEventLog`
+- `/api/webhooks/apify` — verifies shared secret, idempotency via `ApifyRun.apifyRunId`
+
+These don't call `requireUser()` because they are server-to-server. They MUST verify the signature/secret before any DB write.
+
+## Audit checklist (run before merging)
+
+For every diff touching a route or worker:
+
+1. Does the new query include `workspaceId` in `where` (or via a parent relation)?
+2. If accepting `workspaceId` from input, is membership re-verified?
+3. For `update`/`delete` by `id` — pre-verified or switched to `updateMany`/`deleteMany`?
+4. New table — does it have a `workspaceId` column + index, with `onDelete: Cascade` from `Workspace`?
+5. New SemanticMemory write — going through `memory.ts`?
+
+## Anti-patterns
+
+- ❌ `prisma.lead.findUnique({ where: { id } })` from a route — leaks across tenants
+- ❌ Trusting `workspaceId` from request body / URL params without membership check
+- ❌ `prisma.lead.update({ where: { id }, data })` — switch to `updateMany` with `workspaceId`
+- ❌ Worker reading `workspaceId` from job payload as authoritative — re-derive from the row
+- ❌ Adding a workspace-owned table without `workspaceId` + index + cascade

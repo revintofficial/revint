@@ -128,6 +128,7 @@ function makeHit(partial: Partial<MemoryHit> & { text: string }): MemoryHit {
     metadata: partial.metadata ?? { url: "https://acme.example/services" },
     similarity: partial.similarity ?? 0.8,
     createdAt: partial.createdAt ?? new Date(),
+    nicheScope: partial.nicheScope ?? null,
   };
 }
 
@@ -185,6 +186,7 @@ function makeCtx(overrides: Partial<AgentWorkerContext> = {}): AgentWorkerContex
       conversionLink: null,
       socialProof: null,
       branding: null,
+      niche: "WEB_AGENCY",
     },
     memory: [],
     plannerSessionId: null,

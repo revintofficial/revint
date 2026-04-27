@@ -1,0 +1,98 @@
+---
+description: Prisma + Postgres + pgvector. Multi-tenant scope, generated client path, schema editing.
+globs:
+  - "prisma/**"
+  - "src/lib/**/*.ts"
+  - "src/app/api/**/*.ts"
+  - "src/app/**/page.tsx"
+  - "src/app/**/layout.tsx"
+  - "src/workers/**/*.ts"
+  - "scripts/**/*.ts"
+alwaysApply: false
+---
+
+# Prisma / Postgres
+
+## Generated client lives at a CUSTOM path
+
+```ts
+// ✅ correct
+import type { Lead, Workspace, AgentRun } from "@/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
+
+// ❌ wrong — `@prisma/client` is the npm package, not the generated client
+import type { Lead } from "@prisma/client";
+```
+
+`prisma/schema.prisma` declares `output = "../src/generated/prisma"` and `previewFeatures = ["driverAdapters"]`. The Prisma engine + `pg` driver are `serverExternalPackages` in `next.config.mjs`.
+
+## Multi-tenant scope is non-negotiable
+
+Every query that reads or writes workspace-owned data MUST include `workspaceId`. Tables that carry it:
+
+`Lead`, `WebsiteAudit`, `SalesOpportunity`, `WatchlistItem`, `GoogleReview`, `Mockup`, `WebsiteMockup`, `ReviewAnalysis`, `VoiceNote`, `AgentRun`, `SemanticMemory`, `PlannerSession`, `WorkspaceLeadPipeline`, `ServicePackage`, `TeamTodo`, `EmailAccount`, `CopilotMessage`, `WorkspaceMember`.
+
+Patterns:
+
+```ts
+// ✅ Always derive workspaceId from the session.
+const { workspaceId } = await requireUser();
+const leads = await prisma.lead.findMany({ where: { workspaceId } });
+
+// ✅ Lead-scoped read: still scope by workspaceId in the where clause.
+await prisma.lead.findFirst({ where: { id: leadId, workspaceId } });
+
+// ❌ Never trust a workspaceId from the request body / URL without
+//    verifying the caller is a member of it.
+```
+
+For relations, use the parent's scope:
+
+```ts
+// ✅ websiteAudit is auto-scoped because Lead.workspaceId is required.
+await prisma.websiteAudit.findFirst({
+  where: { lead: { workspaceId } },
+});
+```
+
+## Schema editing flow
+
+1. Edit `prisma/schema.prisma`.
+2. `npm run db:push` (no migration history in this project — using `db push` for now). Use `db:migrate` only when explicitly told to switch to migrations.
+3. `npm run db:generate` (or rely on `postinstall`).
+4. If the change touches pgvector or RLS, also run the relevant SQL via `tsx prisma/migrations/apply.ts <file>.sql`. See `package.json` scripts `db:multitenant` and `db:ai-core`.
+
+## Enums to know
+
+- `Plan`: `FREE | PRO | PRO_TEAM | AGENCY`
+- `Role`: `OWNER | ADMIN | MEMBER`
+- `AgentWorkerKind`: 30+ values across Intelligence / Pitch / Deliverable / Ops / Enrichment groups (full list in schema)
+- `MemoryKind`: see `ai-core.mdc`
+- `OutreachStatus`, `PipelineStage`, `PipelinePreset` (`LITE | BALANCED | AGGRESSIVE | CUSTOM`)
+- `WorkspaceNiche`: `WEB_AGENCY | RESTAURANT_TECH | DENTAL | REAL_ESTATE` (last two reserved)
+- `AgentRunStatus`: `PENDING | RUNNING | SUCCEEDED | FAILED | CANCELLED`
+- `CrawlStatus`, `AnalyzeStatus`, `ReviewAnalysisStatus`
+
+## pgvector
+
+- `SemanticMemory.embedding` is `vector(768)` (Gemini `text-embedding-004`).
+- Raw SQL with vector literals goes through `src/lib/ai-core/memory.ts`. Never write raw vectors elsewhere.
+- The `add_pgvector_extension.sql` migration must run before `add_ai_core.sql` on a fresh DB; `npm run db:ai-core` chains them.
+
+## Workspace lifecycle (subtle)
+
+- `requireUser()` in `src/lib/auth.ts` **upserts** the `User` row from Supabase auth on every call. It also auto-creates a personal workspace on first sign-in if the user has none.
+- The active workspace is selected via the `leadac_active_workspace_id` cookie (`ACTIVE_WORKSPACE_COOKIE`). When the cookie targets a workspace the user belongs to, that one wins; otherwise the oldest membership.
+- Membership rows: `WorkspaceMember(workspaceId, userId, role)` with `@@unique([workspaceId, userId])`.
+
+## Counters & cycle reset
+
+`Workspace.leadsCreatedThisCycle`, `aiCreditsUsedThisCycle`, `cycleResetAt`. Reset is aligned with Stripe billing cycle end (`currentPeriodEnd`); see `src/app/api/billing/webhook/route.ts`. Quota meters in UI must read from these — don't recompute.
+
+## Anti-patterns
+
+- ❌ `prisma.semanticMemory.create/update/findMany` — go through `src/lib/ai-core/memory.ts`
+- ❌ `where: { id }` without `workspaceId` on workspace-owned tables
+- ❌ `prisma.lead.findUnique({ where: { id } })` from a route — same issue, breaks tenant isolation
+- ❌ Importing types from `@prisma/client`
+- ❌ Adding a new table without a `workspaceId` column when the data is workspace-owned

@@ -82,6 +82,38 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     // it were real. Instead, the run fails, the pipeline records the
     // failure, and the existing SalesOpportunity row (if any) stays
     // intact. The deterministic score is logged for observability.
+    // Confidence gate (P0.4): below 0.7 from an AUTO classification we
+    // pass `subNicheSlug = null` so the prompt falls back to the parent
+    // F&B framing instead of writing "we'll set up your <wrong-vertical>"
+    // claims. MANUAL overrides skip the gate (rep is gold-standard) by
+    // sending confidence 1.0 regardless of the stored value.
+    const subNicheTrusted =
+      lead.subNicheSlug != null &&
+      (lead.subNicheSource === "MANUAL" ||
+        (lead.subNicheConfidence ?? 0) >= 0.7);
+    const effectiveSubNiche = subNicheTrusted ? lead.subNicheSlug : null;
+    const effectiveSubNicheConfidence = subNicheTrusted
+      ? lead.subNicheSource === "MANUAL"
+        ? 1.0
+        : lead.subNicheConfidence ?? null
+      : null;
+
+    // Pre-load the workspace's priced tiers so Gemini can pick a
+    // package_id from the rep's actual price card instead of inventing
+    // generic STARTER/GROWTH/SALES copy. Empty list -> prompt falls
+    // back to the legacy enum, so non-FineDine tenants stay unaffected.
+    const servicePackages = await prisma.servicePackage.findMany({
+      where: { workspaceId: ctx.workspace.id },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        priceLabel: true,
+        features: true,
+        isPopular: true,
+      },
+    });
+
     const analysis = await analyzeLeadWithGemini(
       lead.businessName,
       lead.formattedAddress,
@@ -91,12 +123,34 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       features,
       ctx.workspace.language ?? "en",
       {
+        niche: ctx.workspace.niche ?? null,
         offerName: ctx.workspace.offerName ?? null,
         valueProposition: ctx.workspace.valueProposition ?? null,
         language: ctx.workspace.language ?? null,
+        subNicheSlug: effectiveSubNiche,
+        subNicheConfidence: effectiveSubNicheConfidence,
+        servicePackages,
       },
       reviewContext,
     );
+
+    // Validate the package id Gemini returned: it must match an id
+    // we actually sent in the prompt. Models occasionally invent ids
+    // ("pkg-premium-plus") even when given a fixed list, and a
+    // dangling FK-less recommendation in the DB confuses the rep.
+    // Drop unknown ids silently and clear the reason; the UI then
+    // shows the legacy suggestedOffer enum instead.
+    const validPackageIds = new Set(servicePackages.map((p) => p.id));
+    const recommendedPackageId =
+      typeof analysis.recommended_package_id === "string" &&
+      validPackageIds.has(analysis.recommended_package_id)
+        ? analysis.recommended_package_id
+        : null;
+    const recommendedPackageReason = recommendedPackageId
+      ? typeof analysis.recommended_package_reason === "string"
+        ? analysis.recommended_package_reason.slice(0, 600)
+        : null
+      : null;
 
     const finalScore = Math.min(
       100,
@@ -117,6 +171,8 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         suggestedOffer: finalOffer.toUpperCase() as "STARTER" | "GROWTH" | "SALES",
         personalizedFirstMessage: analysis.personalized_first_message,
         expectedPriceBand: analysis.expected_price_band || estimatePriceBand(finalOffer),
+        recommendedPackageId,
+        recommendedPackageReason,
         status: "NEW",
       },
       update: {
@@ -128,6 +184,8 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         suggestedOffer: finalOffer.toUpperCase() as "STARTER" | "GROWTH" | "SALES",
         personalizedFirstMessage: analysis.personalized_first_message,
         expectedPriceBand: analysis.expected_price_band || estimatePriceBand(finalOffer),
+        recommendedPackageId,
+        recommendedPackageReason,
       },
     });
 
@@ -148,6 +206,8 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         suggestedOffer: finalOffer,
         expectedPriceBand: analysis.expected_price_band,
         personalizedFirstMessage: analysis.personalized_first_message,
+        recommendedPackageId,
+        recommendedPackageReason,
       },
       costTokens: Math.ceil(JSON.stringify(analysis).length / 4),
     };

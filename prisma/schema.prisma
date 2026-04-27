@@ -90,6 +90,15 @@ enum WorkspaceNiche {
   REAL_ESTATE     // reserved
 }
 
+// Source of a lead's `subNicheSlug` value. AUTO means the
+// FNB_SUBVERTICAL_CLASSIFIER worker tagged it; MANUAL means a sales rep
+// overrode it from the lead detail page. The classifier worker MUST skip
+// leads whose source is MANUAL so reps' overrides are never reverted.
+enum SubNicheSource {
+  AUTO
+  MANUAL
+}
+
 enum EmailProvider {
   GMAIL
   OUTLOOK
@@ -128,6 +137,15 @@ enum AgentWorkerKind {
   // lead_created so REVIEW_ANALYST has corpus to chew on. FREE-safe
   // (no Gemini, no Apify, just one Places API call).
   GOOGLE_PLACES_REVIEWS
+  // SUBVERTICAL_CLASSIFIER tags hybrid-niche leads with a child sub-niche
+  // slug. The worker dispatches on the workspace niche to pick the
+  // parent pack (RESTAURANT_TECH → "fnb", DENTAL → "dental", ...) and
+  // scores the lead against that parent's children using a rule-based
+  // first pass (Google Places types + name + website signals + price
+  // level) and a Gemini fallback when rules are inconclusive. Only
+  // runs when the lead is not already MANUAL-sourced. Drives audit /
+  // opener / mockup branching downstream.
+  SUBVERTICAL_CLASSIFIER
   // Grup B - Pitch
   WEBSITE_PLAN_GENERATOR
   WEBSITE_MOCKUP_GENERATOR
@@ -221,6 +239,8 @@ model User {
 
   ownedWorkspaces Workspace[]       @relation("WorkspaceOwner")
   memberships     WorkspaceMember[]
+  assignedLeads   Lead[]            @relation("LeadAssignee")
+  leadSegments    LeadSegment[]     @relation("LeadSegmentCreator")
 
   @@map("users")
 }
@@ -262,6 +282,15 @@ model Workspace {
   conversionLink   String? @map("conversion_link")
   niche            WorkspaceNiche @default(WEB_AGENCY) @map("niche")
 
+  // Optional sub-niche focus list. When the workspace's parent vertical (e.g.
+  // RESTAURANT_TECH → "fnb") has child packs, the rep can narrow which ones
+  // their team actually pitches (e.g. only fine-dining + bar + hotel) so the
+  // Discovery defaults, classifier prior, and quota planner know which slugs
+  // are in scope. Empty/null means "all children of the parent vertical".
+  // Stored as slugs (e.g. ["fnb-fine-dining","fnb-bar-club"]) — string array,
+  // not enum, because slugs are URL-shaped while the enum is DB-shaped.
+  targetSubNiches String[] @default([]) @map("target_sub_niches")
+
   // Workspace country (ISO-3166-1 alpha-2, e.g. "GB", "US"). Used to scope
   // Discovery queries globally instead of defaulting to London boroughs.
   country String? @map("country")
@@ -285,6 +314,7 @@ model Workspace {
   plannerSessions PlannerSession[]
   servicePackages ServicePackage[]
   leadPipeline    WorkspaceLeadPipeline?
+  leadSegments    LeadSegment[]
 
   @@map("workspaces")
 }
@@ -348,10 +378,52 @@ model Lead {
   crawlStatus          CrawlStatus          @default(PENDING) @map("crawl_status")
   analyzeStatus        AnalyzeStatus        @default(PENDING) @map("analyze_status")
   reviewAnalysisStatus ReviewAnalysisStatus @default(PENDING) @map("review_analysis_status")
+
+  // Niche pack tagging. `nicheSlug` is the parent NichePack slug (e.g.
+  // "fnb", "phone-repair"). `subNicheSlug` is the child slug for hybrid
+  // packs (e.g. "fnb-fine-dining"); null for flat niches. `subNicheSource`
+  // distinguishes auto-classified leads from rep overrides — the classifier
+  // worker only writes when source is null or AUTO. `subNicheConfidence`
+  // is the classifier's 0..1 score; the opener writer falls back to the
+  // parent (generic F&B) angle when confidence < 0.7 and the source is
+  // AUTO, so a low-confidence misclassification doesn't ship a wrong-
+  // vertical pitch.
+  //
+  // `subNicheVersion` increments every time the slug changes (rep
+  // override or re-classification). AgentRun rows snapshot this at
+  // enqueue time as `inputSubNicheVersion`; workers exit early when
+  // the snapshot doesn't match the current version, so a stale audit
+  // queued before an override never overwrites the fresh one.
+  nicheSlug          String?         @map("niche_slug")
+  subNicheSlug       String?         @map("sub_niche_slug")
+  subNicheSource     SubNicheSource? @map("sub_niche_source")
+  subNicheConfidence Float?          @map("sub_niche_confidence")
+  subNicheVersion    Int             @default(0) @map("sub_niche_version")
+  // Discovery query that surfaced this lead (e.g. "cocktail bar").
+  // Used by the rule-based classifier as a strong prior — when the rep
+  // searched specifically for "cocktail bar" the resulting lead is
+  // almost certainly fnb-bar-club. Distinct from `sourceQuery` which is
+  // the raw Google Places query string.
+  discoverySourceQuery String?       @map("discovery_source_query")
+
+  // Lead lifecycle flags surfaced by the leads list overhaul. `archivedAt`
+  // is a soft-delete sentinel (rep removed the lead from active scope —
+  // hidden from list by default but still queryable for restore). The
+  // dedicated `discardedAt` separates "I won't pursue this" from "we
+  // tracked this and closed it" and powers the kanban discard column.
+  // `snoozeUntil` lets a rep hide a lead for N days; the list filter
+  // hides leads where snoozeUntil > now(). `assignedToUserId` is the
+  // optional owner inside multi-rep workspaces.
+  archivedAt        DateTime? @map("archived_at")
+  discardedAt       DateTime? @map("discarded_at")
+  snoozeUntil       DateTime? @map("snooze_until")
+  assignedToUserId  String?   @map("assigned_to_user_id") @db.Uuid
+
   createdAt            DateTime             @default(now()) @map("created_at")
   updatedAt            DateTime             @updatedAt @map("updated_at")
 
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assignedTo       User?             @relation("LeadAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
   websiteAudit     WebsiteAudit?
   salesOpportunity SalesOpportunity?
   watchlistItem    WatchlistItem?
@@ -369,7 +441,35 @@ model Lead {
   @@index([workspaceId, createdAt])
   @@index([workspaceId, hasWebsite])
   @@index([workspaceId, borough])
+  @@index([workspaceId, subNicheSlug])
+  @@index([workspaceId, archivedAt])
+  @@index([workspaceId, snoozeUntil])
+  @@index([workspaceId, assignedToUserId])
   @@map("leads")
+}
+
+// Saved smart-segment for the leads list. `queryJson` is the serialized
+// LeadsFilters object (see src/components/app/leads/useLeadsQuery.ts) so a
+// rep can save a filter combo and reload it later. `isShared` opens the
+// segment up to every member of the workspace; otherwise only the
+// creator sees it. Solo workspaces still benefit — saved segments act as
+// favourite filter presets.
+model LeadSegment {
+  id              String   @id @default(cuid())
+  workspaceId     String   @map("workspace_id")
+  createdByUserId String   @map("created_by_user_id") @db.Uuid
+  name            String
+  queryJson       Json     @map("query_json")
+  isShared        Boolean  @default(false) @map("is_shared")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User      @relation("LeadSegmentCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, isShared])
+  @@map("lead_segments")
 }
 
 // A public, shareable mockup of what the prospect's site COULD look like.
@@ -444,6 +544,14 @@ model SalesOpportunity {
   suggestedOffer           SuggestedOffer @default(STARTER) @map("suggested_offer")
   personalizedFirstMessage String?        @map("personalized_first_message")
   expectedPriceBand        String?        @map("expected_price_band")
+  // ServicePackage tier the analyst picked for this lead. Free-text id
+  // (NOT a FK) so a deleted/renamed package leaves the recommendation
+  // intact as a tombstone the UI can render as plain text and the rep
+  // can re-trigger to refresh. Resolved at render time against
+  // ServicePackage.findMany({ workspaceId }) so cross-tenant access
+  // remains scoped.
+  recommendedPackageId     String?        @map("recommended_package_id")
+  recommendedPackageReason String?        @map("recommended_package_reason")
   status                   OutreachStatus @default(NEW)
   createdAt                DateTime       @default(now()) @map("created_at")
   updatedAt                DateTime       @updatedAt @map("updated_at")
@@ -671,6 +779,14 @@ model AgentRun {
   // rows with NULL keys do not collide. Prisma cannot express the
   // WHERE clause so we run it out of band after `prisma db push`.
   idempotencyKey   String?         @map("idempotency_key")
+  // Snapshot of `Lead.subNicheVersion` at enqueue time. When the
+  // worker resolves and finds the lead's current version is higher,
+  // it exits with status SUCCEEDED + reason "stale-subniche-version"
+  // without writing any lead state. Protects against a worker that
+  // was queued before a rep override / re-classification overwriting
+  // the fresh result. Null for runs unrelated to a lead or for legacy
+  // rows pre-dating the version stamp.
+  inputSubNicheVersion Int?         @map("input_sub_niche_version")
   errorMsg         String?         @map("error_msg") @db.Text
   startedAt        DateTime?       @map("started_at")
   finishedAt       DateTime?       @map("finished_at")
@@ -736,6 +852,14 @@ model SemanticMemory {
   // `WebsiteMockup`) don't require a migration. Pair it with `refId`.
   refType     String?                     @map("ref_type")
   refId       String?                     @map("ref_id")
+  // Niche pack slug this row was learned from. For hybrid niches
+  // (parent + 10 children) we tag with the most specific slug — i.e.
+  // the lead's `subNicheSlug` ("fnb-bar-club") if present, else its
+  // `nicheSlug` ("fnb"). Reads scope by querying the child slug first
+  // and falling back to "any child of parent" (LIKE 'fnb-%') when the
+  // child has too few hits. Null for niche-agnostic memory like
+  // WORKSPACE_OFFER, WORKSPACE_PERSONA, COPILOT_TURN.
+  nicheScope  String?                     @map("niche_scope")
   text        String                      @db.Text
   // Nullable so an upsert can create the row first and enqueue an embed
   // job that populates the vector asynchronously.
@@ -747,12 +871,20 @@ model SemanticMemory {
   lead      Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, kind])
+  @@index([workspaceId, kind, nicheScope])
   @@index([leadId])
-  // Composite uniqueness on (workspaceId, refType, refId) so concurrent
-  // upserts cannot produce duplicate rows for the same source object.
-  // Postgres treats NULL as distinct, so rows without refType/refId
-  // (free-form memory like COPILOT_TURN) are unaffected.
-  @@unique([workspaceId, refType, refId])
+  // Composite uniqueness on (workspaceId, refType, refId, nicheScope)
+  // so concurrent upserts cannot duplicate the same source object
+  // within the same scope, while still permitting the asymmetric
+  // dual-write strategy: a positive signal (OPENER_SUCCESS,
+  // MOCKUP_SECTION, LEAD_PROFILE) is written twice — once tagged
+  // with the child slug ("fnb-bar-club") and once with the parent
+  // slug ("fnb") — so a brand-new sub-niche with no hits still gets
+  // few-shot fuel from the parent. Negative signals (OPENER_FAILURE)
+  // are written child-only so a bar-club failure doesn't poison
+  // cafe-bakery retrieval. Postgres treats NULL as distinct, so rows
+  // without refType/refId (COPILOT_TURN) are unaffected by this key.
+  @@unique([workspaceId, refType, refId, nicheScope])
   @@map("semantic_memory")
 }
 
@@ -800,6 +932,12 @@ model ServicePackage {
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  // Per-workspace name uniqueness so seed scripts and the
+  // packages-form UI can upsert by (workspaceId, name) without
+  // worrying about duplicates. The pre-existing API route already
+  // creates one package per name conceptually; this just enforces
+  // it at the DB level.
+  @@unique([workspaceId, name])
   @@index([workspaceId, sortOrder])
   @@map("service_packages")
 }

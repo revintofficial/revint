@@ -53,6 +53,16 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
 
     let analysis;
     try {
+      // Confidence gate (P0.4): only pass the child sub-niche slug to
+      // Gemini when the classifier was confident enough (≥0.7) or the
+      // rep manually overrode the slug. Below that we fall back to the
+      // parent F&B framing so a low-confidence misclass doesn't ship a
+      // wrong-vertical pitch.
+      const subNicheTrusted =
+        lead.subNicheSlug != null &&
+        (lead.subNicheSource === "MANUAL" ||
+          (lead.subNicheConfidence ?? 0) >= 0.7);
+
       analysis = await analyzeLeadWithGemini(
         lead.businessName,
         lead.formattedAddress,
@@ -66,6 +76,12 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
           offerName: lead.workspace.offerName,
           valueProposition: lead.workspace.valueProposition,
           language: lead.workspace.language,
+          subNicheSlug: subNicheTrusted ? lead.subNicheSlug : null,
+          subNicheConfidence: subNicheTrusted
+            ? lead.subNicheSource === "MANUAL"
+              ? 1.0
+              : lead.subNicheConfidence ?? null
+            : null,
         },
       );
     } catch (aiError) {

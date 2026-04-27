@@ -1,0 +1,104 @@
+---
+description: Next.js 16 API route handlers — auth, error envelope, conventions.
+globs:
+  - "src/app/api/**"
+alwaysApply: false
+---
+
+# API routes (`src/app/api/**`)
+
+All routes are Next.js 16 App Router route handlers (`route.ts` exporting `GET` / `POST` / `PUT` / `PATCH` / `DELETE`).
+
+## Auth — every authed route uses `requireUser()`
+
+```ts
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { internalError } from "@/lib/api-errors";
+
+export async function GET(request: Request) {
+  try {
+    const { workspaceId } = await requireUser();
+    // ... scoped query ...
+    return NextResponse.json({ items: [...] });
+  } catch (err) {
+    if (err instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return internalError(err);
+  }
+}
+```
+
+OR use the wrapper:
+
+```ts
+import { withAuth } from "@/lib/auth";
+
+export const POST = withAuth(async (session, request: Request) => {
+  const { workspaceId, role } = session;
+  // ...
+  return NextResponse.json({ ok: true });
+});
+```
+
+`withAuth` already maps `UnauthorizedError → 401` and `NotFoundError → 404`, and JSON-formats internal errors.
+
+## Hard rules
+
+- **Never** read `workspaceId` from the request body or URL without re-verifying membership. `requireUser()` is the only trusted source.
+- **Always** scope Prisma queries by `workspaceId` (see `prisma-db.mdc`).
+- **Stripe webhook** (`/api/billing/webhook`) bypasses `requireUser()` — it verifies signature against `STRIPE_WEBHOOK_SECRET` and uses `StripeEventLog` for idempotency. Do not skip either.
+- **Apify webhook** (`/api/webhooks/apify`) verifies a shared secret header. Same rule: idempotency on `ApifyRun.apifyRunId`.
+- **Webhook routes** must export `runtime = "nodejs"` (not edge) — Stripe SDK + Prisma both need Node.
+
+## Next.js 16 specifics that bite
+
+- **`params` is a Promise.** Dynamic route handlers receive `{ params: Promise<{ id: string }> }`. Always `await` it.
+  ```ts
+  export async function GET(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> },
+  ) {
+    const { id } = await params;
+  }
+  ```
+- **`cookies()` and `headers()` are async.** `await cookies()` / `await headers()`.
+- **`searchParams`** in pages is a Promise too: `{ searchParams: Promise<...> }`.
+- Default fetch caching changed in 16. If you `fetch()` from a route handler, set `cache` explicitly.
+- No `eslint` config key in `next.config.*` (removed). Lint runs separately as `eslint .`.
+
+## Response envelope
+
+- Success: `NextResponse.json(payload, { status?: 200 })`. Use `204` for no-content where appropriate.
+- Error: `NextResponse.json({ error: "...", detail?: "..." }, { status })`. Common helpers in `src/lib/api-errors.ts` (`internalError`, etc.).
+- Don't return plain strings or HTML from `/api/*`.
+- Validation: prefer typed parsing (zod-like) at the top of the handler; respond `400` with `{ error: "Invalid request", details }` on failure.
+
+## Triggering AI work from a route
+
+```ts
+import { emit } from "@/lib/ai-core/events";
+
+// Always emit — never enqueue BullMQ directly from a route.
+await emit("user_one_click_pitch", { workspaceId, leadId, userId });
+return NextResponse.json({ status: "queued" });
+```
+
+For per-worker invocations: `POST /api/leads/[id]/workers/[kind]` is the canonical entry point. It asserts quota, inserts an `AgentRun`, and enqueues to `agent-runs`. Don't re-implement that flow in a new route.
+
+## File patterns
+
+- Singular resource: `src/app/api/<resource>/[id]/route.ts`.
+- Sub-action: `src/app/api/<resource>/[id]/<action>/route.ts` (e.g. `leads/[id]/send-email`).
+- Webhooks: `src/app/api/webhooks/<provider>/route.ts` (Apify) or `src/app/api/billing/webhook/route.ts` (Stripe).
+- Health: `src/app/api/health/route.ts`.
+
+## Anti-patterns
+
+- ❌ Reading `workspaceId` from the request and trusting it
+- ❌ Calling `prisma.<model>.findMany` without `workspaceId` in `where`
+- ❌ Throwing `Error("...")` and letting Next render an HTML 500 — always return JSON
+- ❌ Long-running work inline (Gemini, Apify, scraping) — use `emit()` or `agent-runs` enqueue
+- ❌ Importing client-only code (browser supabase, framer-motion) in a route handler

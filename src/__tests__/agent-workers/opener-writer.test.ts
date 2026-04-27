@@ -27,9 +27,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentWorkerContext, MemoryHit } from "@/lib/agent-workers/types";
 
-const { generateContentSpy, memoryQueryMock } = vi.hoisted(() => ({
+const { generateContentSpy, memoryQueryMock, memoryUnionMock } = vi.hoisted(() => ({
   generateContentSpy: vi.fn(),
   memoryQueryMock: vi.fn(),
+  memoryUnionMock: vi.fn(),
 }));
 
 vi.mock("@google/generative-ai", () => ({
@@ -49,6 +50,7 @@ vi.mock("@google/generative-ai", () => ({
 
 vi.mock("@/lib/ai-core/memory", () => ({
   query: memoryQueryMock,
+  queryWithNicheUnion: memoryUnionMock,
 }));
 
 const { prismaMock } = vi.hoisted(() => ({
@@ -97,6 +99,7 @@ function hit(partial: Partial<MemoryHit> & { text: string; similarity: number })
     metadata: partial.metadata ?? {},
     similarity: partial.similarity,
     createdAt: partial.createdAt ?? new Date(),
+    nicheScope: partial.nicheScope ?? null,
   };
 }
 
@@ -156,7 +159,8 @@ function makeCtx(overrides: Partial<AgentWorkerContext> = {}): AgentWorkerContex
       conversionLink: "https://leadac.ai/demo",
       socialProof: null,
       branding: null,
-    },
+      niche: "WEB_AGENCY",
+    } as never,
     memory: [],
     plannerSessionId: null,
     emit: vi.fn().mockResolvedValue(undefined),
@@ -168,13 +172,14 @@ beforeEach(() => {
   process.env.GEMINI_API_KEY = "test-key";
   generateContentSpy.mockReset();
   memoryQueryMock.mockReset().mockResolvedValue([]);
+  memoryUnionMock.mockReset().mockResolvedValue([]);
   prismaMock.salesOpportunity.update.mockReset().mockResolvedValue({});
   prismaMock.websiteMockup.findFirst.mockReset().mockResolvedValue(null);
 });
 
 describe("OPENER_WRITER - few-shot block gating", () => {
   it("omits the few-shot header when no OPENER_SUCCESS memory is available", async () => {
-    memoryQueryMock.mockResolvedValue([]);
+    memoryUnionMock.mockResolvedValue([]);
     generateContentSpy.mockResolvedValue(textResponse("Hi - noticed your shop..."));
 
     const result = await run(makeCtx());
@@ -191,7 +196,7 @@ describe("OPENER_WRITER - few-shot block gating", () => {
   });
 
   it("includes the few-shot header and all 3 examples when 3 OPENER_SUCCESS hits are returned", async () => {
-    memoryQueryMock.mockResolvedValue([
+    memoryUnionMock.mockResolvedValue([
       hit({ text: "Example opener one about booking.", similarity: 0.92 }),
       hit({ text: "Example opener two about mobile speed.", similarity: 0.88 }),
       hit({ text: "Example opener three about reviews.", similarity: 0.81 }),
@@ -216,17 +221,22 @@ describe("OPENER_WRITER - few-shot block gating", () => {
 
 describe("OPENER_WRITER - memory retrieval contract", () => {
   it("queries memory with topK=5 and OPENER_SUCCESS kind so the DB layer enforces the cap", async () => {
-    memoryQueryMock.mockResolvedValue([]);
+    memoryUnionMock.mockResolvedValue([]);
     generateContentSpy.mockResolvedValue(textResponse("ok"));
 
     await run(makeCtx());
 
-    expect(memoryQueryMock).toHaveBeenCalledTimes(1);
-    const args = memoryQueryMock.mock.calls[0][0];
+    expect(memoryUnionMock).toHaveBeenCalledTimes(1);
+    const args = memoryUnionMock.mock.calls[0][0];
     expect(args).toMatchObject({
       workspaceId: "ws_1",
       kinds: ["OPENER_SUCCESS"],
       topK: 5,
+      // Niche union: parent fallback when lead has no sub-niche set.
+      // childSlug=null + parentSlug=null because the test ctx does not
+      // configure a workspace niche; weighted union still works.
+      childSlug: null,
+      parentWeight: 0.5,
     });
     expect(typeof args.text).toBe("string");
     expect(args.text.length).toBeGreaterThan(0);
@@ -247,7 +257,7 @@ describe("OPENER_WRITER - memory retrieval contract", () => {
       hit({ text: "SHOULD_NOT_APPEAR_6", similarity: 0.72 }),
       hit({ text: "SHOULD_NOT_APPEAR_7", similarity: 0.65 }),
     ];
-    memoryQueryMock.mockResolvedValue(top5);
+    memoryUnionMock.mockResolvedValue(top5);
     generateContentSpy.mockResolvedValue(textResponse("x"));
 
     const result = await run(makeCtx());
@@ -265,7 +275,7 @@ describe("OPENER_WRITER - memory retrieval contract", () => {
 
 describe("OPENER_WRITER - persistence and output", () => {
   it("persists the Gemini message to SalesOpportunity.personalizedFirstMessage", async () => {
-    memoryQueryMock.mockResolvedValue([]);
+    memoryUnionMock.mockResolvedValue([]);
     generateContentSpy.mockResolvedValue(textResponse("Hey Acme - saw your 4.6 rating..."));
 
     await run(makeCtx());
@@ -279,7 +289,7 @@ describe("OPENER_WRITER - persistence and output", () => {
   });
 
   it("trims surrounding whitespace from the Gemini reply before persisting", async () => {
-    memoryQueryMock.mockResolvedValue([]);
+    memoryUnionMock.mockResolvedValue([]);
     generateContentSpy.mockResolvedValue(textResponse("   Hi Acme   \n"));
 
     const result = await run(makeCtx());
@@ -293,7 +303,7 @@ describe("OPENER_WRITER - persistence and output", () => {
     // The worker consumes result.response.text() directly; it never
     // parses JSON. So a whitespace-only response is stored as "" rather
     // than throwing - this is the actual code path.
-    memoryQueryMock.mockResolvedValue([]);
+    memoryUnionMock.mockResolvedValue([]);
     generateContentSpy.mockResolvedValue(textResponse("   "));
 
     const result = await run(makeCtx());
@@ -304,8 +314,72 @@ describe("OPENER_WRITER - persistence and output", () => {
 
   it("throws when GEMINI_API_KEY is missing", async () => {
     delete process.env.GEMINI_API_KEY;
-    memoryQueryMock.mockResolvedValue([]);
+    memoryUnionMock.mockResolvedValue([]);
     generateContentSpy.mockResolvedValue(textResponse("x"));
     await expect(run(makeCtx())).rejects.toThrow(/GEMINI_API_KEY/);
+  });
+});
+
+describe("OPENER_WRITER - sub-niche confidence gate", () => {
+  it("uses the child sub-niche pack when subNicheSource is MANUAL (skips confidence check)", async () => {
+    memoryUnionMock.mockResolvedValue([]);
+    generateContentSpy.mockResolvedValue(textResponse("ok"));
+
+    const baseCtx = makeCtx();
+    await run(
+      makeCtx({
+        lead: {
+          ...(baseCtx.lead as Record<string, unknown>),
+          nicheSlug: "fnb",
+          subNicheSlug: "fnb-bar-club",
+          subNicheSource: "MANUAL",
+          subNicheConfidence: 0.3,
+        } as never,
+        workspace: {
+          ...baseCtx.workspace,
+          niche: "RESTAURANT_TECH",
+        } as never,
+      }),
+    );
+
+    const args = memoryUnionMock.mock.calls[0][0];
+    expect(args.childSlug).toBe("fnb-bar-club");
+    expect(args.parentSlug).toBe("fnb");
+
+    const prompt = generateContentSpy.mock.calls[0][0] as string;
+    expect(prompt).toContain("Bars & nightclubs");
+  });
+
+  it("falls back to the parent pack when subNicheSource is AUTO and confidence < 0.7", async () => {
+    memoryUnionMock.mockResolvedValue([]);
+    generateContentSpy.mockResolvedValue(textResponse("ok"));
+
+    const baseCtx = makeCtx();
+    await run(
+      makeCtx({
+        lead: {
+          ...(baseCtx.lead as Record<string, unknown>),
+          nicheSlug: "fnb",
+          subNicheSlug: "fnb-bar-club",
+          subNicheSource: "AUTO",
+          subNicheConfidence: 0.55,
+        } as never,
+        workspace: {
+          ...baseCtx.workspace,
+          niche: "RESTAURANT_TECH",
+        } as never,
+      }),
+    );
+
+    const args = memoryUnionMock.mock.calls[0][0];
+    expect(args.childSlug).toBeNull();
+    expect(args.parentSlug).toBe("fnb");
+
+    const prompt = generateContentSpy.mock.calls[0][0] as string;
+    expect(prompt).toContain("sub-vertical not yet confirmed");
+    // Bar-specific featured modules MUST NOT leak into the prompt at
+    // low confidence — that would create the wrong-vertical email the
+    // confidence gate is designed to prevent.
+    expect(prompt).not.toContain("Relevant product modules");
   });
 });

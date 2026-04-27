@@ -95,6 +95,49 @@ export async function executeAgentRun(
     const workerMeta = getWorker(run.workerKind);
     const ctx = await hydrateContext(run);
 
+    // Stale-version guard. When a rep manually overrides a lead's
+    // sub-niche, the override API bumps `Lead.subNicheVersion` and
+    // re-enqueues the affected workers with the new version. Any
+    // run that was already in flight (BullMQ pending, retry backoff,
+    // or stuck on a slow Gemini call) carries the OLD snapshot in
+    // `run.inputSubNicheVersion`. Letting it complete would overwrite
+    // freshly-classified data with stale-vertical analysis. Resolve
+    // by SUCCEEDED-with-skip-reason so the planner advances cleanly
+    // and the new run (already enqueued by the override) is the only
+    // one that lands.
+    if (
+      ctx.lead &&
+      run.inputSubNicheVersion != null &&
+      ctx.lead.subNicheVersion !== run.inputSubNicheVersion
+    ) {
+      const skipPayload = {
+        skipped: true,
+        reason: "stale-subniche-version",
+        snapshotVersion: run.inputSubNicheVersion,
+        currentVersion: ctx.lead.subNicheVersion,
+      };
+      await prisma.agentRun.update({
+        where: { id: runId },
+        data: {
+          status: "SUCCEEDED",
+          finishedAt: new Date(),
+          outputJson: skipPayload as never,
+          costTokens: 0,
+          costUsdCents: 0,
+        },
+      });
+      logger.info("agent_run.execute.stale_subniche_skip", {
+        runId,
+        kind: run.workerKind,
+        leadId: ctx.lead.id,
+        ...skipPayload,
+      });
+      if (run.plannerSessionId) {
+        await safeNotifyOrchestrator(run.plannerSessionId, runId);
+      }
+      return;
+    }
+
     const quota = await checkWorkerQuota({
       workspaceId: run.workspaceId,
       plan: ctx.workspace.plan,
@@ -374,6 +417,7 @@ async function fetchMemoryReads(args: {
         metadata: (r.metadata ?? {}) as Record<string, unknown>,
         similarity: null,
         createdAt: r.createdAt,
+        nicheScope: r.nicheScope,
       });
     }
   }
@@ -398,7 +442,13 @@ async function persistMemoryWrites(
   workspaceId: string,
   writes: MemoryWrite[],
 ): Promise<void> {
-  const { upsertAndEmbed, upsert } = await import("@/lib/ai-core/memory");
+  const {
+    upsertAndEmbed,
+    upsert,
+    upsertWithNicheScopes,
+    upsertAndEmbedWithNicheScopes,
+  } = await import("@/lib/ai-core/memory");
+  const { EmbeddingError } = await import("@/lib/ai-core/embed");
   for (const w of writes) {
     const args = {
       workspaceId,
@@ -409,10 +459,66 @@ async function persistMemoryWrites(
       refId: w.refId ?? null,
       metadata: w.metadata ?? {},
     };
-    if (w.skipEmbed) {
-      await upsert(args);
-    } else {
-      await upsertAndEmbed(args);
+    try {
+      // Asymmetric dual-write path: when the worker hands us a child +
+      // parent scope tuple, route through the niche-aware helpers.
+      // Positive kinds get dual-rows, negative kinds child-only — see
+      // `upsertWithNicheScopes` for the matrix.
+      if (w.niche) {
+        if (w.skipEmbed) {
+          await upsertWithNicheScopes(args, w.niche);
+        } else {
+          await upsertAndEmbedWithNicheScopes(args, w.niche);
+        }
+        continue;
+      }
+      if (w.skipEmbed) {
+        await upsert(args);
+      } else {
+        await upsertAndEmbed(args);
+      }
+    } catch (err) {
+      // Degraded path for embedding failures.
+      //
+      // The April-26 beta diagnostic on workspace
+      // 5496e39e-cc76-41bd-b18b-f1128fb9e41b found that 97/97 FAILED
+      // WEBSITE_AUDITOR + REVIEW_ANALYST runs all carried the same
+      // error: `Failed to embed after 3 attempts` thrown out of
+      // src/lib/ai-core/embed.ts. The worker's primary artifact had
+      // already been committed by the time we got here; the post-run
+      // memory-write embedding is what was tipping the run to FAILED.
+      //
+      // BullMQ's outer 3-attempt retry stacked on top of embed's
+      // inner 3-attempt retry won't recover a Gemini quota outage,
+      // and we already explicitly decided not to wrap embedding
+      // failures in RetryableError (see Phase 2 plan in
+      // .cursor/plans/discovery-bugs-fix-plan_*).
+      //
+      // Fallback: persist the memory row WITHOUT an embedding so the
+      // text itself is preserved. SemanticMemory.embedding is
+      // nullable; rows without embeddings simply don't surface in
+      // similarity search until a future re-embed job backfills the
+      // vector. This keeps the AgentRun SUCCEEDED when the worker's
+      // own work succeeded, while still surfacing the underlying
+      // embedding outage in logs.
+      //
+      // Any non-EmbeddingError still propagates — those are real
+      // bugs we want to see fail loudly.
+      if (err instanceof EmbeddingError) {
+        logger.warn("agent_run.execute.memory_write_embed_failed_degraded", {
+          workspaceId,
+          kind: w.kind,
+          refType: w.refType ?? null,
+          err: err instanceof Error ? err.message : String(err),
+        });
+        if (w.niche) {
+          await upsertWithNicheScopes(args, w.niche);
+        } else {
+          await upsert(args);
+        }
+        continue;
+      }
+      throw err;
     }
   }
 }
@@ -482,6 +588,9 @@ async function hydrateContext(run: AgentRun): Promise<AgentWorkerContext> {
       conversionLink: true,
       socialProof: true,
       branding: true,
+      // Hybrid-niche dispatch surface for SUBVERTICAL_CLASSIFIER and
+      // any sub-niche-aware downstream worker (opener, mockup, scorer).
+      niche: true,
     },
   });
 

@@ -31,6 +31,29 @@ export async function GET(
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
+    // Resolve the analyst-recommended ServicePackage. Workspace-scoped on
+    // purpose: even though `recommendedPackageId` is free-text on the
+    // SalesOpportunity row (no FK), we never trust it past the workspace
+    // boundary. A package that was deleted/renamed since the analysis
+    // ran returns null here, so the UI quietly falls back to the legacy
+    // suggestedOffer enum.
+    let recommendedPackage: {
+      id: string;
+      name: string;
+      priceLabel: string;
+      features: string[];
+    } | null = null;
+    if (lead.salesOpportunity?.recommendedPackageId) {
+      const pkg = await prisma.servicePackage.findFirst({
+        where: {
+          id: lead.salesOpportunity.recommendedPackageId,
+          workspaceId,
+        },
+        select: { id: true, name: true, priceLabel: true, features: true },
+      });
+      recommendedPackage = pkg ?? null;
+    }
+
     // Pull the most recent SUCCEEDED output per worker kind. Multiple runs
     // of the same actor (e.g. SERP snapshot before and after publishing the
     // new site) would otherwise inflate the discovered-links list; the
@@ -75,7 +98,13 @@ export async function GET(
       maxPerPlatform: 3,
     });
 
-    return NextResponse.json({ ...lead, discoveredLinks });
+    return NextResponse.json({
+      ...lead,
+      discoveredLinks,
+      salesOpportunity: lead.salesOpportunity
+        ? { ...lead.salesOpportunity, recommendedPackage }
+        : null,
+    });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

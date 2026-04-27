@@ -13,6 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Save, Sparkles } from "lucide-react";
+import { getChildrenOf, verticalRootForWorkspace } from "@/lib/niches";
+import type { WorkspaceNiche } from "@/generated/prisma";
 
 export interface OfferContext {
   offerName: string;
@@ -26,13 +28,14 @@ export interface OfferContext {
   senderName: string;
   conversionLink: string;
   niche: string;
+  targetSubNiches: string[];
 }
 
 export const NICHE_OPTIONS = [
   { value: "WEB_AGENCY", label: "Web / Marketing Agency (default)", available: true },
   {
     value: "RESTAURANT_TECH",
-    label: "Restaurant Tech (QR menu / digital ordering)",
+    label: "F&B / Hospitality (restaurants, bars, hotels, cafes, ghost kitchens, food trucks, QSR)",
     available: true,
   },
   { value: "DENTAL", label: "Dental (coming soon)", available: false },
@@ -40,11 +43,14 @@ export const NICHE_OPTIONS = [
 ] as const;
 
 export const RESTAURANT_TECH_DEFAULTS = {
-  offerName: "QR Menu & Digital Ordering",
+  offerName: "F&B Digital Stack (QR menu, ordering, reservations)",
   valueProposition:
-    "We replace paper menus with a QR code that lets guests browse, order, and pay from their phone — driving higher spend per table and faster table turns.",
+    "We modernise the digital touchpoints F&B operators rely on — QR menu, table-side ordering, online reservations, and guest data capture — so every cover spends more, comes back more often, and is reachable for marketing.",
   offerHook:
-    "Checked your site and noticed you don't have a QR menu yet — put together a quick demo for you.",
+    "Quickly scoped your site and there's no proper QR menu / reservation flow yet — put together a tailored mockup for you.",
+  // Empty default = workspace targets all 10 child packs. Sales lead can narrow
+  // afterwards (e.g. only fine-dining + bars + hotels for the first month).
+  targetSubNiches: [] as string[],
 };
 
 export const TONE_OPTIONS = ["friendly", "professional", "direct", "casual", "warm"];
@@ -76,6 +82,7 @@ export const EMPTY_OFFER: OfferContext = {
   senderName: "",
   conversionLink: "",
   niche: "WEB_AGENCY",
+  targetSubNiches: [],
 };
 
 // ---------------------------------------------------------------------------
@@ -106,8 +113,24 @@ export function OfferFields({
       if (!data.offerName) next.offerName = RESTAURANT_TECH_DEFAULTS.offerName;
       if (!data.valueProposition) next.valueProposition = RESTAURANT_TECH_DEFAULTS.valueProposition;
       if (!data.offerHook) next.offerHook = RESTAURANT_TECH_DEFAULTS.offerHook;
+    } else {
+      // Switching out of a parent vertical clears the sub-niche focus list —
+      // those slugs only make sense inside their parent vertical.
+      next.targetSubNiches = [];
     }
     onChange(next);
+  };
+
+  // Sub-niche focus list is only meaningful for verticals that define a
+  // parent → children NichePack tree (currently only RESTAURANT_TECH → fnb).
+  const verticalRoot = verticalRootForWorkspace(data.niche as WorkspaceNiche);
+  const childPacks = verticalRoot ? getChildrenOf(verticalRoot) : [];
+
+  const toggleSubNiche = (slug: string) => {
+    const set = new Set(data.targetSubNiches);
+    if (set.has(slug)) set.delete(slug);
+    else set.add(slug);
+    onChange({ ...data, targetSubNiches: Array.from(set) });
   };
 
   return (
@@ -129,6 +152,43 @@ export function OfferFields({
           ))}
         </select>
       </Field>
+
+      {childPacks.length > 0 && (
+        <Field
+          label="Sub-niche focus"
+          help="Optional. Tick the sub-verticals your team actually pitches — Discovery defaults, the auto-classifier prior, and the quota planner narrow to them. Leave all unchecked to target every sub-vertical."
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-xl bg-white/3 border border-white/10 p-3">
+            {childPacks.map((pack) => {
+              const checked = data.targetSubNiches.includes(pack.slug);
+              return (
+                <label
+                  key={pack.slug}
+                  className={`flex items-start gap-2 rounded-lg px-2 py-1.5 text-sm transition ${
+                    disabled
+                      ? "cursor-not-allowed opacity-60"
+                      : "cursor-pointer hover:bg-white/5"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleSubNiche(pack.slug)}
+                    disabled={disabled}
+                    className="mt-0.5 h-4 w-4 accent-(--leadac-500)"
+                  />
+                  <span className="leading-tight">
+                    <span className="block text-white">{pack.label}</span>
+                    <span className="block text-[11px] text-white/40">
+                      {pack.tagline}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </Field>
+      )}
 
       <Field
         label="Offer name"
@@ -295,6 +355,7 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
           senderName: d.senderName ?? "",
           conversionLink: d.conversionLink ?? "",
           niche: d.niche ?? "WEB_AGENCY",
+          targetSubNiches: Array.isArray(d.targetSubNiches) ? d.targetSubNiches : [],
         }),
       )
       .catch(() => toast.error("Couldn't load offer context"))

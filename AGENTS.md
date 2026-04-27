@@ -1,92 +1,81 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+<!-- BEGIN:project-overview -->
+# LeadAC (`leadac-ai`) — agent quick context
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+B2B SaaS for agency lead generation. Stack: **Next.js 16.2.3 (App Router, Webpack), React 19, TypeScript, Prisma 6 + Postgres + pgvector, Supabase auth, BullMQ + Redis, Gemini, Stripe v22, Tailwind v4, Radix, Framer Motion, Resend, Apify, Playwright.**
 
-<!-- BEGIN:ai-core-rules -->
-# AI Core - orchestration, memory, enrichment
+The detailed rules live in `.cursor/rules/*.mdc` and load automatically when the agent edits matching files. **Read the relevant rule before writing code in that area** — don't re-discover what's already documented.
 
-All new AI work in this project goes through the "AI Core" stack at
-[`src/lib/ai-core/`](src/lib/ai-core). Do not add new BullMQ queues,
-new per-worker state columns, or new Gemini-calling endpoints without
-first checking whether an existing AI Core component already solves
-the need.
+| Rule file | Auto-loads when editing | Covers |
+|---|---|---|
+| `architecture.mdc` (alwaysApply) | every file | folder map, hard rules, where to look first |
+| `ai-core.mdc` | `src/lib/ai-core/**`, `src/lib/agent-workers/**`, planner/copilot/agent-runs API routes | orchestrator, chains, memory, worker contract, Apify, Gemini prompts |
+| `prisma-db.mdc` | all `.ts/.tsx` (broad — touches every query) | multi-tenant scope, generated client path, schema flow, pgvector |
+| `multi-tenant-scope.mdc` | API routes, lib, workers, app components | `requireUser()`, scope patterns, audit checklist |
+| `api-routes.mdc` | `src/app/api/**` | Next.js 16 route handlers, auth wrappers, response envelope |
+| `nextjs-16.mdc` | `src/app/**`, middleware, config | async params/cookies, caching defaults, config rules |
+| `workers-bullmq.mdc` | `src/workers/**`, queues, idempotency, execute | BullMQ queues, retries, AI Core hand-off |
+| `billing-stripe.mdc` | `src/lib/stripe.ts`, `plans.ts`, `/api/billing/**`, pricing UI | webhook signature, idempotency, plan gating |
+| `ui-components.mdc` | `src/components/**`, `*.tsx`, `globals.css` | Tailwind v4, design tokens, Radix, Framer |
+<!-- END:project-overview -->
 
-## The contract
+<!-- BEGIN:non-negotiables -->
+## Non-negotiables (every change must satisfy)
 
-Every AI worker is a module under `src/lib/agent-workers/` exporting:
+1. **Multi-tenant scope** — every Prisma query that touches workspace data MUST be scoped by `workspaceId`. Use `requireUser()` from `@/lib/auth`. See `multi-tenant-scope.mdc`.
+2. **Generated Prisma client** — `import type { Lead } from "@/generated/prisma/client"`. NOT `@prisma/client`.
+3. **Semantic memory** — read/write only via `src/lib/ai-core/memory.ts`. Direct `prisma.semanticMemory.*` is forbidden.
+4. **No new BullMQ queue for AI work** — extend `agent-runs` (discriminated `type` field) or AI Core chains.
+5. **No new Gemini-calling endpoint** — wrap the call as a worker module under `src/lib/agent-workers/`.
+6. **Stripe webhook** — verify signature, dedup on `StripeEventLog`, `runtime = "nodejs"`.
+7. **Next.js 16** — `params`, `cookies()`, `headers()`, `searchParams` are Promises. Always `await`. No `eslint` config key, no top-level `env` block, `serverExternalPackages` for native deps.
+8. **No `apiVersion` on Stripe** — broke types in v22.
+<!-- END:non-negotiables -->
 
-- `run(ctx)` - the handler; receives hydrated lead + workspace +
-  pre-fetched memory hits; returns `AgentWorkerOutput`.
-- `memoryWrites(output, ctx)` - optional; returns an array of
-  `MemoryWrite` rows the executor upserts + embeds after a successful
-  run.
+<!-- BEGIN:claude-mem -->
+## Cross-session memory (`claude-mem`)
 
-The worker is then registered in
-[`src/lib/agent-workers/registry.ts`](src/lib/agent-workers/registry.ts)
-with:
-- Stable `kind` (enum value in `prisma/schema.prisma`).
-- `group` (`intelligence` | `pitch` | `deliverable` | `ops` | `enrichment`).
-- `minPlan`, `estimatedDurationMs`, `exportFormats`.
-- `memoryReads` specs (which kinds to pre-fetch, scope workspace/lead).
-- `implModule` lazy import pointing at the worker module.
+This workspace uses the `claude-mem` MCP for persistent cross-session memory. Use it to avoid re-explaining and re-discovering things across sessions.
 
-DO NOT add new workers without:
-1. Updating `AgentWorkerKind` enum in `prisma/schema.prisma`
-2. Running `prisma db push` + `prisma generate`
-3. Adding the limit in `src/lib/agent-workers/quota.ts`
+When to query memory (use the `mem-search` skill or call the MCP directly):
+- "Did we already solve this?" — before re-debugging an issue.
+- "How did we structure X last time?" — before re-designing a known pattern.
+- "What did we decide about Y?" — before reopening a settled decision.
 
-## Chains / orchestration
+When to write to memory (observations, automatic via the plugin):
+- After resolving a non-obvious bug — capture root cause + fix.
+- After a design decision with trade-offs — capture the chosen path and why.
+- After completing a multi-step refactor — capture the new shape.
 
-Events trigger chains:
-- `emit("user_one_click_pitch", { workspaceId, leadId, userId })` in
-  [`src/lib/ai-core/events.ts`](src/lib/ai-core/events.ts)
-- Chain definition in
-  [`src/lib/ai-core/chains.ts`](src/lib/ai-core/chains.ts)
-- Orchestrator walks the DAG and enqueues `ai-runs` jobs
+Available skills (in `~/.claude/plugins/cache/thedotmack/claude-mem/`):
+- `mem-search` — query past sessions
+- `make-plan` + `do` — plan + execute multi-step tasks with subagent fan-out
+- `pathfinder` — map duplicated concerns before a refactor
+- `timeline-report` — full project history narrative
 
-User-initiated events fire from API routes with `emit()`; client code
-POSTs to `/api/planner/start` or `/api/planner/bulk`.
+If a question feels like "we've handled this before", search memory first. If it's a new architectural decision, prefer the `make-plan` skill so the plan is captured for future agents.
+<!-- END:claude-mem -->
 
-## Semantic memory
+<!-- BEGIN:commands -->
+## Common commands
 
-Read/write SemanticMemory ONLY via
-[`src/lib/ai-core/memory.ts`](src/lib/ai-core/memory.ts). Direct
-`prisma.semanticMemory.*` calls are forbidden because the pgvector
-column requires raw-SQL vector literals that the facade handles.
+```bash
+npm run dev                # next dev --webpack
+npm run workers            # tsx src/workers/index.ts (BullMQ supervisor)
+npm run db:push            # prisma db push (dev)
+npm run db:generate        # prisma generate after schema edits
+npm run test               # vitest run
+npm run test:integration   # vitest with integration config
+npm run lint               # eslint .
+```
+<!-- END:commands -->
 
-Write kinds:
-- `LEAD_PROFILE` - compact lead summary; one row per lead
-- `REVIEW_CHUNK` - review text / pain + strength phrases
-- `VOICE_NOTE` - voice note transcripts
-- `OPENER_SUCCESS` / `OPENER_FAILURE` - learning loop
-- `MOCKUP_SECTION` - successful mockup sections
-- `WORKSPACE_OFFER` / `WORKSPACE_PERSONA` - static workspace docs
-- `PROSPECT_KB_CHUNK` - prospect site content for receptionist RAG
-- `COPILOT_TURN` - past copilot exchanges
-- Apify-sourced: `SOCIAL_POST`, `SERP_SNAPSHOT`, `COMPETITOR_AD`,
-  `HIRING_SIGNAL`, `REDDIT_MENTION`
+<!-- BEGIN:references -->
+## Pointers
 
-## Apify enrichment
-
-Workers under `src/lib/agent-workers/apify/` use the wrapper in
-[`src/lib/apify.ts`](src/lib/apify.ts). Rules:
-- Check `isConfigured()` first; return `{ skipped: true }` when no
-  token is set (graceful degradation for FREE tier).
-- Every run writes `costUsdCents` to `AgentRun.costUsdCents`; the
-  quota helper sums across all Apify kinds in the billing cycle to
-  enforce `MONTHLY_APIFY_USD_CENTS` per plan.
-- Long-running actors should use `runAsync()` + webhook callback to
-  `/api/webhooks/apify`; short ones use `runSync()`.
-
-## Copilot
-
-Copilot chat goes through
-[`src/lib/ai-core/router.ts`](src/lib/ai-core/router.ts) with Gemini
-function-calling. The tool set is fixed (search_leads,
-semantic_search_leads, start_pitch_pack, start_deep_research,
-find_lookalikes); new tools require tests. Adding a destructive tool
-(one that writes without the user explicitly confirming) is
-forbidden without a new plan doc.
-<!-- END:ai-core-rules -->
+- Marketing context: `.agents/product-marketing-context.md` (ICP, positioning, voice)
+- Brand assets: `public/logo.png`, `public/leadac-brand-kit.pdf`, `public/brand-kit.html`
+- DB schema: `prisma/schema.prisma` (~700 lines — grep first, don't read whole)
+- AI Core types: `src/lib/agent-workers/types.ts`
+- Plans table: `src/lib/plans.ts`
+- Auth helpers: `src/lib/auth.ts` (`requireUser`, `withAuth`, `ACTIVE_WORKSPACE_COOKIE`)
+<!-- END:references -->

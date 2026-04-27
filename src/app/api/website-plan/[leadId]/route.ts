@@ -73,7 +73,12 @@ export async function POST(
     await assertCanUseAi(workspaceId, 2);
 
     const features = lead.websiteAudit?.rawFeaturesJson as unknown as WebsiteFeatures | null;
-    const auditChecklist = runAuditChecklist(features, !!lead.websiteUrl, lead.workspace.niche);
+    const auditChecklist = runAuditChecklist(
+      features,
+      !!lead.websiteUrl,
+      lead.workspace.niche,
+      lead.subNicheSlug,
+    );
 
     const plan = await generateWebsitePlan({
       businessName: lead.businessName,

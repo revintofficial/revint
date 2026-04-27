@@ -86,6 +86,13 @@ export interface MemoryHit {
    */
   similarity: number | null;
   createdAt: Date;
+  /**
+   * Niche pack scope this row was written under (child slug like
+   * "fnb-bar-club", parent slug like "fnb", or null for niche-agnostic
+   * memory). Workers branching on sub-niche can use this to filter
+   * the pre-fetched hits without a second DB round-trip.
+   */
+  nicheScope: string | null;
 }
 
 /**
@@ -106,6 +113,26 @@ export interface MemoryWrite {
    * structured data that makes no sense to embed.
    */
   skipEmbed?: boolean;
+  /**
+   * Asymmetric niche-scope dual-write. When supplied, the executor
+   * routes the write through `upsertWithNicheScopes` instead of a
+   * single-scope upsert. Positive kinds (OPENER_SUCCESS,
+   * MOCKUP_SECTION, LEAD_PROFILE) get fanned out to BOTH child and
+   * parent scopes; negative kinds (OPENER_FAILURE) are written to
+   * the child only so a vertical's failure pattern doesn't poison
+   * sibling sub-niche retrieval.
+   *
+   * Pass only the parent (`{ parentSlug: "fnb" }`) when the lead is
+   * unclassified — the row will live at the parent scope and be
+   * available to every sub-niche via the weighted union read.
+   *
+   * When omitted entirely, the row is written with `nicheScope = null`
+   * (legacy / niche-agnostic data like WORKSPACE_OFFER, COPILOT_TURN).
+   */
+  niche?: {
+    childSlug?: string | null;
+    parentSlug?: string | null;
+  };
 }
 
 /**
@@ -143,6 +170,11 @@ export interface AgentWorkerContext {
     | "conversionLink"
     | "socialProof"
     | "branding"
+    // Hybrid-niche dispatch: workers like vertical-classifier and
+    // opener-writer branch on `niche` (WorkspaceNiche) to pick the
+    // parent NichePack and decide whether to ask the classifier to
+    // rank against children at all (single-pack niches skip).
+    | "niche"
   >;
   /**
    * Pre-fetched SemanticMemory hits based on this worker's `memoryReads`

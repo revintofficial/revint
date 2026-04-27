@@ -1,0 +1,89 @@
+---
+description: Next.js 16.2.3 specifics — async params/cookies, caching, middleware, config rules. Replaces stale training data.
+globs:
+  - "src/app/**"
+  - "src/middleware.ts"
+  - "next.config.*"
+alwaysApply: false
+---
+
+# Next.js 16.2.3 — what changed vs your training data
+
+This project uses **Next.js 16.2.3, React 19.2.4, Webpack** (`npm run dev` → `next dev --webpack`). Bundled `node_modules/next/dist/docs/` is **NOT installed** in this version — do not try to read it.
+
+## Async APIs (this is the big one)
+
+`cookies()`, `headers()`, `draftMode()`, `params`, and `searchParams` are all **Promises** in 16.
+
+```ts
+// Server component / page
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { slug } = await params;
+  const sp = await searchParams;
+}
+
+// Route handler
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+}
+
+// Anywhere
+import { cookies, headers } from "next/headers";
+const c = await cookies();
+const h = await headers();
+```
+
+## Caching defaults (changed)
+
+- Route handlers default to **dynamic** (no static optimization) when they read request data. Be explicit:
+  ```ts
+  export const dynamic = "force-dynamic"; // or "force-static"
+  export const revalidate = 60;            // ISR
+  export const runtime = "nodejs";         // or "edge"
+  ```
+- `fetch()` cache default is **no-store** for any request that depends on dynamic APIs. Set `cache: "force-cache"` or `next: { revalidate }` explicitly when you want caching.
+
+## Config (`next.config.mjs`)
+
+- The `eslint` config key was **removed** in 16. Lint runs separately (`eslint .` in CI).
+- Top-level `env` block is gone in this project — anything declared there ships to the client bundle. Read server secrets via `process.env` in server code only.
+- `serverExternalPackages` is the supported way to externalise native deps (we do this for `@prisma/client`, `@prisma/adapter-pg`, `pg`).
+- Use `redirects()` / `rewrites()` async functions (we use `redirects()` for `/app/watchlist` → `/app/deals`).
+- `typescript.ignoreBuildErrors` is `false` and stays that way.
+
+## Middleware (`src/middleware.ts`)
+
+- Runs on the Edge runtime by default. Don't import Node-only packages (Prisma, Stripe SDK).
+- Use it for Supabase session refresh and route gating only. See `src/lib/supabase/middleware.ts` for the pattern.
+
+## Routing & layouts
+
+- App Router only. No `pages/` directory.
+- Route groups: `(marketing)`, `(public)`, `app/`. Each can have its own `layout.tsx`.
+- Dynamic catch-all: `[indexnowKey]` exists at the root for the IndexNow proof file.
+- Special files: `loading.tsx`, `error.tsx`, `not-found.tsx`, `route.ts`, `layout.tsx`, `page.tsx`, `template.tsx`.
+
+## Server vs client
+
+- **Server is the default.** Add `"use client"` ONLY when you need state, effects, or browser APIs. Server components can pass server-fetched data into client components as props.
+- Server actions (`"use server"`) are allowed but we mostly use REST handlers under `/api/*` for consistency. Don't introduce server actions for new features without checking with the user first.
+
+## Common pitfalls in 16
+
+- Forgetting to `await params` → TypeError "params is a Promise".
+- `fetch()` from a server component without `cache` set → unintentionally dynamic on every render.
+- Importing `@prisma/client` (the package) instead of `@/generated/prisma/client` (the generated client).
+- Pinning Stripe `apiVersion` — see `architecture.mdc`.
+
+## Reference
+
+When unsure about a 16-specific behaviour, **search the web with year `2026`** (Next 16 was released in 2025, latest stable is 16.2.3). Don't guess from training data — App Router APIs have shifted in every minor since 14.

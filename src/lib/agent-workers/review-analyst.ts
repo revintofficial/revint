@@ -151,7 +151,32 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       where: { id: leadId },
       data: { reviewAnalysisStatus: "FAILED" },
     });
-    throw error;
+    const msg = error instanceof Error ? error.message : String(error);
+    // The no-reviews path above is preserved (early return before the
+    // Gemini call). This catch handles the actual failure modes:
+    // Gemini timeouts, JSON-parse failures, or upstream API errors.
+    // Per Bug #5 in research/finedine/discovery-bugs.md, returning a
+    // skipped output keeps `review` SKIPPED-but-optional in the
+    // orchestrator instead of hardFailing the chain. The
+    // ReviewAnalysis row stays unwritten; the lead surfaces
+    // reviewAnalysisStatus=FAILED in the UI.
+    //
+    // The April-26 beta diagnostic showed REVIEW_ANALYST's dominant
+    // failure bucket today is the post-worker embedding step, not
+    // Gemini analysis itself — that's handled at the executor layer
+    // (see persistMemoryWrites). No bucket here warrants a
+    // RetryableError carve-out today; if a future diagnostic surfaces
+    // genuine Gemini 429/5xx clusters worth retrying, wrap them
+    // before this catch with `if (/429|503/.test(msg)) throw new
+    // RetryableError(msg)`.
+    logger.warn("agent_workers.review_analyst.failed_skipping", {
+      leadId,
+      err: msg,
+    });
+    return {
+      output: { skipped: true, reason: "analysis_failed", errorMsg: msg },
+      costTokens: 0,
+    };
   }
 };
 
@@ -161,11 +186,16 @@ export const memoryWrites = (
 ): MemoryWrite[] => {
   if (!ctx.leadId) return [];
   const o = output as {
+    skipped?: boolean;
     painPhrases?: unknown;
     strengthPhrases?: unknown;
     summary?: string;
     leadScore?: number;
   };
+  // Skipped runs (no reviews / Gemini failure / embedding fallback)
+  // have no grounded phrases to embed; emitting empty REVIEW_CHUNK
+  // rows would just be noise in semantic search.
+  if (o.skipped) return [];
   const writes: MemoryWrite[] = [];
 
   if (o.summary && typeof o.summary === "string") {

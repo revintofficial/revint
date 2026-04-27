@@ -21,6 +21,7 @@ import {
   getRelatedCitiesForNiche,
   getRelatedNichesForCity,
 } from "@/lib/seo/programmatic";
+import { findNichePackForPrimaryType } from "@/lib/niches";
 
 export const revalidate = 3600;
 
@@ -66,15 +67,20 @@ export async function generateMetadata({
       follow: false,
     });
   }
+  const pack = findNichePackForPrimaryType(niche.nicheName);
+  const label = pack ? pack.label : niche.nicheName;
+  const description = pack
+    ? `${pack.tagline} Audited businesses in ${city.cityName} with website audits, Google ratings, and contact details — refreshed weekly.`
+    : `Audited ${niche.nicheName.toLowerCase()} businesses in ${city.cityName} with website audits, Google ratings, and contact details. Live from Google Maps, refreshed weekly.`;
   return buildMetadata({
     path: `/niches/${verticalSlug}/${citySlug}`,
-    title: `${niche.nicheName} in ${city.cityName}`,
-    description: `Audited ${niche.nicheName.toLowerCase()} businesses in ${city.cityName} with website audits, Google ratings, and contact details. Live from Google Maps, refreshed weekly.`,
+    title: `${label} in ${city.cityName}`,
+    description,
     keywords: [
-      `${niche.nicheName} ${city.cityName}`,
-      `${niche.nicheName} in ${city.cityName}`,
-      `${city.cityName} ${niche.nicheName.toLowerCase()} directory`,
-      `best ${niche.nicheName.toLowerCase()} ${city.cityName}`,
+      `${label} ${city.cityName}`,
+      `${label} in ${city.cityName}`,
+      `${city.cityName} ${label.toLowerCase()} directory`,
+      `best ${label.toLowerCase()} ${city.cityName}`,
     ],
   });
 }
@@ -128,7 +134,9 @@ export default async function NicheCityPage({
   if (businesses.length === 0) notFound();
 
   const canonical = `${SITE.url}/niches/${verticalSlug}/${citySlug}`;
-  const faqs = combinedFaqs(niche.nicheName, city.cityName, businesses.length);
+  const pack = findNichePackForPrimaryType(niche.nicheName);
+  const displayLabel = pack ? pack.label : niche.nicheName;
+  const faqs = combinedFaqs(displayLabel, city.cityName, businesses.length);
 
   return (
     <>
@@ -173,9 +181,13 @@ export default async function NicheCityPage({
       />
 
       <DirectoryShell
-        eyebrow={`Directory / ${niche.nicheName} / ${city.cityName}`}
-        title={`${niche.nicheName} in ${city.cityName}`}
-        intro={`${businesses.length} audited ${niche.nicheName.toLowerCase()} businesses in ${city.cityName}. Every listing includes a website audit, Google rating, and a pitch angle a sales team can work with. Data refreshes weekly.`}
+        eyebrow={`Directory / ${displayLabel} / ${city.cityName}`}
+        title={`${displayLabel} in ${city.cityName}`}
+        intro={
+          pack
+            ? `${businesses.length} audited ${displayLabel.toLowerCase()} businesses in ${city.cityName}. ${pack.tagline} Every listing includes a website audit, Google rating, and a pitch angle a sales team can work with. Data refreshes weekly.`
+            : `${businesses.length} audited ${niche.nicheName.toLowerCase()} businesses in ${city.cityName}. Every listing includes a website audit, Google rating, and a pitch angle a sales team can work with. Data refreshes weekly.`
+        }
       >
         {/* One-sentence direct answer for AI search engines */}
         <p
@@ -191,7 +203,7 @@ export default async function NicheCityPage({
           }}
         >
           <strong>Short answer:</strong> {businesses.length}{" "}
-          {niche.nicheName.toLowerCase()} businesses in {city.cityName} are
+          {displayLabel.toLowerCase()} businesses in {city.cityName} are
           currently audited and listed in the Leadac AI directory, ranked by
           Google review volume.
         </p>

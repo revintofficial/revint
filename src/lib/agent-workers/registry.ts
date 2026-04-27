@@ -107,6 +107,22 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
         memoryWrites: m.memoryWrites,
       })),
   },
+  SUBVERTICAL_CLASSIFIER: {
+    kind: "SUBVERTICAL_CLASSIFIER",
+    group: "intelligence",
+    displayName: "Sub-vertical Classifier",
+    displayNameTr: "Alt Dikey Siniflandirici",
+    description:
+      "Tags hybrid-niche leads (e.g. fnb → fnb-bar-club, fnb-fine-dining). Rule-based first using website-audit signals + name + Google Places type; falls back to a Gemini call only when rules can't decide. Self-skips for workspaces whose niche has no children.",
+    descriptionTr:
+      "Hibrit-nis leadlere (orn. fnb → fnb-bar-club, fnb-fine-dining) etiket atar. Once kural tabanli (audit sinyalleri + isim + Google Places tipi); kural cozemezse Gemini fallback. Cocuk paketi olmayan workspace'lerde kendini atlar.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 4000,
+    dependsOn: ["WEBSITE_AUDITOR"],
+    implModule: () =>
+      import("./subvertical-classifier").then((m) => ({ run: m.run })),
+  },
   SOCIAL_SCRAPER: {
     kind: "SOCIAL_SCRAPER",
     group: "intelligence",

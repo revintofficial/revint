@@ -1,0 +1,109 @@
+---
+description: AI Core (orchestrator, chains, memory, agent workers, Gemini prompts).
+globs:
+  - "src/lib/ai-core/**"
+  - "src/lib/agent-workers/**"
+  - "src/lib/prompts/**"
+  - "src/workers/agent-run-worker.ts"
+  - "src/app/api/planner/**"
+  - "src/app/api/copilot/**"
+  - "src/app/api/agent-runs/**"
+  - "src/app/api/leads/*/workers/**"
+  - "src/app/api/webhooks/apify/**"
+alwaysApply: false
+---
+
+# AI Core
+
+All multi-step AI work flows through this stack. **Never add a new BullMQ queue, a new Gemini-calling endpoint, or a new per-worker DB column without first checking what AI Core already provides.**
+
+## Module layout
+
+| File | Purpose |
+|---|---|
+| `src/lib/ai-core/events.ts` | `emit(event, payload)` — only entry point to start a chain. Creates `PlannerSession` + enqueues first `orchestrator_advance` job. |
+| `src/lib/ai-core/chains.ts` | Static `CHAINS` map of `EventKind → ChainStep[]`. `lead_created` resolves dynamically from `WorkspaceLeadPipeline`. |
+| `src/lib/ai-core/orchestrator.ts` | Walks the DAG, fans out parallel ready steps, writes back to `PlannerSession`. |
+| `src/lib/ai-core/planner.ts` | Materialises chain steps for a session; resolves preset → steps for `lead_created`. |
+| `src/lib/ai-core/memory.ts` | **Only** legal interface to `SemanticMemory` (pgvector). |
+| `src/lib/ai-core/embed.ts` | Gemini embedding (`EMBEDDING_DIM = 768`), `toPgVectorLiteral`. |
+| `src/lib/ai-core/router.ts` | Copilot tool-calling router (Gemini function calling). |
+| `src/lib/ai-core/sentinels.ts` | `__EMBED_LEAD_PROFILE__`, `__WRITE_OPENER_OUTCOME__` — inline SQL steps the orchestrator handles itself. |
+
+## Worker contract (`src/lib/agent-workers/`)
+
+Every worker module exports per `types.ts`:
+
+- `run(ctx)` — sync mode handler. Receives hydrated `lead`, `workspace`, pre-fetched `memory: MemoryHit[]`. Returns `AgentWorkerOutput` `{ output, artifactUrl?, costTokens?, costUsdCents? }`.
+- `start(ctx)` + `finalize(ctx, payload)` — async-apify mode (Apify webhook callback into `/api/webhooks/apify`).
+- `memoryWrites(output, ctx)` — optional. Returns `MemoryWrite[]`; executor upserts + embeds after success.
+
+Registry entry in `src/lib/agent-workers/registry.ts` carries:
+- `kind` (matches `AgentWorkerKind` enum in schema), `group` (`intelligence` | `pitch` | `deliverable` | `ops` | `enrichment`)
+- `minPlan`, `estimatedDurationMs`, `phase1Enabled`, `mode`
+- `memoryReads: MemorySpec[]` — declarative pre-fetch (orchestrator hydrates `ctx.memory` from this)
+- `exportFormats?` — `synthflow | retell | vapi | ghl | n8n | make | html | zip | json | kb_json`
+- `dependsOn?: AgentWorkerKind[]` — DAG safety net for ad-hoc runs (chains.ts is authoritative for declared chains)
+- `run` / `start` / `finalize` adapters (lazy-bound)
+
+### Adding a new worker — checklist
+
+1. Append to `AgentWorkerKind` enum in `prisma/schema.prisma`.
+2. `npm run db:push && npm run db:generate`.
+3. Create the worker module under `src/lib/agent-workers/<kind>.ts`.
+4. Register in `src/lib/agent-workers/registry.ts`.
+5. Add per-plan limit row in `src/lib/agent-workers/quota.ts` (`CONSERVATIVE_LIMITS`).
+6. If it goes in a chain, add a step to the relevant entry in `src/lib/ai-core/chains.ts` (or to a preset for `lead_created`).
+7. Workers running outside chains: hit `POST /api/leads/[id]/workers/[kind]` — that route inserts `AgentRun` and enqueues the `agent-runs` BullMQ job.
+
+## Semantic memory
+
+**Read/write only via `src/lib/ai-core/memory.ts`.** The `embedding` column is `pgvector(768)` and requires raw-SQL vector literals — `prisma.semanticMemory.*` calls cannot produce them correctly.
+
+Allowed `MemoryKind` values (full enum in schema):
+- Native: `LEAD_PROFILE`, `REVIEW_CHUNK`, `VOICE_NOTE`, `OPENER_SUCCESS`, `OPENER_FAILURE`, `MOCKUP_SECTION`, `WORKSPACE_OFFER`, `WORKSPACE_PERSONA`, `PROSPECT_KB_CHUNK`, `COPILOT_TURN`
+- Apify-sourced: `SOCIAL_POST`, `SERP_SNAPSHOT`, `COMPETITOR_AD`, `HIRING_SIGNAL`, `REDDIT_MENTION`
+
+Scoping rules:
+- Every read/write requires `workspaceId`. Cross-workspace retrieval is impossible by construction.
+- Pass `leadId` for lead-scoped specs (e.g. `PROSPECT_KB_CHUNK` for receptionist RAG).
+- Upsert key when supplied: `refType + refId`. Without `refId` a new row is always inserted (copilot turns, social posts).
+- Prefer `query({ text, ... })` over manual embed + query — keeps token accounting in sync.
+
+`MemoryHit.similarity` is `null` when the executor pre-fetches by recency (no vector query). **Never sort/threshold on a null similarity.** Re-run a `memoryQuery` with real text if you need ranking.
+
+## Apify enrichment workers
+
+Live under `src/lib/agent-workers/apify/`. Wrapper: `src/lib/apify.ts`.
+
+- Always check `isConfigured()` first; return `{ skipped: true, reason }` when no token. FREE tier must degrade gracefully.
+- Long actors (deep social, gmaps deep, SERP): use `runAsync()` with webhook → `/api/webhooks/apify`. Mode = `"async-apify"` in registry.
+- Short actors: `runSync()`. Mode = `"sync"` (or omit).
+- Every run records `costUsdCents` on `AgentRun`. The quota helper sums all Apify kinds in the billing cycle to enforce `MONTHLY_APIFY_USD_CENTS` per plan.
+- Provide a `run(ctx)` adapter even on async workers — used as a fallback when `getAppBaseUrl()` resolves to localhost (no public webhook ingress on dev).
+
+## Copilot
+
+`src/lib/ai-core/router.ts` is the Gemini function-calling router. The tool set is fixed: `search_leads`, `semantic_search_leads`, `start_pitch_pack`, `start_deep_research`, `find_lookalikes`. **New tools require tests.** Adding a destructive tool (writes without explicit user confirmation) is forbidden without a new plan doc.
+
+## Prompts (`src/lib/prompts/`)
+
+- Use Gemini structured output (`responseSchema`) wherever possible — string parsing is forbidden when JSON shape is known.
+- Set `temperature` per task: extraction = 0.0–0.3, writing = 0.6–0.9.
+- Wrap every Gemini call with retry + exponential backoff and a token guard.
+- Validate response against the schema BEFORE returning to caller.
+- Tone & language come from `workspace.tone` / `workspace.language`. Don't hardcode "English" / "professional".
+
+## Cost & quota
+
+- `costTokens` is approx Gemini token spend; surface it in `AgentRunOutput`.
+- `costUsdCents` is external $ (Apify). 0 for pure Gemini workers.
+- `assertWorkerQuota({ workspaceId, kind })` in BOTH the API route AND `agent-run-worker.ts` job start (defense in depth — direct queue enqueue must not bypass).
+
+## Anti-patterns
+
+- ❌ `prisma.semanticMemory.*` directly — use `memory.ts`
+- ❌ New BullMQ queue for AI work — extend `agent-runs` or AI Core
+- ❌ Gemini call from an API route — wrap as a worker
+- ❌ Per-worker boolean status columns on a domain model — use `AgentRun.status`
+- ❌ Cross-workspace memory query — facade rejects, but never even attempt

@@ -112,7 +112,17 @@ async function analyzeSingleLead(workspaceId: string, leadId: string) {
   try {
     const lead = await prisma.lead.findFirstOrThrow({
       where: { id: leadId, workspaceId },
-      include: { websiteAudit: true },
+      include: {
+        websiteAudit: true,
+        workspace: {
+          select: {
+            niche: true,
+            offerName: true,
+            valueProposition: true,
+            language: true,
+          },
+        },
+      },
     });
 
     const features = lead.websiteAudit?.rawFeaturesJson as unknown as WebsiteFeatures | null;
@@ -126,13 +136,35 @@ async function analyzeSingleLead(workspaceId: string, leadId: string) {
 
     let analysis;
     try {
+      // Confidence gate (P0.4): pass the child sub-niche only when
+      // MANUAL or classifier confidence ≥ 0.7. Below that we fall
+      // back to the parent niche so a low-confidence misclass doesn't
+      // drive a wrong-vertical pitch through this legacy path either.
+      const subNicheTrusted =
+        lead.subNicheSlug != null &&
+        (lead.subNicheSource === "MANUAL" ||
+          (lead.subNicheConfidence ?? 0) >= 0.7);
+
       analysis = await analyzeLeadWithGemini(
         lead.businessName,
         lead.formattedAddress,
         lead.rating,
         lead.reviewCount,
         lead.websiteUrl,
-        features
+        features,
+        lead.workspace.language ?? "en",
+        {
+          niche: lead.workspace.niche,
+          offerName: lead.workspace.offerName,
+          valueProposition: lead.workspace.valueProposition,
+          language: lead.workspace.language,
+          subNicheSlug: subNicheTrusted ? lead.subNicheSlug : null,
+          subNicheConfidence: subNicheTrusted
+            ? lead.subNicheSource === "MANUAL"
+              ? 1.0
+              : lead.subNicheConfidence ?? null
+            : null,
+        },
       );
     } catch (aiError) {
       logger.warn("api.analyze.gemini_fallback", { leadId, err: aiError });

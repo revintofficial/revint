@@ -1,0 +1,84 @@
+---
+description: LeadAC project map. Stack, folder layout, multi-tenant rule, where to look first.
+alwaysApply: true
+---
+
+# LeadAC (`leadac-ai`) — project map
+
+B2B SaaS for agency lead generation. Stack: **Next.js 16.2.3 (App Router, Webpack), React 19, TypeScript, Prisma 6 + Postgres + pgvector, Supabase auth, BullMQ + Redis (ioredis), Gemini (`@google/generative-ai`), Stripe v22, Tailwind v4, Radix UI, Framer Motion, Resend, Apify, Playwright.**
+
+## Folder map (only what agents need)
+
+```
+src/
+  app/
+    (marketing)/      ← public marketing site
+    (public)/         ← SEO-indexable directory pages, /m/<slug> mockups
+    app/              ← authed product (dashboard, leads, deals, copilot, settings)
+    api/              ← all REST routes; every authed route uses `requireUser()`
+    auth/             ← Supabase auth pages
+  components/
+    ui/               ← Radix-based primitives (button, card, dialog, ...)
+    app/              ← product surfaces
+    marketing/        ← landing surfaces (cinematic palette in globals.css)
+  lib/
+    ai-core/          ← orchestrator, planner, chains, memory, router, embed, events
+    agent-workers/    ← worker registry + each worker module + types/quota/execute
+    prompts/          ← Gemini prompt templates
+    seo/, niches/, mockups/, oauth/, email/, audit/, supabase/, i18n/
+    auth.ts           ← `requireUser()`, `withAuth()`, `ACTIVE_WORKSPACE_COOKIE`
+    prisma.ts         ← singleton Prisma client (worker-aware pool sizing)
+    stripe.ts         ← `getStripe()`, `isBillingEnabled()`
+    plans.ts          ← `PLANS` table (FREE / PRO / PRO_TEAM / AGENCY)
+  workers/            ← BullMQ workers: discovery, crawl, analyze, review, email-verify, agent-run, seo-ops
+  generated/prisma/   ← generated Prisma client (`@/generated/prisma/client`)
+  i18n/               ← TR/EN bilingual marketing
+prisma/schema.prisma  ← single source of truth for DB
+scripts/              ← one-shot scripts (seed, capture, validate)
+.agents/              ← marketing context (`product-marketing-context.md`)
+public/               ← brand kit, master.mp4, favicons
+```
+
+## Hard rules (every change must satisfy)
+
+1. **Multi-tenant scope.** Every Prisma read/write that touches workspace data MUST be scoped by `workspaceId`. Never query `Lead`, `AgentRun`, `SemanticMemory`, `WebsiteMockup`, `TeamTodo`, `WatchlistItem`, etc. without it. Cross-tenant leak = highest-severity bug class. Use `requireUser()` from `@/lib/auth` to get the active `workspaceId`.
+2. **No `apiVersion` pin on Stripe.** SDK uses its compiled-against version (see `src/lib/stripe.ts`). Pinning broke types in v22.
+3. **No top-level `env` block in `next.config.mjs`.** Anything declared there leaks to the client bundle. Read server secrets via `process.env` in server code only.
+4. **`typescript.ignoreBuildErrors` stays `false`.** Fix type errors instead of bypassing.
+5. **Generated client lives at `@/generated/prisma/client`** (custom `output` in schema). Don't import from `@prisma/client` in app code.
+6. **Prisma engine + pg are `serverExternalPackages`.** Don't try to bundle them.
+
+## Where to look first
+
+| Need | Read first |
+|---|---|
+| New API route | `src/lib/auth.ts` (`requireUser`, `withAuth`), an existing route in same area |
+| New AI worker | `src/lib/agent-workers/types.ts`, `registry.ts`, `quota.ts`, `execute.ts` |
+| Memory read/write | `src/lib/ai-core/memory.ts` (NEVER touch `prisma.semanticMemory.*` directly) |
+| Trigger AI work | `src/lib/ai-core/events.ts` → `emit(event, payload)` |
+| New chain / DAG | `src/lib/ai-core/chains.ts`, `orchestrator.ts`, `planner.ts` |
+| New BullMQ worker | `src/workers/index.ts`, an existing worker file |
+| Plan limits | `src/lib/plans.ts`, `src/lib/agent-workers/quota.ts` |
+| Stripe webhook | `src/app/api/billing/webhook/route.ts`, idempotency via `StripeEventLog` |
+| DB schema | `prisma/schema.prisma` (~700 lines; grep first before reading whole) |
+| Brand colors / tokens | `src/app/globals.css` (CSS vars: `--leadac-*`, `--cine-*`, `--system-*`) |
+
+## Commands you may need
+
+```bash
+npm run dev                # next dev --webpack
+npm run workers            # tsx src/workers/index.ts (BullMQ supervisor)
+npm run db:push            # prisma db push (dev — no migration history)
+npm run db:generate        # prisma generate after schema edits
+npm run test               # vitest run (unit)
+npm run test:integration   # vitest with integration config
+npm run lint               # eslint .
+```
+
+## Things NOT to do
+
+- Don't add new BullMQ queues; extend AI Core (`src/lib/ai-core/`) or use `agent-runs` queue.
+- Don't add new Gemini-calling endpoints outside `src/lib/agent-workers/` or `src/lib/ai-core/router.ts`.
+- Don't read `node_modules/next/dist/docs/` — those docs are NOT bundled in this install. For Next.js 16 specifics, see the `nextjs-16.mdc` rule (auto-loaded for app/middleware/config files).
+- Don't write to `Lead`, `AgentRun`, etc. without `workspaceId` in the where clause / data.
+- Don't import from `@prisma/client`; use `@/generated/prisma/client`.

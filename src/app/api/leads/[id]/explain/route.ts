@@ -137,6 +137,13 @@ export async function POST(
     }
 
     // 2. Cache miss / stale — schedule + execute inline.
+    // Stamp the lead's current subNicheVersion so the executor can
+    // detect a stale run created before a manual override bumped the
+    // version (see executeAgentRun stale-version guard).
+    const dossierLead = await prisma.lead.findUnique({
+      where: { id: leadId },
+      select: { subNicheVersion: true },
+    });
     const newRun = await prisma.agentRun.create({
       data: {
         workspaceId: session.workspaceId,
@@ -145,6 +152,7 @@ export async function POST(
         workerKind: "LEAD_DOSSIER_GENERATOR",
         status: "PENDING",
         inputsJson: {},
+        inputSubNicheVersion: dossierLead?.subNicheVersion ?? null,
       },
       select: { id: true },
     });

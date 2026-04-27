@@ -56,3 +56,51 @@ export const REASON_LABELS: Record<string, string> = {
   accessibility_issues: "Accessibility Issues",
   no_pwa: "No PWA",
 };
+
+// Compact chip labels: shorter, all-lowercase phrases used inside the
+// leads list reason chips where horizontal real estate is tight. We
+// prefer shipped REASON_LABELS for tooltips / detail pages and use
+// REASON_CODE_LABELS for in-row pills only.
+export const REASON_CODE_LABELS: Record<string, string> = {
+  no_website: "no site",
+  poor_mobile: "not mobile",
+  no_booking: "no booking",
+  no_whatsapp: "no whatsapp",
+  no_https: "no https",
+  weak_seo: "weak seo",
+  slow_site: "slow",
+  slow_load: "slow",
+  no_ecommerce: "no ecom",
+  high_rating_weak_site: "rating ↑ site ↓",
+  good_rating: "rating ↑",
+  site_unreachable: "unreachable",
+  services_unclear: "unclear svcs",
+  uncrawled_website: "unscanned",
+  no_contact_form: "no form",
+  no_analytics: "no analytics",
+  weak_security_headers: "weak sec",
+  no_open_graph: "no og",
+  no_schema: "no schema",
+  no_structured_data: "no schema",
+  accessibility_issues: "a11y",
+  no_pwa: "no pwa",
+  low_rating_trend: "rating ↓",
+};
+
+export const PIPELINE_STAGE_LABELS: Record<string, string> = {
+  NEW: "New",
+  REACHED_OUT: "Reached Out",
+  IN_TALKS: "In Talks",
+  WON: "Won",
+  LOST: "Lost",
+};
+
+// Per-stage dot color (kept inline so consumers don't need to import a
+// design-token util just to render a 6×6 dot).
+export const PIPELINE_STAGE_DOT: Record<string, string> = {
+  NEW: "hsl(220 8% 70%)",
+  REACHED_OUT: "hsl(38 70% 52%)",
+  IN_TALKS: "hsl(248 62% 60%)",
+  WON: "hsl(152 48% 50%)",
+  LOST: "hsl(4 62% 54%)",
+};

@@ -1,0 +1,106 @@
+---
+description: UI — Tailwind v4, design tokens, Radix primitives, Framer Motion, brand palette.
+globs:
+  - "src/components/**"
+  - "src/app/**/*.tsx"
+  - "src/app/globals.css"
+alwaysApply: false
+---
+
+# UI / design system
+
+Stack: **Tailwind v4** (PostCSS plugin), **Radix UI** primitives, **Framer Motion** for motion, **lucide-react** for icons, **sonner** for toasts, **TipTap** for the editor, **dnd-kit** for drag-and-drop, **Recharts** for charts. Fonts: Inter (sans + mono), Oswald (display).
+
+## Token system (single source: `src/app/globals.css`)
+
+Re-skin the entire app by changing four knobs:
+
+```css
+--leadac-h:   38;   /* hue 0–360 — current: warm ochre/orange */
+--leadac-s:   78%;  /* saturation */
+--leadac-ns:  7%;   /* neutral surface saturation */
+--leadac-nts: 10%;  /* neutral text saturation */
+```
+
+Everything below derives from those:
+
+- Primary scale: `--leadac-100` ... `--leadac-900` (HSL, lightness step ramp)
+- Surfaces: `--leadac-bg`, `--leadac-surface`, `--leadac-card`, `--leadac-hover`, `--leadac-border`
+- Text: `--leadac-text-1` (primary), `--leadac-text-2` (secondary), `--leadac-text-3`, `--leadac-muted`
+- Semantic: `--leadac-success`, `--leadac-warning`, `--leadac-error`, `--leadac-info`
+- Glow: `--leadac-glow-soft`, `--leadac-glow-medium`, `--leadac-glow-strong`
+
+**Legacy tokens map onto the leadac scale**:
+- `--system-blue/green/orange/red/purple/teal/yellow` (iOS dark mode names — kept for backward compat)
+- `--label-primary/secondary/tertiary/quaternary` (text alpha ramp)
+- `--shadow-sm/card/elevated/modal`
+- `--border-primary/light`, `--separator`, `--separator-opaque`
+
+**Cinematic palette** (only used by `src/components/marketing/cine/*`):
+- `--cine-ink`, `--cine-cream`, `--cine-ochre`, `--cine-terra`, `--cine-indigo`, `--cine-border`, `--cine-gutter`, `--cine-max`
+
+`src/lib/colors.ts` (`LEADAC_HUE` / `LEADAC_SATURATION`) MUST stay in sync with the CSS knobs.
+
+## Tailwind v4 — what's different
+
+- Use `@import "tailwindcss"` in the CSS entry point (we do, see `globals.css`).
+- Theme extension is via `@theme inline { ... }` — see `globals.css` for `--color-*`, `--font-*`, `--animate-*`.
+- No `tailwind.config.js`. Customisations go in `globals.css` with `@theme`.
+- Class arbitrary values still work: `bg-[var(--leadac-card)]`, `text-[hsl(var(--leadac-h)_var(--leadac-s)_50%)]`.
+- Use `cn()` from `src/lib/utils.ts` (clsx + tailwind-merge) for conditional classes.
+
+## Component conventions
+
+- **Primitives** live in `src/components/ui/` (Button, Card, Dialog, Dropdown, Input, Select, Tabs, Tooltip, Badge, Separator, Progress, Skeleton, Textarea, Toaster, ScrollArea, Popover, Label, Slot). All wrap a Radix primitive or a Tailwind-styled element. Variants via `class-variance-authority`.
+- **Product surfaces** live in `src/components/app/`. They consume `ui/` primitives.
+- **Marketing surfaces** live in `src/components/marketing/`. Cinematic landing in `marketing/cine/*`.
+- **Server vs client**: components default to server. Only add `"use client"` when you need state, effects, refs, framer-motion, or browser APIs. Pass server-fetched data into client components as props.
+
+## Brand colors — DO NOT hardcode
+
+```tsx
+// ✅ token references
+<div className="bg-[var(--leadac-card)] text-[var(--leadac-text-1)] border border-[var(--leadac-border)]" />
+
+// ✅ semantic
+<span className="text-[var(--leadac-success)]" />
+
+// ❌ hex / rgb literals
+<div className="bg-[#1a1a1a] text-white" />
+```
+
+Brand source files: `public/logo.png`, `public/leadac-brand-kit.pdf`, `public/brand-kit.html`.
+
+## Motion
+
+- Use Framer Motion for view-level entrances (hero blur-up, marquees, drawer slides).
+- Existing keyframes in `globals.css`: `marquee`, `marquee-rev`, `cine-blur-up`, `cine-drift`.
+- Respect `prefers-reduced-motion` — wrap any non-decorative animation.
+
+## Glass / liquid
+
+`.glass` and `.glass-strong` utilities (in `globals.css`) handle `backdrop-filter` correctly across browsers. Don't reinvent — reuse.
+
+## Mobile / safe area
+
+iOS notch utilities: `.safe-pt`, `.safe-pb`, `.safe-pl`, `.safe-pr`, `.safe-mt`, `.safe-mb`. Form inputs auto-bump to `font-size: 16px` under 640px to block iOS auto-zoom.
+
+## i18n
+
+Bilingual TR/EN content lives in `src/i18n/`. Marketing surfaces support both via `lang` segment. When adding marketing copy that ships in both languages, also update the TR variant — see the `tr-en-marketing-sync` skill for the workflow.
+
+## Icons
+
+`lucide-react` only. Don't import emoji-as-icon. Use 16/20/24 px sizes (`<Icon className="h-4 w-4" />`).
+
+## Charts
+
+`recharts` for in-app analytics dashboards. Theme via `--leadac-*` tokens — pass `stroke="var(--leadac-500)"` style.
+
+## Anti-patterns
+
+- ❌ Hardcoded hex/rgb/named colors in JSX — use `--leadac-*` / `--system-*` tokens
+- ❌ Adding a `tailwind.config.js` — Tailwind v4 doesn't use one here
+- ❌ Inline `<style>` blocks for one-off styling — extend `globals.css` if it's a real pattern
+- ❌ Client component for static content — keep it server unless you need interactivity
+- ❌ Importing icon SVGs from public/ when `lucide-react` already has it

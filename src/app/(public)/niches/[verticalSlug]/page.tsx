@@ -20,6 +20,7 @@ import {
   getPublicBusinessesByNiche,
   getRelatedCitiesForNiche,
 } from "@/lib/seo/programmatic";
+import { findNichePackForPrimaryType } from "@/lib/niches";
 
 export const revalidate = 3600;
 
@@ -45,14 +46,23 @@ export async function generateMetadata({
       follow: false,
     });
   }
+  // Mirror the runtime hero enrichment for SEO copy: a pack-aware
+  // title + description outranks "audited Restaurant businesses"
+  // for vertical-specific queries.
+  const pack = findNichePackForPrimaryType(niche.nicheName);
+  const label = pack ? pack.label : niche.nicheName;
+  const description = pack
+    ? `${pack.tagline} ${niche.leadCount} audited businesses with full website audits, Google ratings, and contact details — refreshed weekly.`
+    : `${niche.leadCount} audited ${niche.nicheName.toLowerCase()} businesses with website audits, Google ratings, and contact details. Sourced live from Google Maps.`;
   return buildMetadata({
     path: `/niches/${verticalSlug}`,
-    title: `${niche.nicheName} — audited local businesses`,
-    description: `${niche.leadCount} audited ${niche.nicheName.toLowerCase()} businesses with website audits, Google ratings, and contact details. Sourced live from Google Maps.`,
+    title: `${label} — audited local businesses`,
+    description,
     keywords: [
-      `${niche.nicheName} directory`,
-      `${niche.nicheName} lead list`,
-      `local ${niche.nicheName} businesses`,
+      `${label} directory`,
+      `${label} lead list`,
+      `local ${label} businesses`,
+      ...(pack ? [pack.pitchAngle.split(".")[0]] : []),
     ],
   });
 }
@@ -100,12 +110,30 @@ export default async function NichePage({
   const canonical = `${SITE.url}/niches/${verticalSlug}`;
   const faqs = nicheFaqs(niche.nicheName);
 
+  // Hybrid niche enrichment: when the Google primary type ("bar",
+  // "cafe", "fine_dining_restaurant"...) matches a NichePack we ship,
+  // surface its vertical-specific tagline + pitch angle + featured
+  // product modules instead of the generic directory copy. Fallback
+  // is the original generic header for primary types we don't have a
+  // pack for (avoids breaking unmapped types like "park" or
+  // "convenience_store").
+  const pack = findNichePackForPrimaryType(niche.nicheName);
+  const displayLabel = pack ? pack.label : niche.nicheName;
+  const introCopy = pack
+    ? `${pack.tagline} Browse ${businesses.length} audited businesses below — every entry includes a 20-signal website audit, Google rating, and contact details. Refreshed weekly.`
+    : `${businesses.length} ${niche.nicheName.toLowerCase()} businesses with verified contact details, Google ratings, and a 20-signal website audit on each one. Refreshed weekly.`;
+  const directAnswerCopy = pack
+    ? `${pack.pitchAngle} The Leadac AI ${displayLabel.toLowerCase()} directory lists ${businesses.length} audited businesses worldwide, each with a verified website audit, Google rating, and contact details.`
+    : `The Leadac AI ${niche.nicheName.toLowerCase()} directory currently lists ${businesses.length} audited businesses worldwide, each with a verified website audit, Google rating, and contact details. Browse by city below, or open an individual profile for the full 20-signal audit report.`;
+
   return (
     <>
       <JsonLd
         data={collectionPageSchema({
-          name: `${niche.nicheName} — audited local businesses`,
-          description: `Directory of audited ${niche.nicheName.toLowerCase()} businesses.`,
+          name: `${displayLabel} — audited local businesses`,
+          description: pack
+            ? `${pack.tagline}`
+            : `Directory of audited ${niche.nicheName.toLowerCase()} businesses.`,
           url: canonical,
         })}
       />
@@ -122,23 +150,64 @@ export default async function NichePage({
         data={breadcrumbSchema([
           { name: "Home", url: "/" },
           { name: "Niches", url: "/niches" },
-          { name: niche.nicheName, url: `/niches/${verticalSlug}` },
+          { name: displayLabel, url: `/niches/${verticalSlug}` },
         ])}
       />
       <JsonLd data={faqSchema(faqs)} />
 
       <DirectoryShell
-        eyebrow={`Directory / ${niche.nicheName}`}
-        title={`${niche.nicheName} — ${businesses.length} audited businesses`}
-        intro={`${businesses.length} ${niche.nicheName.toLowerCase()} businesses with verified contact details, Google ratings, and a 20-signal website audit on each one. Refreshed weekly.`}
+        eyebrow={`Directory / ${displayLabel}`}
+        title={`${displayLabel} — ${businesses.length} audited businesses`}
+        intro={introCopy}
       >
-        <DirectAnswer>
-          The Leadac AI {niche.nicheName.toLowerCase()} directory currently
-          lists {businesses.length} audited businesses worldwide, each with a
-          verified website audit, Google rating, and contact details.
-          Browse by city below, or open an individual profile for the full
-          20-signal audit report.
-        </DirectAnswer>
+        <DirectAnswer>{directAnswerCopy}</DirectAnswer>
+
+        {pack && pack.highValueSignals.length > 0 && (
+          <section className="rounded-3xl border border-white/8 bg-white/3 p-6 sm:p-7">
+            <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
+              What we audit on every {displayLabel.toLowerCase()} listing
+            </h2>
+            <p className="text-[14px] text-white/60 mt-1.5 max-w-2xl">
+              The 20-signal audit looks for the gaps that matter most for{" "}
+              {displayLabel.toLowerCase()} specifically — not a generic
+              checklist.
+            </p>
+            <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {pack.highValueSignals.slice(0, 6).map((signal) => (
+                <li
+                  key={signal}
+                  className="flex items-start gap-2 text-[13.5px] text-white/85 rounded-2xl bg-white/4 border border-white/8 px-4 py-2.5"
+                >
+                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-(--leadac-500) shrink-0" />
+                  <span className="capitalize">{signal}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {pack && pack.featuredProductModules && pack.featuredProductModules.length > 0 && (
+          <section className="rounded-3xl border border-white/8 bg-white/3 p-6 sm:p-7">
+            <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
+              Modules agencies pitch most for {displayLabel.toLowerCase()}
+            </h2>
+            <p className="text-[14px] text-white/60 mt-1.5 max-w-2xl">
+              When you open a lead profile, the AI opener and mockup
+              automatically lean on these modules — they convert best for{" "}
+              {displayLabel.toLowerCase()}.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {pack.featuredProductModules.map((m) => (
+                <span
+                  key={m}
+                  className="inline-flex items-center rounded-full bg-(--leadac-500)/10 border border-(--leadac-500)/25 px-3 py-1.5 text-[12.5px] text-(--leadac-200)"
+                >
+                  {m}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
 
         <LeadCardList items={businesses} />
 

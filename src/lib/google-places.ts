@@ -7,6 +7,10 @@ const FIELD_MASK = [
   "places.id",
   "places.displayName",
   "places.formattedAddress",
+  // Structured address parts so we can pick the borough /
+  // administrative_area_level_2 reliably for non-UK addresses (see
+  // Bug #7 in research/finedine/discovery-bugs.md).
+  "places.addressComponents",
   "places.websiteUri",
   "places.googleMapsUri",
   "places.nationalPhoneNumber",
@@ -63,6 +67,16 @@ export async function textSearch(
 
   if (query.locationBias) {
     body.locationBias = query.locationBias;
+  }
+
+  // locationRestriction is a hard exclude; locationBias is a soft hint.
+  // Google rejects requests that send both, so callers MUST pick one.
+  if (query.locationRestriction) {
+    body.locationRestriction = query.locationRestriction;
+  }
+
+  if (query.includedTypes && query.includedTypes.length > 0) {
+    body.includedType = query.includedTypes[0];
   }
 
   if (pageToken) {
@@ -158,23 +172,32 @@ export async function getPlaceReviews(placeId: string): Promise<PlaceReview[]> {
 export async function discoverLeads(
   searchQuery: string,
   location: { name: string; country?: string; lat?: number; lng?: number },
-  radiusMeters = 5000
+  radiusMeters = 5000,
+  options: { includedTypes?: string[] } = {},
 ): Promise<PlaceResult[]> {
   const allPlaces: PlaceResult[] = [];
   const countryPart = location.country ? `, ${location.country}` : "";
+  // Google rejects circle.radius > 50000m on locationRestriction.
+  const clampedRadius = Math.min(Math.max(radiusMeters, 100), 50000);
+  // Prefer locationRestriction (hard exclude) over locationBias (soft
+  // hint) whenever we have real coordinates. The API rejects requests
+  // that send both, so it's an either/or choice — keep the existing
+  // 0,0 guard so a sentinel pair never leaks through.
+  const haveCoords = !!location.lat && !!location.lng;
   const query: DiscoveryQuery = {
     textQuery: `${searchQuery} in ${location.name}${countryPart}`,
-    // Only attach a lat/lng bias when both coordinates are truthy — passing
-    // 0,0 would bias results towards the Gulf of Guinea.
-    ...(location.lat && location.lng
+    ...(haveCoords
       ? {
-          locationBias: {
+          locationRestriction: {
             circle: {
-              center: { latitude: location.lat, longitude: location.lng },
-              radius: radiusMeters,
+              center: { latitude: location.lat!, longitude: location.lng! },
+              radius: clampedRadius,
             },
           },
         }
+      : {}),
+    ...(options.includedTypes && options.includedTypes.length > 0
+      ? { includedTypes: options.includedTypes }
       : {}),
   };
 
@@ -197,7 +220,59 @@ export async function discoverLeads(
   return allPlaces;
 }
 
-export function extractBoroughFromAddress(address: string): string | null {
+/**
+ * Extracts the borough / district / locality for a Google place.
+ *
+ * Prefers structured `addressComponents` (Bug #7): Google emits a
+ * typed list like
+ *   [
+ *     { types: ["administrative_area_level_2"], longText: "Kartal" },
+ *     { types: ["administrative_area_level_1"], longText: "Istanbul" },
+ *     { types: ["country", "political"],         longText: "Türkiye" },
+ *   ]
+ * which works for any country. The legacy London-only string-match
+ * fallback only fires when components are absent (older cached rows /
+ * fields not requested).
+ *
+ * Order of preference:
+ *   1. administrative_area_level_2 (county/district — best for most
+ *      countries; UK borough, TR ilçe, US county)
+ *   2. sublocality_level_1 / sublocality (neighbourhood)
+ *   3. postal_town (UK / IE common)
+ *   4. locality (city)
+ *   5. London string-match map (legacy only)
+ */
+export function extractBoroughFromAddress(
+  address: string,
+  components?: {
+    longText: string;
+    shortText: string;
+    types: string[];
+  }[],
+): string | null {
+  if (components && components.length > 0) {
+    // Defensive: Google's v1 Places schema documents `types` as a
+    // required array, but in practice we've seen components arrive
+    // without it (and `longText` occasionally absent on routes /
+    // plus_codes). The TS type makes them required; runtime can lie.
+    // A single bad component must not crash the whole Discovery POST.
+    const findByType = (type: string): string | null => {
+      const c = components.find(
+        (x) => Array.isArray(x?.types) && x.types.includes(type),
+      );
+      return c && typeof c.longText === "string" && c.longText.length > 0
+        ? c.longText
+        : null;
+    };
+    return (
+      findByType("administrative_area_level_2") ||
+      findByType("sublocality_level_1") ||
+      findByType("sublocality") ||
+      findByType("postal_town") ||
+      findByType("locality") ||
+      null
+    );
+  }
   const addr = address.toLowerCase();
   for (const b of LONDON_BOROUGHS) {
     if (addr.includes(b.name.toLowerCase())) return b.name;

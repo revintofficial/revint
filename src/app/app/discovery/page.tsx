@@ -26,9 +26,28 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+// Niche packs are organised into:
+//  1. Parent packs with children (hybrid verticals like "fnb") → selecting
+//     these triggers a fan-out search across every child's primary query.
+//  2. Leaf packs (no parent and no children, e.g. "dental") → single-query.
+//  3. Child packs of a hybrid parent (e.g. "fnb-bar-club") → single-query
+//     with a tighter audit checklist.
+//
+// We expose all three through one dropdown so reps don't have to learn
+// the parent-vs-child distinction; the UI labels the mode they're in.
+const PARENT_PACKS = NICHES.filter((n) => !n.parentSlug && NICHES.some((c) => c.parentSlug === n.slug));
+const LEAF_PACKS = NICHES.filter((n) => !n.parentSlug && !NICHES.some((c) => c.parentSlug === n.slug));
+const CHILDREN_BY_PARENT = new Map<string, typeof NICHES>(
+  PARENT_PACKS.map((p) => [p.slug, NICHES.filter((c) => c.parentSlug === p.slug)]),
+);
+
 export default function DiscoveryPage() {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [city, setCity] = useState("");
+  // Niche pack selection (parent or child slug). When set, we use the
+  // pack's first searchQuery as the default `selectedQuery` and (for
+  // parents) tell the API to fan-out across children.
+  const [selectedPackSlug, setSelectedPackSlug] = useState("");
   const [selectedQuery, setSelectedQuery] = useState("");
   const [customQuery, setCustomQuery] = useState("");
   const [running, setRunning] = useState(false);
@@ -36,10 +55,10 @@ export default function DiscoveryPage() {
     created: number;
     skipped: number;
     total: number;
+    fanOut?: boolean;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Pre-fill country from workspace settings
   useEffect(() => {
     fetch("/api/workspace/country")
       .then((r) => (r.ok ? r.json() : null))
@@ -49,8 +68,23 @@ export default function DiscoveryPage() {
       .catch(() => null);
   }, []);
 
-  const effectiveQuery = customQuery || selectedQuery;
-  const canRun = selectedCountry && city.trim() && effectiveQuery;
+  const selectedPack = selectedPackSlug
+    ? NICHES.find((n) => n.slug === selectedPackSlug) ?? null
+    : null;
+  const isParentPack = selectedPack
+    ? CHILDREN_BY_PARENT.get(selectedPack.slug)?.length ?? 0
+    : 0;
+  const fanOutMode = !!selectedPack && (isParentPack as number) > 0;
+
+  // When a parent pack is selected we ignore the per-child query input;
+  // the API fans out across every child's first query automatically.
+  const effectiveQuery = fanOutMode
+    ? null
+    : customQuery || selectedQuery || selectedPack?.searchQueries[0] || "";
+  const canRun =
+    selectedCountry &&
+    city.trim() &&
+    (fanOutMode || (effectiveQuery && effectiveQuery.length > 0));
 
   const runDiscovery = async () => {
     if (!canRun || running) return;
@@ -66,13 +100,16 @@ export default function DiscoveryPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          searchQuery: effectiveQuery,
+          // Fan-out mode: API doesn't need searchQuery; we still send
+          // the pack slug so it can resolve children.
+          searchQuery: fanOutMode ? undefined : effectiveQuery,
           boroughName: city.trim(),
           country: selectedCountry,
+          nichePackSlug: selectedPackSlug || undefined,
         }),
         signal: controller.signal,
       });
-      let data: { success?: boolean; error?: string; created?: number; skipped?: number; total?: number } = {};
+      let data: { success?: boolean; error?: string; created?: number; skipped?: number; total?: number; fanOut?: boolean } = {};
       try {
         data = await res.json();
       } catch {
@@ -90,8 +127,16 @@ export default function DiscoveryPage() {
         created: data.created ?? 0,
         skipped: data.skipped ?? 0,
         total: data.total ?? 0,
+        fanOut: data.fanOut,
       });
-      toast.success(`${data.created ?? 0} new leads added!`);
+      const childCount = fanOutMode && selectedPack
+        ? CHILDREN_BY_PARENT.get(selectedPack.slug)?.length ?? 0
+        : 0;
+      toast.success(
+        fanOutMode && childCount > 0
+          ? `${data.created ?? 0} new leads from ${childCount} sub-niche scans!`
+          : `${data.created ?? 0} new leads added!`,
+      );
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         setError(
@@ -164,19 +209,52 @@ export default function DiscoveryPage() {
               </p>
             </div>
 
-            {/* Niche */}
+            {/* Niche pack (hybrid parent + child) */}
             <div>
               <label className="text-[13px] font-medium text-white/50 mb-1.5 block">Niche pack (recommended)</label>
               <Select
-                value={selectedQuery && NICHES.some((n) => n.searchQueries[0] === selectedQuery) ? selectedQuery : ""}
-                onValueChange={(v) => { setSelectedQuery(v); setCustomQuery(""); }}
+                value={selectedPackSlug}
+                onValueChange={(v) => {
+                  setSelectedPackSlug(v);
+                  setCustomQuery("");
+                  // Pre-fill the searchQuery from the pack so the leaf-pack
+                  // path doesn't show an empty box. Parents ignore this.
+                  const pack = NICHES.find((n) => n.slug === v);
+                  setSelectedQuery(pack?.searchQueries[0] ?? "");
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pick a vertical with tuned audit signals..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {NICHES.map((niche) => (
-                    <SelectItem key={niche.slug} value={niche.searchQueries[0]}>
+                  {PARENT_PACKS.map((parent) => {
+                    const children = CHILDREN_BY_PARENT.get(parent.slug) ?? [];
+                    return (
+                      <div key={parent.slug}>
+                        <SelectItem value={parent.slug}>
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">
+                              All {parent.label.replace(/ \(all\)$/i, "")}{" "}
+                              <span className="text-[11px] text-white/45">
+                                ({children.length} sub-niches, fan-out)
+                              </span>
+                            </span>
+                            <span className="text-[11px] text-white/45">{parent.tagline}</span>
+                          </div>
+                        </SelectItem>
+                        {children.map((child) => (
+                          <SelectItem key={child.slug} value={child.slug}>
+                            <div className="flex flex-col items-start pl-3">
+                              <span className="font-medium">↳ {child.label}</span>
+                              <span className="text-[11px] text-white/45">{child.tagline}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </div>
+                    );
+                  })}
+                  {LEAF_PACKS.map((niche) => (
+                    <SelectItem key={niche.slug} value={niche.slug}>
                       <div className="flex flex-col items-start">
                         <span className="font-medium">{niche.label}</span>
                         <span className="text-[11px] text-white/45">{niche.tagline}</span>
@@ -187,29 +265,50 @@ export default function DiscoveryPage() {
               </Select>
               <p className="text-[11px] text-white/35 mt-1.5">
                 Niche packs come with vertical-specific audit signals and mockup templates.
+                {fanOutMode && selectedPack && (
+                  <span className="block mt-1 text-(--leadac-500)">
+                    Fan-out mode: {(CHILDREN_BY_PARENT.get(selectedPack.slug)?.length ?? 0)} parallel queries → deduped by Place ID.
+                  </span>
+                )}
               </p>
 
-              <label className="text-[13px] font-medium text-white/50 mt-3 mb-1.5 block">Or pick a generic category</label>
-              <Select
-                value={selectedQuery && !NICHES.some((n) => n.searchQueries[0] === selectedQuery) ? selectedQuery : ""}
-                onValueChange={(v) => { setSelectedQuery(v); setCustomQuery(""); }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Generic category..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {DEFAULT_SEARCH_QUERIES.map((q) => (
-                    <SelectItem key={q} value={q}>{q}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                type="text"
-                placeholder="or type your own niche"
-                value={customQuery}
-                onChange={(e) => { setCustomQuery(e.target.value); setSelectedQuery(""); }}
-                className="mt-2"
-              />
+              {!fanOutMode && (
+                <>
+                  <label className="text-[13px] font-medium text-white/50 mt-3 mb-1.5 block">Or pick a generic category</label>
+                  <Select
+                    value={
+                      selectedQuery && DEFAULT_SEARCH_QUERIES.includes(selectedQuery)
+                        ? selectedQuery
+                        : ""
+                    }
+                    onValueChange={(v) => {
+                      setSelectedQuery(v);
+                      setCustomQuery("");
+                      setSelectedPackSlug("");
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Generic category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEFAULT_SEARCH_QUERIES.map((q) => (
+                        <SelectItem key={q} value={q}>{q}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="text"
+                    placeholder="or type your own niche"
+                    value={customQuery}
+                    onChange={(e) => {
+                      setCustomQuery(e.target.value);
+                      setSelectedQuery("");
+                      setSelectedPackSlug("");
+                    }}
+                    className="mt-2"
+                  />
+                </>
+              )}
             </div>
 
             <Button

@@ -213,6 +213,7 @@ export function getChain(event: EventKind): Chain | null {
 export const LEAD_PIPELINE_ALLOWED_WORKERS: ReadonlySet<AgentWorkerKind> = new Set<AgentWorkerKind>([
   "GOOGLE_PLACES_REVIEWS",
   "WEBSITE_AUDITOR",
+  "SUBVERTICAL_CLASSIFIER",
   "REVIEW_ANALYST",
   "SOCIAL_SCRAPER",
   "EMAIL_VERIFIER",
@@ -241,7 +242,18 @@ export const LEAD_PIPELINE_ALLOWED_WORKERS: ReadonlySet<AgentWorkerKind> = new S
  * regenerator (the saved steps are used as-is).
  */
 export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
-  const audit: ChainStep = { stepId: "audit", workerKind: "WEBSITE_AUDITOR", dependsOn: [] };
+  // Audit is `optional` so a transient crawl failure (timeout, 403,
+  // robots block) doesn't hardFailure the orchestrator and starve
+  // every downstream step of its turn. The classifier, scorer, and
+  // dossier all tolerate a SKIPPED audit (they substitute null
+  // signals) — see Bug #3 in research/finedine/discovery-bugs.md
+  // and the SUBVERTICAL_CLASSIFIER buildClassifierSignals() guard.
+  const audit: ChainStep = {
+    stepId: "audit",
+    workerKind: "WEBSITE_AUDITOR",
+    dependsOn: [],
+    optional: true,
+  };
   const placesReviews: ChainStep = {
     stepId: "places_reviews",
     workerKind: "GOOGLE_PLACES_REVIEWS",
@@ -254,10 +266,22 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     dependsOn: ["places_reviews"],
     optional: true,
   };
+  // Hybrid-niche classifier (parent + child packs, e.g. fnb → fnb-bar-club).
+  // The worker self-skips for workspaces whose niche has no children. It
+  // is INDEPENDENT of audit (dependsOn: []) so the classifier always
+  // runs and stamps subNicheSlug — even when the audit step skipped or
+  // failed (Bug #3). The rule-based pass already tolerates missing
+  // audit signals.
+  const classifier: ChainStep = {
+    stepId: "classifier",
+    workerKind: "SUBVERTICAL_CLASSIFIER",
+    dependsOn: [],
+    optional: true,
+  };
   const score: ChainStep = {
     stepId: "score",
     workerKind: "SALES_OPPORTUNITY_SCORER",
-    dependsOn: ["audit", "review"],
+    dependsOn: ["audit", "review", "classifier"],
   };
   const embedProfile: ChainStep = {
     stepId: "embed_profile",
@@ -269,7 +293,7 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   // Always-on backbone for every preset; review + places_reviews are
   // marked optional so a place with no reviews / no placeId doesn't
   // block the score step.
-  const lite: Chain = [audit, placesReviews, review, score, embedProfile];
+  const lite: Chain = [audit, placesReviews, review, classifier, score, embedProfile];
 
   if (preset === "LITE") {
     return filterByPlan(lite, plan);
@@ -292,7 +316,7 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   // discovery + on-create dossier so the lead detail page is rich
   // the moment the user opens it (no "click Generate to see
   // anything" empty state).
-  const balanced: Chain = [audit, placesReviews, review, social, score, embedProfile, dossier];
+  const balanced: Chain = [audit, placesReviews, review, social, classifier, score, embedProfile, dossier];
 
   if (preset === "BALANCED") {
     return filterByPlan(balanced, plan);
@@ -327,7 +351,7 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   const aggressiveScore: ChainStep = {
     stepId: "score",
     workerKind: "SALES_OPPORTUNITY_SCORER",
-    dependsOn: ["audit", "review", "review_refresh"],
+    dependsOn: ["audit", "review", "review_refresh", "classifier"],
   };
   const mockup: ChainStep = {
     stepId: "mockup",
@@ -350,6 +374,7 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     apifyGmaps,
     apifySerp,
     reviewRefresh,
+    classifier,
     aggressiveScore,
     embedProfile,
     dossier,

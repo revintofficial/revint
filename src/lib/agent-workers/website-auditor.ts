@@ -126,7 +126,32 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       where: { id: lead.id },
       data: { crawlStatus: "FAILED" },
     });
-    throw error;
+    const msg = error instanceof Error ? error.message : String(error);
+    // Crawl failures (DNS, SSL, 404, fetch timeout, robots block) are
+    // operational realities, not chain-breaking bugs. Returning a
+    // skipped output keeps `audit` SKIPPED-but-optional in the
+    // orchestrator (see chains.ts: audit.optional = true) instead of
+    // hardFailing the whole session — Bug #4 in
+    // research/finedine/discovery-bugs.md. The lead still surfaces
+    // crawlStatus=FAILED in the UI for the user to act on, but
+    // downstream classifier/score/dossier proceed.
+    //
+    // The diagnostic in research/finedine/discovery-bugs.md (and the
+    // beta workspace bucketing query) showed the dominant failure
+    // bucket today is the post-worker embedding step
+    // ("Failed to embed after 3 attempts"), not crawl errors — those
+    // are handled at the executor layer (see persistMemoryWrites).
+    // No bucket warrants RetryableError today; carve one out here if
+    // a future diagnostic surfaces a transient bucket worth retrying.
+    logger.warn("agent_workers.website_auditor.crawl_failed_skipping", {
+      leadId: lead.id,
+      url: lead.websiteUrl,
+      err: msg,
+    });
+    return {
+      output: { skipped: true, reason: "crawl_failed", errorMsg: msg },
+      costTokens: 0,
+    };
   }
 };
 
@@ -138,13 +163,17 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
 export const memoryWrites = (output: unknown, ctx: { leadId: string | null; workspaceId: string }): MemoryWrite[] => {
   if (!ctx.leadId) return [];
   const o = output as {
+    skipped?: boolean;
     reachable?: boolean;
     url?: string;
     hasContactForm?: boolean;
     hasBookingSystem?: boolean;
     servicesDetected?: unknown;
   };
-  if (!o?.reachable) return [];
+  // Skipped runs (no website / crawl failed) have nothing useful to
+  // embed; returning an empty list keeps the executor from calling
+  // upsertAndEmbed on an unreachable URL placeholder.
+  if (o?.skipped || !o?.reachable) return [];
 
   const services = Array.isArray(o.servicesDetected)
     ? (o.servicesDetected as unknown[]).filter((x): x is string => typeof x === "string")

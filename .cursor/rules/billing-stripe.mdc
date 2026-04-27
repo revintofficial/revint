@@ -1,0 +1,108 @@
+---
+description: Stripe v22 billing — plans, price IDs, webhook signature, idempotency, plan gating.
+globs:
+  - "src/lib/stripe.ts"
+  - "src/lib/plans.ts"
+  - "src/app/api/billing/**"
+  - "src/app/(public)/pricing/**"
+  - "src/components/**/Pricing*"
+  - "src/components/**/Billing*"
+alwaysApply: false
+---
+
+# Billing & Stripe
+
+SDK: `stripe@^22.0.2`. Initialised lazily in `src/lib/stripe.ts`:
+
+```ts
+// Note the absence of apiVersion — pinning broke against v22 types.
+new Stripe(process.env.STRIPE_SECRET_KEY!);
+```
+
+`isBillingEnabled()` returns `Boolean(STRIPE_SECRET_KEY)`. Routes that don't degrade gracefully when Stripe is off must check this and 503 with a clear message.
+
+## Plans (`src/lib/plans.ts`)
+
+Single source of truth for the `Plan` enum + commercial config:
+
+| Plan | Pricing | Leads/cycle | AI credits | Seats | Mockups |
+|---|---|---|---|---|---|
+| FREE | $0 | 50 | 20 | 1 | 3 |
+| PRO | $79 / £59 | (see plans.ts) | (see) | (see) | (see) |
+| PRO_TEAM | (see) | (see) | (see) | (see) | (see) |
+| AGENCY | (see) | (see) | (see) | (see) | (see) |
+
+Each plan has `priceIds: { USD, GBP }` and `annualPriceIds: { USD, GBP }` populated from env vars (e.g. `STRIPE_PRICE_PRO_USD`, `STRIPE_PRICE_PRO_GBP`, `STRIPE_PRICE_PRO_USD_ANNUAL`).
+
+Helpers — use these, do not roll your own:
+
+- `getPriceId(plan, currency, cycle)` — annual fallback to monthly fallback to USD
+- `hasAnnualPricing(plan, currency)` — feature gate
+- `getDisplayPrice(plan, currency, cycle)` — annual returns discounted per-month figure
+- `currencySymbol(currency)` — `£` or `$`
+- `normalizeCurrency`, `normalizeCycle` — narrow strings safely
+- `detectBrowserCurrency()` — UK locales → GBP, else USD
+- `getPlanLabel(plan)` — never render `"PRO_TEAM"` to users; this title-cases
+- `planAllowsAdditionalSeat(plan, currentSeatCount)` — seat invite gate
+
+## Webhook (`/api/billing/webhook`) — non-negotiable rules
+
+```ts
+export const runtime = "nodejs"; // required — needs raw body + Prisma
+```
+
+1. **Verify signature** against `STRIPE_WEBHOOK_SECRET`. 503 if not set, 400 if missing `stripe-signature`, 400 if `constructEvent` throws.
+2. **Idempotency** via `prisma.stripeEventLog.create({ data: { id: eventId, type } })`. Catch `P2002` = duplicate, return 200 immediately.
+3. Use `request.text()` — Stripe needs the raw body. Don't `request.json()`.
+4. Detect plan from price id via `detectPlanFromPriceId(priceId)` (matches against `PLANS[*].priceIds.{USD,GBP}`).
+5. Notify the workspace via `notifyBillingEvent` for human-relevant events.
+
+## Test/live key separation
+
+- `.env.local` carries test keys; production env carries live. Never commit either.
+- Webhook secret in dev: `stripe listen --forward-to localhost:3000/api/billing/webhook` produces a `whsec_*` test secret.
+- Currency-specific env vars: `STRIPE_PRICE_PRO_USD`, `STRIPE_PRICE_PRO_GBP`. Annual variants suffix `_ANNUAL`.
+
+## Plan gating
+
+Two enforcement layers:
+
+1. **API route** — call `assertWorkerQuota({ workspaceId, kind })` (from `src/lib/agent-workers/quota.ts`) before queueing AI work. 402 with upsell payload if exceeded.
+2. **Worker process** — `executeAgentRun` re-asserts quota at job start. Defense in depth — direct queue enqueue must not bypass.
+
+For non-AI features (seats, custom branding, public profiles), use `planMeetsMinimum(workspace.plan, requiredPlan)` and `planAllowsAdditionalSeat(plan, currentSeatCount)`.
+
+## Cycle reset
+
+The webhook updates `Workspace.currentPeriodEnd` and `Workspace.cycleResetAt` on `customer.subscription.updated` and `invoice.payment_succeeded`. UI meters read `cycleResetAt` for the "resets on X" copy — don't recompute from `current_period_end` elsewhere.
+
+## Downgrade handling
+
+When a workspace downgrades (e.g. PRO → FREE):
+
+1. Webhook updates `Workspace.plan`.
+2. Existing `AgentRun` rows in flight finish under their original quota.
+3. New runs gate against the new plan automatically (quota helper reads `Workspace.plan` live).
+4. Seat overage: do NOT auto-revoke memberships; the UI surfaces "X seats over plan limit, downgrade to keep N" — owner action required.
+
+## Failed payments / dunning
+
+Currently relies on Stripe's built-in dunning + customer portal. The `customer.subscription.updated` webhook flips plan to FREE when subscription enters `unpaid`/`canceled`. We notify the owner via `notifyBillingEvent`.
+
+## Refunds & disputes
+
+- Refund: handled in Stripe dashboard; webhook delivers `charge.refunded` — log it but do not auto-revoke access mid-cycle.
+- Dispute: `charge.dispute.created` → notify ops, freeze workspace if needed (manual decision).
+
+## Customer portal
+
+`POST /api/billing/portal` creates a Stripe billing portal session. Reuses `Workspace.stripeCustomerId` — do not let users have multiple Stripe customers per workspace.
+
+## Anti-patterns
+
+- ❌ Pinning `apiVersion` in `new Stripe(...)`
+- ❌ Reading raw body with `request.json()` in the webhook (signature fails)
+- ❌ Looking up plan from a string passed in the request — derive from `priceId` via `detectPlanFromPriceId`
+- ❌ Skipping `StripeEventLog` dedup — Stripe DOES retry delivered events
+- ❌ Hardcoded prices in UI — read from `PLANS` + `getDisplayPrice`
+- ❌ Letting `getStripe()` throw at module load — call it only when needed (lazy singleton already handles this)

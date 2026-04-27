@@ -6,6 +6,7 @@ import { REVIEW_ANALYSIS_PROMPT_TEMPLATE, type ReviewAnalysisOutput } from "./pr
 import { formatChecklistForPrompt } from "./audit-checklist";
 import { languagePreamble } from "./i18n";
 import { logger } from "./logger";
+import { getNicheBySlug } from "./niches";
 
 /**
  * Best-effort JSON parser for Gemini output.
@@ -181,21 +182,85 @@ export interface WebsitePlanInput {
   offer?: WorkspaceOfferContext | null;
 }
 
+export interface AnalysisServicePackage {
+  id: string;
+  name: string;
+  priceLabel: string;
+  features: string[];
+  isPopular: boolean;
+}
+
 /** Builds a niche-aware analysis prompt. Defaults to WEB_AGENCY behaviour. */
 function buildAnalysisPrompt(
   niche: string | null,
   offerName: string | null,
   valueProposition: string | null,
+  subNicheSlug: string | null = null,
+  /**
+   * 0..1 classifier confidence for `subNicheSlug`. Caller sets this
+   * to 1.0 for MANUAL-sourced (rep-overridden) slugs and to the
+   * classifier's score for AUTO-sourced. The prompt builder appends
+   * a "low-confidence" caveat below 0.7 so Gemini doesn't write
+   * over-specific vertical claims when the classifier wasn't sure.
+   * The caller is responsible for the harder gate (passing
+   * `subNicheSlug = null` and falling back to the parent niche)
+   * when confidence is too low to trust the child at all.
+   */
+  subNicheConfidence: number | null = null,
+  /**
+   * Workspace's configured ServicePackage menu (priced tiers /
+   * service packages the team actually sells). When non-empty, the
+   * prompt presents them to Gemini and asks for `recommended_package_id`
+   * + `recommended_package_reason`, replacing the generic
+   * STARTER/GROWTH/SALES heuristic. When empty, the legacy enum
+   * behaviour is preserved.
+   */
+  servicePackages: AnalysisServicePackage[] = [],
 ): string {
   const isRestaurant = niche === "RESTAURANT_TECH";
 
+  // Resolve the most specific niche pack we can: child > parent > none.
+  // The pack provides the F&B sub-vertical's pitch angle, featured product
+  // modules, and the high-value audit signals so the analyst doesn't pitch
+  // a sommelier note to a food truck or commission-free delivery to a
+  // fine-dining room. When subNicheSlug is null we fall back to the parent
+  // `fnb` pack so analysis stays niche-aware even before the classifier
+  // tags the lead.
+  const nichePack = isRestaurant
+    ? getNicheBySlug(subNicheSlug ?? "fnb")
+    : null;
+  const usingChildPack = !!subNicheSlug && !!nichePack && nichePack.parentSlug !== undefined;
+
+  const subVerticalLine = nichePack
+    ? ` This specific lead is a ${nichePack.label} — ${nichePack.tagline}`
+    : "";
+  const featuredModulesLine = nichePack?.featuredProductModules?.length
+    ? ` Focus the pitch on these product modules: ${nichePack.featuredProductModules.join(", ")}.`
+    : "";
+  const painPointsLine = nichePack?.highValueSignals?.length
+    ? ` Common pain points for this format: ${nichePack.highValueSignals.join("; ")}.`
+    : "";
+
   const industryContext = isRestaurant
-    ? `You are a lead analyst for a restaurant-tech company that sells QR menu and digital ordering solutions to restaurants, cafes, and hotels. Your product helps venues replace paper menus with QR-code digital menus, enable online reservations, and integrate delivery platforms — turning passive menus into revenue tools.`
+    ? `You are a lead analyst for an F&B platform (FineDine-class) that sells digital menu, payment, reservations, table management, kiosk, delivery, and CRM tools to food and beverage venues — replacing paper menus and disconnected POS stacks with one platform.${subVerticalLine}${featuredModulesLine}${painPointsLine}`
     : `You are a lead analyst for a web design agency that sells websites and digital marketing to local service businesses.`;
 
   const offerContext =
     offerName || valueProposition
       ? `\nYour offer: ${[offerName, valueProposition].filter(Boolean).join(" — ")}`
+      : "";
+
+  // Low-confidence caveat: when the sub-niche came from an AUTO
+  // classification with score < 0.7, soften the language so we don't
+  // ship "we'll set up your <wrong-vertical>" messaging that the rep
+  // then has to apologise for. The caller's harder gate (passing
+  // `subNicheSlug = null` below 0.7) catches the worst case; this is
+  // a belt-and-braces in-prompt warning.
+  const confidenceCaveat =
+    usingChildPack &&
+    typeof subNicheConfidence === "number" &&
+    subNicheConfidence < 0.7
+      ? `\nNote: the sub-vertical above was inferred with low confidence (${subNicheConfidence.toFixed(2)}). Keep claims conservative — do not write "we'll set up X for your <vertical>" with too much specificity unless the audit clearly supports it.`
       : "";
 
   const reasonCodesGuidance = isRestaurant
@@ -222,7 +287,33 @@ function buildAnalysisPrompt(
    growth = site + booking + whatsapp + local SEO,
    sales = growth + inventory showcase + review embedding + lead capture)`;
 
-  return `${industryContext}${offerContext}
+  // ServicePackage block: only emitted when the workspace has
+  // explicitly configured priced tiers (Settings -> "Service
+  // packages"). Without this, Gemini hallucinates plan names that
+  // don't exist in the rep's deck and price bands that don't match
+  // the actual price card. Empty workspaces fall through to the
+  // legacy STARTER/GROWTH/SALES enum so the v1 behaviour stays
+  // unchanged for non-FineDine tenants that haven't set packages up.
+  const hasPackages = servicePackages.length > 0;
+  const packagesMenu = hasPackages
+    ? `\nWorkspace service packages (the actual tiers the rep sells - ALWAYS pick one of these IDs verbatim, do NOT invent a new tier):\n${servicePackages
+        .map(
+          (p, i) =>
+            `${i + 1}. id: "${p.id}" | name: "${p.name}" | price: ${p.priceLabel}${p.isPopular ? " (most popular)" : ""}${
+              p.features.length
+                ? `\n   features: ${p.features.slice(0, 6).join("; ")}`
+                : ""
+            }`,
+        )
+        .join("\n")}`
+    : "";
+  const packageFields = hasPackages
+    ? `
+- recommended_package_id: string — the EXACT id of one of the packages above. Pick the cheapest tier whose features cover this lead's pain points; only step up if the audit shows multi-location, hotel, or enterprise signals that justify the higher tier.
+- recommended_package_reason: string (1-2 sentences explaining why this specific tier fits this specific lead — reference an audit signal or pain point so the rep can quote it on the discovery call)`
+    : "";
+
+  return `${industryContext}${offerContext}${confidenceCaveat}${packagesMenu}
 Analyze the following business and produce a JSON assessment.
 
 Business Information:
@@ -240,7 +331,7 @@ ${reasonCodesGuidance}
 - best_sales_angle: string (the best sales angle for approaching this business, 1 sentence)
 ${offerLevels}
 - personalized_first_message: string (a personalized cold outreach message for WhatsApp/email, friendly and professional, max 3 sentences)
-- expected_price_band: string (e.g. "£500-800", "£800-1500", "£1500-3000")
+- expected_price_band: string (e.g. "£500-800", "£800-1500", "£1500-3000")${packageFields}
 
 Respond ONLY with valid JSON, no markdown, no explanation.`;
 }
@@ -250,6 +341,30 @@ export interface AnalysisWorkspaceContext {
   offerName?: string | null;
   valueProposition?: string | null;
   language?: string | null;
+  /**
+   * Hybrid-niche child slug (e.g. "fnb-bar-club"). When set, the
+   * prompt swaps the generic F&B framing for a sub-niche-specific
+   * one that names FineDine modules and pain points relevant to that
+   * format. Pass `null` when the lead is unclassified or when the
+   * confidence gate (below) wants to fall back to the parent.
+   */
+  subNicheSlug?: string | null;
+  /**
+   * Classifier confidence (0..1). Pass 1.0 for MANUAL overrides.
+   * The caller is expected to have already applied the hard gate
+   * (passing `subNicheSlug = null` when confidence is too low for
+   * AUTO source); this field powers a softer in-prompt caveat.
+   */
+  subNicheConfidence?: number | null;
+  /**
+   * Workspace-defined ServicePackage tiers (Settings -> Service
+   * Packages). Caller pre-loads them with prisma.servicePackage.findMany.
+   * When non-empty, the prompt asks Gemini for a `recommended_package_id`
+   * pinned to one of these ids. Empty list = falls back to the legacy
+   * STARTER/GROWTH/SALES enum recommendation, preserving v1 behaviour
+   * for tenants that haven't configured priced tiers yet.
+   */
+  servicePackages?: AnalysisServicePackage[] | null;
 }
 
 /**
@@ -318,6 +433,9 @@ export async function analyzeLeadWithGemini(
     workspaceCtx.niche ?? null,
     workspaceCtx.offerName ?? null,
     workspaceCtx.valueProposition ?? null,
+    workspaceCtx.subNicheSlug ?? null,
+    workspaceCtx.subNicheConfidence ?? null,
+    workspaceCtx.servicePackages ?? [],
   );
 
   const reviewBlock = formatReviewContextForAnalysis(reviewContext);

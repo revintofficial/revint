@@ -71,7 +71,7 @@ describe("planFromEvent - lead_created", () => {
       workspaceId: workspace.id,
       leadId: lead.id,
     });
-    const { session, plan } = await getSession(result.id);
+    const { session, plan } = await getSession(result!.id);
 
     const ids = plan.map((s) => s.stepId).sort();
     expect(ids).toEqual(
@@ -95,7 +95,7 @@ describe("planFromEvent - user_one_click_pitch", () => {
       userId: user.id,
       leadId: lead.id,
     });
-    const { session, plan } = await getSession(result.id);
+    const { session, plan } = await getSession(result!.id);
     const ids = plan.map((s) => s.stepId).sort();
     expect(ids).toEqual(["mockup", "opener", "video"].sort());
     expect(session.triggeredBy).toBe("USER_BUTTON");
@@ -111,7 +111,7 @@ describe("planFromEvent - user_deep_research", () => {
       userId: user.id,
       leadId: lead.id,
     });
-    const { session, plan } = await getSession(result.id);
+    const { session, plan } = await getSession(result!.id);
     expect(plan).toHaveLength(9);
     const ids = plan.map((s) => s.stepId).sort();
     expect(ids).toEqual(
@@ -140,7 +140,7 @@ describe("planFromEvent - user_receptionist_with_kb", () => {
       userId: user.id,
       leadId: lead.id,
     });
-    const { session, plan } = await getSession(result.id);
+    const { session, plan } = await getSession(result!.id);
     expect(plan).toHaveLength(2);
     const receptionist = plan.find((s) => s.stepId === "receptionist");
     expect(receptionist!.dependsOn).toEqual(["webcrawl"]);

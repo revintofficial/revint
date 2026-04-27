@@ -1,7 +1,19 @@
+export interface PlaceAddressComponent {
+  longText: string;
+  shortText: string;
+  // Google emits a list of typed roles per component, e.g.
+  // ["administrative_area_level_2", "political"] for "Kartal".
+  types: string[];
+  languageCode?: string;
+}
+
 export interface PlaceResult {
   id: string;
   displayName?: { text: string; languageCode: string };
   formattedAddress?: string;
+  // Structured breakdown of the address. Optional because legacy /
+  // detail-view code paths don't always request this field.
+  addressComponents?: PlaceAddressComponent[];
   websiteUri?: string;
   googleMapsUri?: string;
   nationalPhoneNumber?: string;
@@ -19,12 +31,29 @@ export interface PlacesSearchResponse {
 
 export interface DiscoveryQuery {
   textQuery: string;
+  // Soft hint — Google ranks places inside the circle higher but
+  // does NOT exclude others. Useful when we only have a fuzzy
+  // location (e.g. neighbourhood name without coordinates).
   locationBias?: {
     circle: {
       center: { latitude: number; longitude: number };
       radius: number;
     };
   };
+  // Hard exclude — Google drops any place outside the circle. We
+  // prefer this whenever we have geocoded coordinates (see
+  // src/lib/geocoding.ts) so a search for "Istanbul Kartal" cannot
+  // surface a hotel in Maltepe or Basel.
+  locationRestriction?: {
+    circle: {
+      center: { latitude: number; longitude: number };
+      radius: number;
+    };
+  };
+  // Server-side type filter. e.g. ["restaurant", "bar"] makes Google
+  // return only those primary types — the cheapest way to keep
+  // "food truck" from matching a truck dealer.
+  includedTypes?: string[];
 }
 
 export interface WebsiteFeatures {
@@ -134,6 +163,20 @@ export interface GeminiAnalysis {
   suggested_offer: "starter" | "growth" | "sales";
   personalized_first_message: string;
   expected_price_band: string;
+  /**
+   * Workspace-defined ServicePackage id the analyst chose for this
+   * lead. Null when the workspace has no packages configured (UI
+   * falls back to suggested_offer enum). Free-text id, NOT a Prisma
+   * enum, since packages are workspace-scoped runtime data.
+   */
+  recommended_package_id?: string | null;
+  /**
+   * 1-2 sentence justification: why this tier (e.g. "Independent
+   * single-location bistro - Base covers QR menu without paying for
+   * Premium's multi-brand console"). Surfaced verbatim in the lead
+   * detail UI so reps can quote it on the discovery call.
+   */
+  recommended_package_reason?: string | null;
 }
 
 export interface PlaceReview {

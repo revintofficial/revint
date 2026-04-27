@@ -101,6 +101,7 @@ function makeCtx(overrides: Partial<AgentWorkerContext> = {}): AgentWorkerContex
       conversionLink: null,
       socialProof: null,
       branding: null,
+      niche: "WEB_AGENCY",
     },
     memory: [],
     plannerSessionId: null,
