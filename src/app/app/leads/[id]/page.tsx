@@ -302,17 +302,40 @@ export default function LeadDetailPage({
   const [dossierCollapsed, setDossierCollapsed] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/leads/${id}`)
-      .then((r) => r.json())
-      .then((data) => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/leads/${id}`);
+        if (cancelled) return;
+        if (!res.ok) {
+          // 404 / 401 / 500 - keep `lead` null so the empty state renders
+          // instead of trying to consume an `{ error }` body as a Lead.
+          setLead(null);
+          return;
+        }
+        const data = await res.json();
+        if (cancelled) return;
+        if (!data || typeof data !== "object" || !data.id) {
+          setLead(null);
+          return;
+        }
         setLead(data);
         if (data.watchlistItem?.websitePlan) {
           setPlan(data.watchlistItem.websitePlan);
           setPlanSectionOpen(true);
         }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+      } catch (err) {
+        if (!cancelled) {
+          console.error(err);
+          setLead(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -334,24 +357,53 @@ export default function LeadDetailPage({
     }
   };
 
+  const refetchLead = async () => {
+    try {
+      const res = await fetch(`/api/leads/${id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && typeof data === "object" && data.id) {
+        setLead(data);
+      }
+    } catch (err) {
+      console.error("refetchLead failed", err);
+    }
+  };
+
   const updateStatus = async (status: string) => {
-    await fetch(`/api/leads/${id}/status`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    const res = await fetch(`/api/leads/${id}`);
-    setLead(await res.json());
+    try {
+      const res = await fetch(`/api/leads/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to update status");
+        return;
+      }
+      await refetchLead();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update status");
+    }
   };
 
   const runCrawl = async () => {
-    await fetch("/api/crawl", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ leadId: id }),
-    });
-    const res = await fetch(`/api/leads/${id}`);
-    setLead(await res.json());
+    try {
+      const res = await fetch("/api/crawl", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadId: id }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to crawl website");
+        return;
+      }
+      await refetchLead();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to crawl website");
+    }
   };
 
   const runAnalyze = async () => {

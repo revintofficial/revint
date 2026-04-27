@@ -93,6 +93,18 @@ export async function emit(
   const { planFromEvent } = await import("./planner");
   const session = await planFromEvent(event, payload);
 
+  if (!session) {
+    // planFromEvent returns null when the pipeline is disabled (lead_created
+    // with WorkspaceLeadPipeline.enabled = false). This is a no-op, not an
+    // error; return an empty string so callers that discard the return value
+    // continue without throwing.
+    logger.info("events.emit.skipped_pipeline_disabled", {
+      event,
+      workspaceId: payload.workspaceId,
+    });
+    return "";
+  }
+
   const rec: EventRecord = {
     event,
     payload,

@@ -63,13 +63,28 @@ export async function enqueueAdvance(sessionId: string): Promise<void> {
       err: err instanceof Error ? err.message : String(err),
     });
     // Fire-and-forget inline execution. We do NOT await to keep the
-    // HTTP request fast; if this throws it logs and dies without
-    // corrupting the session row (advance() is self-contained).
-    advance(sessionId).catch((e) => {
+    // HTTP request fast. If advance() itself throws, we mark the session
+    // FAILED so it does not stall silently in EXECUTING forever with no
+    // caller coming back to unblock it.
+    advance(sessionId).catch(async (e) => {
       logger.error("orchestrator.inline_advance_failed", {
         sessionId,
         err: e instanceof Error ? e.message : String(e),
       });
+      try {
+        await prisma.plannerSession.updateMany({
+          where: {
+            id: sessionId,
+            status: { notIn: ["COMPLETED", "FAILED", "CANCELLED"] },
+          },
+          data: { status: "FAILED" },
+        });
+      } catch (updateErr) {
+        logger.error("orchestrator.inline_advance_session_fail_update_failed", {
+          sessionId,
+          err: updateErr instanceof Error ? updateErr.message : String(updateErr),
+        });
+      }
     });
   }
 }
@@ -186,6 +201,14 @@ async function advanceLocked(sessionId: string): Promise<AdvanceResult> {
       step.status = "SUCCEEDED";
     } else if (actual === "FAILED" && step.status !== "FAILED") {
       step.status = step.optional ? "SKIPPED" : "FAILED";
+    } else if (actual === "CANCELLED" && step.status !== "FAILED") {
+      // A CANCELLED AgentRun (manual cancel, retries exhausted on a
+      // permanent error, or webhook abort) is terminal. We never want
+      // to leave the session stuck in EXECUTING because reconciliation
+      // didn't recognize the cancel state. Treat it like FAILED for
+      // session aggregation, but keep the message specific so the UI
+      // can surface "cancelled" instead of a generic failure.
+      step.status = step.optional ? "SKIPPED" : "FAILED";
     } else if (actual === "RUNNING" && step.status === "PENDING") {
       step.status = "RUNNING";
     }
@@ -292,6 +315,11 @@ async function advanceLocked(sessionId: string): Promise<AdvanceResult> {
           `run:${run.id}`,
           { type: "agent_run", runId: run.id },
           {
+            // 3 attempts total: 1 initial + 2 retries with exponential backoff.
+            // Retries only happen when executeAgentRun throws RetryableError
+            // (network transients, Gemini timeouts, outer deadline).
+            attempts: 3,
+            backoff: { type: "exponential", delay: 2000 },
             removeOnComplete: 100,
             removeOnFail: 50,
           },

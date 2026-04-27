@@ -22,8 +22,14 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import type { EventKind } from "@/lib/agent-workers/types";
-import type { PlannerTrigger } from "@/generated/prisma/client";
-import { getChain, type Chain } from "./chains";
+import type { PlannerTrigger, PipelinePreset, Plan } from "@/generated/prisma/client";
+import {
+  getChain,
+  getDefaultChain,
+  validateLeadPipelineChain,
+  ChainValidationError,
+  type Chain,
+} from "./chains";
 import { enqueueAdvance } from "./orchestrator";
 import type { EventPayload } from "./events";
 
@@ -79,6 +85,7 @@ function eventToTrigger(event: EventKind): PlannerTrigger {
     case "user_deep_research":
       return "USER_DEEP_RESEARCH";
     case "lead_created":
+    case "lead_reviews_updated":
     case "inbox_reply_received":
     default:
       return "EVENT";
@@ -90,6 +97,8 @@ function humanGoal(event: EventKind, payload: EventPayload): string {
   switch (event) {
     case "lead_created":
       return `Process newly created${lead}`;
+    case "lead_reviews_updated":
+      return `Refresh review-derived analyses${lead}`;
     case "inbox_reply_received":
       return `Attribute inbox reply${lead}`;
     case "user_one_click_pitch":
@@ -104,15 +113,117 @@ function humanGoal(event: EventKind, payload: EventPayload): string {
 }
 
 /**
+ * Resolves the `lead_created` chain for a workspace by reading the
+ * `WorkspaceLeadPipeline` row. If the row does not exist yet, a
+ * BALANCED preset row is inserted (workspaces created before this
+ * feature shipped get the default behaviour automatically).
+ *
+ * For non-CUSTOM presets the steps are regenerated from the preset
+ * + workspace plan on every read so a plan upgrade unlocks new
+ * workers immediately. CUSTOM presets are returned as-is.
+ *
+ * Returns `null` only when the saved CUSTOM steps are empty / invalid;
+ * the caller falls back to BALANCED in that case so a misconfigured
+ * row never silently disables ingest.
+ */
+export async function resolveLeadCreatedChain(workspaceId: string): Promise<Chain> {
+  const ws = await prisma.workspace.findUniqueOrThrow({
+    where: { id: workspaceId },
+    select: {
+      id: true,
+      plan: true,
+      leadPipeline: {
+        select: { preset: true, steps: true, enabled: true },
+      },
+    },
+  });
+
+  // No pipeline row yet — create one with BALANCED defaults so the
+  // backfill migration is not strictly required for new workspaces.
+  // Race-safe: if two parallel ingests fire on a brand-new workspace,
+  // the first wins via the `@unique workspaceId` constraint and the
+  // second does an upsert no-op.
+  if (!ws.leadPipeline) {
+    const preset: PipelinePreset = "BALANCED";
+    const steps = getDefaultChain(preset, ws.plan);
+    await prisma.workspaceLeadPipeline.upsert({
+      where: { workspaceId },
+      create: {
+        workspaceId,
+        preset,
+        steps: steps as unknown as object,
+        enabled: true,
+      },
+      update: {},
+    });
+    logger.info("planner.lead_pipeline_seeded", {
+      workspaceId,
+      preset,
+      stepCount: steps.length,
+    });
+    return steps;
+  }
+
+  if (!ws.leadPipeline.enabled) {
+    logger.info("planner.lead_pipeline_disabled", { workspaceId });
+    return [];
+  }
+
+  const preset = ws.leadPipeline.preset;
+
+  if (preset !== "CUSTOM") {
+    return getDefaultChain(preset, ws.plan);
+  }
+
+  // CUSTOM preset: trust the saved steps if they validate, fall back
+  // to BALANCED otherwise.
+  const saved = ws.leadPipeline.steps as unknown as Chain;
+  try {
+    validateLeadPipelineChain(saved);
+    return saved;
+  } catch (err) {
+    logger.warn("planner.lead_pipeline_custom_invalid_fallback_balanced", {
+      workspaceId,
+      error: err instanceof ChainValidationError ? err.reason : String(err),
+    });
+    return getDefaultChain("BALANCED", ws.plan);
+  }
+}
+
+/**
+ * Public helper: returns the canonical chain for a (preset, plan)
+ * tuple. Used by the API + UI cost-estimator without touching the DB.
+ */
+export function getDefaultChainForUi(preset: PipelinePreset, plan: Plan): Chain {
+  return getDefaultChain(preset, plan);
+}
+
+/**
  * Persists a PlannerSession from a named event. Enqueues the first
  * orchestrator_advance job before returning.
  */
 export async function planFromEvent(
   event: EventKind,
   payload: EventPayload,
-): Promise<PlanResult> {
-  const chain = getChain(event);
+): Promise<PlanResult | null> {
+  // lead_created is workspace-configurable: the chain comes from the
+  // WorkspaceLeadPipeline row instead of CHAINS. All other events
+  // use the static CHAINS map.
+  const chain =
+    event === "lead_created"
+      ? await resolveLeadCreatedChain(payload.workspaceId)
+      : getChain(event);
+
   if (!chain || chain.length === 0) {
+    if (event === "lead_created") {
+      // Pipeline disabled via WorkspaceLeadPipeline.enabled = false.
+      // This is expected configuration, not an error — return null so
+      // the caller (emit) skips session creation quietly.
+      logger.info("planner.lead_pipeline_disabled_skip", {
+        workspaceId: payload.workspaceId,
+      });
+      return null;
+    }
     throw new Error(`Planner: no chain registered for event "${event}"`);
   }
 

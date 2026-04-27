@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
-import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 
 export async function GET() {
   try {
@@ -81,8 +81,6 @@ export async function GET() {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error("api.stats.error", { err: error });
-    return NextResponse.json({ error: "Failed to fetch stats", detail: message }, { status: 500 });
+    return internalError("api.stats.error", error);
   }
 }

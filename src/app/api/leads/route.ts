@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { sortByDistance, filterWithinMiles } from "@/lib/geo";
-import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 
 export async function GET(request: Request) {
   try {
@@ -67,24 +67,34 @@ export async function GET(request: Request) {
       };
     }
 
-    const orderBy: Record<string, string> = {};
-    if (sortBy === "score" || sortBy === "nearest") {
-      // For nearest we re-sort below by Haversine; here just order by recency.
-      orderBy.createdAt = sortOrder;
+    // Build orderBy. For score we sort by SalesOpportunity.opportunityScore
+    // (nulls last), falling back to createdAt for ties / leads without an
+    // opportunity row. For nearest we re-sort in app by Haversine.
+    type LeadOrderBy = Record<string, unknown>;
+    let orderBy: LeadOrderBy | LeadOrderBy[];
+    if (sortBy === "score") {
+      orderBy = [
+        {
+          salesOpportunity: {
+            opportunityScore: { sort: sortOrder, nulls: "last" },
+          },
+        },
+        { createdAt: "desc" },
+      ];
+    } else if (sortBy === "nearest") {
+      orderBy = { createdAt: sortOrder };
     } else {
-      orderBy[sortBy] = sortOrder;
+      orderBy = { [sortBy]: sortOrder };
     }
 
-    // For nearest mode we have to fetch a wider result then sort/filter in app
-    // (Postgres earthdistance is overkill for a few hundred leads).
-    const fetchLimit = isNearestSort || Number.isFinite(withinMiles)
-      ? Math.min(2000, limit * 10)
-      : limit;
-    const fetchSkip = isNearestSort || Number.isFinite(withinMiles)
-      ? 0
-      : (page - 1) * limit;
+    const isGeoMode = isNearestSort || Number.isFinite(withinMiles);
 
-    const [allLeads, total] = await Promise.all([
+    // For geo modes we fetch a wider result then sort/filter/slice in app.
+    // Postgres earthdistance is overkill for a few thousand leads.
+    const fetchLimit = isGeoMode ? Math.min(2000, limit * 10) : limit;
+    const fetchSkip = isGeoMode ? 0 : (page - 1) * limit;
+
+    const [allLeads, dbTotal] = await Promise.all([
       prisma.lead.findMany({
         where,
         include: {
@@ -102,35 +112,39 @@ export async function GET(request: Request) {
     ]);
 
     let leads: typeof allLeads | Array<typeof allLeads[number] & { distanceMiles: number | null }> = allLeads;
+    let filteredTotal = dbTotal;
 
     if (hasUserLoc && Number.isFinite(withinMiles)) {
       leads = filterWithinMiles(allLeads, userLat, userLng, withinMiles);
+      // Once we filter by radius the DB count no longer reflects what the
+      // user actually sees. Use the post-filter length (capped by fetchLimit
+      // - we accept this approximation since fetchLimit is generous).
+      filteredTotal = leads.length;
     }
 
     if (isNearestSort) {
       leads = sortByDistance(leads as typeof allLeads, userLat, userLng);
     }
 
-    if (isNearestSort || Number.isFinite(withinMiles)) {
+    if (isGeoMode) {
       const start = (page - 1) * limit;
       leads = leads.slice(start, start + limit);
     }
 
+    const total = isGeoMode ? filteredTotal : dbTotal;
     return NextResponse.json({
       leads,
       pagination: {
         page,
         limit,
-        total: isNearestSort || Number.isFinite(withinMiles) ? leads.length : total,
-        totalPages: Math.ceil(total / limit),
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
       },
     });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.leads.fetch_error", { err: error });
-    const message = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ error: "Failed to fetch leads", detail: message }, { status: 500 });
+    return internalError("api.leads.fetch_error", error);
   }
 }

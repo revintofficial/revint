@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { sendCopilotMessage, CopilotQuotaExceeded } from "@/lib/copilot";
 import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
-import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 
 export async function GET() {
   try {
@@ -74,7 +74,6 @@ export async function POST(request: Request) {
         { status: 402 },
       );
     }
-    logger.error("api.copilot.error", { err });
-    return NextResponse.json({ error: "Copilot failed", detail: String(err) }, { status: 500 });
+    return internalError("api.copilot.error", err);
   }
 }

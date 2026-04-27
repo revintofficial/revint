@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createSupabaseBrowser } from "@/lib/supabase/browser";
+import { safeNextPath } from "@/lib/safe-redirect";
 import Image from "next/image";
 import { Loader2, Mail, Check, AlertCircle } from "lucide-react";
 
@@ -28,7 +29,7 @@ function resolveNext(params: URLSearchParams): string {
     if (cycle === "monthly" || cycle === "annual") checkoutParams.set("cycle", cycle);
     return `/app/settings/billing?${checkoutParams.toString()}`;
   }
-  return params.get("next") || "/app/dashboard";
+  return safeNextPath(params.get("next"), "/app/dashboard");
 }
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {

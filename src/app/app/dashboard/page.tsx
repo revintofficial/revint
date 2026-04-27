@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +24,7 @@ import {
   ArrowUpRight,
   ArrowRight,
   Sparkles,
+  CircleX,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -88,8 +89,14 @@ function getNextAction(stats: Stats): { message: string; action: string; href: s
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  // Distinguish "load failed" from "no data yet" - the dashboard used
+  // to show the same "No data yet" empty state for both, which made
+  // network/auth errors look like a fresh-account onboarding nudge.
+  const [loadFailed, setLoadFailed] = useState(false);
 
-  useEffect(() => {
+  const loadStats = useCallback(() => {
+    setLoading(true);
+    setLoadFailed(false);
     fetch("/api/stats")
       .then((r) => {
         if (!r.ok) throw new Error(`API ${r.status}`);
@@ -105,9 +112,16 @@ export default function DashboardPage() {
           analyzeStatus: data.analyzeStatus ?? [],
         });
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error("dashboard.stats_failed", err);
+        setLoadFailed(true);
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
 
   if (loading) {
     return (
@@ -129,6 +143,23 @@ export default function DashboardPage() {
   }
 
   if (!stats) {
+    if (loadFailed) {
+      return (
+        <div className="p-4 sm:p-6 md:p-8 lg:p-10">
+          <Card className="p-12 text-center">
+            <CircleX className="w-12 h-12 mx-auto mb-4" style={{ color: "var(--leadac-muted)" }} />
+            <h3 className="text-lg font-semibold text-white mb-2">
+              We couldn&apos;t load your dashboard
+            </h3>
+            <p className="text-sm mb-4" style={{ color: "var(--leadac-text-2)" }}>
+              Stats failed to load. Check your connection and try again — your
+              data is safe.
+            </p>
+            <Button onClick={loadStats}>Retry</Button>
+          </Card>
+        </div>
+      );
+    }
     return (
       <div className="p-4 sm:p-6 md:p-8 lg:p-10">
         <Card className="p-12 text-center">

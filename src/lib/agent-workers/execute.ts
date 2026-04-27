@@ -61,13 +61,25 @@ function hasPublicWebhookIngress(): boolean {
   }
 }
 
-export async function executeAgentRun(runId: string): Promise<void> {
+export async function executeAgentRun(
+  runId: string,
+  opts?: { isRetry?: boolean },
+): Promise<void> {
   const run = await prisma.agentRun.findUnique({ where: { id: runId } });
   if (!run) {
     logger.warn("agent_run.execute.missing", { runId });
     return;
   }
-  if (run.status !== "PENDING" && run.status !== "RUNNING") {
+
+  // BullMQ retry: the previous attempt marked the row FAILED before
+  // rethrowing the RetryableError. Reset it to RUNNING so this attempt
+  // can proceed from the beginning rather than early-returning below.
+  if (run.status === "FAILED" && opts?.isRetry) {
+    await prisma.agentRun.update({
+      where: { id: runId },
+      data: { status: "RUNNING", startedAt: new Date(), finishedAt: null, errorMsg: null },
+    });
+  } else if (run.status !== "PENDING" && run.status !== "RUNNING") {
     logger.warn("agent_run.execute.not_runnable", { runId, status: run.status });
     return;
   }
@@ -142,7 +154,9 @@ export async function executeAgentRun(runId: string): Promise<void> {
           kind: run.workerKind,
           reason: startResult.reason,
         });
-        if (run.plannerSessionId) await notifyOrchestrator(run.plannerSessionId);
+        if (run.plannerSessionId) {
+          await safeNotifyOrchestrator(run.plannerSessionId, runId);
+        }
         return;
       }
 
@@ -239,15 +253,31 @@ export async function executeAgentRun(runId: string): Promise<void> {
       tokens: result.costTokens ?? 0,
       cents: result.costUsdCents ?? 0,
     });
-
-    // Notify planner if this run belongs to a session. notifyOrchestrator
-    // throws on failure (swallowing would leave the session stuck
-    // EXECUTING forever with no downstream advance call).
-    if (run.plannerSessionId) {
-      await notifyOrchestrator(run.plannerSessionId);
-    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+
+    if (err instanceof RetryableError) {
+      // Mark the run FAILED for observability, but rethrow so BullMQ can
+      // reschedule the job with exponential backoff. The next attempt will
+      // receive isRetry=true and reset the row back to RUNNING before
+      // re-executing. We intentionally do NOT notify the orchestrator here
+      // because the step is not yet terminal — more attempts are coming.
+      logger.warn("agent_run.execute.retryable_failure", {
+        runId,
+        kind: run.workerKind,
+        err: msg,
+      });
+      await prisma.agentRun.update({
+        where: { id: runId },
+        data: {
+          status: "FAILED",
+          finishedAt: new Date(),
+          errorMsg: `retryable: ${msg}`.slice(0, 2000),
+        },
+      });
+      throw err;
+    }
+
     logger.error("agent_run.execute.failed", {
       runId,
       kind: run.workerKind,
@@ -262,8 +292,19 @@ export async function executeAgentRun(runId: string): Promise<void> {
       },
     });
     if (run.plannerSessionId) {
-      await notifyOrchestrator(run.plannerSessionId);
+      await safeNotifyOrchestrator(run.plannerSessionId, runId);
     }
+    return;
+  }
+
+  // Run completed successfully. The orchestrator notification is
+  // intentionally outside the main try/catch above: a failure to
+  // enqueue the planner advance job MUST NOT flip the just-saved
+  // SUCCEEDED row back to FAILED. The worker did its job; the
+  // session can be advanced manually or by the watchdog. We log the
+  // notify failure loudly so on-call sees it.
+  if (run.plannerSessionId) {
+    await safeNotifyOrchestrator(run.plannerSessionId, runId);
   }
 }
 
@@ -381,16 +422,34 @@ async function persistMemoryWrites(
  * run belongs to. Lazy-imported to keep `execute.ts` free of a
  * direct dependency on the orchestrator.
  *
- * We do NOT swallow failures here: if the queue is unreachable AND
- * the enqueueAdvance fallback-to-inline path also throws, the session
- * would otherwise be stuck EXECUTING forever with no caller coming
- * back to advance it. Throwing here lets executeAgentRun mark the
- * run FAILED, which in turn triggers a dev alert and the session can
- * be manually retried.
+ * Throws on failure; callers that must not roll back a SUCCEEDED row
+ * should use `safeNotifyOrchestrator`.
  */
 async function notifyOrchestrator(sessionId: string): Promise<void> {
   const { enqueueAdvance } = await import("@/lib/ai-core/orchestrator");
   await enqueueAdvance(sessionId);
+}
+
+/**
+ * Best-effort planner advance: catches and logs any error so an
+ * orchestrator failure cannot revert a successful AgentRun back to
+ * FAILED. The session may still be advanced by the watchdog or a
+ * manual retry; the run row already records the truth.
+ */
+async function safeNotifyOrchestrator(
+  sessionId: string,
+  runId: string,
+): Promise<void> {
+  try {
+    await notifyOrchestrator(sessionId);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error("agent_run.execute.notify_failed", {
+      runId,
+      sessionId,
+      err: msg,
+    });
+  }
 }
 
 /**
@@ -517,11 +576,12 @@ export async function finalizeApifyAgentRun(
       },
     });
     if (run.plannerSessionId) {
-      await notifyOrchestrator(run.plannerSessionId);
+      await safeNotifyOrchestrator(run.plannerSessionId, runId);
     }
     return;
   }
 
+  let succeeded = false;
   try {
     const finalize = await resolveWorkerFinalize(run.workerKind);
     if (!finalize) {
@@ -557,16 +617,14 @@ export async function finalizeApifyAgentRun(
       },
     });
 
+    succeeded = true;
+
     logger.info("agent_run.finalize.done", {
       runId,
       kind: run.workerKind,
       apifyRunId: payload.apifyRunId,
       cents: payload.costUsdCents,
     });
-
-    if (run.plannerSessionId) {
-      await notifyOrchestrator(run.plannerSessionId);
-    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     logger.error("agent_run.finalize.failed", {
@@ -583,8 +641,17 @@ export async function finalizeApifyAgentRun(
         errorMsg: msg.slice(0, 2000),
       },
     });
-    if (run.plannerSessionId) {
-      await notifyOrchestrator(run.plannerSessionId);
-    }
   }
+
+  // Always advance the planner: success and failure both transition
+  // the AgentRun to a terminal state, so the orchestrator should be
+  // notified either way. Errors are swallowed by safeNotifyOrchestrator
+  // so a queue blip does not undo the SUCCEEDED row above.
+  if (run.plannerSessionId) {
+    await safeNotifyOrchestrator(run.plannerSessionId, runId);
+  }
+
+  // succeeded is referenced for log clarity in case future telemetry
+  // wants to gate on the outcome at this layer.
+  void succeeded;
 }

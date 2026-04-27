@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { assertSafeFetchUrl, UrlGuardError } from "@/lib/url-guard";
+import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
 
 interface ContentAnalysis {
   url: string;
@@ -313,22 +315,37 @@ function analyzeHtml(html: string, url: string): ContentAnalysis {
 
 export async function POST(request: Request) {
   try {
-    await requireUser();
-    const body = await request.json();
-    const { url } = body;
+    const session = await requireUser();
+    const rl = await checkRateLimit(session.workspaceId, LIMITS.websiteCheck);
+    if (!rl.ok) return rateLimitResponse(rl);
+    const body = await request.json().catch(() => null);
+    const url = body && typeof body === "object" ? (body as { url?: unknown }).url : undefined;
 
-    if (!url) {
+    if (typeof url !== "string" || !url) {
       return NextResponse.json(
         { error: "URL is required" },
         { status: 400 }
       );
     }
 
+    // SSRF guard: rejects non-http(s), private/loopback/link-local addresses,
+    // and DNS-rebinding-style hostnames (which would otherwise let an
+    // authenticated user probe internal services from the app server).
+    let safeUrl: URL;
+    try {
+      safeUrl = await assertSafeFetchUrl(url);
+    } catch (err) {
+      if (err instanceof UrlGuardError) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+      throw err;
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
     try {
-      const response = await fetch(url, {
+      const response = await fetch(safeUrl.toString(), {
         signal: controller.signal,
         headers: {
           "User-Agent":

@@ -16,10 +16,21 @@ export default async function AppLayout({
   // Redirect workspace owners who haven't completed onboarding to the wizard.
   // Skip if the workspace already has leads — that means it's an existing
   // workspace that pre-dates the onboarding flow; auto-mark it complete.
+  //
+  // We also exempt billing/auth-callback paths: paid-intent signups
+  // (?plan=PRO_TEAM&autocheckout=1) land on /app/settings/billing before
+  // they finish onboarding. Forcing them back into the wizard would
+  // break the "pricing CTA → Stripe Checkout in one click" funnel.
   if (session.role === "OWNER" && !session.workspace.onboardingCompletedAt) {
     const headersList = await headers();
     const pathname = headersList.get("x-pathname") ?? "";
-    if (!pathname.startsWith("/app/onboarding")) {
+    const ONBOARDING_EXEMPT_PREFIXES = [
+      "/app/onboarding",
+      "/app/settings/billing",
+      "/auth/callback",
+    ];
+    const isExempt = ONBOARDING_EXEMPT_PREFIXES.some((p) => pathname.startsWith(p));
+    if (!isExempt) {
       // Check if workspace has existing leads (pre-onboarding workspace).
       const leadCount = await prisma.lead.count({
         where: { workspaceId: session.workspaceId },

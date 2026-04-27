@@ -13,7 +13,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 import {
   exportReceptionistArtifact,
   type ReceptionistArtifact,
@@ -106,10 +106,6 @@ export async function GET(
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.agent_run.export_error", { err });
-    return NextResponse.json(
-      { error: "Failed to export run", detail: String(err) },
-      { status: 500 },
-    );
+    return internalError("api.agent_run.export_error", err);
   }
 }

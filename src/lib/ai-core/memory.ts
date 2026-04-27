@@ -104,32 +104,65 @@ export async function upsert(input: MemoryUpsertInput): Promise<string> {
   const metadata = (input.metadata ?? {}) as Record<string, unknown>;
 
   // Upsert path for rows with refType+refId: look up an existing row
-  // in the same workspace and replace its content.
+  // in the same workspace and replace its content. The DB has a
+  // unique constraint on (workspaceId, refType, refId) so two
+  // concurrent callers never end up with duplicate rows; the loser
+  // retries the lookup and updates the winner's row.
   if (input.refType && input.refId) {
-    const existing = await prisma.semanticMemory.findFirst({
-      where: {
-        workspaceId: input.workspaceId,
-        refType: input.refType,
-        refId: input.refId,
-      },
-      select: { id: true },
-    });
-
-    if (existing) {
-      await prisma.semanticMemory.update({
-        where: { id: existing.id },
-        data: {
-          kind: input.kind,
-          leadId: input.leadId ?? null,
-          text: input.text,
-          metadata: metadata as never,
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const existing = await prisma.semanticMemory.findFirst({
+        where: {
+          workspaceId: input.workspaceId,
+          refType: input.refType,
+          refId: input.refId,
         },
+        select: { id: true },
       });
-      if (input.embedding) {
-        await writeEmbedding(existing.id, input.embedding);
+
+      if (existing) {
+        await prisma.semanticMemory.update({
+          where: { id: existing.id },
+          data: {
+            kind: input.kind,
+            leadId: input.leadId ?? null,
+            text: input.text,
+            metadata: metadata as never,
+          },
+        });
+        if (input.embedding) {
+          await writeEmbedding(existing.id, input.embedding);
+        }
+        return existing.id;
       }
-      return existing.id;
+
+      try {
+        const created = await prisma.semanticMemory.create({
+          data: {
+            workspaceId: input.workspaceId,
+            kind: input.kind,
+            leadId: input.leadId ?? null,
+            refType: input.refType,
+            refId: input.refId,
+            text: input.text,
+            metadata: metadata as never,
+          },
+          select: { id: true },
+        });
+        if (input.embedding) {
+          await writeEmbedding(created.id, input.embedding);
+        }
+        return created.id;
+      } catch (err) {
+        const code = (err as { code?: string }).code;
+        if (code === "P2002" && attempt === 0) {
+          // Lost the race - the row was created between findFirst
+          // and create. Loop once and update the winner.
+          continue;
+        }
+        throw err;
+      }
     }
+    throw new MemoryError("SemanticMemory upsert failed after retry");
   }
 
   const created = await prisma.semanticMemory.create({

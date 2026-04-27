@@ -1,45 +1,81 @@
 /**
  * POST /api/leads/[id]/explain
  *
- * Lead Dossier endpoint. Gathers every collected signal about a lead
- * (website audit, sales opportunity, review analysis, raw Google
- * reviews, voice notes, every SUCCEEDED AgentRun output, and semantic
- * memory rows) and pipes the whole raw payload to Gemini 2.5 Flash
- * which returns an English Markdown brief. No caching - the lead detail
- * hero band "AI dossier" button hits this fresh on every click.
+ * Lead Dossier endpoint. Cache-first: if a SUCCEEDED
+ * `LEAD_DOSSIER_GENERATOR` AgentRun exists and is fresher than the
+ * latest source signal (review analysis, audit, scorer output, or
+ * any other lead-scoped AgentRun), the cached markdown is served
+ * immediately. Otherwise we create a new AgentRun, execute the
+ * worker inline, and return its output. This means the dossier
+ * button is instant after the first click (formerly hit fresh Gemini
+ * on every click) and only refreshes when the underlying data has
+ * actually changed.
  *
  * Multi-tenant: every query filters by `session.workspaceId`; the lead
  * lookup uses `findFirst` so cross-workspace lead ids return 404.
- *
- * Token guard: any single agent-run `outputJson` larger than 60 KB is
- * replaced with a truncation marker so a single oversized run (e.g. a
- * Website Mockup HTML artifact) can't push the prompt past Gemini's
- * 1M input context or blow the timeout budget.
  */
 import { NextResponse } from "next/server";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { generateLeadDossier, type LeadDossierPayload } from "@/lib/gemini";
-import { listByLead as listMemoryByLead } from "@/lib/ai-core/memory";
+import { internalError } from "@/lib/api-errors";
+import { executeAgentRun } from "@/lib/agent-workers/execute";
+import type { LeadDossierWorkerOutput } from "@/lib/agent-workers/lead-dossier-generator";
 
-const MAX_OUTPUT_JSON_BYTES = 60_000;
-const MAX_TOTAL_PAYLOAD_BYTES = 120_000;
+/**
+ * Returns the most recent timestamp at which any data the dossier
+ * is built from could have changed. The cached dossier is served
+ * only when it was generated AFTER this timestamp.
+ *
+ * Sources considered:
+ *   - reviewAnalysis.analyzedAt (re-analysis after new reviews)
+ *   - websiteAudit.updatedAt (re-crawl)
+ *   - salesOpportunity.updatedAt (re-score)
+ *   - latest SUCCEEDED AgentRun for this lead OTHER than dossier
+ *     itself (Apify enrichment, social scraper etc.)
+ *   - the lead.updatedAt as a last-resort lower bound
+ */
+async function latestSourceTimestamp(
+  workspaceId: string,
+  leadId: string,
+): Promise<Date | null> {
+  const [lead, latestRun] = await Promise.all([
+    prisma.lead.findFirst({
+      where: { id: leadId, workspaceId },
+      select: {
+        updatedAt: true,
+        reviewAnalysis: { select: { analyzedAt: true } },
+        websiteAudit: { select: { createdAt: true } },
+        salesOpportunity: { select: { updatedAt: true } },
+      },
+    }),
+    prisma.agentRun.findFirst({
+      where: {
+        workspaceId,
+        leadId,
+        status: "SUCCEEDED",
+        workerKind: { not: "LEAD_DOSSIER_GENERATOR" },
+      },
+      orderBy: { finishedAt: "desc" },
+      select: { finishedAt: true },
+    }),
+  ]);
+  if (!lead) return null;
 
-function truncateUnknown(value: unknown, label: string): unknown {
-  if (value == null) return value;
-  let serialized: string;
-  try {
-    serialized = JSON.stringify(value);
-  } catch {
-    return `<unserialisable ${label}>`;
+  const candidates: Array<Date | null | undefined> = [
+    lead.updatedAt,
+    lead.reviewAnalysis?.analyzedAt,
+    lead.websiteAudit?.createdAt,
+    lead.salesOpportunity?.updatedAt,
+    latestRun?.finishedAt,
+  ];
+
+  let max: Date | null = null;
+  for (const c of candidates) {
+    if (!c) continue;
+    if (!max || c > max) max = c;
   }
-  if (serialized.length <= MAX_OUTPUT_JSON_BYTES) return value;
-  return {
-    __truncated: true,
-    reason: `${label} exceeded ${MAX_OUTPUT_JSON_BYTES} bytes (actual ${serialized.length})`,
-    preview: serialized.slice(0, 2_000),
-  };
+  return max;
 }
 
 export async function POST(
@@ -50,161 +86,119 @@ export async function POST(
     const session = await requireUser();
     const { id: leadId } = await params;
 
+    // Authorization + existence check up front so we can return 404
+    // before doing any cache work.
     const lead = await prisma.lead.findFirst({
       where: { id: leadId, workspaceId: session.workspaceId },
-      include: {
-        websiteAudit: true,
-        salesOpportunity: true,
-        reviewAnalysis: true,
-        googleReviews: {
-          orderBy: { publishTime: "desc" },
-          take: 50,
-          select: {
-            authorName: true,
-            rating: true,
-            text: true,
-            relativeTime: true,
-            publishTime: true,
-          },
-        },
-        voiceNotes: {
-          orderBy: { createdAt: "desc" },
-          take: 30,
-          select: {
-            id: true,
-            transcript: true,
-            createdAt: true,
-          },
-        },
-      },
+      select: { id: true },
     });
-
     if (!lead) {
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
-    const agentRunRows = await prisma.agentRun.findMany({
+    // 1. Cache check — most recent SUCCEEDED dossier run for this lead.
+    const cached = await prisma.agentRun.findFirst({
       where: {
         workspaceId: session.workspaceId,
         leadId,
+        workerKind: "LEAD_DOSSIER_GENERATOR",
         status: "SUCCEEDED",
       },
       orderBy: { finishedAt: "desc" },
-      take: 50,
-      select: {
-        workerKind: true,
-        status: true,
-        finishedAt: true,
-        inputsJson: true,
-        outputJson: true,
-        artifactUrl: true,
+      select: { id: true, finishedAt: true, outputJson: true },
+    });
+
+    const sourceTs = await latestSourceTimestamp(session.workspaceId, leadId);
+
+    if (cached?.outputJson && cached.finishedAt) {
+      const cachedFresh = !sourceTs || cached.finishedAt >= sourceTs;
+      if (cachedFresh) {
+        const cachedOut = cached.outputJson as unknown as LeadDossierWorkerOutput;
+        if (cachedOut?.markdown) {
+          logger.info("api.lead.explain.cache_hit", {
+            leadId,
+            runId: cached.id,
+            ageMs: Date.now() - cached.finishedAt.getTime(),
+          });
+          return NextResponse.json({
+            leadId,
+            markdown: cachedOut.markdown,
+            generatedAt: cachedOut.generatedAt ?? cached.finishedAt.toISOString(),
+            stats: cachedOut.stats ?? {
+              agentRunCount: 0,
+              memoryRowCount: 0,
+              reviewCount: 0,
+              voiceNoteCount: 0,
+            },
+            cached: true,
+          });
+        }
+      }
+    }
+
+    // 2. Cache miss / stale — schedule + execute inline.
+    const newRun = await prisma.agentRun.create({
+      data: {
+        workspaceId: session.workspaceId,
+        leadId,
+        userId: session.user.id,
+        workerKind: "LEAD_DOSSIER_GENERATOR",
+        status: "PENDING",
+        inputsJson: {},
       },
+      select: { id: true },
     });
 
-    const memoryRows = await listMemoryByLead({
-      workspaceId: session.workspaceId,
-      leadId,
-      take: 60,
+    const startedAt = Date.now();
+    await executeAgentRun(newRun.id);
+    const elapsed = Date.now() - startedAt;
+
+    const finished = await prisma.agentRun.findUniqueOrThrow({
+      where: { id: newRun.id },
+      select: { status: true, outputJson: true, errorMsg: true, finishedAt: true },
     });
 
-    const {
-      websiteAudit,
-      salesOpportunity,
-      reviewAnalysis,
-      googleReviews,
-      voiceNotes,
-      ...leadBase
-    } = lead;
-
-    const payload: LeadDossierPayload = {
-      lead: leadBase as unknown as Record<string, unknown>,
-      websiteAudit: (websiteAudit ?? null) as Record<string, unknown> | null,
-      salesOpportunity: (salesOpportunity ?? null) as Record<string, unknown> | null,
-      reviewAnalysis: (reviewAnalysis ?? null) as Record<string, unknown> | null,
-      googleReviews: googleReviews as unknown as Array<Record<string, unknown>>,
-      voiceNotes: voiceNotes as unknown as Array<Record<string, unknown>>,
-      agentRuns: agentRunRows.map((r) => ({
-        workerKind: r.workerKind,
-        status: r.status,
-        finishedAt: r.finishedAt ? r.finishedAt.toISOString() : null,
-        inputs: truncateUnknown(r.inputsJson, `AgentRun(${r.workerKind}).inputsJson`),
-        output: truncateUnknown(r.outputJson, `AgentRun(${r.workerKind}).outputJson`),
-        artifactUrl: r.artifactUrl,
-      })),
-      semanticMemory: memoryRows.map((m) => ({
-        kind: m.kind,
-        refType: m.refType,
-        refId: m.refId,
-        text: m.text.length > 1_500 ? `${m.text.slice(0, 1_500)}...` : m.text,
-        metadata: m.metadata,
-        createdAt: m.createdAt.toISOString(),
-      })),
-    };
-
-    let serializedPayload: string;
-    try {
-      serializedPayload = JSON.stringify(payload);
-    } catch (err) {
-      logger.error("api.lead.explain.serialise_error", { leadId, err });
+    if (finished.status !== "SUCCEEDED" || !finished.outputJson) {
+      // The worker error string can include prompt fragments / model
+      // hints, so we log it server-side and return a generic message.
+      logger.warn("api.lead.explain.worker_failed", {
+        leadId,
+        runId: newRun.id,
+        status: finished.status,
+        err: finished.errorMsg,
+        ms: elapsed,
+      });
       return NextResponse.json(
-        { error: "Failed to serialise lead payload" },
+        { error: "Failed to generate lead dossier" },
         { status: 500 },
       );
     }
 
-    if (serializedPayload.length > MAX_TOTAL_PAYLOAD_BYTES) {
-      // Hard cap pass 2: drop the oldest agent runs and trim memory
-      // rows so the final prompt stays well under Gemini's budget.
-      while (
-        payload.agentRuns.length > 10 &&
-        JSON.stringify(payload).length > MAX_TOTAL_PAYLOAD_BYTES
-      ) {
-        payload.agentRuns.pop();
-      }
-      while (
-        payload.semanticMemory.length > 15 &&
-        JSON.stringify(payload).length > MAX_TOTAL_PAYLOAD_BYTES
-      ) {
-        payload.semanticMemory.pop();
-      }
-    }
-
-    const startedAt = Date.now();
-    const markdown = await generateLeadDossier(payload, "en");
-
+    const out = finished.outputJson as unknown as LeadDossierWorkerOutput;
     logger.info("api.lead.explain.generated", {
       leadId,
-      ms: Date.now() - startedAt,
-      agentRunCount: payload.agentRuns.length,
-      memoryRowCount: payload.semanticMemory.length,
-      reviewCount: payload.googleReviews.length,
-      outputChars: markdown.length,
+      runId: newRun.id,
+      ms: elapsed,
+      ...(out.stats ?? {}),
+      outputChars: out.markdown?.length ?? 0,
     });
 
     return NextResponse.json({
       leadId,
-      markdown,
-      generatedAt: new Date().toISOString(),
-      stats: {
-        agentRunCount: payload.agentRuns.length,
-        memoryRowCount: payload.semanticMemory.length,
-        reviewCount: payload.googleReviews.length,
-        voiceNoteCount: payload.voiceNotes.length,
+      markdown: out.markdown,
+      generatedAt: out.generatedAt ?? new Date().toISOString(),
+      stats: out.stats ?? {
+        agentRunCount: 0,
+        memoryRowCount: 0,
+        reviewCount: 0,
+        voiceNoteCount: 0,
       },
+      cached: false,
     });
   } catch (err) {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.lead.explain.error", {
-      err: err instanceof Error ? err.message : String(err),
-    });
-    return NextResponse.json(
-      {
-        error: "Failed to generate lead dossier",
-        detail: err instanceof Error ? err.message : String(err),
-      },
-      { status: 500 },
-    );
+    return internalError("api.lead.explain.error", err);
   }
 }

@@ -180,6 +180,26 @@ export function getPlan(plan: Plan): PlanDefinition {
   return PLANS[plan];
 }
 
+/**
+ * Human-readable label for a Plan enum value. Use this anywhere the
+ * UI is about to render the raw enum (which would print "PRO_TEAM"
+ * instead of "Pro Team"). Accepts loose string input because some
+ * server-rendered surfaces erase the Plan brand into a plain string;
+ * unknown values fall back to title-casing so we never print SHOUTY
+ * underscored tokens to the user.
+ */
+export function getPlanLabel(plan: Plan | string | null | undefined): string {
+  if (!plan) return "Unknown";
+  const def = PLANS[plan as Plan];
+  if (def?.name) return def.name;
+  // Defensive fallback: turn FOO_BAR into "Foo Bar".
+  return String(plan)
+    .toLowerCase()
+    .split("_")
+    .map((s) => (s.length > 0 ? s[0].toUpperCase() + s.slice(1) : s))
+    .join(" ");
+}
+
 /** P0.8: assert this workspace can invite an additional seat without exceeding tier max. */
 export function planAllowsAdditionalSeat(plan: Plan, currentSeatCount: number): boolean {
   return currentSeatCount < PLANS[plan].maxSeats;

@@ -12,7 +12,10 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { analyzeLeadWithGemini } from "@/lib/gemini";
+import {
+  analyzeLeadWithGemini,
+  type ReviewContextForAnalysis,
+} from "@/lib/gemini";
 import {
   calculateDeterministicScore,
   suggestOffer,
@@ -38,7 +41,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   try {
     const lead = await prisma.lead.findUniqueOrThrow({
       where: { id: leadId },
-      include: { websiteAudit: true },
+      include: { websiteAudit: true, reviewAnalysis: true },
     });
     const features = lead.websiteAudit?.rawFeaturesJson as unknown as WebsiteFeatures | null;
 
@@ -48,6 +51,29 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       lead.reviewCount,
       features,
     );
+
+    // Build the grounded review context for Gemini. ReviewAnalysis
+    // arrays are stored as JSON on Postgres, so coerce them to
+    // string[] defensively. Empty arrays + null summary are
+    // tolerated downstream and trigger the "no review data" branch
+    // in the prompt builder.
+    const ra = lead.reviewAnalysis;
+    const reviewContext: ReviewContextForAnalysis | null = ra
+      ? {
+          summary: ra.summary ?? null,
+          painPhrases: Array.isArray(ra.painPhrases)
+            ? (ra.painPhrases as unknown[]).filter(
+                (x): x is string => typeof x === "string",
+              )
+            : [],
+          strengthPhrases: Array.isArray(ra.strengthPhrases)
+            ? (ra.strengthPhrases as unknown[]).filter(
+                (x): x is string => typeof x === "string",
+              )
+            : [],
+          reviewsAnalyzedCount: ra.reviewsAnalyzedCount ?? 0,
+        }
+      : null;
 
     // When Gemini fails we must NOT silently substitute a fake "AI
     // analysis" with canned copy - that fake analysis then flows into
@@ -64,6 +90,12 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       lead.websiteUrl,
       features,
       ctx.workspace.language ?? "en",
+      {
+        offerName: ctx.workspace.offerName ?? null,
+        valueProposition: ctx.workspace.valueProposition ?? null,
+        language: ctx.workspace.language ?? null,
+      },
+      reviewContext,
     );
 
     const finalScore = Math.min(

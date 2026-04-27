@@ -29,11 +29,15 @@ export interface OfferContext {
 }
 
 export const NICHE_OPTIONS = [
-  { value: "WEB_AGENCY", label: "Web / Marketing Agency (default)" },
-  { value: "RESTAURANT_TECH", label: "Restaurant Tech (QR menu / digital ordering)" },
-  { value: "DENTAL", label: "Dental (coming soon)" },
-  { value: "REAL_ESTATE", label: "Real Estate (coming soon)" },
-];
+  { value: "WEB_AGENCY", label: "Web / Marketing Agency (default)", available: true },
+  {
+    value: "RESTAURANT_TECH",
+    label: "Restaurant Tech (QR menu / digital ordering)",
+    available: true,
+  },
+  { value: "DENTAL", label: "Dental (coming soon)", available: false },
+  { value: "REAL_ESTATE", label: "Real Estate (coming soon)", available: false },
+] as const;
 
 export const RESTAURANT_TECH_DEFAULTS = {
   offerName: "QR Menu & Digital Ordering",
@@ -91,6 +95,12 @@ export function OfferFields({
     onChange({ ...data, [k]: v });
 
   const handleNicheChange = (newNiche: string) => {
+    // Coming-soon niches are disabled in the <option> below, but a
+    // determined user could still POST the value through the API.
+    // Defensively reject the change on the client too so the form
+    // never enters an unsupported state.
+    const opt = NICHE_OPTIONS.find((n) => n.value === newNiche);
+    if (opt && !opt.available) return;
     const next: OfferContext = { ...data, niche: newNiche };
     if (newNiche === "RESTAURANT_TECH") {
       if (!data.offerName) next.offerName = RESTAURANT_TECH_DEFAULTS.offerName;
@@ -113,7 +123,9 @@ export function OfferFields({
           className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--leadac-500)/50"
         >
           {NICHE_OPTIONS.map((n) => (
-            <option key={n.value} value={n.value}>{n.label}</option>
+            <option key={n.value} value={n.value} disabled={!n.available}>
+              {n.label}
+            </option>
           ))}
         </select>
       </Field>

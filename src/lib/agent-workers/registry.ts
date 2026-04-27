@@ -56,7 +56,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: true,
     estimatedDurationMs: 15000,
-    implModule: () => import("./website-auditor").then((m) => ({ run: m.run })),
+    implModule: () =>
+      import("./website-auditor").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
   REVIEW_ANALYST: {
     kind: "REVIEW_ANALYST",
@@ -68,7 +72,24 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: true,
     estimatedDurationMs: 20000,
-    implModule: () => import("./review-analyst").then((m) => ({ run: m.run })),
+    dependsOn: ["GOOGLE_PLACES_REVIEWS"],
+    implModule: () => import("./review-analyst").then((m) => ({ run: m.run, memoryWrites: m.memoryWrites })),
+  },
+  GOOGLE_PLACES_REVIEWS: {
+    kind: "GOOGLE_PLACES_REVIEWS",
+    group: "intelligence",
+    displayName: "Google Places Reviews",
+    displayNameTr: "Google Places Yorumlari",
+    description: "Pre-loads up to 5 reviews from Google Places API on lead creation so REVIEW_ANALYST has a corpus to analyze. FREE-safe (one Places API call, no Gemini, no Apify).",
+    descriptionTr: "Lead olusturuldugunda Google Places API'den 5 yoruma kadar onceden yukler; REVIEW_ANALYST analiz edecek corpus'u bulur. FREE-uyumlu (tek Places API cagrisi, Gemini/Apify yok).",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 4000,
+    implModule: () =>
+      import("./google-places-reviews").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
   SALES_OPPORTUNITY_SCORER: {
     kind: "SALES_OPPORTUNITY_SCORER",
@@ -81,7 +102,10 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     phase1Enabled: true,
     estimatedDurationMs: 12000,
     implModule: () =>
-      import("./sales-opportunity-scorer").then((m) => ({ run: m.run })),
+      import("./sales-opportunity-scorer").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
   SOCIAL_SCRAPER: {
     kind: "SOCIAL_SCRAPER",
@@ -170,6 +194,23 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: false,
     estimatedDurationMs: 6000,
+  },
+  LEAD_DOSSIER_GENERATOR: {
+    kind: "LEAD_DOSSIER_GENERATOR",
+    group: "pitch",
+    displayName: "Lead Dossier Generator",
+    displayNameTr: "Lead Dosya Olusturucu",
+    description: "Synthesises every collected signal (audit, reviews, scorer, semantic memory, Apify runs) into a 2-minute Markdown brief. Output is cached on AgentRun so the dossier button serves instantly until source data changes.",
+    descriptionTr: "Toplanmis her sinyali (audit, yorumlar, scorer, semantic memory, Apify runlari) 2 dakikalik Markdown brief'e cevirir. Output AgentRun'da cache'lenir; kaynak data degismedikce buton aninda servis eder.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 12000,
+    memoryReads: [{ kinds: ["LEAD_PROFILE", "REVIEW_CHUNK"], topK: 10, scope: "lead" }],
+    implModule: () =>
+      import("./lead-dossier-generator").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
 
   // -------- Grup C: Deliverable (prospect-install packs) --------
@@ -308,7 +349,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO",
     phase1Enabled: true,
     estimatedDurationMs: 90000,
-    implModule: () => import("./apify/gmaps-deep").then((m) => ({ run: m.run })),
+    implModule: () =>
+      import("./apify/gmaps-deep").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
   APIFY_WEB_CRAWL_DEEP: {
     kind: "APIFY_WEB_CRAWL_DEEP",
@@ -320,7 +365,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO",
     phase1Enabled: true,
     estimatedDurationMs: 120000,
-    implModule: () => import("./apify/web-crawl-deep").then((m) => ({ run: m.run })),
+    implModule: () =>
+      import("./apify/web-crawl-deep").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
   APIFY_INSTAGRAM_DEEP: {
     kind: "APIFY_INSTAGRAM_DEEP",
@@ -332,7 +381,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO",
     phase1Enabled: true,
     estimatedDurationMs: 60000,
-    implModule: () => import("./apify/instagram-deep").then((m) => ({ run: m.run })),
+    implModule: () =>
+      import("./apify/instagram-deep").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
   APIFY_FACEBOOK_DEEP: {
     kind: "APIFY_FACEBOOK_DEEP",
@@ -344,7 +397,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO",
     phase1Enabled: true,
     estimatedDurationMs: 60000,
-    implModule: () => import("./apify/facebook-deep").then((m) => ({ run: m.run })),
+    implModule: () =>
+      import("./apify/facebook-deep").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
   APIFY_TIKTOK_DEEP: {
     kind: "APIFY_TIKTOK_DEEP",
@@ -356,7 +413,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO",
     phase1Enabled: true,
     estimatedDurationMs: 60000,
-    implModule: () => import("./apify/tiktok-deep").then((m) => ({ run: m.run })),
+    implModule: () =>
+      import("./apify/tiktok-deep").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
   APIFY_SERP_RANK: {
     kind: "APIFY_SERP_RANK",
@@ -392,7 +453,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO",
     phase1Enabled: true,
     estimatedDurationMs: 60000,
-    implModule: () => import("./apify/competitor-ads").then((m) => ({ run: m.run })),
+    implModule: () =>
+      import("./apify/competitor-ads").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
   APIFY_LINKEDIN_COMPANY: {
     kind: "APIFY_LINKEDIN_COMPANY",
@@ -404,7 +469,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO_TEAM",
     phase1Enabled: true,
     estimatedDurationMs: 75000,
-    implModule: () => import("./apify/linkedin-company").then((m) => ({ run: m.run })),
+    implModule: () =>
+      import("./apify/linkedin-company").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
   APIFY_REDDIT_MENTIONS: {
     kind: "APIFY_REDDIT_MENTIONS",
@@ -416,7 +485,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO",
     phase1Enabled: true,
     estimatedDurationMs: 45000,
-    implModule: () => import("./apify/reddit-mentions").then((m) => ({ run: m.run })),
+    implModule: () =>
+      import("./apify/reddit-mentions").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
   },
 };
 

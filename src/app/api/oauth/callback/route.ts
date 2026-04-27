@@ -3,10 +3,12 @@
  */
 
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { exchangeCodeForToken, type OAuthProvider } from "@/lib/oauth/providers";
 import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 
 interface ProfileResponse {
   email?: string;
@@ -60,6 +62,32 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "State workspace mismatch" }, { status: 403 });
     }
 
+    // CSRF defense: the state nonce we issued at /api/oauth/start was set in
+    // an httpOnly `oauth_state` cookie. The callback must present that exact
+    // nonce or we reject - this prevents an attacker from forcing a victim
+    // to link the attacker's mailbox to the victim's workspace.
+    const cookieStore = await cookies();
+    const cookieNonce = cookieStore.get("oauth_state")?.value;
+    if (!cookieNonce || cookieNonce !== state.nonce) {
+      logger.warn("api.oauth.state_nonce_mismatch", {
+        workspaceId: session.workspaceId,
+        userId: session.user.id,
+        provider: state.provider,
+        hasCookie: Boolean(cookieNonce),
+      });
+      return NextResponse.json(
+        { error: "OAuth state nonce mismatch" },
+        { status: 403 },
+      );
+    }
+    cookieStore.set("oauth_state", "", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 0,
+      path: "/",
+    });
+
     const tokens = await exchangeCodeForToken(state.provider, code);
     const email = await fetchProfile(state.provider, tokens.access_token);
     if (!email) {
@@ -92,7 +120,6 @@ export async function GET(request: Request) {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.oauth.callback_error", { err });
-    return NextResponse.json({ error: "OAuth callback failed", detail: String(err) }, { status: 500 });
+    return internalError("api.oauth.callback_error", err);
   }
 }

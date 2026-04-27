@@ -5,7 +5,15 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Plus, Trash2, Star, Package, GripVertical, Check } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, Plus, Trash2, Star, Package, Check } from "lucide-react";
 
 interface ServicePackage {
   id: string;
@@ -29,6 +37,7 @@ function PackageCard({ pkg, canEdit, onUpdate, onDelete }: PackageCardProps) {
   const [features, setFeatures] = useState<string[]>(pkg.features);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const isDirty =
     name !== pkg.name ||
@@ -79,6 +88,7 @@ function PackageCard({ pkg, canEdit, onUpdate, onDelete }: PackageCardProps) {
     setDeleting(true);
     const res = await fetch(`/api/workspace/packages/${pkg.id}`, { method: "DELETE" });
     setDeleting(false);
+    setConfirmOpen(false);
     if (!res.ok && res.status !== 204) {
       toast.error("Failed to delete");
       return;
@@ -115,9 +125,6 @@ function PackageCard({ pkg, canEdit, onUpdate, onDelete }: PackageCardProps) {
     >
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2 text-white/30">
-          <GripVertical className="w-4 h-4 shrink-0" />
-        </div>
         <div className="flex-1 space-y-2">
           <Input
             value={name}
@@ -147,7 +154,7 @@ function PackageCard({ pkg, canEdit, onUpdate, onDelete }: PackageCardProps) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={remove}
+            onClick={() => setConfirmOpen(true)}
             disabled={!canEdit || deleting}
             title="Delete package"
             className="text-[hsl(4_62%_54%)]/60 hover:text-[hsl(4_62%_54%)]"
@@ -156,6 +163,37 @@ function PackageCard({ pkg, canEdit, onUpdate, onDelete }: PackageCardProps) {
           </Button>
         </div>
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={(open) => !deleting && setConfirmOpen(open)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete package?</DialogTitle>
+            <DialogDescription>
+              This will permanently remove
+              {" "}
+              <span className="text-white">{pkg.name || "this package"}</span>
+              {" "}
+              and any AI mockups that reference it. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmOpen(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={remove}
+              disabled={deleting}
+            >
+              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete package"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Features */}
       <div className="space-y-2">

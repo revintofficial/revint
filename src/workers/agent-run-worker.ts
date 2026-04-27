@@ -42,9 +42,11 @@ async function processJob(job: Job<AgentRunJob>) {
       logger.warn("worker.ai_runs.agent_run_missing_runId", { jobId: job.id });
       return;
     }
-    logger.info("worker.ai_runs.agent_run.starting", { runId });
+    logger.info("worker.ai_runs.agent_run.starting", { runId, attempt: job.attemptsMade });
     try {
-      await executeAgentRun(runId);
+      // Pass isRetry so executeAgentRun can reset a FAILED row (set by a
+      // previous attempt's RetryableError) back to RUNNING before re-executing.
+      await executeAgentRun(runId, { isRetry: job.attemptsMade > 0 });
     } catch (err) {
       if (!isRetryable(err)) {
         // Surface as UnrecoverableError so BullMQ stops retrying
@@ -54,7 +56,7 @@ async function processJob(job: Job<AgentRunJob>) {
         const msg = err instanceof Error ? err.message : String(err);
         throw new UnrecoverableError(`permanent: ${msg}`);
       }
-      throw err;
+      throw err; // RetryableError — BullMQ retries with backoff
     }
     return { runId };
   }
@@ -154,8 +156,54 @@ export function startAgentRunWorker() {
   worker.on("completed", (job) => {
     logger.info("worker.ai_runs.job_completed", { jobId: job.id });
   });
-  worker.on("failed", (job, err) => {
+  worker.on("failed", async (job, err) => {
     logger.error("worker.ai_runs.job_failed", { jobId: job?.id, err: err?.message });
+
+    // When all retry attempts are exhausted (or the error is UnrecoverableError),
+    // the AgentRun row may still be FAILED from the last rethrow without the
+    // planner session having been notified. Notify it now so the session can
+    // advance to FAILED rather than stalling in EXECUTING indefinitely.
+    if (!job) return;
+    const data = job.data as AgentRunJob;
+    if (inferJobType(data) !== "agent_run") return;
+    const runId = "runId" in data ? data.runId : undefined;
+    if (!runId) return;
+
+    // `failed` fires on every attempt, including intermediate ones that
+    // will be retried. Only act on the final failure.
+    const isFinalFailure =
+      err instanceof UnrecoverableError ||
+      job.attemptsMade >= ((job.opts as { attempts?: number })?.attempts ?? 1);
+    if (!isFinalFailure) return;
+
+    try {
+      const { prisma: p } = await import("../lib/prisma");
+      const run = await p.agentRun.findUnique({
+        where: { id: runId },
+        select: { plannerSessionId: true, status: true },
+      });
+      if (!run || run.status === "SUCCEEDED") return;
+
+      // Ensure the run has a definitive FAILED status with a clear message.
+      await p.agentRun.updateMany({
+        where: { id: runId, status: { notIn: ["SUCCEEDED", "CANCELLED"] } },
+        data: {
+          status: "FAILED",
+          finishedAt: new Date(),
+          errorMsg: `retries_exhausted: ${err?.message ?? "unknown"}`.slice(0, 2000),
+        },
+      });
+
+      if (run.plannerSessionId) {
+        const { enqueueAdvance } = await import("../lib/ai-core/orchestrator");
+        await enqueueAdvance(run.plannerSessionId);
+      }
+    } catch (notifyErr) {
+      logger.error("worker.ai_runs.failed_handler_notify_error", {
+        runId,
+        err: notifyErr instanceof Error ? notifyErr.message : String(notifyErr),
+      });
+    }
   });
 
   return worker;

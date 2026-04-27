@@ -55,6 +55,10 @@ const CONSERVATIVE_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   SALES_OPPORTUNITY_SCORER: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
   SOCIAL_SCRAPER: { FREE: 20, PRO: 300, PRO_TEAM: 1500, AGENCY: UNLIMITED },
   EMAIL_VERIFIER: { FREE: 0, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
+  // GOOGLE_PLACES_REVIEWS is a thin Places API call (no Gemini, no
+  // Apify). FREE gets a generous cap because the cost is a single
+  // upstream API call already paid for by GOOGLE_PLACES_API_KEY.
+  GOOGLE_PLACES_REVIEWS: { FREE: 100, PRO: 1000, PRO_TEAM: 5000, AGENCY: UNLIMITED },
 
   // Grup B - Pitch
   WEBSITE_PLAN_GENERATOR: { FREE: 5, PRO: 50, PRO_TEAM: 200, AGENCY: UNLIMITED },
@@ -62,6 +66,10 @@ const CONSERVATIVE_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   OPENER_WRITER: { FREE: 20, PRO: 300, PRO_TEAM: 1500, AGENCY: UNLIMITED },
   VIDEO_SCRIPT_WRITER: { FREE: 0, PRO: 50, PRO_TEAM: 200, AGENCY: UNLIMITED },
   VOICE_NOTE_TRANSCRIBER: { FREE: 10, PRO: 100, PRO_TEAM: 500, AGENCY: UNLIMITED },
+  // LEAD_DOSSIER_GENERATOR is one Gemini call per lead but the worker
+  // is cached on AgentRun, so re-clicks are free. FREE gets enough
+  // headroom to dossier-up every lead in the pipeline once.
+  LEAD_DOSSIER_GENERATOR: { FREE: 30, PRO: 300, PRO_TEAM: 1500, AGENCY: UNLIMITED },
 
   // Grup C - Deliverable (prospect install packs)
   AI_RECEPTIONIST_BUILDER: { FREE: 0, PRO: 20, PRO_TEAM: 100, AGENCY: UNLIMITED },
@@ -101,12 +109,14 @@ const LAUNCH_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   SALES_OPPORTUNITY_SCORER: { FREE: 100, PRO: 1000, PRO_TEAM: 5000, AGENCY: UNLIMITED },
   SOCIAL_SCRAPER: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
   EMAIL_VERIFIER: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
+  GOOGLE_PLACES_REVIEWS: { FREE: 200, PRO: 2000, PRO_TEAM: 10000, AGENCY: UNLIMITED },
 
   WEBSITE_PLAN_GENERATOR: { FREE: 10, PRO: 50, PRO_TEAM: 200, AGENCY: UNLIMITED },
   WEBSITE_MOCKUP_GENERATOR: { FREE: 10, PRO: 50, PRO_TEAM: 200, AGENCY: UNLIMITED },
   OPENER_WRITER: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
   VIDEO_SCRIPT_WRITER: { FREE: 10, PRO: 100, PRO_TEAM: 500, AGENCY: UNLIMITED },
   VOICE_NOTE_TRANSCRIBER: { FREE: 30, PRO: 300, PRO_TEAM: 1000, AGENCY: UNLIMITED },
+  LEAD_DOSSIER_GENERATOR: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
 
   AI_RECEPTIONIST_BUILDER: { FREE: 5, PRO: 30, PRO_TEAM: 150, AGENCY: UNLIMITED },
   REVIEW_REPLY_AGENT: { FREE: 5, PRO: 30, PRO_TEAM: 150, AGENCY: UNLIMITED },
@@ -351,18 +361,22 @@ export async function checkWorkerQuota(args: {
 
   // Apify kinds: second gate on USD budget. Summed across ALL Apify
   // kinds in the same cycle; one workspace cannot bypass the cap by
-  // spreading runs across actor types. Only SUCCEEDED rows carry a
-  // real costUsdCents value (set on completion), so restricting to
-  // SUCCEEDED both aligns with billing truth and avoids the stuck-row
-  // quota drain described above.
+  // spreading runs across actor types. We include fresh PENDING/RUNNING
+  // rows (within PENDING_GRACE_MS) because their costUsdCents is set to
+  // the actor cost estimate at kickoff — not including them would allow a
+  // burst of concurrent Apify jobs to each pass the budget gate before
+  // any of them completes, collectively blowing the cap.
   if (isApifyKind(args.kind)) {
     const apifyLimitCents = MONTHLY_APIFY_USD_CENTS[args.plan] ?? 0;
     const sum = await prisma.agentRun.aggregate({
       where: {
         workspaceId: args.workspaceId,
         workerKind: { in: Array.from(APIFY_KINDS) },
-        status: "SUCCEEDED",
         createdAt: { gte: ws.cycleResetAt },
+        OR: [
+          { status: "SUCCEEDED" },
+          { status: { in: ["PENDING", "RUNNING"] }, createdAt: { gte: pendingCutoff } },
+        ],
       },
       _sum: { costUsdCents: true },
     });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 
 export async function GET() {
   try {
@@ -22,11 +23,7 @@ export async function GET() {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.todos.fetch_error", { err: error });
-    return NextResponse.json(
-      { error: "Failed to fetch todos", detail: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    );
+    return internalError("api.todos.fetch_error", error);
   }
 }
 

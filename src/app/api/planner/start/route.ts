@@ -19,6 +19,7 @@
  */
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth";
+import { internalError } from "@/lib/api-errors";
 import { prisma } from "@/lib/prisma";
 import { emit } from "@/lib/ai-core/events";
 import { getChain } from "@/lib/ai-core/chains";
@@ -173,7 +174,6 @@ export const POST = withAuth(async (session, req: Request) => {
     });
     return NextResponse.json({ sessionId });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: "Planner failed", detail: msg }, { status: 500 });
+    return internalError("api.planner.start_error", err);
   }
 });

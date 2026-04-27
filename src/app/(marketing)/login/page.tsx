@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/marketing/auth-form";
 import { getOptionalUser } from "@/lib/auth";
 import { buildMetadata } from "@/lib/seo/metadata";
+import { safeNextPath } from "@/lib/safe-redirect";
 
 export const metadata = buildMetadata({
   path: "/login",
@@ -33,8 +34,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
       if (cycle === "monthly" || cycle === "annual") params.set("cycle", cycle);
       redirect(`/app/settings/billing?${params.toString()}`);
     }
-    const next = typeof sp.next === "string" ? sp.next : "/app/dashboard";
-    redirect(next);
+    const rawNext = typeof sp.next === "string" ? sp.next : undefined;
+    redirect(safeNextPath(rawNext, "/app/dashboard"));
   }
   return (
     <Suspense>

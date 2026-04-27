@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPlanLabel } from "@/lib/plans";
 import {
   Dialog,
   DialogContent,
@@ -390,7 +391,7 @@ export function AiWorkersPanel({ leadId }: Props) {
             </p>
           </div>
           <Badge variant="outline" className="text-[11px]">
-            {data.plan}
+            {getPlanLabel(data.plan)}
           </Badge>
         </div>
       </CardHeader>

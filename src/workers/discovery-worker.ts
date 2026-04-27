@@ -3,6 +3,12 @@ import { discoverLeads, extractBoroughFromAddress } from "../lib/google-places";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { emit } from "../lib/ai-core/events";
+import {
+  assertCanCreateLeads,
+  recordLeadsCreated,
+  QuotaExceededError,
+  getUsage,
+} from "../lib/quotas";
 import IORedis from "ioredis";
 
 interface DiscoveryJobData {
@@ -30,6 +36,7 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
 
   let created = 0;
   let skipped = 0;
+  let quotaBlocked = 0;
 
   for (const place of places) {
     const placeId = place.id;
@@ -42,6 +49,29 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
     if (existing) {
       skipped++;
       continue;
+    }
+
+    // Per-lead quota gate. Bulk discovery enqueues many jobs at once; the API
+    // layer cannot pre-reserve quota across them, so we re-check here per
+    // creation. When the workspace is over its plan we stop early - the user
+    // sees the cap respected, and the rest of the queue exits cleanly.
+    try {
+      await assertCanCreateLeads(workspaceId, 1);
+    } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        quotaBlocked = places.length - created - skipped;
+        logger.warn("worker.discovery.quota_reached", {
+          workspaceId,
+          created,
+          skipped,
+          remaining: quotaBlocked,
+          plan: err.planName,
+          limit: err.limit,
+          used: err.used,
+        });
+        break;
+      }
+      throw err;
     }
 
     const address = place.formattedAddress || "";
@@ -72,6 +102,18 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
       select: { id: true },
     });
 
+    // Increment plan usage immediately after each successful create so
+    // concurrent jobs (and the assertCanCreateLeads above) see the most
+    // recent counter. Cheaper than a full transaction; small drift is OK.
+    try {
+      await recordLeadsCreated(workspaceId, 1);
+    } catch (err) {
+      logger.warn("worker.discovery.record_lead_failed", {
+        leadId: lead.id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     // Kick off the AI Core `lead_created` chain (auditor + review +
     // scorer + sentinel embed). Failure to start the chain must not
     // roll back the lead row, so we swallow but log loudly.
@@ -86,8 +128,22 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
     created++;
   }
 
-  logger.info("worker.discovery.done", { created, skipped, total: places.length });
-  return { created, skipped, total: places.length };
+  logger.info("worker.discovery.done", {
+    created,
+    skipped,
+    quotaBlocked,
+    total: places.length,
+  });
+  // Surface the latest counters so the UI / planner can observe usage.
+  const usage = await getUsage(workspaceId).catch(() => null);
+  return {
+    created,
+    skipped,
+    quotaBlocked,
+    total: places.length,
+    leadsUsed: usage?.leadsUsed ?? null,
+    leadsRemaining: usage?.leadsRemaining ?? null,
+  };
 }
 
 export function startDiscoveryWorker() {

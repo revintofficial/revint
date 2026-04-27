@@ -69,6 +69,20 @@ enum Plan {
   AGENCY
 }
 
+// Lead onboarding pipeline preset — drives the per-workspace
+// `lead_created` chain. LITE keeps FREE-tier workspaces under their
+// Gemini budget; BALANCED is the default for new workspaces and adds
+// social scrape + on-create dossier; AGGRESSIVE turns on Apify gmaps
+// deep + auto mockup + auto opener (PRO+ only). CUSTOM means the
+// owner has hand-edited the steps array; the resolver no longer
+// regenerates it from the preset.
+enum PipelinePreset {
+  LITE
+  BALANCED
+  AGGRESSIVE
+  CUSTOM
+}
+
 enum WorkspaceNiche {
   WEB_AGENCY      // default — generic web/marketing agency
   RESTAURANT_TECH // QR menu / digital ordering (FineDine, MenuTiger, etc.)
@@ -110,12 +124,21 @@ enum AgentWorkerKind {
   SALES_OPPORTUNITY_SCORER
   SOCIAL_SCRAPER
   EMAIL_VERIFIER
+  // GOOGLE_PLACES_REVIEWS pre-loads up to 5 reviews from Places API on
+  // lead_created so REVIEW_ANALYST has corpus to chew on. FREE-safe
+  // (no Gemini, no Apify, just one Places API call).
+  GOOGLE_PLACES_REVIEWS
   // Grup B - Pitch
   WEBSITE_PLAN_GENERATOR
   WEBSITE_MOCKUP_GENERATOR
   OPENER_WRITER
   VIDEO_SCRIPT_WRITER
   VOICE_NOTE_TRANSCRIBER
+  // LEAD_DOSSIER_GENERATOR encapsulates the previously-uncached
+  // /api/leads/[id]/explain logic. Output is cached on AgentRun so
+  // the dossier button serves instantly until reviews / Apify runs
+  // invalidate it.
+  LEAD_DOSSIER_GENERATOR
   // Grup C - Deliverable (prospect install packs)
   AI_RECEPTIONIST_BUILDER
   REVIEW_REPLY_AGENT
@@ -250,7 +273,7 @@ model Workspace {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner           User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner           User                   @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members         WorkspaceMember[]
   leads           Lead[]
   todos           TeamTodo[]
@@ -261,8 +284,32 @@ model Workspace {
   semanticMemory  SemanticMemory[]
   plannerSessions PlannerSession[]
   servicePackages ServicePackage[]
+  leadPipeline    WorkspaceLeadPipeline?
 
   @@map("workspaces")
+}
+
+// AI Core - workspace-scoped lead onboarding pipeline configuration.
+// Stores the (preset, steps) tuple that drives the `lead_created`
+// chain for this workspace. When `preset != CUSTOM`, the resolver
+// regenerates `steps` from the preset on every read (so plan upgrades
+// unlock new workers automatically); CUSTOM is treated as-is.
+//
+// `steps` JSON shape mirrors `ChainStep[]` from
+// src/lib/ai-core/chains.ts. The resolver validates it before
+// scheduling so a malformed UI write cannot crash the orchestrator.
+model WorkspaceLeadPipeline {
+  id          String         @id @default(cuid())
+  workspaceId String         @unique @map("workspace_id")
+  preset      PipelinePreset @default(BALANCED)
+  steps       Json           @default("[]")
+  enabled     Boolean        @default(true)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_lead_pipelines")
 }
 
 model WorkspaceMember {
@@ -446,6 +493,7 @@ model GoogleReview {
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
+  @@index([leadId])
   @@map("google_reviews")
 }
 
@@ -700,7 +748,11 @@ model SemanticMemory {
 
   @@index([workspaceId, kind])
   @@index([leadId])
-  @@index([workspaceId, refType, refId])
+  // Composite uniqueness on (workspaceId, refType, refId) so concurrent
+  // upserts cannot produce duplicate rows for the same source object.
+  // Postgres treats NULL as distinct, so rows without refType/refId
+  // (free-form memory like COPILOT_TURN) are unaffected.
+  @@unique([workspaceId, refType, refId])
   @@map("semantic_memory")
 }
 

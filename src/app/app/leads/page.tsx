@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { DEFAULT_LOCATIONS } from "@/lib/constants";
 import { OUTREACH_LABELS, CRAWL_LABELS } from "@/lib/labels";
+import { toast } from "sonner";
 import {
   Search,
   Globe,
@@ -372,12 +373,32 @@ function LeadsPageContent() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => {
-                fetch("/api/crawl", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ crawlAll: true }),
-                }).then(() => fetchLeads());
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/crawl", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ crawlAll: true }),
+                  });
+                  if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    const reason = (body && typeof body === "object" && "error" in body)
+                      ? String(body.error)
+                      : `HTTP ${res.status}`;
+                    toast.error(`Scan failed: ${reason}`);
+                    return;
+                  }
+                  const data = await res.json().catch(() => null);
+                  if (data && typeof data.crawled === "number") {
+                    toast.success(`Scan complete: ${data.crawled} succeeded, ${data.failed ?? 0} failed`);
+                  } else {
+                    toast.success("Scan complete");
+                  }
+                  fetchLeads();
+                } catch (err) {
+                  console.error(err);
+                  toast.error("Scan failed: network error");
+                }
               }}
             >
               <Globe className="w-4 h-4" />
@@ -385,12 +406,32 @@ function LeadsPageContent() {
             </Button>
             <Button
               size="sm"
-              onClick={() => {
-                fetch("/api/analyze", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ analyzeAll: true }),
-                }).then(() => fetchLeads());
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/analyze", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ analyzeAll: true }),
+                  });
+                  if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    const reason = (body && typeof body === "object" && "error" in body)
+                      ? String(body.error)
+                      : `HTTP ${res.status}`;
+                    toast.error(`Analysis failed: ${reason}`);
+                    return;
+                  }
+                  const data = await res.json().catch(() => null);
+                  if (data && typeof data.analyzed === "number") {
+                    toast.success(`Analysis complete: ${data.analyzed} succeeded, ${data.failed ?? 0} failed`);
+                  } else {
+                    toast.success("Analysis complete");
+                  }
+                  fetchLeads();
+                } catch (err) {
+                  console.error(err);
+                  toast.error("Analysis failed: network error");
+                }
               }}
             >
               <Bot className="w-4 h-4" />
@@ -549,7 +590,7 @@ function LeadsPageContent() {
                     <Link href={`/app/deals?lead=${lead.id}`}>
                       <Button size="sm" variant="ghost" className="h-8 px-2 gap-1 text-[11px] text-[hsl(38_70%_52%)] hover:text-[hsl(38_70%_52%)]">
                         <BookmarkCheck className="w-3 h-3" />
-                        Saved
+                        Open Deal
                       </Button>
                     </Link>
                   ) : (

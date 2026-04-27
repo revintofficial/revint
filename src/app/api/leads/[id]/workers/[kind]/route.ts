@@ -17,6 +17,7 @@ import { NextResponse } from "next/server";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 import { getAgentRunsQueue } from "@/lib/queues";
 import { getWorker } from "@/lib/agent-workers/registry";
 import { executeAgentRun } from "@/lib/agent-workers/execute";
@@ -254,10 +255,6 @@ export async function POST(
         { status: 402 },
       );
     }
-    logger.error("api.agent_run.trigger_error", { err });
-    return NextResponse.json(
-      { error: "Failed to start worker", detail: String(err) },
-      { status: 500 },
-    );
+    return internalError("api.agent_run.trigger_error", err);
   }
 }

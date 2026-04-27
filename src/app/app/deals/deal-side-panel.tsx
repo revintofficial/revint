@@ -24,6 +24,7 @@ import {
   Loader2,
 } from "lucide-react";
 import type { DealItem, OfferValue } from "./types";
+import { toast } from "sonner";
 
 const OFFER_PACKAGES: {
   value: OfferValue;
@@ -114,15 +115,28 @@ export function DealSidePanel({
     async (itemId: string, patch: Record<string, unknown>) => {
       setSaveStatus("saving");
       try {
-        await fetch(`/api/watchlist/${itemId}`, {
+        const res = await fetch(`/api/watchlist/${itemId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(patch),
         });
+        if (!res.ok) {
+          // Don't pretend the change persisted. Surface a toast and
+          // reset the indicator so the user knows to retry / refresh.
+          setSaveStatus("idle");
+          const body = await res.json().catch(() => ({}));
+          const reason = (body && typeof body === "object" && "error" in body)
+            ? String(body.error)
+            : `HTTP ${res.status}`;
+          toast.error(`Couldn't save change: ${reason}`);
+          return;
+        }
         setSaveStatus("saved");
         window.setTimeout(() => setSaveStatus("idle"), 1400);
-      } catch {
+      } catch (err) {
+        console.error("deal.save_failed", err);
         setSaveStatus("idle");
+        toast.error("Couldn't save change: network error");
       }
     },
     []

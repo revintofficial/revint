@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { COUNTRIES } from "@/lib/countries";
+import { getPlanLabel } from "@/lib/plans";
 import { toast } from "sonner";
 import { Loader2, Globe } from "lucide-react";
 
@@ -99,7 +100,7 @@ export function WorkspaceForm({
           </div>
           <div>
             <p className="block text-[11.5px] text-white/55 mb-1">Current plan</p>
-            <p className="text-[14px] font-medium">{initial.plan}</p>
+            <p className="text-[14px] font-medium">{getPlanLabel(initial.plan)}</p>
           </div>
           {canEdit && (
             <Button type="submit" disabled={busy}>

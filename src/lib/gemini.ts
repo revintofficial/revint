@@ -252,6 +252,44 @@ export interface AnalysisWorkspaceContext {
   language?: string | null;
 }
 
+/**
+ * Grounded review evidence the scorer feeds into Gemini so its
+ * `likely_pain_points` and `best_sales_angle` are based on actual
+ * customer voice instead of the model fabricating "50 reviews say..."
+ * from the rating count alone (the previous failure mode).
+ *
+ * Supplied by SALES_OPPORTUNITY_SCORER when ReviewAnalysis exists for
+ * the lead. Empty arrays / null summary are tolerated upstream and
+ * trigger the "no review data" branch in the prompt builder.
+ */
+export interface ReviewContextForAnalysis {
+  summary: string | null;
+  painPhrases: string[];
+  strengthPhrases: string[];
+  reviewsAnalyzedCount: number;
+}
+
+function formatReviewContextForAnalysis(rc: ReviewContextForAnalysis | null): string {
+  if (!rc || (rc.painPhrases.length === 0 && rc.strengthPhrases.length === 0 && !rc.summary)) {
+    return "Review data is not yet available for this lead. Base your analysis on the audit and Place metadata only; do NOT invent quotes or claims attributed to reviewers.";
+  }
+  const lines: string[] = [];
+  lines.push(`Review evidence (REVIEW_ANALYST output, ${rc.reviewsAnalyzedCount} reviews analysed):`);
+  if (rc.summary) lines.push(`- Summary: ${rc.summary}`);
+  if (rc.painPhrases.length > 0) {
+    const sample = rc.painPhrases.slice(0, 6).map((p) => `"${p}"`).join("; ");
+    lines.push(`- Pain phrases (negative signal): ${sample}`);
+  }
+  if (rc.strengthPhrases.length > 0) {
+    const sample = rc.strengthPhrases.slice(0, 4).map((p) => `"${p}"`).join("; ");
+    lines.push(`- Strength phrases (positive signal): ${sample}`);
+  }
+  lines.push(
+    "Use these phrases verbatim (or close paraphrase) in best_sales_angle and likely_pain_points so the personalised_first_message references real customer language. Do NOT add pain points that aren't supported by the evidence.",
+  );
+  return lines.join("\n");
+}
+
 export async function analyzeLeadWithGemini(
   businessName: string,
   address: string,
@@ -262,7 +300,15 @@ export async function analyzeLeadWithGemini(
   /** P2.3 - workspace.language injection. Defaults to 'en'; explicit TR workspaces still get TR output via languagePreamble. */
   language: string | null = "en",
   /** Niche + offer context for targeted analysis. Defaults to WEB_AGENCY behaviour. */
-  workspaceCtx: AnalysisWorkspaceContext = {}
+  workspaceCtx: AnalysisWorkspaceContext = {},
+  /**
+   * Grounded review context (pain + strength phrases) from
+   * REVIEW_ANALYST. When present, the prompt instructs Gemini to
+   * derive sales angles from these phrases instead of inventing
+   * generic complaints. When null/empty, Gemini is told explicitly
+   * not to fabricate review-derived claims.
+   */
+  reviewContext: ReviewContextForAnalysis | null = null,
 ): Promise<GeminiAnalysis> {
   const client = getClient();
   const model = client.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -274,9 +320,13 @@ export async function analyzeLeadWithGemini(
     workspaceCtx.valueProposition ?? null,
   );
 
+  const reviewBlock = formatReviewContextForAnalysis(reviewContext);
+
   const prompt = `${languagePreamble(effectiveLanguage)}
 
-${analysisPrompt}`
+${analysisPrompt}
+
+${reviewBlock}`
     .replace("{business_name}", businessName)
     .replace("{address}", address)
     .replace("{rating}", rating?.toString() ?? "N/A")

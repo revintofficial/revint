@@ -19,6 +19,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 
 export const OFFER_FIELDS = [
   "offerName",
@@ -175,8 +176,6 @@ export async function PATCH(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const msg = error instanceof Error ? error.message : String(error);
-    logger.error("api.workspace.offer_patch_error", { err: error, msg });
-    return NextResponse.json({ error: "Failed to update offer", detail: msg }, { status: 500 });
+    return internalError("api.workspace.offer_patch_error", error);
   }
 }

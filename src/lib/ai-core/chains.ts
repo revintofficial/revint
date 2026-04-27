@@ -1,15 +1,24 @@
 /**
- * AI Core - deterministic chain definitions.
+ * AI Core - chain definitions.
  *
  * A "chain" is a DAG of worker invocations that the planner produces
  * for a given event. Each step declares `dependsOn` by stepId;
  * orchestrator.advance() walks the graph and enqueues ready steps.
  *
+ * Most chains are static (declared in `CHAINS` below). The
+ * `lead_created` chain is the exception: it is resolved at planning
+ * time from the workspace's `WorkspaceLeadPipeline` row so each
+ * workspace can pick a preset (LITE / BALANCED / AGGRESSIVE) or
+ * hand-edit the DAG. Use `getDefaultChain(preset, plan)` to derive
+ * the steps from a preset; the resolver in `planner.ts` calls into
+ * here to materialise them.
+ *
  * Keep this file purely declarative; logic belongs in
  * `src/lib/ai-core/orchestrator.ts`. A new event type is added by:
  *   1. Append it to the `EventKind` union in
  *      `src/lib/agent-workers/types.ts`.
- *   2. Add a new entry to `CHAINS` below.
+ *   2. Add a new entry to `CHAINS` below (or to the preset table for
+ *      lead-onboarding events).
  *   3. Call `emit("<new_event>", { workspaceId, ... })` from wherever
  *      the trigger originates.
  *
@@ -18,8 +27,9 @@
  * (e.g. `SALES_OPPORTUNITY_SCORER` running before and after deep
  * research). Prefer lowercase-snake ids.
  */
-import type { AgentWorkerKind } from "@/generated/prisma/client";
+import type { AgentWorkerKind, Plan, PipelinePreset } from "@/generated/prisma/client";
 import type { EventKind } from "@/lib/agent-workers/types";
+import { planMeetsMinimum, getWorker } from "@/lib/agent-workers/registry";
 
 export interface ChainStep {
   /**
@@ -69,59 +79,6 @@ export const SENTINEL_STEPS = {
  * dynamically by the router.
  */
 export const CHAINS: Partial<Record<EventKind, Chain>> = {
-  // ---------- Intelligence chain for newly ingested leads ----------
-  // Auto-fires on every Lead row creation. Legacy status columns are
-  // maintained inside each worker for backward compat until Phase 2
-  // drops them. REVIEW_ANALYST + WEBSITE_AUDITOR fan out in parallel;
-  // APIFY_SERP_RANK piggybacks on the same run to harvest social-
-  // profile URLs from Google's organic results (Instagram, Facebook,
-  // LinkedIn etc. almost always appear on page 1 for a business-name
-  // query, so we get social coverage even for leads with no website).
-  // SOCIAL_SCRAPER waits for both audit AND serp so it sees the
-  // merged socialProfiles blob. SALES_OPPORTUNITY_SCORER waits for
-  // audit + review; it is NOT blocked on the optional Apify step so
-  // FREE-tier workspaces (SERP quota = 0, step SKIPPED) still score
-  // their leads on time.
-  lead_created: [
-    { stepId: "audit", workerKind: "WEBSITE_AUDITOR", dependsOn: [] },
-    // APIFY_SERP_RANK runs after audit so the WebsiteAudit row
-    // exists before we merge SERP-sourced socials into it, and so
-    // we don't race the auditor's own upsert. Optional = FREE-tier
-    // quota/plan-gate failures are SKIPPED rather than FAILED.
-    {
-      stepId: "serp",
-      workerKind: "APIFY_SERP_RANK",
-      dependsOn: ["audit"],
-      optional: true,
-    },
-    {
-      stepId: "social",
-      workerKind: "SOCIAL_SCRAPER",
-      dependsOn: ["audit", "serp"],
-      optional: true,
-    },
-    { stepId: "review", workerKind: "REVIEW_ANALYST", dependsOn: [], optional: true },
-    {
-      stepId: "email_verify",
-      workerKind: "EMAIL_VERIFIER",
-      dependsOn: ["audit"],
-      optional: true,
-    },
-    {
-      stepId: "score",
-      workerKind: "SALES_OPPORTUNITY_SCORER",
-      dependsOn: ["audit", "review"],
-    },
-    // Sentinel: embed a compact LEAD_PROFILE row so the lead is
-    // immediately searchable by copilot + lookalike queries.
-    {
-      stepId: "embed_profile",
-      workerKind: "SALES_OPPORTUNITY_SCORER" as AgentWorkerKind, // placeholder, handled via sentinel
-      dependsOn: ["score"],
-      inputs: { __sentinel: SENTINEL_STEPS.EMBED_LEAD_PROFILE },
-    },
-  ],
-
   // ---------- Inbox reply attribution ----------
   // Fires when the inbox sync worker finds a reply matching a sent
   // opener. The attributor updates pipeline state; the sentinel write
@@ -200,21 +157,363 @@ export const CHAINS: Partial<Record<EventKind, Chain>> = {
       dependsOn: ["webcrawl"],
     },
   ],
+
+  // ---------- Reviews-changed re-analysis ----------
+  // Fired by /api/reviews/[leadId] after fresh GoogleReview rows are
+  // written, so REVIEW_ANALYST + SCORER + DOSSIER can refresh against
+  // the new corpus. Every step is optional so a workspace that has
+  // turned off the dossier preset still gets review + score updates.
+  lead_reviews_updated: [
+    {
+      stepId: "review_refresh",
+      workerKind: "REVIEW_ANALYST",
+      dependsOn: [],
+    },
+    {
+      stepId: "score_refresh",
+      workerKind: "SALES_OPPORTUNITY_SCORER",
+      dependsOn: ["review_refresh"],
+    },
+    {
+      stepId: "embed_profile",
+      workerKind: "SALES_OPPORTUNITY_SCORER" as AgentWorkerKind,
+      dependsOn: ["score_refresh"],
+      inputs: { __sentinel: SENTINEL_STEPS.EMBED_LEAD_PROFILE },
+    },
+    {
+      stepId: "dossier_refresh",
+      workerKind: "LEAD_DOSSIER_GENERATOR",
+      dependsOn: ["score_refresh"],
+      optional: true,
+    },
+  ],
 };
 
 /**
  * Returns the chain for an event or null if the event has no
  * pre-built chain (copilot-driven custom plans, etc.). Treat a null
  * result as "planner must build a plan dynamically".
+ *
+ * NOTE: `lead_created` is not in CHAINS — it is resolved per
+ * workspace by `resolveLeadCreatedChain` in `planner.ts` from the
+ * `WorkspaceLeadPipeline` row. Callers that need the lead_created
+ * chain MUST go through the planner, not getChain().
  */
 export function getChain(event: EventKind): Chain | null {
   return CHAINS[event] ?? null;
 }
 
 /**
- * Validates a chain at import time: no duplicate stepIds, no unknown
- * dependsOn references. Called at module load (below) so typos get
- * caught during `next build`.
+ * Workers that may appear in lead_created presets, ordered for the
+ * editor UI. Anything not in this set is rejected by `validateChain`
+ * when a workspace tries to PUT a CUSTOM steps array — keeps owners
+ * from accidentally adding e.g. INBOX_REPLY_ATTRIBUTOR (no lead
+ * context) to the lead-onboarding pipeline.
+ */
+export const LEAD_PIPELINE_ALLOWED_WORKERS: ReadonlySet<AgentWorkerKind> = new Set<AgentWorkerKind>([
+  "GOOGLE_PLACES_REVIEWS",
+  "WEBSITE_AUDITOR",
+  "REVIEW_ANALYST",
+  "SOCIAL_SCRAPER",
+  "EMAIL_VERIFIER",
+  "SALES_OPPORTUNITY_SCORER",
+  "LEAD_DOSSIER_GENERATOR",
+  "WEBSITE_MOCKUP_GENERATOR",
+  "OPENER_WRITER",
+  "APIFY_GMAPS_DEEP",
+  "APIFY_SERP_RANK",
+  "APIFY_WEB_CRAWL_DEEP",
+  "APIFY_INSTAGRAM_DEEP",
+  "APIFY_FACEBOOK_DEEP",
+  "APIFY_REDDIT_MENTIONS",
+]);
+
+/**
+ * Returns the canonical lead_created DAG for a (preset, plan) tuple.
+ * Workers above the workspace plan are filtered OUT of the steps so
+ * a FREE workspace on AGGRESSIVE preset gets the BALANCED-ish set
+ * (no Apify, no auto mockup) instead of having every Apify step
+ * fail with PlanTooLow at run time.
+ *
+ * The planner persists the result of this function as the workspace's
+ * pipeline `steps` JSON when the row is first created, then hands it
+ * to the orchestrator. Editing the row to CUSTOM disables this
+ * regenerator (the saved steps are used as-is).
+ */
+export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
+  const audit: ChainStep = { stepId: "audit", workerKind: "WEBSITE_AUDITOR", dependsOn: [] };
+  const placesReviews: ChainStep = {
+    stepId: "places_reviews",
+    workerKind: "GOOGLE_PLACES_REVIEWS",
+    dependsOn: [],
+    optional: true,
+  };
+  const review: ChainStep = {
+    stepId: "review",
+    workerKind: "REVIEW_ANALYST",
+    dependsOn: ["places_reviews"],
+    optional: true,
+  };
+  const score: ChainStep = {
+    stepId: "score",
+    workerKind: "SALES_OPPORTUNITY_SCORER",
+    dependsOn: ["audit", "review"],
+  };
+  const embedProfile: ChainStep = {
+    stepId: "embed_profile",
+    workerKind: "SALES_OPPORTUNITY_SCORER" as AgentWorkerKind,
+    dependsOn: ["score"],
+    inputs: { __sentinel: SENTINEL_STEPS.EMBED_LEAD_PROFILE },
+  };
+
+  // Always-on backbone for every preset; review + places_reviews are
+  // marked optional so a place with no reviews / no placeId doesn't
+  // block the score step.
+  const lite: Chain = [audit, placesReviews, review, score, embedProfile];
+
+  if (preset === "LITE") {
+    return filterByPlan(lite, plan);
+  }
+
+  const social: ChainStep = {
+    stepId: "social",
+    workerKind: "SOCIAL_SCRAPER",
+    dependsOn: ["audit"],
+    optional: true,
+  };
+  const dossier: ChainStep = {
+    stepId: "dossier",
+    workerKind: "LEAD_DOSSIER_GENERATOR",
+    dependsOn: ["score"],
+    optional: true,
+  };
+
+  // BALANCED is the default for new workspaces. Adds social link
+  // discovery + on-create dossier so the lead detail page is rich
+  // the moment the user opens it (no "click Generate to see
+  // anything" empty state).
+  const balanced: Chain = [audit, placesReviews, review, social, score, embedProfile, dossier];
+
+  if (preset === "BALANCED") {
+    return filterByPlan(balanced, plan);
+  }
+
+  // AGGRESSIVE adds Apify deep enrichment + auto pitch-pack on every
+  // ingested lead. Burns through Gemini and Apify budget very fast;
+  // gated to PRO+ at the UI layer. FREE workspaces still get the
+  // BALANCED set if their preset is AGGRESSIVE (filterByPlan drops
+  // the Apify steps + the mockup step automatically).
+  const apifyGmaps: ChainStep = {
+    stepId: "apify_gmaps",
+    workerKind: "APIFY_GMAPS_DEEP",
+    dependsOn: [],
+    optional: true,
+  };
+  const apifySerp: ChainStep = {
+    stepId: "apify_serp",
+    workerKind: "APIFY_SERP_RANK",
+    dependsOn: ["audit"],
+    optional: true,
+  };
+  const reviewRefresh: ChainStep = {
+    // After APIFY_GMAPS_DEEP imports up to 500 reviews, REVIEW_ANALYST
+    // re-runs against the deeper corpus so the scorer + dossier see
+    // the full evidence set instead of just the Places-API five.
+    stepId: "review_refresh",
+    workerKind: "REVIEW_ANALYST",
+    dependsOn: ["apify_gmaps"],
+    optional: true,
+  };
+  const aggressiveScore: ChainStep = {
+    stepId: "score",
+    workerKind: "SALES_OPPORTUNITY_SCORER",
+    dependsOn: ["audit", "review", "review_refresh"],
+  };
+  const mockup: ChainStep = {
+    stepId: "mockup",
+    workerKind: "WEBSITE_MOCKUP_GENERATOR",
+    dependsOn: ["score"],
+    optional: true,
+  };
+  const opener: ChainStep = {
+    stepId: "opener",
+    workerKind: "OPENER_WRITER",
+    dependsOn: ["score", "mockup"],
+    optional: true,
+  };
+
+  const aggressive: Chain = [
+    audit,
+    placesReviews,
+    review,
+    social,
+    apifyGmaps,
+    apifySerp,
+    reviewRefresh,
+    aggressiveScore,
+    embedProfile,
+    dossier,
+    mockup,
+    opener,
+  ];
+
+  if (preset === "AGGRESSIVE") {
+    return filterByPlan(aggressive, plan);
+  }
+
+  // CUSTOM has no derived default — caller is expected to supply the
+  // saved steps from the workspace row. Returning BALANCED here is a
+  // safety net for a freshly inserted CUSTOM row that hasn't been
+  // edited yet.
+  return filterByPlan(balanced, plan);
+}
+
+/**
+ * Drops steps whose worker kind is above the workspace's plan, then
+ * rewires `dependsOn` so removed steps don't leave dangling refs.
+ * Removed steps are conservatively replaced by their own dependencies
+ * — i.e. anything that depended on a removed step now depends on
+ * everything that step depended on (transitive close).
+ */
+function filterByPlan(chain: Chain, plan: Plan): Chain {
+  const allowedSteps = new Map<string, ChainStep>();
+  // First pass: keep only plan-eligible steps (sentinel steps are
+  // always kept; their workerKind field is a placeholder).
+  for (const step of chain) {
+    const isSentinel = (step.inputs?.__sentinel ?? null) !== null;
+    if (isSentinel) {
+      allowedSteps.set(step.stepId, step);
+      continue;
+    }
+    const worker = getWorker(step.workerKind);
+    if (!worker) continue;
+    if (!planMeetsMinimum(plan, worker.minPlan)) continue;
+    allowedSteps.set(step.stepId, step);
+  }
+
+  // Compute the transitive closure of dependsOn for each removed
+  // step so we can rewire dependents.
+  const removed = new Set<string>();
+  for (const step of chain) {
+    if (!allowedSteps.has(step.stepId)) removed.add(step.stepId);
+  }
+
+  function transitiveDeps(stepId: string, seen = new Set<string>()): string[] {
+    if (seen.has(stepId)) return [];
+    seen.add(stepId);
+    const orig = chain.find((s) => s.stepId === stepId);
+    if (!orig) return [];
+    const out: string[] = [];
+    for (const d of orig.dependsOn) {
+      if (allowedSteps.has(d)) {
+        out.push(d);
+      } else if (removed.has(d)) {
+        out.push(...transitiveDeps(d, seen));
+      }
+    }
+    return out;
+  }
+
+  const result: Chain = [];
+  for (const step of chain) {
+    if (!allowedSteps.has(step.stepId)) continue;
+    const newDeps = Array.from(
+      new Set(
+        step.dependsOn.flatMap((d) =>
+          allowedSteps.has(d) ? [d] : transitiveDeps(d),
+        ),
+      ),
+    );
+    result.push({ ...step, dependsOn: newDeps });
+  }
+
+  return result;
+}
+
+/**
+ * Validates an arbitrary chain (e.g. one a workspace owner saved as
+ * CUSTOM via the editor): no duplicate stepIds, no unknown
+ * `dependsOn` refs, every workerKind is in the allowed set for lead
+ * onboarding, no cycles. Throws a `ChainValidationError` with a
+ * stable message so the API can surface it to the UI.
+ *
+ * Skipped for the static `CHAINS` map below because those are
+ * developer-authored and validated at module load time.
+ */
+export class ChainValidationError extends Error {
+  constructor(public reason: string) {
+    super(reason);
+    this.name = "ChainValidationError";
+  }
+}
+
+export function validateLeadPipelineChain(chain: Chain): void {
+  if (!Array.isArray(chain) || chain.length === 0) {
+    throw new ChainValidationError("Pipeline must contain at least one step");
+  }
+
+  const seen = new Set<string>();
+  for (const step of chain) {
+    if (!step || typeof step !== "object") {
+      throw new ChainValidationError("Step is not an object");
+    }
+    if (typeof step.stepId !== "string" || !step.stepId) {
+      throw new ChainValidationError("Step is missing stepId");
+    }
+    if (seen.has(step.stepId)) {
+      throw new ChainValidationError(`Duplicate stepId "${step.stepId}"`);
+    }
+    seen.add(step.stepId);
+
+    const isSentinel = (step.inputs?.__sentinel ?? null) !== null;
+    if (
+      !isSentinel &&
+      !LEAD_PIPELINE_ALLOWED_WORKERS.has(step.workerKind)
+    ) {
+      throw new ChainValidationError(
+        `Worker "${step.workerKind}" is not allowed in lead-pipeline chains`,
+      );
+    }
+
+    if (!Array.isArray(step.dependsOn)) {
+      throw new ChainValidationError(
+        `Step "${step.stepId}".dependsOn must be an array`,
+      );
+    }
+  }
+
+  for (const step of chain) {
+    for (const dep of step.dependsOn) {
+      if (!seen.has(dep)) {
+        throw new ChainValidationError(
+          `Step "${step.stepId}" depends on unknown "${dep}"`,
+        );
+      }
+    }
+  }
+
+  // Cycle detection — DFS with a stack. Sentinel placeholders are
+  // treated as ordinary nodes here.
+  const adj = new Map<string, string[]>();
+  for (const step of chain) adj.set(step.stepId, step.dependsOn);
+  const colour = new Map<string, "white" | "grey" | "black">();
+  for (const step of chain) colour.set(step.stepId, "white");
+  function visit(id: string): void {
+    if (colour.get(id) === "grey") {
+      throw new ChainValidationError(`Cycle detected at step "${id}"`);
+    }
+    if (colour.get(id) === "black") return;
+    colour.set(id, "grey");
+    for (const next of adj.get(id) ?? []) visit(next);
+    colour.set(id, "black");
+  }
+  for (const step of chain) visit(step.stepId);
+}
+
+/**
+ * Validates a developer-authored static chain at module load time:
+ * no duplicate stepIds, no unknown dependsOn references. Caught
+ * during `next build`.
  */
 function validateChain(event: EventKind, chain: Chain): void {
   const seen = new Set<string>();

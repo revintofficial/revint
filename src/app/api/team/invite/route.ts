@@ -4,6 +4,7 @@ import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { createSupabaseAdmin } from "@/lib/supabase/server";
 import { PLANS, planAllowsAdditionalSeat } from "@/lib/plans";
 import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 import { sendEmailAsync } from "@/lib/email/send";
 import { TeamInviteEmail } from "@/lib/email/templates/team-invite";
 
@@ -59,14 +60,17 @@ export async function POST(request: Request) {
           });
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        // Fall back: if Supabase admin/invite isn't configured, still create a placeholder
-        logger.warn("api.team.supabase_invite_failed", { err });
+        // Fall back: if Supabase admin/invite isn't configured, surface a
+        // hand-written 503 message but log the real error server-side. We
+        // don't echo `err.message` to the client because Supabase errors
+        // can include configuration details (project refs, role hints).
+        logger.warn("api.team.supabase_invite_failed", {
+          err: err instanceof Error ? err.message : String(err),
+        });
         return NextResponse.json(
           {
             error:
               "Could not send invite email. Set SUPABASE_SERVICE_ROLE_KEY or have the user sign up first.",
-            detail: msg,
           },
           { status: 503 }
         );
@@ -125,7 +129,6 @@ export async function POST(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.team.invite_error", { err: error });
-    return NextResponse.json({ error: "Failed to invite", detail: String(error) }, { status: 500 });
+    return internalError("api.team.invite_error", error);
   }
 }

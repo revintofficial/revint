@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { getCrawlQueue } from "@/lib/queues";
 import { logger } from "@/lib/logger";
+import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
 
 /**
  * Crawl is long-running (headless browser, network fetches per site) and
@@ -13,8 +14,15 @@ import { logger } from "@/lib/logger";
 export async function POST(request: Request) {
   try {
     const { workspaceId } = await requireUser();
-    const body = await request.json();
-    const { leadId, crawlAll = false } = body;
+    // Crawl jobs touch the headless browser pool; rate-limit per workspace so
+    // a single tenant cannot starve the worker queue with bulk enqueues.
+    const rl = await checkRateLimit(workspaceId, LIMITS.crawl);
+    if (!rl.ok) return rateLimitResponse(rl);
+    const body = await request.json().catch(() => ({}));
+    const { leadId, crawlAll = false } = (body ?? {}) as {
+      leadId?: string;
+      crawlAll?: boolean;
+    };
 
     const queue = getCrawlQueue();
 

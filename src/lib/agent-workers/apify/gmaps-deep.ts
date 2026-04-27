@@ -104,20 +104,27 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   // about text presence, not the ingestion step.
   const reviews = Array.isArray(place.reviews) ? place.reviews : [];
   if (reviews.length > 0) {
-    await prisma.googleReview.deleteMany({ where: { leadId: lead.id } });
-    await prisma.googleReview.createMany({
-      data: reviews
-        .filter((r) => typeof r.stars === "number" || typeof r.text === "string")
-        .map((r) => ({
-          leadId: lead.id,
-          authorName: r.name ?? "Anonymous",
-          authorPhoto: r.reviewerPhotoUrl ?? null,
-          rating: Math.max(1, Math.min(5, Math.round(r.stars ?? 5))),
-          text: typeof r.text === "string" ? r.text : null,
-          relativeTime: "",
-          publishTime: r.publishedAtDate ? new Date(r.publishedAtDate) : new Date(),
-        })),
-    });
+    const rows = reviews
+      .filter((r) => typeof r.stars === "number" || typeof r.text === "string")
+      .map((r) => ({
+        leadId: lead.id,
+        authorName: r.name ?? "Anonymous",
+        authorPhoto: r.reviewerPhotoUrl ?? null,
+        rating: Math.max(1, Math.min(5, Math.round(r.stars ?? 5))),
+        text: typeof r.text === "string" ? r.text : null,
+        relativeTime: "",
+        publishTime: r.publishedAtDate ? new Date(r.publishedAtDate) : new Date(),
+      }));
+    if (rows.length > 0) {
+      // Atomic swap: delete old reviews + insert new in one transaction
+      // so a crash between phases never leaves the lead with zero
+      // reviews. See src/app/api/reviews/[leadId]/route.ts for the
+      // same pattern in the manual-refresh path.
+      await prisma.$transaction([
+        prisma.googleReview.deleteMany({ where: { leadId: lead.id } }),
+        prisma.googleReview.createMany({ data: rows }),
+      ]);
+    }
   }
 
   // Merge extracted contacts into WebsiteAudit for downstream workers.

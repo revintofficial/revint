@@ -266,13 +266,20 @@ export async function fetchRun(runId: string): Promise<ApifyRunResult<unknown>> 
 /**
  * Verifies an Apify webhook signature. Apify posts the raw header
  * value we set via `headersTemplate`; a simple equality check is
- * enough (Apify does not use HMAC). Returns true when the header
- * matches `APIFY_WEBHOOK_SECRET` or when no secret is configured
- * (dev mode).
+ * enough (Apify does not use HMAC).
+ *
+ * In production we fail closed if no secret is configured: an
+ * unsecured webhook endpoint that accepts arbitrary callbacks could be
+ * driven by an attacker to mark runs complete or trigger memory
+ * writes. In non-production (dev/test) we still allow missing secrets
+ * so local Apify replay tooling keeps working.
  */
 export function verifyWebhookSecret(headers: Headers): boolean {
   const expected = process.env.APIFY_WEBHOOK_SECRET;
-  if (!expected) return true;
+  if (!expected) {
+    if (process.env.NODE_ENV === "production") return false;
+    return true;
+  }
   const got = headers.get("x-apify-webhook-secret");
   return got === expected;
 }

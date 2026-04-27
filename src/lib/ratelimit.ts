@@ -34,6 +34,8 @@ export const LIMITS = {
   websitePlan: { bucket: "plan", windowSec: 60, limit: 10 },
   websiteSearch: { bucket: "wsrch", windowSec: 60, limit: 15 },
   copilot: { bucket: "copi", windowSec: 60, limit: 30 },
+  websiteCheck: { bucket: "wcheck", windowSec: 60, limit: 30 },
+  crawl: { bucket: "crawl", windowSec: 60, limit: 10 },
 } as const satisfies Record<string, RateLimitConfig>;
 
 export async function checkRateLimit(

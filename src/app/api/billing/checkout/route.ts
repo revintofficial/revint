@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getStripe, isBillingEnabled } from "@/lib/stripe";
 import { PLANS, getPriceId, normalizeCurrency, normalizeCycle } from "@/lib/plans";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
-import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 import type { Plan } from "@/generated/prisma/client";
 
 export async function POST(request: Request) {
@@ -15,6 +15,15 @@ export async function POST(request: Request) {
       );
     }
     const session = await requireUser();
+    // Billing changes (creating a subscription, plan upgrades) must be limited
+    // to workspace owners; non-owners should not be able to commit the
+    // workspace to a paid plan even if they figure out the API contract.
+    if (session.role !== "OWNER") {
+      return NextResponse.json(
+        { error: "Only the workspace owner can manage billing" },
+        { status: 403 }
+      );
+    }
     const body = await request.json();
     const plan = body.plan as Plan;
     const referralId = typeof body.referralId === "string" ? body.referralId : null;
@@ -78,6 +87,17 @@ export async function POST(request: Request) {
       success_url: `${origin}/app/settings/billing?success=1`,
       cancel_url: `${origin}/app/settings/billing?canceled=1`,
       allow_promotion_codes: true,
+      // B2B VAT collection. Customers in EU/UK will see a "Add tax ID" field
+      // that flows back into the Stripe customer record so invoices show
+      // their VAT number. Required to be invoice-compliant in most of EU.
+      tax_id_collection: { enabled: true },
+      // Sync any name/address the customer enters at checkout back onto the
+      // Stripe Customer so the billing portal and future invoices use the
+      // same details. Without this, our `customers.create` defaults stick.
+      customer_update: { name: "auto", address: "auto" },
+      // Collect billing address - prerequisite for tax_id_collection on most
+      // payment methods and a soft signal Stripe uses for fraud scoring.
+      billing_address_collection: "auto",
       // Rewardful attribution: when a referral cookie is present we forward
       // the ID as `client_reference_id` so the standard Stripe + Rewardful
       // integration can credit the partner.
@@ -91,10 +111,6 @@ export async function POST(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.billing.checkout_error", { err: error });
-    return NextResponse.json(
-      { error: "Failed to create checkout session", detail: String(error) },
-      { status: 500 }
-    );
+    return internalError("api.billing.checkout_error", error);
   }
 }

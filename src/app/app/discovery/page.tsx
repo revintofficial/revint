@@ -281,13 +281,26 @@ export default function DiscoveryPage() {
                 variant="outline"
                 className="w-full justify-start"
                 onClick={async () => {
-                  const res = await fetch("/api/crawl", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ crawlAll: true }),
-                  });
-                  const data = await res.json();
-                  toast.success(`Scan complete: ${data.crawled} succeeded, ${data.failed} failed`);
+                  try {
+                    const res = await fetch("/api/crawl", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ crawlAll: true }),
+                    });
+                    if (!res.ok) {
+                      const body = await res.json().catch(() => ({}));
+                      const reason = (body && typeof body === "object" && "error" in body)
+                        ? String(body.error)
+                        : `HTTP ${res.status}`;
+                      toast.error(`Scan failed: ${reason}`);
+                      return;
+                    }
+                    const data = await res.json();
+                    toast.success(`Scan complete: ${data.crawled} succeeded, ${data.failed} failed`);
+                  } catch (err) {
+                    console.error(err);
+                    toast.error("Scan failed: network error");
+                  }
                 }}
               >
                 <Globe className="w-4 h-4" />
@@ -296,13 +309,26 @@ export default function DiscoveryPage() {
               <Button
                 className="w-full justify-start"
                 onClick={async () => {
-                  const res = await fetch("/api/analyze", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ analyzeAll: true }),
-                  });
-                  const data = await res.json();
-                  toast.success(`Analysis complete: ${data.analyzed} succeeded, ${data.failed} failed`);
+                  try {
+                    const res = await fetch("/api/analyze", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ analyzeAll: true }),
+                    });
+                    if (!res.ok) {
+                      const body = await res.json().catch(() => ({}));
+                      const reason = (body && typeof body === "object" && "error" in body)
+                        ? String(body.error)
+                        : `HTTP ${res.status}`;
+                      toast.error(`Analysis failed: ${reason}`);
+                      return;
+                    }
+                    const data = await res.json();
+                    toast.success(`Analysis complete: ${data.analyzed} succeeded, ${data.failed} failed`);
+                  } catch (err) {
+                    console.error(err);
+                    toast.error("Analysis failed: network error");
+                  }
                 }}
               >
                 <Zap className="w-4 h-4" />

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Loader2, Lock, Globe } from "lucide-react";
 import type { WorkspaceBranding } from "@/lib/branding";
+import { getPlanLabel } from "@/lib/plans";
 
 interface Props {
   plan: string;
@@ -101,7 +102,7 @@ export function BrandingForm({
                   White label is on the Agency plan
                 </p>
                 <p className="text-[12px] text-white/55 mt-1">
-                  You&apos;re on {plan}. Upgrade to swap the logo, colors, and
+                  You&apos;re on {getPlanLabel(plan)}. Upgrade to swap the logo, colors, and
                   remove the &quot;Leadac AI&quot; credit on shared mockups.
                 </p>
                 <Link

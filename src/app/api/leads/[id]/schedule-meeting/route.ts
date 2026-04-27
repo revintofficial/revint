@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { createCalendarEvent } from "@/lib/oauth/calendar-client";
-import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 
 interface ScheduleBody {
   accountId: string;
@@ -99,10 +99,6 @@ export async function POST(
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.leads.schedule_meeting_error", { err });
-    return NextResponse.json(
-      { error: "Failed to schedule", detail: String(err) },
-      { status: 500 },
-    );
+    return internalError("api.leads.schedule_meeting_error", err);
   }
 }

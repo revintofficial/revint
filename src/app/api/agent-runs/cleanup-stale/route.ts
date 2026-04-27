@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 
 export async function POST() {
   try {
@@ -41,9 +42,6 @@ export async function POST() {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    return NextResponse.json(
-      { error: "Cleanup failed", detail: String(err) },
-      { status: 500 },
-    );
+    return internalError("api.agent_run.cleanup_error", err);
   }
 }

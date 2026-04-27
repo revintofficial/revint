@@ -45,6 +45,7 @@ export type AgentExportFormat =
  */
 export type EventKind =
   | "lead_created"
+  | "lead_reviews_updated"
   | "inbox_reply_received"
   | "user_one_click_pitch"
   | "user_deep_research"
