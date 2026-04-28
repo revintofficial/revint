@@ -11,7 +11,26 @@ import { startAgentRunWorker } from "./agent-run-worker";
 import { startSeoOpsWorker } from "./seo-ops-worker";
 import { logger } from "../lib/logger";
 
-logger.info("worker.supervisor.starting");
+function maskRedisUrl(raw: string | undefined): string {
+  if (!raw) return "<UNSET>";
+  try {
+    const u = new URL(raw);
+    const host = u.hostname || "<no-host>";
+    const port = u.port || "<no-port>";
+    const proto = u.protocol.replace(":", "");
+    const hasPassword = u.password ? "yes" : "no";
+    return `${proto}://***:${hasPassword}@${host}:${port}`;
+  } catch {
+    return "<UNPARSEABLE>";
+  }
+}
+
+logger.info("worker.supervisor.starting", {
+  redisUrlPresent: Boolean(process.env.REDIS_URL),
+  redisUrlMasked: maskRedisUrl(process.env.REDIS_URL),
+  databaseUrlPresent: Boolean(process.env.DATABASE_URL),
+  nodeEnv: process.env.NODE_ENV ?? "<unset>",
+});
 
 const discoveryWorker = startDiscoveryWorker();
 const crawlWorker = startCrawlWorker();
