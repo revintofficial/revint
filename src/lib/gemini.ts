@@ -277,23 +277,13 @@ function buildAnalysisPrompt(
   "no_whatsapp" (no WhatsApp contact)`
     : `- reason_codes: string[] — e.g. "no_website", "poor_mobile", "no_booking", "no_whatsapp", "weak_seo", "no_https", "slow_site", "no_ecommerce", "high_rating_weak_site"`;
 
-  const offerLevels = isRestaurant
-    ? `- suggested_offer: "starter" | "growth" | "sales"
-  (starter = basic QR menu setup,
-   growth = QR menu + online reservation + delivery integration,
-   sales = growth + loyalty program + table management + analytics dashboard)`
-    : `- suggested_offer: "starter" | "growth" | "sales"
-  (starter = basic mobile site,
-   growth = site + booking + whatsapp + local SEO,
-   sales = growth + inventory showcase + review embedding + lead capture)`;
-
-  // ServicePackage block: only emitted when the workspace has
-  // explicitly configured priced tiers (Settings -> "Service
-  // packages"). Without this, Gemini hallucinates plan names that
-  // don't exist in the rep's deck and price bands that don't match
-  // the actual price card. Empty workspaces fall through to the
-  // legacy STARTER/GROWTH/SALES enum so the v1 behaviour stays
-  // unchanged for non-FineDine tenants that haven't set packages up.
+  // ServicePackage block. The new lead_created chain is gated on the
+  // workspace having at least one ServicePackage, so the scorer
+  // ALWAYS sees a non-empty list and Gemini is asked for a required
+  // recommended_package_id keyed to the actual rep price card.
+  // Legacy single-shot callers (api/analyze, analyze-worker) that
+  // don't pre-load packages get the old optional shape so they keep
+  // working — they just don't get a package recommendation.
   const hasPackages = servicePackages.length > 0;
   const packagesMenu = hasPackages
     ? `\nWorkspace service packages (the actual tiers the rep sells - ALWAYS pick one of these IDs verbatim, do NOT invent a new tier):\n${servicePackages
@@ -309,8 +299,8 @@ function buildAnalysisPrompt(
     : "";
   const packageFields = hasPackages
     ? `
-- recommended_package_id: string — the EXACT id of one of the packages above. Pick the cheapest tier whose features cover this lead's pain points; only step up if the audit shows multi-location, hotel, or enterprise signals that justify the higher tier.
-- recommended_package_reason: string (1-2 sentences explaining why this specific tier fits this specific lead — reference an audit signal or pain point so the rep can quote it on the discovery call)`
+- recommended_package_id: string (REQUIRED) — the EXACT id of one of the packages above. Pick the cheapest tier whose features cover this lead's pain points; only step up if the audit shows multi-location, hotel, or enterprise signals that justify the higher tier.
+- recommended_package_reason: string (REQUIRED, 1-2 sentences explaining why this specific tier fits this specific lead — reference an audit signal or pain point so the rep can quote it on the discovery call)`
     : "";
 
   return `${industryContext}${offerContext}${confidenceCaveat}${packagesMenu}
@@ -329,9 +319,7 @@ ${reasonCodesGuidance}
 - why_good_target: string (1-2 sentences explaining why this business is a good target for YOUR offer)
 - likely_pain_points: string[] (list of likely pain points relevant to your offer)
 - best_sales_angle: string (the best sales angle for approaching this business, 1 sentence)
-${offerLevels}
-- personalized_first_message: string (a personalized cold outreach message for WhatsApp/email, friendly and professional, max 3 sentences)
-- expected_price_band: string (e.g. "£500-800", "£800-1500", "£1500-3000")${packageFields}
+- personalized_first_message: string (a personalized cold outreach message for WhatsApp/email, friendly and professional, max 3 sentences)${packageFields}
 
 Respond ONLY with valid JSON, no markdown, no explanation.`;
 }
@@ -747,6 +735,24 @@ export interface LeadDossierPayload {
     metadata: Record<string, unknown>;
     createdAt: string;
   }>;
+  /**
+   * Workspace ServicePackage rows (the actual price card the rep
+   * sells). The dossier prompt pins its "Recommended Package"
+   * section to this list verbatim so the markdown can never
+   * surface a hard-coded "Starter / Growth / Sales" tier that
+   * doesn't exist in the rep's own deck. Empty array means the
+   * Recommended Package section is omitted entirely (the
+   * `lead_created` chain shouldn't run for workspaces with zero
+   * packages, but legacy on-demand dossier requests survive
+   * gracefully).
+   */
+  workspaceServicePackages: Array<{
+    id: string;
+    name: string;
+    priceLabel: string;
+    features: string[];
+    isPopular: boolean;
+  }>;
 }
 
 export async function generateLeadDossier(
@@ -764,17 +770,23 @@ export async function generateLeadDossier(
     },
   });
 
-  const prompt = `You are a senior B2B sales / research analyst working for a web design agency that sells websites and lead-gen add-ons to local service businesses. Below is ALL the raw intelligence different AI agents have collected about ONE business (a lead), provided as JSON: business metadata, website audit, sales-opportunity scoring, review analysis, raw Google reviews, voice notes, successful agent-run outputs (Apify social scrapers, SERP rank, competitor ads, Facebook/Instagram/TikTok/LinkedIn/Reddit, website mockup, opener writer, video script, etc.) and semantic memory rows.
+  const hasPackages = payload.workspaceServicePackages.length > 0;
+  // The dossier owns the package recommendation: it must pick exactly
+  // one of the workspace's configured tiers and quote its name +
+  // priceLabel verbatim. Hard-coded Starter/Growth/Sales tiers are
+  // gone; if the workspace has no packages the Recommended Package
+  // section is omitted entirely (legacy on-demand dossier callers).
+  const recommendedPackageSection = hasPackages
+    ? `2. Recommended Package — pick exactly ONE of the workspace's configured packages from the JSON \`workspaceServicePackages\` array. Quote the package's \`name\` and \`priceLabel\` verbatim, then justify the fit in 1-2 sentences referencing concrete audit / review findings. Pick the cheapest tier whose features cover this lead's pain points; only step up if the audit shows multi-location, hotel, or enterprise signals that justify the higher tier.`
+    : `2. Recommended Package — write "no data" (the workspace has not configured any service packages yet; nothing to recommend).`;
+
+  const prompt = `You are a senior B2B sales / research analyst working for a web design agency that sells websites and lead-gen add-ons to local service businesses. Below is ALL the raw intelligence different AI agents have collected about ONE business (a lead), provided as JSON: business metadata, website audit, sales-opportunity scoring, review analysis, raw Google reviews, voice notes, successful agent-run outputs (Apify social scrapers, SERP rank, competitor ads, Facebook/Instagram/TikTok/LinkedIn/Reddit, website mockup, opener writer, video script, etc.), semantic memory rows, and the workspace's own service packages (the price card the rep actually sells).
 
 Task: Synthesise this raw data into a clean "Lead Dossier" that a salesperson seeing this lead for the first time can read in under 2 minutes and act on. You own the scoring and the package selection: do not defer to the sales_opportunity row — form your own judgement from the full evidence set. Write in English.
 
 Required sections (use Markdown ## headings, keep the exact order):
 1. Lead Score — a single integer 0-100 (higher = better target) on its own line prefixed with "Score: ", then a short label ("High", "Medium" or "Low" potential), then 1-2 sentences justifying the score from the evidence. Re-compute from scratch; if the JSON contains an existing salesOpportunity.opportunityScore note it only as a cross-check.
-2. Recommended Package — choose exactly one of "Starter", "Growth" or "Sales":
-     - Starter: basic mobile-friendly marketing site, minimal forms, for leads with no site or a placeholder.
-     - Growth: site + online booking + WhatsApp + local SEO, for leads with a basic site or missing conversion paths.
-     - Sales: Growth + inventory/showcase + review embedding + lead-capture automation, for leads already generating demand that leaks.
-   Also quote a price band in GBP (e.g. £600–£900, £1.2k–£2k, £2.5k–£4k) and justify the fit in 1-2 sentences referencing concrete audit / review findings.
+${recommendedPackageSection}
 3. Business Overview — what they do, where, size signals.
 4. Web Presence — website audit findings, performance/security/mobile summary, technical weaknesses.
 5. Social & SERP Signals — posts, trends, competitors, ads, Reddit mentions from the social agents; if none, write "no data".
@@ -791,6 +803,7 @@ Rules:
 - Do not use emojis. Avoid promotional vocabulary (game-changer, unlock, elevate, seamless, etc.).
 - Long reviews, social posts or memory texts should be summarised in 1-2 sentences, not pasted in full.
 - Maximum 850 words.
+- NEVER invent a tier name or price band that is not in the \`workspaceServicePackages\` array. Hard-coded "Starter / Growth / Sales" labels are forbidden; only quote what the rep actually sells.
 
 Raw JSON (LEAD_DOSSIER_INPUT):
 \`\`\`json

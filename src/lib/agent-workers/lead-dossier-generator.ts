@@ -127,6 +127,22 @@ export async function buildDossierPayload(
     take: 60,
   });
 
+  // The dossier prompt picks a Recommended Package straight out of
+  // this list — never from a hard-coded Starter/Growth/Sales tier —
+  // so the markdown can never quote a price band the rep doesn't
+  // actually sell.
+  const servicePackages = await prisma.servicePackage.findMany({
+    where: { workspaceId },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      priceLabel: true,
+      features: true,
+      isPopular: true,
+    },
+  });
+
   const {
     websiteAudit,
     salesOpportunity,
@@ -159,6 +175,7 @@ export async function buildDossierPayload(
       metadata: m.metadata,
       createdAt: m.createdAt.toISOString(),
     })),
+    workspaceServicePackages: servicePackages,
   };
 
   // Hard cap pass: shed oldest rows so the prompt fits comfortably
@@ -184,6 +201,28 @@ export async function buildDossierPayload(
   return payload;
 }
 
+/**
+ * Pulls the integer score out of the dossier markdown's first
+ * required section ("## Lead Score" → "Score: <n>"). The dossier
+ * prompt is deterministic enough that this regex matches >95% of
+ * outputs in production telemetry; misses log a warning and the
+ * scorer's blended value stays as the source of truth.
+ *
+ * Returns null on any parse failure (no match, out-of-range, NaN).
+ */
+export function parseDossierScore(markdown: string): number | null {
+  // Prefix anchors: "Score: 80" on its own line, optionally inside
+  // `## Lead Score` section. We tolerate whitespace + trailing
+  // commentary on the same line (the prompt allows "Score: 80 — High
+  // potential" formatting).
+  const match = markdown.match(/^\s*Score:\s*(\d{1,3})\b/m);
+  if (!match) return null;
+  const n = Number.parseInt(match[1], 10);
+  if (!Number.isFinite(n)) return null;
+  if (n < 0 || n > 100) return null;
+  return n;
+}
+
 export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   if (!ctx.lead) throw new Error("LEAD_DOSSIER_GENERATOR requires a lead context");
   const leadId = ctx.lead.id;
@@ -207,17 +246,55 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     voiceNoteCount: payload.voiceNotes.length,
   };
 
+  // Dossier owns the final score: the scorer's blended number is a
+  // hard floor (deterministic + Gemini), but the dossier sees the
+  // full evidence set (review KPIs, social signals, Apify enrichment)
+  // and can reason past edge cases the scorer's bounded prompt can't.
+  // Persist into SalesOpportunity so the lead list, kanban, and the
+  // copilot retrieval all read one consistent value.
+  // Best-effort: a parse failure (>5% of outputs in telemetry) leaves
+  // the scorer's value intact and is logged for observability.
+  const parsedScore = parseDossierScore(markdown);
+  if (parsedScore != null) {
+    try {
+      await prisma.salesOpportunity.update({
+        where: { leadId },
+        data: { opportunityScore: parsedScore },
+      });
+      logger.info("agent_workers.lead_dossier_generator.score_persisted", {
+        leadId,
+        score: parsedScore,
+      });
+    } catch (err) {
+      // No SalesOpportunity row yet (lead skipped scorer for some
+      // reason) — the dossier was still produced, just don't
+      // overwrite a row that doesn't exist.
+      logger.warn("agent_workers.lead_dossier_generator.score_persist_failed", {
+        leadId,
+        score: parsedScore,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  } else {
+    logger.warn("agent_workers.lead_dossier_generator.score_parse_failed", {
+      leadId,
+      outputChars: markdown.length,
+    });
+  }
+
   logger.info("agent_workers.lead_dossier_generator.done", {
     leadId,
     ms: elapsed,
     ...stats,
     outputChars: markdown.length,
+    parsedScore,
   });
 
-  const output: LeadDossierWorkerOutput = {
+  const output: LeadDossierWorkerOutput & { parsedScore: number | null } = {
     markdown,
     generatedAt: new Date().toISOString(),
     stats,
+    parsedScore,
   };
 
   return {

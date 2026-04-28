@@ -15,6 +15,10 @@ export async function GET() {
             salesOpportunity: {
               select: {
                 opportunityScore: true,
+                // Legacy STARTER/GROWTH/SALES enum (deprecated P0.4) —
+                // selected so historic rows still render in the export
+                // PDF/Excel; new rows leave this at the schema default
+                // and surface their package via recommendedPackageId.
                 suggestedOffer: true,
                 status: true,
                 whyGoodTarget: true,
@@ -23,6 +27,8 @@ export async function GET() {
                 personalizedFirstMessage: true,
                 expectedPriceBand: true,
                 reasonCodes: true,
+                recommendedPackageId: true,
+                recommendedPackageReason: true,
               },
             },
             googleReviews: { orderBy: { publishTime: "desc" } },
@@ -35,7 +41,46 @@ export async function GET() {
       ],
     });
 
-    return NextResponse.json({ items });
+    // Resolve recommendedPackageId → name + priceLabel in a single
+    // workspace-scoped query so the watchlist export renders the
+    // package the dossier picked, not the legacy STARTER/GROWTH/SALES
+    // enum. Free-text id => unresolved rows fall back to the legacy
+    // suggestedOffer column (export side handles the OR).
+    const packageIds = Array.from(
+      new Set(
+        items
+          .map((it) => it.lead.salesOpportunity?.recommendedPackageId)
+          .filter((id): id is string => !!id),
+      ),
+    );
+    const packages = packageIds.length
+      ? await prisma.servicePackage.findMany({
+          where: { workspaceId, id: { in: packageIds } },
+          select: { id: true, name: true, priceLabel: true },
+        })
+      : [];
+    const packageById = new Map(packages.map((p) => [p.id, p]));
+
+    const decorated = items.map((it) => {
+      const opp = it.lead.salesOpportunity;
+      if (!opp) return it;
+      const pkg = opp.recommendedPackageId
+        ? packageById.get(opp.recommendedPackageId) ?? null
+        : null;
+      return {
+        ...it,
+        lead: {
+          ...it.lead,
+          salesOpportunity: {
+            ...opp,
+            recommendedPackageName: pkg?.name ?? null,
+            recommendedPackagePriceLabel: pkg?.priceLabel ?? null,
+          },
+        },
+      };
+    });
+
+    return NextResponse.json({ items: decorated });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

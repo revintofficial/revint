@@ -12,12 +12,27 @@ interface GoogleReviewData {
 
 interface SalesOpportunityData {
   opportunityScore: number;
-  suggestedOffer: string;
+  /**
+   * Legacy STARTER/GROWTH/SALES enum (deprecated P0.4). The export
+   * still falls back to this column for legacy rows that pre-date
+   * the ServicePackage migration; new rows leave it at the schema
+   * default and surface their package via `recommendedPackageName`.
+   */
+  suggestedOffer?: string | null;
+  /** Resolved ServicePackage.name (joined upstream by /api/leads). */
+  recommendedPackageName?: string | null;
+  /** Resolved ServicePackage.priceLabel (joined upstream by /api/leads). */
+  recommendedPackagePriceLabel?: string | null;
   status: string;
   whyGoodTarget?: string | null;
   likelyPainPoints?: string[];
   bestSalesAngle?: string | null;
   personalizedFirstMessage?: string | null;
+  /**
+   * Legacy free-text price band (deprecated P0.4). Kept readable so
+   * historic exports don't lose the column; new rows are blank and
+   * the export prefers `recommendedPackagePriceLabel`.
+   */
   expectedPriceBand?: string | null;
   reasonCodes?: string[];
 }
@@ -68,8 +83,24 @@ export async function exportToExcel(items: WatchlistExportItem[]) {
     { label: "Selected Package", values: items.map((i) => i.selectedOffer || "") },
     { label: "Meeting Result", values: items.map((i) => meetingLabel(i.meetingResult)) },
     { label: "Opportunity Score", values: items.map((i) => i.lead.salesOpportunity?.opportunityScore ?? "") },
-    { label: "Suggested Package", values: items.map((i) => i.lead.salesOpportunity?.suggestedOffer || "") },
-    { label: "Price Range", values: items.map((i) => i.lead.salesOpportunity?.expectedPriceBand || "") },
+    {
+      label: "Recommended Package",
+      values: items.map(
+        (i) =>
+          i.lead.salesOpportunity?.recommendedPackageName ||
+          i.lead.salesOpportunity?.suggestedOffer ||
+          "",
+      ),
+    },
+    {
+      label: "Price",
+      values: items.map(
+        (i) =>
+          i.lead.salesOpportunity?.recommendedPackagePriceLabel ||
+          i.lead.salesOpportunity?.expectedPriceBand ||
+          "",
+      ),
+    },
     { label: "Status", values: items.map((i) => i.lead.salesOpportunity?.status || "") },
     { label: "Why Good Target", values: items.map((i) => i.lead.salesOpportunity?.whyGoodTarget || "") },
     {
@@ -239,8 +270,14 @@ export async function exportToPDF(items: WatchlistExportItem[]) {
       pdf.setFont("Roboto", "normal");
       pdf.setTextColor(63, 63, 70);
 
-      pdf.text(`Suggested Package: ${opp.suggestedOffer}`, margin + 2, y); y += 5;
-      if (opp.expectedPriceBand) { pdf.text(`Price Range: ${opp.expectedPriceBand}`, margin + 2, y); y += 5; }
+      const packageLabel =
+        opp.recommendedPackageName ?? opp.suggestedOffer ?? null;
+      const priceLabel =
+        opp.recommendedPackagePriceLabel ?? opp.expectedPriceBand ?? null;
+      if (packageLabel) {
+        pdf.text(`Recommended Package: ${packageLabel}`, margin + 2, y); y += 5;
+      }
+      if (priceLabel) { pdf.text(`Price: ${priceLabel}`, margin + 2, y); y += 5; }
       if (opp.status) { pdf.text(`Status: ${opp.status}`, margin + 2, y); y += 5; }
 
       if (opp.whyGoodTarget) {

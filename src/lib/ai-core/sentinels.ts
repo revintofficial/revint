@@ -17,7 +17,8 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { upsertAndEmbed } from "./memory";
+import { upsert, upsertAndEmbed, enqueueReembed } from "./memory";
+import { EmbeddingError } from "./embed";
 
 /**
  * Embeds a compact LEAD_PROFILE summary into SemanticMemory so the
@@ -100,10 +101,9 @@ export async function embedLeadProfile(args: {
   }
 
   const text = lines.join("\n");
-
-  await upsertAndEmbed({
+  const upsertArgs = {
     workspaceId: args.workspaceId,
-    kind: "LEAD_PROFILE",
+    kind: "LEAD_PROFILE" as const,
     text,
     leadId: args.leadId,
     refType: "lead",
@@ -114,12 +114,36 @@ export async function embedLeadProfile(args: {
       hasWebsite: lead.hasWebsite,
       status: opp?.status ?? null,
     },
-  });
+  };
 
-  logger.info("sentinel.embed_lead_profile.done", {
-    leadId: args.leadId,
-    textLen: text.length,
-  });
+  // Degraded path. The April-26 outage on workspace
+  // 5496e39e-cc76-41bd-b18b-f1128fb9e41b had Gemini's embedding
+  // endpoint returning 429s for the whole batch; the sentinel was
+  // mandatory at that time and crashed the planner_session even
+  // though every other step succeeded. Mirror the
+  // `persistMemoryWrites` fallback in `agent-workers/execute.ts`:
+  // when embedding fails, persist the row WITHOUT a vector and
+  // enqueue an `embed` job so the worker backfills when Gemini
+  // recovers. Any non-EmbeddingError still propagates so real bugs
+  // (DB outage, dim mismatch) fail loudly.
+  try {
+    await upsertAndEmbed(upsertArgs);
+    logger.info("sentinel.embed_lead_profile.done", {
+      leadId: args.leadId,
+      textLen: text.length,
+    });
+    return;
+  } catch (err) {
+    if (!(err instanceof EmbeddingError)) throw err;
+    const memoryId = await upsert(upsertArgs);
+    await enqueueReembed(memoryId);
+    logger.warn("sentinel.embed_lead_profile.degraded", {
+      leadId: args.leadId,
+      memoryId,
+      textLen: text.length,
+      err: err.message,
+    });
+  }
 }
 
 /**

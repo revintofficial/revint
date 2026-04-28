@@ -3,6 +3,7 @@ export { MarketingBackdrop } from "./marketing-backdrop";
 export { MetricCounter } from "./metric-counter";
 export { ValidationQuote } from "./validation-quote";
 export { LeadCardLive } from "./lead-card-live";
+export { AuditScorecard } from "./audit-scorecard";
 export { DiscoveryDemo } from "./discovery-demo";
 export { MockupGeneratorDemo } from "./mockup-generator-demo";
 export { OpenerComposer } from "./opener-composer";

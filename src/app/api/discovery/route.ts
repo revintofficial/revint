@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { discoverLeads, extractBoroughFromAddress } from "@/lib/google-places";
-import { SEARCH_QUERIES } from "@/types";
+import { SEARCH_QUERIES, type PickedLocation } from "@/types";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import {
   assertCanCreateLeads,
@@ -24,6 +24,47 @@ import { geocodeBorough } from "@/lib/geocoding";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
+
+/**
+ * Internal-shape for the per-location loop. Either:
+ *   - mode: "picked" — picked from the LocationPicker; carries
+ *     viewport + lat/lng + countryCode. Triggers a hard
+ *     locationRestriction.rectangle on the Places call (most
+ *     accurate). Stamped onto Lead.sourceQuery so analytics can
+ *     attribute leads to the picked area.
+ *   - mode: "geocoded" — legacy free-text fallback. We pipe the
+ *     string through geocodeBorough and use a 5km circle. Less
+ *     accurate, but never blocks Discovery on a geocoding miss.
+ */
+type ResolvedLocation =
+  | {
+      mode: "picked";
+      placeId: string;
+      name: string;
+      country?: string;
+      lat: number;
+      lng: number;
+      viewport?: PickedLocation["viewport"];
+    }
+  | {
+      mode: "geocoded";
+      name: string;
+      country?: string;
+      lat?: number;
+      lng?: number;
+    };
+
+function isPickedLocation(v: unknown): v is PickedLocation {
+  if (!v || typeof v !== "object") return false;
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.placeId === "string" &&
+    o.placeId.length > 0 &&
+    typeof o.lat === "number" &&
+    typeof o.lng === "number" &&
+    typeof o.displayName === "string"
+  );
+}
 
 export async function POST(request: Request) {
   try {
@@ -49,6 +90,13 @@ export async function POST(request: Request) {
       // route degenerates to a single-query search using `searchQuery`
       // (the picker's selected query, defaulted from the pack).
       nichePackSlug,
+      // NEW: array of verified PickedLocation objects from the
+      // LocationPicker component. Preferred over `boroughName` because
+      // each carries a viewport rectangle Google enforces server-side
+      // — eliminates the "buyukcekmece -> Bend, Oregon" rot. When
+      // present, we run the niche fan-out once per location and dedup
+      // by Place ID across all locations.
+      locations,
     }: {
       searchQuery?: string;
       boroughName?: string;
@@ -56,6 +104,7 @@ export async function POST(request: Request) {
       runAll?: boolean;
       country?: string;
       nichePackSlug?: string;
+      locations?: PickedLocation[];
     } = body;
 
     // Bulk path moved to the worker queue. Previously this ran 5 boroughs x
@@ -94,9 +143,27 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!boroughName) {
+    // Validate input — caller must supply either `locations` (preferred)
+    // or `boroughName` (legacy). At least one is required.
+    const pickedLocations: PickedLocation[] = Array.isArray(locations)
+      ? (locations.filter(isPickedLocation) as PickedLocation[])
+      : [];
+    const hasPicked = pickedLocations.length > 0;
+    if (!hasPicked && !boroughName) {
       return NextResponse.json(
-        { error: "boroughName is required" },
+        { error: "locations[] or boroughName is required" },
+        { status: 400 },
+      );
+    }
+    // Cap the picker payload to a sensible max — the UI also caps at 5
+    // but a malicious / buggy client should not be able to issue 100
+    // fan-outs in one POST.
+    const MAX_LOCATIONS = 5;
+    if (pickedLocations.length > MAX_LOCATIONS) {
+      return NextResponse.json(
+        {
+          error: `Too many locations (max ${MAX_LOCATIONS}); split into multiple Discovery runs.`,
+        },
         { status: 400 },
       );
     }
@@ -123,160 +190,219 @@ export async function POST(request: Request) {
     if (!country) country = wsCtx?.country ?? undefined;
     targetSubNiches = wsCtx?.targetSubNiches ?? [];
 
-    // Geocode the free-typed borough into { lat, lng } so discoverLeads
-    // can attach a hard locationRestriction circle. Without this, Google
-    // Places treats the borough name as a soft hint and returns matches
-    // in the wrong city / country (see Bug #1, Istanbul → Basel,
-    // Maltepe, Pendik). geocodeBorough returns null on any failure
-    // (key missing, API disabled, ZERO_RESULTS) — fall back to the
-    // pre-existing name-only behaviour rather than blocking the
-    // search.
-    const tGeo = Date.now();
-    const coords = await geocodeBorough(boroughName, country).catch(() => null);
-    const location: {
-      name: string;
-      country?: string;
-      lat?: number;
-      lng?: number;
-    } = {
-      name: boroughName,
-      country,
-      ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
-    };
-    logger.info("api.discovery.geocode_resolved", {
-      workspaceId,
-      borough: boroughName,
-      country,
-      hasCoords: !!coords,
-      ms: Date.now() - tGeo,
-    });
+    // Materialise the per-location loop. For picked locations we use
+    // their own viewport + lat/lng directly (no extra geocoding). For
+    // the legacy boroughName path we geocode once and run a single
+    // fallback location.
+    const resolved: ResolvedLocation[] = [];
+    if (hasPicked) {
+      for (const loc of pickedLocations) {
+        resolved.push({
+          mode: "picked",
+          placeId: loc.placeId,
+          name: loc.displayName,
+          country: loc.countryCode ?? country,
+          lat: loc.lat,
+          lng: loc.lng,
+          viewport: loc.viewport,
+        });
+      }
+    } else if (boroughName) {
+      // Geocode the free-typed borough into { lat, lng } so discoverLeads
+      // can attach a (less accurate) circle locationRestriction. Without
+      // this, Google Places treats the borough name as a soft hint and
+      // returns matches in the wrong city / country (Bug #1, Istanbul
+      // → Basel/Maltepe/Pendik). geocodeBorough returns null on any
+      // failure (key missing, API disabled, ZERO_RESULTS) — fall back
+      // to the pre-existing name-only behaviour rather than blocking
+      // the search.
+      const tGeo = Date.now();
+      const coords = await geocodeBorough(boroughName, country).catch(() => null);
+      logger.info("api.discovery.geocode_resolved", {
+        workspaceId,
+        borough: boroughName,
+        country,
+        hasCoords: !!coords,
+        ms: Date.now() - tGeo,
+      });
+      resolved.push({
+        mode: "geocoded",
+        name: boroughName,
+        country,
+        ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
+      });
+    }
 
     type SourcedPlace = {
       place: Awaited<ReturnType<typeof discoverLeads>>[number];
       sourceQuery: string;
+      /** placeId of the resolved location that surfaced this place.
+       *  Used downstream for the `Lead.sourceQuery` stamp. Empty for
+       *  the legacy free-text path. */
+      sourcePlaceId: string;
+      /** Display name of the resolved location for log + lead stamp. */
+      sourceLocationName: string;
     };
 
-    let sourced: SourcedPlace[] = [];
+    const allSourced: SourcedPlace[] = [];
+    let totalLegFailures = 0;
 
-    if (fanOut && pack) {
-      const allChildren = getChildrenOf(pack.slug);
-      // Narrow to the workspace's `targetSubNiches` if set; otherwise fan
-      // out across every child. Empty list = "target all", matching the
-      // form's empty-default semantics.
-      const focusSet = new Set(targetSubNiches);
-      const children =
-        focusSet.size > 0
-          ? allChildren.filter((c) => focusSet.has(c.slug))
-          : allChildren;
-
-      // Build the (child, query, includedTypes) leg list. We iterate
-      // the FIRST TWO searchQueries per child so a single fan-out
-      // surfaces multiple intent variations (e.g. fnb-bar-club hits
-      // both "cocktail bar" and "wine bar") while keeping per-Discovery
-      // Places API calls bounded. Each leg also forwards the child's
-      // discoveryPlaceTypes as includedType, which Google enforces
-      // server-side so "food truck" cannot return a building-materials
-      // store (Bug #2).
-      type FanLeg = {
-        childSlug: string;
-        query: string;
-        includedTypes: string[] | undefined;
+    // Loop locations sequentially. Each location runs the existing fan-
+    // out internally (which IS parallel across child niches), so we
+    // don't need a second outer Promise.all — total wall time is
+    // O(locations) × O(slowest leg) which is fine for ≤5 locations.
+    // Sequential also keeps the per-Discovery API spend predictable
+    // and respects upstream rate limits.
+    for (const r of resolved) {
+      const baseLocation: Parameters<typeof discoverLeads>[1] = {
+        name: r.name,
+        country: r.country,
+        ...(r.mode === "picked"
+          ? {
+              lat: r.lat,
+              lng: r.lng,
+              viewport: r.viewport,
+            }
+          : {
+              ...(r.lat ? { lat: r.lat } : {}),
+              ...(r.lng ? { lng: r.lng } : {}),
+            }),
       };
-      const legs: FanLeg[] = [];
-      for (const c of children) {
-        const queriesForChild = c.searchQueries.slice(0, 2);
-        for (const q of queriesForChild) {
-          if (!q) continue;
-          legs.push({
-            childSlug: c.slug,
-            query: q,
-            includedTypes: c.discoveryPlaceTypes,
-          });
+      const sourcePlaceId = r.mode === "picked" ? r.placeId : "";
+
+      if (fanOut && pack) {
+        const allChildren = getChildrenOf(pack.slug);
+        const focusSet = new Set(targetSubNiches);
+        const children =
+          focusSet.size > 0
+            ? allChildren.filter((c) => focusSet.has(c.slug))
+            : allChildren;
+
+        type FanLeg = {
+          childSlug: string;
+          query: string;
+          includedTypes: string[] | undefined;
+        };
+        const legs: FanLeg[] = [];
+        for (const c of children) {
+          const queriesForChild = c.searchQueries.slice(0, 2);
+          for (const q of queriesForChild) {
+            if (!q) continue;
+            legs.push({
+              childSlug: c.slug,
+              query: q,
+              includedTypes: c.discoveryPlaceTypes,
+            });
+          }
         }
-      }
 
-      const t0 = Date.now();
-      logger.info("api.discovery.fanout_start", {
-        workspaceId,
-        parent: pack.slug,
-        legCount: legs.length,
-        childCount: children.length,
-        focusedTo: focusSet.size > 0 ? Array.from(focusSet) : "all",
-        location: boroughName,
-        country,
-        hasCoords: !!coords,
-      });
+        const t0 = Date.now();
+        logger.info("api.discovery.fanout_start", {
+          workspaceId,
+          parent: pack.slug,
+          legCount: legs.length,
+          childCount: children.length,
+          focusedTo: focusSet.size > 0 ? Array.from(focusSet) : "all",
+          location: r.name,
+          locationMode: r.mode,
+          country: r.country,
+          hasViewport: r.mode === "picked" && !!r.viewport,
+        });
 
-      // Parallel fan-out. Failures are isolated per leg so one bad
-      // query (or rate limit) doesn't blow the whole batch.
-      const settled = await Promise.allSettled(
-        legs.map(async (leg) => {
-          const places = await discoverLeads(leg.query, location, radiusMeters, {
-            includedTypes: leg.includedTypes,
-          });
-          return places.map((p) => ({ place: p, sourceQuery: leg.query }));
-        }),
-      );
-
-      const allSourced: SourcedPlace[] = [];
-      const failedQueries: string[] = [];
-      settled.forEach((r, i) => {
-        if (r.status === "fulfilled") {
-          allSourced.push(...r.value);
-        } else {
-          failedQueries.push(legs[i].query);
-          logger.error("api.discovery.fanout_query_failed", {
-            query: legs[i].query,
-            childSlug: legs[i].childSlug,
-            err: r.reason instanceof Error ? r.reason.message : String(r.reason),
-          });
-        }
-      });
-
-      // Dedup by Place ID; keep the FIRST source query that found it
-      // because earlier queries in the children array are the more
-      // specific (highest-confidence prior) ones.
-      const seen = new Set<string>();
-      sourced = [];
-      for (const item of allSourced) {
-        if (!item.place.id || seen.has(item.place.id)) continue;
-        seen.add(item.place.id);
-        sourced.push(item);
-      }
-
-      logger.info("api.discovery.fanout_done", {
-        workspaceId,
-        parent: pack.slug,
-        totalRaw: allSourced.length,
-        deduped: sourced.length,
-        failedCount: failedQueries.length,
-        ms: Date.now() - t0,
-      });
-    } else {
-      // Single-query path. searchQuery is required when not fanning out.
-      if (!searchQuery) {
-        return NextResponse.json(
-          { error: "searchQuery is required when no parent niche pack is selected" },
-          { status: 400 },
+        const settled = await Promise.allSettled(
+          legs.map(async (leg) => {
+            const places = await discoverLeads(leg.query, baseLocation, radiusMeters, {
+              includedTypes: leg.includedTypes,
+            });
+            return places.map((p) => ({
+              place: p,
+              sourceQuery: leg.query,
+              sourcePlaceId,
+              sourceLocationName: r.name,
+            }));
+          }),
         );
-      }
 
-      const t0 = Date.now();
-      logger.info("api.discovery.places_start", {
-        workspaceId,
-        searchQuery,
-        location: boroughName,
-        country,
-      });
-      const places = await discoverLeads(searchQuery, location, radiusMeters);
-      logger.info("api.discovery.places_done", {
-        workspaceId,
-        count: places.length,
-        location: boroughName,
-        ms: Date.now() - t0,
-      });
-      sourced = places.map((p) => ({ place: p, sourceQuery: searchQuery }));
+        let failedThisLocation = 0;
+        settled.forEach((res, i) => {
+          if (res.status === "fulfilled") {
+            allSourced.push(...res.value);
+          } else {
+            failedThisLocation++;
+            logger.error("api.discovery.fanout_query_failed", {
+              query: legs[i].query,
+              childSlug: legs[i].childSlug,
+              location: r.name,
+              err: res.reason instanceof Error ? res.reason.message : String(res.reason),
+            });
+          }
+        });
+        totalLegFailures += failedThisLocation;
+
+        logger.info("api.discovery.fanout_done", {
+          workspaceId,
+          parent: pack.slug,
+          location: r.name,
+          legs: legs.length,
+          failedCount: failedThisLocation,
+          ms: Date.now() - t0,
+        });
+      } else {
+        // Single-query path. searchQuery is required when not fanning out.
+        if (!searchQuery) {
+          return NextResponse.json(
+            { error: "searchQuery is required when no parent niche pack is selected" },
+            { status: 400 },
+          );
+        }
+
+        const t0 = Date.now();
+        logger.info("api.discovery.places_start", {
+          workspaceId,
+          searchQuery,
+          location: r.name,
+          locationMode: r.mode,
+          country: r.country,
+        });
+        const places = await discoverLeads(searchQuery, baseLocation, radiusMeters);
+        logger.info("api.discovery.places_done", {
+          workspaceId,
+          count: places.length,
+          location: r.name,
+          ms: Date.now() - t0,
+        });
+        for (const p of places) {
+          allSourced.push({
+            place: p,
+            sourceQuery: searchQuery,
+            sourcePlaceId,
+            sourceLocationName: r.name,
+          });
+        }
+      }
     }
+
+    // Dedup by Place ID across ALL locations + legs. Keep the first
+    // hit so earlier (more specific) niche queries win the source-
+    // query attribution. A place that appears in multiple picked
+    // locations gets attributed to the first location it surfaced
+    // from — usually the smaller / more specific one — which is the
+    // intuitive behaviour.
+    const seen = new Set<string>();
+    const sourced: SourcedPlace[] = [];
+    for (const item of allSourced) {
+      if (!item.place.id || seen.has(item.place.id)) continue;
+      seen.add(item.place.id);
+      sourced.push(item);
+    }
+
+    logger.info("api.discovery.dedup_done", {
+      workspaceId,
+      locationCount: resolved.length,
+      totalRaw: allSourced.length,
+      deduped: sourced.length,
+      legFailures: totalLegFailures,
+    });
 
     // Niche slug stamping: parent fan-out → parent slug; leaf pack → its
     // own slug; no pack → null. The classifier later writes subNicheSlug
@@ -293,7 +419,7 @@ export async function POST(request: Request) {
     let quotaHit: string | null = null;
     const tDb = Date.now();
 
-    for (const { place, sourceQuery: srcQ } of sourced) {
+    for (const { place, sourceQuery: srcQ, sourcePlaceId, sourceLocationName } of sourced) {
       if (!place.id) continue;
       const existing = await prisma.lead.findUnique({
         where: { workspaceId_placeId: { workspaceId, placeId: place.id } },
@@ -317,12 +443,20 @@ export async function POST(request: Request) {
       const websiteUrl = place.websiteUri || null;
       // Bug #7: prefer the structured Google address component (works
       // for any country) over the user-typed borough string. We fall
-      // back to the user input only when Google didn't return a
-      // recognisable component — e.g. coastal / industrial addresses
-      // where there is no admin_area_level_2 anywhere in the chain.
+      // back to the resolved location's display name only when Google
+      // didn't return a recognisable component — e.g. coastal /
+      // industrial addresses where there is no admin_area_level_2
+      // anywhere in the chain.
       const detectedBorough =
         extractBoroughFromAddress(address, place.addressComponents) ??
-        boroughName;
+        sourceLocationName;
+      // Stamp the picked location's placeId onto Lead.sourceQuery so
+      // analytics queries can group leads by where they were searched
+      // from, not by what the user typed. Empty marker for legacy
+      // free-text path keeps the column shape stable.
+      const sourceQueryStamp = sourcePlaceId
+        ? `${srcQ} in ${sourceLocationName} [${sourcePlaceId}]`
+        : `${srcQ} in ${sourceLocationName}`;
       const lead = await prisma.lead.create({
         data: {
           workspaceId,
@@ -338,7 +472,7 @@ export async function POST(request: Request) {
           reviewCount: place.userRatingCount || null,
           businessStatus: place.businessStatus || null,
           primaryType: place.primaryType || null,
-          sourceQuery: `${srcQ} in ${boroughName}`,
+          sourceQuery: sourceQueryStamp,
           sourceLat: undefined,
           sourceLng: undefined,
           crawlStatus: websiteUrl ? "PENDING" : "NO_WEBSITE",
@@ -382,6 +516,7 @@ export async function POST(request: Request) {
       skipped,
       total: sourced.length,
       fanOut: !!fanOut,
+      locationCount: resolved.length,
       ms: Date.now() - tDb,
     });
 
@@ -391,6 +526,7 @@ export async function POST(request: Request) {
       skipped,
       total: sourced.length,
       fanOut: !!fanOut,
+      locationCount: resolved.length,
       ...(quotaHit ? { quota: quotaHit } : {}),
     });
   } catch (error) {

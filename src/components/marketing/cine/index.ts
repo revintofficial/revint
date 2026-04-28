@@ -2,6 +2,7 @@ export { BlurText } from "./blur-text";
 export { ScrubSequence } from "./scrub-sequence";
 export { CineHero } from "./cine-hero";
 export { CineBento, type CineService } from "./cine-bento";
+export { CineFeatures } from "./cine-features";
 export { CineWhy, type CineReason } from "./cine-why";
 export { CineProcess, type CineStep } from "./cine-process";
 export { CineStats, type CineStat } from "./cine-stats";

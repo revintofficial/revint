@@ -22,6 +22,8 @@
  */
 import type { EventKind } from "@/lib/agent-workers/types";
 import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
+import { workspaceHasServicePackages } from "@/lib/workspace";
 
 export interface EventPayload extends Record<string, unknown> {
   workspaceId: string;
@@ -86,6 +88,40 @@ export async function emit(
 ): Promise<string> {
   if (!payload.workspaceId) {
     throw new Error(`events.emit: workspaceId is required for event ${event}`);
+  }
+
+  // ServicePackage gate (P0.4). The dossier picks the recommended
+  // tier from the workspace's price card, so a workspace with zero
+  // packages produces a dossier that can't recommend anything and a
+  // scorer that can't ask Gemini for an id. Rather than burn Gemini
+  // credits on a half-formed pipeline, mark the lead as
+  // BLOCKED_NEEDS_PACKAGES and bail before the planner spins up. The
+  // dashboard banner + onboarding flow prompt the workspace owner to
+  // fill in their packages, then `POST /api/leads/process-pending`
+  // re-emits `lead_created` for every blocked lead.
+  if (event === "lead_created" && payload.leadId) {
+    const ok = await workspaceHasServicePackages(payload.workspaceId);
+    if (!ok) {
+      try {
+        await prisma.lead.updateMany({
+          where: { id: payload.leadId, workspaceId: payload.workspaceId },
+          data: { pipelineStatus: "BLOCKED_NEEDS_PACKAGES" },
+        });
+      } catch (err) {
+        // Status flag is observability, not correctness — never let a
+        // schema/migration drift block the rest of the pipeline.
+        logger.warn("events.lead_created.block_status_failed", {
+          workspaceId: payload.workspaceId,
+          leadId: payload.leadId,
+          err: err instanceof Error ? err.message : String(err),
+        });
+      }
+      logger.info("events.lead_created.blocked_no_packages", {
+        workspaceId: payload.workspaceId,
+        leadId: payload.leadId,
+      });
+      return "";
+    }
   }
 
   // Lazy-load the planner to avoid an import cycle (planner imports

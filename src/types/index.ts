@@ -40,20 +40,74 @@ export interface DiscoveryQuery {
       radius: number;
     };
   };
-  // Hard exclude — Google drops any place outside the circle. We
+  // Hard exclude — Google drops any place outside the area. We
   // prefer this whenever we have geocoded coordinates (see
   // src/lib/geocoding.ts) so a search for "Istanbul Kartal" cannot
-  // surface a hotel in Maltepe or Basel.
-  locationRestriction?: {
-    circle: {
-      center: { latitude: number; longitude: number };
-      radius: number;
-    };
-  };
+  // surface a hotel in Maltepe or Basel. Either circle (geocoded
+  // free-text fallback path) OR rectangle (preferred — comes from
+  // the picked place's own viewport bounds, which fit the actual
+  // admin polygon better than a fixed-radius circle).
+  locationRestriction?:
+    | {
+        circle: {
+          center: { latitude: number; longitude: number };
+          radius: number;
+        };
+      }
+    | {
+        rectangle: {
+          low: { latitude: number; longitude: number };
+          high: { latitude: number; longitude: number };
+        };
+      };
   // Server-side type filter. e.g. ["restaurant", "bar"] makes Google
   // return only those primary types — the cheapest way to keep
   // "food truck" from matching a truck dealer.
   includedTypes?: string[];
+}
+
+/**
+ * A geographic viewport (rectangle) returned by Google Places for any
+ * place. NE corner = `high`, SW corner = `low`, in Google's own
+ * vocabulary. We use this directly as `locationRestriction.rectangle`
+ * so a search inside Büyükçekmece (a ~15km coastal district) covers
+ * the actual admin polygon instead of a 5km circle around the
+ * centroid.
+ */
+export interface PlaceViewport {
+  ne: { lat: number; lng: number };
+  sw: { lat: number; lng: number };
+}
+
+/**
+ * The shape produced by the LocationPicker (combobox + chips) and
+ * consumed by /api/discovery. Each entry corresponds to one user
+ * selection from the Google Places Autocomplete (New) dropdown.
+ *
+ *   placeId       – Google Places opaque id (e.g. "ChIJ..."). Stable
+ *                   across sessions; we stamp it onto Lead.sourceQuery
+ *                   so analytics can group by the picked area instead
+ *                   of by user typing.
+ *   displayName   – the full canonical name ("Büyükçekmece, Istanbul,
+ *                   Türkiye"). Used in toast / breadcrumb copy.
+ *   primaryText / secondaryText – the two-line label Google shows in
+ *                   the autocomplete dropdown. Stored so we can render
+ *                   the picked chip the same way.
+ *   lat, lng      – fallback circle centre when viewport is missing.
+ *   viewport      – the place's own bounding box; preferred over lat/
+ *                   lng for fan-out queries.
+ *   countryCode   – ISO-2 (e.g. "TR"). Optional — derived from the
+ *                   addressComponents when the picker fetches details.
+ */
+export interface PickedLocation {
+  placeId: string;
+  displayName: string;
+  primaryText: string;
+  secondaryText: string;
+  lat: number;
+  lng: number;
+  viewport?: PlaceViewport;
+  countryCode?: string;
 }
 
 export interface WebsiteFeatures {
@@ -160,14 +214,16 @@ export interface GeminiAnalysis {
   why_good_target: string;
   likely_pain_points: string[];
   best_sales_angle: string;
-  suggested_offer: "starter" | "growth" | "sales";
   personalized_first_message: string;
-  expected_price_band: string;
   /**
    * Workspace-defined ServicePackage id the analyst chose for this
-   * lead. Null when the workspace has no packages configured (UI
-   * falls back to suggested_offer enum). Free-text id, NOT a Prisma
-   * enum, since packages are workspace-scoped runtime data.
+   * lead. Required when the workspace has packages configured (the
+   * `lead_created` chain is now gated on at least one ServicePackage
+   * row, so this field should always come back populated in the new
+   * pipeline). Null is tolerated for backwards compatibility with
+   * legacy single-shot analyze callers (api/analyze, analyze-worker)
+   * that don't pre-load packages — those rows simply lack a package
+   * recommendation. Free-text id, NOT a Prisma enum.
    */
   recommended_package_id?: string | null;
   /**

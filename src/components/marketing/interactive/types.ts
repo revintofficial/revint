@@ -11,6 +11,10 @@ export interface DemoLead {
   signals?: DemoAuditSignal[];
   services?: string[];
   brandColor?: string;
+  /** A short customer-review snippet pulled from Google reviews. */
+  reviewQuote?: string;
+  /** Industry / niche label shown on the lead chip. */
+  niche?: string;
 }
 
 export interface DemoAuditSignal {

@@ -2,16 +2,16 @@
 import { ArrowUpRight, Sparkles } from "lucide-react";
 import { PricingCards } from "@/components/marketing/pricing-cards";
 import { HomeScrollTour } from "@/components/marketing/home-scroll-tour";
+import MultiOrbitSemiCircle from "@/components/ui/multi-orbit-semi-circle";
 import {
   CineHero,
-  CineBento,
+  CineFeatures,
   CineWhy,
   CineProcess,
   CineStats,
   CineTestimonials,
   CineFaq,
   CineCta,
-  type CineService,
   type CineReason,
   type CineStep,
   type CineStat,
@@ -56,45 +56,6 @@ export const metadata = buildMetadata({
 const HERO_FRAMES_PATH = "/frames";
 const HERO_FRAME_COUNT = 0;
 const HERO_FRAME_EXT = "jpg" as const;
-
-const SERVICES: CineService[] = [
-  {
-    icon: "Search",
-    title: "A list nobody else is pitching",
-    body: "Apollo and Clay sell the same 50M contacts to every agency on the planet. Postcode plus niche pulls 50 to 1,000 fresh businesses live off Google Places — local-deep where the enterprise databases are blind. The list you get this morning, no other agency has tonight.",
-    accent: "hsl(231 75% 74%)",
-  },
-  {
-    icon: "Globe",
-    title: "The homework, already done",
-    body: "Every lead lands with its own site read for you — booking flow, mobile fit, page speed, schema, security headers, up to 500 Google reviews. The AI turns the findings into a 0-100 opportunity score, the angle to pitch, the offer tier, and the price band you can charge. You stop tabbing through websites before the first line gets written.",
-    accent: "hsl(165 80% 62%)",
-  },
-  {
-    icon: "Wand2",
-    title: "An opener that reads like you researched them",
-    body: "The first draft references the exact thing the audit found. The booking page that breaks on mobile. The 1-star review they never replied to. The schema they’re missing. The reply asks what it would cost, not who you are.",
-    accent: "hsl(280 80% 72%)",
-  },
-  {
-    icon: "LayoutGrid",
-    title: "A one-page mockup, hand-attached to the email",
-    body: "The thing nobody else is doing. Every opener ships with a private link to a one-page mockup of how their site could look — branded for your agency, ready for the prospect to click. The link is the conversion device; click rate and reply rate compound off the same line.",
-    accent: "hsl(38 90% 70%)",
-  },
-  {
-    icon: "Send",
-    title: "Your inbox. Your brand. Your reputation.",
-    body: "Auto-send stays off by default. You connect Gmail or Outlook, review the draft, send it from your own sender — so the deliverability score and the quality floor both stay yours. Replies attribute back to the lead, the pipeline stage advances on its own, and Monday morning is not a CRM cleanup.",
-    accent: "hsl(12 85% 66%)",
-  },
-  {
-    icon: "PhoneCall",
-    title: "What you sold, ready to install the day they sign",
-    body: "When the contract closes, Leadac exports the AI receptionist (Synthflow / Retell / Vapi / GHL), the review-reply agent with a human gate on 1- and 2-star reviews, and the 60-second lead-response tree for GHL, n8n, or Make. Booking widget and GBP auto-post are in beta. The retainer is already packaged.",
-    accent: "hsl(200 85% 66%)",
-  },
-];
 
 const REASONS: CineReason[] = [
   {
@@ -311,12 +272,7 @@ export default function LandingPage() {
         partners={["Smartlead", "Instantly", "GHL", "Gmail", "Outlook"]}
       />
 
-      <CineBento
-        eyebrow="Why it works"
-        headline="Cold email is broken because it sounds cold."
-        sub="What gets a reply is proof you did your homework. We do the homework for you on every prospect — audit, opener, mockup — and ship it on the first line. The prospect stops asking who you are. They ask what it would cost."
-        services={SERVICES}
-      />
+      <CineFeatures />
 
       {/* Live interactive scroll tour — the product, shown actually working.
           Keeps a dark wrapper so the existing dark-themed product frames
@@ -371,6 +327,15 @@ export default function LandingPage() {
         headline="From empty screen to signed client."
         sub="No onboarding call. No 60-page doc. You open the app, type a postcode, hit go — the tool carries the rest."
         steps={STEPS}
+      />
+
+      {/* Integrations orbit — sits after the process so the buyer can answer
+          "...and what does it plug into?" without scrolling for it. Light
+          section keeps the rhythm against the dark Brain block below. */}
+      <MultiOrbitSemiCircle
+        eyebrow="Integrations"
+        title="Plugs into the stack you already pay for."
+        subtitle="Send from Gmail or Outlook. Export to Smartlead, Instantly, or GHL. Install the AI receptionist into Synthflow, Retell, or Vapi. One subscription, every layer — no new contracts to sign."
       />
 
       {/* The brain — copilot tools + learning loop. Dark-soft wrapper to

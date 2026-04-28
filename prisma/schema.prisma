@@ -99,6 +99,19 @@ enum SubNicheSource {
   MANUAL
 }
 
+// Pipeline-level state of a Lead. OK means the planner is free to run
+// the lead_created chain. BLOCKED_NEEDS_PACKAGES means the workspace
+// has not configured any ServicePackage rows yet, so the SCORER would
+// have nothing to recommend — the lead is parked and the UI surfaces a
+// "process pending leads" CTA on the Service Packages settings page
+// once the rep adds their first tier. Distinct from analyzeStatus /
+// crawlStatus / reviewAnalysisStatus which describe individual worker
+// outcomes; this one gates the entire lead_created chain at emit-time.
+enum LeadPipelineStatus {
+  OK
+  BLOCKED_NEEDS_PACKAGES
+}
+
 enum EmailProvider {
   GMAIL
   OUTLOOK
@@ -419,6 +432,13 @@ model Lead {
   snoozeUntil       DateTime? @map("snooze_until")
   assignedToUserId  String?   @map("assigned_to_user_id") @db.Uuid
 
+  // Pipeline gate (Service Packages). Defaults to OK for backwards
+  // compatibility; flipped to BLOCKED_NEEDS_PACKAGES by `emit("lead_created")`
+  // when the workspace has zero ServicePackage rows so the analyst
+  // doesn't get to a Gemini call without a price card to pick from.
+  // The workspace's first package creation should re-process these.
+  pipelineStatus LeadPipelineStatus @default(OK) @map("pipeline_status")
+
   createdAt            DateTime             @default(now()) @map("created_at")
   updatedAt            DateTime             @updatedAt @map("updated_at")
 
@@ -445,6 +465,7 @@ model Lead {
   @@index([workspaceId, archivedAt])
   @@index([workspaceId, snoozeUntil])
   @@index([workspaceId, assignedToUserId])
+  @@index([workspaceId, pipelineStatus])
   @@map("leads")
 }
 

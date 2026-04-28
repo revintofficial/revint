@@ -1,10 +1,6 @@
 import { Worker, type Job } from "bullmq";
 import { analyzeLeadWithGemini } from "../lib/gemini";
-import {
-  calculateDeterministicScore,
-  suggestOffer,
-  estimatePriceBand,
-} from "../lib/scoring";
+import { calculateDeterministicScore } from "../lib/scoring";
 import type { WebsiteFeatures } from "../types";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
@@ -86,16 +82,18 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
       );
     } catch (aiError) {
       logger.warn("worker.analyze.gemini_failed", { leadId, err: aiError });
-      const offer = suggestOffer(deterministicScore, reasons);
+      // Hard-coded STARTER/GROWTH/SALES is gone (P0.4). The legacy
+      // worker still produces a deterministic-only fallback so the
+      // standalone /api/analyze entry point keeps working, but the
+      // package recommendation is left blank — the dossier (or the
+      // workspace owner) fills it in.
       analysis = {
         opportunity_score: deterministicScore,
         reason_codes: reasons,
         why_good_target: "AI analysis was unavailable; falling back to the deterministic score.",
         likely_pain_points: reasons.map(reasonToEnglish),
         best_sales_angle: "Offer to strengthen their digital presence where the deterministic signals are weakest.",
-        suggested_offer: offer,
         personalized_first_message: `Hi ${lead.businessName} team - would you be open to a quick look at a modern website concept we put together for a business like yours?`,
-        expected_price_band: estimatePriceBand(offer),
       };
     }
 
@@ -107,9 +105,6 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
       ...new Set([...reasons, ...analysis.reason_codes]),
     ];
 
-    const finalOffer =
-      analysis.suggested_offer || suggestOffer(finalScore, mergedReasons);
-
     await prisma.salesOpportunity.upsert({
       where: { leadId },
       create: {
@@ -119,9 +114,7 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
         whyGoodTarget: analysis.why_good_target,
         likelyPainPoints: analysis.likely_pain_points,
         bestSalesAngle: analysis.best_sales_angle,
-        suggestedOffer: finalOffer.toUpperCase() as "STARTER" | "GROWTH" | "SALES",
         personalizedFirstMessage: analysis.personalized_first_message,
-        expectedPriceBand: analysis.expected_price_band || estimatePriceBand(finalOffer),
         status: "NEW",
       },
       update: {
@@ -130,9 +123,7 @@ async function processAnalyze(job: Job<AnalyzeJobData>) {
         whyGoodTarget: analysis.why_good_target,
         likelyPainPoints: analysis.likely_pain_points,
         bestSalesAngle: analysis.best_sales_angle,
-        suggestedOffer: finalOffer.toUpperCase() as "STARTER" | "GROWTH" | "SALES",
         personalizedFirstMessage: analysis.personalized_first_message,
-        expectedPriceBand: analysis.expected_price_band || estimatePriceBand(finalOffer),
       },
     });
 

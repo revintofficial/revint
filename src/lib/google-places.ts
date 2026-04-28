@@ -1,4 +1,10 @@
-import type { PlaceResult, PlacesSearchResponse, DiscoveryQuery, PlaceReview } from "@/types";
+import type {
+  PlaceResult,
+  PlacesSearchResponse,
+  DiscoveryQuery,
+  PlaceReview,
+  PlaceViewport,
+} from "@/types";
 import { LONDON_BOROUGHS } from "@/types";
 
 const PLACES_API_BASE = "https://places.googleapis.com/v1";
@@ -171,7 +177,20 @@ export async function getPlaceReviews(placeId: string): Promise<PlaceReview[]> {
 
 export async function discoverLeads(
   searchQuery: string,
-  location: { name: string; country?: string; lat?: number; lng?: number },
+  location: {
+    name: string;
+    country?: string;
+    lat?: number;
+    lng?: number;
+    /**
+     * Viewport rectangle for the picked place. When provided takes
+     * precedence over (lat, lng) + radius — Google enforces it as a
+     * hard exclude that fits the actual admin polygon (so a search
+     * inside Büyükçekmece covers all 15km of coastline instead of a
+     * 5km circle around the centroid).
+     */
+    viewport?: PlaceViewport;
+  },
   radiusMeters = 5000,
   options: { includedTypes?: string[] } = {},
 ): Promise<PlaceResult[]> {
@@ -179,23 +198,39 @@ export async function discoverLeads(
   const countryPart = location.country ? `, ${location.country}` : "";
   // Google rejects circle.radius > 50000m on locationRestriction.
   const clampedRadius = Math.min(Math.max(radiusMeters, 100), 50000);
-  // Prefer locationRestriction (hard exclude) over locationBias (soft
-  // hint) whenever we have real coordinates. The API rejects requests
-  // that send both, so it's an either/or choice — keep the existing
-  // 0,0 guard so a sentinel pair never leaks through.
+
+  // Restriction precedence:
+  //   1. viewport rectangle (preferred — comes from the picked
+  //      place's own bounds, fits the admin polygon).
+  //   2. lat/lng + radius circle (free-text + geocode fallback path).
+  //   3. nothing (degraded mode — Google treats name as a soft hint).
+  // The API rejects requests that send both restriction shapes, so
+  // it's an either/or choice. Keep the 0,0 guard for the circle path
+  // so a sentinel pair never leaks through.
+  const haveViewport = !!location.viewport;
   const haveCoords = !!location.lat && !!location.lng;
+
+  let restriction: DiscoveryQuery["locationRestriction"] | undefined;
+  if (haveViewport) {
+    const v = location.viewport!;
+    restriction = {
+      rectangle: {
+        low: { latitude: v.sw.lat, longitude: v.sw.lng },
+        high: { latitude: v.ne.lat, longitude: v.ne.lng },
+      },
+    };
+  } else if (haveCoords) {
+    restriction = {
+      circle: {
+        center: { latitude: location.lat!, longitude: location.lng! },
+        radius: clampedRadius,
+      },
+    };
+  }
+
   const query: DiscoveryQuery = {
     textQuery: `${searchQuery} in ${location.name}${countryPart}`,
-    ...(haveCoords
-      ? {
-          locationRestriction: {
-            circle: {
-              center: { latitude: location.lat!, longitude: location.lng! },
-              radius: clampedRadius,
-            },
-          },
-        }
-      : {}),
+    ...(restriction ? { locationRestriction: restriction } : {}),
     ...(options.includedTypes && options.includedTypes.length > 0
       ? { includedTypes: options.includedTypes }
       : {}),

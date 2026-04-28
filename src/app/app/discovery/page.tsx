@@ -21,10 +21,12 @@ import {
   Globe,
   Loader2,
   Zap,
-  MapPin,
   AlertCircle,
   CheckCircle2,
+  Info,
 } from "lucide-react";
+import { LocationPicker } from "@/components/app/discovery/LocationPicker";
+import type { PickedLocation } from "@/types";
 
 // Niche packs are organised into:
 //  1. Parent packs with children (hybrid verticals like "fnb") → selecting
@@ -43,6 +45,11 @@ const CHILDREN_BY_PARENT = new Map<string, typeof NICHES>(
 
 export default function DiscoveryPage() {
   const [selectedCountry, setSelectedCountry] = useState("");
+  // Picked locations from the autocomplete flow (preferred path —
+  // verified place_id + viewport rectangle, accurate worldwide).
+  const [locations, setLocations] = useState<PickedLocation[]>([]);
+  // Free-text fallback. Kept for backwards compat + escape hatch when
+  // the picker can't resolve a place; surfaced with a warning banner.
   const [city, setCity] = useState("");
   // Niche pack selection (parent or child slug). When set, we use the
   // pack's first searchQuery as the default `selectedQuery` and (for
@@ -81,9 +88,14 @@ export default function DiscoveryPage() {
   const effectiveQuery = fanOutMode
     ? null
     : customQuery || selectedQuery || selectedPack?.searchQueries[0] || "";
+  // Picker path is preferred; free-text fallback is allowed only when
+  // no chips are picked and the user typed something into the legacy
+  // field. canRun gates on at least one of those + niche-or-query.
+  const hasPickedLocations = locations.length > 0;
+  const usingFallback = !hasPickedLocations && city.trim().length > 0;
   const canRun =
     selectedCountry &&
-    city.trim() &&
+    (hasPickedLocations || usingFallback) &&
     (fanOutMode || (effectiveQuery && effectiveQuery.length > 0));
 
   const runDiscovery = async () => {
@@ -103,7 +115,15 @@ export default function DiscoveryPage() {
           // Fan-out mode: API doesn't need searchQuery; we still send
           // the pack slug so it can resolve children.
           searchQuery: fanOutMode ? undefined : effectiveQuery,
-          boroughName: city.trim(),
+          // Preferred: array of verified PickedLocation objects from
+          // the autocomplete picker. The API loops over them and
+          // applies each viewport as a hard locationRestriction.
+          locations: hasPickedLocations ? locations : undefined,
+          // Legacy fallback — only sent when user typed into the
+          // free-text box without picking. The API geocodes it and
+          // applies a 5km circle (less accurate but doesn't block
+          // discovery on geocode hiccups).
+          boroughName: usingFallback ? city.trim() : undefined,
           country: selectedCountry,
           nichePackSlug: selectedPackSlug || undefined,
         }),
@@ -132,10 +152,13 @@ export default function DiscoveryPage() {
       const childCount = fanOutMode && selectedPack
         ? CHILDREN_BY_PARENT.get(selectedPack.slug)?.length ?? 0
         : 0;
+      const locCount = locations.length;
+      const locSuffix =
+        locCount > 1 ? ` across ${locCount} locations` : "";
       toast.success(
         fanOutMode && childCount > 0
-          ? `${data.created ?? 0} new leads from ${childCount} sub-niche scans!`
-          : `${data.created ?? 0} new leads added!`,
+          ? `${data.created ?? 0} new leads from ${childCount} sub-niche scans${locSuffix}!`
+          : `${data.created ?? 0} new leads added${locSuffix}!`,
       );
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
@@ -194,19 +217,52 @@ export default function DiscoveryPage() {
               </Select>
             </div>
 
-            {/* City */}
+            {/* Location picker (preferred) — combobox + chips backed by
+                Google Places Autocomplete. Verified place_id + viewport
+                rectangle gives Google a hard server-side bounding box
+                that fits the actual admin polygon; eliminates the
+                "buyukcekmece -> Bend, Oregon" rot. */}
             <div>
-              <label className="text-[13px] font-medium text-white/50 mb-1.5 block">City / Area</label>
-              <Input
-                type="text"
-                placeholder="e.g. Manchester, Istanbul, New York"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
+              <label className="text-[13px] font-medium text-white/50 mb-1.5 block">
+                Locations
+              </label>
+              <LocationPicker
+                value={locations}
+                onChange={(next) => {
+                  setLocations(next);
+                  // Picking a chip clears the free-text fallback so
+                  // the user doesn't accidentally double up.
+                  if (next.length > 0) setCity("");
+                }}
+                regionCode={selectedCountry || undefined}
+                maxLocations={5}
               />
-              <p className="text-[11px] text-white/35 mt-1.5 flex items-center gap-1">
-                <MapPin className="w-3 h-3 inline" />
-                Type any city, district, or neighbourhood
-              </p>
+
+              {/* Legacy free-text fallback. Hidden once chips exist —
+                  picker path is strictly more accurate. Surfaces a
+                  warning banner so the user knows they're on the
+                  approximate-geocoding path. */}
+              {!hasPickedLocations && (
+                <div className="mt-3 space-y-1.5">
+                  <label className="text-[12px] font-medium text-white/45 block">
+                    Or fall back to typed text (approximate)
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="e.g. Manchester, Istanbul, New York"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                  />
+                  {usingFallback && (
+                    <p className="text-[11px] text-[hsl(38_50%_72%)] flex items-start gap-1.5">
+                      <Info className="w-3 h-3 mt-0.5 shrink-0" />
+                      Free-text uses approximate geocoding. Some leads may
+                      land outside your target area — pick from the
+                      suggestions above for accurate results.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Niche pack (hybrid parent + child) */}
@@ -325,7 +381,7 @@ export default function DiscoveryPage() {
 
             {!canRun && !running && (
               <p className="text-xs text-white/30 text-center">
-                Select a country, enter a city, and choose a business type to start
+                Select a country, pick at least one location, and choose a business type to start
               </p>
             )}
 

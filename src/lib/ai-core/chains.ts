@@ -142,6 +142,11 @@ export const CHAINS: Partial<Record<EventKind, Chain>> = {
       stepId: "embed_profile",
       workerKind: "SALES_OPPORTUNITY_SCORER" as AgentWorkerKind,
       dependsOn: ["score_refresh"],
+      // Defense-in-depth: even though the sentinel itself degrades on
+      // EmbeddingError (writes the row without a vector), marking the
+      // step optional ensures the planner_session keeps walking the
+      // DAG if any other transient sentinel error surfaces.
+      optional: true,
       inputs: { __sentinel: SENTINEL_STEPS.EMBED_LEAD_PROFILE },
     },
   ],
@@ -178,6 +183,7 @@ export const CHAINS: Partial<Record<EventKind, Chain>> = {
       stepId: "embed_profile",
       workerKind: "SALES_OPPORTUNITY_SCORER" as AgentWorkerKind,
       dependsOn: ["score_refresh"],
+      optional: true,
       inputs: { __sentinel: SENTINEL_STEPS.EMBED_LEAD_PROFILE },
     },
     {
@@ -287,6 +293,12 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     stepId: "embed_profile",
     workerKind: "SALES_OPPORTUNITY_SCORER" as AgentWorkerKind,
     dependsOn: ["score"],
+    // The sentinel itself degrades on EmbeddingError (writes the row
+    // without a vector and enqueues a re-embed job). Marking the step
+    // optional is belt-and-braces: any other transient sentinel
+    // failure (DB hiccup at upsert time) doesn't hardFailure the
+    // whole planner_session and starve dossier downstream.
+    optional: true,
     inputs: { __sentinel: SENTINEL_STEPS.EMBED_LEAD_PROFILE },
   };
 
@@ -311,12 +323,34 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     dependsOn: ["score"],
     optional: true,
   };
+  // Mockup is part of BALANCED so the lead detail page already has a
+  // public `/m/<slug>` URL the rep can drop into the first cold-email
+  // draft without first clicking "Generate". Optional so a Gemini
+  // hiccup (or quota exhaustion) doesn't drag dossier down with it;
+  // the mockup also depends on `score` because the scorer's
+  // `bestSalesAngle` is part of the prompt that drives copy choice.
+  const mockup: ChainStep = {
+    stepId: "mockup",
+    workerKind: "WEBSITE_MOCKUP_GENERATOR",
+    dependsOn: ["score"],
+    optional: true,
+  };
 
   // BALANCED is the default for new workspaces. Adds social link
-  // discovery + on-create dossier so the lead detail page is rich
-  // the moment the user opens it (no "click Generate to see
-  // anything" empty state).
-  const balanced: Chain = [audit, placesReviews, review, social, classifier, score, embedProfile, dossier];
+  // discovery + on-create dossier + on-create mockup so the lead
+  // detail page is rich the moment the user opens it (no "click
+  // Generate to see anything" empty state).
+  const balanced: Chain = [
+    audit,
+    placesReviews,
+    review,
+    social,
+    classifier,
+    score,
+    embedProfile,
+    mockup,
+    dossier,
+  ];
 
   if (preset === "BALANCED") {
     return filterByPlan(balanced, plan);
@@ -353,12 +387,8 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     workerKind: "SALES_OPPORTUNITY_SCORER",
     dependsOn: ["audit", "review", "review_refresh", "classifier"],
   };
-  const mockup: ChainStep = {
-    stepId: "mockup",
-    workerKind: "WEBSITE_MOCKUP_GENERATOR",
-    dependsOn: ["score"],
-    optional: true,
-  };
+  // `mockup` is hoisted into the BALANCED block above; AGGRESSIVE
+  // reuses the same ChainStep instance so opener can depend on it.
   const opener: ChainStep = {
     stepId: "opener",
     workerKind: "OPENER_WRITER",

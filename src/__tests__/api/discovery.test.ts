@@ -30,7 +30,29 @@ vi.mock("@/lib/ratelimit", () => ({
     websitePlan: { bucket: "plan", windowSec: 60, limit: 10 },
     websiteSearch: { bucket: "wsrch", windowSec: 60, limit: 15 },
     copilot: { bucket: "copi", windowSec: 60, limit: 30 },
+    placesAutocomplete: { bucket: "pac", windowSec: 60, limit: 60 },
+    placesDetails: { bucket: "pdet", windowSec: 60, limit: 30 },
   },
+}));
+
+// Geocoding always returns a fake lat/lng so the legacy free-text
+// fallback path can be exercised without hitting Google.
+vi.mock("@/lib/geocoding", () => ({
+  geocodeBorough: vi.fn().mockResolvedValue({ lat: 51.4826, lng: 0.0077 }),
+}));
+
+// AI Core emit is fire-and-forget; mock to a noop so tests don't try
+// to spin up Redis / Prisma sessions.
+vi.mock("@/lib/ai-core/events", () => ({
+  emit: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Niches lookup needs a deterministic response. Default: route falls
+// through to single-query mode (no fan-out).
+vi.mock("@/lib/niches", () => ({
+  getNicheBySlug: vi.fn(() => null),
+  getChildrenOf: vi.fn(() => []),
+  isParentNiche: vi.fn(() => false),
 }));
 
 const mockPlaces = [
@@ -79,6 +101,11 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
       create: (...args: unknown[]) => mockCreate(...args),
     },
+    workspace: {
+      findUnique: vi
+        .fn()
+        .mockResolvedValue({ country: "GB", targetSubNiches: [] }),
+    },
   },
 }));
 
@@ -103,12 +130,12 @@ describe("/api/discovery POST", () => {
     vi.useRealTimers();
   });
 
-  it("requires searchQuery and boroughName for single search", async () => {
+  it("requires either locations[] or boroughName", async () => {
     const res = await POST(makeRequest({}));
     const data = await res.json();
 
     expect(res.status).toBe(400);
-    expect(data.error).toContain("searchQuery and boroughName are required");
+    expect(data.error).toContain("locations[] or boroughName is required");
   });
 
   it("accepts unknown borough and proceeds with the search (lat/lng falls back to 0,0)", async () => {
@@ -282,7 +309,8 @@ describe("/api/discovery POST", () => {
       expect(data.enqueued).toBe(15);
       expect(data.jobs).toHaveLength(15);
       for (const job of data.jobs) {
-        expect(job).toHaveProperty("borough");
+        // The bulk route enqueues `{ city, query }` jobs.
+        expect(job).toHaveProperty("city");
         expect(job).toHaveProperty("query");
       }
       expect(mockDiscoverLeads).not.toHaveBeenCalled();
@@ -302,6 +330,148 @@ describe("/api/discovery POST", () => {
       expect(res.status).toBe(202);
       expect(data.success).toBe(true);
       expect(data.enqueued).toBe(15);
+    });
+  });
+
+  describe("locations[] (LocationPicker path)", () => {
+    const buyukcekmece = {
+      placeId: "ChIJ_buyukcekmece",
+      displayName: "Büyükçekmece, Istanbul, Türkiye",
+      primaryText: "Büyükçekmece",
+      secondaryText: "Istanbul, Türkiye",
+      lat: 41.020,
+      lng: 28.595,
+      viewport: {
+        ne: { lat: 41.07, lng: 28.7 },
+        sw: { lat: 40.97, lng: 28.5 },
+      },
+      countryCode: "TR",
+    };
+    const beylikduzu = {
+      placeId: "ChIJ_beylikduzu",
+      displayName: "Beylikdüzü, Istanbul, Türkiye",
+      primaryText: "Beylikdüzü",
+      secondaryText: "Istanbul, Türkiye",
+      lat: 41.0,
+      lng: 28.65,
+      viewport: {
+        ne: { lat: 41.04, lng: 28.7 },
+        sw: { lat: 40.98, lng: 28.6 },
+      },
+      countryCode: "TR",
+    };
+
+    it("forwards picked viewport into discoverLeads as a hard restriction signal", async () => {
+      await POST(
+        makeRequest({
+          searchQuery: "specialty coffee shop",
+          locations: [buyukcekmece],
+        }),
+      );
+
+      expect(mockDiscoverLeads).toHaveBeenCalledTimes(1);
+      const [, locArg] = mockDiscoverLeads.mock.calls[0];
+      expect(locArg).toMatchObject({
+        name: "Büyükçekmece, Istanbul, Türkiye",
+        country: "TR",
+        lat: 41.02,
+        lng: 28.595,
+      });
+      expect(locArg.viewport).toMatchObject({
+        ne: { lat: 41.07, lng: 28.7 },
+        sw: { lat: 40.97, lng: 28.5 },
+      });
+    });
+
+    it("loops over multiple picked locations and dedups by Place ID across all", async () => {
+      // Same place returned by both locations — dedup must keep one.
+      mockDiscoverLeads.mockResolvedValue([mockPlaces[0]]);
+      mockFindUnique.mockResolvedValue(null);
+
+      const res = await POST(
+        makeRequest({
+          searchQuery: "specialty coffee shop",
+          locations: [buyukcekmece, beylikduzu],
+        }),
+      );
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(mockDiscoverLeads).toHaveBeenCalledTimes(2);
+      // Total raw = 2 × 1 = 2, deduped = 1, created = 1.
+      expect(data.created).toBe(1);
+      expect(data.total).toBe(1);
+      expect(data.locationCount).toBe(2);
+    });
+
+    it("stamps the picked place's id onto Lead.sourceQuery for analytics", async () => {
+      mockFindUnique.mockResolvedValue(null);
+
+      await POST(
+        makeRequest({
+          searchQuery: "specialty coffee shop",
+          locations: [buyukcekmece],
+        }),
+      );
+
+      const createCall = mockCreate.mock.calls[0][0];
+      expect(createCall.data.sourceQuery).toContain("ChIJ_buyukcekmece");
+      expect(createCall.data.sourceQuery).toContain("Büyükçekmece");
+    });
+
+    it("rejects more than 5 picked locations", async () => {
+      const six = Array.from({ length: 6 }, (_, i) => ({
+        ...buyukcekmece,
+        placeId: `ChIJ_loc_${i}`,
+      }));
+
+      const res = await POST(
+        makeRequest({ searchQuery: "specialty coffee shop", locations: six }),
+      );
+      const data = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(data.error).toMatch(/Too many locations/);
+    });
+
+    it("falls back to boroughName + geocode when locations[] is empty", async () => {
+      const res = await POST(
+        makeRequest({
+          searchQuery: "phone repair",
+          boroughName: "Greenwich",
+          locations: [],
+        }),
+      );
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(mockDiscoverLeads).toHaveBeenCalledWith(
+        "phone repair",
+        expect.objectContaining({ name: "Greenwich" }),
+        5000,
+      );
+    });
+
+    it("ignores malformed location entries silently and falls back to boroughName when none remain", async () => {
+      const res = await POST(
+        makeRequest({
+          searchQuery: "phone repair",
+          boroughName: "Greenwich",
+          // Mix of invalid shapes — none satisfy isPickedLocation.
+          locations: [{ foo: "bar" }, null, { placeId: "" }],
+        }),
+      );
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.success).toBe(true);
+      // Falls through to the legacy borough path.
+      expect(mockDiscoverLeads).toHaveBeenCalledWith(
+        "phone repair",
+        expect.objectContaining({ name: "Greenwich" }),
+        5000,
+      );
     });
   });
 });

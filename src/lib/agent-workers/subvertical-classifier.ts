@@ -47,6 +47,7 @@ import { generateWithTimeout } from "@/lib/gemini-client";
 import { safeParseGeminiJson } from "@/lib/gemini";
 import {
   getChildrenOf,
+  rankAllChildren,
   ruleBasedClassify,
   verticalRootForWorkspace,
   type ClassifierLeadSignals,
@@ -62,7 +63,7 @@ interface ClassifierResult {
   slug: string;
   confidence: number;
   reasoning: string | null;
-  source: "rule" | "gemini" | "rule-default";
+  source: "rule" | "gemini" | "rule-weak" | "rule-default";
   reasons?: { rule: string; weight: number }[];
 }
 
@@ -114,15 +115,42 @@ export const run: AgentWorkerRun = async (
     if (geminiHit) {
       result = { ...geminiHit, source: "gemini" };
     } else {
-      // Last-resort default: park the lead at the parent scope
-      // (no child slug). The opener writer's confidence gate will
-      // pick the parent (generic F&B) angle.
-      result = {
-        slug: "",
-        confidence: 0,
-        reasoning: "no-classification",
-        source: "rule-default",
-      };
+      // Both the floored rule pass AND Gemini failed. Rather than
+      // park the lead at the parent scope with `subNicheSlug = null`
+      // (which strips ALL vertical context from the dossier + memory
+      // layer for ever after), fall back to the floorless rule pass.
+      // It returns the best-scoring child even when no rule clears
+      // the 0.5 threshold — we persist that with a clamped low
+      // confidence (≥ 0.3) and source = "rule-weak" so:
+      //   1. The 0.7 confidence gate in scorer/opener still rejects
+      //      it, defaulting back to the parent (generic F&B) framing.
+      //      A wrong-vertical pitch CANNOT ship from this branch.
+      //   2. The dossier + UI + memory niche scope still carry the
+      //      best-guess sub-vertical metadata so retrieval and
+      //      lookalikes don't regress to scope-null.
+      const ruleBest = rankAllChildren(signals, children);
+      if (ruleBest) {
+        result = {
+          slug: ruleBest.slug,
+          // Clamp upward to 0.3 so a single weak signal still surfaces
+          // as a "I tried but I'm not confident" rather than 0 (which
+          // looks identical to "no classification" in telemetry).
+          confidence: Math.max(ruleBest.confidence, 0.3),
+          reasoning: `low-confidence rule pick (Gemini unavailable): ${ruleBest.reasons.map((r) => r.rule).join(", ")}`,
+          source: "rule-weak",
+          reasons: ruleBest.reasons,
+        };
+      } else {
+        // No rule fired at all — park at the parent scope (legacy
+        // behaviour). This is now genuinely "no signal", not "we
+        // didn't bother trying".
+        result = {
+          slug: "",
+          confidence: 0,
+          reasoning: "no-classification",
+          source: "rule-default",
+        };
+      }
     }
   }
 

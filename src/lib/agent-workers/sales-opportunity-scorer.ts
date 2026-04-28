@@ -16,11 +16,7 @@ import {
   analyzeLeadWithGemini,
   type ReviewContextForAnalysis,
 } from "@/lib/gemini";
-import {
-  calculateDeterministicScore,
-  suggestOffer,
-  estimatePriceBand,
-} from "@/lib/scoring";
+import { calculateDeterministicScore } from "@/lib/scoring";
 import type { WebsiteFeatures } from "@/types";
 import type {
   AgentWorkerContext,
@@ -157,8 +153,12 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       Math.round(deterministicScore * 0.4 + analysis.opportunity_score * 0.6),
     );
     const mergedReasons = Array.from(new Set([...reasons, ...analysis.reason_codes]));
-    const finalOffer = analysis.suggested_offer || suggestOffer(finalScore, mergedReasons);
 
+    // suggestedOffer + expectedPriceBand are deprecated (P0.4). The
+    // dossier owns the package recommendation now; the column survives
+    // for legacy data but the write path leaves it at the schema
+    // default (STARTER) on first create and untouched on update so we
+    // can't accidentally pin a stale tier on a re-analyze.
     await prisma.salesOpportunity.upsert({
       where: { leadId },
       create: {
@@ -168,9 +168,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         whyGoodTarget: analysis.why_good_target,
         likelyPainPoints: analysis.likely_pain_points,
         bestSalesAngle: analysis.best_sales_angle,
-        suggestedOffer: finalOffer.toUpperCase() as "STARTER" | "GROWTH" | "SALES",
         personalizedFirstMessage: analysis.personalized_first_message,
-        expectedPriceBand: analysis.expected_price_band || estimatePriceBand(finalOffer),
         recommendedPackageId,
         recommendedPackageReason,
         status: "NEW",
@@ -181,9 +179,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         whyGoodTarget: analysis.why_good_target,
         likelyPainPoints: analysis.likely_pain_points,
         bestSalesAngle: analysis.best_sales_angle,
-        suggestedOffer: finalOffer.toUpperCase() as "STARTER" | "GROWTH" | "SALES",
         personalizedFirstMessage: analysis.personalized_first_message,
-        expectedPriceBand: analysis.expected_price_band || estimatePriceBand(finalOffer),
         recommendedPackageId,
         recommendedPackageReason,
       },
@@ -203,8 +199,6 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         whyGoodTarget: analysis.why_good_target,
         likelyPainPoints: analysis.likely_pain_points,
         bestSalesAngle: analysis.best_sales_angle,
-        suggestedOffer: finalOffer,
-        expectedPriceBand: analysis.expected_price_band,
         personalizedFirstMessage: analysis.personalized_first_message,
         recommendedPackageId,
         recommendedPackageReason,

@@ -224,6 +224,45 @@ export async function upsertAndEmbed(
 }
 
 /**
+ * Enqueues an `embed` job on the unified `agent-runs` queue so the
+ * background worker backfills the missing vector for an existing
+ * SemanticMemory row. Used by the degraded write path (sentinel +
+ * post-run memory writes) when Gemini's embedding endpoint is
+ * unavailable: the row is persisted text-only first, then this helper
+ * schedules the vector to be written when Gemini recovers.
+ *
+ * Best-effort: a Redis outage at enqueue time logs a warning and the
+ * embedding stays null. The orchestrator's stuck-session watchdog and
+ * the per-AgentRun lazy watchdog don't cover memory rows, so we rely
+ * on a periodic backfill scan (or a manual re-trigger) when Redis is
+ * the failure mode. Silent here is acceptable because the row already
+ * exists in the DB — the worst case is that retrieval doesn't see the
+ * text until the next embed job lands.
+ */
+export async function enqueueReembed(memoryId: string): Promise<void> {
+  try {
+    const { getAgentRunsQueue } = await import("@/lib/queues");
+    const queue = getAgentRunsQueue();
+    await queue.add(
+      `embed:${memoryId}`,
+      { type: "embed", memoryId },
+      {
+        removeOnComplete: 200,
+        removeOnFail: 100,
+        attempts: 3,
+        backoff: { type: "exponential", delay: 30_000 },
+      },
+    );
+  } catch (err) {
+    const { logger } = await import("@/lib/logger");
+    logger.warn("memory.enqueue_reembed_failed", {
+      memoryId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
  * Sets the embedding column on an existing row. Used by the async
  * embed job path (memory row inserted first, embedding written when
  * the embed worker runs).

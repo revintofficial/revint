@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { analyzeLeadWithGemini } from "@/lib/gemini";
-import {
-  calculateDeterministicScore,
-  suggestOffer,
-  estimatePriceBand,
-} from "@/lib/scoring";
+import { calculateDeterministicScore } from "@/lib/scoring";
 import type { WebsiteFeatures } from "@/types";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import {
@@ -168,16 +164,16 @@ async function analyzeSingleLead(workspaceId: string, leadId: string) {
       );
     } catch (aiError) {
       logger.warn("api.analyze.gemini_fallback", { leadId, err: aiError });
-      const offer = suggestOffer(deterministicScore, reasons);
+      // Hard-coded STARTER/GROWTH/SALES is gone (P0.4). When Gemini is
+      // unavailable the deterministic score still posts; the dossier
+      // (or the workspace owner) fills in the package recommendation.
       analysis = {
         opportunity_score: deterministicScore,
         reason_codes: reasons,
         why_good_target: "AI analysis unavailable. Falling back to deterministic score.",
         likely_pain_points: reasons,
         best_sales_angle: "Pitch a focused upgrade that closes their biggest gap.",
-        suggested_offer: offer,
         personalized_first_message: `Hi, would ${lead.businessName} be interested in a quick chat about a faster, more conversion-focused website?`,
-        expected_price_band: estimatePriceBand(offer),
       };
     }
 
@@ -186,7 +182,6 @@ async function analyzeSingleLead(workspaceId: string, leadId: string) {
     );
 
     const mergedReasons = [...new Set([...reasons, ...analysis.reason_codes])];
-    const finalOffer = analysis.suggested_offer || suggestOffer(finalScore, mergedReasons);
 
     // Scope the upsert by leadId + workspace via a two-step pattern: check
     // the lead belongs to this workspace, then upsert. Prisma's upsert
@@ -209,9 +204,7 @@ async function analyzeSingleLead(workspaceId: string, leadId: string) {
         whyGoodTarget: analysis.why_good_target,
         likelyPainPoints: analysis.likely_pain_points,
         bestSalesAngle: analysis.best_sales_angle,
-        suggestedOffer: finalOffer.toUpperCase() as "STARTER" | "GROWTH" | "SALES",
         personalizedFirstMessage: analysis.personalized_first_message,
-        expectedPriceBand: analysis.expected_price_band || estimatePriceBand(finalOffer),
         status: "NEW",
       },
       update: {
@@ -220,9 +213,7 @@ async function analyzeSingleLead(workspaceId: string, leadId: string) {
         whyGoodTarget: analysis.why_good_target,
         likelyPainPoints: analysis.likely_pain_points,
         bestSalesAngle: analysis.best_sales_angle,
-        suggestedOffer: finalOffer.toUpperCase() as "STARTER" | "GROWTH" | "SALES",
         personalizedFirstMessage: analysis.personalized_first_message,
-        expectedPriceBand: analysis.expected_price_band || estimatePriceBand(finalOffer),
       },
     });
 
@@ -231,7 +222,7 @@ async function analyzeSingleLead(workspaceId: string, leadId: string) {
       data: { analyzeStatus: "ANALYZED" },
     });
 
-    return { score: finalScore, offer: finalOffer };
+    return { score: finalScore };
   } catch (error) {
     await prisma.lead.updateMany({
       where: { id: leadId, workspaceId },

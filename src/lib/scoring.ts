@@ -132,23 +132,17 @@ export function calculateDeterministicScore(
   };
 }
 
-export function suggestOffer(
-  score: number,
-  reasons: string[]
-): "starter" | "growth" | "sales" {
-  if (reasons.includes("no_website")) return "starter";
-  if (score >= 60) return "sales";
-  if (score >= 35) return "growth";
-  return "starter";
-}
-
-export function estimatePriceBand(offer: "starter" | "growth" | "sales"): string {
-  switch (offer) {
-    case "starter":
-      return "£500-800";
-    case "growth":
-      return "£800-1500";
-    case "sales":
-      return "£1500-3000";
-  }
-}
+// `suggestOffer` and `estimatePriceBand` were removed when the
+// platform switched from a hard-coded STARTER/GROWTH/SALES enum to
+// per-workspace ServicePackage rows as the single source of truth for
+// pricing. The scorer / dossier now read from `ServicePackage` and
+// the `lead_created` chain is gated on the workspace having at least
+// one package configured (see `workspaceHasServicePackages`).
+//
+// Callers that previously fell back to these helpers should:
+//   - Upsert SalesOpportunity rows without `suggestedOffer` /
+//     `expectedPriceBand` (the deprecated columns default to STARTER
+//     / null and are no longer surfaced in the UI).
+//   - Render the analyst-recommended package via the
+//     `recommendedPackageId` join (resolved at read time from
+//     `ServicePackage.findMany({ workspaceId })`).

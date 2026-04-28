@@ -9,6 +9,8 @@ import {
   Loader2,
   CheckCircle2,
   ArrowRight,
+  Globe,
+  ShieldCheck,
 } from "lucide-react";
 import { LeadCardLive } from "./lead-card-live";
 import type { DemoLead } from "./types";
@@ -169,25 +171,47 @@ export function DiscoveryDemo({
           >
             app.leadac.ai / discover
           </div>
+          <span
+            className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              color: "rgba(255,255,255,0.45)",
+              border: "0.5px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            Discover
+          </span>
         </div>
 
         <div className="p-5 sm:p-6">
           {/* Form */}
           <div
-            className="rounded-xl p-4 mb-4"
+            className="rounded-xl p-4 mb-4 space-y-3.5"
             style={{
               background: "rgba(255,255,255,0.025)",
               border: "0.5px solid rgba(255,255,255,0.07)",
             }}
           >
-            <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
-              <div>
-                <label className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-white/45 mb-1.5 block">
-                  <MapPin className="w-3 h-3 inline -mt-0.5 mr-1" />
-                  City / postcode
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {cities.map((c) => (
+            {/* Locations row */}
+            <div>
+              <label className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-white/45 mb-1.5 flex items-center gap-1.5">
+                <MapPin className="w-3 h-3" />
+                Locations
+                <span className="ml-1 inline-flex items-center gap-1 px-1.5 py-px rounded-full text-[9px] font-medium normal-case tracking-normal"
+                  style={{
+                    background: "hsl(152 48% 50% / 0.1)",
+                    border: "0.5px solid hsl(152 48% 50% / 0.28)",
+                    color: "hsl(152 48% 60%)",
+                  }}
+                >
+                  <ShieldCheck className="w-2.5 h-2.5" />
+                  Verified · Google Places
+                </span>
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {cities.map((c) => {
+                  const active = c === city;
+                  return (
                     <button
                       key={c}
                       type="button"
@@ -196,31 +220,51 @@ export function DiscoveryDemo({
                         setPhase("idle");
                         setVisibleCount(0);
                       }}
-                      className="px-2.5 py-1 rounded-md text-[11.5px] font-medium transition-all"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11.5px] font-medium transition-all"
                       style={{
-                        background:
-                          c === city
-                            ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16)"
-                            : "rgba(255,255,255,0.03)",
-                        border:
-                          c === city
-                            ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45)"
-                            : "0.5px solid rgba(255,255,255,0.06)",
-                        color: c === city ? "var(--leadac-300)" : "rgba(255,255,255,0.65)",
+                        background: active
+                          ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16)"
+                          : "rgba(255,255,255,0.03)",
+                        border: active
+                          ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45)"
+                          : "0.5px solid rgba(255,255,255,0.06)",
+                        color: active ? "var(--leadac-300)" : "rgba(255,255,255,0.65)",
                       }}
                     >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{
+                          background: active
+                            ? "hsl(152 48% 55%)"
+                            : "rgba(255,255,255,0.25)",
+                          boxShadow: active
+                            ? "0 0 6px hsl(152 48% 55% / 0.7)"
+                            : "none",
+                        }}
+                      />
                       {c}
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-              <div>
-                <label className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-white/45 mb-1.5 block">
-                  <Search className="w-3 h-3 inline -mt-0.5 mr-1" />
-                  Niche
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {niches.map((n) => (
+            </div>
+
+            {/* Niche pack row */}
+            <div>
+              <label className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-white/45 mb-1.5 flex items-center gap-1.5">
+                <Search className="w-3 h-3" />
+                Niche pack
+                <span className="ml-1 text-[9px] font-medium normal-case tracking-normal text-white/35">
+                  · audit signals tuned per vertical
+                </span>
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {niches.map((n, i) => {
+                  const active = n === niche;
+                  // Mark the first niche as a parent pack with sub-niches
+                  // (matches the real "fnb" hybrid pack with fan-out).
+                  const subNicheCount = i === 0 ? 9 : 0;
+                  return (
                     <button
                       key={n}
                       type="button"
@@ -229,33 +273,57 @@ export function DiscoveryDemo({
                         setPhase("idle");
                         setVisibleCount(0);
                       }}
-                      className="px-2.5 py-1 rounded-md text-[11.5px] font-medium transition-all"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11.5px] font-medium transition-all"
                       style={{
-                        background:
-                          n === niche
-                            ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16)"
-                            : "rgba(255,255,255,0.03)",
-                        border:
-                          n === niche
-                            ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45)"
-                            : "0.5px solid rgba(255,255,255,0.06)",
-                        color: n === niche ? "var(--leadac-300)" : "rgba(255,255,255,0.65)",
+                        background: active
+                          ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16)"
+                          : "rgba(255,255,255,0.03)",
+                        border: active
+                          ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45)"
+                          : "0.5px solid rgba(255,255,255,0.06)",
+                        color: active
+                          ? "var(--leadac-300)"
+                          : "rgba(255,255,255,0.65)",
                       }}
                     >
                       {n}
+                      {subNicheCount > 0 && (
+                        <span
+                          className="px-1.5 py-px rounded-full text-[9.5px] font-semibold tabular-nums"
+                          style={{
+                            background: active
+                              ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.22)"
+                              : "rgba(255,255,255,0.05)",
+                            color: active
+                              ? "var(--leadac-200)"
+                              : "rgba(255,255,255,0.45)",
+                          }}
+                        >
+                          {subNicheCount} sub
+                        </span>
+                      )}
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
+            </div>
+
+            {/* Run button row */}
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <p className="text-[11px] text-white/40 leading-snug min-w-0 flex-1">
+                <Globe className="w-3 h-3 inline -mt-0.5 mr-1 text-white/30" />
+                Searches Google Places live · deduped by Place ID before save
+              </p>
               <button
                 type="button"
                 onClick={run}
                 // Intentionally always clickable: re-clicking during "running"
                 // starts a fresh run (runTokenRef invalidates stale timers),
                 // which is the user's escape hatch if the demo ever gets stuck.
-                className="px-3.5 py-2 rounded-lg text-[12.5px] font-semibold text-white inline-flex items-center justify-center gap-1.5"
+                className="px-3.5 py-2 rounded-lg text-[12.5px] font-semibold text-white inline-flex items-center justify-center gap-1.5 shrink-0"
                 style={{
-                  background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
+                  background:
+                    "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
                   boxShadow:
                     "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.7), 0 6px 18px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.4)",
                 }}
@@ -286,13 +354,13 @@ export function DiscoveryDemo({
               {phase === "running" && (
                 <>
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Calling Google Places…
+                  Fanning out · deduping by Place ID…
                 </>
               )}
               {phase === "done" && (
                 <>
                   <CheckCircle2 className="w-3 h-3 text-[hsl(152_48%_50%)]" />
-                  {visibleCount} of {leads.length} loaded
+                  {visibleCount} of {leads.length} audited
                 </>
               )}
               {phase === "idle" && (

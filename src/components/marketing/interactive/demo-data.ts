@@ -5,62 +5,74 @@ import type { DemoLead } from "./types";
 export const HOME_LEADS: DemoLead[] = [
   {
     name: "Bella Vita Trattoria",
+    niche: "Italian restaurant",
     city: "Brooklyn, NY",
     phone: "+1 (718) 555-0142",
     website: "bellavita-trattoria.com",
     rating: 4.7,
     reviewCount: 318,
     score: 87,
-    issues: ["No mobile site", "No HTTPS", "No booking"],
+    issues: ["No HTTPS", "No mobile site", "No online booking"],
     pitch:
-      "Site looks like 2008. They're 4.7★ but losing reservations on mobile.",
-    services: ["Online reservations", "Menu + photos", "Click-to-call"],
+      "4.7★ trattoria with a 2009-era site. Losing weekend reservations on mobile.",
+    services: ["Online reservations", "Menu + photos", "Click-to-call hero"],
+    reviewQuote:
+      "Best carbonara in the borough — but their website wouldn't even load on my phone.",
     signals: [
-      { label: "HTTPS", status: "bad", detail: "Site served over HTTP only" },
-      { label: "Mobile fit", status: "bad", detail: "Viewport not configured" },
-      { label: "Booking flow", status: "bad", detail: "No booking, only a tel: link" },
-      { label: "Page speed", status: "warning", detail: "5.2s on mobile 4G" },
-      { label: "Last updated", status: "warning", detail: "© 2019 in footer" },
+      { label: "HTTPS", status: "bad", detail: "Served over HTTP only · no SSL cert" },
+      { label: "Mobile viewport", status: "bad", detail: "No responsive meta tag · 360px renders broken" },
+      { label: "Online booking", status: "bad", detail: "No reservation system · tel: link only" },
+      { label: "Page speed", status: "warning", detail: "5.2s LCP on simulated 4G · 2.1MB unoptimized images" },
+      { label: "Last updated", status: "warning", detail: "© 2019 in footer · WordPress 5.4 (EOL)" },
+      { label: "Schema markup", status: "bad", detail: "No Restaurant or LocalBusiness JSON-LD" },
     ],
   },
   {
     name: "Marlow Coffee Co.",
+    niche: "Specialty café",
     city: "Williamsburg, NY",
     phone: "+1 (718) 555-0298",
     website: null,
     rating: 4.9,
     reviewCount: 612,
     score: 94,
-    issues: ["No website", "No online ordering"],
+    issues: ["No website at all", "DMs-only ordering"],
     pitch:
-      "5★ café with no website, getting 200+ Instagram DMs/week asking for a menu.",
-    services: ["Single-page menu", "Order ahead", "Loyalty signup"],
+      "4.9★ café with no website. 28k IG followers asking for the menu in DMs.",
+    services: ["One-page menu site", "Order-ahead form", "Loyalty signup"],
+    reviewQuote:
+      "Their oat flat white is unreal. Wish I could see the hours without DMing them.",
     signals: [
-      { label: "Website", status: "bad", detail: "No site listed on Google" },
-      { label: "Mobile fit", status: "bad", detail: "N/A — no website" },
-      { label: "Online ordering", status: "bad", detail: "Manual DMs only" },
-      { label: "Reviews", status: "good", detail: "4.9★ from 612 reviewers" },
-      { label: "Posts on IG", status: "good", detail: "Active, 28k followers" },
+      { label: "Website", status: "bad", detail: "No site listed on Google Business Profile" },
+      { label: "Mobile presence", status: "bad", detail: "Instagram only · no fallback URL" },
+      { label: "Online ordering", status: "bad", detail: "Manual via DM · 200+/week per their last reel" },
+      { label: "Google reviews", status: "good", detail: "4.9★ from 612 reviewers · 18 in last 30d" },
+      { label: "Social cadence", status: "good", detail: "Active IG · 28.4k followers · daily posts" },
+      { label: "GBP completeness", status: "warning", detail: "No menu link · no hours on holidays" },
     ],
   },
   {
     name: "Nova Dental Studio",
+    niche: "Dental practice",
     city: "Queens, NY",
     phone: "+1 (347) 555-0118",
     website: "novadental-ny.com",
     rating: 4.6,
     reviewCount: 84,
     score: 72,
-    issues: ["Slow load (5.2s)", "No SEO", "Outdated design"],
+    issues: ["Slow load · 5.2s", "Phone-only intake", "Thin SEO"],
     pitch:
-      "Practices in this zip earn $1.2M+/yr. Their site is killing 30%+ of organic search.",
+      "Practices in this zip clear $1.2M/yr. Their site leaks 30%+ of organic search.",
     services: ["Local SEO landing", "Insurance verifier", "Online intake form"],
+    reviewQuote:
+      "Dr. Patel is amazing. Their booking system is 'leave a voicemail and we'll call back'.",
     signals: [
-      { label: "HTTPS", status: "good", detail: "Cert valid until 2027" },
-      { label: "Mobile fit", status: "warning", detail: "Touch targets too small" },
-      { label: "Booking flow", status: "bad", detail: "Phone-only intake" },
-      { label: "Page speed", status: "bad", detail: "5.2s LCP on 4G" },
-      { label: "SEO basics", status: "bad", detail: "No meta description, 1 H1" },
+      { label: "HTTPS", status: "good", detail: "Valid Let's Encrypt cert · auto-renewing" },
+      { label: "Mobile viewport", status: "warning", detail: "Responsive but tap targets <44px" },
+      { label: "Online booking", status: "bad", detail: "Phone-only intake · no calendar widget" },
+      { label: "Page speed", status: "bad", detail: "5.2s LCP · 12 render-blocking scripts" },
+      { label: "SEO basics", status: "bad", detail: "No meta description · 1 H1 across whole site" },
+      { label: "Reviews surfaced", status: "warning", detail: "Hidden behind footer link · no schema" },
     ],
   },
 ];
@@ -191,8 +203,8 @@ export const SMMA_LEADS: DemoLead[] = [
   },
 ];
 
-export const HOME_CITIES = ["Brooklyn, NY", "London E14", "London / Hackney"];
-export const HOME_NICHES = ["Italian restaurants", "Cafés", "Dental"];
+export const HOME_CITIES = ["Brooklyn, NY", "Queens, NY", "Manhattan, NY"];
+export const HOME_NICHES = ["Restaurants & F&B", "Cafés & bakeries", "Dental practices"];
 
 export const AGENCY_CITIES = ["Manhattan, NY", "Brooklyn, NY", "Queens, NY"];
 export const AGENCY_NICHES = ["Dental practices", "Aesthetics", "Med spas"];

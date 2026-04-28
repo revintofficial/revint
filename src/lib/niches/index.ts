@@ -800,6 +800,32 @@ export function ruleBasedClassify(
   lead: ClassifierLeadSignals,
   children: NichePack[],
 ): RuleClassificationResult | null {
+  const best = rankAllChildren(lead, children);
+  // Floor: don't return a classification we don't actually believe in.
+  // The classifier worker reads `null` as "punt to Gemini".
+  if (!best || best.confidence < 0.5) return null;
+  return best;
+}
+
+/**
+ * Floorless variant of `ruleBasedClassify`. Returns the highest-scoring
+ * child slug regardless of how weak the score is. Used by the
+ * SUBVERTICAL_CLASSIFIER worker as a last-resort fallback when the
+ * Gemini API is unavailable: rather than parking the lead with a null
+ * sub-niche (which loses ALL vertical context downstream), we persist
+ * the rule pass's best guess with a low confidence so the dossier and
+ * UI can still surface the most likely sub-vertical with a "low
+ * confidence" caveat.
+ *
+ * The 0.7 confidence gate in scoring/opener still rejects this output
+ * (it falls back to the parent niche framing), so a low-confidence
+ * misclass cannot ship a wrong-vertical pitch — it only enriches the
+ * memory layer + dossier metadata.
+ */
+export function rankAllChildren(
+  lead: ClassifierLeadSignals,
+  children: NichePack[],
+): RuleClassificationResult | null {
   if (children.length === 0) return null;
 
   const nameLower = (lead.businessName ?? "").toLowerCase();
@@ -959,8 +985,9 @@ export function ruleBasedClassify(
     }
   }
 
-  // Floor: don't return a classification we don't actually believe in.
-  // The classifier worker reads `null` as "punt to Gemini".
-  if (!best || best.confidence < 0.5) return null;
+  // No floor here — `ruleBasedClassify` applies the 0.5 threshold above
+  // for the "punt to Gemini" decision. `rankAllChildren` callers want
+  // the best guess regardless so they can persist a rule-weak result
+  // when the Gemini fallback is unavailable.
   return best;
 }

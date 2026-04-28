@@ -10,6 +10,8 @@ import {
   MapPin,
   ArrowRight,
   Star,
+  Quote,
+  Link as LinkIcon,
 } from "lucide-react";
 import type { DemoLead } from "./types";
 
@@ -18,10 +20,15 @@ interface MockupGeneratorDemoProps {
   variants?: number;
 }
 
+// Three palettes mirror the three site directions Leadac drafts off the
+// prospect's brand colour: warm/terracotta (food), cool sage (wellness /
+// dental), and a saturated amber (hospitality / cafes). The bg1/bg2 pair
+// is the page gradient; surface layers above it are derived from `text`
+// at low alpha, which keeps the type-on-tinted-bg contrast readable.
 const PALETTES = [
-  { primary: "hsl(var(--leadac-h) var(--leadac-s) 50%)", accent: "var(--leadac-300)", text: "#FFFFFF", bg1: "#1A0F2E", bg2: "#2B1845" },
-  { primary: "hsl(152 48% 50%)", accent: "hsl(152 28% 70%)", text: "#04221A", bg1: "#0F2A21", bg2: "#173B30" },
-  { primary: "#F59E0B", accent: "hsl(38 70% 60%)", text: "#1F1404", bg1: "#241704", bg2: "#3A2710" },
+  { name: "Terracotta", primary: "#C25A3D", accent: "#F0B27A", text: "#FFF7EE", bg1: "#1B0F0B", bg2: "#341B12" },
+  { name: "Sage", primary: "hsl(152 38% 48%)", accent: "hsl(152 28% 78%)", text: "#F0FAF5", bg1: "#0E1F19", bg2: "#1A2F26" },
+  { name: "Amber", primary: "#E0A23A", accent: "#FFD27A", text: "#FFF8E8", bg1: "#1F1505", bg2: "#3A2710" },
 ];
 
 export function MockupGeneratorDemo({
@@ -106,29 +113,45 @@ export function MockupGeneratorDemo({
               <p className="text-[11.5px] font-medium text-white truncate">
                 Mockup for {lead.name}
               </p>
-              <p className="text-[10px] text-white/40 truncate">
-                Variant {variant + 1} of {variants} · Gemini 2.5 Flash
+              <p className="text-[10px] text-white/40 truncate font-mono">
+                {palette.name.toLowerCase()} · variant {variant + 1}/{variants} · gemini 2.5 flash
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => regenerate()}
-            disabled={phase === "generating"}
-            className="px-2.5 py-1 rounded-md text-[11px] font-medium inline-flex items-center gap-1 disabled:opacity-60"
-            style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "0.5px solid rgba(255,255,255,0.08)",
-              color: "rgba(255,255,255,0.85)",
-            }}
-          >
-            {phase === "generating" ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <RefreshCw className="w-3 h-3" />
-            )}
-            Regenerate
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <span
+              className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-mono"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "0.5px solid rgba(255,255,255,0.08)",
+                color: "rgba(255,255,255,0.55)",
+              }}
+            >
+              <LinkIcon className="w-2.5 h-2.5" />
+              leadac.ai/m/{lead.name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .slice(0, 18)}
+            </span>
+            <button
+              type="button"
+              onClick={() => regenerate()}
+              disabled={phase === "generating"}
+              className="px-2.5 py-1 rounded-md text-[11px] font-medium inline-flex items-center gap-1 disabled:opacity-60"
+              style={{
+                background: "rgba(255,255,255,0.05)",
+                border: "0.5px solid rgba(255,255,255,0.08)",
+                color: "rgba(255,255,255,0.85)",
+              }}
+            >
+              {phase === "generating" ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3 h-3" />
+              )}
+              Regenerate
+            </button>
+          </div>
         </div>
 
         {/* Mockup viewport */}
@@ -199,73 +222,97 @@ export function MockupGeneratorDemo({
                 }}
               >
                 {/* Mock site nav */}
-                <div className="px-5 py-3 flex items-center justify-between">
+                <div
+                  className="px-5 sm:px-7 py-3 flex items-center justify-between"
+                  style={{ borderBottom: `1px solid ${palette.text}0d` }}
+                >
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-5 h-5 rounded-md"
+                      className="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold"
                       style={{
                         background: palette.primary,
+                        color: palette.text,
                         boxShadow: `0 4px 12px ${palette.primary}55`,
                       }}
-                    />
+                    >
+                      {lead.name.charAt(0)}
+                    </div>
                     <span
                       className="text-[12px] font-semibold tracking-tight"
-                      style={{ color: palette.text }}
+                      style={{ color: palette.text, letterSpacing: "-0.01em" }}
                     >
                       {lead.name}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px]" style={{ color: `${palette.text}99` }}>
-                    <span>Services</span>
+                  <div
+                    className="flex items-center gap-4 text-[10px]"
+                    style={{ color: `${palette.text}99` }}
+                  >
+                    <span>Menu</span>
                     <span>Reviews</span>
-                    <span>Contact</span>
+                    <span>Visit</span>
                     <button
-                      className="px-2 py-1 rounded text-[10px] font-semibold"
+                      className="px-2.5 py-1 rounded text-[10px] font-semibold"
                       style={{
                         background: palette.primary,
                         color: palette.text,
                       }}
                     >
-                      Contact
+                      Reserve
                     </button>
                   </div>
                 </div>
 
                 {/* Hero */}
-                <div className="px-5 sm:px-7 pt-4 pb-5">
-                  <div
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium mb-3"
-                    style={{
-                      background: `${palette.accent}22`,
-                      color: palette.accent,
-                      border: `0.5px solid ${palette.accent}44`,
-                    }}
-                  >
-                    <Star className="w-2.5 h-2.5 fill-current" />
-                    {lead.rating.toFixed(1)} on Google · {lead.reviewCount} reviews
+                <div className="px-5 sm:px-7 pt-5 pb-4">
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-semibold"
+                      style={{
+                        background: `${palette.accent}22`,
+                        color: palette.accent,
+                        border: `0.5px solid ${palette.accent}44`,
+                      }}
+                    >
+                      <Star className="w-2.5 h-2.5 fill-current" />
+                      {lead.rating.toFixed(1)} · {lead.reviewCount} Google reviews
+                    </span>
+                    {lead.niche && (
+                      <span
+                        className="text-[9.5px] font-medium px-2 py-0.5 rounded-full"
+                        style={{
+                          color: `${palette.text}aa`,
+                          background: `${palette.text}08`,
+                          border: `0.5px solid ${palette.text}10`,
+                        }}
+                      >
+                        {lead.niche}
+                      </span>
+                    )}
                   </div>
                   <h3
-                    className="text-[20px] sm:text-[26px] font-bold leading-[1.05] mb-2 tracking-tight"
-                    style={{ color: palette.text, letterSpacing: "-0.02em" }}
+                    className="text-[22px] sm:text-[28px] font-bold leading-[1.02] mb-2 tracking-tight"
+                    style={{ color: palette.text, letterSpacing: "-0.025em" }}
                   >
                     {lead.name}
                   </h3>
                   <p
-                    className="text-[11.5px] leading-relaxed mb-3"
-                    style={{ color: `${palette.text}aa` }}
+                    className="text-[12px] leading-relaxed mb-4 max-w-[36ch]"
+                    style={{ color: `${palette.text}b5` }}
                   >
-                    {lead.rating.toFixed(1)}★ in {lead.city}, with a site that
-                    finally matches the reviews.
+                    A {lead.rating.toFixed(1)}★ {lead.niche?.toLowerCase() ?? "neighbourhood favourite"} in {lead.city.split(",")[0]} —
+                    with a site that finally loads as fast as the line outside.
                   </p>
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2.5">
                     <button
-                      className="px-3 py-1.5 rounded text-[11px] font-semibold inline-flex items-center gap-1"
+                      className="px-3.5 py-1.5 rounded-md text-[11.5px] font-semibold inline-flex items-center gap-1.5"
                       style={{
                         background: palette.primary,
                         color: palette.text,
+                        boxShadow: `0 8px 24px ${palette.primary}40`,
                       }}
                     >
-                      Get in touch
+                      Reserve a table
                       <ArrowRight className="w-3 h-3" />
                     </button>
                     <span
@@ -278,33 +325,58 @@ export function MockupGeneratorDemo({
                   </div>
                 </div>
 
+                {/* Review proof strip */}
+                {lead.reviewQuote && (
+                  <div
+                    className="mx-5 sm:mx-7 mb-4 px-3.5 py-2.5 rounded-lg flex items-start gap-2.5"
+                    style={{
+                      background: `${palette.text}08`,
+                      border: `0.5px solid ${palette.text}10`,
+                    }}
+                  >
+                    <Quote
+                      className="w-3 h-3 mt-0.5 shrink-0"
+                      style={{ color: palette.accent }}
+                    />
+                    <p
+                      className="text-[10.5px] italic leading-snug"
+                      style={{ color: `${palette.text}c5` }}
+                    >
+                      &ldquo;{lead.reviewQuote}&rdquo;
+                      <span
+                        className="not-italic ml-1.5 text-[9.5px]"
+                        style={{ color: `${palette.text}77` }}
+                      >
+                        — pulled from Google
+                      </span>
+                    </p>
+                  </div>
+                )}
+
                 {/* Service cards */}
-                <div
-                  className="px-5 sm:px-7 pb-4 grid grid-cols-3 gap-2"
-                  style={{ borderTop: `1px solid ${palette.text}10` }}
-                >
+                <div className="px-5 sm:px-7 pb-4 grid grid-cols-3 gap-2">
                   {services.slice(0, 3).map((s, i) => (
                     <div
                       key={s}
                       className="rounded-lg p-2.5"
                       style={{
-                        background: `${palette.text}08`,
+                        background: `${palette.text}0a`,
                         border: `0.5px solid ${palette.text}14`,
-                        marginTop: 12,
                       }}
                     >
                       <div
-                        className="w-5 h-5 rounded-md flex items-center justify-center mb-1.5"
+                        className="w-5 h-5 rounded-md flex items-center justify-center mb-1.5 text-[10px] font-bold tabular-nums"
                         style={{
                           background: `${palette.accent}22`,
                           color: palette.accent,
+                          border: `0.5px solid ${palette.accent}33`,
                         }}
                       >
-                        {i + 1}
+                        0{i + 1}
                       </div>
                       <p
-                        className="text-[10px] font-semibold leading-tight"
-                        style={{ color: palette.text }}
+                        className="text-[10.5px] font-semibold leading-tight"
+                        style={{ color: palette.text, letterSpacing: "-0.005em" }}
                       >
                         {s}
                       </p>
@@ -318,10 +390,14 @@ export function MockupGeneratorDemo({
                   style={{
                     background: `${palette.text}08`,
                     color: `${palette.text}aa`,
+                    border: `0.5px solid ${palette.text}10`,
                   }}
                 >
                   <MapPin className="w-3 h-3" />
                   {lead.city}
+                  <span className="ml-auto" style={{ color: `${palette.text}66` }}>
+                    Open today · 11am–10pm
+                  </span>
                 </div>
 
                 {/* Variant chips */}

@@ -36,6 +36,13 @@ export const LIMITS = {
   copilot: { bucket: "copi", windowSec: 60, limit: 30 },
   websiteCheck: { bucket: "wcheck", windowSec: 60, limit: 30 },
   crawl: { bucket: "crawl", windowSec: 60, limit: 10 },
+  // Lighter limit for the location picker's per-keystroke autocomplete
+  // proxy. 60/min ≈ one debounced keystroke per second per workspace —
+  // fine for human typing but caps a runaway client loop.
+  placesAutocomplete: { bucket: "pac", windowSec: 60, limit: 60 },
+  // Place Details is fired once per picked suggestion, so the budget
+  // is dominated by chip selections (max 5 chips × a few retries).
+  placesDetails: { bucket: "pdet", windowSec: 60, limit: 30 },
 } as const satisfies Record<string, RateLimitConfig>;
 
 export async function checkRateLimit(

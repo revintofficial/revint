@@ -315,16 +315,18 @@ export function DealSidePanel({
                 <label className="text-[11px] uppercase tracking-wider text-white/40 font-semibold">
                   Offer
                 </label>
-                {opp?.suggestedOffer && !item.selectedOffer && (
-                  <span className="text-[10px] text-white/30">
-                    AI suggests: {opp.suggestedOffer}
-                  </span>
-                )}
               </div>
+              {/*
+                The "AI suggests: X" hint and the per-tier "AI" badge
+                were removed when the platform switched to per-workspace
+                ServicePackage rows (P0.4). The dossier owns the
+                recommendation now and surfaces it in the lead detail
+                via RecommendedPackageCard; this manual offer selector
+                is rep-driven.
+              */}
               <div className="grid grid-cols-2 gap-2">
                 {OFFER_PACKAGES.map((pkg) => {
                   const isSelected = item.selectedOffer === pkg.value;
-                  const isSuggested = opp?.suggestedOffer === pkg.value;
                   return (
                     <button
                       key={pkg.value}
@@ -337,11 +339,6 @@ export function DealSidePanel({
                     >
                       {isSelected && (
                         <Check className={`absolute top-1.5 right-1.5 w-3.5 h-3.5 ${pkg.cls.label}`} />
-                      )}
-                      {isSuggested && !isSelected && (
-                        <span className="absolute top-1.5 right-1.5 text-[9px] font-medium text-white/30 bg-white/10 px-1 rounded">
-                          AI
-                        </span>
                       )}
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <span className={`w-2 h-2 rounded-full ${pkg.cls.dot}`} />

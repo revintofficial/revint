@@ -66,7 +66,11 @@ const CONSERVATIVE_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
 
   // Grup B - Pitch
   WEBSITE_PLAN_GENERATOR: { FREE: 5, PRO: 50, PRO_TEAM: 200, AGENCY: UNLIMITED },
-  WEBSITE_MOCKUP_GENERATOR: { FREE: 3, PRO: 30, PRO_TEAM: 150, AGENCY: UNLIMITED },
+  // WEBSITE_MOCKUP_GENERATOR is now part of the BALANCED preset so a
+  // typical FREE workspace expects every newly ingested lead to get
+  // one. Bumped from 3/30/150 so the cap matches the chain default —
+  // a 4th lead silently skipping its mockup would be confusing.
+  WEBSITE_MOCKUP_GENERATOR: { FREE: 20, PRO: 100, PRO_TEAM: 500, AGENCY: UNLIMITED },
   OPENER_WRITER: { FREE: 20, PRO: 300, PRO_TEAM: 1500, AGENCY: UNLIMITED },
   VIDEO_SCRIPT_WRITER: { FREE: 0, PRO: 50, PRO_TEAM: 200, AGENCY: UNLIMITED },
   VOICE_NOTE_TRANSCRIBER: { FREE: 10, PRO: 100, PRO_TEAM: 500, AGENCY: UNLIMITED },
@@ -117,7 +121,10 @@ const LAUNCH_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   GOOGLE_PLACES_REVIEWS: { FREE: 200, PRO: 2000, PRO_TEAM: 10000, AGENCY: UNLIMITED },
 
   WEBSITE_PLAN_GENERATOR: { FREE: 10, PRO: 50, PRO_TEAM: 200, AGENCY: UNLIMITED },
-  WEBSITE_MOCKUP_GENERATOR: { FREE: 10, PRO: 50, PRO_TEAM: 200, AGENCY: UNLIMITED },
+  // BALANCED preset auto-generates a mockup per lead (see
+  // `getDefaultChain`), so the FREE cap needs to comfortably cover a
+  // small evaluation cohort without users hitting "skipped: quota".
+  WEBSITE_MOCKUP_GENERATOR: { FREE: 20, PRO: 100, PRO_TEAM: 500, AGENCY: UNLIMITED },
   OPENER_WRITER: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
   VIDEO_SCRIPT_WRITER: { FREE: 10, PRO: 100, PRO_TEAM: 500, AGENCY: UNLIMITED },
   VOICE_NOTE_TRANSCRIBER: { FREE: 30, PRO: 300, PRO_TEAM: 1000, AGENCY: UNLIMITED },

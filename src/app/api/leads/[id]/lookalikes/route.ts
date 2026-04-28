@@ -78,7 +78,16 @@ export const GET = withAuth(async (session, req: Request, ctx: { params: Promise
           reviewCount: true,
           hasWebsite: true,
           salesOpportunity: {
-            select: { opportunityScore: true, status: true, suggestedOffer: true },
+            select: {
+              opportunityScore: true,
+              status: true,
+              // Legacy STARTER/GROWTH/SALES (deprecated P0.4) — still
+              // selected so old rows render their tier in the look-
+              // alike panel; new rows surface a configured
+              // ServicePackage via recommendedPackageId.
+              suggestedOffer: true,
+              recommendedPackageId: true,
+            },
           },
         },
       })
