@@ -123,7 +123,17 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
     )?.label || "Leadac AI";
 
   return (
-    <div className="flex h-screen overflow-hidden relative" style={{ background: "var(--leadac-bg)" }}>
+    <div
+      className="flex h-screen overflow-hidden relative"
+      style={{
+        backgroundColor: "var(--leadac-bg)",
+        backgroundImage:
+          "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 5% / 0.58) 0%, hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.72) 100%), url(/background.jpeg)",
+        backgroundSize: "cover, cover",
+        backgroundPosition: "center, center",
+        backgroundRepeat: "no-repeat, no-repeat",
+      }}
+    >
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-100 focus:px-3 focus:py-2 focus:rounded-md focus:bg-white focus:text-black focus:outline-none"
