@@ -329,18 +329,8 @@ export default function LandingPage() {
         steps={STEPS}
       />
 
-      {/* Integrations orbit — sits after the process so the buyer can answer
-          "...and what does it plug into?" without scrolling for it. Light
-          section keeps the rhythm against the dark Brain block below. */}
-      <MultiOrbitSemiCircle
-        eyebrow="Integrations"
-        title="Plugs into the stack you already pay for."
-        subtitle="Send from Gmail or Outlook. Export to Smartlead, Instantly, or GHL. Install the AI receptionist into Synthflow, Retell, or Vapi. One subscription, every layer — no new contracts to sign."
-      />
-
-      {/* The brain — copilot tools + learning loop. Dark-soft wrapper to
-          break the rhythm between the two light sections (Process → Stats)
-          and signal that what sits in here is the invisible engine. */}
+      {/* The brain — copilot tools + learning loop. Dark-soft wrapper
+          between light sections for rhythm. */}
       <section
         id="brain"
         className="vx-dark-section-soft relative py-24 md:py-36 overflow-hidden"
@@ -527,6 +517,13 @@ export default function LandingPage() {
           <PricingCards />
         </div>
       </section>
+
+      {/* Integrations orbit — after pricing so plan choice is answered, then stack fit. */}
+      <MultiOrbitSemiCircle
+        eyebrow="Integrations"
+        title="Plugs into the stack you already pay for."
+        subtitle="Send from Gmail or Outlook. Export to Smartlead, Instantly, or GHL. Install the AI receptionist into Synthflow, Retell, or Vapi. One subscription, every layer — no new contracts to sign."
+      />
 
       <CineFaq
         eyebrow="Questions"

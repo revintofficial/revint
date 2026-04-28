@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="vp">
+  <title id="vp">Vapi</title>
+  <rect width="48" height="48" rx="10" fill="#0F172A"/>
+  <circle cx="24" cy="26" r="9" stroke="#38BDF8" stroke-width="3" fill="none"/>
+  <circle cx="16" cy="26" fill="#38BDF8" r="3"/>
+</svg>

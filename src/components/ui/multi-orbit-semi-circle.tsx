@@ -1,84 +1,56 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  Mail,
-  Inbox,
-  Send,
-  Zap,
-  Workflow,
-  MapPin,
-  Phone,
-  PhoneCall,
-  Mic,
-  MessageCircle,
-  GitBranch,
-  Settings2,
-  Bot,
-  CalendarDays,
-  Briefcase,
-  Building2,
-  CreditCard,
-  MessageSquare,
-  FileText,
-  Database,
-  Cloud,
-  TrendingUp,
-  Webhook,
-  Globe,
-  type LucideIcon,
-} from "lucide-react";
 
-type Integration = {
+export type OrbitIntegration = {
   name: string;
-  icon: LucideIcon;
+  /** Full-color logo under `public/integrations/` */
+  logoSrc: string;
 };
 
-/* Three rings of integrations, ordered inside-out by how proximate the
- * tool is to a finished agency send. Inner ring = the inbox / sender we
- * push the draft into. Middle ring = the post-reply install layer we
- * export to. Outer ring = the data + workflow surface that we receive
- * from or write back to. Tooltip copy is the actual partner name; this
- * is the section that has to look credible to a buyer. */
-const INNER_RING: Integration[] = [
-  { name: "Gmail", icon: Mail },
-  { name: "Outlook", icon: Inbox },
-  { name: "Smartlead", icon: Send },
-  { name: "Instantly", icon: Zap },
-  { name: "GoHighLevel", icon: Workflow },
-  { name: "Google Maps", icon: MapPin },
+/** Three rings of integrations, inside-out by send proximity. Tooltips use partner names. */
+export const INNER_RING_ORBIT: OrbitIntegration[] = [
+  { name: "Gmail", logoSrc: "/integrations/gmail.svg" },
+  { name: "Outlook", logoSrc: "/integrations/outlook.svg" },
+  { name: "Smartlead", logoSrc: "/integrations/smartlead.svg" },
+  { name: "Instantly", logoSrc: "/integrations/instantly.svg" },
+  { name: "GoHighLevel", logoSrc: "/integrations/gohighlevel.svg" },
+  { name: "Google Maps", logoSrc: "/integrations/googlemaps.svg" },
 ];
 
-const MIDDLE_RING: Integration[] = [
-  { name: "Synthflow", icon: Phone },
-  { name: "Retell", icon: PhoneCall },
-  { name: "Vapi", icon: Mic },
-  { name: "Twilio", icon: MessageCircle },
-  { name: "n8n", icon: GitBranch },
-  { name: "Make", icon: Settings2 },
-  { name: "Zapier", icon: Bot },
-  { name: "Calendly", icon: CalendarDays },
+export const MIDDLE_RING_ORBIT: OrbitIntegration[] = [
+  { name: "Synthflow", logoSrc: "/integrations/synthflow.svg" },
+  { name: "Retell", logoSrc: "/integrations/retell.svg" },
+  { name: "Vapi", logoSrc: "/integrations/vapi.svg" },
+  { name: "Twilio", logoSrc: "/integrations/twilio.svg" },
+  { name: "n8n", logoSrc: "/integrations/n8n.svg" },
+  { name: "Make", logoSrc: "/integrations/make.svg" },
+  { name: "Zapier", logoSrc: "/integrations/zapier.svg" },
+  { name: "Calendly", logoSrc: "/integrations/calendly.svg" },
 ];
 
-const OUTER_RING: Integration[] = [
-  { name: "LinkedIn", icon: Briefcase },
-  { name: "Apollo", icon: Building2 },
-  { name: "Stripe", icon: CreditCard },
-  { name: "Slack", icon: MessageSquare },
-  { name: "Notion", icon: FileText },
-  { name: "Airtable", icon: Database },
-  { name: "Salesforce", icon: Cloud },
-  { name: "HubSpot", icon: TrendingUp },
-  { name: "Webhook", icon: Webhook },
-  { name: "Web", icon: Globe },
+export const OUTER_RING_ORBIT: OrbitIntegration[] = [
+  { name: "LinkedIn", logoSrc: "/integrations/linkedin.svg" },
+  { name: "Apollo", logoSrc: "/integrations/apollo-io.svg" },
+  { name: "Stripe", logoSrc: "/integrations/stripe.svg" },
+  { name: "Slack", logoSrc: "/integrations/slack.svg" },
+  { name: "Notion", logoSrc: "/integrations/notion.svg" },
+  { name: "Airtable", logoSrc: "/integrations/airtable.svg" },
+  { name: "Salesforce", logoSrc: "/integrations/salesforce.svg" },
+  { name: "HubSpot", logoSrc: "/integrations/hubspot.svg" },
+  { name: "Webhook", logoSrc: "/integrations/webhook.svg" },
+  { name: "Web", logoSrc: "/integrations/web.svg" },
 ];
+
+/** @deprecated Use ORBIT exports; kept for any old `icon` + Lucide props. */
+export type Integration = OrbitIntegration;
 
 type OrbitProps = {
   radius: number;
   centerX: number;
   centerY: number;
   iconSize: number;
-  items: Integration[];
+  items: OrbitIntegration[];
 };
 
 function SemiCircleOrbit({
@@ -96,7 +68,6 @@ function SemiCircleOrbit({
         const angle = (index / (count - 1)) * 180;
         const x = radius * Math.cos((angle * Math.PI) / 180);
         const y = radius * Math.sin((angle * Math.PI) / 180);
-        const Icon = item.icon;
 
         const tooltipAbove = angle > 90;
 
@@ -113,7 +84,7 @@ function SemiCircleOrbit({
             }}
           >
             <div
-              className="flex items-center justify-center rounded-full bg-white transition-transform duration-200 hover:scale-110 cursor-default"
+              className="flex items-center justify-center rounded-full bg-white transition-transform duration-200 hover:scale-110 cursor-default p-[5px]"
               style={{
                 width: buttonSize,
                 height: buttonSize,
@@ -124,10 +95,15 @@ function SemiCircleOrbit({
               }}
               aria-label={item.name}
             >
-              <Icon
-                className="text-(--vx-purple-700)"
-                style={{ width: iconSize, height: iconSize }}
-                strokeWidth={1.75}
+              <img
+                src={item.logoSrc}
+                alt=""
+                decoding="async"
+                className="select-none object-contain"
+                style={{
+                  width: Math.max(12, iconSize - 2),
+                  height: Math.max(12, iconSize - 2),
+                }}
               />
             </div>
 
@@ -160,21 +136,21 @@ export type MultiOrbitSemiCircleProps = {
   title?: string;
   subtitle?: string;
   rings?: {
-    inner?: Integration[];
-    middle?: Integration[];
-    outer?: Integration[];
+    inner?: OrbitIntegration[];
+    middle?: OrbitIntegration[];
+    outer?: OrbitIntegration[];
   };
 };
 
 export default function MultiOrbitSemiCircle({
   eyebrow = "Integrations",
   title = "Plugs into the stack you already pay for.",
-  subtitle = "Send from Gmail or Outlook. Export to Smartlead, Instantly, or GHL. Install the AI receptionist into Synthflow, Retell, or Vapi. One subscription, every layer.",
+  subtitle = "Send from Gmail or Outlook. Export to Smartlead, Instantly, or GHL. Install the AI receptionist into Synthflow, Retell, or Vapi. One subscription, every layer — no new contracts to sign.",
   rings,
 }: MultiOrbitSemiCircleProps = {}) {
-  const inner = rings?.inner ?? INNER_RING;
-  const middle = rings?.middle ?? MIDDLE_RING;
-  const outer = rings?.outer ?? OUTER_RING;
+  const inner = rings?.inner ?? INNER_RING_ORBIT;
+  const middle = rings?.middle ?? MIDDLE_RING_ORBIT;
+  const outer = rings?.outer ?? OUTER_RING_ORBIT;
 
   const [width, setWidth] = useState(0);
 
@@ -193,8 +169,8 @@ export default function MultiOrbitSemiCircle({
     width < 480
       ? Math.max(14, baseWidth * 0.032)
       : width < 768
-      ? Math.max(16, baseWidth * 0.036)
-      : Math.max(18, baseWidth * 0.04);
+        ? Math.max(16, baseWidth * 0.036)
+        : Math.max(18, baseWidth * 0.04);
 
   const titleWords = title.split(" ");
   const lastWord = titleWords.at(-1) ?? "";
@@ -226,7 +202,6 @@ export default function MultiOrbitSemiCircle({
         </div>
 
         <div className="relative flex justify-center">
-          {/* Soft warm glow behind the orbits */}
           <div
             aria-hidden
             className="absolute inset-0 flex justify-center pointer-events-none"
@@ -250,7 +225,6 @@ export default function MultiOrbitSemiCircle({
               height: baseWidth * 0.62,
             }}
           >
-            {/* Faint guide arcs so the orbits read even before icons render */}
             <svg
               aria-hidden
               className="absolute inset-0 w-full h-full pointer-events-none"

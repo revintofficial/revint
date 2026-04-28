@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="sf">
+  <title id="sf">Synthflow</title>
+  <rect width="48" height="48" rx="11" fill="#EDE9FE"/>
+  <path fill="#7C3AED" d="M8 26h6v14H8V26Zm12-10h6v24h-6V16Zm12 6h6v18h-6V22Z"/>
+</svg>

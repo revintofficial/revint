@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="globe">
+  <title id="globe">Web</title>
+  <circle cx="24" cy="24" r="17" fill="none" stroke="#0EA5E9" stroke-width="2.5"/>
+  <ellipse cx="24" cy="24" rx="8" ry="17" fill="none" stroke="#38BDF8" stroke-width="2"/>
+  <path fill="none" stroke="#7DD3FC" stroke-width="2" d="M7 24h34"/>
+</svg>
