@@ -18,7 +18,7 @@
  * driven. We tolerate a 60s lag on first-step scheduling because the
  * cadences themselves are measured in hours, not seconds.
  */
-import { Queue } from "bullmq";
+import { Queue, type JobsOptions } from "bullmq";
 import IORedis from "ioredis";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
@@ -100,21 +100,29 @@ export async function processSequenceTick(): Promise<SequenceTickResult> {
 
   const queue = getQueue();
   await Promise.all(
-    eligible.map((state) =>
-      queue.add(
+    eligible.map((state) => {
+      // De-dupe by state id so a second tick that overlaps with an
+      // in-flight step doesn't enqueue a duplicate job. `jobId` is a
+      // BaseJobOptions field on the bullmq side, but the d.ts files
+      // shipped with 5.73.5 widen `JobsOptions` so that the bundler-
+      // mode type checker doesn't see it on the public signature.
+      // Cast the options bag through Record<string, unknown> so the
+      // runtime call matches the documented BullMQ API while keeping
+      // every other field explicitly typed locally. TODO: drop the
+      // cast once bullmq's TS types align.
+      const opts = {
+        jobId: `sequence_step:${state.id}:${now.getTime()}`,
+        removeOnComplete: 200,
+        removeOnFail: 100,
+        attempts: 3,
+        backoff: { type: "exponential", delay: 30_000 },
+      } as unknown as JobsOptions;
+      return queue.add(
         "sequence_step",
         { type: "sequence_step", stateId: state.id },
-        {
-          // De-dupe by state id so a second tick that overlaps with
-          // an in-flight step doesn't enqueue a duplicate job.
-          jobId: `sequence_step:${state.id}:${now.getTime()}`,
-          removeOnComplete: 200,
-          removeOnFail: 100,
-          attempts: 3,
-          backoff: { type: "exponential", delay: 30_000 },
-        },
-      ),
-    ),
+        opts,
+      );
+    }),
   );
 
   logger.info("sequence_engine.tick.scheduled", {

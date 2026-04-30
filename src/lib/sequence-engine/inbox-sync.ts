@@ -16,7 +16,7 @@
  * IMAP idle on Gmail/Outlook needs more infra than we want to ship
  * for the FineDine pilot.
  */
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, type Schema } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { listRecentInboxMessages } from "@/lib/oauth/email-client";
@@ -28,18 +28,18 @@ interface ClassifyOutput {
   reason: string;
 }
 
-const CLASSIFY_SCHEMA = {
+const CLASSIFY_SCHEMA: Schema = {
   type: SchemaType.OBJECT,
   properties: {
     classification: {
       type: SchemaType.STRING,
       enum: ["POSITIVE", "NEGATIVE", "OUT_OF_OFFICE", "UNSUBSCRIBE", "OTHER"],
-    },
+    } as Schema,
     confidence: { type: SchemaType.NUMBER },
     reason: { type: SchemaType.STRING },
   },
   required: ["classification", "confidence", "reason"],
-} as const;
+};
 
 async function classifyReply(subject: string, fromAddress: string): Promise<ClassifyOutput> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -52,7 +52,7 @@ async function classifyReply(subject: string, fromAddress: string): Promise<Clas
     model: "gemini-2.0-flash-001",
     generationConfig: {
       responseMimeType: "application/json",
-      responseSchema: CLASSIFY_SCHEMA as unknown as Record<string, unknown>,
+      responseSchema: CLASSIFY_SCHEMA,
       temperature: 0.2,
       maxOutputTokens: 256,
     },
@@ -116,8 +116,11 @@ export async function syncWorkspaceInbox(
     dnc: 0,
   };
 
+  // EmailAccount has no `status` column; we treat any account that the
+  // rep opted into reply attribution for AS the connected set, which is
+  // the only set the inbox sync should touch anyway.
   const accounts = await prisma.emailAccount.findMany({
-    where: { workspaceId, status: "CONNECTED" },
+    where: { workspaceId, replyAttributionEnabled: true },
     select: { id: true },
   });
 
@@ -140,13 +143,15 @@ export async function syncWorkspaceInbox(
       if (!fromAddr) continue;
 
       // Match by checking if the WebsiteAudit.contactEmails or
-      // the Lead's discovered emails contain this sender.
+      // the Lead's discovered emails contain this sender. `contactEmails`
+      // is a Json column (string[] semantically); use array_contains for
+      // the JsonFilter equivalent of the native `has` operator.
       const audit = await prisma.websiteAudit.findFirst({
         where: {
           lead: { workspaceId },
-          contactEmails: { has: fromAddr },
+          contactEmails: { array_contains: [fromAddr] },
         },
-        select: { leadId: true, lead: { select: { id: true, businessName: true } } },
+        include: { lead: { select: { id: true, businessName: true } } },
       });
 
       if (!audit?.lead) continue;

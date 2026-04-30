@@ -20,6 +20,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import type { Prisma } from "@/generated/prisma/client";
 
 export interface SequenceStepResult {
   fired: boolean;
@@ -178,7 +179,12 @@ export async function processSequenceStep(stateId: string): Promise<SequenceStep
         workspaceId: lead.workspaceId,
         leadId: lead.id,
         kind: activityKind,
-        payload: activityPayload,
+        // `activityPayload` is a Record<string, unknown> built from
+        // step config + rendered template strings (all JSON-safe).
+        // Cast to Prisma.InputJsonValue so the generated client's
+        // strict object-shape check passes; we never put non-JSON
+        // values (Date, undefined, function) into it.
+        payload: activityPayload as Prisma.InputJsonValue,
       },
     }),
     // Bump the lead's outreach counters so Today's Queue and

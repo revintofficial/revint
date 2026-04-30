@@ -305,7 +305,7 @@ export default function LeadDetailPage({
   const [planGenerating, setPlanGenerating] = useState(false);
   const [plan, setPlan] = useState<string | null>(null);
   const [showPlan, setShowPlan] = useState(false);
-  const [auditSummary, setAuditSummary] = useState<{ totalChecks: number; passed: number; failed: number; scorePercent: number } | null>(null);
+  const [auditSummary, setAuditSummary] = useState<{ totalChecks: number; passed: number; failed: number; unknown?: number; scorePercent: number } | null>(null);
   const [contentCheck, setContentCheck] = useState<ContentCheckResult | null>(null);
   const [contentCheckLoading, setContentCheckLoading] = useState(false);
   const [showContentCheck, setShowContentCheck] = useState(false);
@@ -1997,7 +1997,7 @@ function WebsitePlanSection({
   setSectionOpen: (v: boolean) => void;
   generating: boolean;
   onGenerate: () => void;
-  auditSummary: { totalChecks: number; passed: number; failed: number; scorePercent: number } | null;
+  auditSummary: { totalChecks: number; passed: number; failed: number; unknown?: number; scorePercent: number } | null;
   businessName: string;
 }) {
   const planRef = useRef<HTMLDivElement>(null);
