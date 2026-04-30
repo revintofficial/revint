@@ -7,7 +7,8 @@ import { getChildrenOf } from "@/lib/niches";
 
 export async function GET(request: Request) {
   try {
-    const { workspaceId } = await requireUser();
+    const { workspaceId, user } = await requireUser();
+    const userId = user.id;
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
@@ -21,6 +22,8 @@ export async function GET(request: Request) {
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
     const search = searchParams.get("search");
+    // Phase 1 — top-level "view" tab: today | mine | all | archive.
+    const queue = searchParams.get("queue") || "all";
     // P1.5 - GPS-based sorting + radius filter (ICP4 walk-in workflow).
     const userLat = parseFloat(searchParams.get("userLat") || "");
     const userLng = parseFloat(searchParams.get("userLng") || "");
@@ -29,6 +32,48 @@ export async function GET(request: Request) {
     const isNearestSort = sortBy === "nearest" && hasUserLoc;
 
     const where: Record<string, unknown> = { workspaceId };
+
+    // Phase 1 — Today's Queue / My Leads / Archive scoping.
+    // - "today": assigned to me OR unassigned AND (nextActionDueAt
+    //   <= now OR null) AND not archived/discarded/snoozed/dnc
+    // - "mine": assigned to me, not archived
+    // - "all": legacy — everything not archived
+    // - "archive": archivedAt IS NOT NULL
+    const now = new Date();
+    if (queue === "archive") {
+      where.archivedAt = { not: null };
+    } else if (queue === "today") {
+      where.archivedAt = null;
+      where.discardedAt = null;
+      where.dnc = false;
+      where.AND = [
+        ...((where.AND as Array<Record<string, unknown>> | undefined) ?? []),
+        {
+          OR: [
+            { snoozeUntil: null },
+            { snoozeUntil: { lte: now } },
+          ],
+        },
+        {
+          OR: [
+            { assignedToUserId: userId },
+            { assignedToUserId: null },
+          ],
+        },
+        {
+          OR: [
+            { nextActionDueAt: null },
+            { nextActionDueAt: { lte: now } },
+          ],
+        },
+      ];
+    } else if (queue === "mine") {
+      where.archivedAt = null;
+      where.assignedToUserId = userId;
+    } else {
+      // "all" — keep existing default but hide archived.
+      where.archivedAt = null;
+    }
 
     if (borough && borough !== "all") where.borough = borough;
     if (hasWebsite === "true") where.hasWebsite = true;
@@ -127,6 +172,21 @@ export async function GET(request: Request) {
             opportunityScore: { sort: sortOrder, nulls: "last" },
           },
         },
+        { createdAt: "desc" },
+      ];
+    } else if (sortBy === "queue") {
+      // Phase 1 — Today's Queue ordering: leads with the soonest
+      // nextActionDueAt first; ties broken by salesConfidence DESC
+      // (act on high-confidence leads before low-confidence ones).
+      // Leads with no salesConfidence sort last via Prisma's `nulls`.
+      orderBy = [
+        { nextActionDueAt: { sort: "asc", nulls: "last" } },
+        { salesConfidence: { sort: "desc", nulls: "last" } },
+        { createdAt: "desc" },
+      ];
+    } else if (sortBy === "confidence") {
+      orderBy = [
+        { salesConfidence: { sort: sortOrder, nulls: "last" } },
         { createdAt: "desc" },
       ];
     } else if (sortBy === "nearest") {

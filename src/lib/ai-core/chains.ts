@@ -273,15 +273,20 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     optional: true,
   };
   // Hybrid-niche classifier (parent + child packs, e.g. fnb → fnb-bar-club).
-  // The worker self-skips for workspaces whose niche has no children. It
-  // is INDEPENDENT of audit (dependsOn: []) so the classifier always
-  // runs and stamps subNicheSlug — even when the audit step skipped or
-  // failed (Bug #3). The rule-based pass already tolerates missing
-  // audit signals.
+  // The worker self-skips for workspaces whose niche has no children.
+  //
+  // Phase 0/B3 — now `dependsOn: ["audit"]`. Previously the classifier
+  // ran in parallel with audit; this raced with the worker's signal
+  // builder which WANTS the audit features (QR menu detection, booking
+  // widget, multi-location nav) to weight the slug correctly. The
+  // worker still tolerates a missing audit (audit is `optional` so
+  // it can be SKIPPED, which still satisfies this dependency), so a
+  // crawl failure doesn't stall classification — it just falls back
+  // to the Places-types/discovery-query rule pass.
   const classifier: ChainStep = {
     stepId: "classifier",
     workerKind: "SUBVERTICAL_CLASSIFIER",
-    dependsOn: [],
+    dependsOn: ["audit"],
     optional: true,
   };
   const score: ChainStep = {
@@ -302,10 +307,31 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     inputs: { __sentinel: SENTINEL_STEPS.EMBED_LEAD_PROFILE },
   };
 
+  // Phase 0/B5 — minimal "intelligence brief" used by LITE preset.
+  // Same worker as the BALANCED variant but with a thinner dependsOn:
+  // it skips dossier/mockup (which LITE doesn't run) and feeds purely
+  // off score + embed_profile. Output is the same 0-100 sales
+  // confidence rollup so the leads list query can still sort on it
+  // for FREE-tier workspaces.
+  const intelligenceBriefLite: ChainStep = {
+    stepId: "intelligence_brief",
+    workerKind: "LEAD_INTELLIGENCE_BRIEF",
+    dependsOn: ["score", "embed_profile"],
+    optional: true,
+  };
+
   // Always-on backbone for every preset; review + places_reviews are
   // marked optional so a place with no reviews / no placeId doesn't
   // block the score step.
-  const lite: Chain = [audit, placesReviews, review, classifier, score, embedProfile];
+  const lite: Chain = [
+    audit,
+    placesReviews,
+    review,
+    classifier,
+    score,
+    embedProfile,
+    intelligenceBriefLite,
+  ];
 
   if (preset === "LITE") {
     return filterByPlan(lite, plan);
@@ -317,10 +343,17 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     dependsOn: ["audit"],
     optional: true,
   };
+  // Phase 0/B3 — dossier now waits for embed_profile + social + the
+  // deep web crawl so the markdown narrative actually has the full
+  // signal set before Gemini writes it. Each upstream is optional so
+  // a SKIPPED step still unlocks dossier (no FREE-tier regression).
+  // Previously: dependsOn: ["score"] — first-pass dossier missed deep
+  // crawl context entirely because apify_webcrawl had no downstream
+  // edge in the DAG.
   const dossier: ChainStep = {
     stepId: "dossier",
     workerKind: "LEAD_DOSSIER_GENERATOR",
-    dependsOn: ["score"],
+    dependsOn: ["score", "embed_profile", "social", "apify_webcrawl"],
     optional: true,
   };
   // Mockup is part of BALANCED so the lead detail page already has a
@@ -329,10 +362,30 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   // hiccup (or quota exhaustion) doesn't drag dossier down with it;
   // the mockup also depends on `score` because the scorer's
   // `bestSalesAngle` is part of the prompt that drives copy choice.
+  //
+  // Phase 0/B3 — also depends on `classifier` so the mockup template
+  // selection sees `subNicheSlug` (fine-dining vs cafe vs bar drives
+  // very different hero / CTA templates). Classifier is `optional` so
+  // a SKIPPED classifier still unblocks mockup.
   const mockup: ChainStep = {
     stepId: "mockup",
     workerKind: "WEBSITE_MOCKUP_GENERATOR",
-    dependsOn: ["score"],
+    dependsOn: ["score", "classifier"],
+    optional: true,
+  };
+
+  // Phase 0/B5 — the unified "Sales Confidence" brief. Runs at the
+  // END of the chain (after every enrichment + scoring + dossier +
+  // mockup has either finished or been SKIPPED) so it can read every
+  // upstream artifact in one pass and produce a single canonical
+  // "what should the rep say / when should they call / what is the
+  // confidence" payload. Also writes Lead.salesConfidence and bumps
+  // Lead.intelligenceVersion. Optional because a Gemini hiccup here
+  // shouldn't FAIL the session — the dossier is still useful on its own.
+  const intelligenceBrief: ChainStep = {
+    stepId: "intelligence_brief",
+    workerKind: "LEAD_INTELLIGENCE_BRIEF",
+    dependsOn: ["score", "embed_profile", "dossier", "mockup"],
     optional: true,
   };
 
@@ -381,6 +434,11 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   // dossier + on-create mockup so the lead detail page is rich the
   // moment the user opens it. Apify steps are optional and plan-gated
   // so FREE workspaces automatically get the Places-API-only subset.
+  //
+  // Phase 0/B3 — `intelligence_brief` is the FINAL step. Its dependsOn
+  // includes dossier + mockup, which themselves depend on social /
+  // apify_webcrawl / classifier. The whole DAG converges here so the
+  // brief is the single rep-facing canonical artifact.
   const balanced: Chain = [
     audit,
     placesReviews,
@@ -394,6 +452,7 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     embedProfile,
     mockup,
     dossier,
+    intelligenceBrief,
   ];
 
   if (preset === "BALANCED") {
@@ -413,10 +472,17 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   };
   // `mockup` is hoisted into the BALANCED block above; AGGRESSIVE
   // reuses the same ChainStep instance so opener can depend on it.
+  //
+  // Phase 0/B3 — opener now consumes `dossier` so the cold-email body
+  // can reuse the dossier's `bestSalesAngle` narrative + opening hook.
+  // Previously the opener never saw the dossier, which produced two
+  // different "first contact" narratives for the same lead. Optional
+  // SKIP from a failed dossier still unblocks opener, so the AGGRESSIVE
+  // chain never stalls on a single Gemini hiccup.
   const opener: ChainStep = {
     stepId: "opener",
     workerKind: "OPENER_WRITER",
-    dependsOn: ["score", "mockup"],
+    dependsOn: ["score", "mockup", "dossier"],
     optional: true,
   };
 
@@ -435,6 +501,7 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     dossier,
     mockup,
     opener,
+    intelligenceBrief,
   ];
 
   if (preset === "AGGRESSIVE") {

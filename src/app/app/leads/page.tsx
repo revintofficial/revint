@@ -537,25 +537,57 @@ function LeadsPageContent() {
               variant="outline"
               onClick={handleScanWebsites}
               disabled={scanRunning}
+              title="Pull fresh website signals for any leads waiting in the pipeline"
             >
               {scanRunning ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Globe className="w-4 h-4" />
               )}
-              Scan Websites
+              Refresh signals
             </Button>
-            <Button size="sm" onClick={handleAnalyze} disabled={analyzeRunning}>
+            <Button
+              size="sm"
+              onClick={handleAnalyze}
+              disabled={analyzeRunning}
+              title="Re-run the full AI sales brief on every pending lead"
+            >
               {analyzeRunning ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Bot className="w-4 h-4" />
               )}
-              AI Analysis
+              Build sales brief
             </Button>
           </div>
         }
       />
+
+      {/* Phase 1 — top-level queue tabs (Today / Mine / All / Archive). */}
+      <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-white/8 bg-white/3 p-1">
+        {(["today", "mine", "all", "archive"] as const).map((q) => {
+          const active = filters.queue === q;
+          const label =
+            q === "today" ? "Today's queue" :
+            q === "mine" ? "My leads" :
+            q === "all" ? "All leads" :
+            "Archive";
+          return (
+            <button
+              key={q}
+              type="button"
+              onClick={() => setFilters((prev) => ({ ...prev, queue: q, page: 1 }))}
+              className={
+                active
+                  ? "rounded-xl bg-(--leadac-500) px-3 py-1.5 text-[13px] font-medium text-black"
+                  : "rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/60 hover:text-white hover:bg-white/5"
+              }
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
 
       <LeadFiltersBar
         filters={filters}

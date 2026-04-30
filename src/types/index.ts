@@ -110,9 +110,42 @@ export interface PickedLocation {
   countryCode?: string;
 }
 
+/**
+ * Crawl outcome tag. Phase 0/B1 — disambiguates "we never tried" from
+ * "we tried but the site blocked our bot" from "DNS / SSL hard fail".
+ * Surfaced in the lead detail UI so the SDR can decide whether to
+ * trust the audit or open the site themselves.
+ */
+export type CrawlError =
+  | "TIMEOUT"           // navigation exceeded our budget
+  | "DNS_ERROR"         // hostname did not resolve
+  | "TLS_ERROR"         // SSL handshake / cert failure
+  | "BOT_BLOCKED_4XX"   // 401/403 — server refused our UA, human can usually open
+  | "SERVER_5XX"        // 5xx — origin error
+  | "REDIRECT_LOOP"     // too many redirects
+  | "PLAYWRIGHT_CRASH"  // browser/page crashed mid-navigation
+  | "EMPTY_RESPONSE"    // page loaded but produced 0 bytes
+  | "UNKNOWN";
+
 export interface WebsiteFeatures {
   url: string;
   reachable: boolean;
+  /**
+   * Phase 0/B1 — final HTTP status from the navigation, even when
+   * 4xx/5xx. null when navigation never produced a response (timeout,
+   * DNS, TLS). The previous crawler treated `!response.ok()` as
+   * "unreachable" which zeroed every other field. Now `reachable` is
+   * true when we got USEFUL HTML (2xx OR a 3xx that still rendered
+   * content OR a 4xx that returned a real page like a custom 404).
+   */
+  httpStatus: number | null;
+  /**
+   * Phase 0/B1 — crawl error tag for non-success outcomes. Null on
+   * fully successful crawls. When this is set the UI shows a "We
+   * couldn't reach the site — open it manually" hint instead of
+   * silently rendering "Title: —".
+   */
+  crawlError: CrawlError | null;
   loadTimeMs: number | null;
   https: boolean;
   mobileFriendlyGuess: boolean;

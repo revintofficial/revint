@@ -98,6 +98,12 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
         sourceLng: borough.lng,
         crawlStatus: websiteUrl ? "PENDING" : "NO_WEBSITE",
         analyzeStatus: "PENDING",
+        // KVKK / GDPR: stamp the lead with where its data came from so we
+        // have a defensible answer when a regulator asks "why did you
+        // contact this business?". Public Google Places listings are a
+        // legitimate-interest source for B2B outreach in TR / EU.
+        consentSource: "PUBLIC_LISTING",
+        consentRecordedAt: new Date(),
       },
       select: { id: true },
     });

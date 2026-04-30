@@ -270,36 +270,17 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     voiceNoteCount: payload.voiceNotes.length,
   };
 
-  // Dossier owns the final score: the scorer's blended number is a
-  // hard floor (deterministic + Gemini), but the dossier sees the
-  // full evidence set (review KPIs, social signals, Apify enrichment)
-  // and can reason past edge cases the scorer's bounded prompt can't.
-  // Persist into SalesOpportunity so the lead list, kanban, and the
-  // copilot retrieval all read one consistent value.
-  // Best-effort: a parse failure (>5% of outputs in telemetry) leaves
-  // the scorer's value intact and is logged for observability.
+  // Phase 0/B3b — dossier no longer overwrites SalesOpportunity.opportunityScore.
+  // The scorer is the single authority. Previously the dossier parsed a
+  // "Score: N" line out of its own Gemini markdown and overwrote the
+  // scorer's deterministic+Gemini value. That created two scores in
+  // disagreement (the leads list showed one number, the dossier text
+  // referenced another) and the new LEAD_INTELLIGENCE_BRIEF worker is
+  // the one supposed to roll up a unified Sales Confidence anyway. The
+  // parsed score is kept on the AgentRun output for telemetry/audit but
+  // is no longer mutated into the row.
   const parsedScore = parseDossierScore(markdown);
-  if (parsedScore != null) {
-    try {
-      await prisma.salesOpportunity.update({
-        where: { leadId },
-        data: { opportunityScore: parsedScore },
-      });
-      logger.info("agent_workers.lead_dossier_generator.score_persisted", {
-        leadId,
-        score: parsedScore,
-      });
-    } catch (err) {
-      // No SalesOpportunity row yet (lead skipped scorer for some
-      // reason) — the dossier was still produced, just don't
-      // overwrite a row that doesn't exist.
-      logger.warn("agent_workers.lead_dossier_generator.score_persist_failed", {
-        leadId,
-        score: parsedScore,
-        err: err instanceof Error ? err.message : String(err),
-      });
-    }
-  } else {
+  if (parsedScore == null) {
     logger.warn("agent_workers.lead_dossier_generator.score_parse_failed", {
       leadId,
       outputChars: markdown.length,

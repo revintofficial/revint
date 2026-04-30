@@ -25,6 +25,14 @@ type AgentRunJob =
   | { type: "agent_run"; runId: string }
   | { type: "orchestrator_advance"; sessionId: string }
   | { type: "embed"; memoryId: string }
+  // Phase 2 — native sequence engine. `sequence_tick` scans for due
+  // LeadSequenceState rows and enqueues `sequence_step` jobs for the
+  // ones that are ACTIVE + due. `sequence_step` actually fires the
+  // outbound action (email, whatsapp, manual call reminder) for one
+  // (lead, sequence, step) tuple. Both reuse the agent-runs queue —
+  // no new BullMQ queue per the architecture rule.
+  | { type: "sequence_tick" }
+  | { type: "sequence_step"; stateId: string }
   // Legacy payload shape (pre-discriminator). Anything posted before
   // this worker upgrade lands without a `type` field. We infer
   // `agent_run` when `runId` is present.
@@ -87,14 +95,38 @@ async function processJob(job: Job<AgentRunJob>) {
     return { memoryId };
   }
 
+  if (jobType === "sequence_tick") {
+    const { processSequenceTick } = await import("../lib/sequence-engine/tick");
+    const result = await processSequenceTick();
+    logger.info("worker.ai_runs.sequence_tick.done", result);
+    return result;
+  }
+
+  if (jobType === "sequence_step") {
+    const stateId = "stateId" in data ? (data as { stateId: string }).stateId : undefined;
+    if (!stateId) {
+      logger.warn("worker.ai_runs.sequence_step_missing_stateId", { jobId: job.id });
+      return;
+    }
+    const { processSequenceStep } = await import("../lib/sequence-engine/step");
+    const result = await processSequenceStep(stateId);
+    logger.info("worker.ai_runs.sequence_step.done", { stateId, ...result });
+    return result;
+  }
+
   logger.warn("worker.ai_runs.unknown_job_type", { jobId: job.id, type: jobType });
 }
 
 function inferJobType(
   data: AgentRunJob,
-): "agent_run" | "orchestrator_advance" | "embed" | "unknown" {
+): "agent_run" | "orchestrator_advance" | "embed" | "sequence_tick" | "sequence_step" | "unknown" {
   if ("type" in data && typeof data.type === "string") {
-    return data.type as "agent_run" | "orchestrator_advance" | "embed";
+    return data.type as
+      | "agent_run"
+      | "orchestrator_advance"
+      | "embed"
+      | "sequence_tick"
+      | "sequence_step";
   }
   if ("runId" in data && typeof data.runId === "string") return "agent_run";
   return "unknown";

@@ -1,0 +1,475 @@
+/**
+ * LEAD_INTELLIGENCE_BRIEF worker (Phase 0/B5).
+ *
+ * The canonical "single source of truth" worker. Runs at the END of
+ * the `lead_created` chain — after every enrichment + scoring +
+ * classification + dossier + mockup has either succeeded or been
+ * SKIPPED. Reads every Lead-scoped artifact in one pass and writes:
+ *
+ *   1. A structured "brief" payload (talking points, next action,
+ *      best-time-to-call hint, opener seed, reply objections,
+ *      Sales Confidence 0-100). Cached on `AgentRun.outputJson`.
+ *   2. Denormalized `Lead.salesConfidence` + `Lead.intelligenceVersion`
+ *      so the leads list query can sort/filter on a single number
+ *      without joining four tables.
+ *
+ * Why a separate worker (vs reusing the dossier)?
+ *   - The dossier is a long-form Markdown narrative. Reps don't speed-
+ *     read 850 words during a cold call.
+ *   - The dossier had to be its own author for Gemini-friendliness;
+ *     the brief is structured JSON so the UI can render specific
+ *     fields ("Open with this line", "Best time to call: weekday lunch")
+ *     in dedicated cards.
+ *   - The Sales Confidence rollup needs to read every signal AT ONCE
+ *     including the dossier; a worker that depends on the dossier
+ *     can't BE the dossier.
+ *
+ * Output shape:
+ *   {
+ *     salesConfidence: number,            // 0-100
+ *     confidenceBreakdown: {
+ *       audit: number, reviews: number, opportunity: number, weight: number
+ *     },
+ *     headline: string,                    // one-line "this is a {x}"
+ *     talkingPoints: string[],             // 3-5 short pointers for the call
+ *     openerSeed: string,                  // first-line opener for cold email/call
+ *     bestTimeToCall: string | null,       // free-text hint, may include local TZ
+ *     dnc: boolean,                        // hard block from outbound (e.g. opted-out)
+ *     nextAction: { kind: string, due: string | null, note: string },
+ *     replyObjections: string[],           // anticipated buyer objections
+ *     redFlags: string[],                  // spend-time-elsewhere signals
+ *     evidence: { source: string, note: string }[],
+ *     generatedAt: string,
+ *     intelligenceVersion: number,
+ *   }
+ */
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
+import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
+import { safeParseGeminiJson } from "@/lib/gemini";
+import { listByLead as listMemoryByLead } from "@/lib/ai-core/memory";
+import { runAuditChecklist } from "@/lib/audit-checklist";
+import { getNicheBySlug } from "@/lib/niches";
+import type { WebsiteFeatures } from "@/types";
+import type {
+  AgentWorkerContext,
+  AgentWorkerOutput,
+  AgentWorkerRun,
+} from "./types";
+
+interface BriefOutput {
+  salesConfidence: number;
+  confidenceBreakdown: {
+    audit: number;
+    reviews: number;
+    opportunity: number;
+    weight: number;
+  };
+  headline: string;
+  talkingPoints: string[];
+  openerSeed: string;
+  bestTimeToCall: string | null;
+  dnc: boolean;
+  nextAction: { kind: string; due: string | null; note: string };
+  replyObjections: string[];
+  redFlags: string[];
+  evidence: { source: string; note: string }[];
+  generatedAt: string;
+  intelligenceVersion: number;
+}
+
+/**
+ * Phase 0/B5 — deterministic "Sales Confidence" rollup. The Gemini
+ * call is for the prose (talking points, opener seed) but the SCORE
+ * itself is a math.weighted blend of the three upstream signals so
+ * we don't depend on Gemini's mood for sorting the leads list.
+ *
+ * Weights:
+ *   - audit checklist scorePercent       40%
+ *   - reviewAnalysis.leadScore           30%
+ *   - salesOpportunity.opportunityScore  30%
+ *
+ * Missing signals collapse to 0 and reduce the total weight
+ * proportionally so a lead with "no reviews, no website" still gets
+ * a usable number rather than NaN.
+ */
+function computeSalesConfidence(input: {
+  auditScorePct: number | null;
+  reviewLeadScore: number | null;
+  opportunityScore: number | null;
+}): { score: number; breakdown: BriefOutput["confidenceBreakdown"] } {
+  const components: { value: number | null; weight: number; key: keyof BriefOutput["confidenceBreakdown"] }[] = [
+    { value: input.auditScorePct, weight: 0.4, key: "audit" },
+    { value: input.reviewLeadScore, weight: 0.3, key: "reviews" },
+    { value: input.opportunityScore, weight: 0.3, key: "opportunity" },
+  ];
+  let totalWeight = 0;
+  let weightedSum = 0;
+  const breakdown: BriefOutput["confidenceBreakdown"] = {
+    audit: 0,
+    reviews: 0,
+    opportunity: 0,
+    weight: 0,
+  };
+  for (const c of components) {
+    if (c.value == null) continue;
+    const clamped = Math.max(0, Math.min(100, c.value));
+    weightedSum += clamped * c.weight;
+    totalWeight += c.weight;
+    breakdown[c.key] = clamped;
+  }
+  breakdown.weight = totalWeight;
+  const score = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
+  return { score, breakdown };
+}
+
+interface BriefPromptInput {
+  businessName: string;
+  niche: string | null;
+  subNiche: string | null;
+  address: string;
+  rating: number | null;
+  reviewCount: number | null;
+  websiteUrl: string | null;
+  workspaceLanguage: string;
+  workspaceOffer: string | null;
+  workspaceValueProp: string | null;
+  audit: Record<string, unknown> | null;
+  auditChecklistText: string;
+  reviewAnalysis: Record<string, unknown> | null;
+  salesOpportunity: Record<string, unknown> | null;
+  socialProfiles: Record<string, string | null> | null;
+  voiceNotes: { transcript: string | null; createdAt: string }[];
+  dossierMarkdown: string | null;
+  memorySnippets: { kind: string; text: string }[];
+  agentRunSummaries: { workerKind: string; output: string }[];
+  nicheLabel: string | null;
+  nichePitchAngle: string | null;
+  preComputedConfidence: number;
+}
+
+async function generateBrief(
+  input: BriefPromptInput,
+  intelligenceVersion: number,
+): Promise<Omit<BriefOutput, "intelligenceVersion" | "generatedAt">> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
+  const client = new GoogleGenerativeAI(apiKey);
+  const model = client.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    generationConfig: {
+      maxOutputTokens: 4096,
+      temperature: 0.5,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          salesConfidence: { type: SchemaType.NUMBER },
+          confidenceBreakdown: {
+            type: SchemaType.OBJECT,
+            properties: {
+              audit: { type: SchemaType.NUMBER },
+              reviews: { type: SchemaType.NUMBER },
+              opportunity: { type: SchemaType.NUMBER },
+              weight: { type: SchemaType.NUMBER },
+            },
+            required: ["audit", "reviews", "opportunity", "weight"],
+          },
+          headline: { type: SchemaType.STRING },
+          talkingPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          openerSeed: { type: SchemaType.STRING },
+          bestTimeToCall: { type: SchemaType.STRING },
+          dnc: { type: SchemaType.BOOLEAN },
+          nextAction: {
+            type: SchemaType.OBJECT,
+            properties: {
+              kind: { type: SchemaType.STRING },
+              due: { type: SchemaType.STRING },
+              note: { type: SchemaType.STRING },
+            },
+            required: ["kind", "due", "note"],
+          },
+          replyObjections: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          redFlags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          evidence: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                source: { type: SchemaType.STRING },
+                note: { type: SchemaType.STRING },
+              },
+              required: ["source", "note"],
+            },
+          },
+        },
+        required: [
+          "salesConfidence",
+          "confidenceBreakdown",
+          "headline",
+          "talkingPoints",
+          "openerSeed",
+          "bestTimeToCall",
+          "dnc",
+          "nextAction",
+          "replyObjections",
+          "redFlags",
+          "evidence",
+        ],
+      },
+    },
+  });
+
+  const prompt = `You are the senior SDR enablement analyst at a B2B SaaS for ${input.niche ?? "small businesses"}. The output of this brief is shown to a sales rep DURING a cold call — they need 3-5 talking points, ONE opener line they can read out loud, an honest "should I call?" sales-confidence number, and the realistic objection they will hit.
+
+Write in plain ${input.workspaceLanguage === "tr" ? "Turkish" : "English"}. Avoid marketing fluff. Cite which signal each talking point came from.
+
+Business: ${input.businessName} (${input.subNiche ?? input.niche ?? "unclassified"})
+${input.nicheLabel ? `Niche pack: ${input.nicheLabel} — pitch angle: ${input.nichePitchAngle ?? "n/a"}\n` : ""}
+Address: ${input.address}
+Website: ${input.websiteUrl ?? "n/a"}
+Google rating: ${input.rating ?? "n/a"} (${input.reviewCount ?? 0} reviews)
+
+Workspace offer: ${input.workspaceOffer ?? "(not configured)"}
+Workspace value prop: ${input.workspaceValueProp ?? "(not configured)"}
+
+PRE-COMPUTED Sales Confidence (use this as your salesConfidence; do not invent a different number): ${input.preComputedConfidence}
+
+## Audit checklist
+${input.auditChecklistText}
+
+## Review analysis
+${input.reviewAnalysis ? JSON.stringify(input.reviewAnalysis).slice(0, 4000) : "(no review analysis)"}
+
+## Sales opportunity (scorer)
+${input.salesOpportunity ? JSON.stringify(input.salesOpportunity).slice(0, 3000) : "(no opportunity row)"}
+
+## Social profiles
+${input.socialProfiles ? JSON.stringify(input.socialProfiles) : "(none)"}
+
+## Voice notes (rep-recorded)
+${input.voiceNotes.map((v) => `- ${v.transcript ?? ""}`).join("\n") || "(none)"}
+
+## Dossier (long-form analyst narrative)
+${input.dossierMarkdown ? input.dossierMarkdown.slice(0, 6000) : "(not generated)"}
+
+## Recent agent-run outputs
+${input.agentRunSummaries.map((r) => `- ${r.workerKind}: ${r.output.slice(0, 400)}`).join("\n") || "(none)"}
+
+## Semantic memory (top hits)
+${input.memorySnippets.map((m) => `- [${m.kind}] ${m.text.slice(0, 200)}`).join("\n") || "(none)"}
+
+Rules:
+- salesConfidence MUST equal ${input.preComputedConfidence}. Use confidenceBreakdown to explain WHY.
+- talkingPoints: 3-5 items, each <= 18 words, each anchored in a real signal. No filler.
+- openerSeed: ONE sentence the SDR can read aloud — not a full email body. Natural, not salesy.
+- bestTimeToCall: brief hint based on niche (e.g. "Restaurants prefer between lunch and dinner rush, ~3-5pm local") or null when uncertain.
+- dnc: true ONLY when the data shows explicit opt-out / unsubscribe / "do not call" signals; otherwise false.
+- nextAction.kind: one of "CALL_NOW", "EMAIL_FIRST", "WAIT_FOR_REPLY", "DROP_LEAD", "NEEDS_RESEARCH".
+- nextAction.due: ISO-8601 if a specific time is implied, else null.
+- replyObjections: 2-3 anticipated buyer objections, in their voice.
+- redFlags: pull from review analysis (low rating + dropping trend), shutdown signals, "permanently closed" indicators. Empty array if none.
+- evidence: 3-6 short citations of the actual signals you used.
+- NO emojis. NO em-dashes. NO marketing buzzwords.
+
+Return ONLY the JSON. No code fences, no preamble.`;
+
+  const result = await generateWithTimeout(model, prompt, {
+    timeoutMs: WORKER_TIMEOUTS.LEAD_INTELLIGENCE_BRIEF,
+    label: "lead_intelligence_brief",
+  });
+  const raw = result.response.text();
+  const parsed = safeParseGeminiJson<Omit<BriefOutput, "intelligenceVersion" | "generatedAt">>(raw, "lead_intelligence_brief");
+
+  // Hard-clamp salesConfidence to the deterministic value, regardless
+  // of what Gemini emitted. The prompt instructs the model to echo
+  // the pre-computed number, but bugs happen and we DO NOT want a
+  // free-form Gemini number to drive the leads-list ordering.
+  parsed.salesConfidence = input.preComputedConfidence;
+  return parsed;
+}
+
+export const run: AgentWorkerRun = async (
+  ctx: AgentWorkerContext,
+): Promise<AgentWorkerOutput> => {
+  if (!ctx.lead) {
+    throw new Error("LEAD_INTELLIGENCE_BRIEF requires a lead context");
+  }
+  const lead = ctx.lead;
+  const leadId = lead.id;
+  const workspaceId = ctx.workspaceId;
+
+  // Pull the latest dossier markdown if any (for prompt context).
+  const dossierRun = await prisma.agentRun.findFirst({
+    where: {
+      workspaceId,
+      leadId,
+      workerKind: "LEAD_DOSSIER_GENERATOR",
+      status: "SUCCEEDED",
+    },
+    orderBy: { finishedAt: "desc" },
+    select: { outputJson: true },
+  });
+  const dossierMarkdown =
+    dossierRun?.outputJson && typeof dossierRun.outputJson === "object" &&
+    "markdown" in (dossierRun.outputJson as Record<string, unknown>)
+      ? String((dossierRun.outputJson as Record<string, unknown>).markdown ?? "")
+      : null;
+
+  const recentRuns = await prisma.agentRun.findMany({
+    where: {
+      workspaceId,
+      leadId,
+      status: "SUCCEEDED",
+      workerKind: { notIn: ["LEAD_INTELLIGENCE_BRIEF", "LEAD_DOSSIER_GENERATOR"] },
+    },
+    orderBy: { finishedAt: "desc" },
+    take: 12,
+    select: { workerKind: true, outputJson: true },
+  });
+
+  const memoryRows = await listMemoryByLead({ workspaceId, leadId, take: 12 });
+
+  const features = (lead.websiteAudit?.rawFeaturesJson as WebsiteFeatures | null) ?? null;
+  const checklist = runAuditChecklist(
+    features,
+    lead.hasWebsite,
+    ctx.workspace.niche,
+    lead.subNicheSlug,
+  );
+
+  const reviewAnalysis = lead.reviewAnalysis;
+  const auditScorePct = features ? checklist.summary.scorePercent : null;
+  const reviewLeadScore = reviewAnalysis ? reviewAnalysis.leadScore : null;
+  const opportunityScore = lead.salesOpportunity?.opportunityScore ?? null;
+
+  const { score: salesConfidence, breakdown } = computeSalesConfidence({
+    auditScorePct,
+    reviewLeadScore,
+    opportunityScore,
+  });
+
+  const subNicheSlug = lead.subNicheSlug as string | null;
+  const nicheSlug = lead.nicheSlug as string | null;
+  const resolvedSlug = subNicheSlug ?? nicheSlug ?? null;
+  const nichePack = resolvedSlug ? getNicheBySlug(resolvedSlug) ?? null : null;
+
+  const auditFeaturesForPrompt = lead.websiteAudit
+    ? {
+        reachable: lead.websiteAudit.reachable,
+        crawlError: lead.websiteAudit.crawlError,
+        httpStatus: lead.websiteAudit.httpStatus,
+        title: lead.websiteAudit.title,
+        loadTimeMs: lead.websiteAudit.loadTimeMs,
+        mobileFriendlyGuess: lead.websiteAudit.mobileFriendlyGuess,
+        hasContactForm: lead.websiteAudit.hasContactForm,
+        hasBookingSystem: lead.websiteAudit.hasBookingSystem,
+        hasEcommerce: lead.websiteAudit.hasEcommerce,
+        servicesDetected: lead.websiteAudit.servicesDetected,
+        bookingProvider: lead.websiteAudit.bookingProvider,
+      }
+    : null;
+
+  const newVersion = (lead.intelligenceVersion ?? 0) + 1;
+
+  // Pull a short voice-note transcript bag for the prompt.
+  const voiceNotes = await prisma.voiceNote.findMany({
+    where: { leadId, workspaceId },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: { transcript: true, createdAt: true },
+  });
+
+  let brief: Omit<BriefOutput, "intelligenceVersion" | "generatedAt">;
+  try {
+    brief = await generateBrief(
+      {
+        businessName: lead.businessName,
+        niche: ctx.workspace.niche,
+        subNiche: subNicheSlug,
+        address: lead.formattedAddress,
+        rating: lead.rating,
+        reviewCount: lead.reviewCount,
+        websiteUrl: lead.websiteUrl,
+        workspaceLanguage: ctx.workspace.language ?? "en",
+        workspaceOffer: ctx.workspace.offerName,
+        workspaceValueProp: ctx.workspace.valueProposition,
+        audit: auditFeaturesForPrompt,
+        auditChecklistText: `Audit summary: ${checklist.summary.passed}/${checklist.summary.totalChecks - checklist.summary.unknown} checks passed (${checklist.summary.scorePercent}%).`,
+        reviewAnalysis: (reviewAnalysis as unknown) as Record<string, unknown> | null,
+        salesOpportunity: (lead.salesOpportunity as unknown) as Record<string, unknown> | null,
+        socialProfiles:
+          (lead.websiteAudit?.socialProfiles as Record<string, string | null> | null) ?? null,
+        voiceNotes: voiceNotes.map((v) => ({
+          transcript: v.transcript,
+          createdAt: v.createdAt.toISOString(),
+        })),
+        dossierMarkdown,
+        memorySnippets: memoryRows.map((m) => ({ kind: m.kind, text: m.text })),
+        agentRunSummaries: recentRuns.map((r) => ({
+          workerKind: r.workerKind,
+          output: typeof r.outputJson === "string"
+            ? r.outputJson
+            : JSON.stringify(r.outputJson ?? {}),
+        })),
+        nicheLabel: nichePack?.label ?? null,
+        nichePitchAngle: nichePack?.pitchAngle ?? null,
+        preComputedConfidence: salesConfidence,
+      },
+      newVersion,
+    );
+  } catch (err) {
+    // Fall back to a deterministic brief — Gemini hiccups should not
+    // block the salesConfidence rollup landing on the leads list.
+    logger.warn("agent_workers.lead_intelligence_brief.gemini_failed_fallback", {
+      leadId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+    brief = {
+      salesConfidence,
+      confidenceBreakdown: breakdown,
+      headline: `${lead.businessName} (${lead.subNicheSlug ?? lead.nicheSlug ?? "lead"})`,
+      talkingPoints: [
+        ...(opportunityScore != null ? [`Sales opportunity score: ${opportunityScore}/100.`] : []),
+        ...(auditScorePct != null ? [`Website audit score: ${auditScorePct}%.`] : []),
+        ...(reviewLeadScore != null ? [`Review lead score: ${reviewLeadScore}/100.`] : []),
+      ],
+      openerSeed: `Hi, I work with ${ctx.workspace.niche === "RESTAURANT_TECH" ? "restaurants" : "businesses"} like ${lead.businessName} on improving their booking flow.`,
+      bestTimeToCall: null,
+      dnc: lead.dnc ?? false,
+      nextAction: { kind: "NEEDS_RESEARCH", due: null, note: "AI brief unavailable; rep should review manually." },
+      replyObjections: [],
+      redFlags: [],
+      evidence: [],
+    };
+  }
+
+  // Phase 0/B5 — write the rollup back onto the Lead so the leads
+  // list query and Today's Queue can sort/filter on a single column.
+  await prisma.lead.updateMany({
+    where: { id: leadId, workspaceId },
+    data: {
+      salesConfidence: brief.salesConfidence,
+      intelligenceVersion: newVersion,
+    },
+  });
+
+  const output: BriefOutput = {
+    ...brief,
+    intelligenceVersion: newVersion,
+    generatedAt: new Date().toISOString(),
+  };
+
+  logger.info("agent_workers.lead_intelligence_brief.done", {
+    leadId,
+    intelligenceVersion: newVersion,
+    salesConfidence: brief.salesConfidence,
+    hasDossier: dossierMarkdown != null,
+  });
+
+  return {
+    output,
+    costTokens: 0,
+  };
+};

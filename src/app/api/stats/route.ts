@@ -7,6 +7,12 @@ export async function GET() {
   try {
     const { workspaceId } = await requireUser();
 
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
     const [
       totalLeads,
       withWebsite,
@@ -17,6 +23,14 @@ export async function GET() {
       statusCounts,
       crawlStatusCounts,
       analyzeStatusCounts,
+      // Phase 1 SDR throughput counters.
+      callsToday,
+      emailsToday,
+      meetingsBooked30d,
+      replies7d,
+      todayQueueSize,
+      avgConfidence,
+      activitiesByKind7d,
     ] = await Promise.all([
       prisma.lead.count({ where: { workspaceId } }),
       prisma.lead.count({ where: { workspaceId, hasWebsite: true } }),
@@ -52,6 +66,69 @@ export async function GET() {
         where: { workspaceId },
         _count: { analyzeStatus: true },
       }),
+      prisma.leadActivity.count({
+        where: {
+          workspaceId,
+          kind: "CALL_LOGGED",
+          createdAt: { gte: startOfToday },
+        },
+      }),
+      prisma.leadActivity.count({
+        where: {
+          workspaceId,
+          kind: "EMAIL_SENT",
+          createdAt: { gte: startOfToday },
+        },
+      }),
+      prisma.leadActivity.count({
+        where: {
+          workspaceId,
+          kind: "MEETING_BOOKED",
+          createdAt: { gte: thirtyDaysAgo },
+        },
+      }),
+      prisma.leadActivity.count({
+        where: {
+          workspaceId,
+          kind: "EMAIL_REPLIED",
+          createdAt: { gte: sevenDaysAgo },
+        },
+      }),
+      prisma.lead.count({
+        where: {
+          workspaceId,
+          archivedAt: null,
+          discardedAt: null,
+          dnc: false,
+          OR: [
+            { snoozeUntil: null },
+            { snoozeUntil: { lte: now } },
+          ],
+          AND: [
+            {
+              OR: [
+                { nextActionDueAt: null },
+                { nextActionDueAt: { lte: now } },
+              ],
+            },
+          ],
+        },
+      }),
+      prisma.lead.aggregate({
+        where: {
+          workspaceId,
+          salesConfidence: { not: null },
+        },
+        _avg: { salesConfidence: true },
+      }),
+      prisma.leadActivity.groupBy({
+        by: ["kind"],
+        where: {
+          workspaceId,
+          createdAt: { gte: sevenDaysAgo },
+        },
+        _count: { kind: true },
+      }),
     ]);
 
     return NextResponse.json({
@@ -76,6 +153,18 @@ export async function GET() {
         status: s.analyzeStatus,
         count: s._count.analyzeStatus,
       })),
+      sdr: {
+        callsToday,
+        emailsToday,
+        meetingsBooked30d,
+        replies7d,
+        todayQueueSize,
+        averageConfidence: Math.round(avgConfidence._avg.salesConfidence ?? 0),
+        activitiesByKind7d: activitiesByKind7d.map((row) => ({
+          kind: row.kind,
+          count: row._count.kind,
+        })),
+      },
     });
   } catch (error) {
     if (error instanceof UnauthorizedError) {

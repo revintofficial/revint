@@ -1,6 +1,6 @@
 import { chromium, type Browser, type Page } from "playwright";
 import { extractFeatures } from "./extractor";
-import type { SecurityHeadersResult, WebsiteFeatures } from "@/types";
+import type { CrawlError, SecurityHeadersResult, WebsiteFeatures } from "@/types";
 
 let browserInstance: Browser | null = null;
 
@@ -38,18 +38,79 @@ function extractSecurityHeaders(headers: Record<string, string>): SecurityHeader
   };
 }
 
-export async function crawlWebsite(url: string, businessType?: string | null): Promise<WebsiteFeatures> {
+/**
+ * Phase 0/B1 — error tag inference.
+ *
+ * The previous implementation zeroed every audit field whenever
+ * `response.ok()` was false (i.e. anything outside 200-299). This
+ * marked LOTS of legitimate sites as "unreachable" because:
+ *  - 401/403 from Cloudflare bot challenge to Playwright UA
+ *  - 15s timeout on slower hosting (genuinely reachable to humans)
+ *  - 3xx redirect loops where each hop responded but final was non-2xx
+ *
+ * The new policy: classify the failure, retry once on transient
+ * conditions, and on persistent failure surface a partial result that
+ * still includes whatever useful HTML we did manage to grab. That way
+ * the FineDine SDR sees "Site responded 403 — open manually" instead
+ * of "Reachable: No / Title: — / Mobile Friendly: No".
+ */
+function classifyError(message: string): CrawlError {
+  const m = message.toLowerCase();
+  if (m.includes("timeout")) return "TIMEOUT";
+  if (m.includes("dns") || m.includes("err_name_not_resolved")) return "DNS_ERROR";
+  if (
+    m.includes("ssl") ||
+    m.includes("certificate") ||
+    m.includes("tls") ||
+    m.includes("err_cert")
+  ) return "TLS_ERROR";
+  if (m.includes("redirect")) return "REDIRECT_LOOP";
+  if (m.includes("crash") || m.includes("closed")) return "PLAYWRIGHT_CRASH";
+  return "UNKNOWN";
+}
+
+const NAV_TIMEOUT_MS = 25_000;
+const RETRY_DELAY_MS = 4_000;
+
+export async function crawlWebsite(
+  url: string,
+  businessType?: string | null,
+): Promise<WebsiteFeatures> {
+  // First attempt; on transient failure (timeout / playwright crash)
+  // we wait a beat and retry once before giving up.
+  let last: WebsiteFeatures = await crawlOnce(url, businessType);
+  const transient: CrawlError[] = ["TIMEOUT", "PLAYWRIGHT_CRASH"];
+  if (
+    !last.reachable &&
+    last.crawlError &&
+    transient.includes(last.crawlError)
+  ) {
+    await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+    last = await crawlOnce(url, businessType);
+  }
+  return last;
+}
+
+async function crawlOnce(url: string, businessType?: string | null): Promise<WebsiteFeatures> {
   const browser = await getBrowser();
   let page: Page | null = null;
 
   try {
     page = await browser.newPage({
+      // Modern desktop UA. Many WAFs reject the default Playwright UA;
+      // a real Chrome 120 string slips past most of them.
       userAgent:
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       viewport: { width: 1280, height: 720 },
+      // Bot-protection bypass: accept downloads false, do not honour
+      // CSP that blocks our injected scripts (we don't inject any but
+      // some WAFs trip on Playwright's instrumentation).
+      acceptDownloads: false,
+      bypassCSP: true,
+      ignoreHTTPSErrors: true,
+      locale: "en-US",
     });
 
-    // Collect console errors
     const consoleErrors: string[] = [];
     page.on("console", (msg) => {
       if (msg.type() === "error") {
@@ -59,31 +120,70 @@ export async function crawlWebsite(url: string, businessType?: string | null): P
 
     const startTime = Date.now();
 
-    const response = await page.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: 15000,
-    });
+    // `load` (full document) is more reliable than `domcontentloaded`
+    // for SPAs that hydrate after DOMContentLoaded. Worst case we wait
+    // up to NAV_TIMEOUT_MS but the load event usually fires earlier.
+    let response: Awaited<ReturnType<Page["goto"]>>;
+    try {
+      response = await page.goto(url, {
+        waitUntil: "load",
+        timeout: NAV_TIMEOUT_MS,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const tag = classifyError(message);
+      return createUnreachableResult(url, tag, null, message);
+    }
 
     const loadTimeMs = Date.now() - startTime;
 
-    if (!response || !response.ok()) {
-      return createUnreachableResult(url);
+    if (!response) {
+      return createUnreachableResult(url, "EMPTY_RESPONSE", null, "no response object");
     }
 
+    const status = response.status();
+
+    // Phase 0/B1 — DO NOT abort on non-2xx. We still want the HTML the
+    // server sent (e.g. a 403 page, a custom 404, a 500 error page) so
+    // the audit shows "site responds with 403" instead of zeroing every
+    // field. We only abort on 5xx because those usually mean nothing
+    // useful was rendered.
+    if (status >= 500) {
+      return createUnreachableResult(url, "SERVER_5XX", status, `HTTP ${status}`);
+    }
+
+    // Allow time for client-side JS to render content above the fold.
     await page.waitForTimeout(2000);
 
-    // Extract security headers from response
     const responseHeaders = response.headers();
     const securityHeaders = extractSecurityHeaders(responseHeaders);
 
     const html = await page.content();
 
+    // If the body is empty (e.g. SPA that needs longer hydration) and
+    // status is 2xx/3xx, treat as a thin reachable result rather than
+    // an unreachable error — the URL DID respond.
+    if (!html || html.length < 50) {
+      return createPartialResult(url, status, "EMPTY_RESPONSE", loadTimeMs);
+    }
+
     const features = extractFeatures(html, url, businessType);
     features.loadTimeMs = loadTimeMs;
     features.securityHeaders = securityHeaders;
     features.consoleErrors = consoleErrors.slice(0, 10);
+    features.httpStatus = status;
 
-    // Check for Service Worker registration
+    // 4xx with usable HTML: mark crawlError but keep `reachable=true`
+    // so the rest of the audit (title/meta/etc.) still surfaces. The UI
+    // will show a "Site responded with 4xx — verify manually" warning.
+    if (status >= 400) {
+      features.crawlError = status === 401 || status === 403 ? "BOT_BLOCKED_4XX" : "UNKNOWN";
+      features.reachable = false; // strict definition kept for sales-confidence rollup
+    } else {
+      features.crawlError = null;
+      features.reachable = true;
+    }
+
     try {
       features.hasServiceWorker = await page.evaluate(() => {
         return "serviceWorker" in navigator &&
@@ -93,17 +193,20 @@ export async function crawlWebsite(url: string, businessType?: string | null): P
       features.hasServiceWorker = false;
     }
 
-    // Mobile-friendliness: re-check with mobile viewport
+    // Mobile-friendliness check — keep the existing viewport-meta heuristic.
     await page.setViewportSize({ width: 375, height: 812 });
     await page.waitForTimeout(1000);
     const mobileHtml = await page.content();
-    const hasViewportMeta = mobileHtml.includes("width=device");
+    const hasViewportMeta = /<meta[^>]+name=["']viewport["']/i.test(mobileHtml) ||
+      mobileHtml.includes("width=device");
     features.mobileFriendlyGuess = hasViewportMeta;
 
     return features;
   } catch (error) {
-    console.error(`Crawl failed for ${url}:`, error);
-    return createUnreachableResult(url);
+    const message = error instanceof Error ? error.message : String(error);
+    const tag = classifyError(message);
+    console.error(`Crawl failed for ${url}:`, message);
+    return createUnreachableResult(url, tag, null, message);
   } finally {
     if (page) {
       await page.close().catch(() => {});
@@ -111,10 +214,17 @@ export async function crawlWebsite(url: string, businessType?: string | null): P
   }
 }
 
-function createUnreachableResult(url: string): WebsiteFeatures {
+function createUnreachableResult(
+  url: string,
+  crawlError: CrawlError,
+  httpStatus: number | null,
+  _detail: string,
+): WebsiteFeatures {
   return {
     url,
     reachable: false,
+    httpStatus,
+    crawlError,
     loadTimeMs: null,
     https: url.startsWith("https"),
     mobileFriendlyGuess: false,
@@ -157,5 +267,21 @@ function createUnreachableResult(url: string): WebsiteFeatures {
     consoleErrors: [],
     contactEmails: [],
     bookingProvider: null,
+  };
+}
+
+function createPartialResult(
+  url: string,
+  httpStatus: number,
+  crawlError: CrawlError,
+  loadTimeMs: number,
+): WebsiteFeatures {
+  const base = createUnreachableResult(url, crawlError, httpStatus, "partial");
+  return {
+    ...base,
+    loadTimeMs,
+    // Reachable in the sense that the server responded; consumers
+    // can still check `crawlError` to see this was a thin response.
+    reachable: httpStatus < 400,
   };
 }

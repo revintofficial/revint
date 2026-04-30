@@ -3,12 +3,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
+ * Phase 1 — Today's Queue / My Leads / All / Archive top-level "view"
+ * tabs. Drives a different default filter combo PLUS a different
+ * sort order (Today's Queue sorts on `nextActionDueAt asc + salesConfidence desc`).
+ */
+export type LeadQueue = "today" | "mine" | "all" | "archive";
+
+/**
  * Filter shape used by the leads list. Multi-valued filters are arrays
  * (we serialize to comma-joined strings on the wire). Empty / "all"
  * values are stripped before the request goes out so the URL stays
  * clean.
  */
 export interface LeadsFilters {
+  /**
+   * Phase 1 top-level tab. "today" = leads with nextActionDueAt
+   * <= now() OR no nextActionDueAt + assignedToUserId = current user;
+   * "mine" = all assignedToUserId = current user; "all" = workspace-wide
+   * (legacy default); "archive" = archivedAt IS NOT NULL.
+   */
+  queue: LeadQueue;
   search: string;
   borough: string; // "all" or a London borough name
   hasWebsite: "all" | "true" | "false";
@@ -17,7 +31,7 @@ export interface LeadsFilters {
   subNiche: string; // "all" or sub-niche slug
   minScore: number; // 0..100, 0 = no min
   maxScore: number; // 0..100, 100 = no max
-  sortBy: string; // "createdAt" | "rating" | "reviewCount" | "businessName" | "score" | "nearest"
+  sortBy: string; // "createdAt" | "rating" | "reviewCount" | "businessName" | "score" | "nearest" | "queue"
   page: number;
   // GPS-based filters (only set when "near me" toggle is on)
   userLat: number | null;
@@ -26,6 +40,7 @@ export interface LeadsFilters {
 }
 
 export const DEFAULT_LEADS_FILTERS: LeadsFilters = {
+  queue: "today",
   search: "",
   borough: "all",
   hasWebsite: "all",
@@ -34,7 +49,10 @@ export const DEFAULT_LEADS_FILTERS: LeadsFilters = {
   subNiche: "all",
   minScore: 0,
   maxScore: 100,
-  sortBy: "createdAt",
+  // Phase 1 — Today's Queue is the default view; "queue" sortBy means
+  // "next action ASC, sales confidence DESC". Reps see leads they
+  // need to act on TODAY at the top.
+  sortBy: "queue",
   page: 1,
   userLat: null,
   userLng: null,
@@ -58,6 +76,16 @@ export interface LeadListItem {
   subNicheSlug: string | null;
   subNicheSource: "AUTO" | "MANUAL" | null;
   subNicheConfidence: number | null;
+  // Phase 1 SDR fields surfaced on the row.
+  salesConfidence: number | null;
+  lastContactedAt: string | null;
+  nextActionDueAt: string | null;
+  sequenceStep: number;
+  lastDisposition: string | null;
+  assignedToUserId: string | null;
+  dnc: boolean;
+  archivedAt: string | null;
+  snoozeUntil: string | null;
   updatedAt: string;
   createdAt: string;
   sourceLat: number | null;
@@ -92,6 +120,7 @@ export function buildLeadsQuery(filters: LeadsFilters, limit: number): URLSearch
     limit: String(limit),
     sortBy: filters.sortBy,
     sortOrder: "desc",
+    queue: filters.queue,
   });
   if (filters.borough !== "all") params.set("borough", filters.borough);
   if (filters.hasWebsite !== "all") params.set("hasWebsite", filters.hasWebsite);

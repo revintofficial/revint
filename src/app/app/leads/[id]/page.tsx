@@ -46,8 +46,11 @@ import {
   ChevronDown,
   Star,
   Phone,
+  PhoneOff,
   Mail,
   MessageCircle,
+  Clock,
+  ClipboardList,
   X,
 } from "lucide-react";
 
@@ -163,8 +166,12 @@ interface LeadDetail {
   discoverySourceQuery?: string | null;
   crawlStatus: string;
   analyzeStatus: string;
+  auditSummary?: { totalChecks: number; passed: number; failed: number; unknown?: number; scorePercent: number } | null;
   websiteAudit: {
     reachable: boolean;
+    crawlAttemptedAt?: string | null;
+    crawlError?: string | null;
+    httpStatus?: number | null;
     loadTimeMs: number | null;
     https: boolean;
     mobileFriendlyGuess: boolean;
@@ -254,50 +261,37 @@ interface LeadDetail {
   sourceLat?: number | null;
   sourceLng?: number | null;
   discoveredLinks?: DiscoveredLink[];
+  // Phase 1 SDR fields.
+  salesConfidence?: number | null;
+  intelligenceVersion?: number;
+  lastContactedAt?: string | null;
+  nextActionDueAt?: string | null;
+  sequenceStep?: number;
+  lastDisposition?: string | null;
+  dnc?: boolean;
+  consentSource?: string | null;
+  timezone?: string | null;
+  archivedAt?: string | null;
+  snoozeUntil?: string | null;
+  assignedToUserId?: string | null;
 }
 
 type TabKey = "overview" | "website" | "workers" | "reviews" | "outreach";
 const TAB_KEYS: TabKey[] = ["overview", "website", "workers", "reviews", "outreach"];
 
-function countAuditPassTotal(audit: NonNullable<LeadDetail["websiteAudit"]>): { passed: number; total: number } {
-  const bools: boolean[] = [
-    audit.reachable,
-    audit.https,
-    audit.mobileFriendlyGuess,
-    audit.hasContactForm,
-    audit.hasWhatsappLink,
-    audit.hasBookingSystem,
-    audit.hasEcommerce,
-  ];
-  const optionalKeys = [
-    "hasOpenGraph",
-    "hasTwitterCards",
-    "hasFavicon",
-    "hasManifest",
-    "hasServiceWorker",
-    "hasGoogleAnalytics",
-    "hasCookieConsent",
-    "hasResponsiveImages",
-    "hasFontDisplay",
-  ] as const;
-  for (const k of optionalKeys) {
-    const v = audit[k];
-    if (typeof v === "boolean") bools.push(v);
-  }
-  if (audit.securityHeaders) {
-    const sh = audit.securityHeaders;
-    bools.push(
-      sh.hasCSP,
-      sh.hasXFrameOptions,
-      sh.hasXContentTypeOptions,
-      sh.hasReferrerPolicy,
-      sh.hasHSTS,
-      sh.hasPermissionsPolicy,
-    );
-  }
-  const passed = bools.filter(Boolean).length;
-  return { passed, total: bools.length };
-}
+/**
+ * Phase 0/B2 — "Checks Passed" comes ONLY from the canonical
+ * `auditSummary` returned by GET /api/leads/[id], which itself runs
+ * `runAuditChecklist` (the same logic the website-plan endpoint and
+ * the dossier prompt use). Previously this page maintained its own
+ * boolean tally over a subset of WebsiteAudit fields, which:
+ *   - disagreed with the audit-score and AI-written dossier copy
+ *   - showed `1/7` to the FineDine SDR even when the site was clearly fine
+ *     (the crawler.ts B1 bug zeroed all booleans, leaving only `https`
+ *      passing because it's derived from the URL string)
+ * The previous local helper has been removed — use `auditSummary` from the
+ * lead payload everywhere.
+ */
 
 export default function LeadDetailPage({
   params,
@@ -347,6 +341,13 @@ export default function LeadDetailPage({
         if (data.watchlistItem?.websitePlan) {
           setPlan(data.watchlistItem.websitePlan);
           setPlanSectionOpen(true);
+        }
+        // Phase 0/B2 — server now returns canonical auditSummary so the
+        // "Checks Passed" tile and the audit-score subtitle agree on the
+        // same number from the moment the page loads (no waiting for
+        // /api/website-plan).
+        if (data.auditSummary) {
+          setAuditSummary(data.auditSummary);
         }
       } catch (err) {
         if (!cancelled) {
@@ -572,7 +573,6 @@ export default function LeadDetailPage({
 
   const opp = lead.salesOpportunity;
   const audit = lead.websiteAudit;
-  const auditCounts = audit ? countAuditPassTotal(audit) : null;
 
   return (
     <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-5">
@@ -583,6 +583,8 @@ export default function LeadDetailPage({
         <ArrowLeft className="w-4 h-4" />
         Leads
       </Link>
+
+      <SalesCallSheet lead={lead} onLogged={() => { void refetchLead(); }} />
 
       <HeroBand lead={lead} onPipelineStarted={() => { void refetchLead(); }} />
 
@@ -663,7 +665,7 @@ export default function LeadDetailPage({
               )}
               {audit ? (
                 <>
-                  <WebsiteStatsRow audit={audit} auditCounts={auditCounts} />
+                  <WebsiteStatsRow audit={audit} auditSummary={auditSummary} />
                   <AuditAccordion audit={audit} />
                 </>
               ) : (
@@ -764,6 +766,8 @@ export default function LeadDetailPage({
           </Tabs>
         </section>
       </div>
+
+      <MobileActionBar lead={lead} onLogged={() => { void refetchLead(); }} />
     </div>
   );
 }
@@ -906,7 +910,11 @@ function HeroBand({
   onPipelineStarted?: () => void;
 }) {
   const opp = lead.salesOpportunity;
-  const score = opp?.opportunityScore ?? null;
+  // Phase 1 — prefer the unified Sales Confidence rollup written by
+  // LEAD_INTELLIGENCE_BRIEF over the raw opportunityScore. Falls back
+  // to opportunityScore for leads enriched before the brief shipped.
+  const score = lead.salesConfidence ?? opp?.opportunityScore ?? null;
+  const scoreLabel = lead.salesConfidence != null ? "Sales Confidence" : "Opportunity";
   const potentialLabel =
     score == null ? null : score >= 60 ? "High Potential" : score >= 35 ? "Medium Potential" : "Low Potential";
   const potentialColor =
@@ -987,7 +995,7 @@ function HeroBand({
                   </div>
                 </div>
                 <div className="md:text-center">
-                  <p className="text-[12px] uppercase tracking-[0.06em] text-white/40">Opportunity</p>
+                  <p className="text-[12px] uppercase tracking-[0.06em] text-white/40">{scoreLabel}</p>
                   <p className={`text-[13px] font-medium ${potentialColor}`}>{potentialLabel}</p>
                 </div>
               </div>
@@ -1608,16 +1616,22 @@ function EmptyAuditCard({
 
 function WebsiteStatsRow({
   audit,
-  auditCounts,
+  auditSummary,
 }: {
   audit: NonNullable<LeadDetail["websiteAudit"]>;
-  auditCounts: { passed: number; total: number } | null;
+  auditSummary: { totalChecks: number; passed: number; failed: number; unknown?: number; scorePercent: number } | null;
 }) {
-  const scorePct = auditCounts ? Math.round((auditCounts.passed / Math.max(1, auditCounts.total)) * 100) : 0;
+  // Phase 0/B2 — denominator is the canonical "scorable" count
+  // (totalChecks - unknown). Same number the AI prompt sees, same
+  // number the website-plan endpoint returns. No more 1/7 mystery.
+  const denom = auditSummary
+    ? Math.max(1, auditSummary.totalChecks - (auditSummary.unknown ?? 0))
+    : 0;
+  const scorePct = auditSummary ? auditSummary.scorePercent : 0;
   return (
     <div className="grid grid-cols-3 gap-3">
       <StatTile
-        value={auditCounts ? `${auditCounts.passed}/${auditCounts.total}` : "—"}
+        value={auditSummary ? `${auditSummary.passed}/${denom}` : "—"}
         label="Checks Passed"
         accent={scorePct >= 70 ? "ok" : scorePct >= 40 ? "warn" : "bad"}
       />
@@ -1670,8 +1684,22 @@ function AuditAccordion({ audit }: { audit: NonNullable<LeadDetail["websiteAudit
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ core: true });
   const toggle = (k: string) => setOpenGroups((s) => ({ ...s, [k]: !s[k] }));
 
+  // Phase 0/B1 — when our crawler bumped into a bot block / 4xx but
+  // the page might be perfectly fine for humans, surface that fact
+  // instead of just rendering "Reachable: No / Title: —". Lets the SDR
+  // open the site themselves rather than mistrust the audit silently.
+  const reachableLabel: ReactNode = audit.reachable ? (
+    <Badge variant="success">Yes</Badge>
+  ) : audit.crawlError === "BOT_BLOCKED_4XX" || (audit.httpStatus && audit.httpStatus >= 400 && audit.httpStatus < 500) ? (
+    <Badge variant="warning">{`Bot blocked (${audit.httpStatus ?? "4xx"})`}</Badge>
+  ) : audit.crawlError ? (
+    <Badge variant="destructive">{`Failed (${audit.crawlError.replace(/_/g, " ").toLowerCase()})`}</Badge>
+  ) : (
+    <Badge variant="destructive">No</Badge>
+  );
+
   const coreRows: { label: string; value: ReactNode }[] = [
-    { label: "Reachable", value: <Badge variant={audit.reachable ? "success" : "destructive"}>{audit.reachable ? "Yes" : "No"}</Badge> },
+    { label: "Reachable", value: reachableLabel },
     { label: "Mobile Friendly", value: <Badge variant={audit.mobileFriendlyGuess ? "success" : "destructive"}>{audit.mobileFriendlyGuess ? "Yes" : "No"}</Badge> },
     { label: "Title", value: audit.title || "—" },
     { label: "Meta Description", value: audit.metaDescription || "—" },
@@ -1687,6 +1715,13 @@ function AuditAccordion({ audit }: { audit: NonNullable<LeadDetail["websiteAudit
         <CardTitle className="text-[17px]">Website Audit</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
+        {audit.crawlError === "BOT_BLOCKED_4XX" && (
+          <div className="rounded-lg border border-[var(--leadac-warning)]/30 bg-[var(--leadac-warning)]/10 px-3 py-2 text-[12px] text-[var(--leadac-text-2)]">
+            Site responded with {audit.httpStatus} to our crawler. A real
+            visitor can usually still open it — open the URL manually before
+            trusting these audit fields.
+          </div>
+        )}
         <AuditGroup label="Core" open={!!openGroups.core} onToggle={() => toggle("core")}>
           <div className="space-y-2.5">
             {coreRows.map((r) => (
@@ -2013,12 +2048,12 @@ function WebsitePlanSection({
           <div className="min-w-0">
             <CardTitle className="text-[17px] flex items-center gap-2">
               <FileText className="w-4 h-4 text-(--leadac-500) shrink-0" />
-              AI Website Plan
+              Sales Talking Points
             </CardTitle>
             <p className="text-[12px] text-white/40 mt-1">{summaryLine}</p>
             {auditSummary && (
               <p className="text-[12px] text-white/40 mt-0.5">
-                Audit score: {auditSummary.scorePercent}% (passed {auditSummary.passed} of {auditSummary.totalChecks} checks)
+                Audit score: {auditSummary.scorePercent}% (passed {auditSummary.passed} of {auditSummary.totalChecks - (auditSummary.unknown ?? 0)} checks)
               </p>
             )}
           </div>
@@ -2053,7 +2088,7 @@ function WebsitePlanSection({
             </>
           )}
           <Button size="sm" onClick={onGenerate} disabled={generating} className="h-9 rounded-full px-4 gap-1.5">
-            {generating ? <><Loader2 className="w-4 h-4 animate-spin" />Generating...</> : plan ? <><RefreshCw className="w-4 h-4" />Regenerate</> : <><Sparkles className="w-4 h-4" />Generate Plan</>}
+            {generating ? <><Loader2 className="w-4 h-4 animate-spin" />Building...</> : plan ? <><RefreshCw className="w-4 h-4" />Regenerate</> : <><Sparkles className="w-4 h-4" />Build talking points</>}
           </Button>
         </div>
       </CardHeader>
@@ -2068,7 +2103,7 @@ function WebsitePlanSection({
         <CardContent>
           <div className="text-center py-8">
             <FileText className="w-10 h-10 text-white/20 mx-auto mb-3" />
-            <p className="text-sm text-white/40">Click the button to generate a detailed website plan.</p>
+            <p className="text-sm text-white/40">Generate the cold-call ready talking points for this lead.</p>
           </div>
         </CardContent>
       )}
@@ -2524,5 +2559,385 @@ function SubNicheOverride({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Phase 1 — SDR-first call sheet + mobile action bar.
+// ---------------------------------------------------------------------------
+
+const DISPOSITION_LABELS: Record<string, string> = {
+  ANSWERED_INTERESTED: "Answered — interested",
+  ANSWERED_NOT_INTERESTED: "Answered — not interested",
+  VOICEMAIL: "Left voicemail",
+  NO_ANSWER: "No answer",
+  WRONG_NUMBER: "Wrong number",
+  BOOKED_MEETING: "Booked a meeting",
+  OPTED_OUT: "Opted out / DNC",
+};
+
+function formatDateRel(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const diffMs = Date.now() - d.getTime();
+  const diffMin = Math.round(diffMs / 60_000);
+  if (Math.abs(diffMin) < 60) return diffMin <= 0 ? `in ${-diffMin}m` : `${diffMin}m ago`;
+  const diffHr = Math.round(diffMin / 60);
+  if (Math.abs(diffHr) < 48) return diffHr <= 0 ? `in ${-diffHr}h` : `${diffHr}h ago`;
+  return d.toLocaleDateString();
+}
+
+/**
+ * Phase 1 — sticky "Sales Call Sheet" header that appears at the top
+ * of the lead detail page. Shows the rep at-a-glance:
+ *   - Sales Confidence ring
+ *   - Last contact + next action timing
+ *   - Big inline buttons: Call, Email, WhatsApp, Log
+ *   - DNC / opted-out red banner when appropriate
+ * Mirrored on small screens by `MobileActionBar` (sticky bottom bar).
+ */
+function SalesCallSheet({
+  lead,
+  onLogged,
+}: {
+  lead: LeadDetail;
+  onLogged?: () => void;
+}) {
+  const [logOpen, setLogOpen] = useState(false);
+  const confidence = lead.salesConfidence ?? lead.salesOpportunity?.opportunityScore ?? null;
+  const phone = lead.phone;
+  const whatsapp = lead.websiteAudit?.socialProfiles?.whatsapp ?? null;
+  const firstEmail = lead.websiteAudit?.contactEmails?.[0] ?? null;
+  const dncBlocked = !!(lead.dnc || lead.lastDisposition === "OPTED_OUT");
+
+  return (
+    <>
+      <div
+        className="sticky top-0 z-30 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-10 px-4 sm:px-6 md:px-8 lg:px-10 py-3 backdrop-blur-md border-b border-white/8"
+        style={{ background: "hsl(var(--leadac-h) var(--leadac-ns) 9% / 0.85)" }}
+      >
+        <div className="flex flex-wrap items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            {confidence != null && (
+              <div className="hidden sm:block shrink-0">
+                <CircularProgress value={confidence} size={42} strokeWidth={4} />
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-[15px] sm:text-[16px] font-medium text-white truncate">
+                {lead.businessName}
+              </p>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-white/55">
+                {confidence != null && (
+                  <span className="inline-flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    Confidence {confidence}
+                  </span>
+                )}
+                {lead.lastContactedAt && (
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Last contact {formatDateRel(lead.lastContactedAt)}
+                  </span>
+                )}
+                {lead.nextActionDueAt && (
+                  <span className="inline-flex items-center gap-1">
+                    <ClipboardList className="w-3 h-3" />
+                    Next action {formatDateRel(lead.nextActionDueAt)}
+                  </span>
+                )}
+                {lead.lastDisposition && (
+                  <span className="inline-flex items-center gap-1 text-white/70">
+                    {DISPOSITION_LABELS[lead.lastDisposition] ?? lead.lastDisposition}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden md:flex items-center gap-1.5 shrink-0">
+            {phone && (
+              dncBlocked ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full gap-1.5 opacity-50 cursor-not-allowed"
+                  disabled
+                  title="Do not contact — outbound blocked"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  Call
+                </Button>
+              ) : (
+                <a href={`tel:${phone}`}>
+                  <Button size="sm" variant="outline" className="rounded-full gap-1.5">
+                    <Phone className="w-3.5 h-3.5" />
+                    Call
+                  </Button>
+                </a>
+              )
+            )}
+            {firstEmail && (
+              dncBlocked ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full gap-1.5 opacity-50 cursor-not-allowed"
+                  disabled
+                  title="Do not contact — outbound blocked"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  Email
+                </Button>
+              ) : (
+                <a href={`mailto:${firstEmail}`}>
+                  <Button size="sm" variant="outline" className="rounded-full gap-1.5">
+                    <Mail className="w-3.5 h-3.5" />
+                    Email
+                  </Button>
+                </a>
+              )
+            )}
+            {whatsapp && (
+              dncBlocked ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full gap-1.5 opacity-50 cursor-not-allowed"
+                  disabled
+                  title="Do not contact — outbound blocked"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  WhatsApp
+                </Button>
+              ) : (
+                <a href={whatsapp} target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" variant="outline" className="rounded-full gap-1.5">
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    WhatsApp
+                  </Button>
+                </a>
+              )
+            )}
+            <Button size="sm" className="rounded-full gap-1.5" onClick={() => setLogOpen(true)}>
+              <ClipboardList className="w-3.5 h-3.5" />
+              Log call
+            </Button>
+          </div>
+        </div>
+
+        {dncBlocked && (
+          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[hsl(4_62%_54%)]/30 bg-[hsl(4_62%_54%)]/10 px-3 py-1 text-[12px] text-[hsl(4_42%_72%)]">
+            <PhoneOff className="w-3.5 h-3.5" />
+            Do not contact — outbound is blocked for this lead
+            {lead.consentSource && (
+              <span className="ml-2 text-white/40">· source: {lead.consentSource}</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      <LogCallModal
+        open={logOpen}
+        onOpenChange={setLogOpen}
+        leadId={lead.id}
+        onLogged={onLogged}
+      />
+    </>
+  );
+}
+
+/**
+ * Mobile-only sticky bottom action bar. Field reps spend most of
+ * their day on a phone — they shouldn't have to scroll back to the
+ * top of the page to dial / email / log a call.
+ */
+function MobileActionBar({
+  lead,
+  onLogged,
+}: {
+  lead: LeadDetail;
+  onLogged?: () => void;
+}) {
+  const [logOpen, setLogOpen] = useState(false);
+  const phone = lead.phone;
+  const whatsapp = lead.websiteAudit?.socialProfiles?.whatsapp ?? null;
+  const firstEmail = lead.websiteAudit?.contactEmails?.[0] ?? null;
+  const blocked = !!(lead.dnc || lead.lastDisposition === "OPTED_OUT");
+
+  return (
+    <>
+      <div
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/10 backdrop-blur-md"
+        style={{
+          background: "hsl(var(--leadac-h) var(--leadac-ns) 7% / 0.92)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0) + 8px)",
+          paddingTop: "8px",
+        }}
+      >
+        <div className="grid grid-cols-4 gap-1 px-2">
+          <a
+            href={!blocked && phone ? `tel:${phone}` : undefined}
+            aria-disabled={blocked || !phone}
+            className={
+              !blocked && phone
+                ? "flex flex-col items-center justify-center rounded-xl py-2 text-white/85"
+                : "flex flex-col items-center justify-center rounded-xl py-2 text-white/30 pointer-events-none"
+            }
+          >
+            <Phone className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Call</span>
+          </a>
+          <a
+            href={!blocked && firstEmail ? `mailto:${firstEmail}` : undefined}
+            aria-disabled={blocked || !firstEmail}
+            className={
+              !blocked && firstEmail
+                ? "flex flex-col items-center justify-center rounded-xl py-2 text-white/85"
+                : "flex flex-col items-center justify-center rounded-xl py-2 text-white/30 pointer-events-none"
+            }
+          >
+            <Mail className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Email</span>
+          </a>
+          <a
+            href={!blocked && whatsapp ? whatsapp : undefined}
+            target={whatsapp ? "_blank" : undefined}
+            rel="noopener noreferrer"
+            aria-disabled={blocked || !whatsapp}
+            className={
+              !blocked && whatsapp
+                ? "flex flex-col items-center justify-center rounded-xl py-2 text-white/85"
+                : "flex flex-col items-center justify-center rounded-xl py-2 text-white/30 pointer-events-none"
+            }
+          >
+            <MessageCircle className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">WhatsApp</span>
+          </a>
+          <button
+            type="button"
+            onClick={() => setLogOpen(true)}
+            className="flex flex-col items-center justify-center rounded-xl py-2 text-(--leadac-500)"
+          >
+            <ClipboardList className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Log</span>
+          </button>
+        </div>
+      </div>
+      {/* Add bottom padding so the page content isn't hidden under the bar */}
+      <div className="md:hidden h-20" aria-hidden />
+
+      <LogCallModal
+        open={logOpen}
+        onOpenChange={setLogOpen}
+        leadId={lead.id}
+        onLogged={onLogged}
+      />
+    </>
+  );
+}
+
+/**
+ * Phase 1 — log a call disposition. Posts to the new
+ * /api/leads/[id]/log-call endpoint, which writes a LeadActivity row
+ * + updates Lead.lastContactedAt, lastDisposition, and (depending on
+ * the disposition) nextActionDueAt + dnc.
+ */
+function LogCallModal({
+  open,
+  onOpenChange,
+  leadId,
+  onLogged,
+}: {
+  open: boolean;
+  onOpenChange: (next: boolean) => void;
+  leadId: string;
+  onLogged?: () => void;
+}) {
+  const [disposition, setDisposition] = useState<string>("VOICEMAIL");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!open) return null;
+
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/log-call`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ disposition, notes: notes.trim() || null }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        toast.error(body.error ?? "Failed to log call");
+        return;
+      }
+      toast.success("Call logged");
+      onLogged?.();
+      onOpenChange(false);
+      setNotes("");
+    } catch (err) {
+      console.error(err);
+      toast.error("Network error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-6"
+      style={{ background: "rgba(0,0,0,0.55)" }}
+      onClick={() => onOpenChange(false)}
+    >
+      <div
+        className="w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-white/10 bg-[hsl(var(--leadac-h)_var(--leadac-ns)_10%)] p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[16px] font-medium text-white">Log call outcome</h3>
+          <button onClick={() => onOpenChange(false)} className="text-white/50 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="space-y-2 mb-4">
+          {Object.entries(DISPOSITION_LABELS).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setDisposition(value)}
+              className={
+                disposition === value
+                  ? "w-full text-left rounded-xl border border-(--leadac-500)/40 bg-(--leadac-500)/10 px-3 py-2 text-[13px] text-white"
+                  : "w-full text-left rounded-xl border border-white/8 bg-white/3 px-3 py-2 text-[13px] text-white/70 hover:bg-white/6"
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <textarea
+          rows={3}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Optional note for the timeline (e.g. 'asked to call back Tuesday')"
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-[13px] text-white placeholder-white/30 focus:outline-none focus:border-(--leadac-500)/40 resize-none"
+        />
+
+        <div className="mt-4 flex items-center justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button size="sm" onClick={submit} disabled={submitting}>
+            {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            Save
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -78,6 +78,9 @@ const CONSERVATIVE_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   // is cached on AgentRun, so re-clicks are free. FREE gets enough
   // headroom to dossier-up every lead in the pipeline once.
   LEAD_DOSSIER_GENERATOR: { FREE: 30, PRO: 300, PRO_TEAM: 1500, AGENCY: UNLIMITED },
+  // LEAD_INTELLIGENCE_BRIEF runs once per lead at chain end; quota
+  // mirrors the dossier limit because they fire 1:1 in BALANCED.
+  LEAD_INTELLIGENCE_BRIEF: { FREE: 30, PRO: 300, PRO_TEAM: 1500, AGENCY: UNLIMITED },
 
   // Grup C - Deliverable (prospect install packs)
   AI_RECEPTIONIST_BUILDER: { FREE: 0, PRO: 20, PRO_TEAM: 100, AGENCY: UNLIMITED },
@@ -129,6 +132,7 @@ const LAUNCH_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   VIDEO_SCRIPT_WRITER: { FREE: 10, PRO: 100, PRO_TEAM: 500, AGENCY: UNLIMITED },
   VOICE_NOTE_TRANSCRIBER: { FREE: 30, PRO: 300, PRO_TEAM: 1000, AGENCY: UNLIMITED },
   LEAD_DOSSIER_GENERATOR: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
+  LEAD_INTELLIGENCE_BRIEF: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
 
   AI_RECEPTIONIST_BUILDER: { FREE: 5, PRO: 30, PRO_TEAM: 150, AGENCY: UNLIMITED },
   REVIEW_REPLY_AGENT: { FREE: 5, PRO: 30, PRO_TEAM: 150, AGENCY: UNLIMITED },

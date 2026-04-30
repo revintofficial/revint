@@ -6,6 +6,8 @@ import {
   extractDiscoveredLinks,
   type AgentRunForLinks,
 } from "@/lib/discovered-links";
+import { runAuditChecklist } from "@/lib/audit-checklist";
+import type { WebsiteFeatures } from "@/types";
 
 export async function GET(
   _request: Request,
@@ -98,9 +100,27 @@ export async function GET(
       maxPerPlatform: 3,
     });
 
+    // Phase 0/B2 — single source of truth for "Checks Passed". Use the
+    // SAME `runAuditChecklist` logic that the website-plan endpoint and
+    // dossier prompt build with, so the rep sees a consistent number
+    // regardless of where they look. Falls back to null when the lead
+    // has no audit at all (or the audit has no extracted features).
+    let auditSummary: ReturnType<typeof runAuditChecklist>["summary"] | null = null;
+    if (lead.websiteAudit) {
+      const features = lead.websiteAudit.rawFeaturesJson as WebsiteFeatures | null;
+      const checklist = runAuditChecklist(
+        features,
+        lead.hasWebsite,
+        lead.workspace?.niche ?? null,
+        lead.subNicheSlug,
+      );
+      auditSummary = checklist.summary;
+    }
+
     return NextResponse.json({
       ...lead,
       discoveredLinks,
+      auditSummary,
       salesOpportunity: lead.salesOpportunity
         ? { ...lead.salesOpportunity, recommendedPackage }
         : null,

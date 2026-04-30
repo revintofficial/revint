@@ -1,11 +1,11 @@
 import { Suspense } from "react";
-import { requireUser } from "@/lib/auth";
+import { requireWorkspaceAdmin } from "@/lib/auth";
 import { getUsage } from "@/lib/quotas";
 import { isBillingEnabled } from "@/lib/stripe";
 import { BillingPanel } from "@/components/app/billing-panel";
 
 export default async function BillingSettingsPage() {
-  const session = await requireUser();
+  const session = await requireWorkspaceAdmin();
   const usage = await getUsage(session.workspaceId);
   return (
     // BillingPanel uses `useSearchParams` (for ?plan, ?autocheckout, ?success)

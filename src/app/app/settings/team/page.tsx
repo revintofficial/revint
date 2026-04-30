@@ -1,9 +1,9 @@
-import { requireUser } from "@/lib/auth";
+import { requireWorkspaceAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TeamPanel } from "@/components/app/team-panel";
 
 export default async function TeamSettingsPage() {
-  const session = await requireUser();
+  const session = await requireWorkspaceAdmin();
   const members = await prisma.workspaceMember.findMany({
     where: { workspaceId: session.workspaceId },
     include: { user: true },

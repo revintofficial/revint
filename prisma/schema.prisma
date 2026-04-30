@@ -112,6 +112,43 @@ enum LeadPipelineStatus {
   BLOCKED_NEEDS_PACKAGES
 }
 
+// SDR call disposition logged after a phone touch. Set by the rep
+// from the Lead Detail "Log call outcome" modal. Drives the SDR
+// throughput dashboard (calls today, voicemails, no-answer ratio)
+// and feeds the Today's Queue ordering — ANSWERED_NOT_INTERESTED
+// and OPTED_OUT pull a lead out of the queue, VOICEMAIL/NO_ANSWER
+// schedule a re-attempt.
+enum CallDisposition {
+  ANSWERED_INTERESTED
+  ANSWERED_NOT_INTERESTED
+  VOICEMAIL
+  NO_ANSWER
+  WRONG_NUMBER
+  BOOKED_MEETING
+  OPTED_OUT
+}
+
+// Lead activity timeline kind. Every touch (call, email send/reply,
+// WhatsApp, manual note, status change, meeting booking, sequence
+// step firing, disposition logging) writes a LeadActivity row so the
+// detail page can render a real timeline instead of showing only
+// `updatedAt`. Drives the SDR throughput dashboard and the per-lead
+// "next action" recommendation.
+enum LeadActivityKind {
+  CALL_LOGGED
+  EMAIL_SENT
+  EMAIL_REPLIED
+  WHATSAPP_SENT
+  NOTE
+  STATUS_CHANGED
+  MEETING_BOOKED
+  DISPOSITION_LOGGED
+  SEQUENCE_STEP_FIRED
+  SNOOZED
+  ASSIGNED
+  CONSENT_RECORDED
+}
+
 enum EmailProvider {
   GMAIL
   OUTLOOK
@@ -170,6 +207,19 @@ enum AgentWorkerKind {
   // the dossier button serves instantly until reviews / Apify runs
   // invalidate it.
   LEAD_DOSSIER_GENERATOR
+  // LEAD_INTELLIGENCE_BRIEF (Phase 0/B5) — the canonical "single
+  // source of truth" worker. Runs at the END of the lead_created
+  // chain, after every enrichment + scoring + classification +
+  // mockup + opener has either succeeded or been SKIPPED. Reads
+  // every Lead-scoped artifact (audit, reviewAnalysis, salesOpp,
+  // social profiles, deep crawl memory, sub-niche, voice notes,
+  // dossier, mockup) and writes BOTH a structured JSON brief
+  // (Sales Talking Points, Best Time To Call hint, Next Action,
+  // Sales Confidence 0-100) AND bumps Lead.intelligenceVersion +
+  // Lead.salesConfidence. Replaces the dossier button as the
+  // primary "AI sales brief" the rep sees. Dossier remains as a
+  // long-form fallback for users who still want the markdown narrative.
+  LEAD_INTELLIGENCE_BRIEF
   // Grup C - Deliverable (prospect install packs)
   AI_RECEPTIONIST_BUILDER
   REVIEW_REPLY_AGENT
@@ -328,6 +378,7 @@ model Workspace {
   servicePackages ServicePackage[]
   leadPipeline    WorkspaceLeadPipeline?
   leadSegments    LeadSegment[]
+  sequences       Sequence[]
 
   @@map("workspaces")
 }
@@ -439,6 +490,53 @@ model Lead {
   // The workspace's first package creation should re-process these.
   pipelineStatus LeadPipelineStatus @default(OK) @map("pipeline_status")
 
+  // SDR workflow fields (Phase 0/1). `lastContactedAt` is the most
+  // recent outbound touch (any channel). `nextActionDueAt` is the
+  // recommended next-touch timestamp the Today's Queue sorts on —
+  // null means "queue position determined by salesConfidence".
+  // `sequenceStep` is the rep's progression through the active
+  // outreach sequence (0 = no sequence active, N = on step N of N+).
+  // `lastDisposition` is the outcome of the most recent CALL_LOGGED
+  // activity, surfaced as a quick-glance status chip on the queue
+  // row so the SDR sees "VOICEMAIL last Tue" without opening the lead.
+  lastContactedAt   DateTime?         @map("last_contacted_at")
+  nextActionDueAt   DateTime?         @map("next_action_due_at")
+  sequenceStep      Int               @default(0) @map("sequence_step")
+  lastDisposition   CallDisposition?  @map("last_disposition")
+
+  // Phase 0/B5 — single rolled-up "Sales Confidence" 0-100 score.
+  // Computed by LEAD_INTELLIGENCE_BRIEF as a weighted blend of the
+  // audit checklist score, reviewAnalysis.leadScore, and the
+  // SalesOpportunity.opportunityScore — written denormalized here
+  // so the leads list query can sort/filter on it without joining
+  // three tables. Null means the brief hasn't run yet (or input
+  // signals were insufficient).
+  salesConfidence       Int?    @map("sales_confidence")
+  // Bumps every time LEAD_INTELLIGENCE_BRIEF writes a new brief.
+  // The lead detail page's "Re-analyze" button forces a new version;
+  // older briefs are kept on AgentRun for audit but the UI shows
+  // only the latest.
+  intelligenceVersion   Int     @default(0) @map("intelligence_version")
+
+  // KVKK / GDPR consent. `dnc` (do-not-contact) is a hard outbound
+  // block — send-email/whatsapp APIs refuse to send when true and
+  // the UI surfaces a red badge in the lead header. `consentSource`
+  // explains lawful basis ("PUBLIC_LISTING" for businesses listed in
+  // public directories like Google Maps; "MANUAL_OPT_IN" when the
+  // rep records explicit consent; "REFERRED" for warm intros).
+  // `consentRecordedAt` timestamps the lawful basis. `optedOutAt`
+  // is set when an unsubscribe / "stop calling me" reply lands.
+  dnc                  Boolean   @default(false) @map("dnc")
+  consentSource        String?   @map("consent_source")
+  consentRecordedAt    DateTime? @map("consent_recorded_at")
+  optedOutAt           DateTime? @map("opted_out_at")
+
+  // IANA timezone string (e.g. "Europe/Istanbul") inferred at
+  // discovery time from formattedAddress / Google Places. Powers
+  // "Local time: 14:34" badge so a TR SDR doesn't dial a NYC lead
+  // at 4am their time. Phase 2 enrichment.
+  timezone             String?   @map("timezone")
+
   createdAt            DateTime             @default(now()) @map("created_at")
   updatedAt            DateTime             @updatedAt @map("updated_at")
 
@@ -455,6 +553,7 @@ model Lead {
   websiteMockups   WebsiteMockup[]
   semanticMemory   SemanticMemory[]
   plannerSessions  PlannerSession[]
+  activities       LeadActivity[]
 
   // placeId scoped per workspace so two workspaces can independently track the same business
   @@unique([workspaceId, placeId])
@@ -466,7 +565,166 @@ model Lead {
   @@index([workspaceId, snoozeUntil])
   @@index([workspaceId, assignedToUserId])
   @@index([workspaceId, pipelineStatus])
+  // Today's Queue ordering — sorted by nextActionDueAt ASC, scoped
+  // to the current rep + active workspace. NULL last so leads
+  // without a due-by sort to the bottom.
+  @@index([workspaceId, assignedToUserId, nextActionDueAt])
+  @@index([workspaceId, salesConfidence])
+  @@index([workspaceId, dnc])
   @@map("leads")
+}
+
+// SDR-first activity timeline. Every outbound or status-change touch
+// writes one row here; the lead detail page reads this back as a
+// chronological feed and the dashboard aggregates by user + kind +
+// day for SDR throughput metrics. Designed to grow into the
+// authoritative "what happened on this lead" log so multiple reps
+// can pick up where another left off.
+model LeadActivity {
+  id          String           @id @default(cuid())
+  workspaceId String           @map("workspace_id")
+  leadId      String           @map("lead_id")
+  userId      String?          @map("user_id") @db.Uuid
+  kind        LeadActivityKind
+  // Optional structured detail per kind:
+  // - CALL_LOGGED: { disposition, durationSec?, notes? }
+  // - EMAIL_SENT: { subject, bodyPreview, threadId, accountId }
+  // - EMAIL_REPLIED: { sentiment, classification, threadId }
+  // - WHATSAPP_SENT: { phone, bodyPreview }
+  // - NOTE: { body }
+  // - STATUS_CHANGED: { from, to }
+  // - MEETING_BOOKED: { startsAt, provider, eventId }
+  // - DISPOSITION_LOGGED: { disposition, notes? }
+  // - SEQUENCE_STEP_FIRED: { sequenceId, step, channel }
+  // - SNOOZED: { until }
+  // - ASSIGNED: { from, to }
+  // - CONSENT_RECORDED: { source }
+  payload     Json?
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, leadId, createdAt])
+  @@index([workspaceId, kind, createdAt])
+  @@index([workspaceId, userId, createdAt])
+  @@map("lead_activities")
+}
+
+// Phase 2 — Native multi-touch sequence engine.
+//
+// A `Sequence` is a workspace-level cadence template (e.g. "Restaurant
+// 5-touch"). It is composed of ordered `SequenceStep` rows, each step
+// has a channel (EMAIL / WHATSAPP / MANUAL_CALL / WAIT) and a
+// `delayHours` offset from the previous step. When a lead is enrolled,
+// a `LeadSequenceState` row tracks which step we're on, when the next
+// step is due, and whether the cadence has been paused (typically by
+// a positive reply from the inbox-reply-attributor).
+//
+// Execution path: a tick worker scans LeadSequenceState rows whose
+// `nextStepAt <= now()` and whose `pausedAt IS NULL`, and enqueues a
+// discriminated job into the existing `agent-runs` queue with
+// `type="sequence_step"`. We deliberately do NOT spin up a new BullMQ
+// queue — see the always-applied workspace rule about not adding
+// queues for AI/automation work.
+model Sequence {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  name        String
+  description String?
+  // ICP / niche tags — used as a hint to the rep ("this sequence is
+  // tuned for fnb-restaurant"). Free-form to avoid over-constraining.
+  niche       String?
+  // Soft-delete: paused sequences keep their state rows but stop
+  // ticking. Useful when an admin is editing the cadence and wants
+  // a freeze before re-enrolling leads.
+  archivedAt  DateTime? @map("archived_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  steps     SequenceStep[]
+  states    LeadSequenceState[]
+
+  @@index([workspaceId, archivedAt])
+  @@map("sequences")
+}
+
+enum SequenceChannel {
+  EMAIL
+  WHATSAPP
+  MANUAL_CALL
+  WAIT
+}
+
+model SequenceStep {
+  id         String          @id @default(cuid())
+  sequenceId String          @map("sequence_id")
+  position   Int
+  channel    SequenceChannel
+  // Hours to wait AFTER the previous step completes (or after enroll
+  // for position=0). 0 = fire immediately on enroll.
+  delayHours Int             @default(0) @map("delay_hours")
+  // Channel-specific payload. EMAIL: { subject, bodyTemplate }.
+  // WHATSAPP: { bodyTemplate }. MANUAL_CALL: { promptForRep }.
+  // WAIT: { reason }. The opener-writer worker can fill in the
+  // bodyTemplate for AI-personalised steps; otherwise this is a
+  // static rep-authored template with mustache-style {{businessName}}.
+  payload    Json?
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
+
+  sequence Sequence            @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  states   LeadSequenceState[] @relation("CurrentStep")
+
+  @@unique([sequenceId, position])
+  @@index([sequenceId])
+  @@map("sequence_steps")
+}
+
+enum SequenceState {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  EXITED
+}
+
+model LeadSequenceState {
+  id              String         @id @default(cuid())
+  workspaceId     String         @map("workspace_id")
+  leadId          String         @map("lead_id")
+  sequenceId      String         @map("sequence_id")
+  // Pointer to the step we're currently AT (next to fire), not the
+  // last completed step. Null = enrollment finished and the lead
+  // dropped off the cadence.
+  currentStepId   String?        @map("current_step_id")
+  state           SequenceState  @default(ACTIVE)
+  // Inclusive scheduling window. Tick worker picks a row when
+  // `state=ACTIVE` and `nextStepAt <= now()`.
+  nextStepAt      DateTime?      @map("next_step_at")
+  pausedAt        DateTime?      @map("paused_at")
+  // Why was the cadence paused? "REPLY_RECEIVED" stops outbound
+  // until the rep manually resumes; "DNC" stops permanently;
+  // "MANAGER_PAUSE" is a soft hand-off. Free-form for now.
+  pausedReason    String?        @map("paused_reason")
+  enrolledAt      DateTime       @default(now()) @map("enrolled_at")
+  enrolledByUserId String?       @map("enrolled_by_user_id") @db.Uuid
+  completedAt     DateTime?      @map("completed_at")
+  // Bumps every time a step fires so we can attribute LeadActivity
+  // back to a specific (sequence, step, attempt) tuple.
+  stepsFired      Int            @default(0) @map("steps_fired")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  sequence    Sequence      @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  currentStep SequenceStep? @relation("CurrentStep", fields: [currentStepId], references: [id], onDelete: SetNull)
+
+  // One active state per (workspace, lead, sequence). A lead can be
+  // re-enrolled after EXITED but only one ACTIVE row exists at a
+  // time — the API enforces this.
+  @@unique([workspaceId, leadId, sequenceId])
+  @@index([workspaceId, state, nextStepAt])
+  @@index([workspaceId, leadId])
+  @@map("lead_sequence_states")
 }
 
 // Saved smart-segment for the leads list. `queryJson` is the serialized
@@ -522,6 +780,22 @@ model WebsiteAudit {
   leadId                String   @unique @map("lead_id")
   url                   String
   reachable             Boolean  @default(false)
+  // Phase 0/B1 — extra crawl signals so the UI can disambiguate
+  // "we did not crawl yet" vs "the page returned 401/403 to our
+  // bot but a human can open it" vs "DNS / SSL hard fail". Before
+  // this fix the crawler treated ANY non-200 as `reachable=false`
+  // and zeroed out every other field, which led to the FineDine
+  // SDR seeing "Reachable: No / Title: — / Mobile Friendly: No"
+  // for sites that humans could open fine.
+  // - crawlAttemptedAt: last time we tried (null = never tried).
+  // - crawlError: short error tag (e.g. "TIMEOUT", "DNS_ERROR",
+  //   "BOT_BLOCKED_4XX", "PLAYWRIGHT_CRASH"). Null on success.
+  // - httpStatus: final HTTP status from the navigation response,
+  //   even when 4xx/5xx. null when navigation never produced a
+  //   response (timeout / DNS / TLS failure).
+  crawlAttemptedAt      DateTime? @map("crawl_attempted_at")
+  crawlError            String?   @map("crawl_error")
+  httpStatus            Int?      @map("http_status")
   loadTimeMs            Int?     @map("load_time_ms")
   https                 Boolean  @default(false)
   mobileFriendlyGuess   Boolean  @default(false) @map("mobile_friendly_guess")

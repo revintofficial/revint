@@ -25,6 +25,10 @@ import {
   ArrowRight,
   Sparkles,
   CircleX,
+  Phone,
+  Mail,
+  CalendarCheck,
+  ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -41,6 +45,15 @@ interface Stats {
   outreachStatus: { status: string; count: number }[];
   crawlStatus: { status: string; count: number }[];
   analyzeStatus: { status: string; count: number }[];
+  sdr?: {
+    callsToday: number;
+    emailsToday: number;
+    meetingsBooked30d: number;
+    replies7d: number;
+    todayQueueSize: number;
+    averageConfidence: number;
+    activitiesByKind7d: { kind: string; count: number }[];
+  };
 }
 
 // Mono-indigo KPI cards: every icon shares the same primary hue, only the
@@ -294,6 +307,48 @@ export default function DashboardPage() {
         })}
       </div>
 
+      {/* SDR throughput — Phase 1: surface what reps actually shipped today */}
+      {stats.sdr && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle>SDR Throughput</CardTitle>
+              <Link href="/app/leads?queue=today" className="text-xs hover:underline" style={{ color: "var(--leadac-500)" }}>
+                Open today&apos;s queue →
+              </Link>
+            </div>
+            <p className="text-xs" style={{ color: "var(--leadac-text-3)" }}>
+              {stats.sdr.todayQueueSize} leads in today&apos;s queue · avg sales confidence {stats.sdr.averageConfidence}/100
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <ThroughputTile
+                icon={Phone}
+                label="Calls today"
+                value={stats.sdr.callsToday}
+              />
+              <ThroughputTile
+                icon={Mail}
+                label="Emails today"
+                value={stats.sdr.emailsToday}
+              />
+              <ThroughputTile
+                icon={ClipboardList}
+                label="Replies (7d)"
+                value={stats.sdr.replies7d}
+              />
+              <ThroughputTile
+                icon={CalendarCheck}
+                label="Meetings booked (30d)"
+                value={stats.sdr.meetingsBooked30d}
+                accent
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Funnel */}
@@ -375,6 +430,43 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function ThroughputTile({
+  icon: Icon,
+  label,
+  value,
+  accent = false,
+}: {
+  icon: typeof Phone;
+  label: string;
+  value: number;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className="rounded-2xl border p-4"
+      style={{
+        background: accent
+          ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.06)"
+          : "var(--leadac-hover)",
+        borderColor: accent
+          ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18)"
+          : "var(--leadac-border)",
+      }}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)" }}
+        >
+          <Icon className="w-4 h-4" style={{ color: accent ? LEADAC.primary300 : LEADAC.primary400 }} />
+        </div>
+        <span className="text-[12px]" style={{ color: "var(--leadac-text-2)" }}>{label}</span>
+      </div>
+      <div className="text-2xl font-semibold text-white">{value}</div>
     </div>
   );
 }

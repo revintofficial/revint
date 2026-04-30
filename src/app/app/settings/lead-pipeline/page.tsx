@@ -8,7 +8,7 @@
  * owner / admin pick a preset, toggle individual workers, and see
  * live cost projections via /lead-pipeline/dry-run.
  */
-import { requireUser } from "@/lib/auth";
+import { requireWorkspaceAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import {
@@ -24,7 +24,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import type { PipelinePreset } from "@/generated/prisma/client";
 
 export default async function LeadPipelineSettingsPage() {
-  const session = await requireUser();
+  const session = await requireWorkspaceAdmin();
 
   const ws = await prisma.workspace.findUniqueOrThrow({
     where: { id: session.workspaceId },

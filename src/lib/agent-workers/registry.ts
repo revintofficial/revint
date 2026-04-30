@@ -228,6 +228,24 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
         memoryWrites: m.memoryWrites,
       })),
   },
+  LEAD_INTELLIGENCE_BRIEF: {
+    kind: "LEAD_INTELLIGENCE_BRIEF",
+    group: "intelligence",
+    displayName: "Sales Intelligence Brief",
+    displayNameTr: "Satis Brief'i",
+    description: "Final-stage rollup: reads every upstream artifact (audit, reviews, social, deep crawl, dossier, mockup) and writes a single canonical 'Sales Talking Points' payload + a 0-100 Sales Confidence score. Replaces the old multi-source scoring confusion with one number the rep can trust.",
+    descriptionTr: "Tum onceki sinyalleri (audit, yorumlar, sosyal, derin tarama, dosya, mockup) tek satilabilir brief'e ve 0-100 Sales Confidence skoruna ozetler. Coklu kaynaklardan gelen skor karmasini tek guvenilir bir numaraya indirger.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 9000,
+    memoryReads: [
+      { kinds: ["LEAD_PROFILE", "REVIEW_CHUNK", "PROSPECT_KB_CHUNK"], topK: 12, scope: "lead" },
+    ],
+    implModule: () =>
+      import("./lead-intelligence-brief").then((m) => ({
+        run: m.run,
+      })),
+  },
 
   // -------- Grup C: Deliverable (prospect-install packs) --------
   AI_RECEPTIONIST_BUILDER: {

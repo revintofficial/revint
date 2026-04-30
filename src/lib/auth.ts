@@ -166,6 +166,25 @@ export async function getOptionalUser(): Promise<AuthedSession | null> {
 }
 
 /**
+ * Require the active workspace member to be ADMIN or OWNER. MEMBER
+ * sessions are redirected to /app/settings/account so SDR users
+ * who type an admin URL into the address bar are bounced out
+ * gracefully instead of seeing a 500 / blank page.
+ *
+ * Phase 1 deployment-redesign: pairs with the role-aware
+ * SettingsNav to enforce ADMIN-only configuration surfaces
+ * (offer, packages, lead pipeline, branding, team, billing).
+ */
+export async function requireWorkspaceAdmin(): Promise<AuthedSession> {
+  const session = await requireUser();
+  if (session.role !== "OWNER" && session.role !== "ADMIN") {
+    const { redirect } = await import("next/navigation");
+    redirect("/app/settings/account");
+  }
+  return session;
+}
+
+/**
  * Wrap an /api route handler so that:
  *   - 401 is returned automatically when there is no session
  *   - the handler receives a fully resolved AuthedSession

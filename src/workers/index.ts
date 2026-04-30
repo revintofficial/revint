@@ -47,8 +47,21 @@ process.env.IS_WORKER = "1";
 }
 
 import { startDiscoveryWorker } from "./discovery-worker";
-import { startCrawlWorker } from "./crawl-worker";
-import { startAnalyzeWorker } from "./analyze-worker";
+// Phase 0/B4 — `crawl-worker` and `analyze-worker` are intentionally
+// no longer booted here. Both raced with AI Core (`WEBSITE_AUDITOR`
+// + `SALES_OPPORTUNITY_SCORER`) on the same `WebsiteAudit` /
+// `SalesOpportunity` rows, which produced "two scores in
+// disagreement" and "audit overwritten by older crawl" complaints
+// from the FineDine SDR pilot. The legacy `/api/crawl` and
+// `/api/analyze` HTTP routes now forward to `emit("lead_created")`
+// so callers automatically pick up the AI Core path.
+//
+// The worker source files remain on disk (see `crawl-worker.ts`,
+// `analyze-worker.ts`) until the Sunset window closes; until then
+// they can be re-enabled by uncommenting the imports below in case
+// of an emergency rollback.
+// import { startCrawlWorker } from "./crawl-worker";
+// import { startAnalyzeWorker } from "./analyze-worker";
 import { startReviewAnalysisWorker } from "./review-analysis-worker";
 import { startEmailVerificationWorker } from "./email-verification-worker";
 import { startAgentRunWorker } from "./agent-run-worker";
@@ -77,12 +90,24 @@ logger.info("worker.supervisor.starting", {
 });
 
 const discoveryWorker = startDiscoveryWorker();
-const crawlWorker = startCrawlWorker();
-const analyzeWorker = startAnalyzeWorker();
 const reviewAnalysisWorker = startReviewAnalysisWorker();
 const emailVerificationWorker = startEmailVerificationWorker();
 const agentRunWorker = startAgentRunWorker();
 const seoOpsWorker = startSeoOpsWorker();
+
+// Phase 2 — install a 60-second repeatable `sequence_tick` job onto
+// the shared agent-runs queue. This is our cron equivalent: the
+// agent-run worker picks it up and runs `processSequenceTick()`
+// which scans LeadSequenceState rows for due steps. Failure here
+// (e.g. Redis unavailable at boot) is logged but non-fatal — sequences
+// just stop progressing until the next worker restart.
+import("./../lib/sequence-engine/scheduler")
+  .then(({ installSequenceTickCron }) => installSequenceTickCron())
+  .catch((err) => {
+    logger.error("worker.supervisor.sequence_cron_install_failed", {
+      err: err instanceof Error ? err.message : String(err),
+    });
+  });
 
 logger.info("worker.supervisor.started");
 
@@ -90,8 +115,6 @@ async function shutdown() {
   logger.info("worker.supervisor.shutdown");
   await Promise.all([
     discoveryWorker.close(),
-    crawlWorker.close(),
-    analyzeWorker.close(),
     reviewAnalysisWorker.close(),
     emailVerificationWorker.close(),
     agentRunWorker.close(),

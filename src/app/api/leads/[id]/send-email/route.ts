@@ -35,10 +35,28 @@ export async function POST(
 
     const lead = await prisma.lead.findFirst({
       where: { id: leadId, workspaceId: session.workspaceId },
-      select: { id: true },
+      select: { id: true, dnc: true, optedOutAt: true, businessName: true },
     });
     if (!lead) {
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+    }
+
+    // KVKK / GDPR: never let an authenticated rep email a DNC-flagged
+    // lead, even if they typed in the address by hand. The lead
+    // detail UI already disables the Send button — this is the
+    // server-side floor that protects us when the UI lies, when a
+    // CSV import dropped DNC, or when a future automation forgets
+    // to read the flag.
+    if (lead.dnc || lead.optedOutAt) {
+      return NextResponse.json(
+        {
+          error: "dnc_blocked",
+          message:
+            "This lead is on Do-Not-Contact. Sending email is blocked by KVKK / GDPR rules.",
+          businessName: lead.businessName,
+        },
+        { status: 403 },
+      );
     }
 
     const account = await prisma.emailAccount.findFirst({

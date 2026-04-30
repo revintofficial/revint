@@ -484,6 +484,9 @@ export async function POST(request: Request) {
           // → fnb-bar-club is almost certain).
           nicheSlug: nicheSlugForLeads,
           discoverySourceQuery: srcQ,
+          // KVKK / GDPR provenance stamp — public Google Places listing.
+          consentSource: "PUBLIC_LISTING",
+          consentRecordedAt: new Date(),
         },
         select: { id: true },
       });

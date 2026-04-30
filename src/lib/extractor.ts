@@ -433,6 +433,8 @@ export function extractFeatures(html: string, url: string, businessType?: string
   return {
     url,
     reachable: true,
+    httpStatus: null,
+    crawlError: null,
     loadTimeMs: null,
     https: isHttps,
     mobileFriendlyGuess,
