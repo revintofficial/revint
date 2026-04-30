@@ -215,9 +215,20 @@ export function getChain(event: EventKind): Chain | null {
  * when a workspace tries to PUT a CUSTOM steps array — keeps owners
  * from accidentally adding e.g. INBOX_REPLY_ATTRIBUTOR (no lead
  * context) to the lead-onboarding pipeline.
+ *
+ * FineDine deployment redesign — `GOOGLE_PLACES_REVIEWS` and
+ * `WEBSITE_MOCKUP_GENERATOR` are intentionally OUT of this set:
+ *  - Places reviews max at 5 per business which biases sentiment;
+ *    reviews now come exclusively from APIFY_GMAPS_DEEP.
+ *  - Mockup generation is on-demand only — the rep clicks
+ *    "Generate Mockup" on the lead detail when they're about to
+ *    actually use it, firing the explicit `user_one_click_pitch`
+ *    chain. Auto-mockup at ingest burned Gemini tokens on leads
+ *    that the rep never even opened.
+ * Both workers are still implemented and dispatched by other event
+ * chains; they're just blocked from the lead-onboarding pipeline.
  */
 export const LEAD_PIPELINE_ALLOWED_WORKERS: ReadonlySet<AgentWorkerKind> = new Set<AgentWorkerKind>([
-  "GOOGLE_PLACES_REVIEWS",
   "WEBSITE_AUDITOR",
   "SUBVERTICAL_CLASSIFIER",
   "REVIEW_ANALYST",
@@ -225,7 +236,6 @@ export const LEAD_PIPELINE_ALLOWED_WORKERS: ReadonlySet<AgentWorkerKind> = new S
   "EMAIL_VERIFIER",
   "SALES_OPPORTUNITY_SCORER",
   "LEAD_DOSSIER_GENERATOR",
-  "WEBSITE_MOCKUP_GENERATOR",
   "OPENER_WRITER",
   "APIFY_GMAPS_DEEP",
   "APIFY_SERP_RANK",
@@ -260,18 +270,14 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     dependsOn: [],
     optional: true,
   };
-  const placesReviews: ChainStep = {
-    stepId: "places_reviews",
-    workerKind: "GOOGLE_PLACES_REVIEWS",
-    dependsOn: [],
-    optional: true,
-  };
-  const review: ChainStep = {
-    stepId: "review",
-    workerKind: "REVIEW_ANALYST",
-    dependsOn: ["places_reviews"],
-    optional: true,
-  };
+  // FineDine deployment redesign — `GOOGLE_PLACES_REVIEWS` is no longer
+  // part of the default chain. The Places "lookup" endpoint caps at
+  // five reviews per business, which is too thin a corpus for the
+  // review-analyst (5 cherry-picked top reviews skew sentiment
+  // dramatically). Reviews now come exclusively from
+  // `APIFY_GMAPS_DEEP` (BALANCED+ presets) which pulls hundreds, and
+  // FREE / LITE workspaces simply ship without review evidence
+  // until they upgrade — explicit choice over noisy half-data.
   // Hybrid-niche classifier (parent + child packs, e.g. fnb → fnb-bar-club).
   // The worker self-skips for workspaces whose niche has no children.
   //
@@ -292,7 +298,7 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   const score: ChainStep = {
     stepId: "score",
     workerKind: "SALES_OPPORTUNITY_SCORER",
-    dependsOn: ["audit", "review", "classifier"],
+    dependsOn: ["audit", "classifier"],
   };
   const embedProfile: ChainStep = {
     stepId: "embed_profile",
@@ -320,13 +326,13 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     optional: true,
   };
 
-  // Always-on backbone for every preset; review + places_reviews are
-  // marked optional so a place with no reviews / no placeId doesn't
-  // block the score step.
+  // Always-on backbone for every preset. LITE no longer fetches
+  // Google Places reviews — see the comment above the `score` step.
+  // FREE workspaces on LITE get the audit + classifier + scorer +
+  // intelligence-brief stack without any review corpus. Upgrading to
+  // BALANCED unlocks the Apify deep-review pull.
   const lite: Chain = [
     audit,
-    placesReviews,
-    review,
     classifier,
     score,
     embedProfile,
@@ -356,27 +362,17 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     dependsOn: ["score", "embed_profile", "social", "apify_webcrawl"],
     optional: true,
   };
-  // Mockup is part of BALANCED so the lead detail page already has a
-  // public `/m/<slug>` URL the rep can drop into the first cold-email
-  // draft without first clicking "Generate". Optional so a Gemini
-  // hiccup (or quota exhaustion) doesn't drag dossier down with it;
-  // the mockup also depends on `score` because the scorer's
-  // `bestSalesAngle` is part of the prompt that drives copy choice.
-  //
-  // Phase 0/B3 — also depends on `classifier` so the mockup template
-  // selection sees `subNicheSlug` (fine-dining vs cafe vs bar drives
-  // very different hero / CTA templates). Classifier is `optional` so
-  // a SKIPPED classifier still unblocks mockup.
-  const mockup: ChainStep = {
-    stepId: "mockup",
-    workerKind: "WEBSITE_MOCKUP_GENERATOR",
-    dependsOn: ["score", "classifier"],
-    optional: true,
-  };
+  // FineDine deployment redesign — `WEBSITE_MOCKUP_GENERATOR` is no
+  // longer in any auto chain. Mockups burn Gemini tokens and most
+  // discovered leads never see the SDR's screen, so generating a
+  // mockup for every lead at ingest was the highest-cost least-used
+  // step in the pipeline. Reps now click "Generate Mockup" on the
+  // lead detail page when they're actually about to use it, which
+  // fires `user_one_click_pitch` (mockup → opener) on demand.
 
   // Phase 0/B5 — the unified "Sales Confidence" brief. Runs at the
-  // END of the chain (after every enrichment + scoring + dossier +
-  // mockup has either finished or been SKIPPED) so it can read every
+  // END of the chain (after every enrichment + scoring + dossier
+  // has either finished or been SKIPPED) so it can read every
   // upstream artifact in one pass and produce a single canonical
   // "what should the rep say / when should they call / what is the
   // confidence" payload. Also writes Lead.salesConfidence and bumps
@@ -385,7 +381,7 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   const intelligenceBrief: ChainStep = {
     stepId: "intelligence_brief",
     workerKind: "LEAD_INTELLIGENCE_BRIEF",
-    dependsOn: ["score", "embed_profile", "dossier", "mockup"],
+    dependsOn: ["score", "embed_profile", "dossier"],
     optional: true,
   };
 
@@ -421,28 +417,31 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   };
   // Score step that waits for the deep review refresh. filterByPlan
   // rewires dependsOn transitively when review_refresh is dropped
-  // (FREE plan), so the scorer falls back cleanly to the Places-API
-  // corpus without a DAG break.
+  // (FREE plan), so the scorer falls back cleanly to the audit +
+  // classifier signals without a DAG break.
   const deepScore: ChainStep = {
     stepId: "score",
     workerKind: "SALES_OPPORTUNITY_SCORER",
-    dependsOn: ["audit", "review", "review_refresh", "classifier"],
+    dependsOn: ["audit", "review_refresh", "classifier"],
   };
 
   // BALANCED is the default for new workspaces. Adds social link
   // discovery + Apify deep reviews + website KB crawl + on-create
-  // dossier + on-create mockup so the lead detail page is rich the
-  // moment the user opens it. Apify steps are optional and plan-gated
-  // so FREE workspaces automatically get the Places-API-only subset.
+  // dossier so the lead detail page is rich the moment the user
+  // opens it. Apify steps are optional and plan-gated so FREE
+  // workspaces automatically get the audit-only subset.
   //
-  // Phase 0/B3 — `intelligence_brief` is the FINAL step. Its dependsOn
-  // includes dossier + mockup, which themselves depend on social /
-  // apify_webcrawl / classifier. The whole DAG converges here so the
+  // FineDine deployment redesign — `placesReviews`, the early
+  // `review` step, and `mockup` are NO LONGER in this chain. Reviews
+  // come from the Apify deep pull only (Places API caps at 5).
+  // Mockups are explicit-trigger only via /api/agent-runs/pitch-pack.
+  //
+  // Phase 0/B3 — `intelligence_brief` is the FINAL step. Its
+  // dependsOn includes dossier (which itself waits for social +
+  // apify_webcrawl + score). The whole DAG converges here so the
   // brief is the single rep-facing canonical artifact.
   const balanced: Chain = [
     audit,
-    placesReviews,
-    review,
     social,
     apifyGmaps,
     reviewRefresh,
@@ -450,7 +449,6 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     classifier,
     deepScore,
     embedProfile,
-    mockup,
     dossier,
     intelligenceBrief,
   ];
@@ -470,26 +468,25 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     dependsOn: ["audit"],
     optional: true,
   };
-  // `mockup` is hoisted into the BALANCED block above; AGGRESSIVE
-  // reuses the same ChainStep instance so opener can depend on it.
-  //
-  // Phase 0/B3 — opener now consumes `dossier` so the cold-email body
-  // can reuse the dossier's `bestSalesAngle` narrative + opening hook.
-  // Previously the opener never saw the dossier, which produced two
-  // different "first contact" narratives for the same lead. Optional
-  // SKIP from a failed dossier still unblocks opener, so the AGGRESSIVE
-  // chain never stalls on a single Gemini hiccup.
+  // FineDine deployment redesign — opener no longer waits on `mockup`
+  // because mockup is no longer in any auto chain. It still consumes
+  // `dossier` so the cold-email body can reuse the dossier's
+  // `bestSalesAngle` narrative + opening hook (Phase 0/B3). Reps who
+  // want the mockup link in the opener trigger the explicit
+  // `user_one_click_pitch` chain instead, which runs mockup → opener
+  // sequentially and substitutes the URL.
   const opener: ChainStep = {
     stepId: "opener",
     workerKind: "OPENER_WRITER",
-    dependsOn: ["score", "mockup", "dossier"],
+    dependsOn: ["score", "dossier"],
     optional: true,
   };
 
+  // AGGRESSIVE adds Apify SERP + on-create opener on top of BALANCED.
+  // Mockup and the early Places-reviews / review step are dropped for
+  // the same reasons described in the BALANCED comment.
   const aggressive: Chain = [
     audit,
-    placesReviews,
-    review,
     social,
     apifyGmaps,
     apifySerp,
@@ -499,7 +496,6 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     deepScore,
     embedProfile,
     dossier,
-    mockup,
     opener,
     intelligenceBrief,
   ];

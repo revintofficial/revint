@@ -2589,6 +2589,56 @@ function formatDateRel(iso: string | null | undefined): string {
 }
 
 /**
+ * Phase 2 — small inline badge showing the prospect's local time
+ * along with a hint ("lunch service — don't call"). Renders in the
+ * sticky call sheet header next to last-contact / next-action info.
+ * Re-renders once a minute so the time stays fresh while the rep
+ * sits on the page.
+ */
+function LocalTimeBadgeInline({ timezone }: { timezone: string }) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  let label = "";
+  let isCallable = true;
+  try {
+    const fmt = new Intl.DateTimeFormat("en-GB", {
+      timeZone: timezone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const time = fmt.format(new Date());
+    const hour = parseInt(time.split(":")[0] ?? "0", 10);
+    let hint: string | null = null;
+    if (hour < 9 || hour >= 19) {
+      hint = "after hours";
+      isCallable = false;
+    } else if (hour >= 12 && hour < 14) {
+      hint = "lunch service";
+      isCallable = false;
+    } else if (hour >= 14 && hour < 17) {
+      hint = "best window";
+    }
+    label = hint ? `${time} · ${hint}` : time;
+  } catch {
+    return null;
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1"
+      style={{ color: isCallable ? "var(--leadac-text-2)" : "hsl(35 80% 70%)" }}
+      title={`Prospect timezone: ${timezone}`}
+    >
+      <Clock className="w-3 h-3" />
+      {label}
+    </span>
+  );
+}
+
+/**
  * Phase 1 — sticky "Sales Call Sheet" header that appears at the top
  * of the lead detail page. Shows the rep at-a-glance:
  *   - Sales Confidence ring
@@ -2651,6 +2701,9 @@ function SalesCallSheet({
                   <span className="inline-flex items-center gap-1 text-white/70">
                     {DISPOSITION_LABELS[lead.lastDisposition] ?? lead.lastDisposition}
                   </span>
+                )}
+                {lead.timezone && (
+                  <LocalTimeBadgeInline timezone={lead.timezone} />
                 )}
               </div>
             </div>

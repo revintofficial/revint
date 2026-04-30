@@ -379,6 +379,7 @@ model Workspace {
   leadPipeline    WorkspaceLeadPipeline?
   leadSegments    LeadSegment[]
   sequences       Sequence[]
+  accounts        Account[]
 
   @@map("workspaces")
 }
@@ -537,11 +538,19 @@ model Lead {
   // at 4am their time. Phase 2 enrichment.
   timezone             String?   @map("timezone")
 
+  // Phase 2 — optional multi-location grouping. A lead that belongs
+  // to a brand with several locations (e.g. FineDine has 5
+  // restaurant Places) carries `accountId` so the leads list can
+  // roll up under a single brand row. Null = standalone prospect,
+  // which remains the default.
+  accountId            String?   @map("account_id")
+
   createdAt            DateTime             @default(now()) @map("created_at")
   updatedAt            DateTime             @updatedAt @map("updated_at")
 
   workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   assignedTo       User?             @relation("LeadAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  account          Account?          @relation(fields: [accountId], references: [id], onDelete: SetNull)
   websiteAudit     WebsiteAudit?
   salesOpportunity SalesOpportunity?
   watchlistItem    WatchlistItem?
@@ -571,7 +580,49 @@ model Lead {
   @@index([workspaceId, assignedToUserId, nextActionDueAt])
   @@index([workspaceId, salesConfidence])
   @@index([workspaceId, dnc])
+  @@index([workspaceId, accountId])
   @@map("leads")
+}
+
+// Phase 2 — multi-location account rollup.
+//
+// FineDine's pilot scenario: a single brand operating 5 restaurant
+// locations shows up as 5 separate Lead rows because each location
+// has its own Google Place. Without an Account layer the SDR ends
+// up cold-pitching the same brand five times. The Account row is a
+// soft grouping: leads in the same account share a brand identity
+// (name, primary domain, parent contact) and the leads list can
+// optionally roll them up to one row.
+//
+// Account is fully optional — a lead with `accountId = null` is a
+// standalone prospect, which is the common case. Manager actions
+// (snooze, assign, archive) cascade to all leads in an account when
+// triggered from the rollup view.
+model Account {
+  id           String    @id @default(cuid())
+  workspaceId  String    @map("workspace_id")
+  // Display name e.g. "FineDine UK" — usually the brand, not a single
+  // location name. Reps will see this in the rollup row label.
+  name         String
+  // Primary apex domain. We use this as the de-dupe signal during
+  // discovery: two leads with the same `apexDomain` are auto-grouped
+  // into the same Account on a best-effort basis. Manual unmerge
+  // is supported by setting `accountId = null` on the lead.
+  apexDomain   String?   @map("apex_domain")
+  primaryEmail String?   @map("primary_email")
+  primaryPhone String?   @map("primary_phone")
+  notes        String?
+  archivedAt   DateTime? @map("archived_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  leads     Lead[]
+
+  @@unique([workspaceId, apexDomain])
+  @@index([workspaceId, archivedAt])
+  @@index([workspaceId, name])
+  @@map("accounts")
 }
 
 // SDR-first activity timeline. Every outbound or status-change touch

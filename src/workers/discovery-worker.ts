@@ -78,6 +78,14 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
     const detectedBorough = extractBoroughFromAddress(address) || borough.name;
     const websiteUrl = place.websiteUri || null;
 
+    const { estimateLeadTimezone } = await import("../lib/timezone/estimate");
+    const tz = estimateLeadTimezone({
+      formattedAddress: address,
+      borough: detectedBorough,
+      sourceLat: borough.lat,
+      sourceLng: borough.lng,
+    });
+
     const lead = await prisma.lead.create({
       data: {
         workspaceId,
@@ -104,6 +112,7 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
         // legitimate-interest source for B2B outreach in TR / EU.
         consentSource: "PUBLIC_LISTING",
         consentRecordedAt: new Date(),
+        timezone: tz,
       },
       select: { id: true },
     });
@@ -127,6 +136,20 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
       await emit("lead_created", { workspaceId, leadId: lead.id });
     } catch (err) {
       logger.error("worker.discovery.emit_lead_created_failed", {
+        leadId: lead.id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Phase 2 — best-effort multi-location grouping. We don't await
+    // failure here because mis-grouping is recoverable (manager can
+    // unmerge from the rollup view) but failing discovery on a
+    // grouping bug is not.
+    try {
+      const { autoGroupLeadIntoAccount } = await import("../lib/accounts/auto-group");
+      await autoGroupLeadIntoAccount(lead.id, workspaceId);
+    } catch (err) {
+      logger.warn("worker.discovery.auto_group_failed", {
         leadId: lead.id,
         err: err instanceof Error ? err.message : String(err),
       });

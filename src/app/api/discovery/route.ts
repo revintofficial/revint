@@ -14,6 +14,7 @@ import { logger } from "@/lib/logger";
 import { emit } from "@/lib/ai-core/events";
 import { getNicheBySlug, getChildrenOf, isParentNiche } from "@/lib/niches";
 import { geocodeBorough } from "@/lib/geocoding";
+import { estimateTimezoneFromAddress } from "@/lib/timezone/estimate";
 
 // Vercel serverless function config.
 // - nodejs runtime: Prisma + BullMQ need a full Node runtime (no Edge).
@@ -487,6 +488,7 @@ export async function POST(request: Request) {
           // KVKK / GDPR provenance stamp — public Google Places listing.
           consentSource: "PUBLIC_LISTING",
           consentRecordedAt: new Date(),
+          timezone: estimateTimezoneFromAddress(address),
         },
         select: { id: true },
       });
