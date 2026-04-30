@@ -48,6 +48,7 @@ import { LeadCard } from "@/components/app/leads/LeadCard";
 import { LeadTableView } from "@/components/app/leads/LeadTableView";
 import { LeadCardsGrid } from "@/components/app/leads/LeadCardsGrid";
 import { LeadActionBar } from "@/components/app/leads/LeadActionBar";
+import { LiveProcessingStrip } from "@/components/app/leads/LiveProcessingStrip";
 import {
   type LeadsView,
   parseLeadsView,
@@ -504,12 +505,18 @@ function LeadsPageContent() {
         return;
       }
       const data = await res.json().catch(() => null);
-      if (data && typeof data.analyzed === "number") {
+      // The endpoint returns 202 + `enqueued` count — the actual AI
+      // chain runs asynchronously in the worker process. Make that
+      // explicit so the user knows where to look (the live strip
+      // above) instead of expecting the data to appear instantly.
+      const enqueued =
+        data && typeof data.enqueued === "number" ? data.enqueued : null;
+      if (enqueued && enqueued > 0) {
         toast.success(
-          `Analysis complete: ${data.analyzed} succeeded, ${data.failed ?? 0} failed`,
+          `Queued ${enqueued} lead${enqueued === 1 ? "" : "s"} for AI analysis — progress shows above the list.`,
         );
       } else {
-        toast.success("Analysis complete");
+        toast.success("Nothing pending — every lead already has a sales brief.");
       }
       refetch();
     } catch (err) {
@@ -588,6 +595,12 @@ function LeadsPageContent() {
           );
         })}
       </div>
+
+      {/* Live heartbeat for background AI work. Shows nothing when the
+          workspace is idle; auto-refetches the leads list when the
+          last worker drains so brand-new scores show up without a
+          manual refresh. */}
+      <LiveProcessingStrip onTransitionToIdle={refetch} />
 
       <LeadFiltersBar
         filters={filters}

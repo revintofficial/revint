@@ -26,6 +26,7 @@ import {
   Info,
 } from "lucide-react";
 import { LocationPicker } from "@/components/app/discovery/LocationPicker";
+import { LiveProcessingStrip } from "@/components/app/leads/LiveProcessingStrip";
 import type { PickedLocation } from "@/types";
 
 // Niche packs are organised into:
@@ -155,10 +156,15 @@ export default function DiscoveryPage() {
       const locCount = locations.length;
       const locSuffix =
         locCount > 1 ? ` across ${locCount} locations` : "";
+      // Tell the user where AI work shows up next — the live strip
+      // above starts polling the moment a chain step kicks off, so
+      // they should look there instead of refreshing the page.
+      const aiSuffix =
+        (data.created ?? 0) > 0 ? " — AI analysis is running above." : "";
       toast.success(
         fanOutMode && childCount > 0
-          ? `${data.created ?? 0} new leads from ${childCount} sub-niche scans${locSuffix}!`
-          : `${data.created ?? 0} new leads added${locSuffix}!`,
+          ? `${data.created ?? 0} new leads from ${childCount} sub-niche scans${locSuffix}!${aiSuffix}`
+          : `${data.created ?? 0} new leads added${locSuffix}!${aiSuffix}`,
       );
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
@@ -181,6 +187,13 @@ export default function DiscoveryPage() {
         title="Discover"
         subtitle="Find local businesses that need your services — anywhere in the world"
       />
+
+      {/* Live heartbeat for the AI Core chain. After each Discovery
+          run the audit / classifier / scorer / dossier / mockup /
+          brief workers fan out asynchronously — without this strip
+          the rep would see the success toast and stare at a frozen
+          page wondering whether anything was actually happening. */}
+      <LiveProcessingStrip />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Search Card */}
@@ -479,7 +492,20 @@ export default function DiscoveryPage() {
                       return;
                     }
                     const data = await res.json();
-                    toast.success(`Analysis complete: ${data.analyzed} succeeded, ${data.failed} failed`);
+                    // Endpoint returns 202 + `enqueued` — the chain
+                    // runs in the worker, not inline. Surface that
+                    // up-front so the rep watches the live strip.
+                    const enqueued =
+                      data && typeof data.enqueued === "number"
+                        ? data.enqueued
+                        : null;
+                    if (enqueued && enqueued > 0) {
+                      toast.success(
+                        `Queued ${enqueued} lead${enqueued === 1 ? "" : "s"} for AI analysis — watch progress above.`,
+                      );
+                    } else {
+                      toast.success("Nothing pending — every lead already has a sales brief.");
+                    }
                   } catch (err) {
                     console.error(err);
                     toast.error("Analysis failed: network error");

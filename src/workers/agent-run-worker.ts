@@ -237,11 +237,14 @@ export function startAgentRunWorker() {
 
   const worker = new Worker<AgentRunJob>("agent-runs", processJob, {
     connection,
-    // Keep concurrency conservative; the bottleneck is Gemini quota.
-    // Apify-backed workers have their own timeouts and are mostly
-    // waiting, so they don't consume a Gemini slot.
-    concurrency: 5,
-    limiter: { max: 60, duration: 60000 },
+    // Concurrency raised from 5→15: at 5 we were doing ~20 jobs/min,
+    // 3× below the rate limiter. Apify async-mode workers free the slot
+    // in ~2s (they fire the actor and return), so effective Gemini load
+    // is only the sync steps (audit, classifier, scorer, dossier,
+    // brief). At 15 concurrency + ~12s avg sync duration we hit ~75
+    // jobs/min — just above the old 60 cap, so bump the limiter too.
+    concurrency: 15,
+    limiter: { max: 150, duration: 60000 },
     // Lock duration: how long BullMQ holds the job lock before
     // assuming the worker is dead. Must be > the longest possible job
     // duration (180s outer deadline). 240s = 4 min gives 60s buffer.
