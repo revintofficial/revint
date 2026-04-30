@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPlanLabel } from "@/lib/plans";
+import { DeepResearchProgressPanel } from "@/components/app/deep-research-progress-panel";
 import {
   Dialog,
   DialogContent,
@@ -378,53 +379,62 @@ export function AiWorkersPanel({ leadId }: Props) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-(--leadac-500) shrink-0" />
-              AI Workers
-            </CardTitle>
-            <p className="text-xs text-white/30 mt-1">
-              AI worker packs generated per lead.
-            </p>
+    <div className="space-y-4">
+      {/* DeepResearchProgressPanel renders nothing unless a
+          USER_DEEP_RESEARCH PlannerSession exists for this lead. When
+          one is active, it surfaces a unified DAG progress card so the
+          user doesn't have to reason about 6 individual worker tiles
+          polling separately. */}
+      <DeepResearchProgressPanel leadId={leadId} />
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-(--leadac-500) shrink-0" />
+                AI Workers
+              </CardTitle>
+              <p className="text-xs text-white/30 mt-1">
+                AI worker packs generated per lead.
+              </p>
+            </div>
+            <Badge variant="outline" className="text-[11px]">
+              {getPlanLabel(data.plan)}
+            </Badge>
           </div>
-          <Badge variant="outline" className="text-[11px]">
-            {getPlanLabel(data.plan)}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {(["pitch", "deliverable", "intelligence", "enrichment", "ops"] as Group[]).map((group) => {
-          const items = grouped[group];
-          if (!items.length) return null;
-          const copy = GROUP_COPY[group];
-          return (
-            <section key={group} className="space-y-3">
-              <div>
-                <h3 className="text-[13px] font-semibold text-white/70">
-                  {copy.title}
-                </h3>
-                <p className="text-[11px] text-white/30">
-                  {copy.hint}
-                </p>
-              </div>
-              <div className="space-y-2">
-                {items.map((w) => (
-                  <WorkerRow
-                    key={w.kind}
-                    worker={w}
-                    running={runningKinds.has(w.kind)}
-                    onGenerate={() => triggerWorker(w)}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {(["pitch", "deliverable", "intelligence", "enrichment", "ops"] as Group[]).map((group) => {
+            const items = grouped[group];
+            if (!items.length) return null;
+            const copy = GROUP_COPY[group];
+            return (
+              <section key={group} className="space-y-3">
+                <div>
+                  <h3 className="text-[13px] font-semibold text-white/70">
+                    {copy.title}
+                  </h3>
+                  <p className="text-[11px] text-white/30">
+                    {copy.hint}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {items.map((w) => (
+                    <WorkerRow
+                      key={w.kind}
+                      worker={w}
+                      running={runningKinds.has(w.kind)}
+                      onGenerate={() => triggerWorker(w)}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

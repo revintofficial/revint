@@ -20,6 +20,7 @@ import { SocialProfileIcons } from "@/components/app/social-profile-icons";
 import { LeadMapView } from "@/components/app/lead-map-view";
 import { AiWorkersPanel } from "@/components/app/ai-workers-panel";
 import { PlannerActions } from "@/components/app/planner-actions";
+import { NicheProductFitCard } from "@/components/app/niche-product-fit-card";
 import {
   ArrowLeft,
   Globe,
@@ -653,6 +654,13 @@ export default function LeadDetailPage({
                 audit && (
                   <RestaurantSignalsCard features={audit.rawFeaturesJson ?? null} />
                 )}
+              {(lead.nicheSlug || lead.subNicheSlug) && (
+                <NicheProductFitCard
+                  nicheSlug={lead.nicheSlug}
+                  subNicheSlug={lead.subNicheSlug}
+                  auditFeatures={audit?.rawFeaturesJson ?? null}
+                />
+              )}
               {audit ? (
                 <>
                   <WebsiteStatsRow audit={audit} auditCounts={auditCounts} />
