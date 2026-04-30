@@ -198,6 +198,12 @@ export interface AgentWorkerContext {
    * accepted, not when downstream work completes.
    */
   emit: (event: EventKind, payload?: Record<string, unknown>) => Promise<void>;
+  /**
+   * Values persisted on `AgentRun.inputsJson` when the run is triggered
+   * (e.g. POST body for ad-hoc worker options). Workers read only keys
+   * they understand.
+   */
+  runInputs?: Record<string, unknown>;
 }
 
 /**

@@ -753,6 +753,20 @@ export interface LeadDossierPayload {
     features: string[];
     isPopular: boolean;
   }>;
+  /**
+   * Resolved niche pack for the lead's sub-vertical (e.g.
+   * fnb-fine-dining). Injected by buildDossierPayload so the model
+   * understands pitchAngle, highValueSignals, and featuredModules
+   * without having to infer them from the slug string alone.
+   * Null when the lead has no niche or the slug doesn't resolve.
+   */
+  nichePack?: {
+    label: string;
+    tagline: string;
+    pitchAngle: string;
+    highValueSignals: string[];
+    featuredProductModules: string[];
+  } | null;
 }
 
 export async function generateLeadDossier(
@@ -780,7 +794,16 @@ export async function generateLeadDossier(
     ? `2. Recommended Package — pick exactly ONE of the workspace's configured packages from the JSON \`workspaceServicePackages\` array. Quote the package's \`name\` and \`priceLabel\` verbatim, then justify the fit in 1-2 sentences referencing concrete audit / review findings. Pick the cheapest tier whose features cover this lead's pain points; only step up if the audit shows multi-location, hotel, or enterprise signals that justify the higher tier.`
     : `2. Recommended Package — write "no data" (the workspace has not configured any service packages yet; nothing to recommend).`;
 
+  const nichePackSection = payload.nichePack
+    ? `\nNiche pack (sub-vertical context — use this to sharpen Sales Angles and Recommended First Action):
+- Label: ${payload.nichePack.label} — ${payload.nichePack.tagline}
+- Pitch angle: ${payload.nichePack.pitchAngle}
+- High-value signals to surface: ${payload.nichePack.highValueSignals.join(", ")}
+- Relevant product modules (mention only those backed by evidence): ${payload.nichePack.featuredProductModules.join(", ")}\n`
+    : "";
+
   const prompt = `You are a senior B2B sales / research analyst working for a web design agency that sells websites and lead-gen add-ons to local service businesses. Below is ALL the raw intelligence different AI agents have collected about ONE business (a lead), provided as JSON: business metadata, website audit, sales-opportunity scoring, review analysis, raw Google reviews, voice notes, successful agent-run outputs (Apify social scrapers, SERP rank, competitor ads, Facebook/Instagram/TikTok/LinkedIn/Reddit, website mockup, opener writer, video script, etc.), semantic memory rows, and the workspace's own service packages (the price card the rep actually sells).
+${nichePackSection}
 
 Task: Synthesise this raw data into a clean "Lead Dossier" that a salesperson seeing this lead for the first time can read in under 2 minutes and act on. You own the scoring and the package selection: do not defer to the sales_opportunity row — form your own judgement from the full evidence set. Write in English.
 

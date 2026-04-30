@@ -636,6 +636,10 @@ async function hydrateContext(run: AgentRun): Promise<AgentWorkerContext> {
     memory,
     plannerSessionId: run.plannerSessionId,
     emit,
+    runInputs:
+      run.inputsJson != null && typeof run.inputsJson === "object" && !Array.isArray(run.inputsJson)
+        ? (run.inputsJson as Record<string, unknown>)
+        : {},
   };
 }
 

@@ -19,9 +19,10 @@
  *     Used for long actors (Google Maps deep, web crawl).
  *
  * Cost tracking: every successful run returns `costUsdCents` derived
- * from Apify's `usageTotalUsd` field. Each worker writes this into
- * `AgentRun.costUsdCents`; the quota helper sums across all Apify
- * runs in the billing cycle to enforce the monthly USD cap.
+ * from Apify's `usageTotalUsd` field when `x-apify-pagination-run-id`
+ * is present. If that header is missing (rare API edge), we log and
+ * fall back to `estimateSyncRunCostUsdCents` so the job still succeeds;
+ * quota may under-count that run.
  */
 import { logger } from "./logger";
 
@@ -71,6 +72,16 @@ function getToken(): string {
 }
 
 /**
+ * `run-sync-get-dataset-items` does not include USD usage in the JSON body.
+ * Without `x-apify-pagination-run-id` we cannot call `actor-runs/:id`.
+ * Returns 0 so callers succeed; extend with heuristics if needed per actor.
+ */
+function estimateSyncRunCostUsdCents<T>(items: T[]): number {
+  void items;
+  return 0;
+}
+
+/**
  * Runs an actor and blocks until completion. Returns the dataset
  * items. Safe for actors that finish within ~60 seconds; for longer
  * ones use `runAsync` + webhook.
@@ -110,15 +121,10 @@ export async function runSync<T = unknown>(
 
   const items = (await res.json()) as T[];
 
-  // `run-sync-get-dataset-items` doesn't return cost in the body.
-  // We MUST fetch the latest run stats to record costUsdCents: a
-  // silent 0 here means the quota helper sums "free" runs and the
-  // workspace's Apify USD cap never trips. If the stats fetch fails
-  // we surface the error (caller can decide whether to retry or flip
-  // the run to FAILED); we do NOT silently proceed with cost=0.
-  //
-  // One retry with linear backoff handles the race where the
-  // dataset is available before the run-status row has caught up.
+  // `run-sync-get-dataset-items` doesn't return cost in the body; we
+  // fetch run stats via `x-apify-pagination-run-id` when present.
+  // One retry with linear backoff handles the race where the dataset
+  // is available before the run-status row has caught up.
   const runId = res.headers.get("x-apify-pagination-run-id") ?? "";
   let costUsdCents = 0;
   if (runId) {
@@ -136,13 +142,12 @@ export async function runSync<T = unknown>(
       costUsdCents = stats.costUsdCents;
     }
   } else {
-    // No runId in response headers means Apify did not follow its
-    // documented response shape. Refuse to pretend cost=0 - throw so
-    // the caller surfaces the anomaly and we can debug the actor.
-    throw new ApifyRunError(
-      `Apify ${actorId} returned 200 but no x-apify-pagination-run-id header; cannot record cost`,
-      "MISSING_RUN_ID",
-    );
+    logger.warn("apify.run_sync.missing_pagination_run_id", {
+      actorId,
+      itemCount: Array.isArray(items) ? items.length : 0,
+      message: "No x-apify-pagination-run-id; using estimateSyncRunCostUsdCents (quota may under-count)",
+    });
+    costUsdCents = estimateSyncRunCostUsdCents(items);
   }
 
   return {

@@ -16,6 +16,7 @@ vi.mock("@/lib/apify", () => ApifyMock);
 const { prismaMock } = vi.hoisted(() => {
   return {
     prismaMock: {
+      $transaction: vi.fn((ops: unknown[]) => Promise.all(ops as Promise<unknown>[])),
       googleReview: {
         deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
         createMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -95,6 +96,7 @@ function makeCtx(overrides: Partial<AgentWorkerContext> = {}): AgentWorkerContex
 
 beforeEach(() => {
   ApifyMock.resetApifyMock();
+  prismaMock.$transaction.mockClear();
   prismaMock.googleReview.deleteMany.mockClear().mockResolvedValue({ count: 0 });
   prismaMock.googleReview.createMany.mockClear().mockResolvedValue({ count: 0 });
   prismaMock.websiteAudit.findUnique.mockReset();
@@ -130,6 +132,26 @@ describe("APIFY_GMAPS_DEEP - common matrix", () => {
     expect(out.placeId).toBe("ChIJabc");
     expect(out.reviewsCount).toBe(2);
     expect(out.costUsdCents).toBe(42);
+  });
+
+  it("passes runInputs.maxReviews to Apify actor input", async () => {
+    ApifyMock.setRunSyncResponse([{ placeId: "p", reviews: [] }], 0);
+    await run(makeCtx({ runInputs: { maxReviews: 60 } }));
+    expect(ApifyMock.runSync).toHaveBeenCalledWith(
+      "compass/crawler-google-places",
+      expect.objectContaining({ maxReviews: 60 }),
+      expect.anything(),
+    );
+  });
+
+  it("clamps runInputs.maxReviews to 500", async () => {
+    ApifyMock.setRunSyncResponse([{ placeId: "p", reviews: [] }], 0);
+    await run(makeCtx({ runInputs: { maxReviews: 9999 } }));
+    expect(ApifyMock.runSync).toHaveBeenCalledWith(
+      "compass/crawler-google-places",
+      expect.objectContaining({ maxReviews: 500 }),
+      expect.anything(),
+    );
   });
 
   it("review dedup: deleteMany is invoked BEFORE createMany", async () => {

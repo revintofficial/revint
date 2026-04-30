@@ -3,7 +3,8 @@
  *
  * Hits `compass/crawler-google-places` with the lead's
  * `businessName + formattedAddress` (or `placeId` when present) and
- * pulls up to 500 reviews + emails + 6 social links + photos + Q&A.
+ * pulls up to 500 reviews (default; overridable via `runInputs.maxReviews`
+ * when triggered from the UI) + emails + social links + photos + Q&A.
  *
  * Writes:
  *   - REVIEW_CHUNK rows (one per review, text = review body)
@@ -22,7 +23,15 @@ import type {
 } from "../types";
 
 const ACTOR_ID = "compass/crawler-google-places";
-const MAX_REVIEWS = 500;
+const DEFAULT_MAX_REVIEWS = 500;
+
+function resolveMaxReviews(ctx: AgentWorkerContext): number {
+  const raw = ctx.runInputs?.maxReviews;
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return Math.max(1, Math.min(DEFAULT_MAX_REVIEWS, Math.floor(raw)));
+  }
+  return DEFAULT_MAX_REVIEWS;
+}
 
 interface PlaceItem {
   placeId?: string;
@@ -59,6 +68,8 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
 
   const lead = ctx.lead;
 
+  const maxReviews = resolveMaxReviews(ctx);
+
   // Actor input - prefer placeId if we have it, otherwise search by
   // name + address. `maxReviews` caps spend.
   const input = {
@@ -69,7 +80,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       ? undefined
       : [`${lead.businessName} ${lead.formattedAddress}`],
     maxCrawledPlacesPerSearch: 1,
-    maxReviews: MAX_REVIEWS,
+    maxReviews,
     language: ctx.workspace.language ?? "en",
     countryCode: "gb",
     scrapeReviewerName: true,
@@ -162,6 +173,15 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     reviews: reviews.length,
     costCents: result.costUsdCents,
   });
+
+  // When running standalone (no planner session), the DAG has no
+  // review_refresh step to cascade. Emit lead_reviews_updated so
+  // REVIEW_ANALYST + SCORER + DOSSIER automatically re-run against
+  // the deeper corpus — same behaviour as the manual "Refresh reviews"
+  // button in the Places-API path.
+  if (!ctx.plannerSessionId && reviews.length > 0) {
+    await ctx.emit("lead_reviews_updated");
+  }
 
   return {
     output: {

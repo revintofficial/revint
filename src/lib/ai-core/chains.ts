@@ -336,17 +336,61 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     optional: true,
   };
 
+  // Apify deep-review + web-crawl steps shared by BALANCED and
+  // AGGRESSIVE. Both are optional so a missing Apify token, quota
+  // exhaustion, or a FREE workspace plan (filterByPlan drops them)
+  // never stalls the sync backbone.
+  const apifyGmaps: ChainStep = {
+    stepId: "apify_gmaps",
+    workerKind: "APIFY_GMAPS_DEEP",
+    dependsOn: [],
+    optional: true,
+  };
+  // After APIFY_GMAPS_DEEP imports up to 500 reviews, REVIEW_ANALYST
+  // re-runs against the deeper corpus so the scorer + dossier see
+  // the full evidence set instead of just the Places-API five.
+  const reviewRefresh: ChainStep = {
+    stepId: "review_refresh",
+    workerKind: "REVIEW_ANALYST",
+    dependsOn: ["apify_gmaps"],
+    optional: true,
+  };
+  // Web crawl populates PROSPECT_KB_CHUNK SemanticMemory rows that
+  // LEAD_DOSSIER_GENERATOR and OPENER_WRITER consume on their next
+  // run. Runs in parallel with the sync backbone so it never blocks
+  // the initial score; the richer KB is available from the next
+  // dossier refresh onward.
+  const apifyWebCrawl: ChainStep = {
+    stepId: "apify_webcrawl",
+    workerKind: "APIFY_WEB_CRAWL_DEEP",
+    dependsOn: [],
+    optional: true,
+  };
+  // Score step that waits for the deep review refresh. filterByPlan
+  // rewires dependsOn transitively when review_refresh is dropped
+  // (FREE plan), so the scorer falls back cleanly to the Places-API
+  // corpus without a DAG break.
+  const deepScore: ChainStep = {
+    stepId: "score",
+    workerKind: "SALES_OPPORTUNITY_SCORER",
+    dependsOn: ["audit", "review", "review_refresh", "classifier"],
+  };
+
   // BALANCED is the default for new workspaces. Adds social link
-  // discovery + on-create dossier + on-create mockup so the lead
-  // detail page is rich the moment the user opens it (no "click
-  // Generate to see anything" empty state).
+  // discovery + Apify deep reviews + website KB crawl + on-create
+  // dossier + on-create mockup so the lead detail page is rich the
+  // moment the user opens it. Apify steps are optional and plan-gated
+  // so FREE workspaces automatically get the Places-API-only subset.
   const balanced: Chain = [
     audit,
     placesReviews,
     review,
     social,
+    apifyGmaps,
+    reviewRefresh,
+    apifyWebCrawl,
     classifier,
-    score,
+    deepScore,
     embedProfile,
     mockup,
     dossier,
@@ -356,36 +400,16 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     return filterByPlan(balanced, plan);
   }
 
-  // AGGRESSIVE adds Apify deep enrichment + auto pitch-pack on every
-  // ingested lead. Burns through Gemini and Apify budget very fast;
-  // gated to PRO+ at the UI layer. FREE workspaces still get the
-  // BALANCED set if their preset is AGGRESSIVE (filterByPlan drops
-  // the Apify steps + the mockup step automatically).
-  const apifyGmaps: ChainStep = {
-    stepId: "apify_gmaps",
-    workerKind: "APIFY_GMAPS_DEEP",
-    dependsOn: [],
-    optional: true,
-  };
+  // AGGRESSIVE adds Apify SERP + auto pitch-pack on every ingested
+  // lead on top of the BALANCED set. Burns through Gemini and Apify
+  // budget very fast; gated to PRO+ at the UI layer. FREE workspaces
+  // still get the BALANCED set if their preset is AGGRESSIVE
+  // (filterByPlan drops the Apify steps automatically).
   const apifySerp: ChainStep = {
     stepId: "apify_serp",
     workerKind: "APIFY_SERP_RANK",
     dependsOn: ["audit"],
     optional: true,
-  };
-  const reviewRefresh: ChainStep = {
-    // After APIFY_GMAPS_DEEP imports up to 500 reviews, REVIEW_ANALYST
-    // re-runs against the deeper corpus so the scorer + dossier see
-    // the full evidence set instead of just the Places-API five.
-    stepId: "review_refresh",
-    workerKind: "REVIEW_ANALYST",
-    dependsOn: ["apify_gmaps"],
-    optional: true,
-  };
-  const aggressiveScore: ChainStep = {
-    stepId: "score",
-    workerKind: "SALES_OPPORTUNITY_SCORER",
-    dependsOn: ["audit", "review", "review_refresh", "classifier"],
   };
   // `mockup` is hoisted into the BALANCED block above; AGGRESSIVE
   // reuses the same ChainStep instance so opener can depend on it.
@@ -404,8 +428,9 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     apifyGmaps,
     apifySerp,
     reviewRefresh,
+    apifyWebCrawl,
     classifier,
-    aggressiveScore,
+    deepScore,
     embedProfile,
     dossier,
     mockup,

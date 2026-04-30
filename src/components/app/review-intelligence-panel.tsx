@@ -24,6 +24,7 @@ import {
   Loader2,
   RefreshCw,
   Star,
+  Download,
 } from "lucide-react";
 
 interface KpiBar {
@@ -60,16 +61,30 @@ interface ReviewAnalysis {
 interface Props {
   leadId: string;
   hasReviews: boolean;
+  /** How many GoogleReview rows we actually have in the DB for this lead. */
+  storedReviewCount?: number;
+  /** Total reviews on Google Maps (lead.reviewCount from Places API). */
+  totalReviewCount?: number;
   onAnalysisReady?: (analysis: ReviewAnalysis) => void;
 }
 
 type Status = "PENDING" | "ANALYZING" | "ANALYZED" | "FAILED" | "NO_REVIEWS";
 
-export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }: Props) {
+/** Batch size for Review Intelligence “fetch more” (Apify `maxReviews` cap). */
+const APIFY_EXTRA_REVIEWS = 60;
+
+export function ReviewIntelligencePanel({
+  leadId,
+  hasReviews,
+  storedReviewCount = 0,
+  totalReviewCount = 0,
+  onAnalysisReady,
+}: Props) {
   const [status, setStatus] = useState<Status>("PENDING");
   const [analysis, setAnalysis] = useState<ReviewAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [fetchingDeep, setFetchingDeep] = useState(false);
 
   const fetchAnalysis = useCallback(async () => {
     try {
@@ -135,6 +150,36 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
       setRunning(false);
     }
   }, [status]);
+
+  const runDeepReviews = async () => {
+    setFetchingDeep(true);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/workers/APIFY_GMAPS_DEEP`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ maxReviews: APIFY_EXTRA_REVIEWS }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.error || "Couldn't trigger deep review fetch.");
+        return;
+      }
+      toast.success(
+        `Fetching up to ${APIFY_EXTRA_REVIEWS} Google Maps reviews via Apify — refresh analysis after it finishes.`,
+      );
+    } catch {
+      toast.error("Couldn't trigger deep review fetch.");
+    } finally {
+      setFetchingDeep(false);
+    }
+  };
+
+  // Show "Get More Reviews" banner when stored count is low relative to
+  // total available on Google Maps.
+  const showDeepReviewsBanner =
+    totalReviewCount > 0 &&
+    storedReviewCount < Math.min(totalReviewCount, 20) &&
+    totalReviewCount > storedReviewCount;
 
   if (loading) {
     return (
@@ -206,7 +251,25 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
             )}
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {showDeepReviewsBanner && (
+            <div className="flex items-center justify-between rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-300/90">
+              <span>
+                {storedReviewCount} reviews saved — add up to {APIFY_EXTRA_REVIEWS} more from Google Maps via
+                Apify
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-3 h-6 px-2 text-[11px] border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                onClick={runDeepReviews}
+                disabled={fetchingDeep}
+              >
+                {fetchingDeep ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                <span className="ml-1">+{APIFY_EXTRA_REVIEWS} more (Apify)</span>
+              </Button>
+            </div>
+          )}
           <p className="text-sm text-white/50 leading-relaxed">
             Run up to 50 Google reviews for this lead through Gemini in a KPI-bar format.
             The strongest play here: the thing customers complain about most lands straight
@@ -226,14 +289,31 @@ export function ReviewIntelligencePanel({ leadId, hasReviews, onAnalysisReady }:
             Review Intelligence
           </CardTitle>
           <p className="text-xs text-white/30 mt-1">
-            {analysis.reviewsAnalyzedCount} reviews analyzed · Lead Score{" "}
-            {analysis.leadScore}/100
+            {analysis.reviewsAnalyzedCount} of {storedReviewCount || analysis.reviewsAnalyzedCount} reviews analyzed
+            {totalReviewCount > storedReviewCount && totalReviewCount > 0
+              ? ` · ${totalReviewCount - storedReviewCount} more on Google Maps`
+              : ""}
+            {" "}· Lead Score {analysis.leadScore}/100
           </p>
         </div>
-        <Button size="sm" variant="outline" onClick={runAnalysis} disabled={running}>
-          {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {showDeepReviewsBanner && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-[11px] border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+              onClick={runDeepReviews}
+              disabled={fetchingDeep}
+            >
+              {fetchingDeep ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+              <span className="ml-1">+{APIFY_EXTRA_REVIEWS} more (Apify)</span>
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={runAnalysis} disabled={running}>
+            {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-5">
         {analysis.summary && (

@@ -11,9 +11,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
-import { getReviewAnalysisQueue } from "@/lib/queues";
 import { assertCanUseAi, recordAiUsed, QuotaExceededError } from "@/lib/quotas";
 import { logger } from "@/lib/logger";
+import { runReviewAnalysisJob } from "@/lib/review-analysis/run-job";
+import { tryEnqueueReviewAnalysis } from "@/lib/review-analysis/try-enqueue";
 
 export async function POST(
   _request: Request,
@@ -53,16 +54,23 @@ export async function POST(
       data: { reviewAnalysisStatus: "PENDING" },
     });
 
-    const queue = getReviewAnalysisQueue();
-    await queue.add(
-      "analyze",
-      { leadId },
-      { removeOnComplete: 100, removeOnFail: 50 },
-    );
+    const enqueued = await tryEnqueueReviewAnalysis(leadId);
+    if (!enqueued) {
+      logger.warn("api.reviews.analyze.queue_unavailable_inline_fallback", { leadId });
+      void runReviewAnalysisJob(leadId).catch((err) => {
+        logger.error("api.reviews.analyze.inline_fallback_error", {
+          leadId,
+          err: err instanceof Error ? err.message : String(err),
+        });
+      });
+    }
 
     await recordAiUsed(workspaceId, 1);
 
-    return NextResponse.json({ status: "queued", leadId }, { status: 202 });
+    return NextResponse.json(
+      { status: "queued", leadId, mode: enqueued ? "queue" : "inline" },
+      { status: 202 },
+    );
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

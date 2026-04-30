@@ -86,7 +86,7 @@ async function tryEnqueue(runId: string, timeoutMs = 1500): Promise<boolean> {
 }
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string; kind: string }> },
 ) {
   try {
@@ -191,6 +191,29 @@ export async function POST(
       where: { id: leadId },
       select: { subNicheVersion: true },
     });
+
+    let runInputs: Record<string, unknown> = {};
+    if (kind === AgentWorkerKind.APIFY_GMAPS_DEEP) {
+      try {
+        const raw = await request.json();
+        if (
+          raw &&
+          typeof raw === "object" &&
+          !Array.isArray(raw) &&
+          "maxReviews" in raw
+        ) {
+          const v = (raw as { maxReviews: unknown }).maxReviews;
+          if (typeof v === "number" && Number.isFinite(v)) {
+            runInputs = {
+              maxReviews: Math.max(1, Math.min(500, Math.floor(v))),
+            };
+          }
+        }
+      } catch {
+        // no JSON body — use default worker options
+      }
+    }
+
     const run = await prisma.agentRun.create({
       data: {
         workspaceId: session.workspaceId,
@@ -198,7 +221,7 @@ export async function POST(
         userId: session.user.id,
         workerKind: kind,
         status: "PENDING",
-        inputsJson: {},
+        inputsJson: runInputs as never,
         inputSubNicheVersion: versionedLead?.subNicheVersion ?? null,
       },
       select: { id: true, createdAt: true, workerKind: true, status: true },

@@ -23,6 +23,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { generateLeadDossier, type LeadDossierPayload } from "@/lib/gemini";
 import { listByLead as listMemoryByLead } from "@/lib/ai-core/memory";
+import { getNicheBySlug, getParentOf } from "@/lib/niches";
 import type {
   AgentWorkerContext,
   AgentWorkerOutput,
@@ -152,6 +153,20 @@ export async function buildDossierPayload(
     ...leadBase
   } = lead;
 
+  // Resolve the most specific niche pack available: child slug first,
+  // then parent slug fallback. The pack fields (pitchAngle,
+  // highValueSignals, featuredProductModules) are injected into the
+  // dossier prompt so the model produces niche-aware sales angles
+  // without needing to infer them from the raw slug string.
+  const subNicheSlug = lead.subNicheSlug as string | null;
+  const nicheSlug = lead.nicheSlug as string | null;
+  const resolvedSlug =
+    subNicheSlug ??
+    nicheSlug ??
+    (subNicheSlug ? getParentOf(subNicheSlug) : null) ??
+    null;
+  const resolvedPack = resolvedSlug ? getNicheBySlug(resolvedSlug) ?? null : null;
+
   const payload: LeadDossierPayload = {
     lead: leadBase as unknown as Record<string, unknown>,
     websiteAudit: (websiteAudit ?? null) as Record<string, unknown> | null,
@@ -176,6 +191,15 @@ export async function buildDossierPayload(
       createdAt: m.createdAt.toISOString(),
     })),
     workspaceServicePackages: servicePackages,
+    nichePack: resolvedPack
+      ? {
+          label: resolvedPack.label,
+          tagline: resolvedPack.tagline,
+          pitchAngle: resolvedPack.pitchAngle,
+          highValueSignals: resolvedPack.highValueSignals ?? [],
+          featuredProductModules: resolvedPack.featuredProductModules ?? [],
+        }
+      : null,
   };
 
   // Hard cap pass: shed oldest rows so the prompt fits comfortably

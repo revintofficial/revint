@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use, useRef, useCallback } from "react";
+import { useEffect, useState, use, useRef } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CircularProgress } from "@/components/ui/progress";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { OutreachStepper } from "@/components/ui/outreach-stepper";
-import { CRAWL_LABELS, ANALYZE_LABELS, OUTREACH_LABELS } from "@/lib/labels";
+import { CRAWL_LABELS, ANALYZE_LABELS, OUTREACH_LABELS, REASON_LABELS, OFFER_LABELS } from "@/lib/labels";
 import { ReviewIntelligencePanel } from "@/components/app/review-intelligence-panel";
 import { GoogleReviewsAccordion } from "@/components/app/google-reviews-accordion";
 import { VoiceNotesPanel } from "@/components/app/voice-notes-panel";
@@ -48,7 +48,6 @@ import {
   Mail,
   MessageCircle,
   X,
-  Wrench,
 } from "lucide-react";
 
 interface ContentCheckSignal {
@@ -160,6 +159,7 @@ interface LeadDetail {
   reviewCount: number | null;
   businessStatus: string | null;
   primaryType: string | null;
+  discoverySourceQuery?: string | null;
   crawlStatus: string;
   analyzeStatus: string;
   websiteAudit: {
@@ -202,6 +202,9 @@ interface LeadDetail {
       detectedMenuTool?: string | null;
       menuUrl?: string | null;
     } | null;
+    bookingProvider?: string | null;
+    brokenLinksCount?: number;
+    structuredDataPresent?: boolean;
   } | null;
   workspace?: { niche: string } | null;
   // Hybrid-niche fields. `nicheSlug` is the parent (e.g. "fnb"),
@@ -240,6 +243,7 @@ interface LeadDetail {
     websitePlan: string | null;
   } | null;
   reviewAnalysisStatus?: string;
+  pipelineStatus?: string;
   reviewAnalysis?: {
     leadScore: number;
     summary: string | null;
@@ -310,7 +314,6 @@ export default function LeadDetailPage({
   const [contentCheck, setContentCheck] = useState<ContentCheckResult | null>(null);
   const [contentCheckLoading, setContentCheckLoading] = useState(false);
   const [showContentCheck, setShowContentCheck] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [websiteSearchResult, setWebsiteSearchResult] = useState<WebsiteSearchResult | null>(null);
   const [websiteSearchLoading, setWebsiteSearchLoading] = useState(false);
   const [showWebsiteSearch, setShowWebsiteSearch] = useState(false);
@@ -423,23 +426,6 @@ export default function LeadDetailPage({
     } catch (err) {
       console.error(err);
       toast.error("Failed to crawl website");
-    }
-  };
-
-  const runAnalyze = async () => {
-    setAnalyzing(true);
-    try {
-      await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId: id }),
-      });
-      const res = await fetch(`/api/leads/${id}`);
-      setLead(await res.json());
-    } catch (err) {
-      console.error("Analyze failed:", err);
-    } finally {
-      setAnalyzing(false);
     }
   };
 
@@ -597,16 +583,7 @@ export default function LeadDetailPage({
         Leads
       </Link>
 
-      <HeroBand
-        lead={lead}
-        analyzing={analyzing}
-        contentCheckLoading={contentCheckLoading}
-        dossierLoading={dossierLoading}
-        onAnalyze={runAnalyze}
-        onCrawl={runCrawl}
-        onContentCheck={runContentCheck}
-        onDossier={generateDossier}
-      />
+      <HeroBand lead={lead} onPipelineStarted={() => { void refetchLead(); }} />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <aside className="lg:col-span-4 lg:sticky lg:top-6 lg:self-start space-y-5">
@@ -670,9 +647,12 @@ export default function LeadDetailPage({
                 subNicheConfidence={lead.subNicheConfidence}
                 onChange={refetchLead}
               />
-              {lead.workspace?.niche === "RESTAURANT_TECH" && audit && (
-                <RestaurantSignalsCard features={audit.rawFeaturesJson ?? null} />
-              )}
+              {(lead.workspace?.niche === "RESTAURANT_TECH" ||
+                lead.nicheSlug === "fnb" ||
+                lead.subNicheSlug?.startsWith("fnb")) &&
+                audit && (
+                  <RestaurantSignalsCard features={audit.rawFeaturesJson ?? null} />
+                )}
               {audit ? (
                 <>
                   <WebsiteStatsRow audit={audit} auditCounts={auditCounts} />
@@ -718,6 +698,8 @@ export default function LeadDetailPage({
               <ReviewIntelligencePanel
                 leadId={lead.id}
                 hasReviews={(lead.googleReviews?.length ?? 0) > 0}
+                storedReviewCount={lead.googleReviews?.length ?? 0}
+                totalReviewCount={lead.reviewCount ?? 0}
               />
               <GoogleReviewsAccordion leadId={lead.id} />
               <VoiceNotesPanel leadId={lead.id} />
@@ -778,24 +760,142 @@ export default function LeadDetailPage({
   );
 }
 
+/** Narrative block shown directly under the lead title — mirrors sales-opportunity copy. */
+function HeroFitSummary({ lead }: { lead: LeadDetail }) {
+  const opp = lead.salesOpportunity;
+  const why = opp?.whyGoodTarget?.trim();
+  const pains = Array.isArray(opp?.likelyPainPoints)
+    ? (opp.likelyPainPoints as unknown[]).filter((x): x is string => typeof x === "string" && x.trim().length > 0).slice(0, 10)
+    : [];
+
+  if (!why && pains.length === 0) return null;
+
+  const labelCls =
+    "text-[11px] uppercase tracking-[0.08em] text-white/40 font-medium mb-2";
+
+  const twoCol = Boolean(why && pains.length > 0);
+
+  return (
+    <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 sm:px-5 sm:py-5">
+      <div className={`grid gap-5 ${twoCol ? "md:grid-cols-2 md:gap-8 md:items-start" : ""}`}>
+        {why ? (
+          <div className="min-w-0">
+            <p className={labelCls}>Why they&apos;re a fit</p>
+            <p className="text-[13px] sm:text-[14px] text-white/72 leading-relaxed">{why}</p>
+          </div>
+        ) : null}
+        {pains.length > 0 ? (
+          <div className="min-w-0">
+            <p className={labelCls}>Likely pain points</p>
+            <ul className="text-[13px] text-white/68 space-y-1.5 list-none pl-0">
+              {pains.map((p) => (
+                <li key={p} className="flex gap-2">
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-(--leadac-500)/70" aria-hidden />
+                  <span className="leading-snug">{p}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/** Dense CRM hero strip: recommended motion, AI hooks, and site wedges reps scan in seconds (F&B / multi-outlet buyers). */
+function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
+  const opp = lead.salesOpportunity;
+  const audit = lead.websiteAudit;
+  const ra = lead.reviewAnalysis;
+  const raw = audit?.rawFeaturesJson;
+
+  const reasonCodes = Array.from(
+    new Set(
+      Array.isArray(opp?.reasonCodes)
+        ? (opp.reasonCodes as unknown[]).filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+        : [],
+    ),
+  ).slice(0, 5);
+
+  const slowMs = audit?.loadTimeMs;
+  const slowLabel =
+    slowMs != null && slowMs >= 3500 ? `Slow site ~${Math.round(slowMs / 1000)}s` : null;
+
+  const wedges: string[] = [];
+  if (audit?.hasWhatsappLink === false) wedges.push("No WhatsApp");
+  if (audit?.hasContactForm === false) wedges.push("No contact form");
+  if (raw?.hasQrMenu === true) wedges.push("QR menu detected");
+
+  const showStrip =
+    opp?.recommendedPackage != null ||
+    opp?.suggestedOffer != null ||
+    reasonCodes.length > 0 ||
+    slowLabel != null ||
+    wedges.length > 0 ||
+    ra != null;
+
+  if (!showStrip) return null;
+
+  return (
+    <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 sm:px-5">
+      <p className="text-[10px] uppercase tracking-[0.1em] text-white/40 mb-2.5 flex items-center gap-1.5 font-medium">
+        <Zap className="w-3 h-3 text-(--leadac-500)" aria-hidden />
+        At a glance
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {opp?.recommendedPackage && (
+          <Badge
+            variant="outline"
+            className="text-[11px] font-normal border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+          >
+            Package: {opp.recommendedPackage.name}
+          </Badge>
+        )}
+        {opp?.suggestedOffer && (
+          <Badge variant="outline" className="text-[11px] font-normal border-white/15 bg-white/5">
+            Tier: {OFFER_LABELS[opp.suggestedOffer] ?? opp.suggestedOffer}
+          </Badge>
+        )}
+        {ra != null && (
+          <Badge variant="outline" className="text-[11px] font-normal border-white/15 bg-white/5">
+            Review IQ {ra.leadScore}/100
+          </Badge>
+        )}
+        {slowLabel && (
+          <Badge variant="outline" className="text-[11px] font-normal border-amber-500/30 bg-amber-500/10 text-amber-100">
+            {slowLabel}
+          </Badge>
+        )}
+        {wedges.map((w) => (
+          <Badge
+            key={w}
+            variant="outline"
+            className="text-[11px] font-normal border-white/12 bg-white/[0.06] text-white/75"
+          >
+            {w}
+          </Badge>
+        ))}
+        {reasonCodes.map((code) => (
+          <Badge
+            key={code}
+            variant="outline"
+            title={code}
+            className="text-[11px] font-normal border-(--leadac-500)/25 bg-(--leadac-500)/10 text-(--leadac-200)"
+          >
+            {REASON_LABELS[code] ?? code.replace(/_/g, " ")}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HeroBand({
   lead,
-  analyzing,
-  contentCheckLoading,
-  dossierLoading,
-  onAnalyze,
-  onCrawl,
-  onContentCheck,
-  onDossier,
+  onPipelineStarted,
 }: {
   lead: LeadDetail;
-  analyzing: boolean;
-  contentCheckLoading: boolean;
-  dossierLoading: boolean;
-  onAnalyze: () => void;
-  onCrawl: () => void;
-  onContentCheck: () => void;
-  onDossier: () => void;
+  onPipelineStarted?: () => void;
 }) {
   const opp = lead.salesOpportunity;
   const score = opp?.opportunityScore ?? null;
@@ -865,23 +965,6 @@ function HeroBand({
                 </span>
               ))}
             </div>
-
-            {lead.websiteAudit?.servicesDetected && lead.websiteAudit.servicesDetected.length > 0 && (
-              <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.08em] text-white/40 mr-1">
-                  <Wrench className="w-3 h-3" />
-                  Services
-                </span>
-                {lead.websiteAudit.servicesDetected.map((s) => (
-                  <span
-                    key={s}
-                    className="inline-flex items-center rounded-full bg-(--leadac-500)/12 border border-(--leadac-500)/25 px-2.5 py-0.5 text-[12px] text-(--leadac-200) capitalize"
-                  >
-                    {s}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="flex items-center gap-5 md:flex-col md:items-end md:gap-2 shrink-0">
@@ -908,6 +991,10 @@ function HeroBand({
             )}
           </div>
         </div>
+
+        <HeroFitSummary lead={lead} />
+
+        <HeroPriorityStrip lead={lead} />
 
         <HeroContactBar
           phone={lead.phone}
@@ -942,17 +1029,7 @@ function HeroBand({
 
         <HeroDirectoryBadges links={lead.discoveredLinks ?? []} />
 
-        <HeroAgentBar
-          leadId={lead.id}
-          hasWebsite={!!lead.websiteUrl}
-          analyzing={analyzing}
-          contentCheckLoading={contentCheckLoading}
-          dossierLoading={dossierLoading}
-          onCrawl={onCrawl}
-          onContentCheck={onContentCheck}
-          onAnalyze={onAnalyze}
-          onDossier={onDossier}
-        />
+        <HeroPipelineRerunBar leadId={lead.id} onStarted={onPipelineStarted} />
       </div>
     </div>
   );
@@ -1154,173 +1231,53 @@ function HeroDirectoryBadges({ links }: { links: DiscoveredLink[] }) {
   );
 }
 
-type AgentRunState = "idle" | "running" | "done" | "failed";
-
-// Deep Scan is the only worker-backed action in the hero bar - it kicks off
-// APIFY_WEB_CRAWL_DEEP which runs async on a BullMQ worker and is polled via
-// /api/agent-runs/:id. The other three actions reuse handlers that already
-// exist on the lead page (crawl, content-check, dossier generation) so they
-// keep the parent's loading state as the source of truth.
-const DEEP_SCAN_KIND = "APIFY_WEB_CRAWL_DEEP" as const;
-
-function HeroAgentBar({
+function HeroPipelineRerunBar({
   leadId,
-  hasWebsite,
-  analyzing,
-  contentCheckLoading,
-  dossierLoading,
-  onCrawl,
-  onContentCheck,
-  onAnalyze,
-  onDossier,
+  onStarted,
 }: {
   leadId: string;
-  hasWebsite: boolean;
-  analyzing: boolean;
-  contentCheckLoading: boolean;
-  dossierLoading: boolean;
-  onCrawl: () => void;
-  onContentCheck: () => void;
-  onAnalyze: () => void;
-  onDossier: () => void;
+  onStarted?: () => void;
 }) {
-  const [deepScanState, setDeepScanState] = useState<AgentRunState>("idle");
-  const pollerRef = useRef<number | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    return () => {
-      if (pollerRef.current != null) {
-        window.clearInterval(pollerRef.current);
-        pollerRef.current = null;
-      }
-    };
-  }, []);
-
-  const pollRun = useCallback((runId: string) => {
-    if (pollerRef.current != null) window.clearInterval(pollerRef.current);
-    const intervalId = window.setInterval(async () => {
-      try {
-        const res = await fetch(`/api/agent-runs/${runId}`, { cache: "no-store" });
-        if (!res.ok) return;
-        const run = await res.json();
-        if (run.status === "SUCCEEDED" || run.status === "FAILED" || run.status === "CANCELLED") {
-          window.clearInterval(intervalId);
-          pollerRef.current = null;
-          const next: AgentRunState = run.status === "SUCCEEDED" ? "done" : "failed";
-          setDeepScanState(next);
-          if (run.status === "SUCCEEDED") {
-            toast.success("Deep scan finished.");
-          } else if (run.status === "FAILED") {
-            toast.error(`Deep scan failed: ${run.errorMsg ?? "unknown error"}`);
-          }
-        }
-      } catch (err) {
-        console.error("HeroAgentBar poll error:", err);
-      }
-    }, 2000);
-    pollerRef.current = intervalId;
-  }, []);
-
-  const triggerDeepScan = useCallback(async () => {
-    setDeepScanState("running");
+  const run = async () => {
+    setBusy(true);
     try {
-      const res = await fetch(`/api/leads/${leadId}/workers/${DEEP_SCAN_KIND}`, { method: "POST" });
+      const res = await fetch(`/api/leads/${leadId}/pipeline-rerun`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        setDeepScanState("idle");
-        if (res.status === 402) {
-          toast.error(err.message || "Plan or quota insufficient.");
+        if (res.status === 400 && data.error === "no_service_packages") {
+          toast.error(data.message || "Add a service package in Settings first.");
+        } else if (res.status === 409) {
+          toast.error(data.message || "Lead pipeline is disabled for this workspace.");
         } else {
-          toast.error(err.error || `Failed to start (${res.status})`);
+          toast.error(data.error || data.message || `Could not start pipeline (${res.status})`);
         }
         return;
       }
-      const { runId } = await res.json();
-      pollRun(runId);
-    } catch (err) {
-      console.error("HeroAgentBar trigger error:", err);
-      setDeepScanState("idle");
-      toast.error("Connection error");
+      toast.success("Intake pipeline started — same flow as when this lead was first added.");
+      onStarted?.();
+    } catch {
+      toast.error("Could not reach the server.");
+    } finally {
+      setBusy(false);
     }
-  }, [leadId, pollRun]);
-
-  interface Action {
-    key: string;
-    label: string;
-    icon: typeof Sparkles;
-    hint: string;
-    onClick: () => void;
-    busy: boolean;
-    disabled?: boolean;
-    state?: AgentRunState;
-  }
-
-  const actions: Action[] = [
-    {
-      key: "deep-scan",
-      label: "Deep Scan",
-      icon: Sparkles,
-      hint: "Full Apify crawl of the lead's site into searchable knowledge chunks.",
-      onClick: triggerDeepScan,
-      busy: deepScanState === "running",
-      disabled: !hasWebsite,
-      state: deepScanState,
-    },
-    {
-      key: "content-check",
-      label: "Content Check",
-      icon: ScanSearch,
-      hint: "Quick audit of the lead's homepage content quality.",
-      onClick: onContentCheck,
-      busy: contentCheckLoading,
-      disabled: !hasWebsite,
-    },
-    {
-      key: "scan-website",
-      label: "Scan Website",
-      icon: Globe,
-      hint: "Run the standard Playwright website auditor.",
-      onClick: onCrawl,
-      busy: false,
-      disabled: !hasWebsite,
-    },
-    {
-      key: "ai-dossier",
-      label: "AI Dossier Analyze",
-      icon: Bot,
-      hint: "Generate the full AI dossier and refresh the opportunity analysis.",
-      onClick: () => {
-        onDossier();
-        onAnalyze();
-      },
-      busy: dossierLoading || analyzing,
-    },
-  ];
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-2 mt-3">
-      <span className="text-[11px] uppercase tracking-[0.08em] text-white/30 mr-0.5">Run agent</span>
-      {actions.map((a) => {
-        const done = a.state === "done";
-        const failed = a.state === "failed";
-        const Icon = a.busy ? Loader2 : done ? Check : failed ? AlertTriangle : a.icon;
-        return (
-          <Button
-            key={a.key}
-            size="sm"
-            variant="outline"
-            onClick={a.onClick}
-            disabled={a.busy || a.disabled}
-            title={a.hint}
-            className="h-9 rounded-full px-3 gap-1.5 text-[12px]"
-          >
-            <Icon className={`w-3.5 h-3.5 ${a.busy ? "animate-spin" : ""}`} />
-            {a.label}
-            {done && <span className="ml-0.5 text-[10px] text-[hsl(152_48%_50%)]">done</span>}
-            {failed && <span className="ml-0.5 text-[10px] text-[hsl(4_62%_54%)]">failed</span>}
-          </Button>
-        );
-      })}
+      <span className="text-[11px] uppercase tracking-[0.08em] text-white/30 mr-0.5">Pipeline</span>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => void run()}
+        disabled={busy}
+        title="Re-runs your workspace lead pipeline (audit, reviews, scoring, dossier — per Settings)."
+        className="h-9 rounded-full px-3 gap-1.5 text-[12px]"
+      >
+        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+        Re-run intake pipeline
+      </Button>
     </div>
   );
 }

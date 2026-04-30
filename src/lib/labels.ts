@@ -22,6 +22,20 @@ export const ANALYZE_LABELS: Record<string, string> = {
   FAILED: "Analysis Failed",
 };
 
+export const REVIEW_ANALYSIS_LABELS: Record<string, string> = {
+  PENDING: "Review IQ queued",
+  ANALYZING: "Review IQ running…",
+  ANALYZED: "Review IQ done",
+  FAILED: "Review IQ failed",
+  NO_REVIEWS: "No reviews to analyze",
+};
+
+/** Lead row `pipelineStatus` — gates `lead_created`, not kanban stage. */
+export const LEAD_PIPELINE_GATE_LABELS: Record<string, string> = {
+  OK: "Intake OK",
+  BLOCKED_NEEDS_PACKAGES: "Blocked — add packages",
+};
+
 export const OFFER_LABELS: Record<string, string> = {
   STARTER: "Starter",
   GROWTH: "Growth",
