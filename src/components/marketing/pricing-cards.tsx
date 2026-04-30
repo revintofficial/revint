@@ -28,9 +28,15 @@ interface Props {
    * for marketing surfaces.
    */
   carryIntentToSignup?: boolean;
+  /** Plans stay visible; membership CTAs render disabled with “Soon”. */
+  ctaDisabled?: boolean;
 }
 
-export function PricingCards({ ctaHref = "/signup", carryIntentToSignup = true }: Props) {
+export function PricingCards({
+  ctaHref = "/signup",
+  carryIntentToSignup = true,
+  ctaDisabled = false,
+}: Props) {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [currency, setCurrency] = useState<Currency>("USD");
 
@@ -198,40 +204,70 @@ export function PricingCards({ ctaHref = "/signup", carryIntentToSignup = true }
                   : "Billed monthly · cancel anytime"}
               </p>
 
-              <Link
-                href={buildHref(plan.id)}
-                className="w-full inline-flex items-center justify-center px-3 py-2.5 rounded-xl text-[13px] font-semibold mb-3 transition-all"
-                style={
-                  isHighlight
-                    ? {
-                        background: "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
-                        color: "white",
-                        boxShadow:
-                          "0 1px 0 rgba(255,255,255,0.25) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.7), 0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.55)",
-                      }
-                    : id === "FREE"
-                    ? {
-                        background: "rgba(255,255,255,0.05)",
-                        color: "white",
-                        border: "0.5px solid rgba(255,255,255,0.1)",
-                      }
-                    : {
-                        background: "rgba(255,255,255,0.08)",
-                        color: "white",
-                        border: "0.5px solid rgba(255,255,255,0.14)",
-                      }
-                }
-              >
-                {plan.id === "FREE" ? "Start free" : `Get ${plan.name}`}
-              </Link>
+              {ctaDisabled ? (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full inline-flex items-center justify-center px-3 py-2.5 rounded-xl text-[13px] font-semibold mb-7 cursor-not-allowed opacity-[0.72]"
+                  style={
+                    isHighlight
+                      ? {
+                          background: "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 48%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
+                          color: "white",
+                          border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 45% / 0.35)",
+                          boxShadow: "none",
+                        }
+                      : id === "FREE"
+                      ? {
+                          background: "rgba(255,255,255,0.04)",
+                          color: "rgba(255,255,255,0.55)",
+                          border: "0.5px solid rgba(255,255,255,0.08)",
+                        }
+                      : {
+                          background: "rgba(255,255,255,0.06)",
+                          color: "rgba(255,255,255,0.55)",
+                          border: "0.5px solid rgba(255,255,255,0.1)",
+                        }
+                  }
+                >
+                  Soon
+                </button>
+              ) : (
+                <Link
+                  href={buildHref(plan.id)}
+                  className="w-full inline-flex items-center justify-center px-3 py-2.5 rounded-xl text-[13px] font-semibold mb-3 transition-all"
+                  style={
+                    isHighlight
+                      ? {
+                          background: "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
+                          color: "white",
+                          boxShadow:
+                            "0 1px 0 rgba(255,255,255,0.25) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.7), 0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.55)",
+                        }
+                      : id === "FREE"
+                      ? {
+                          background: "rgba(255,255,255,0.05)",
+                          color: "white",
+                          border: "0.5px solid rgba(255,255,255,0.1)",
+                        }
+                      : {
+                          background: "rgba(255,255,255,0.08)",
+                          color: "white",
+                          border: "0.5px solid rgba(255,255,255,0.14)",
+                        }
+                  }
+                >
+                  {plan.id === "FREE" ? "Start free" : `Get ${plan.name}`}
+                </Link>
+              )}
 
-              {id !== "FREE" && (
+              {!ctaDisabled && id !== "FREE" && (
                 <p className="text-[10.5px] text-white/40 mb-4 flex items-center justify-center gap-1.5">
                   <Lock className="w-2.5 h-2.5" />
                   Secure Stripe checkout · cancel anytime
                 </p>
               )}
-              {id === "FREE" && (
+              {!ctaDisabled && id === "FREE" && (
                 <p className="text-[10.5px] text-white/40 mb-4 text-center">
                   No credit card required
                 </p>

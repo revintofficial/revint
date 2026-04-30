@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PricingCards } from "@/components/marketing/pricing-cards";
+import { MARKETING_COMING_SOON } from "@/lib/marketing-coming-soon";
 import { Faq } from "@/components/marketing/faq";
 import { ArrowRight } from "lucide-react";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -17,20 +18,22 @@ export default function PricingPage() {
       <div className="max-w-5xl mx-auto px-5 sm:px-6">
         <div className="text-center mb-12">
           <p className="text-[12px] uppercase tracking-[0.15em] font-semibold text-(--leadac-300) mb-3">
-            Pricing
+            {MARKETING_COMING_SOON ? "Launching soon" : "Pricing"}
           </p>
           <h1
             className="text-[40px] sm:text-[56px] font-semibold tracking-tight mb-4"
             style={{ letterSpacing: "-0.03em" }}
           >
-            Simple, fair pricing.
+            {MARKETING_COMING_SOON ? "Plans open at launch." : "Simple, fair pricing."}
           </h1>
           <p className="text-[16px] text-white/55 max-w-xl mx-auto">
-            Start free. Upgrade once you're closing deals.
+            {MARKETING_COMING_SOON
+              ? "We are finishing packaging before public signup."
+              : "Start free. Upgrade once you're closing deals."}
           </p>
         </div>
 
-        <PricingCards />
+        <PricingCards ctaDisabled={MARKETING_COMING_SOON} />
 
         <div
           className="mt-14 mx-auto max-w-3xl px-6 py-5 rounded-2xl text-center"
@@ -64,18 +67,20 @@ export default function PricingPage() {
         </div>
 
         <div className="mt-20 text-center">
-          <Link
-            href="/signup"
-            className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
-            style={{
-              background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
-              boxShadow:
-                "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.45)",
-            }}
-          >
-            Start free
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          {!MARKETING_COMING_SOON && (
+            <Link
+              href="/signup"
+              className="px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white inline-flex items-center gap-1.5 group"
+              style={{
+                background: "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
+                boxShadow:
+                  "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.45)",
+              }}
+            >
+              Start free
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          )}
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ import {
   ScrollStage,
   type ScrollScene,
   DiscoveryDemo,
-  AuditScorecard,
+  LeadCardLive,
   MockupGeneratorDemo,
   OpenerComposer,
   DemoData,
@@ -16,8 +16,8 @@ const SCENES: ScrollScene[] = [
   {
     id: "discover",
     eyebrow: "01 — Discover",
-    title: "From a postcode to a deduped lead list.",
-    body: "Country sets the language and the dialing code. Verified Google Places picks lock the search to a real viewport — not the geocoded blob the Apollo crowd works with. Pick a niche pack, hit run, and Leadac fans out across the sub-niches and dedupes by Place ID before anything lands in your workspace.",
+    title: "Pick a postcode and a niche.",
+    body: "Leadac AI pulls every matching local business straight from Google Maps the moment you ask. The data is live, never a recycled Apollo export the whole industry already burned.",
     visual: (
       <DiscoveryDemo
         cities={DemoData.HOME_CITIES}
@@ -29,22 +29,33 @@ const SCENES: ScrollScene[] = [
   {
     id: "audit",
     eyebrow: "02 — Audit & score",
-    title: "Every site, opened up.",
-    body: "Twenty-plus signals on every lead — HTTPS, mobile viewport, booking flow, page weight, schema, last-updated year — plus a reviews-pulse pass on up to 500 Google reviews. Gemini ranks the opportunity 0-100, attaches a grade, and tells you the angle that already maps to a service tier in your packages.",
-    visual: <AuditScorecard lead={FEATURED_LEAD} />,
+    title: "We open the hood on every site.",
+    body: "Twenty-plus signals: HTTPS, mobile fit, booking flow, page weight, last-updated year. Gemini scores the opportunity 0-100 and tells you exactly why it landed there.",
+    visual: (
+      <div className="rounded-2xl p-4" style={{
+        background: "linear-gradient(180deg, rgba(32,32,36,0.92), rgba(22,22,26,0.96))",
+        border: "0.5px solid rgba(255,255,255,0.09)",
+        boxShadow: "0 24px 60px rgba(0,0,0,0.5), 0 80px 200px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.25)",
+      }}>
+        <p className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-(--leadac-300) mb-3 px-1">
+          Lead detail · click to expand
+        </p>
+        <LeadCardLive lead={FEATURED_LEAD} defaultExpanded />
+      </div>
+    ),
   },
   {
     id: "mockup",
     eyebrow: "03 — Mockup",
     title: "Show, don't pitch.",
-    body: "One click drafts a one-page mockup using the prospect's real name, real reviews, the gap your audit just flagged, and a colour the AI picks off their existing brand. Hosted at a private branded URL — the message stops being 'hi, can I help' and starts being 'I built you a draft.'",
+    body: "One click drafts a custom one-page mockup using the prospect's real name, reviews, and missing features. Drop the link in your email and the message stops being 'hi, can I help' and starts being 'I built you a draft.'",
     visual: <MockupGeneratorDemo lead={FEATURED_LEAD} />,
   },
   {
     id: "opener",
     eyebrow: "04 — Opener",
-    title: "AI drafts. You ship.",
-    body: "The opener references their actual site, their actual rating, and the exact two issues Gemini flagged in the audit — not a Mad Lib. Read it, edit the line that sounds off, then send from your own Gmail or Outlook. CSV export to Smartlead and Instantly is one click. Auto-send is off by default. Your inbox, your brand.",
+    title: "AI writes the first draft. You ship.",
+    body: "The opener references their actual site, not a Mad Lib. You read it, edit the line that sounds off, and push the file to Smartlead or Instantly. Auto-send is off by default, on purpose.",
     visual: <OpenerComposer lead={FEATURED_LEAD} />,
   },
 ];

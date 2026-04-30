@@ -1,0 +1,50 @@
+# Posts GitHub issue activity to Slack via an Incoming Webhook.
+# Configure: Repo → Settings → Secrets and variables → Actions → New repository secret
+#   Name:  SLACK_ISSUES_WEBHOOK_URL
+#   Value: https://hooks.slack.com/services/... (from Slack app / Incoming Webhooks)
+
+name: GitHub issues → Slack
+
+on:
+  issues:
+    types:
+      - opened
+      - reopened
+      - closed
+      - edited
+      - deleted
+      - transferred
+      - labeled
+      - unlabeled
+      - assigned
+      - unassigned
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post to Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ISSUES_WEBHOOK_URL }}
+          ISSUE_ACTION: ${{ github.event.action }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.event.sender.login }}
+        run: |
+          if [ -z "${SLACK_WEBHOOK_URL}" ]; then
+            echo "::notice::SLACK_ISSUES_WEBHOOK_URL is not set; skipping Slack notify."
+            exit 0
+          fi
+          BODY=$(jq -n \
+            --arg action "$ISSUE_ACTION" \
+            --arg num "$ISSUE_NUM" \
+            --arg title "$ISSUE_TITLE" \
+            --arg url "$ISSUE_URL" \
+            --arg repo "$REPO" \
+            --arg actor "$ACTOR" \
+            '{
+              text: ("*" + ($action | ascii_upcase) + "* issue [#" + $num + " " + $title + "](" + $url + ") — `" + $repo + "` — @" + $actor)
+            }')
+          curl -fsS -X POST -H 'Content-Type: application/json' -d "$BODY" "$SLACK_WEBHOOK_URL"

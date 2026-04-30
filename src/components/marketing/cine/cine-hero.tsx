@@ -21,7 +21,8 @@ type CineHeroProps = {
   tagline: string;
   headline: string;
   sub: string;
-  ctaPrimary: { label: string; href: string };
+  /** Omit `href` for a non-navigating “launching soon” style primary control. */
+  ctaPrimary: { label: string; href?: string };
   ctaSecondary?: { label: string; href: string };
   partners?: string[];
   partnersLabel?: string;
@@ -214,12 +215,21 @@ export function CineHero({
               transition={{ delay: 0.4, duration: 0.55 }}
               className="mt-10 flex items-center gap-3 flex-wrap"
             >
-              <Link href={ctaPrimary.href} className="vx-magic-pill">
-                {ctaPrimary.label}
-                <span className="vx-arrow-bubble">
-                  <ArrowRight className="w-4 h-4" />
+              {ctaPrimary.href ? (
+                <Link href={ctaPrimary.href} className="vx-magic-pill">
+                  {ctaPrimary.label}
+                  <span className="vx-arrow-bubble">
+                    <ArrowRight className="w-4 h-4" />
+                  </span>
+                </Link>
+              ) : (
+                <span className="vx-magic-pill opacity-[0.92] cursor-default" role="status">
+                  {ctaPrimary.label}
+                  <span className="vx-arrow-bubble">
+                    <Rocket className="w-4 h-4" />
+                  </span>
                 </span>
-              </Link>
+              )}
               {ctaSecondary && (
                 <Link href={ctaSecondary.href} className="vx-pill-ghost">
                   <Play className="w-3.5 h-3.5 fill-current" />

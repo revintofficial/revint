@@ -12,7 +12,14 @@ const FOR_LINKS = [
   { href: "/for/walk-in-web-agencies", label: "Walk-in web agencies", desc: "Tablet, mockup, close" },
 ];
 
-export function MarketingNav({ signedIn }: { signedIn: boolean }) {
+export function MarketingNav({
+  signedIn,
+  hidePublicAuth = false,
+}: {
+  signedIn: boolean;
+  /** Hide Log in / Start free — direct URLs still work */
+  hidePublicAuth?: boolean;
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [forOpen, setForOpen] = useState(false);
@@ -138,7 +145,7 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
                 →
               </span>
             </Link>
-          ) : (
+          ) : hidePublicAuth ? null : (
             <>
               <Link
                 href="/login"
@@ -217,9 +224,11 @@ export function MarketingNav({ signedIn }: { signedIn: boolean }) {
             <Link href="/#faq" onClick={() => setMobileOpen(false)} className="text-white/70 hover:text-white">
               FAQ
             </Link>
-            <Link href="/login" onClick={() => setMobileOpen(false)} className="text-white/70 hover:text-white sm:hidden">
-              Log in
-            </Link>
+            {!hidePublicAuth && (
+              <Link href="/login" onClick={() => setMobileOpen(false)} className="text-white/70 hover:text-white sm:hidden">
+                Log in
+              </Link>
+            )}
           </nav>
         </div>
       )}

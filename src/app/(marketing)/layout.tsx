@@ -2,6 +2,7 @@ import Script from "next/script";
 import { MarketingNav } from "@/components/marketing/nav";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { getOptionalUser } from "@/lib/auth";
+import { MARKETING_COMING_SOON } from "@/lib/marketing-coming-soon";
 
 export default async function MarketingLayout({
   children,
@@ -31,9 +32,9 @@ export default async function MarketingLayout({
           />
         </>
       )}
-      <MarketingNav signedIn={!!session} />
+      <MarketingNav signedIn={!!session} hidePublicAuth={MARKETING_COMING_SOON} />
       <main className="flex-1">{children}</main>
-      <MarketingFooter />
+      <MarketingFooter hidePublicAuth={MARKETING_COMING_SOON} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import { ArrowUpRight, Sparkles } from "lucide-react";
 import { PricingCards } from "@/components/marketing/pricing-cards";
+import { MARKETING_COMING_SOON } from "@/lib/marketing-coming-soon";
 import { HomeScrollTour } from "@/components/marketing/home-scroll-tour";
 import MultiOrbitSemiCircle from "@/components/ui/multi-orbit-semi-circle";
 import {
@@ -266,7 +267,11 @@ export default function LandingPage() {
         tagline="Client acquisition system for agencies"
         headline="Turn Google Maps into your next 50 clients."
         sub="Postcode plus niche. Leadac pulls 50 fresh businesses off Google Maps, reads every site in the background, and drafts a personalised first email from what the audit found — paired with a one-page mockup the prospect can click on the same line. Five minutes from your first search to a list nobody else is emailing tonight."
-        ctaPrimary={{ label: "Get my first 50 clients", href: "/signup" }}
+        ctaPrimary={
+          MARKETING_COMING_SOON
+            ? { label: "Launching soon" }
+            : { label: "Get my first 50 clients", href: "/signup" }
+        }
         ctaSecondary={{ label: "Watch the tour", href: "#tour" }}
         partnersLabel="Plugs into your sender. We don’t replace it."
         partners={["Smartlead", "Instantly", "GHL", "Gmail", "Outlook"]}
@@ -304,11 +309,21 @@ export default function LandingPage() {
               The four screens
             </span>
             <h2 className="vx-display text-[clamp(32px,5vw,60px)] leading-[1.02] tracking-[-0.03em] max-w-[22ch] text-white">
-              See it work before you{" "}
-              <span className="vx-text-gradient">sign up.</span>
+              {MARKETING_COMING_SOON ? (
+                <>
+                  Product tour ·{" "}
+                  <span className="vx-text-gradient">launching soon.</span>
+                </>
+              ) : (
+                <>
+                  See it work before you{" "}
+                  <span className="vx-text-gradient">sign up.</span>
+                </>
+              )}
             </h2>
             <p className="text-[15px] md:text-[16.5px] text-white/55 max-w-xl leading-relaxed">
-              No sales call. No scripted demo. Scroll, and four screens play in order with real data — discover, audit, mockup, opener. Same screens you’ll be using ten minutes from now.
+              No sales call. No scripted demo. Scroll, and four screens play in order with real data —
+              discover, audit, mockup, opener. Same screens you&apos;ll be using ten minutes from now.
             </p>
           </div>
           <HomeScrollTour />
@@ -504,17 +519,28 @@ export default function LandingPage() {
                 color: "rgba(255,255,255,0.85)",
               }}
             >
-              Pricing
+              {MARKETING_COMING_SOON ? "Pricing · launching soon" : "Pricing"}
             </span>
             <h2 className="vx-display text-[clamp(32px,5vw,60px)] leading-[1.02] tracking-[-0.03em] max-w-[22ch] text-white">
-              Stop stacking tools.{" "}
-              <span className="vx-text-gradient">Start stacking replies.</span>
+              {MARKETING_COMING_SOON ? (
+                <>
+                  Plans ·{" "}
+                  <span className="vx-text-gradient">opening at launch.</span>
+                </>
+              ) : (
+                <>
+                  Stop stacking tools.{" "}
+                  <span className="vx-text-gradient">Start stacking replies.</span>
+                </>
+              )}
             </h2>
             <p className="text-[15px] md:text-[16.5px] text-white/55 max-w-xl leading-relaxed">
-              A typical Apollo + Clay + Smartlead + AI-receptionist stack runs $300–$475 a month before your agency retainer. Leadac’s Agency tier does the same work for roughly 15% of that. One subscription. One workspace. One card on file.
+              {MARKETING_COMING_SOON
+                ? "We’re finishing packaging for launch. Same thesis: one workspace instead of a four-tool spreadsheet stack — details when signup opens."
+                : "A typical Apollo + Clay + Smartlead + AI-receptionist stack runs $300–$475 a month before your agency retainer. Leadac’s Agency tier does the same work for roughly 15% of that. One subscription. One workspace. One card on file."}
             </p>
           </div>
-          <PricingCards />
+          <PricingCards ctaDisabled={MARKETING_COMING_SOON} />
         </div>
       </section>
 
@@ -527,18 +553,40 @@ export default function LandingPage() {
 
       <CineFaq
         eyebrow="Questions"
-        headline="Read this before you sign up."
-        sub="Short answers. The long answers are one email away."
+        headline={
+          MARKETING_COMING_SOON ? "Answers before launch." : "Read this before you sign up."
+        }
+        sub={
+          MARKETING_COMING_SOON
+            ? "Short answers — full story when we open signup."
+            : "Short answers. The long answers are one email away."
+        }
         contactCta={{ label: "Email the founder", href: "mailto:mert@leadac.ai" }}
         items={FAQ_ITEMS}
       />
 
       <CineCta
         headline="Your next 50 clients aren’t on Apollo."
-        sub="They’re on Google Maps. Pick a postcode, pick a niche, open the first audited lead in five minutes. If the list doesn’t beat what you’re emailing to today, walk away. No card taken, nothing to cancel."
-        primary={{ label: "Get my first 50 clients", href: "/signup" }}
-        secondary={{ label: "See pricing", href: "#pricing" }}
-        microCopy="50 free leads · no credit card · cancel any time"
+        sub={
+          MARKETING_COMING_SOON
+            ? "They’re on Google Maps — same workflow when we open the doors. Until then, watch the tour above or drop us a line."
+            : "They’re on Google Maps. Pick a postcode, pick a niche, open the first audited lead in five minutes. If the list doesn’t beat what you’re emailing to today, walk away. No card taken, nothing to cancel."
+        }
+        primary={
+          MARKETING_COMING_SOON
+            ? { label: "Launching soon" }
+            : { label: "Get my first 50 clients", href: "/signup" }
+        }
+        secondary={
+          MARKETING_COMING_SOON
+            ? { label: "Email the founder", href: "mailto:mert@leadac.ai" }
+            : { label: "See pricing", href: "#pricing" }
+        }
+        microCopy={
+          MARKETING_COMING_SOON
+            ? undefined
+            : "50 free leads · no credit card · cancel any time"
+        }
       />
 
       <div className="relative z-10 border-t border-white/6">
@@ -558,15 +606,22 @@ export default function LandingPage() {
           <Link href="/legal/privacy" style={{ color: "rgba(255,255,255,0.45)" }} className="hover:!text-white transition-colors">
             Privacy
           </Link>
-          <Link
-            href="/signup"
-            style={{ color: "rgba(255,255,255,0.75)" }}
-            className="inline-flex items-center gap-1 hover:!text-white transition-colors"
-          >
-            <Sparkles className="w-3 h-3" />
-            Start free
-            <ArrowUpRight className="w-3 h-3" />
-          </Link>
+          {MARKETING_COMING_SOON ? (
+            <span style={{ color: "rgba(255,255,255,0.45)" }} className="inline-flex items-center gap-1">
+              <Sparkles className="w-3 h-3 opacity-70" />
+              Launching soon
+            </span>
+          ) : (
+            <Link
+              href="/signup"
+              style={{ color: "rgba(255,255,255,0.75)" }}
+              className="inline-flex items-center gap-1 hover:!text-white transition-colors"
+            >
+              <Sparkles className="w-3 h-3" />
+              Start free
+              <ArrowUpRight className="w-3 h-3" />
+            </Link>
+          )}
         </div>
       </div>
     </>

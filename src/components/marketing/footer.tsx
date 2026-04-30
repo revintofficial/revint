@@ -1,7 +1,11 @@
 ﻿import Link from "next/link";
 import Image from "next/image";
 
-export function MarketingFooter() {
+export function MarketingFooter({
+  hidePublicAuth = false,
+}: {
+  hidePublicAuth?: boolean;
+}) {
   return (
     <footer
       className="border-t mt-24"
@@ -31,7 +35,9 @@ export function MarketingFooter() {
               <li><Link href="/#how" className="text-white/65 hover:text-white">How it works</Link></li>
               <li><Link href="/#features" className="text-white/65 hover:text-white">Features</Link></li>
               <li><Link href="/pricing" className="text-white/65 hover:text-white">Pricing</Link></li>
-              <li><Link href="/login" className="text-white/65 hover:text-white">Log in</Link></li>
+              {!hidePublicAuth && (
+                <li><Link href="/login" className="text-white/65 hover:text-white">Log in</Link></li>
+              )}
             </ul>
           </div>
 

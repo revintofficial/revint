@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Rocket } from "lucide-react";
 
 type Props = {
   headline: string;
   sub: string;
-  primary: { label: string; href: string };
+  /** Omit `href` for a non-navigating primary control (e.g. launching soon). */
+  primary: { label: string; href?: string };
   secondary?: { label: string; href: string };
   /** Kept for interface stability; the Voxr CTA uses a CSS purple halo instead. */
   videoSrc?: string;
@@ -50,12 +51,21 @@ export function CineCta({
           {sub}
         </p>
         <div className="mt-10 flex items-center gap-3 flex-wrap justify-center">
-          <Link href={primary.href} className="vx-magic-pill">
-            {primary.label}
-            <span className="vx-arrow-bubble">
-              <ArrowRight className="w-4 h-4" />
+          {primary.href ? (
+            <Link href={primary.href} className="vx-magic-pill">
+              {primary.label}
+              <span className="vx-arrow-bubble">
+                <ArrowRight className="w-4 h-4" />
+              </span>
+            </Link>
+          ) : (
+            <span className="vx-magic-pill opacity-[0.92] cursor-default" role="status">
+              {primary.label}
+              <span className="vx-arrow-bubble">
+                <Rocket className="w-4 h-4" />
+              </span>
             </span>
-          </Link>
+          )}
           {secondary && (
             <Link href={secondary.href} className="vx-pill-ghost">
               {secondary.label}
