@@ -135,6 +135,22 @@ interface BriefPromptInput {
   workspaceLanguage: string;
   workspaceOffer: string | null;
   workspaceValueProp: string | null;
+  // P0.5 — workspace-level personalization signals. These shape the
+  // BRIEF's prose (talking points, opener seed, next action) but DO
+  // NOT change the deterministic salesConfidence rollup.
+  workspaceObjective: string | null;
+  workspaceTone: string | null;
+  workspaceOfferHook: string | null;
+  workspaceSocialProof: string | null;
+  workspaceSenderName: string | null;
+  /** Active sales campaigns (Sequences) with their niche tags + ids. */
+  activeCampaigns: { id: string; name: string; niche: string | null }[];
+  /**
+   * Campaign id matched by the scorer's ICP-fit deterministic check.
+   * When set, the brief should recommend `ENROLL_IN_<campaignId>` as
+   * the next action so the rep enrols the lead in one click.
+   */
+  matchedCampaignId: string | null;
   audit: Record<string, unknown> | null;
   auditChecklistText: string;
   reviewAnalysis: Record<string, unknown> | null;
@@ -221,6 +237,34 @@ async function generateBrief(
     },
   });
 
+  const personalizationLines: string[] = [];
+  if (input.workspaceObjective)
+    personalizationLines.push(`- Campaign objective: ${input.workspaceObjective}`);
+  if (input.workspaceTone)
+    personalizationLines.push(`- Voice / tone: ${input.workspaceTone}`);
+  if (input.workspaceOfferHook)
+    personalizationLines.push(`- Rep's signature hook: "${input.workspaceOfferHook}"`);
+  if (input.workspaceSocialProof)
+    personalizationLines.push(`- Social proof to cite: "${input.workspaceSocialProof}"`);
+  if (input.workspaceSenderName)
+    personalizationLines.push(`- Sender / signature: ${input.workspaceSenderName}`);
+  const personalizationBlock = personalizationLines.length
+    ? `\n\nWorkspace personalization (shape the prose to this — voice, hook, proof):\n${personalizationLines.join("\n")}`
+    : "";
+
+  const campaignsBlock = input.activeCampaigns.length
+    ? `\n\nActive sales campaigns (Sequences this workspace is currently running):\n${input.activeCampaigns
+        .map(
+          (c) =>
+            `- id: ${c.id} | name: "${c.name}" | niche: ${c.niche ? `"${c.niche}"` : "(any)"}`,
+        )
+        .join("\n")}${
+        input.matchedCampaignId
+          ? `\n>>> ICP-fit matched campaign id: ${input.matchedCampaignId}. Recommend nextAction.kind = "ENROLL_IN_CAMPAIGN" with note referencing this campaign by name.`
+          : ""
+      }`
+    : "";
+
   const prompt = `You are the senior SDR enablement analyst at a B2B SaaS for ${input.niche ?? "small businesses"}. The output of this brief is shown to a sales rep DURING a cold call — they need 3-5 talking points, ONE opener line they can read out loud, an honest "should I call?" sales-confidence number, and the realistic objection they will hit.
 
 Write in plain ${input.workspaceLanguage === "tr" ? "Turkish" : "English"}. Avoid marketing fluff. Cite which signal each talking point came from.
@@ -232,7 +276,7 @@ Website: ${input.websiteUrl ?? "n/a"}
 Google rating: ${input.rating ?? "n/a"} (${input.reviewCount ?? 0} reviews)
 
 Workspace offer: ${input.workspaceOffer ?? "(not configured)"}
-Workspace value prop: ${input.workspaceValueProp ?? "(not configured)"}
+Workspace value prop: ${input.workspaceValueProp ?? "(not configured)"}${personalizationBlock}${campaignsBlock}
 
 PRE-COMPUTED Sales Confidence (use this as your salesConfidence; do not invent a different number): ${input.preComputedConfidence}
 
@@ -266,7 +310,7 @@ Rules:
 - openerSeed: ONE sentence the SDR can read aloud — not a full email body. Natural, not salesy.
 - bestTimeToCall: brief hint based on niche (e.g. "Restaurants prefer between lunch and dinner rush, ~3-5pm local") or null when uncertain.
 - dnc: true ONLY when the data shows explicit opt-out / unsubscribe / "do not call" signals; otherwise false.
-- nextAction.kind: one of "CALL_NOW", "EMAIL_FIRST", "WAIT_FOR_REPLY", "DROP_LEAD", "NEEDS_RESEARCH".
+- nextAction.kind: one of "CALL_NOW", "EMAIL_FIRST", "WAIT_FOR_REPLY", "DROP_LEAD", "NEEDS_RESEARCH", "ENROLL_IN_CAMPAIGN" (use the last one only when an ICP-fit matched campaign id is provided above; the note must include the campaign name and id).
 - nextAction.due: ISO-8601 if a specific time is implied, else null.
 - replyObjections: 2-3 anticipated buyer objections, in their voice.
 - redFlags: pull from review analysis (low rating + dropping trend), shutdown signals, "permanently closed" indicators. Empty array if none.
@@ -328,6 +372,45 @@ export const run: AgentWorkerRun = async (
     take: 12,
     select: { workerKind: true, outputJson: true },
   });
+
+  // Pre-load active campaigns so the brief can recommend an enrollment
+  // and mention the campaign by name in the talking points / next
+  // action. Limit to the 8 most-recently-updated active sequences;
+  // workspaces that have more should rely on the ICP-fit matchedCampaignId
+  // signal coming from the scorer to pick the right one.
+  const activeSequences = await prisma.sequence.findMany({
+    where: { workspaceId, archivedAt: null },
+    orderBy: { updatedAt: "desc" },
+    take: 8,
+    select: { id: true, name: true, niche: true },
+  });
+
+  // Resolve the ICP-fit matched campaign id from the most recent
+  // SALES_OPPORTUNITY_SCORER run so the brief knows which campaign
+  // (if any) the lead actually fits. Falls back to null when scorer
+  // output predates the icpFit field.
+  const scorerRun = await prisma.agentRun.findFirst({
+    where: {
+      workspaceId,
+      leadId,
+      workerKind: "SALES_OPPORTUNITY_SCORER",
+      status: "SUCCEEDED",
+    },
+    orderBy: { finishedAt: "desc" },
+    select: { outputJson: true },
+  });
+  const matchedCampaignId =
+    scorerRun?.outputJson &&
+    typeof scorerRun.outputJson === "object" &&
+    "icpFit" in (scorerRun.outputJson as Record<string, unknown>) &&
+    typeof (scorerRun.outputJson as Record<string, unknown>).icpFit === "object" &&
+    (scorerRun.outputJson as Record<string, { matchedCampaignId?: string | null }>)
+      .icpFit?.matchedCampaignId
+      ? String(
+          (scorerRun.outputJson as Record<string, { matchedCampaignId?: string | null }>)
+            .icpFit.matchedCampaignId,
+        )
+      : null;
 
   const memoryRows = await listMemoryByLead({ workspaceId, leadId, take: 12 });
 
@@ -395,6 +478,17 @@ export const run: AgentWorkerRun = async (
         workspaceLanguage: ctx.workspace.language ?? "en",
         workspaceOffer: ctx.workspace.offerName,
         workspaceValueProp: ctx.workspace.valueProposition,
+        workspaceObjective: ctx.workspace.objective ?? null,
+        workspaceTone: ctx.workspace.tone ?? null,
+        workspaceOfferHook: ctx.workspace.offerHook ?? null,
+        workspaceSocialProof: ctx.workspace.socialProof ?? null,
+        workspaceSenderName: ctx.workspace.senderName ?? null,
+        activeCampaigns: activeSequences.map((s) => ({
+          id: s.id,
+          name: s.name,
+          niche: s.niche ?? null,
+        })),
+        matchedCampaignId,
         audit: auditFeaturesForPrompt,
         auditChecklistText: `Audit summary: ${checklist.summary.passed}/${checklist.summary.totalChecks - checklist.summary.unknown} checks passed (${checklist.summary.scorePercent}%).`,
         reviewAnalysis: (reviewAnalysis as unknown) as Record<string, unknown> | null,

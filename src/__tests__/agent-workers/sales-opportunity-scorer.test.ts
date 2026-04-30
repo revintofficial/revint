@@ -42,6 +42,20 @@ const { prismaMock } = vi.hoisted(() => ({
     salesOpportunity: {
       upsert: vi.fn().mockResolvedValue({}),
     },
+    // P0.5 — scorer now also pre-loads service packages, workspace
+    // settings (target_sub_niches), and active sales sequences so
+    // the prompt and the deterministic ICP-fit adjustment have
+    // workspace-level context. Default mocks return empty / null so
+    // the legacy tests stay neutral on personalization.
+    servicePackage: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
+    workspace: {
+      findUnique: vi.fn().mockResolvedValue({ targetSubNiches: [] }),
+    },
+    sequence: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
   },
 }));
 
@@ -144,6 +158,9 @@ beforeEach(() => {
   prismaMock.lead.update.mockReset().mockResolvedValue({});
   prismaMock.lead.findUniqueOrThrow.mockReset();
   prismaMock.salesOpportunity.upsert.mockReset().mockResolvedValue({});
+  prismaMock.servicePackage.findMany.mockReset().mockResolvedValue([]);
+  prismaMock.workspace.findUnique.mockReset().mockResolvedValue({ targetSubNiches: [] });
+  prismaMock.sequence.findMany.mockReset().mockResolvedValue([]);
 });
 
 describe("SALES_OPPORTUNITY_SCORER - happy path", () => {
@@ -203,12 +220,12 @@ describe("SALES_OPPORTUNITY_SCORER - out-of-range Gemini score", () => {
     expect(out.opportunityScore).toBe(100);
   });
 
-  it("does NOT add a lower-bound clamp: Gemini returning a negative score is blended as-is (0 is the floor from the blend, not an explicit clamp)", async () => {
-    // The worker's formula is Math.min(100, Math.round(det*0.4 + gem*0.6)).
-    // There is no Math.max(0, ...) - so a very negative Gemini score
-    // could mathematically push the final below 0. We document the
-    // actual behavior rather than inventing a floor the code doesn't
-    // implement.
+  it("clamps a wildly negative Gemini score to 0 (P0.5 added Math.max(0, ...) to support the ICP-fit penalty path safely)", async () => {
+    // Older versions of the worker had only an upper-bound clamp.
+    // P0.5 added the deterministic ICP-fit penalty (-8) and with it
+    // a symmetric Math.max(0, ...) floor so a negative Gemini score
+    // (or a -8 penalty pushing a near-0 lead into negative territory)
+    // can never produce a sub-zero opportunityScore.
     prismaMock.lead.findUniqueOrThrow.mockResolvedValue(
       makeLeadRow({ hasWebsite: true, rating: 5, reviewCount: 500, websiteAudit: null }),
     );
@@ -216,8 +233,7 @@ describe("SALES_OPPORTUNITY_SCORER - out-of-range Gemini score", () => {
 
     const result = await run(makeCtx());
     const out = result.output as { opportunityScore: number };
-    // Deterministic path for perfect-lookup lead is near 0; -1000*0.6 = -600.
-    // The final is whatever the formula produces, capped at 100 from above.
+    expect(out.opportunityScore).toBeGreaterThanOrEqual(0);
     expect(out.opportunityScore).toBeLessThanOrEqual(100);
   });
 });
@@ -271,5 +287,95 @@ describe("SALES_OPPORTUNITY_SCORER - Gemini error handling", () => {
 
   it("throws 'requires a lead context' when ctx.lead is null", async () => {
     await expect(run(makeCtx({ lead: null }))).rejects.toThrow(/requires a lead/);
+  });
+});
+
+describe("SALES_OPPORTUNITY_SCORER - P0.5 ICP-fit adjustment", () => {
+  // Stable inputs across these tests — only the workspace target list
+  // and lead niche slugs change. analyzeLeadWithGemini returns a
+  // mid-range opportunity_score so we have headroom to detect the
+  // +5 / -8 deterministic adjustment without hitting the [0, 100]
+  // clamp boundaries.
+  const baseGemini = geminiOutput({
+    opportunity_score: 60,
+    reason_codes: ["weak_seo"],
+  });
+
+  it("adds +5 + 'icp_fit' reason when lead's subNicheSlug is in workspace.targetSubNiches", async () => {
+    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(
+      makeLeadRow({ subNicheSlug: "fnb-bar-club", nicheSlug: "fnb" }),
+    );
+    prismaMock.workspace.findUnique.mockResolvedValue({
+      targetSubNiches: ["fnb-bar-club", "fnb-fine-dining"],
+    });
+    analyzeLeadWithGeminiMock.mockResolvedValue(baseGemini);
+
+    await run(makeCtx());
+    const upsertArgs = prismaMock.salesOpportunity.upsert.mock.calls[0][0];
+    const baseline = Math.round(0 * 0.4 + 60 * 0.6); // det score is 0 for a perfect audit
+    expect(upsertArgs.create.opportunityScore).toBeGreaterThanOrEqual(baseline + 5);
+    expect(upsertArgs.create.reasonCodes).toContain("icp_fit");
+    expect(upsertArgs.create.reasonCodes).not.toContain("outside_icp");
+  });
+
+  it("subtracts 8 + 'outside_icp' reason when targetSubNiches is non-empty AND the lead is outside it", async () => {
+    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(
+      makeLeadRow({ subNicheSlug: "hvac", nicheSlug: "home-services" }),
+    );
+    prismaMock.workspace.findUnique.mockResolvedValue({
+      targetSubNiches: ["fnb-bar-club"],
+    });
+    analyzeLeadWithGeminiMock.mockResolvedValue(baseGemini);
+
+    await run(makeCtx());
+    const upsertArgs = prismaMock.salesOpportunity.upsert.mock.calls[0][0];
+    expect(upsertArgs.create.reasonCodes).toContain("outside_icp");
+    expect(upsertArgs.create.reasonCodes).not.toContain("icp_fit");
+    // Score is clamped to >=0 even if the penalty pushes it negative.
+    expect(upsertArgs.create.opportunityScore).toBeGreaterThanOrEqual(0);
+  });
+
+  it("matches an active campaign niche → +5 + 'icp_fit' + matchedCampaignId surfaced on output", async () => {
+    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(
+      makeLeadRow({ subNicheSlug: "dental-clinic", nicheSlug: "dental" }),
+    );
+    prismaMock.workspace.findUnique.mockResolvedValue({ targetSubNiches: [] });
+    prismaMock.sequence.findMany.mockResolvedValue([
+      { id: "seq_1", name: "Dental Q2", niche: "dental-clinic", description: null },
+    ]);
+    analyzeLeadWithGeminiMock.mockResolvedValue(baseGemini);
+
+    const result = await run(makeCtx());
+    const out = result.output as {
+      opportunityScore: number;
+      reasonCodes: string[];
+      icpFit: { delta: number; code: string | null; matchedCampaignId: string | null };
+    };
+    expect(out.reasonCodes).toContain("icp_fit");
+    expect(out.icpFit).toEqual({
+      delta: 5,
+      code: "icp_fit",
+      matchedCampaignId: "seq_1",
+    });
+  });
+
+  it("stays neutral when targetSubNiches is empty AND no campaign niche matches", async () => {
+    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(
+      makeLeadRow({ subNicheSlug: "dental-clinic", nicheSlug: "dental" }),
+    );
+    prismaMock.workspace.findUnique.mockResolvedValue({ targetSubNiches: [] });
+    prismaMock.sequence.findMany.mockResolvedValue([
+      { id: "seq_other", name: "Restaurants Q2", niche: "fnb-bar-club", description: null },
+    ]);
+    analyzeLeadWithGeminiMock.mockResolvedValue(baseGemini);
+
+    const result = await run(makeCtx());
+    const out = result.output as {
+      reasonCodes: string[];
+      icpFit: { delta: number; code: string | null };
+    };
+    expect(out.reasonCodes).not.toContain("icp_fit");
+    expect(out.reasonCodes).not.toContain("outside_icp");
+    expect(out.icpFit).toEqual({ delta: 0, code: null, matchedCampaignId: null });
   });
 });

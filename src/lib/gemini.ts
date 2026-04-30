@@ -190,6 +190,29 @@ export interface AnalysisServicePackage {
   isPopular: boolean;
 }
 
+/**
+ * Active sales campaign / sequence summary fed into the analyst
+ * prompt. Each entry represents an OUTBOUND program the workspace is
+ * currently running; when a lead's `nicheSlug` / `subNicheSlug`
+ * matches one of these, the analyst awards an ICP-fit bonus and
+ * surfaces the campaign in `best_sales_angle` so the rep can enroll
+ * the lead immediately.
+ */
+export interface AnalysisActiveCampaign {
+  /** Stable id (Sequence.id) — used by callers to enroll programmatically. */
+  id: string;
+  /** Display name shown to the rep ("Bar & Club Q2 outbound"). */
+  name: string;
+  /**
+   * Free-form niche tag from the rep ("fnb-bar-club", "dental-clinic").
+   * Compared loosely against `lead.subNicheSlug` and `lead.nicheSlug`
+   * for ICP-fit detection. Null = niche-agnostic campaign.
+   */
+  niche: string | null;
+  /** One-line description, optional, surfaces in the prompt only. */
+  description: string | null;
+}
+
 /** Builds a niche-aware analysis prompt. Defaults to WEB_AGENCY behaviour. */
 function buildAnalysisPrompt(
   niche: string | null,
@@ -216,6 +239,28 @@ function buildAnalysisPrompt(
    * behaviour is preserved.
    */
   servicePackages: AnalysisServicePackage[] = [],
+  /**
+   * Sales-focus signals that personalise the score + narrative to
+   * the workspace's actual go-to-market. All optional; missing
+   * fields collapse to neutral language. See `AnalysisWorkspaceContext`.
+   */
+  salesFocus: {
+    objective: string | null;
+    tone: string | null;
+    offerHook: string | null;
+    socialProof: string | null;
+    senderName: string | null;
+    targetSubNiches: string[];
+    activeCampaigns: AnalysisActiveCampaign[];
+  } = {
+    objective: null,
+    tone: null,
+    offerHook: null,
+    socialProof: null,
+    senderName: null,
+    targetSubNiches: [],
+    activeCampaigns: [],
+  },
 ): string {
   const isRestaurant = niche === "RESTAURANT_TECH";
 
@@ -250,6 +295,67 @@ function buildAnalysisPrompt(
       ? `\nYour offer: ${[offerName, valueProposition].filter(Boolean).join(" — ")}`
       : "";
 
+  // P0.5 — Sales focus block. These are the workspace-level personalization
+  // signals the rep configured in Settings. They DO NOT change the audit-
+  // derived deterministic score (that's still pure website signals); they
+  // shape the narrative + nudge the qualitative `opportunity_score` toward
+  // leads that match the rep's actual pitch.
+  const salesFocusLines: string[] = [];
+  if (salesFocus.objective)
+    salesFocusLines.push(`- Campaign objective: ${salesFocus.objective}`);
+  if (salesFocus.tone) salesFocusLines.push(`- Voice / tone: ${salesFocus.tone}`);
+  if (salesFocus.offerHook)
+    salesFocusLines.push(`- Hook the rep opens with: "${salesFocus.offerHook}"`);
+  if (salesFocus.socialProof)
+    salesFocusLines.push(`- Social proof you can cite: "${salesFocus.socialProof}"`);
+  if (salesFocus.senderName)
+    salesFocusLines.push(`- Sender / signature: ${salesFocus.senderName}`);
+  const salesFocusBlock = salesFocusLines.length
+    ? `\n\nSales focus (workspace-level config — bias the narrative toward this):\n${salesFocusLines.join("\n")}`
+    : "";
+
+  // ICP filter. When the workspace narrowed `target_sub_niches`, the
+  // analyst should reward leads inside that list and penalise leads
+  // outside it. Empty list = no filter (everything is in scope).
+  const icpFilterBlock = salesFocus.targetSubNiches.length
+    ? `\n\nICP filter — workspace ONLY pitches these sub-niches: ${salesFocus.targetSubNiches
+        .map((s) => `"${s}"`)
+        .join(", ")}. The lead's nicheSlug / subNicheSlug must match for an ICP-fit bonus.`
+    : "";
+
+  // Active sales campaigns block. The rep is currently running these
+  // outbound programs; when this lead's vertical matches one, mention
+  // the campaign by name in `best_sales_angle` so the rep can enroll
+  // immediately. Niche-agnostic campaigns (niche=null) are listed but
+  // don't drive ICP-fit.
+  const activeCampaigns = salesFocus.activeCampaigns;
+  const activeCampaignsBlock = activeCampaigns.length
+    ? `\n\nActive sales campaigns (currently enrolling new leads):\n${activeCampaigns
+        .map(
+          (c, i) =>
+            `${i + 1}. id: "${c.id}" | name: "${c.name}" | niche: ${c.niche ? `"${c.niche}"` : "(any)"}${
+              c.description ? `\n   ${c.description.slice(0, 200)}` : ""
+            }`,
+        )
+        .join("\n")}\nIf this lead's nicheSlug / subNicheSlug matches one of the campaign niches above, name that campaign in best_sales_angle so the rep can enroll the lead.`
+    : "";
+
+  // ICP-fit scoring rule. Two reason codes wired into reason_codes:
+  //   - icp_fit          : lead falls inside target_sub_niches OR an
+  //                        active campaign niche (+5 to opportunity_score)
+  //   - outside_icp      : target_sub_niches is non-empty AND the lead
+  //                        is not in it (-8 to opportunity_score)
+  // The deterministic side of the scorer applies the same bonus/penalty
+  // as a safety net so a misbehaving Gemini output cannot drop the
+  // signal entirely.
+  const icpScoringRule =
+    salesFocus.targetSubNiches.length || activeCampaigns.length
+      ? `\n\nICP scoring rule:
+- Add +5 to opportunity_score and include "icp_fit" in reason_codes when the lead's nicheSlug or subNicheSlug matches an entry in target_sub_niches OR an active campaign niche.
+- Subtract -8 from opportunity_score and include "outside_icp" in reason_codes when target_sub_niches is non-empty AND the lead is OUTSIDE that list.
+- Otherwise stay neutral on ICP and do not include either code.`
+      : "";
+
   // Low-confidence caveat: when the sub-niche came from an AUTO
   // classification with score < 0.7, soften the language so we don't
   // ship "we'll set up your <wrong-vertical>" messaging that the rep
@@ -274,8 +380,10 @@ function buildAnalysisPrompt(
   "high_review_volume" (many reviews = high footfall = strong ROI case),
   "no_website" (no site at all),
   "poor_mobile" (poor mobile UX),
-  "no_whatsapp" (no WhatsApp contact)`
-    : `- reason_codes: string[] — e.g. "no_website", "poor_mobile", "no_booking", "no_whatsapp", "weak_seo", "no_https", "slow_site", "no_ecommerce", "high_rating_weak_site"`;
+  "no_whatsapp" (no WhatsApp contact),
+  "icp_fit" (lead matches workspace target_sub_niches or an active campaign niche),
+  "outside_icp" (workspace has a target_sub_niches filter and this lead is outside it)`
+    : `- reason_codes: string[] — e.g. "no_website", "poor_mobile", "no_booking", "no_whatsapp", "weak_seo", "no_https", "slow_site", "no_ecommerce", "high_rating_weak_site", "icp_fit", "outside_icp"`;
 
   // ServicePackage block. The new lead_created chain is gated on the
   // workspace having at least one ServicePackage, so the scorer
@@ -303,7 +411,7 @@ function buildAnalysisPrompt(
 - recommended_package_reason: string (REQUIRED, 1-2 sentences explaining why this specific tier fits this specific lead — reference an audit signal or pain point so the rep can quote it on the discovery call)`
     : "";
 
-  return `${industryContext}${offerContext}${confidenceCaveat}${packagesMenu}
+  return `${industryContext}${offerContext}${salesFocusBlock}${icpFilterBlock}${activeCampaignsBlock}${icpScoringRule}${confidenceCaveat}${packagesMenu}
 Analyze the following business and produce a JSON assessment.
 
 Business Information:
@@ -353,6 +461,48 @@ export interface AnalysisWorkspaceContext {
    * for tenants that haven't configured priced tiers yet.
    */
   servicePackages?: AnalysisServicePackage[] | null;
+  /**
+   * Workspace.objective — what the rep is trying to accomplish with
+   * this lead (BOOK_DEMO, SCHEDULE_CALL, REQUEST_INFO, ...). Free-form
+   * text from Settings; flows into the prompt verbatim so Gemini can
+   * shape `personalized_first_message` toward the right CTA.
+   */
+  objective?: string | null;
+  /** Workspace.tone — voice the rep wants Gemini to write in. */
+  tone?: string | null;
+  /**
+   * Workspace.offerHook — the rep's signature opening hook. When
+   * supplied, Gemini is told this is the line the rep typically
+   * opens with so the personalised first message complements (not
+   * duplicates) it.
+   */
+  offerHook?: string | null;
+  /**
+   * Workspace.socialProof — case study / testimonial line the rep
+   * can drop into the message. Gemini is encouraged to weave this in
+   * when it lifts conversion (e.g. "we helped X book +30 covers").
+   */
+  socialProof?: string | null;
+  /** Workspace.senderName — who the message is from. */
+  senderName?: string | null;
+  /**
+   * Workspace.targetSubNiches — the slugs the rep narrowed their
+   * pitch to. When non-empty AND the lead is inside the list, the
+   * prompt awards an ICP-fit bonus; when the lead is outside, it
+   * applies a penalty. Empty list = no ICP filter.
+   */
+  targetSubNiches?: string[] | null;
+  /**
+   * Active sales campaigns (Sequences) the workspace is currently
+   * running. Used for two things:
+   *   - ICP-fit detection: a lead whose niche matches one of these
+   *     campaigns gets a bonus and the campaign is named in
+   *     `best_sales_angle` so the rep can enroll immediately.
+   *   - Narrative shaping: Gemini knows which playbook to lean into.
+   * Pass an empty list when no campaigns exist; behaviour collapses
+   * to the legacy "no campaign awareness" prompt.
+   */
+  activeCampaigns?: AnalysisActiveCampaign[] | null;
 }
 
 /**
@@ -424,6 +574,15 @@ export async function analyzeLeadWithGemini(
     workspaceCtx.subNicheSlug ?? null,
     workspaceCtx.subNicheConfidence ?? null,
     workspaceCtx.servicePackages ?? [],
+    {
+      objective: workspaceCtx.objective ?? null,
+      tone: workspaceCtx.tone ?? null,
+      offerHook: workspaceCtx.offerHook ?? null,
+      socialProof: workspaceCtx.socialProof ?? null,
+      senderName: workspaceCtx.senderName ?? null,
+      targetSubNiches: workspaceCtx.targetSubNiches ?? [],
+      activeCampaigns: workspaceCtx.activeCampaigns ?? [],
+    },
   );
 
   const reviewBlock = formatReviewContextForAnalysis(reviewContext);

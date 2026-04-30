@@ -14,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import {
   analyzeLeadWithGemini,
+  type AnalysisActiveCampaign,
   type ReviewContextForAnalysis,
 } from "@/lib/gemini";
 import { calculateDeterministicScore } from "@/lib/scoring";
@@ -24,6 +25,69 @@ import type {
   AgentWorkerRun,
   MemoryWrite,
 } from "./types";
+
+/**
+ * Loose case-insensitive match between a lead's niche slugs and a
+ * workspace's target / campaign niche tag. We compare both child
+ * slug and parent slug because reps often filter by parent ("fnb")
+ * while leads land with a child slug ("fnb-bar-club"), and vice
+ * versa.
+ */
+function matchesNiche(
+  lead: { nicheSlug: string | null; subNicheSlug: string | null },
+  candidate: string | null,
+): boolean {
+  if (!candidate) return false;
+  const c = candidate.toLowerCase().trim();
+  if (!c) return false;
+  const a = (lead.subNicheSlug ?? "").toLowerCase();
+  const b = (lead.nicheSlug ?? "").toLowerCase();
+  if (!a && !b) return false;
+  // Direct match either way.
+  if (a === c || b === c) return true;
+  // Hierarchy match — e.g. campaign tag "fnb" should match lead
+  // sub-niche "fnb-bar-club", and campaign tag "fnb-bar-club"
+  // should match a lead whose parent niche is "fnb" only when
+  // the parent is identical to the campaign root.
+  if (a && (a.startsWith(`${c}-`) || c.startsWith(`${a}-`))) return true;
+  if (b && (b.startsWith(`${c}-`) || c.startsWith(`${b}-`))) return true;
+  return false;
+}
+
+/**
+ * Deterministic ICP-fit adjustment — sits next to the prompt-level
+ * rule so a misbehaving Gemini output cannot drop the signal. Returns
+ * the bonus/penalty + the reason code that callers should merge into
+ * `reason_codes`.
+ *
+ * Bonus  : +5  when the lead matches an active campaign niche OR is
+ *              in `targetSubNiches`.
+ * Penalty: -8  when `targetSubNiches` is non-empty AND the lead is
+ *              outside it (and no campaign matches it either).
+ * Neutral:  0  when targetSubNiches is empty AND no campaign matches.
+ */
+function computeIcpFitAdjustment(
+  lead: { nicheSlug: string | null; subNicheSlug: string | null },
+  targetSubNiches: string[],
+  activeCampaigns: AnalysisActiveCampaign[],
+): { delta: number; code: "icp_fit" | "outside_icp" | null; matchedCampaignId: string | null } {
+  const matchedCampaign = activeCampaigns.find((c) => matchesNiche(lead, c.niche));
+  const inTargetList =
+    targetSubNiches.length > 0 &&
+    targetSubNiches.some((slug) => matchesNiche(lead, slug));
+
+  if (matchedCampaign || inTargetList) {
+    return {
+      delta: +5,
+      code: "icp_fit",
+      matchedCampaignId: matchedCampaign?.id ?? null,
+    };
+  }
+  if (targetSubNiches.length > 0) {
+    return { delta: -8, code: "outside_icp", matchedCampaignId: null };
+  }
+  return { delta: 0, code: null, matchedCampaignId: null };
+}
 
 export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   if (!ctx.lead) throw new Error("SALES_OPPORTUNITY_SCORER requires a lead context");
@@ -98,17 +162,41 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     // package_id from the rep's actual price card instead of inventing
     // generic STARTER/GROWTH/SALES copy. Empty list -> prompt falls
     // back to the legacy enum, so non-FineDine tenants stay unaffected.
-    const servicePackages = await prisma.servicePackage.findMany({
-      where: { workspaceId: ctx.workspace.id },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      select: {
-        id: true,
-        name: true,
-        priceLabel: true,
-        features: true,
-        isPopular: true,
-      },
-    });
+    // Also load the workspace's full personalization context (target
+    // sub-niches) and the live sales campaigns (Sequences) so the
+    // analyst can reward leads that fit what THIS team actually sells
+    // and is currently running outbound for.
+    const [servicePackages, workspaceFull, activeSequences] = await Promise.all([
+      prisma.servicePackage.findMany({
+        where: { workspaceId: ctx.workspace.id },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        select: {
+          id: true,
+          name: true,
+          priceLabel: true,
+          features: true,
+          isPopular: true,
+        },
+      }),
+      prisma.workspace.findUnique({
+        where: { id: ctx.workspace.id },
+        select: { targetSubNiches: true },
+      }),
+      prisma.sequence.findMany({
+        where: { workspaceId: ctx.workspace.id, archivedAt: null },
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+        select: { id: true, name: true, niche: true, description: true },
+      }),
+    ]);
+
+    const targetSubNiches = workspaceFull?.targetSubNiches ?? [];
+    const activeCampaigns: AnalysisActiveCampaign[] = activeSequences.map((s) => ({
+      id: s.id,
+      name: s.name,
+      niche: s.niche ?? null,
+      description: s.description ?? null,
+    }));
 
     const analysis = await analyzeLeadWithGemini(
       lead.businessName,
@@ -126,8 +214,27 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         subNicheSlug: effectiveSubNiche,
         subNicheConfidence: effectiveSubNicheConfidence,
         servicePackages,
+        // Personalization signals — see `AnalysisWorkspaceContext`.
+        objective: ctx.workspace.objective ?? null,
+        tone: ctx.workspace.tone ?? null,
+        offerHook: ctx.workspace.offerHook ?? null,
+        socialProof: ctx.workspace.socialProof ?? null,
+        senderName: ctx.workspace.senderName ?? null,
+        targetSubNiches,
+        activeCampaigns,
       },
       reviewContext,
+    );
+
+    // Deterministic ICP-fit adjustment. Sits next to the prompt-level
+    // rule so reps see the same bonus/penalty regardless of Gemini's
+    // mood. Applied to the BLENDED final score (after the 0.4/0.6
+    // blend) and merged into reason_codes so the UI can render a
+    // chip ("ICP fit" / "Outside ICP") off a single signal.
+    const icpAdjustment = computeIcpFitAdjustment(
+      { nicheSlug: lead.nicheSlug, subNicheSlug: lead.subNicheSlug },
+      targetSubNiches,
+      activeCampaigns,
     );
 
     // Validate the package id Gemini returned: it must match an id
@@ -148,11 +255,25 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         : null
       : null;
 
-    const finalScore = Math.min(
-      100,
-      Math.round(deterministicScore * 0.4 + analysis.opportunity_score * 0.6),
+    const blendedScore = Math.round(
+      deterministicScore * 0.4 + analysis.opportunity_score * 0.6,
     );
-    const mergedReasons = Array.from(new Set([...reasons, ...analysis.reason_codes]));
+    // Apply the deterministic ICP-fit delta on top of the blend, then
+    // clamp to [0, 100]. Gemini may also have applied its own bonus
+    // via the prompt rule — that double-counts intentionally, since
+    // it represents "the analyst chose this lead because it fits the
+    // ICP" PLUS "math says it does", which is the exact intent.
+    const finalScore = Math.max(
+      0,
+      Math.min(100, blendedScore + icpAdjustment.delta),
+    );
+    const mergedReasons = Array.from(
+      new Set([
+        ...reasons,
+        ...analysis.reason_codes,
+        ...(icpAdjustment.code ? [icpAdjustment.code] : []),
+      ]),
+    );
 
     // suggestedOffer + expectedPriceBand are deprecated (P0.4). The
     // dossier owns the package recommendation now; the column survives
@@ -190,7 +311,14 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       data: { analyzeStatus: "ANALYZED" },
     });
 
-    logger.info("agent_workers.scorer.done", { leadId, score: finalScore });
+    logger.info("agent_workers.scorer.done", {
+      leadId,
+      score: finalScore,
+      blendedScore,
+      icpDelta: icpAdjustment.delta,
+      icpCode: icpAdjustment.code,
+      matchedCampaignId: icpAdjustment.matchedCampaignId,
+    });
 
     return {
       output: {
@@ -202,6 +330,13 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         personalizedFirstMessage: analysis.personalized_first_message,
         recommendedPackageId,
         recommendedPackageReason,
+        // Surface ICP fit so the UI can render "Enroll in <campaign>"
+        // and the leads list can filter on icp_fit / outside_icp.
+        icpFit: {
+          delta: icpAdjustment.delta,
+          code: icpAdjustment.code,
+          matchedCampaignId: icpAdjustment.matchedCampaignId,
+        },
       },
       costTokens: Math.ceil(JSON.stringify(analysis).length / 4),
     };
