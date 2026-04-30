@@ -1,7 +1,11 @@
-# Posts GitHub issue activity to Slack via an Incoming Webhook.
-# Configure: Repo → Settings → Secrets and variables → Actions → New repository secret
-#   Name:  SLACK_ISSUES_WEBHOOK_URL
-#   Value: https://hooks.slack.com/services/... (from Slack app / Incoming Webhooks)
+# Posts GitHub issue activity to Slack (Incoming Webhook).
+#
+# Important:
+# - This workflow only runs when this file exists on the repository DEFAULT branch (e.g. main).
+# - Secret must be repo-level Actions secret (not Dependabot-only):
+#     Settings → Secrets and variables → Actions → New repository secret
+#       Name:  SLACK_ISSUES_WEBHOOK_URL
+#       Value: https://hooks.slack.com/services/...
 
 name: GitHub issues → Slack
 
@@ -19,6 +23,9 @@ on:
       - assigned
       - unassigned
 
+permissions:
+  contents: read
+
 jobs:
   notify:
     runs-on: ubuntu-latest
@@ -33,18 +40,41 @@ jobs:
           REPO: ${{ github.repository }}
           ACTOR: ${{ github.event.sender.login }}
         run: |
+          set -euo pipefail
           if [ -z "${SLACK_WEBHOOK_URL}" ]; then
-            echo "::notice::SLACK_ISSUES_WEBHOOK_URL is not set; skipping Slack notify."
-            exit 0
+            echo "::error::Missing repo secret SLACK_ISSUES_WEBHOOK_URL — add under Settings → Secrets and variables → Actions."
+            exit 1
           fi
-          BODY=$(jq -n \
-            --arg action "$ISSUE_ACTION" \
-            --arg num "$ISSUE_NUM" \
-            --arg title "$ISSUE_TITLE" \
-            --arg url "$ISSUE_URL" \
-            --arg repo "$REPO" \
-            --arg actor "$ACTOR" \
-            '{
-              text: ("*" + ($action | ascii_upcase) + "* issue [#" + $num + " " + $title + "](" + $url + ") — `" + $repo + "` — @" + $actor)
-            }')
-          curl -fsS -X POST -H 'Content-Type: application/json' -d "$BODY" "$SLACK_WEBHOOK_URL"
+          python3 << 'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          action = os.environ["ISSUE_ACTION"].upper()
+          num = os.environ["ISSUE_NUM"]
+          title = os.environ["ISSUE_TITLE"]
+          url = os.environ["ISSUE_URL"]
+          repo = os.environ["REPO"]
+          actor = os.environ["ACTOR"]
+          text = f"*{action}* issue [#{num} {title}]({url}) — `{repo}` — @{actor}"
+          body = json.dumps({"text": text}).encode("utf-8")
+
+          webhook = os.environ["SLACK_WEBHOOK_URL"]
+          req = urllib.request.Request(
+              webhook,
+              data=body,
+              method="POST",
+              headers={"Content-Type": "application/json; charset=utf-8"},
+          )
+          try:
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  raw = resp.read().decode("utf-8", errors="replace")
+                  if raw:
+                      print("Slack:", raw[:500])
+                  print("HTTP", resp.status)
+          except urllib.error.HTTPError as e:
+              detail = e.read().decode("utf-8", errors="replace") or str(e)
+              print("::error::Slack HTTP", e.code, detail[:2000])
+              raise SystemExit(1) from None
+          PY
