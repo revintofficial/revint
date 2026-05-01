@@ -103,6 +103,83 @@
   --border-light: hsl(var(--leadac-h) var(--leadac-ns) 35% / 0.35);
   --separator: hsl(var(--leadac-h) var(--leadac-ns) 35% / 0.65);
   --separator-opaque: var(--leadac-border);
+
+  /* -------------------------------------------------------------------
+   * Mobile / tablet UX tokens (see plan: leadac_mobile_ux_plan).
+   * Apple HIG + Material 3 + WCAG 2.2 AA-aligned. Single source of truth
+   * mirrored in src/lib/tokens.ts so React Native consumers can reuse.
+   * ----------------------------------------------------------------- */
+
+  /* 8pt spacing scale (semantic, Apple HIG-compatible) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+  --space-9: 64px;
+  --space-10: 80px;
+  --space-11: 96px;
+  --space-12: 128px;
+
+  /* Radius scale */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* Motion: durations + easing curves (Apple "smooth", Material "emphasized") */
+  --motion-fast: 150ms;
+  --motion-base: 250ms;
+  --motion-slow: 400ms;
+  --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --motion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Touch targets — 44pt minimum (Apple HIG = WCAG 2.2 AAA) */
+  --touch-target-min: 44px;
+  --touch-target-large: 56px;
+
+  /* Mobile chrome dimensions */
+  --app-bar-height: 56px;
+  --tab-bar-height: 64px;
+  --fab-size: 56px;
+
+  /* Bottom sheet snap points */
+  --sheet-snap-min: 25vh;
+  --sheet-snap-mid: 50vh;
+  --sheet-snap-max: 92vh;
+
+  /* Mobile typography scale (semantic; iPad bumps body via @media) */
+  --text-display: clamp(28px, 6vw, 34px);
+  --text-title-1: clamp(22px, 5vw, 28px);
+  --text-title-2: 20px;
+  --text-title-3: 18px;
+  --text-body: 17px;
+  --text-callout: 16px;
+  --text-subhead: 15px;
+  --text-footnote: 13px;
+  --text-caption: 12px;
+
+  /* Z-index layers (mobile chrome) */
+  --z-tab-bar: 50;
+  --z-app-bar: 50;
+  --z-fab: 45;
+  --z-sheet: 60;
+  --z-modal: 70;
+  --z-toast: 80;
+}
+
+/* iPad bumps body/callout one notch for comfortable reading */
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root {
+    --text-body: 18px;
+    --text-callout: 17px;
+  }
 }
 
 @theme inline {
@@ -147,6 +224,64 @@ body {
 .safe-pr { padding-right: env(safe-area-inset-right); }
 .safe-mt { margin-top: env(safe-area-inset-top); }
 .safe-mb { margin-bottom: env(safe-area-inset-bottom); }
+
+/* Page padding that accounts for mobile bottom tab bar (only on phone) */
+.pb-tabbar { padding-bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom)); }
+@media (min-width: 768px) {
+  .pb-tabbar { padding-bottom: 0; }
+}
+
+/* Floating-action-button position that lifts above the bottom tab bar on
+ * phone but sits at the standard 20px corner on tablet+ where there is no
+ * tab bar. Used by the Copilot FAB and the Discovery FAB. */
+.fab-above-tabbar {
+  bottom: calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + 16px);
+}
+@media (min-width: 768px) {
+  .fab-above-tabbar {
+    bottom: 1.25rem;
+  }
+}
+
+/* Touch-target enforcement for icon-only buttons */
+.touch-target {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile-only / tablet-only utilities (Tailwind v4 doesn't ship "phone:") */
+@media (min-width: 768px) {
+  .phone-only { display: none !important; }
+}
+@media (max-width: 767px) {
+  .tablet-up-only { display: none !important; }
+}
+@media (max-width: 767px), (min-width: 1024px) {
+  .tablet-only { display: none !important; }
+}
+
+/* Native-feel scroll snap for segmented sections */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: var(--space-4);
+}
+.scroll-snap-x > * { scroll-snap-align: start; }
+
+/* Reduce motion globally — honored by all .animate-* utilities below */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* Block iOS Safari from auto-zooming on input focus when font-size < 16px */
 @media (max-width: 640px) {
@@ -342,6 +477,18 @@ body {
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes sheet-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes sheet-slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .animate-slide-in { animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }

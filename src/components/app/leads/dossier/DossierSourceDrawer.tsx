@@ -64,19 +64,33 @@ export function DossierSourceDrawer({
         />
         <DialogPrimitive.Content
           className={cn(
-            "fixed right-0 top-0 z-50 h-screen w-full max-w-[480px] flex flex-col",
+            // Phone: bottom-sheet (92vh, slides up). Tablet+: right side drawer.
+            "fixed left-0 right-0 bottom-0 max-h-[92vh] rounded-t-2xl flex flex-col z-50 safe-pb",
+            "md:left-auto md:right-0 md:top-0 md:bottom-0 md:max-h-none md:h-screen md:w-full md:max-w-[480px] md:rounded-none md:safe-pb-0",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right",
+            "data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
+            "md:data-[state=open]:slide-in-from-right md:data-[state=closed]:slide-out-to-right",
             "duration-200",
           )}
           style={{
             background: "hsl(var(--leadac-h) var(--leadac-ns) 10% / 0.98)",
             backdropFilter: "saturate(180%) blur(30px)",
             WebkitBackdropFilter: "saturate(180%) blur(30px)",
-            borderLeft: "0.5px solid hsl(0 0% 100% / 0.12)",
-            boxShadow: "-20px 0 60px rgba(0, 0, 0, 0.5)",
+            border: "0.5px solid hsl(0 0% 100% / 0.12)",
+            boxShadow: "0 -8px 60px rgba(0, 0, 0, 0.5)",
           }}
         >
+          {/* Phone-only drag handle for visual affordance */}
+          <div className="md:hidden flex justify-center pt-2 pb-1" aria-hidden="true">
+            <div
+              className="rounded-full"
+              style={{
+                width: "36px",
+                height: "5px",
+                background: "hsl(0 0% 100% / 0.25)",
+              }}
+            />
+          </div>
           {/* Header */}
           <div className="px-5 pt-5 pb-4 border-b border-white/8 flex items-start gap-3">
             <span

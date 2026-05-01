@@ -60,6 +60,16 @@ interface LocationPickerProps {
   className?: string;
   placeholder?: string;
   disabled?: boolean;
+  /**
+   * Optional escape hatch: when Google returns zero suggestions for
+   * the current query (typo, obscure neighbourhood, novel spelling),
+   * the no-results state shows a "Use as approximate text" button.
+   * Clicking it forwards the typed string to this callback so the
+   * parent can shove it into the legacy free-text fallback path —
+   * otherwise the user is stuck typing the same string twice into
+   * two different inputs.
+   */
+  onFallbackText?: (text: string) => void;
 }
 
 /**
@@ -91,6 +101,7 @@ export function LocationPicker({
   className,
   placeholder = "Search a city, district, or neighbourhood…",
   disabled,
+  onFallbackText,
 }: LocationPickerProps) {
   const [input, setInput] = useState("");
   const [suggestions, setSuggestions] = useState<AutocompleteSuggestion[]>([]);
@@ -125,7 +136,6 @@ export function LocationPicker({
   // one (classic input-race bug).
   useEffect(() => {
     const trimmed = input.trim();
-    console.log("[LocationPicker] effect fired", { input: trimmed, len: trimmed.length, regionCode, languageCode });
     if (trimmed.length < MIN_QUERY_LEN) {
       setSuggestions([]);
       setLoadingSuggestions(false);
@@ -134,9 +144,7 @@ export function LocationPicker({
     const seq = ++requestSeqRef.current;
     setLoadingSuggestions(true);
     setError(null);
-    console.log("[LocationPicker] timer scheduled", { seq, query: trimmed });
     const timer = setTimeout(async () => {
-      console.log("[LocationPicker] timer fired -> fetch", { seq, query: trimmed });
       try {
         const res = await fetch("/api/places/autocomplete", {
           method: "POST",
@@ -148,7 +156,6 @@ export function LocationPicker({
             languageCode,
           }),
         });
-        console.log("[LocationPicker] fetch returned", { seq, status: res.status });
         if (seq !== requestSeqRef.current) return;
         if (!res.ok) {
           setSuggestions([]);
@@ -160,12 +167,10 @@ export function LocationPicker({
           return;
         }
         const data = (await res.json()) as { suggestions?: AutocompleteSuggestion[] };
-        console.log("[LocationPicker] parsed", { seq, count: data.suggestions?.length ?? 0 });
         if (seq !== requestSeqRef.current) return;
         setSuggestions(data.suggestions ?? []);
         setActiveIndex(0);
-      } catch (err) {
-        console.error("[LocationPicker] fetch error", err);
+      } catch {
         if (seq !== requestSeqRef.current) return;
         setSuggestions([]);
         setError("Couldn't load suggestions.");
@@ -175,10 +180,7 @@ export function LocationPicker({
         }
       }
     }, DEBOUNCE_MS);
-    return () => {
-      console.log("[LocationPicker] cleanup -> clearTimeout", { seq });
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, [input, regionCode, languageCode]);
 
   const pickSuggestion = useCallback(
@@ -273,6 +275,28 @@ export function LocationPicker({
     return `Picked ${value.length} of ${maxLocations}. Add more or remove with the X.`;
   }, [maxLocations, reachedMax, value.length]);
 
+  // "No matches" guard — only fires once we know Google answered (not
+  // loading), the user passed the minimum query length, and there's
+  // nothing to render. Without this branch the dropdown silently
+  // closes and the user has no idea their typo (e.g. "Nothingham")
+  // didn't match anything.
+  const trimmedInput = input.trim();
+  const showNoResults =
+    !loadingSuggestions &&
+    !error &&
+    suggestions.length === 0 &&
+    trimmedInput.length >= MIN_QUERY_LEN;
+
+  const promoteToFallback = useCallback(() => {
+    if (!onFallbackText) return;
+    const text = trimmedInput;
+    if (!text) return;
+    onFallbackText(text);
+    setInput("");
+    setSuggestions([]);
+    setOpen(false);
+  }, [onFallbackText, trimmedInput]);
+
   return (
     <div ref={containerRef} className={cn("relative", className)}>
       {/* Chips + input row. Chips render above the input field; the
@@ -340,9 +364,14 @@ export function LocationPicker({
       </div>
 
       {/* Suggestions dropdown. Positioned absolutely below the row.
-          Hidden when there's nothing to show (closed, no query, or no
-          results). */}
-      {open && (suggestions.length > 0 || loadingSuggestions || error) && (
+          Renders whenever there's something useful to show — including
+          a "no matches" state so the user gets feedback when their
+          query doesn't resolve (instead of staring at silence). */}
+      {open &&
+        (suggestions.length > 0 ||
+          loadingSuggestions ||
+          error ||
+          showNoResults) && (
         <div
           className="absolute left-0 right-0 mt-1.5 rounded-xl overflow-hidden shadow-lg z-30"
           style={{
@@ -360,6 +389,36 @@ export function LocationPicker({
             <div className="px-3 py-2 text-[12px] text-white/40 flex items-center gap-2">
               <Loader2 className="w-3 h-3 animate-spin" />
               Searching places…
+            </div>
+          )}
+          {showNoResults && (
+            <div className="px-3 py-2.5 text-[12px] text-white/55 space-y-2">
+              <div>
+                No matches for{" "}
+                <span className="text-white/80">&ldquo;{trimmedInput}&rdquo;</span>{" "}
+                — check the spelling, or use the typed text below for an
+                approximate geocode.
+              </div>
+              {/* Only offer fallback when no chips are picked — the
+                  Discovery API uses chips XOR free-text, never both,
+                  so showing this with chips already in place would
+                  silently no-op. */}
+              {onFallbackText && value.length === 0 && (
+                <button
+                  type="button"
+                  onClick={promoteToFallback}
+                  className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] text-white transition-colors"
+                  style={{
+                    backgroundColor:
+                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16)",
+                    borderColor:
+                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.36)",
+                  }}
+                >
+                  <MapPin className="w-3 h-3" />
+                  Use &ldquo;{trimmedInput}&rdquo; as approximate text
+                </button>
+              )}
             </div>
           )}
           {suggestions.map((s, idx) => {

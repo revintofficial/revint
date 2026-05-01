@@ -44,22 +44,17 @@ const CACHE_VERSION = "v1";
 // `restaurant`, `point_of_interest`) is a business, not a place to
 // search inside, and would defeat the whole purpose of the picker.
 //
-// Google's "(cities)" / "(regions)" group filters from the legacy API
-// don't exist on the new API; you list specific primary types or use
-// the broader `regions` umbrella. We use explicit types so we get
-// admin levels 1-3 + locality + sublocality + postal_code, which
-// covers everything from a country to a neighbourhood worldwide.
-const INCLUDED_PRIMARY_TYPES = [
-  "country",
-  "administrative_area_level_1",
-  "administrative_area_level_2",
-  "administrative_area_level_3",
-  "locality",
-  "sublocality",
-  "sublocality_level_1",
-  "neighborhood",
-  "postal_code",
-];
+// Google Places API (New) caps `includedPrimaryTypes` at FIVE explicit
+// values (Table A/B) and otherwise rejects the request with
+// INVALID_REQUEST — that was the original "No matches for istanbul" bug
+// where a 9-entry list silently 400'd every autocomplete call. The
+// `(regions)` type collection is the supported escape hatch: it bundles
+// `locality`, `sublocality`, `postal_code`, `country`,
+// `administrative_area_level_1`, and `administrative_area_level_2`,
+// which is exactly the city / district / postcode coverage we want
+// worldwide. Type collections must be passed alone, not mixed with
+// explicit types.
+const INCLUDED_PRIMARY_TYPES = ["(regions)"];
 
 const MEMORY_CACHE_MAX = 500;
 type MemoryEntry<T> = { value: T; expiresAt: number };

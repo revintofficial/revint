@@ -20,6 +20,14 @@ function bar(used: number, limit: number) {
   return { pct, color };
 }
 
+// Number.toLocaleString() picks up the runtime's default locale, which
+// differs between Node (en-US) and a Turkish/non-English browser (tr-TR
+// → "1.000" instead of "1,000"). That mismatch fires React error #418
+// during hydration, which tears down the whole client tree and breaks
+// effects mid-render (e.g. cancels the LocationPicker debounce timer).
+// Pinning the locale keeps SSR and CSR byte-identical.
+const NUM_FMT = new Intl.NumberFormat("en-US");
+
 export function UsageBadge({ usage }: UsageBadgeProps) {
   const leads = bar(usage.leadsUsed, usage.leadsLimit);
   const ai = bar(usage.aiUsed, usage.aiLimit);
@@ -48,7 +56,7 @@ export function UsageBadge({ usage }: UsageBadgeProps) {
           <div className="flex items-center justify-between text-[10.5px] mb-0.5">
             <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)" }}>Leads</span>
             <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.7)" }}>
-              {usage.leadsUsed.toLocaleString()} / {usage.leadsLimit.toLocaleString()}
+              {NUM_FMT.format(usage.leadsUsed)} / {NUM_FMT.format(usage.leadsLimit)}
             </span>
           </div>
           <div
@@ -65,7 +73,7 @@ export function UsageBadge({ usage }: UsageBadgeProps) {
           <div className="flex items-center justify-between text-[10.5px] mb-0.5">
             <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)" }}>AI credits</span>
             <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.7)" }}>
-              {usage.aiUsed.toLocaleString()} / {usage.aiLimit.toLocaleString()}
+              {NUM_FMT.format(usage.aiUsed)} / {NUM_FMT.format(usage.aiLimit)}
             </span>
           </div>
           <div

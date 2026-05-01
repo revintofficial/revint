@@ -15,6 +15,8 @@ import {
   PanelLeft,
   Menu,
   X,
+  Bell,
+  MoreHorizontal,
   Command as CommandIcon,
 } from "lucide-react";
 import { UserMenu } from "@/components/app/user-menu";
@@ -23,6 +25,12 @@ import { CommandPalette } from "@/components/app/command-palette";
 import { UsageBadge } from "@/components/app/usage-badge";
 import { UpgradeBanner } from "@/components/app/upgrade-banner";
 import { CopilotDrawer } from "@/components/app/copilot-drawer";
+import {
+  BottomTabBar,
+  type BottomTabItem,
+} from "@/components/ui/bottom-tab-bar";
+import { AppBarIconButton } from "@/components/ui/app-bar";
+import { NotificationsSheet } from "@/components/app/notifications-sheet";
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 type NavGroup = { label: string; items: NavItem[] };
@@ -54,6 +62,16 @@ const NAV_GROUPS: NavGroup[] = [
 
 const ALL_LINKS = NAV_GROUPS.flatMap((g) => g.items);
 
+// 5-tab bottom navigation for phone (≤640px). Apple HIG / NN/g recommend
+// 3–5 visible primary destinations; everything else lives under "More".
+const PHONE_TABS: BottomTabItem[] = [
+  { href: "/app/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/app/leads", label: "Leads", icon: Users },
+  { href: "/app/discovery", label: "Discover", icon: Search },
+  { href: "/app/deals", label: "Deals", icon: GitBranch },
+  { href: "/app/more", label: "More", icon: MoreHorizontal, match: "/app/more" },
+];
+
 export interface AppShellProps {
   user: {
     id: string;
@@ -81,16 +99,37 @@ export interface AppShellProps {
 
 export function AppShell({ user, workspace, role, usage, children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // On tablet (md..lg) we collapse the sidebar to icons-only by default to
+  // give the master/detail layouts more horizontal room. Persist the user
+  // toggle in localStorage so it sticks across reloads.
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    const stored = localStorage.getItem("leadac.sidebar.collapsed");
+    if (stored === "1") setCollapsed(true);
+    else if (stored === "0") setCollapsed(false);
+    else if (typeof window !== "undefined") {
+      // Default: collapsed on tablet, expanded on desktop
+      setCollapsed(window.matchMedia("(max-width: 1023px)").matches);
+    }
+  }, []);
+
+  const toggleCollapse = useCallback(() => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("leadac.sidebar.collapsed", next ? "1" : "0");
+      return next;
+    });
+  }, []);
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
   // Close on route change. The lint rule `react-hooks/set-state-in-effect`
   // discourages this pattern, but reacting to a route change is exactly the
-  // sync-with-external-system case the rule allows. We pass the close handler
-  // as an explicit dep to satisfy exhaustive-deps.
+  // sync-with-external-system case the rule allows.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     closeSidebar();
@@ -119,8 +158,12 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
     ALL_LINKS.find((l) =>
       l.href === "/app/dashboard"
         ? pathname === "/app/dashboard"
-        : pathname.startsWith(l.href)
+        : pathname.startsWith(l.href),
     )?.label || "Leadac AI";
+
+  // Hide the bottom tab bar on detail screens that own the bottom (the
+  // /app/leads/[id] page renders its own sticky action bar there).
+  const hideTabBarOnDetail = /^\/app\/leads\/[^/]+$/.test(pathname);
 
   return (
     <div
@@ -147,39 +190,63 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
         navItems={ALL_LINKS}
       />
 
-      {/* P1.2 - AI sales co-pilot floating drawer */}
+      <NotificationsSheet open={notifOpen} onOpenChange={setNotifOpen} />
+
       <CopilotDrawer />
 
-      {/* Mobile top bar */}
+      {/* Phone top bar (visible <md) — replaces hamburger sidebar trigger.
+          Sidebar still available via a "Workspace" sheet from the left, but
+          primary nav lives in the bottom tab bar. */}
       <div
-        className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-4 py-3 md:hidden safe-pt"
+        className="fixed top-0 left-0 right-0 z-40 flex items-center gap-1 px-2 md:hidden safe-pt"
         style={{
           background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.85)",
           backdropFilter: "saturate(180%) blur(30px)",
           WebkitBackdropFilter: "saturate(180%) blur(30px)",
-          borderBottom: "0.5px solid rgba(255, 255, 255, 0.08)",
+          borderBottom: "0.5px solid hsl(0 0% 100% / 0.08)",
+          minHeight: "var(--app-bar-height)",
         }}
       >
         <button
           onClick={() => setSidebarOpen(true)}
-          className="rounded-lg p-1.5 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
-          style={{ color: "var(--leadac-text-2)" }}
-          aria-label="Open navigation menu"
+          className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
+          style={{ color: "var(--leadac-text-1)" }}
+          aria-label="Open workspace menu"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-5 h-5" strokeWidth={2.25} />
         </button>
-        <Link href="/app/dashboard" className="flex items-center gap-2">
+        <Link
+          href="/app/dashboard"
+          className="flex items-center gap-2 flex-1 min-w-0 px-2 touch-target"
+          aria-label="Leadac AI home"
+        >
           <Image
             src="/logo.png"
             alt=""
             width={28}
             height={28}
-            className="w-7 h-7 object-contain"
+            className="w-7 h-7 object-contain shrink-0"
           />
-          <h1 className="text-base font-semibold tracking-tight text-white">
-            Leadac AI
+          <h1
+            className="font-semibold tracking-tight text-white truncate"
+            style={{
+              fontSize: "var(--text-title-3)",
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {currentPageName}
           </h1>
         </Link>
+        <AppBarIconButton
+          icon={Bell}
+          label="Notifications"
+          onClick={() => setNotifOpen(true)}
+        />
+        <AppBarIconButton
+          icon={Search}
+          label="Search"
+          onClick={() => setPaletteOpen(true)}
+        />
       </div>
 
       {/* Mobile overlay */}
@@ -191,7 +258,7 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — phone (off-canvas), tablet (collapsed icons), desktop (full) */}
       <aside
         className={`fixed md:relative z-50 md:z-10 h-full transition-transform duration-300 ease-in-out ${
           collapsed ? "md:w-[80px]" : "md:w-[260px]"
@@ -208,12 +275,13 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
               border: "0.5px solid hsl(0 0% 100% / 0.08)",
             }}
           >
-            {/* Logo */}
             <div
               className="px-4 pt-5 pb-4"
               style={{ borderBottom: "0.5px solid hsl(0 0% 100% / 0.06)" }}
             >
-              <div className={`flex items-center ${collapsed ? "md:justify-center" : "gap-2.5"}`}>
+              <div
+                className={`flex items-center ${collapsed ? "md:justify-center" : "gap-2.5"}`}
+              >
                 <Link
                   href="/app/dashboard"
                   className="relative flex items-center justify-center w-9 h-9 rounded-xl shrink-0 focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
@@ -240,7 +308,7 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                 </div>
                 <button
                   onClick={closeSidebar}
-                  className="rounded-lg p-1 hover:bg-white/10 md:hidden focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
+                  className="touch-target rounded-lg hover:bg-white/10 md:hidden focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
                   style={{ color: "var(--leadac-text-2)" }}
                   aria-label="Close navigation menu"
                 >
@@ -248,7 +316,6 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                 </button>
               </div>
 
-              {/* Search / command palette trigger */}
               <button
                 onClick={() => setPaletteOpen(true)}
                 className={`mt-4 flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-(--leadac-500) ${
@@ -257,10 +324,14 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                 style={{
                   background: "hsl(0 0% 100% / 0.04)",
                   border: "0.5px solid hsl(0 0% 100% / 0.06)",
+                  minHeight: "36px",
                 }}
                 aria-label="Open command palette"
               >
-                <Search className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--leadac-text-3)" }} />
+                <Search
+                  className="w-3.5 h-3.5 shrink-0"
+                  style={{ color: "var(--leadac-text-3)" }}
+                />
                 <span
                   className={`flex-1 text-[12.5px] ${collapsed ? "md:hidden" : ""}`}
                   style={{ color: "var(--leadac-text-3)" }}
@@ -279,8 +350,10 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
               </button>
             </div>
 
-            {/* Navigation */}
-            <nav className="flex-1 px-2 py-3 overflow-y-auto scrollbar-hide" aria-label="Main">
+            <nav
+              className="flex-1 px-2 py-3 overflow-y-auto scrollbar-hide"
+              aria-label="Main"
+            >
               {NAV_GROUPS.map((group) => (
                 <div key={group.label} className="mb-3 last:mb-0">
                   <p
@@ -297,14 +370,18 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                           key={link.href}
                           href={link.href}
                           aria-current={isActive ? "page" : undefined}
+                          title={collapsed ? link.label : undefined}
                           className={`group flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-(--leadac-500) ${
                             isActive ? "leadac-sidebar-active" : ""
                           } ${collapsed ? "md:justify-center md:px-2" : ""}`}
+                          style={{ minHeight: "40px" }}
                         >
                           <link.icon
                             className="w-4 h-4 shrink-0 transition-colors"
                             style={{
-                              color: isActive ? "var(--leadac-300)" : "var(--leadac-text-2)",
+                              color: isActive
+                                ? "var(--leadac-300)"
+                                : "var(--leadac-text-2)",
                               strokeWidth: 2,
                             }}
                             aria-hidden="true"
@@ -312,7 +389,9 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                           <span
                             className={`text-[13.5px] flex-1 truncate ${collapsed ? "md:hidden" : ""}`}
                             style={{
-                              color: isActive ? "var(--leadac-text-1)" : "var(--leadac-text-2)",
+                              color: isActive
+                                ? "var(--leadac-text-1)"
+                                : "var(--leadac-text-2)",
                               fontWeight: isActive ? 600 : 450,
                             }}
                           >
@@ -326,22 +405,25 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
               ))}
             </nav>
 
-            {/* Footer: usage + user menu */}
             <div
               className="px-3 py-3 space-y-2"
               style={{ borderTop: "0.5px solid hsl(0 0% 100% / 0.06)" }}
             >
-              {usage && !collapsed && (
-                <UsageBadge usage={usage} />
-              )}
+              {usage && !collapsed && <UsageBadge usage={usage} />}
 
-              <UserMenu user={user} workspace={workspace} role={role} collapsed={collapsed} />
+              <UserMenu
+                user={user}
+                workspace={workspace}
+                role={role}
+                collapsed={collapsed}
+              />
 
               <button
-                onClick={() => setCollapsed(!collapsed)}
+                onClick={toggleCollapse}
                 className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs hover:bg-white/5 w-full focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
                 style={{ color: "var(--leadac-muted)" }}
                 aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               >
                 {collapsed ? (
                   <PanelLeft className="w-3.5 h-3.5 shrink-0" />
@@ -379,6 +461,14 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
             </div>
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setNotifOpen(true)}
+                className="touch-target rounded-md text-[12px] focus-visible:outline-2 focus-visible:outline-(--leadac-500) hover:bg-white/5"
+                style={{ color: "var(--leadac-text-2)" }}
+                aria-label="Notifications"
+              >
+                <Bell className="w-4 h-4" />
+              </button>
+              <button
                 onClick={() => setPaletteOpen(true)}
                 className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-md text-[12px] focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
                 style={{
@@ -397,19 +487,24 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
           </div>
         </header>
 
-        {usage && (usage.leadsUsed / usage.leadsLimit > 0.8 || usage.aiUsed / usage.aiLimit > 0.8) && (
-          <div className="mx-4 sm:mx-4 mt-3">
-            <UpgradeBanner usage={usage} />
-          </div>
-        )}
+        {usage &&
+          (usage.leadsUsed / usage.leadsLimit > 0.8 ||
+            usage.aiUsed / usage.aiLimit > 0.8) && (
+            <div className="mx-4 sm:mx-4 mt-3">
+              <UpgradeBanner usage={usage} />
+            </div>
+          )}
 
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+56px)] md:pt-0 safe-pb"
+          className="flex-1 overflow-y-auto pt-[calc(env(safe-area-inset-top)+56px)] md:pt-0 pb-tabbar"
         >
           <div className="animate-fade-in">{children}</div>
         </main>
       </div>
+
+      {/* Phone bottom tab bar (always rendered <md, hidden via CSS otherwise) */}
+      {!hideTabBarOnDetail && <BottomTabBar items={PHONE_TABS} />}
     </div>
   );
 }

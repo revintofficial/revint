@@ -266,45 +266,52 @@ export default async function SeoDashboardPage() {
           </CardHeader>
           <CardContent>
             {queries && queries.rows.length > 0 ? (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs uppercase tracking-wide text-white/50">
-                    <th className="pb-2">Query</th>
-                    <th className="pb-2 text-right">Clicks</th>
-                    <th className="pb-2 text-right">Impr.</th>
-                    <th className="pb-2 text-right">CTR</th>
-                    <th className="pb-2 text-right">Pos.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {queries.rows
-                    .slice()
-                    .sort((a, b) => b.clicks - a.clicks)
-                    .slice(0, 20)
-                    .map((row, i) => (
-                      <tr
-                        key={`${row.keys[0]}-${i}`}
-                        className="border-t border-white/5"
-                      >
-                        <td className="py-1.5 pr-2 text-white/90">
-                          {row.keys[0]}
-                        </td>
-                        <td className="py-1.5 text-right text-white/70">
-                          {row.clicks}
-                        </td>
-                        <td className="py-1.5 text-right text-white/50">
-                          {row.impressions}
-                        </td>
-                        <td className="py-1.5 text-right text-white/50">
-                          {(row.ctr * 100).toFixed(1)}%
-                        </td>
-                        <td className="py-1.5 text-right text-white/70">
-                          {row.position.toFixed(1)}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+              // Horizontal scroll on phone keeps tabular columns readable
+              // instead of squeezing them; sticky first column means the
+              // user always sees what query a row belongs to.
+              <div className="-mx-4 sm:mx-0 overflow-x-auto">
+                <table className="w-full min-w-[460px] text-sm px-4 sm:px-0">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wide text-white/50">
+                      <th className="pb-2 sticky left-0 bg-(--leadac-card) z-10">
+                        Query
+                      </th>
+                      <th className="pb-2 text-right">Clicks</th>
+                      <th className="pb-2 text-right">Impr.</th>
+                      <th className="pb-2 text-right">CTR</th>
+                      <th className="pb-2 text-right">Pos.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {queries.rows
+                      .slice()
+                      .sort((a, b) => b.clicks - a.clicks)
+                      .slice(0, 20)
+                      .map((row, i) => (
+                        <tr
+                          key={`${row.keys[0]}-${i}`}
+                          className="border-t border-white/5"
+                        >
+                          <td className="py-1.5 pr-3 text-white/90 sticky left-0 bg-(--leadac-card) z-10">
+                            {row.keys[0]}
+                          </td>
+                          <td className="py-1.5 text-right text-white/70 tabular-nums">
+                            {row.clicks}
+                          </td>
+                          <td className="py-1.5 text-right text-white/50 tabular-nums">
+                            {row.impressions}
+                          </td>
+                          <td className="py-1.5 text-right text-white/50 tabular-nums">
+                            {(row.ctr * 100).toFixed(1)}%
+                          </td>
+                          <td className="py-1.5 text-right text-white/70 tabular-nums">
+                            {row.position.toFixed(1)}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <EmptyState text={gscReady ? "Awaiting first ingest" : "GSC not configured"} />
             )}
@@ -317,39 +324,43 @@ export default async function SeoDashboardPage() {
           </CardHeader>
           <CardContent>
             {pages && pages.rows.length > 0 ? (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs uppercase tracking-wide text-white/50">
-                    <th className="pb-2">Page</th>
-                    <th className="pb-2 text-right">Clicks</th>
-                    <th className="pb-2 text-right">Pos.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pages.rows
-                    .slice()
-                    .sort((a, b) => b.clicks - a.clicks)
-                    .slice(0, 20)
-                    .map((row, i) => (
-                      <tr
-                        key={`${row.keys[0]}-${i}`}
-                        className="border-t border-white/5"
-                      >
-                        <td className="truncate py-1.5 pr-2 text-white/80">
-                          <span className="font-mono text-xs">
-                            {shortenUrl(row.keys[0])}
-                          </span>
-                        </td>
-                        <td className="py-1.5 text-right text-white/70">
-                          {row.clicks}
-                        </td>
-                        <td className="py-1.5 text-right text-white/70">
-                          {row.position.toFixed(1)}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+              <div className="-mx-4 sm:mx-0 overflow-x-auto">
+                <table className="w-full min-w-[360px] text-sm px-4 sm:px-0">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-wide text-white/50">
+                      <th className="pb-2 sticky left-0 bg-(--leadac-card) z-10">
+                        Page
+                      </th>
+                      <th className="pb-2 text-right">Clicks</th>
+                      <th className="pb-2 text-right">Pos.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pages.rows
+                      .slice()
+                      .sort((a, b) => b.clicks - a.clicks)
+                      .slice(0, 20)
+                      .map((row, i) => (
+                        <tr
+                          key={`${row.keys[0]}-${i}`}
+                          className="border-t border-white/5"
+                        >
+                          <td className="truncate py-1.5 pr-3 text-white/80 sticky left-0 bg-(--leadac-card) z-10 max-w-[220px]">
+                            <span className="font-mono text-xs">
+                              {shortenUrl(row.keys[0])}
+                            </span>
+                          </td>
+                          <td className="py-1.5 text-right text-white/70 tabular-nums">
+                            {row.clicks}
+                          </td>
+                          <td className="py-1.5 text-right text-white/70 tabular-nums">
+                            {row.position.toFixed(1)}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <EmptyState text={gscReady ? "Awaiting first ingest" : "GSC not configured"} />
             )}
@@ -365,18 +376,20 @@ export default async function SeoDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="max-h-[420px] overflow-auto">
-              <table className="w-full text-sm">
+            <div className="max-h-[420px] overflow-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full min-w-[420px] text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-white/50">
-                    <th className="pb-2">URL</th>
+                    <th className="pb-2 sticky left-0 bg-(--leadac-card) z-10">
+                      URL
+                    </th>
                     <th className="pb-2 text-right">Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {broken.broken.slice(0, 200).map((b) => (
                     <tr key={b.url} className="border-t border-white/5">
-                      <td className="truncate py-1.5 pr-2">
+                      <td className="truncate py-1.5 pr-3 sticky left-0 bg-(--leadac-card) z-10 max-w-[260px]">
                         <a
                           href={b.url}
                           rel="nofollow noopener"
@@ -385,7 +398,7 @@ export default async function SeoDashboardPage() {
                           {shortenUrl(b.url)}
                         </a>
                       </td>
-                      <td className="py-1.5 text-right text-white/70">
+                      <td className="py-1.5 text-right text-white/70 tabular-nums">
                         {b.status || "fetch error"}
                       </td>
                     </tr>

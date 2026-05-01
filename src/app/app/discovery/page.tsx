@@ -249,6 +249,12 @@ export default function DiscoveryPage() {
                 }}
                 regionCode={selectedCountry || undefined}
                 maxLocations={5}
+                // When Google returns zero matches (e.g. typo like
+                // "Nothingham" → no place_id), the picker offers a
+                // one-click escape hatch that shoves the typed string
+                // into the legacy free-text fallback below — so the
+                // user doesn't have to retype into a second input.
+                onFallbackText={(text) => setCity(text)}
               />
 
               {/* Legacy free-text fallback. Hidden once chips exist —

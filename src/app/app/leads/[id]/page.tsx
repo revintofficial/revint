@@ -20,6 +20,7 @@ import type {
   LeadDetailTab,
 } from "@/components/app/leads/dossier/source-registry";
 import { OutreachStepper } from "@/components/ui/outreach-stepper";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { CRAWL_LABELS, ANALYZE_LABELS, OUTREACH_LABELS, REASON_LABELS, OFFER_LABELS } from "@/lib/labels";
 import { ReviewIntelligencePanel } from "@/components/app/review-intelligence-panel";
 import { GoogleReviewsAccordion } from "@/components/app/google-reviews-accordion";
@@ -40,6 +41,7 @@ import {
   Download,
   Eye,
   EyeOff,
+  Layers,
   Loader2,
   ScanSearch,
   Search,
@@ -49,6 +51,10 @@ import {
   Sparkles,
   FileText,
   ChevronDown,
+  ChevronUp,
+  Globe,
+  Bot as BotIcon,
+  MessageSquareText,
   Star,
   Phone,
   PhoneOff,
@@ -639,8 +645,22 @@ export default function LeadDetailPage({
         onJumpToTab={handleSourceJump}
       />
 
+      {/* Phone-only collapsible identity card. On lg+ the IdentityRail aside
+          takes over (left column); on phone we move the same data to a tap-
+          to-expand block under the hero so it's never hidden but doesn't
+          dominate the viewport. */}
+      <div className="lg:hidden">
+        <CollapsibleIdentityRail
+          lead={lead}
+          contentCheckLoading={contentCheckLoading}
+          websiteSearchLoading={websiteSearchLoading}
+          onContentCheck={runContentCheck}
+          onWebsiteSearch={runWebsiteSearch}
+        />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <aside className="lg:col-span-4 lg:sticky lg:top-6 lg:self-start space-y-5">
+        <aside className="hidden lg:block lg:col-span-4 lg:sticky lg:top-6 lg:self-start space-y-5">
           <div id="anchor-identity">
             <IdentityRail
               lead={lead}
@@ -654,7 +674,24 @@ export default function LeadDetailPage({
 
         <section className="lg:col-span-8 min-w-0 space-y-5">
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
+            {/* Phone: iOS segmented control. Tablet+: original Radix TabsList. */}
+            <div className="md:hidden">
+              <SegmentedControl<TabKey>
+                ariaLabel="Lead detail sections"
+                variant="fill"
+                size="sm"
+                value={activeTab}
+                onChange={(v) => handleTabChange(v)}
+                items={[
+                  { value: "overview", label: "Overview", shortLabel: "Brief", icon: Sparkles },
+                  { value: "website", label: "Site", icon: Globe },
+                  { value: "workers", label: "Workers", icon: BotIcon },
+                  { value: "reviews", label: "Reviews", shortLabel: "Reviews", icon: Star },
+                  { value: "outreach", label: "Outreach", shortLabel: "Outreach", icon: MessageSquareText },
+                ]}
+              />
+            </div>
+            <div className="hidden md:block overflow-x-auto scrollbar-hide -mx-1 px-1">
               <TabsList className="w-full sm:w-auto">
                 <TabsTrigger value="overview" className="flex-1 sm:flex-initial">Overview</TabsTrigger>
                 <TabsTrigger value="website" className="flex-1 sm:flex-initial">Website</TabsTrigger>
@@ -1348,6 +1385,64 @@ function HeroPipelineRerunBar({
         {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
         Re-run intake pipeline
       </Button>
+    </div>
+  );
+}
+
+/**
+ * Phone/tablet variant of IdentityRail — collapsed by default to save vertical
+ * space, expands inline when the user taps the header. Animation honors
+ * prefers-reduced-motion via the global CSS rule.
+ */
+function CollapsibleIdentityRail(props: {
+  lead: LeadDetail;
+  contentCheckLoading: boolean;
+  websiteSearchLoading: boolean;
+  onContentCheck: () => void;
+  onWebsiteSearch: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="space-y-3">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls="mobile-identity-rail"
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500) rounded-2xl"
+        style={{
+          minHeight: "var(--touch-target-min)",
+          background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.65)",
+          border: "0.5px solid hsl(0 0% 100% / 0.06)",
+        }}
+      >
+        <Layers className="w-4 h-4 shrink-0" style={{ color: "var(--leadac-300)" }} />
+        <span
+          className="flex-1 text-left font-medium"
+          style={{
+            color: "var(--leadac-text-1)",
+            fontSize: "var(--text-callout)",
+          }}
+        >
+          Identity & contact
+        </span>
+        <span
+          className="text-[12px]"
+          style={{ color: "var(--leadac-text-3)" }}
+        >
+          {open ? "Hide" : "Show"}
+        </span>
+        {open ? (
+          <ChevronUp className="w-4 h-4" style={{ color: "var(--leadac-text-3)" }} />
+        ) : (
+          <ChevronDown className="w-4 h-4" style={{ color: "var(--leadac-text-3)" }} />
+        )}
+      </button>
+      {open && (
+        <div id="mobile-identity-rail" className="animate-fade-in-up space-y-5">
+          <IdentityRail {...props} />
+        </div>
+      )}
     </div>
   );
 }

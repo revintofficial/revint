@@ -31,9 +31,11 @@ import {
   Bot,
   CircleCheck,
   CircleX,
+  Filter,
   Globe,
   Info,
   Loader2,
+  Plus,
   ScanSearch,
   Users,
 } from "lucide-react";
@@ -44,11 +46,12 @@ import {
   useLeadsQuery,
 } from "@/components/app/leads/useLeadsQuery";
 import { LeadFiltersBar } from "@/components/app/leads/LeadFiltersBar";
-import { LeadCard } from "@/components/app/leads/LeadCard";
 import { LeadTableView } from "@/components/app/leads/LeadTableView";
 import { LeadCardsGrid } from "@/components/app/leads/LeadCardsGrid";
 import { LeadActionBar } from "@/components/app/leads/LeadActionBar";
 import { LiveProcessingStrip } from "@/components/app/leads/LiveProcessingStrip";
+import { MobileLeadList } from "@/components/app/leads/MobileLeadList";
+import { BottomSheet, BottomSheetFooter } from "@/components/ui/bottom-sheet";
 import {
   type LeadsView,
   parseLeadsView,
@@ -260,6 +263,7 @@ function LeadsPageContent() {
 
   const [scanRunning, setScanRunning] = useState(false);
   const [analyzeRunning, setAnalyzeRunning] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const fetchWatchlistIds = useCallback(async () => {
     try {
@@ -602,16 +606,40 @@ function LeadsPageContent() {
           manual refresh. */}
       <LiveProcessingStrip onTransitionToIdle={refetch} />
 
-      <LeadFiltersBar
-        filters={filters}
-        setFilters={setFilters}
-        density={density}
-        setDensity={setDensity}
-        view={view}
-        setView={setView}
-        geoActive={geoActive}
-        totalCount={pagination.total}
-      />
+      {/* Mobile: filter trigger row (replaces the inline LeadFiltersBar on phone).
+          The full filter UI lives in a bottom sheet to keep the list above the fold. */}
+      <div className="md:hidden flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setMobileFiltersOpen(true)}
+          className="flex-1 justify-start gap-2"
+          aria-label="Open filters"
+        >
+          <Filter className="w-4 h-4" />
+          <span className="flex-1 text-left">Filters</span>
+          <span
+            className="text-[11px] tabular-nums"
+            style={{ color: "var(--leadac-text-3)" }}
+          >
+            {pagination.total.toLocaleString()}
+          </span>
+        </Button>
+      </div>
+
+      {/* Desktop / tablet: full inline filter bar */}
+      <div className="hidden md:block">
+        <LeadFiltersBar
+          filters={filters}
+          setFilters={setFilters}
+          density={density}
+          setDensity={setDensity}
+          view={view}
+          setView={setView}
+          geoActive={geoActive}
+          totalCount={pagination.total}
+        />
+      </div>
 
       <LeadActionBar
         selectedIds={Array.from(selectedIds)}
@@ -623,51 +651,24 @@ function LeadsPageContent() {
         onDone={refetch}
       />
 
-      {/* Mobile cards (always cards on small screens, regardless of `view`) */}
-      <div className="md:hidden space-y-3">
-        {loading && leads.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 flex flex-col items-center justify-center gap-3">
-              <Loader2 className="w-6 h-6 text-(--leadac-500) animate-spin" />
-              <p className="text-sm text-white/30">Loading...</p>
-            </CardContent>
-          </Card>
-        ) : leads.length === 0 ? (
-          <Card>
-            <CardContent className="p-10 flex flex-col items-center justify-center gap-3 text-center">
-              <Users className="w-10 h-10 text-white/20" />
-              <p className="text-sm font-medium text-white/50">
-                No leads match these filters
-              </p>
-              <p className="text-xs text-white/30">
-                Try clearing presets or running discovery for more leads.
-              </p>
-              <Link href="/app/discovery">
-                <Button size="sm">Go to Discovery</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ) : (
-          leads.map((lead, index) => (
-            <LeadCard
-              key={lead.id}
-              lead={lead}
-              index={index}
-              isWatchlisted={watchlistLeadIds.has(lead.id)}
-              isSelected={selectedIds.has(lead.id)}
-              contentCheckLoading={
-                contentCheckLoading && contentCheckLeadId === lead.id
-              }
-              websiteSearchLoading={
-                websiteSearchLoading && websiteSearchLeadId === lead.id
-              }
-              onContentCheck={runContentCheck}
-              onWebsiteSearch={runWebsiteSearch}
-              onShortlist={openWatchlistDialog}
-              onToggleSelect={toggleSelect}
-            />
-          ))
-        )}
+      {/* Mobile cards — native interactions live in MobileLeadList */}
+      <div className="md:hidden">
+        <MobileLeadList
+          leads={leads}
+          loading={loading}
+          watchlistLeadIds={watchlistLeadIds}
+          selectedIds={selectedIds}
+          contentCheckLeadId={contentCheckLeadId}
+          contentCheckLoading={contentCheckLoading}
+          websiteSearchLeadId={websiteSearchLeadId}
+          websiteSearchLoading={websiteSearchLoading}
+          onRefresh={refetch}
+          onContentCheck={runContentCheck}
+          onWebsiteSearch={runWebsiteSearch}
+          onShortlist={openWatchlistDialog}
+          onToggleSelect={toggleSelect}
+          onCallStatusChange={handleCallStatus}
+        />
       </div>
 
       {/* Desktop view switcher */}
@@ -796,6 +797,59 @@ function LeadsPageContent() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      {/* Mobile filter bottom sheet — wraps the existing LeadFiltersBar for parity */}
+      <BottomSheet
+        open={mobileFiltersOpen}
+        onOpenChange={setMobileFiltersOpen}
+        title="Filters"
+        description={`${pagination.total.toLocaleString()} lead${pagination.total === 1 ? "" : "s"} match`}
+        snap="max"
+      >
+        <LeadFiltersBar
+          filters={filters}
+          setFilters={setFilters}
+          density={density}
+          setDensity={setDensity}
+          view={view}
+          setView={setView}
+          geoActive={geoActive}
+          totalCount={pagination.total}
+        />
+        <BottomSheetFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setFilters((prev) => ({
+                ...DEFAULT_LEADS_FILTERS,
+                queue: prev.queue,
+              }));
+            }}
+          >
+            Reset
+          </Button>
+          <Button onClick={() => setMobileFiltersOpen(false)}>Done</Button>
+        </BottomSheetFooter>
+      </BottomSheet>
+
+      {/* Phone-only floating action button — go to discovery */}
+      <Link
+        href="/app/discovery"
+        aria-label="Start discovery"
+        className="md:hidden fixed right-4 z-40 flex items-center justify-center rounded-full shadow-lg active:scale-95 transition-transform focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
+        style={{
+          bottom: "calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + 16px)",
+          width: "var(--fab-size)",
+          height: "var(--fab-size)",
+          background:
+            "linear-gradient(135deg, var(--leadac-500), var(--leadac-700))",
+          color: "white",
+          boxShadow:
+            "0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.5)",
+        }}
+      >
+        <Plus className="w-6 h-6" strokeWidth={2.5} />
+      </Link>
 
       <Dialog
         open={!!watchlistDialogLead}

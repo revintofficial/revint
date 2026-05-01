@@ -15,6 +15,11 @@ export interface UpgradeBannerProps {
   };
 }
 
+// Pin number formatting locale so SSR (Node, en-US) and CSR (browser,
+// possibly tr-TR) produce identical output. See usage-badge.tsx for the
+// full rationale.
+const NUM_FMT = new Intl.NumberFormat("en-US");
+
 export function UpgradeBanner({ usage }: UpgradeBannerProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -23,9 +28,9 @@ export function UpgradeBanner({ usage }: UpgradeBannerProps) {
   const overLeads = leadPct >= 100;
   const overAi = aiPct >= 100;
   const message = overLeads
-    ? `You've reached your ${usage.planName} plan lead limit (${usage.leadsLimit.toLocaleString()}). Upgrade to keep discovering.`
+    ? `You've reached your ${usage.planName} plan lead limit (${NUM_FMT.format(usage.leadsLimit)}). Upgrade to keep discovering.`
     : overAi
-    ? `You've used all your ${usage.planName} plan AI credits (${usage.aiLimit.toLocaleString()}). Upgrade to keep analyzing.`
+    ? `You've used all your ${usage.planName} plan AI credits (${NUM_FMT.format(usage.aiLimit)}). Upgrade to keep analyzing.`
     : leadPct >= 80
     ? `You're at ${Math.round(leadPct)}% of your monthly lead quota.`
     : `You're at ${Math.round(aiPct)}% of your AI credits this cycle.`;

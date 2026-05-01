@@ -399,34 +399,89 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Location Chart */}
+      {/* Location Chart — phone gets a legible horizontal-bar list (rotated
+          axis labels are unreadable below 380px); tablet+ keeps Recharts. */}
       {stats.boroughDistribution.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Leads by Location</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.boroughDistribution}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 100% / 0.06)" />
-                <XAxis
-                  dataKey="borough"
-                  tick={{ fontSize: 11, fill: LEADAC.text2 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                  axisLine={{ stroke: "hsl(0 0% 100% / 0.06)" }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: LEADAC.text2 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="count" fill={LEADAC.primary500} radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {/* Phone */}
+            <div className="md:hidden space-y-2">
+              {stats.boroughDistribution.slice(0, 8).map((row) => {
+                const total = stats.boroughDistribution.reduce(
+                  (sum, r) => sum + r.count,
+                  0,
+                );
+                const pct = total > 0 ? (row.count / total) * 100 : 0;
+                return (
+                  <div key={row.borough} className="flex items-center gap-3">
+                    <span
+                      className="text-[12px] truncate"
+                      style={{
+                        color: "var(--leadac-text-2)",
+                        width: "120px",
+                        flex: "0 0 auto",
+                      }}
+                      title={row.borough}
+                    >
+                      {row.borough}
+                    </span>
+                    <div
+                      className="flex-1 h-6 rounded-md overflow-hidden relative"
+                      style={{ backgroundColor: "var(--leadac-hover)" }}
+                    >
+                      <div
+                        className="h-full transition-all duration-700"
+                        style={{
+                          width: `${Math.max(pct, 2)}%`,
+                          backgroundColor: LEADAC.primary500,
+                        }}
+                      />
+                      <span
+                        className="absolute inset-0 flex items-center px-2 text-[11px] font-medium tabular-nums text-white"
+                        style={{ letterSpacing: "-0.01em" }}
+                      >
+                        {row.count}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+              {stats.boroughDistribution.length > 8 && (
+                <p
+                  className="text-[11px] pt-1"
+                  style={{ color: "var(--leadac-text-3)" }}
+                >
+                  +{stats.boroughDistribution.length - 8} more locations
+                </p>
+              )}
+            </div>
+            {/* Tablet/desktop */}
+            <div className="hidden md:block">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={stats.boroughDistribution}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 100% / 0.06)" />
+                  <XAxis
+                    dataKey="borough"
+                    tick={{ fontSize: 11, fill: LEADAC.text2 }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    axisLine={{ stroke: "hsl(0 0% 100% / 0.06)" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: LEADAC.text2 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="count" fill={LEADAC.primary500} radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       )}

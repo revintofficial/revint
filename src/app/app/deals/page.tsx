@@ -25,7 +25,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { GitBranch, Star, Phone, MapPin } from "lucide-react";
+import {
+  SegmentedControl,
+  type SegmentedControlItem,
+} from "@/components/ui/segmented-control";
+import { ActionSheet, type ActionSheetItem } from "@/components/ui/action-sheet";
+import { GitBranch, Star, Phone, MapPin, MoveRight } from "lucide-react";
 import { DealSidePanel } from "./deal-side-panel";
 import type { PipelineStage, DealItem } from "./types";
 
@@ -60,6 +65,13 @@ function DealsBoard() {
   const [items, setItems] = useState<DealItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  // Phone-only: which stage segment is currently active. The kanban uses all
+  // five columns at once, but on a 360px screen we'd shrink each one to ~70px
+  // and the cards would be unreadable. Instead we surface one stage at a time
+  // through a segmented control (Apple HIG §"Show one task at a time").
+  const [activePhoneStage, setActivePhoneStage] = useState<PipelineStage>("NEW");
+  // ActionSheet state for "Move to stage" on phone (replaces drag-and-drop).
+  const [moveSheetItem, setMoveSheetItem] = useState<DealItem | null>(null);
   const reorderInFlight = useRef(false);
 
   const fetchItems = useCallback(async () => {
@@ -234,7 +246,63 @@ function DealsBoard() {
     handleClosePanel();
   };
 
+  // Phone-only: move a card to a different pipeline stage via the action sheet.
+  // Mirrors what `handleDragEnd` does for the kanban path so the optimistic UI
+  // and the persisted state stay in sync regardless of input modality.
+  const moveItemToStage = useCallback(
+    async (item: DealItem, targetStage: PipelineStage) => {
+      if (item.pipelineStage === targetStage) return;
+
+      const withoutActive = items.filter((i) => i.id !== item.id);
+      const targetColumn = withoutActive
+        .filter((i) => i.pipelineStage === targetStage)
+        .sort((a, b) => (a.stageOrder ?? 0) - (b.stageOrder ?? 0));
+
+      const reordered = [
+        ...targetColumn,
+        { ...item, pipelineStage: targetStage },
+      ];
+      const sequenced = reordered.map((card, idx) => ({
+        ...card,
+        stageOrder: idx,
+      }));
+
+      setItems((prev) => {
+        const byId = new Map(sequenced.map((c) => [c.id, c]));
+        return prev
+          .filter((i) => i.pipelineStage !== targetStage || !byId.has(i.id))
+          .concat(sequenced);
+      });
+
+      try {
+        await fetch("/api/watchlist/reorder", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            items: sequenced.map((c) => ({
+              id: c.id,
+              pipelineStage: targetStage,
+              stageOrder: c.stageOrder,
+            })),
+          }),
+        });
+      } catch (err) {
+        console.error("Phone stage move failed:", err);
+        fetchItems();
+      }
+    },
+    [items, fetchItems],
+  );
+
   const activeCard = draggingId ? items.find((i) => i.id === draggingId) : null;
+
+  // Stage tabs for the phone segmented control. Each segment shows its count as
+  // a pill — the same convention G-Mail / Mail.app use for inbox folders.
+  const phoneStageItems: SegmentedControlItem[] = STAGES.map((stage) => ({
+    value: stage.id,
+    label: stage.label,
+  }));
+  const phoneActiveItems = grouped[activePhoneStage] || [];
 
   return (
     <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6">
@@ -244,11 +312,24 @@ function DealsBoard() {
       />
 
       {loading && (
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-[320px] rounded-2xl" />
-          ))}
-        </div>
+        <>
+          {/* Phone skeleton: segmented control + 3 card placeholders */}
+          <div className="md:hidden space-y-3">
+            <Skeleton className="h-9 rounded-xl" />
+            <Skeleton className="h-20 rounded-xl" />
+            <Skeleton className="h-20 rounded-xl" />
+            <Skeleton className="h-20 rounded-xl" />
+          </div>
+          {/* Tablet/desktop skeleton: kanban columns. iPad portrait (md, 768–
+              1023px) shows 3 columns to keep cards legible; iPad landscape /
+              small laptop (lg, ≥1024px) shows 4; large desktop (xl) shows
+              all 5 stages side by side. */}
+          <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-[320px] rounded-2xl" />
+            ))}
+          </div>
+        </>
       )}
 
       {!loading && items.length === 0 && (
@@ -274,6 +355,49 @@ function DealsBoard() {
         </Card>
       )}
 
+      {/* Phone: stage segmented control + vertical card list. Drag-and-drop
+          across columns is impractical at 360px so cards expose a "Move" tap
+          target instead, opening an ActionSheet of stages (HIG §Action Sheets). */}
+      {!loading && items.length > 0 && (
+        <div className="md:hidden space-y-3">
+          <SegmentedControl
+            items={phoneStageItems}
+            value={activePhoneStage}
+            onChange={(v) => setActivePhoneStage(v as PipelineStage)}
+            ariaLabel="Filter deals by pipeline stage"
+          />
+          <div className="flex items-center justify-between text-xs px-1">
+            <span style={{ color: "var(--leadac-text-2)" }}>
+              {phoneActiveItems.length} deal
+              {phoneActiveItems.length === 1 ? "" : "s"} in{" "}
+              {STAGES.find((s) => s.id === activePhoneStage)?.label}
+            </span>
+          </div>
+          {phoneActiveItems.length === 0 ? (
+            <Card>
+              <CardContent className="py-10 text-center">
+                <p className="text-sm" style={{ color: "var(--leadac-text-3)" }}>
+                  No deals in this stage yet.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {phoneActiveItems.map((item) => (
+                <PhoneDealCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => handleCardClick(item.lead.id)}
+                  onMove={() => setMoveSheetItem(item)}
+                  highlighted={activeLeadId === item.lead.id}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tablet/desktop: classic kanban with drag-and-drop. */}
       {!loading && items.length > 0 && (
         <DndContext
           sensors={sensors}
@@ -282,7 +406,7 @@ function DealsBoard() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4">
+          <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {STAGES.map((stage) => (
               <KanbanColumn
                 key={stage.id}
@@ -299,6 +423,31 @@ function DealsBoard() {
           </DragOverlay>
         </DndContext>
       )}
+
+      {/* Phone-only: move-to-stage action sheet */}
+      <ActionSheet
+        open={!!moveSheetItem}
+        onOpenChange={(open) => {
+          if (!open) setMoveSheetItem(null);
+        }}
+        title={moveSheetItem ? `Move "${moveSheetItem.lead.businessName}"` : ""}
+        description="Choose a new pipeline stage"
+        items={
+          moveSheetItem
+            ? (STAGES.filter(
+                (s) => s.id !== moveSheetItem.pipelineStage,
+              ).map<ActionSheetItem>((stage) => ({
+                id: `move-to-${stage.id}`,
+                label: `Move to ${stage.label}`,
+                onSelect: () => {
+                  void moveItemToStage(moveSheetItem, stage.id);
+                  setMoveSheetItem(null);
+                },
+              })))
+            : []
+        }
+      />
+
 
       <DealSidePanel
         item={selectedItem}
@@ -406,6 +555,105 @@ function SortableCard({
       className={`cursor-grab active:cursor-grabbing ${highlighted ? "ring-2 ring-(--leadac-500)/50 rounded-xl" : ""}`}
     >
       <DealCard item={item} />
+    </div>
+  );
+}
+
+// Phone-specific card. Cleaner layout than the kanban variant since it has
+// the full row width to work with (no shrinking to 70px). The "Move" button
+// is a 44pt-min touch target on the right that opens the stage ActionSheet.
+function PhoneDealCard({
+  item,
+  onClick,
+  onMove,
+  highlighted,
+}: {
+  item: DealItem;
+  onClick: () => void;
+  onMove: () => void;
+  highlighted: boolean;
+}) {
+  const opp = item.lead.salesOpportunity;
+  const score = opp?.opportunityScore;
+  const scoreColor =
+    score == null
+      ? "text-white/30 bg-white/5"
+      : score >= 60
+        ? "text-[hsl(152_48%_50%)] bg-[hsl(152_48%_50%)]/10"
+        : score >= 35
+          ? "text-[hsl(38_70%_52%)] bg-[hsl(38_70%_52%)]/10"
+          : "text-white/50 bg-white/5";
+
+  const relUpdated = relativeTime(item.updatedAt || item.createdAt);
+  const hasBuiltSite = hasValidUrl(item.siteUrl);
+
+  return (
+    <div
+      className={`flex items-stretch gap-2 rounded-xl border transition-shadow ${
+        highlighted
+          ? "border-(--leadac-500)/50 ring-1 ring-(--leadac-500)/30"
+          : hasBuiltSite
+            ? "border-[hsl(152_48%_50%)]/40 bg-[hsl(152_48%_50%)]/10"
+            : "border-white/10 bg-(--leadac-card)"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex-1 min-w-0 text-left px-3 py-3 space-y-1.5 touch-target"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-[15px] font-medium text-white leading-tight line-clamp-2 flex-1 min-w-0">
+            {item.lead.businessName}
+          </p>
+          <span
+            className={`shrink-0 text-[11px] font-bold px-1.5 py-0.5 rounded-md ${scoreColor}`}
+            title="Opportunity score"
+          >
+            {score ?? "–"}
+          </span>
+        </div>
+        {(item.selectedOffer || item.lead.borough) && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {item.selectedOffer && (
+              <Badge
+                className={
+                  item.selectedOffer === "STARTER"
+                    ? "bg-[hsl(152_48%_50%)]/10 text-[hsl(152_48%_50%)] border-[hsl(152_48%_50%)]/20 text-[10px] px-1.5 py-0"
+                    : item.selectedOffer === "GROWTH"
+                      ? "bg-(--leadac-500)/10 text-(--leadac-500) border-(--leadac-500)/20 text-[10px] px-1.5 py-0"
+                      : "bg-(--leadac-400)/10 text-(--leadac-300) text-[10px] px-1.5 py-0"
+                }
+              >
+                {item.selectedOffer}
+              </Badge>
+            )}
+            {item.lead.borough && (
+              <span className="text-[11px] text-white/40 truncate">
+                {item.lead.borough}
+              </span>
+            )}
+          </div>
+        )}
+        <div className="flex items-center justify-between text-[11px] text-white/40">
+          <span>{relUpdated ? `Updated ${relUpdated}` : ""}</span>
+          <span className="flex items-center gap-1.5">
+            {item.lead.phone && <Phone className="w-3 h-3" />}
+            {item.lead.googleMapsUri && <MapPin className="w-3 h-3" />}
+          </span>
+        </div>
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onMove();
+        }}
+        aria-label="Move to a different stage"
+        className="shrink-0 w-12 flex items-center justify-center border-l border-white/5 text-white/40 hover:text-white hover:bg-white/5 transition-colors touch-target"
+      >
+        <MoveRight className="w-4 h-4" />
+      </button>
     </div>
   );
 }

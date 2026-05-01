@@ -23,6 +23,7 @@ import {
 } from "@/components/app/offer-form";
 import { toast } from "sonner";
 import {
+  ArrowLeft,
   ArrowRight,
   Check,
   Loader2,
@@ -51,6 +52,8 @@ const STEPS = [
   { number: 6, title: "First Leads", description: "Discover your first businesses" },
 ];
 
+const TOTAL_STEPS = STEPS.length;
+
 // ---------------------------------------------------------------------------
 // Inline Package editor for onboarding step 4
 // ---------------------------------------------------------------------------
@@ -64,12 +67,10 @@ interface NewPackage {
 
 function PackageEditor({
   pkg,
-  index,
   onChange,
   onRemove,
 }: {
   pkg: NewPackage;
-  index: number;
   onChange: (pkg: NewPackage) => void;
   onRemove: () => void;
 }) {
@@ -93,6 +94,7 @@ function PackageEditor({
           size="icon"
           onClick={() => onChange({ ...pkg, isPopular: !pkg.isPopular })}
           title="Mark as Popular"
+          aria-label={pkg.isPopular ? "Unmark as popular" : "Mark as popular"}
           className={pkg.isPopular ? "text-(--leadac-500)" : "text-white/30 hover:text-white/60"}
         >
           <Star className="w-4 h-4" fill={pkg.isPopular ? "currentColor" : "none"} />
@@ -101,6 +103,7 @@ function PackageEditor({
           variant="ghost"
           size="icon"
           onClick={onRemove}
+          aria-label="Remove package"
           className="text-[hsl(4_62%_54%)]/60 hover:text-[hsl(4_62%_54%)]"
         >
           <Trash2 className="w-4 h-4" />
@@ -126,6 +129,7 @@ function PackageEditor({
               variant="ghost"
               size="icon"
               onClick={() => onChange({ ...pkg, features: pkg.features.filter((_, fi) => fi !== i) })}
+              aria-label={`Remove feature ${i + 1}`}
               className="shrink-0 text-white/30 hover:text-[hsl(4_62%_54%)]"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -363,12 +367,172 @@ export default function OnboardingPage() {
     }
   };
 
+  const goBack = () => {
+    if (step > 1) setStep(step - 1);
+  };
+
+  // ---- Per-step CTA wiring (used by both phone sticky bar and tablet inline)
+
+  // Each step contributes its own primary CTA + optional skip. Centralising the
+  // wiring here means we only render one set of action UI per breakpoint and
+  // never get the two out of sync (Apple HIG: "primary action should be the
+  // single, obvious next step").
+  type StepActions = {
+    primary: { label: string; onClick: () => void; disabled?: boolean; busy?: boolean; busyLabel?: string };
+    secondary?: { label: string; onClick: () => void };
+  };
+
+  const actions: StepActions =
+    step === 1
+      ? {
+          primary: {
+            label: "Continue",
+            onClick: advance,
+            disabled: !workspaceName.trim() || saving,
+            busy: saving,
+            busyLabel: "Saving…",
+          },
+        }
+      : step === 2
+        ? {
+            primary: {
+              label: "Continue",
+              onClick: advance,
+              disabled: !country || saving,
+              busy: saving,
+              busyLabel: "Saving…",
+            },
+            secondary: { label: "Back", onClick: goBack },
+          }
+        : step === 3
+          ? {
+              primary: {
+                label: "Continue",
+                onClick: advance,
+                disabled: saving,
+                busy: saving,
+                busyLabel: "Saving…",
+              },
+              secondary: { label: "Back", onClick: goBack },
+            }
+          : step === 4
+            ? {
+                primary: {
+                  label: "Continue",
+                  onClick: advance,
+                  disabled: saving,
+                  busy: saving,
+                  busyLabel: "Saving…",
+                },
+                secondary: { label: "Back", onClick: goBack },
+              }
+            : step === 5
+              ? {
+                  primary: {
+                    label: "Continue",
+                    onClick: advance,
+                    disabled: saving,
+                    busy: saving,
+                    busyLabel: "Sending…",
+                  },
+                  secondary: { label: "Back", onClick: goBack },
+                }
+              : {
+                  primary: {
+                    label: "Discover Leads",
+                    onClick: handleDiscover,
+                    disabled: !effectiveNiche || !city.trim() || running,
+                    busy: running,
+                    busyLabel: "Discovering…",
+                  },
+                  secondary: { label: "Back", onClick: goBack },
+                };
+
   // ---- Render ---------------------------------------------------------------
 
+  const progressPercent = Math.round((step / TOTAL_STEPS) * 100);
+  const stepInfo = STEPS[step - 1];
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-xl space-y-8">
-        {/* Header */}
+    <div className="min-h-screen flex flex-col md:items-center md:justify-center md:p-6">
+      {/* ------------------------------------------------------------- */}
+      {/* Phone-only top bar — back chevron, step counter, progress bar  */}
+      {/* ------------------------------------------------------------- */}
+      <header
+        className="md:hidden sticky top-0 z-20 safe-pt"
+        style={{
+          background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.92)",
+          backdropFilter: "saturate(180%) blur(24px)",
+          WebkitBackdropFilter: "saturate(180%) blur(24px)",
+          borderBottom: "0.5px solid hsl(0 0% 100% / 0.08)",
+        }}
+      >
+        <div
+          className="flex items-center gap-3 px-4"
+          style={{ minHeight: "var(--app-bar-height)" }}
+        >
+          {step > 1 ? (
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label="Previous step"
+              className="touch-target rounded-lg hover:bg-white/5 -ml-2"
+              style={{ color: "var(--leadac-text-1)" }}
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          ) : (
+            <div style={{ width: "var(--touch-target-min)" }} aria-hidden="true" />
+          )}
+          <div className="flex-1 min-w-0 text-center">
+            <p
+              className="uppercase tracking-wider"
+              style={{
+                fontSize: "var(--text-caption)",
+                color: "var(--leadac-muted)",
+              }}
+            >
+              Step {step} of {TOTAL_STEPS}
+            </p>
+            <p
+              className="font-semibold tracking-tight truncate"
+              style={{
+                fontSize: "var(--text-callout)",
+                color: "var(--leadac-text-1)",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              {stepInfo.title}
+            </p>
+          </div>
+          <div style={{ width: "var(--touch-target-min)" }} aria-hidden="true" />
+        </div>
+        {/* Slim progress strip — accessible-name applied via aria-label below */}
+        <div
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progressPercent}
+          aria-label={`Onboarding progress, step ${step} of ${TOTAL_STEPS}`}
+          className="h-1 w-full"
+          style={{ background: "hsl(0 0% 100% / 0.08)" }}
+        >
+          <div
+            className="h-full"
+            style={{
+              width: `${progressPercent}%`,
+              background:
+                "linear-gradient(90deg, var(--leadac-500), var(--leadac-300))",
+              transition: "width var(--motion-base) var(--motion-ease-emphasized)",
+            }}
+          />
+        </div>
+      </header>
+
+      {/* ------------------------------------------------------------- */}
+      {/* Tablet+ logo + dot progress  */}
+      {/* ------------------------------------------------------------- */}
+      <div className="hidden md:block w-full max-w-xl space-y-8">
         <div className="text-center">
           <Image
             src="/logo.png"
@@ -379,11 +543,15 @@ export default function OnboardingPage() {
             className="w-14 h-14 object-contain mx-auto mb-4"
           />
           <h1 className="text-2xl font-semibold text-white">Welcome to Leadac AI</h1>
-          <p className="text-sm text-white/50 mt-1">Let&apos;s set up your workspace in a few steps.</p>
+          <p className="text-sm text-white/50 mt-1">
+            Let&apos;s set up your workspace in a few steps.
+          </p>
         </div>
 
-        {/* Progress */}
-        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+        <nav
+          className="flex items-center justify-center gap-1.5 flex-wrap"
+          aria-label="Onboarding steps"
+        >
           {STEPS.map((s) => (
             <div key={s.number} className="flex items-center gap-1.5">
               <div
@@ -394,305 +562,137 @@ export default function OnboardingPage() {
                       ? "bg-(--leadac-500) text-white"
                       : "bg-white/10 text-white/30"
                 }`}
+                aria-current={s.number === step ? "step" : undefined}
+                aria-label={`Step ${s.number}: ${s.title}`}
               >
                 {s.number < step ? <Check className="w-3.5 h-3.5" /> : s.number}
               </div>
-              {s.number < 6 && (
-                <div className={`w-6 h-0.5 rounded-full transition-all ${s.number < step ? "bg-[hsl(152_48%_50%)]" : "bg-white/15"}`} />
+              {s.number < TOTAL_STEPS && (
+                <div
+                  className={`w-6 h-0.5 rounded-full transition-all ${
+                    s.number < step ? "bg-[hsl(152_48%_50%)]" : "bg-white/15"
+                  }`}
+                  aria-hidden="true"
+                />
               )}
             </div>
           ))}
+        </nav>
+      </div>
+
+      {/* ------------------------------------------------------------- */}
+      {/* Step body — phone full-bleed, tablet+ inside Card  */}
+      {/* ------------------------------------------------------------- */}
+      <main
+        id="onboarding-step-body"
+        className="flex-1 w-full md:max-w-xl md:mt-6"
+      >
+        {/* Phone layout: full-bleed flow, no card chrome, sticky bottom CTA. */}
+        <div
+          className="md:hidden px-5 pt-5 space-y-5"
+          style={{
+            // Reserve space for the sticky CTA so the last form field doesn't
+            // hide behind it on smaller phones.
+            paddingBottom: "calc(120px + env(safe-area-inset-bottom))",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "var(--text-subhead)",
+              color: "var(--leadac-text-2)",
+            }}
+          >
+            {stepInfo.description}
+          </p>
+          <StepBody
+            step={step}
+            workspaceName={workspaceName}
+            setWorkspaceName={setWorkspaceName}
+            country={country}
+            setCountry={setCountry}
+            offer={offer}
+            setOffer={setOffer}
+            packages={packages}
+            setPackages={setPackages}
+            inviteEmails={inviteEmails}
+            setInviteEmails={setInviteEmails}
+            niche={niche}
+            setNiche={setNiche}
+            customNiche={customNiche}
+            setCustomNiche={setCustomNiche}
+            city={city}
+            setCity={setCity}
+            effectiveNiche={effectiveNiche}
+          />
         </div>
 
-        {/* Step card */}
-        <Card>
-          <CardContent className="p-6 space-y-5">
-            <div>
-              <h2 className="text-lg font-semibold text-white">{STEPS[step - 1].title}</h2>
-              <p className="text-sm text-white/50 mt-0.5">{STEPS[step - 1].description}</p>
-            </div>
-
-            {/* ---- Step 1: Workspace name ---- */}
-            {step === 1 && (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[12px] font-medium text-white/70 mb-1.5 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5" /> Workspace name
-                  </label>
-                  <Input
-                    value={workspaceName}
-                    onChange={(e) => setWorkspaceName(e.target.value)}
-                    placeholder="e.g. Acme Web Agency"
-                    autoFocus
-                  />
-                  <p className="text-[11px] text-white/35 mt-1">
-                    This is how your workspace appears in the app.
-                  </p>
-                </div>
-                <Button
-                  className="w-full"
-                  disabled={!workspaceName.trim() || saving}
-                  onClick={advance}
-                >
-                  {saving ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</> : <>Continue <ArrowRight className="w-4 h-4" /></>}
-                </Button>
+        {/* Tablet+ layout: classic single-card wizard. */}
+        <div className="hidden md:block">
+          <Card>
+            <CardContent className="p-6 space-y-5">
+              <div>
+                <h2 className="text-lg font-semibold text-white">{stepInfo.title}</h2>
+                <p className="text-sm text-white/50 mt-0.5">{stepInfo.description}</p>
               </div>
-            )}
-
-            {/* ---- Step 2: Country ---- */}
-            {step === 2 && (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[12px] font-medium text-white/70 mb-1.5 flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5" /> Country
-                  </label>
-                  <Select value={country} onValueChange={setCountry}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a country…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COUNTRIES.map((c) => (
-                        <SelectItem key={c.code} value={c.code}>
-                          <div className="flex items-center gap-2">
-                            <Globe className="w-3 h-3 text-white/30" />
-                            {c.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[11px] text-white/35 mt-1">
-                    Used to scope Discovery searches globally.
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setStep(1)} className="flex-1">Back</Button>
+              <StepBody
+                step={step}
+                workspaceName={workspaceName}
+                setWorkspaceName={setWorkspaceName}
+                country={country}
+                setCountry={setCountry}
+                offer={offer}
+                setOffer={setOffer}
+                packages={packages}
+                setPackages={setPackages}
+                inviteEmails={inviteEmails}
+                setInviteEmails={setInviteEmails}
+                niche={niche}
+                setNiche={setNiche}
+                customNiche={customNiche}
+                setCustomNiche={setCustomNiche}
+                city={city}
+                setCity={setCity}
+                effectiveNiche={effectiveNiche}
+              />
+              <div className="flex gap-2 pt-1">
+                {actions.secondary && (
                   <Button
+                    variant="outline"
+                    onClick={actions.secondary.onClick}
                     className="flex-1"
-                    disabled={!country || saving}
-                    onClick={advance}
                   >
-                    {saving ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</> : <>Continue <ArrowRight className="w-4 h-4" /></>}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* ---- Step 3: My Offer ---- */}
-            {step === 3 && (
-              <div className="space-y-5">
-                <div className="flex items-center gap-2 text-(--leadac-300) text-sm">
-                  <Sparkles className="w-4 h-4" />
-                  <span>These fields personalize every AI mockup and message.</span>
-                </div>
-                <OfferFields data={offer} onChange={setOffer} />
-                <div className="flex gap-2 pt-1">
-                  <Button variant="outline" onClick={() => setStep(2)} className="flex-1">Back</Button>
-                  <Button className="flex-1" disabled={saving} onClick={advance}>
-                    {saving ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</> : <>Continue <ArrowRight className="w-4 h-4" /></>}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* ---- Step 4: Service Packages ---- */}
-            {step === 4 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-white/50">
-                  <Package className="w-4 h-4 text-(--leadac-300)" />
-                  Add the service tiers you pitch to clients. You can edit these later.
-                </div>
-
-                {packages.map((pkg, i) => (
-                  <PackageEditor
-                    key={i}
-                    pkg={pkg}
-                    index={i}
-                    onChange={(updated) => {
-                      const next = [...packages];
-                      next[i] = updated;
-                      setPackages(next);
-                    }}
-                    onRemove={() => setPackages(packages.filter((_, fi) => fi !== i))}
-                  />
-                ))}
-
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setPackages([...packages, { name: "", priceLabel: "", features: [], isPopular: false }])}
-                  disabled={packages.length >= 6}
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Package
-                </Button>
-
-                <div className="flex gap-2 pt-1">
-                  <Button variant="outline" onClick={() => setStep(3)} className="flex-1">Back</Button>
-                  <Button className="flex-1" disabled={saving} onClick={advance}>
-                    {saving ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</> : <>Continue <ArrowRight className="w-4 h-4" /></>}
-                  </Button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setStep(5)}
-                  className="w-full text-[11.5px] text-white/30 hover:text-white/50 transition-colors"
-                >
-                  Skip for now
-                </button>
-              </div>
-            )}
-
-            {/* ---- Step 5: Invite team ---- */}
-            {step === 5 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-sm text-white/50">
-                  <Users className="w-4 h-4 text-(--leadac-300)" />
-                  Teammates will receive an email invite to join your workspace.
-                </div>
-
-                {inviteEmails.map((email, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <Input
-                      type="email"
-                      value={email}
-                      onChange={(e) => {
-                        const next = [...inviteEmails];
-                        next[i] = e.target.value;
-                        setInviteEmails(next);
-                      }}
-                      placeholder="colleague@company.com"
-                    />
-                    {inviteEmails.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setInviteEmails(inviteEmails.filter((_, fi) => fi !== i))}
-                        className="text-white/30 hover:text-[hsl(4_62%_54%)] shrink-0"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-
-                {inviteEmails.length < 5 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setInviteEmails([...inviteEmails, ""])}
-                    className="text-white/40"
-                  >
-                    <Plus className="w-3.5 h-3.5 mr-1" />
-                    Add another
+                    {actions.secondary.label}
                   </Button>
                 )}
-
-                <div className="flex gap-2 pt-1">
-                  <Button variant="outline" onClick={() => setStep(4)} className="flex-1">Back</Button>
-                  <Button className="flex-1" disabled={saving} onClick={advance}>
-                    {saving ? <><Loader2 className="w-4 h-4 animate-spin" />Sending…</> : <>Continue <ArrowRight className="w-4 h-4" /></>}
-                  </Button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setStep(6)}
-                  className="w-full text-[11.5px] text-white/30 hover:text-white/50 transition-colors"
+                <Button
+                  className="flex-1"
+                  onClick={actions.primary.onClick}
+                  disabled={actions.primary.disabled}
                 >
-                  Skip for now
-                </button>
-              </div>
-            )}
-
-            {/* ---- Step 6: First discovery ---- */}
-            {step === 6 && (
-              <div className="space-y-4">
-                {/* Niche */}
-                <div>
-                  <label className="block text-[12px] font-medium text-white/70 mb-1.5">Business type</label>
-                  <Select value={niche} onValueChange={(v) => { setNiche(v); setCustomNiche(""); }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a business type…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {NICHES.map((n) => (
-                        <SelectItem key={n.slug} value={n.searchQueries[0]}>
-                          <div className="flex flex-col items-start">
-                            <span className="font-medium">{n.label}</span>
-                            <span className="text-[11px] text-white/45">{n.tagline}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                      {DEFAULT_SEARCH_QUERIES.map((q) => (
-                        <SelectItem key={q} value={q}>{q}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex items-center gap-3 mt-2">
-                    <div className="h-px flex-1 bg-white/15" />
-                    <span className="text-[12px] text-white/40">or type your own</span>
-                    <div className="h-px flex-1 bg-white/15" />
-                  </div>
-                  <Input
-                    value={customNiche}
-                    onChange={(e) => { setCustomNiche(e.target.value); setNiche(""); }}
-                    placeholder="e.g. web design for restaurants"
-                    className="mt-2"
-                  />
-                </div>
-
-                {/* City */}
-                <div>
-                  <label className="text-[12px] font-medium text-white/70 mb-1.5 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" /> City / Area
-                  </label>
-                  <Input
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="e.g. Manchester, Istanbul, New York"
-                  />
-                  {country && (
-                    <p className="text-[11px] text-white/35 mt-1">
-                      Searching in {COUNTRIES.find((c) => c.code === country)?.name ?? country}
-                    </p>
+                  {actions.primary.busy ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {actions.primary.busyLabel ?? "Working…"}
+                    </>
+                  ) : (
+                    <>
+                      {step === 6 ? <Search className="w-4 h-4" /> : null}
+                      {actions.primary.label}
+                      {step !== 6 ? <ArrowRight className="w-4 h-4" /> : null}
+                    </>
                   )}
-                </div>
-
-                {/* Summary */}
-                {(effectiveNiche || city) && (
-                  <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-1.5">
-                    {effectiveNiche && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Search className="w-4 h-4 text-(--leadac-500)" />
-                        <span className="text-white/50">Looking for:</span>
-                        <span className="font-medium text-white">{effectiveNiche}</span>
-                      </div>
-                    )}
-                    {city && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-(--leadac-500)" />
-                        <span className="text-white/50">In:</span>
-                        <span className="font-medium text-white">{city}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setStep(5)} className="flex-1">Back</Button>
-                  <Button
-                    className="flex-1"
-                    onClick={handleDiscover}
-                    disabled={!effectiveNiche || !city.trim() || running}
-                  >
-                    {running ? (
-                      <><Loader2 className="w-4 h-4 animate-spin" />Discovering…</>
-                    ) : (
-                      <><Search className="w-4 h-4" />Discover Leads</>
-                    )}
-                  </Button>
-                </div>
-
+                </Button>
+              </div>
+              {(step === 4 || step === 5) && (
+                <button
+                  type="button"
+                  onClick={() => setStep(step + 1)}
+                  className="w-full text-[11.5px] text-white/30 hover:text-white/50 transition-colors"
+                >
+                  Skip for now
+                </button>
+              )}
+              {step === 6 && (
                 <button
                   type="button"
                   onClick={skipAndComplete}
@@ -700,11 +700,380 @@ export default function OnboardingPage() {
                 >
                   Skip — I&apos;ll discover leads later
                 </button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+
+      {/* ------------------------------------------------------------- */}
+      {/* Phone-only sticky bottom CTA bar (safe-area aware)  */}
+      {/* ------------------------------------------------------------- */}
+      <div
+        className="md:hidden fixed left-0 right-0 bottom-0 z-30 safe-pb px-4 pt-3"
+        style={{
+          background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.95)",
+          backdropFilter: "saturate(180%) blur(24px)",
+          WebkitBackdropFilter: "saturate(180%) blur(24px)",
+          borderTop: "0.5px solid hsl(0 0% 100% / 0.08)",
+          paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
+        }}
+      >
+        <Button
+          className="w-full leadac-glow-cta"
+          onClick={actions.primary.onClick}
+          disabled={actions.primary.disabled}
+          style={{ minHeight: "var(--touch-target-large)" }}
+        >
+          {actions.primary.busy ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {actions.primary.busyLabel ?? "Working…"}
+            </>
+          ) : (
+            <>
+              {step === 6 ? <Search className="w-4 h-4" /> : null}
+              {actions.primary.label}
+              {step !== 6 ? <ArrowRight className="w-4 h-4" /> : null}
+            </>
+          )}
+        </Button>
+        {(step === 4 || step === 5) && (
+          <button
+            type="button"
+            onClick={() => setStep(step + 1)}
+            className="w-full text-center mt-2 py-1 text-[12.5px]"
+            style={{ color: "var(--leadac-text-3)" }}
+          >
+            Skip for now
+          </button>
+        )}
+        {step === 6 && (
+          <button
+            type="button"
+            onClick={skipAndComplete}
+            className="w-full text-center mt-2 py-1 text-[12.5px]"
+            style={{ color: "var(--leadac-text-3)" }}
+          >
+            Skip — I&apos;ll discover leads later
+          </button>
+        )}
       </div>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// StepBody — content for each step, rendered identically on phone + tablet so
+// the tablet card and the phone full-bleed layout never drift.
+// ---------------------------------------------------------------------------
+
+interface StepBodyProps {
+  step: number;
+  workspaceName: string;
+  setWorkspaceName: (s: string) => void;
+  country: string;
+  setCountry: (s: string) => void;
+  offer: OfferContext;
+  setOffer: (o: OfferContext) => void;
+  packages: NewPackage[];
+  setPackages: (p: NewPackage[]) => void;
+  inviteEmails: string[];
+  setInviteEmails: (e: string[]) => void;
+  niche: string;
+  setNiche: (s: string) => void;
+  customNiche: string;
+  setCustomNiche: (s: string) => void;
+  city: string;
+  setCity: (s: string) => void;
+  effectiveNiche: string;
+}
+
+function StepBody(props: StepBodyProps) {
+  const {
+    step,
+    workspaceName,
+    setWorkspaceName,
+    country,
+    setCountry,
+    offer,
+    setOffer,
+    packages,
+    setPackages,
+    inviteEmails,
+    setInviteEmails,
+    niche,
+    setNiche,
+    customNiche,
+    setCustomNiche,
+    city,
+    setCity,
+    effectiveNiche,
+  } = props;
+
+  if (step === 1) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <label
+            htmlFor="onboarding-workspace-name"
+            className="text-[12px] font-medium text-white/70 mb-1.5 flex items-center gap-1.5"
+          >
+            <Building2 className="w-3.5 h-3.5" /> Workspace name
+          </label>
+          <Input
+            id="onboarding-workspace-name"
+            value={workspaceName}
+            onChange={(e) => setWorkspaceName(e.target.value)}
+            placeholder="e.g. Acme Web Agency"
+            autoFocus
+            autoComplete="organization"
+            enterKeyHint="next"
+          />
+          <p className="text-[11px] text-white/35 mt-1">
+            This is how your workspace appears in the app.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 2) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <label
+            htmlFor="onboarding-country"
+            className="text-[12px] font-medium text-white/70 mb-1.5 flex items-center gap-1.5"
+          >
+            <Globe className="w-3.5 h-3.5" /> Country
+          </label>
+          <Select value={country} onValueChange={setCountry}>
+            <SelectTrigger id="onboarding-country">
+              <SelectValue placeholder="Select a country…" />
+            </SelectTrigger>
+            <SelectContent>
+              {COUNTRIES.map((c) => (
+                <SelectItem key={c.code} value={c.code}>
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-3 h-3 text-white/30" />
+                    {c.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-white/35 mt-1">
+            Used to scope Discovery searches globally.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 3) {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-2 text-(--leadac-300) text-sm">
+          <Sparkles className="w-4 h-4" />
+          <span>These fields personalize every AI mockup and message.</span>
+        </div>
+        <OfferFields data={offer} onChange={setOffer} />
+      </div>
+    );
+  }
+
+  if (step === 4) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-sm text-white/50">
+          <Package className="w-4 h-4 text-(--leadac-300)" />
+          Add the service tiers you pitch to clients. You can edit these later.
+        </div>
+
+        {packages.map((pkg, i) => (
+          <PackageEditor
+            key={i}
+            pkg={pkg}
+            onChange={(updated) => {
+              const next = [...packages];
+              next[i] = updated;
+              setPackages(next);
+            }}
+            onRemove={() => setPackages(packages.filter((_, fi) => fi !== i))}
+          />
+        ))}
+
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() =>
+            setPackages([
+              ...packages,
+              { name: "", priceLabel: "", features: [], isPopular: false },
+            ])
+          }
+          disabled={packages.length >= 6}
+        >
+          <Plus className="w-4 h-4" />
+          Add Package
+        </Button>
+      </div>
+    );
+  }
+
+  if (step === 5) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-sm text-white/50">
+          <Users className="w-4 h-4 text-(--leadac-300)" />
+          Teammates will receive an email invite to join your workspace.
+        </div>
+
+        {inviteEmails.map((email, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                const next = [...inviteEmails];
+                next[i] = e.target.value;
+                setInviteEmails(next);
+              }}
+              placeholder="colleague@company.com"
+              autoComplete="email"
+              inputMode="email"
+              enterKeyHint="next"
+              aria-label={`Invite ${i + 1}`}
+            />
+            {inviteEmails.length > 1 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  setInviteEmails(inviteEmails.filter((_, fi) => fi !== i))
+                }
+                aria-label={`Remove invite ${i + 1}`}
+                className="text-white/30 hover:text-[hsl(4_62%_54%)] shrink-0"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        ))}
+
+        {inviteEmails.length < 5 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setInviteEmails([...inviteEmails, ""])}
+            className="text-white/40"
+          >
+            <Plus className="w-3.5 h-3.5 mr-1" />
+            Add another
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  if (step === 6) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <label
+            htmlFor="onboarding-niche"
+            className="block text-[12px] font-medium text-white/70 mb-1.5"
+          >
+            Business type
+          </label>
+          <Select
+            value={niche}
+            onValueChange={(v) => {
+              setNiche(v);
+              setCustomNiche("");
+            }}
+          >
+            <SelectTrigger id="onboarding-niche">
+              <SelectValue placeholder="Choose a business type…" />
+            </SelectTrigger>
+            <SelectContent>
+              {NICHES.map((n) => (
+                <SelectItem key={n.slug} value={n.searchQueries[0]}>
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">{n.label}</span>
+                    <span className="text-[11px] text-white/45">{n.tagline}</span>
+                  </div>
+                </SelectItem>
+              ))}
+              {DEFAULT_SEARCH_QUERIES.map((q) => (
+                <SelectItem key={q} value={q}>
+                  {q}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-3 mt-2">
+            <div className="h-px flex-1 bg-white/15" />
+            <span className="text-[12px] text-white/40">or type your own</span>
+            <div className="h-px flex-1 bg-white/15" />
+          </div>
+          <Input
+            value={customNiche}
+            onChange={(e) => {
+              setCustomNiche(e.target.value);
+              setNiche("");
+            }}
+            placeholder="e.g. web design for restaurants"
+            className="mt-2"
+            enterKeyHint="next"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="onboarding-city"
+            className="text-[12px] font-medium text-white/70 mb-1.5 flex items-center gap-1.5"
+          >
+            <MapPin className="w-3.5 h-3.5" /> City / Area
+          </label>
+          <Input
+            id="onboarding-city"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            placeholder="e.g. Manchester, Istanbul, New York"
+            autoComplete="address-level2"
+            enterKeyHint="search"
+          />
+          {country && (
+            <p className="text-[11px] text-white/35 mt-1">
+              Searching in{" "}
+              {COUNTRIES.find((c) => c.code === country)?.name ?? country}
+            </p>
+          )}
+        </div>
+
+        {(effectiveNiche || city) && (
+          <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-1.5">
+            {effectiveNiche && (
+              <div className="flex items-center gap-2 text-sm">
+                <Search className="w-4 h-4 text-(--leadac-500)" />
+                <span className="text-white/50">Looking for:</span>
+                <span className="font-medium text-white">{effectiveNiche}</span>
+              </div>
+            )}
+            {city && (
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="w-4 h-4 text-(--leadac-500)" />
+                <span className="text-white/50">In:</span>
+                <span className="font-medium text-white">{city}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return null;
 }
