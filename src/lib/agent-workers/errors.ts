@@ -63,6 +63,18 @@ export function isRetryable(err: unknown): boolean {
     if (name === "aborterror" || msg.includes("the operation was aborted") || msg.includes("aborted")) return true;
     // Network transients.
     if (msg.includes("socket hang up") || msg.includes("econnreset") || msg.includes("enotfound")) return true;
+    // node-postgres pool back-pressure: surfaces as "Connection terminated
+    // due to connection timeout" when the pool's connectionTimeoutMillis
+    // elapses while waiting for a free slot. Transient — retry after backoff
+    // typically succeeds because sibling jobs have released their connections.
+    if (msg.includes("connection terminated") || msg.includes("connection timeout")) return true;
+    // Transient Apify 5xx / rate-limit (HTTP_429, HTTP_502, HTTP_503).
+    if (/http_(429|5\d\d)/.test(msg)) return true;
+    // Apify temporary "memory limit exceeded" (402): once sibling actors
+    // free their reservations the retry succeeds. With the new memoryMbytes
+    // caps in @/lib/apify this should be rare, but still belongs in the
+    // retry class rather than poisoning the AgentRun.
+    if (msg.includes("actor-memory-limit-exceeded")) return true;
 
     // --- Explicit permanent patterns ---
     if (msg.includes("schema") && msg.includes("violation")) return false;

@@ -20,10 +20,9 @@ import { SocialProfileIcons } from "@/components/app/social-profile-icons";
 import { LeadMapView } from "@/components/app/lead-map-view";
 import { AiWorkersPanel } from "@/components/app/ai-workers-panel";
 import { PlannerActions } from "@/components/app/planner-actions";
-import { NicheProductFitCard } from "@/components/app/niche-product-fit-card";
+import { WebsiteIntelligencePanel } from "@/components/app/website-intelligence-panel";
 import {
   ArrowLeft,
-  Globe,
   MapPin,
   ExternalLink,
   Bot,
@@ -36,8 +35,6 @@ import {
   Loader2,
   ScanSearch,
   Search,
-  CircleCheck,
-  CircleX,
   AlertTriangle,
   Info,
   Zap,
@@ -642,6 +639,23 @@ export default function LeadDetailPage({
             </TabsContent>
 
             <TabsContent value="website" className="space-y-5">
+              <WebsiteIntelligencePanel
+                websiteUrl={lead.websiteUrl}
+                hasWebsite={lead.hasWebsite}
+                businessName={lead.businessName}
+                workspaceNiche={lead.workspace?.niche ?? null}
+                nicheSlug={lead.nicheSlug}
+                subNicheSlug={lead.subNicheSlug}
+                audit={audit}
+                auditSummary={auditSummary}
+                contentCheck={showContentCheck ? contentCheck : null}
+                contentCheckLoading={contentCheckLoading}
+                websiteSearch={showWebsiteSearch ? websiteSearchResult : null}
+                websiteSearchLoading={websiteSearchLoading}
+                onCrawl={runCrawl}
+                onContentCheck={runContentCheck}
+                onWebsiteSearch={runWebsiteSearch}
+              />
               <SubNicheOverride
                 leadId={lead.id}
                 nicheSlug={lead.nicheSlug}
@@ -650,38 +664,6 @@ export default function LeadDetailPage({
                 subNicheConfidence={lead.subNicheConfidence}
                 onChange={refetchLead}
               />
-              {(lead.workspace?.niche === "RESTAURANT_TECH" ||
-                lead.nicheSlug === "fnb" ||
-                lead.subNicheSlug?.startsWith("fnb")) &&
-                audit && (
-                  <RestaurantSignalsCard features={audit.rawFeaturesJson ?? null} />
-                )}
-              {(lead.nicheSlug || lead.subNicheSlug) && (
-                <NicheProductFitCard
-                  nicheSlug={lead.nicheSlug}
-                  subNicheSlug={lead.subNicheSlug}
-                  auditFeatures={audit?.rawFeaturesJson ?? null}
-                />
-              )}
-              {audit ? (
-                <>
-                  <WebsiteStatsRow audit={audit} auditSummary={auditSummary} />
-                  <AuditAccordion audit={audit} />
-                </>
-              ) : (
-                <EmptyAuditCard
-                  hasWebsite={lead.hasWebsite}
-                  onCrawl={runCrawl}
-                  onWebsiteSearch={runWebsiteSearch}
-                  websiteSearchLoading={websiteSearchLoading}
-                />
-              )}
-              {showContentCheck && contentCheck && (
-                <ContentCheckCard result={contentCheck} onClose={() => setShowContentCheck(false)} />
-              )}
-              {showWebsiteSearch && websiteSearchResult && (
-                <WebsiteSearchCard result={websiteSearchResult} onClose={() => setShowWebsiteSearch(false)} />
-              )}
             </TabsContent>
 
             <TabsContent value="workers" className="space-y-5">
@@ -1569,415 +1551,10 @@ function PersonalizedMessageCard({
   );
 }
 
-function EmptyAuditCard({
-  hasWebsite,
-  onCrawl,
-  onWebsiteSearch,
-  websiteSearchLoading,
-}: {
-  hasWebsite: boolean;
-  onCrawl: () => void;
-  onWebsiteSearch: () => void;
-  websiteSearchLoading: boolean;
-}) {
-  return (
-    <Card>
-      <CardContent className="py-14 flex flex-col items-center text-center">
-        <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mb-4">
-          <Globe className="w-7 h-7 text-white/40" />
-        </div>
-        <p className="text-[17px] font-semibold text-white">
-          {hasWebsite ? "Website not scanned yet" : "No website on file"}
-        </p>
-        <p className="text-[14px] text-white/55 mt-1 max-w-sm">
-          {hasWebsite
-            ? "Scan the website to extract technical signals, detected services and opportunity indicators."
-            : "Search the web for an active domain matching this business."}
-        </p>
-        {hasWebsite ? (
-          <Button onClick={onCrawl} className="mt-5 h-11 rounded-full px-5 gap-2">
-            <Globe className="w-4 h-4" />
-            Scan Website
-          </Button>
-        ) : (
-          <Button
-            onClick={onWebsiteSearch}
-            disabled={websiteSearchLoading}
-            className="mt-5 h-11 rounded-full px-5 gap-2"
-          >
-            {websiteSearchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            Find Website
-          </Button>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function WebsiteStatsRow({
-  audit,
-  auditSummary,
-}: {
-  audit: NonNullable<LeadDetail["websiteAudit"]>;
-  auditSummary: { totalChecks: number; passed: number; failed: number; unknown?: number; scorePercent: number } | null;
-}) {
-  // Phase 0/B2 — denominator is the canonical "scorable" count
-  // (totalChecks - unknown). Same number the AI prompt sees, same
-  // number the website-plan endpoint returns. No more 1/7 mystery.
-  const denom = auditSummary
-    ? Math.max(1, auditSummary.totalChecks - (auditSummary.unknown ?? 0))
-    : 0;
-  const scorePct = auditSummary ? auditSummary.scorePercent : 0;
-  return (
-    <div className="grid grid-cols-3 gap-3">
-      <StatTile
-        value={auditSummary ? `${auditSummary.passed}/${denom}` : "—"}
-        label="Checks Passed"
-        accent={scorePct >= 70 ? "ok" : scorePct >= 40 ? "warn" : "bad"}
-      />
-      <StatTile
-        value={audit.loadTimeMs != null ? `${audit.loadTimeMs}` : "—"}
-        suffix={audit.loadTimeMs != null ? "ms" : undefined}
-        label="Load Time"
-        accent={audit.loadTimeMs == null ? "neutral" : audit.loadTimeMs < 1500 ? "ok" : audit.loadTimeMs < 3500 ? "warn" : "bad"}
-      />
-      <StatTile
-        value={audit.https ? "Yes" : "No"}
-        label="HTTPS"
-        accent={audit.https ? "ok" : "bad"}
-      />
-    </div>
-  );
-}
-
-function StatTile({
-  value,
-  suffix,
-  label,
-  accent = "neutral",
-}: {
-  value: string;
-  suffix?: string;
-  label: string;
-  accent?: "ok" | "warn" | "bad" | "neutral";
-}) {
-  const color =
-    accent === "ok"
-      ? "text-[hsl(152_48%_50%)]"
-      : accent === "warn"
-      ? "text-[hsl(38_70%_52%)]"
-      : accent === "bad"
-      ? "text-[hsl(4_62%_54%)]"
-      : "text-white";
-  return (
-    <div className="rounded-2xl bg-white/5 border border-white/8 p-4 text-center">
-      <p className={`text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] leading-none ${color}`}>
-        {value}
-        {suffix && <span className="text-[13px] font-medium text-white/40 ml-1">{suffix}</span>}
-      </p>
-      <p className="text-[11px] uppercase tracking-[0.08em] text-white/40 mt-2">{label}</p>
-    </div>
-  );
-}
-
-function AuditAccordion({ audit }: { audit: NonNullable<LeadDetail["websiteAudit"]> }) {
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ core: true });
-  const toggle = (k: string) => setOpenGroups((s) => ({ ...s, [k]: !s[k] }));
-
-  // Phase 0/B1 — when our crawler bumped into a bot block / 4xx but
-  // the page might be perfectly fine for humans, surface that fact
-  // instead of just rendering "Reachable: No / Title: —". Lets the SDR
-  // open the site themselves rather than mistrust the audit silently.
-  const reachableLabel: ReactNode = audit.reachable ? (
-    <Badge variant="success">Yes</Badge>
-  ) : audit.crawlError === "BOT_BLOCKED_4XX" || (audit.httpStatus && audit.httpStatus >= 400 && audit.httpStatus < 500) ? (
-    <Badge variant="warning">{`Bot blocked (${audit.httpStatus ?? "4xx"})`}</Badge>
-  ) : audit.crawlError ? (
-    <Badge variant="destructive">{`Failed (${audit.crawlError.replace(/_/g, " ").toLowerCase()})`}</Badge>
-  ) : (
-    <Badge variant="destructive">No</Badge>
-  );
-
-  const coreRows: { label: string; value: ReactNode }[] = [
-    { label: "Reachable", value: reachableLabel },
-    { label: "Mobile Friendly", value: <Badge variant={audit.mobileFriendlyGuess ? "success" : "destructive"}>{audit.mobileFriendlyGuess ? "Yes" : "No"}</Badge> },
-    { label: "Title", value: audit.title || "—" },
-    { label: "Meta Description", value: audit.metaDescription || "—" },
-    { label: "Contact Form", value: audit.hasContactForm ? "Yes" : "No" },
-    { label: "WhatsApp", value: audit.hasWhatsappLink ? "Yes" : "No" },
-    { label: "Booking", value: audit.hasBookingSystem ? "Yes" : "No" },
-    { label: "E-commerce", value: audit.hasEcommerce ? "Yes" : "No" },
-  ];
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-[17px]">Website Audit</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {audit.crawlError === "BOT_BLOCKED_4XX" && (
-          <div className="rounded-lg border border-[var(--leadac-warning)]/30 bg-[var(--leadac-warning)]/10 px-3 py-2 text-[12px] text-[var(--leadac-text-2)]">
-            Site responded with {audit.httpStatus} to our crawler. A real
-            visitor can usually still open it — open the URL manually before
-            trusting these audit fields.
-          </div>
-        )}
-        <AuditGroup label="Core" open={!!openGroups.core} onToggle={() => toggle("core")}>
-          <div className="space-y-2.5">
-            {coreRows.map((r) => (
-              <InfoRow key={r.label} label={r.label} value={r.value} />
-            ))}
-          </div>
-        </AuditGroup>
-
-        <AuditGroup label="Extended" open={!!openGroups.extended} onToggle={() => toggle("extended")}>
-          <div className="space-y-2">
-            <AuditBadgeRow label="Open Graph" value={audit.hasOpenGraph} />
-            <AuditBadgeRow label="Twitter Cards" value={audit.hasTwitterCards} />
-            <AuditBadgeRow label="Favicon" value={audit.hasFavicon} />
-            <AuditBadgeRow label="PWA Manifest" value={audit.hasManifest} />
-            <AuditBadgeRow label="Service Worker" value={audit.hasServiceWorker} />
-            <AuditBadgeRow label="Google Analytics" value={audit.hasGoogleAnalytics} />
-            <AuditBadgeRow label="Cookie Consent" value={audit.hasCookieConsent} />
-            <AuditBadgeRow label="Responsive Images" value={audit.hasResponsiveImages} />
-            <AuditBadgeRow label="Font Display Swap" value={audit.hasFontDisplay} />
-            {audit.cssFramework && <InfoRow label="CSS Framework" value={audit.cssFramework} />}
-            {typeof audit.pageCount === "number" && audit.pageCount > 0 && (
-              <InfoRow label="Page Count" value={String(audit.pageCount)} />
-            )}
-            {audit.schemaTypes && audit.schemaTypes.length > 0 && (
-              <div className="pt-1">
-                <p className="text-[12px] text-white/40 uppercase tracking-[0.06em] mb-1.5">Schema.org</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {audit.schemaTypes.map((t) => <Badge key={t} variant="outline">{t}</Badge>)}
-                </div>
-              </div>
-            )}
-            {audit.servicesDetected.length > 0 && (
-              <div className="pt-1">
-                <p className="text-[12px] text-white/40 uppercase tracking-[0.06em] mb-1.5">Detected Services</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {audit.servicesDetected.map((s) => <Badge key={s} variant="outline">{s}</Badge>)}
-                </div>
-              </div>
-            )}
-          </div>
-        </AuditGroup>
-
-        {audit.securityHeaders && (
-          <AuditGroup label="Security Headers" open={!!openGroups.security} onToggle={() => toggle("security")}>
-            <div className="space-y-2">
-              <AuditBadgeRow label="CSP" value={audit.securityHeaders.hasCSP} />
-              <AuditBadgeRow label="X-Frame-Options" value={audit.securityHeaders.hasXFrameOptions} />
-              <AuditBadgeRow label="X-Content-Type" value={audit.securityHeaders.hasXContentTypeOptions} />
-              <AuditBadgeRow label="Referrer-Policy" value={audit.securityHeaders.hasReferrerPolicy} />
-              <AuditBadgeRow label="HSTS" value={audit.securityHeaders.hasHSTS} />
-              <AuditBadgeRow label="Permissions-Policy" value={audit.securityHeaders.hasPermissionsPolicy} />
-            </div>
-          </AuditGroup>
-        )}
-
-        {((audit.accessibilityIssues && audit.accessibilityIssues.length > 0) ||
-          (audit.performanceHints && audit.performanceHints.length > 0)) && (
-          <AuditGroup label="Performance & A11y" open={!!openGroups.perf} onToggle={() => toggle("perf")}>
-            <div className="space-y-3">
-              {audit.accessibilityIssues && audit.accessibilityIssues.length > 0 && (
-                <div>
-                  <p className="text-[12px] text-white/40 uppercase tracking-[0.06em] mb-1.5">Accessibility Issues</p>
-                  <ul className="space-y-1">
-                    {audit.accessibilityIssues.map((issue, i) => (
-                      <li key={i} className="text-[14px] text-[hsl(4_62%_54%)] flex items-start gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                        {issue}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {audit.performanceHints && audit.performanceHints.length > 0 && (
-                <div>
-                  <p className="text-[12px] text-white/40 uppercase tracking-[0.06em] mb-1.5">Performance Hints</p>
-                  <ul className="space-y-1">
-                    {audit.performanceHints.map((hint, i) => (
-                      <li key={i} className="text-[14px] text-[hsl(38_70%_52%)] flex items-start gap-1.5">
-                        <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                        {hint}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </AuditGroup>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function AuditGroup({
-  label,
-  open,
-  onToggle,
-  children,
-}: {
-  label: string;
-  open: boolean;
-  onToggle: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl bg-white/[0.03] border border-white/8 overflow-hidden">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.03] transition-colors"
-      >
-        <span className="text-[14px] font-medium text-white">{label}</span>
-        <ChevronDown
-          className={`w-4 h-4 text-white/40 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && <div className="px-4 pb-4 pt-1">{children}</div>}
-    </div>
-  );
-}
-
-function ContentCheckCard({ result, onClose }: { result: ContentCheckResult; onClose: () => void }) {
-  const verdictConfig: Record<string, { label: string; color: string; bg: string; Icon: typeof CircleX }> = {
-    placeholder: { label: "Placeholder / Empty Site", color: "text-[hsl(4_62%_54%)]", bg: "bg-[hsl(4_62%_54%)]/6 border-[hsl(4_62%_54%)]/20", Icon: CircleX },
-    basic: { label: "Basic Site", color: "text-[hsl(38_70%_52%)]", bg: "bg-[hsl(38_70%_52%)]/6 border-[hsl(38_70%_52%)]/20", Icon: AlertTriangle },
-    developed: { label: "Developed Site", color: "text-[hsl(152_48%_50%)]", bg: "bg-[hsl(152_48%_50%)]/6 border-[hsl(152_48%_50%)]/20", Icon: CircleCheck },
-    unreachable: { label: "Unreachable", color: "text-white/60", bg: "bg-white/5 border-white/10", Icon: CircleX },
-  };
-
-  const config = verdictConfig[result.verdict] || verdictConfig.unreachable;
-
-  return (
-    <Card className="overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-[17px] flex items-center gap-2">
-          <ScanSearch className="w-4 h-4 text-(--leadac-500)" />
-          Content Check Result
-        </CardTitle>
-        <button type="button" onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors rounded-lg p-1 hover:bg-white/10">
-          <X className="w-4 h-4" />
-        </button>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className={`rounded-2xl border p-4 ${config.bg}`}>
-          <div className="flex items-center gap-3 mb-2">
-            <config.Icon className={`w-5 h-5 ${config.color}`} />
-            <div className="flex-1">
-              <p className={`font-semibold ${config.color}`}>{config.label}</p>
-              <p className="text-xs text-white/50">Score: {result.score}/100</p>
-            </div>
-            <CircularProgress value={result.score} size={48} strokeWidth={4} />
-          </div>
-          <p className="text-sm text-white/70 leading-relaxed">{result.summary}</p>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {[
-            { value: result.wordCount, label: "Words" },
-            { value: result.imageCount, label: "Images" },
-            { value: result.internalLinkCount, label: "Links" },
-            { value: `${(result.htmlSize / 1024).toFixed(0)}`, label: "KB" },
-          ].map((stat) => (
-            <div key={stat.label} className="rounded-2xl bg-white/5 p-3 text-center">
-              <p className="text-lg font-semibold text-white">{stat.value}</p>
-              <p className="text-[11px] uppercase tracking-[0.06em] text-white/40">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {result.builderDetected && (
-          <div className="flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-(--leadac-500)/6 border border-(--leadac-500)/20">
-            <Info className="w-4 h-4 text-(--leadac-500) shrink-0" />
-            <span className="text-sm text-(--leadac-500)">Built with <strong>{result.builderDetected}</strong></span>
-          </div>
-        )}
-
-        <div className="space-y-1.5 max-h-60 overflow-y-auto">
-          <p className="text-[12px] uppercase tracking-[0.06em] text-white/40">Detailed Analysis</p>
-          {result.signals.map((signal, i) => (
-            <div key={i} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${signal.status === "good" ? "bg-[hsl(152_48%_50%)]" : signal.status === "warning" ? "bg-[hsl(38_70%_52%)]" : "bg-[hsl(4_62%_54%)]"}`} />
-                <span className="text-sm font-medium text-white/75">{signal.label}</span>
-              </div>
-              <span className="text-sm text-white/50 text-right max-w-[55%] truncate">{signal.detail}</span>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function WebsiteSearchCard({ result, onClose }: { result: WebsiteSearchResult; onClose: () => void }) {
-  return (
-    <Card className="overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-[17px] flex items-center gap-2">
-          <Globe className="w-4 h-4 text-[hsl(38_70%_52%)]" />
-          Website Search Results
-        </CardTitle>
-        <button type="button" onClick={onClose} className="text-white/30 hover:text-white/70 transition-colors rounded-lg p-1 hover:bg-white/10">
-          <X className="w-4 h-4" />
-        </button>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {result.found ? (
-          <>
-            <div className="rounded-2xl border border-[hsl(152_48%_50%)]/20 bg-[hsl(152_48%_50%)]/6 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CircleCheck className="w-5 h-5 text-[hsl(152_48%_50%)]" />
-                <p className="font-semibold text-[hsl(152_48%_50%)]">{result.websites.length} website(s) found!</p>
-              </div>
-              <p className="text-sm text-[hsl(152_48%_50%)]">The first match was saved to the lead automatically.</p>
-            </div>
-            <div className="space-y-2">
-              {result.websites.map((website, i) => (
-                <div key={i} className="rounded-2xl border border-white/10 p-3 hover:bg-white/5 transition-all">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <a href={website.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-(--leadac-500) hover:underline break-all">{website.url}</a>
-                      {website.title && <p className="text-xs text-white/50 mt-0.5 truncate">{website.title}</p>}
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <Badge variant={website.source === "google_search" ? "secondary" : "outline"}>{website.source === "google_search" ? "Google" : "Domain"}</Badge>
-                      {i === 0 && <Badge variant="success">Saved</Badge>}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <CircleX className="w-5 h-5 text-white/30" />
-              <p className="font-semibold text-white/60">No website found</p>
-            </div>
-            <p className="text-sm text-white/50">Scanned {result.searchedCount} addresses but no active website was detected.</p>
-          </div>
-        )}
-        <p className="text-xs text-white/30 text-center">{result.searchedCount} addresses scanned</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function AuditBadgeRow({ label, value }: { label: string; value?: boolean }) {
-  if (value === undefined) return null;
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-[13px] text-white/55">{label}</span>
-      <Badge variant={value ? "success" : "destructive"} className="text-xs">{value ? "Yes" : "No"}</Badge>
-    </div>
-  );
-}
+// EmptyAuditCard, WebsiteStatsRow, StatTile, AuditAccordion, AuditGroup,
+// ContentCheckCard, WebsiteSearchCard, AuditBadgeRow, RestaurantSignalsCard
+// and InfoRow have moved into `WebsiteIntelligencePanel` so the website
+// tab now renders one cohesive surface instead of seven separate cards.
 
 function WebsitePlanSection({
   plan,
@@ -2293,86 +1870,6 @@ function HeroContactBar({
         </a>
       )}
     </div>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="flex items-start justify-between gap-3">
-      <span className="text-[13px] text-white/55">{label}</span>
-      <span className="text-[13px] font-medium text-right max-w-[60%] text-white/90">{value}</span>
-    </div>
-  );
-}
-
-function RestaurantSignalsCard({
-  features,
-}: {
-  features: {
-    hasQrMenu?: boolean;
-    hasOnlineReservation?: boolean;
-    hasDeliveryIntegration?: boolean;
-    detectedMenuTool?: string | null;
-    menuUrl?: string | null;
-  } | null;
-}) {
-  const signals = [
-    {
-      label: "QR Menu",
-      present: !!features?.hasQrMenu,
-      detail: features?.detectedMenuTool
-        ? `Detected: ${features.detectedMenuTool}`
-        : "Not detected — primary sales opportunity",
-      priority: "critical" as const,
-    },
-    {
-      label: "Online Reservation",
-      present: !!features?.hasOnlineReservation,
-      detail: features?.hasOnlineReservation
-        ? "Reservation system found"
-        : "No reservation integration",
-      priority: "important" as const,
-    },
-    {
-      label: "Delivery Integration",
-      present: !!features?.hasDeliveryIntegration,
-      detail: features?.hasDeliveryIntegration
-        ? "Delivery platform link found"
-        : "No delivery platform embed",
-      priority: "nice_to_have" as const,
-    },
-  ];
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-[15px] flex items-center gap-2">
-          <span className="text-lg">🍽</span>
-          Restaurant Tech Signals
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {signals.map((s) => (
-          <div key={s.label} className="flex items-start gap-3">
-            <div className="mt-0.5 shrink-0">
-              {s.present ? (
-                <CircleCheck className="w-4 h-4 text-emerald-400" />
-              ) : s.priority === "critical" ? (
-                <CircleX className="w-4 h-4 text-red-400" />
-              ) : s.priority === "important" ? (
-                <AlertTriangle className="w-4 h-4 text-amber-400" />
-              ) : (
-                <Info className="w-4 h-4 text-white/30" />
-              )}
-            </div>
-            <div>
-              <p className="text-[13px] font-medium text-white/90">{s.label}</p>
-              <p className="text-[12px] text-white/50">{s.detail}</p>
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
   );
 }
 

@@ -237,13 +237,19 @@ export function startAgentRunWorker() {
 
   const worker = new Worker<AgentRunJob>("agent-runs", processJob, {
     connection,
-    // Concurrency raised from 5→15: at 5 we were doing ~20 jobs/min,
-    // 3× below the rate limiter. Apify async-mode workers free the slot
-    // in ~2s (they fire the actor and return), so effective Gemini load
-    // is only the sync steps (audit, classifier, scorer, dossier,
-    // brief). At 15 concurrency + ~12s avg sync duration we hit ~75
-    // jobs/min — just above the old 60 cap, so bump the limiter too.
-    concurrency: 15,
+    // Concurrency tuned together with the Prisma pool (worker pool=25,
+    // see src/lib/prisma.ts). 15 was too aggressive: combined with the
+    // sibling crawl/analyze/review/email-verification workers running
+    // in the same node, peak DB demand (~33 concurrent jobs × 1-2 conns
+    // each) blew past the pool's connectionTimeoutMillis, surfacing as
+    // pg "Connection terminated due to connection timeout" and FAILED
+    // AgentRun rows. 10 keeps the agent-runs queue's share of the pool
+    // around 60% utilisation (10 jobs × 1.5 conns avg = 15 of 25),
+    // leaving headroom for the legacy intelligence queues.
+    //
+    // At 10 concurrency × ~12s avg sync duration we still clear ~50
+    // jobs/min, comfortably under the 150/min Gemini rate limiter.
+    concurrency: 10,
     limiter: { max: 150, duration: 60000 },
     // Lock duration: how long BullMQ holds the job lock before
     // assuming the worker is dead. Must be > the longest possible job

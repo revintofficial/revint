@@ -28,6 +28,33 @@ import { logger } from "./logger";
 
 const APIFY_API_BASE = "https://api.apify.com/v2";
 
+/**
+ * Default per-actor memory cap.
+ *
+ * Apify actors default to whatever the actor manifest declares - many
+ * actors (notably `apify/website-content-crawler`) declare 8192 MB,
+ * which on Apify's free / starter tiers immediately busts the 8 GB
+ * total memory cap once even a single sibling actor is running. Result:
+ * Apify returns 402 `actor-memory-limit-exceeded` and the AgentRun
+ * fails despite the actor itself being light enough to run on far
+ * less memory.
+ *
+ * 2048 MB is the conservative middle ground:
+ *   - Light cheerio / search / dataset actors finish in well under 1 GB
+ *     so 2 GB is plenty (and individual workers can override down to
+ *     1024 - see `web-crawl-deep`).
+ *   - Browser-based actors (Instagram, Facebook posts, TikTok, gmaps)
+ *     run comfortably at 2 GB; the 4-8 GB defaults are headroom for
+ *     enterprise scale crawls we don't issue.
+ *   - With a 2 GB cap, the 8 GB free-tier ceiling allows up to 4
+ *     concurrent Apify workers per workspace, which matches the chain
+ *     fan-out (gmaps + serp + ig + web-crawl in parallel).
+ *
+ * Workers that genuinely need more memory pass `memoryMbytes` explicitly
+ * and skip this default.
+ */
+const DEFAULT_MEMORY_MBYTES = 2048;
+
 export interface ApifyRunResult<T = unknown> {
   runId: string;
   /**
@@ -101,7 +128,7 @@ export async function runSync<T = unknown>(
   );
   url.searchParams.set("token", token);
   if (opts?.timeoutSec) url.searchParams.set("timeout", String(opts.timeoutSec));
-  if (opts?.memoryMbytes) url.searchParams.set("memory", String(opts.memoryMbytes));
+  url.searchParams.set("memory", String(opts?.memoryMbytes ?? DEFAULT_MEMORY_MBYTES));
 
   const res = await fetch(url.toString(), {
     method: "POST",
@@ -191,7 +218,7 @@ export async function runAsync(
   const url = new URL(`${APIFY_API_BASE}/acts/${encodeURIComponent(actorId)}/runs`);
   url.searchParams.set("token", token);
   if (opts.timeoutSec) url.searchParams.set("timeout", String(opts.timeoutSec));
-  if (opts.memoryMbytes) url.searchParams.set("memory", String(opts.memoryMbytes));
+  url.searchParams.set("memory", String(opts.memoryMbytes ?? DEFAULT_MEMORY_MBYTES));
 
   const res = await fetch(url.toString(), {
     method: "POST",

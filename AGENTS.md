@@ -72,7 +72,7 @@ npm run lint               # eslint .
 <!-- BEGIN:references -->
 ## Pointers
 
-- Marketing context: `.agents/product-marketing-context.md` (ICP, positioning, voice)
+- Marketing / research / ops docs: archived (moved out of workspace by user). If you need ICP, positioning, persona, launch plan, market research, or roadmap context, ask the user — these are no longer in-tree to keep agent token cost low.
 - Brand assets: `public/logo.png`, `public/leadac-brand-kit.pdf`, `public/brand-kit.html`
 - DB schema: `prisma/schema.prisma` (~700 lines — grep first, don't read whole)
 - AI Core types: `src/lib/agent-workers/types.ts`

@@ -54,7 +54,14 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     removeElementsCssSelector: "nav, footer, header, .cookie, script, style",
   };
 
-  const result = await runSync<CrawledPage>(ACTOR_ID, input, { timeoutSec: 300 });
+  // The cheerio crawler is HTML-only (no headless browser), so 1 GB
+  // is plenty even for 50-page sites. Override the wrapper's 2 GB
+  // default so several APIFY_WEB_CRAWL_DEEP runs fit under the
+  // workspace's Apify total-memory cap simultaneously.
+  const result = await runSync<CrawledPage>(ACTOR_ID, input, {
+    timeoutSec: 300,
+    memoryMbytes: 1024,
+  });
 
   const pages = result.items
     .filter((p) => p && (typeof p.markdown === "string" || typeof p.text === "string"))
