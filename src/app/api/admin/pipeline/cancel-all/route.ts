@@ -46,8 +46,8 @@ export async function POST() {
     // (they'll hit the CANCELLED DB state above when they try to write back).
     let drainedJobs = 0;
     try {
-      const agentRunsQueue = getAgentRunsQueue();
-      const discoveryQueue = getDiscoveryQueue();
+      const agentRunsQueue = getAgentRunsQueue() as any;
+      const discoveryQueue = getDiscoveryQueue() as any;
       await Promise.all([
         agentRunsQueue.drain(),
         discoveryQueue.drain(),
