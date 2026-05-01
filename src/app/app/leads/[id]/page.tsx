@@ -11,6 +11,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CircularProgress } from "@/components/ui/progress";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
+import { DossierMarkdown } from "@/components/app/leads/dossier/DossierMarkdown";
+import { DossierSourceDrawer } from "@/components/app/leads/dossier/DossierSourceDrawer";
+import { useDossierSources } from "@/components/app/leads/dossier/use-dossier-sources";
+import type {
+  CanonicalTag,
+  DossierSourcesPayload,
+  LeadDetailTab,
+} from "@/components/app/leads/dossier/source-registry";
 import { OutreachStepper } from "@/components/ui/outreach-stepper";
 import { CRAWL_LABELS, ANALYZE_LABELS, OUTREACH_LABELS, REASON_LABELS, OFFER_LABELS } from "@/lib/labels";
 import { ReviewIntelligencePanel } from "@/components/app/review-intelligence-panel";
@@ -315,6 +323,16 @@ export default function LeadDetailPage({
   const [dossierLoading, setDossierLoading] = useState(false);
   const [dossierCopied, setDossierCopied] = useState(false);
   const [dossierCollapsed, setDossierCollapsed] = useState(false);
+  // Source-chip drawer: tag the user clicked, or null when closed.
+  const [drawerTag, setDrawerTag] = useState<CanonicalTag | null>(null);
+  // Dossier-sources backing data (websiteAudit / runs / memory etc.).
+  // Lazy: only fetched once a dossier exists. `refetchSources` is
+  // called after the user re-generates the dossier so chips re-bind
+  // to the freshly-stale source map.
+  const {
+    sources: dossierSources,
+    refetch: refetchDossierSources,
+  } = useDossierSources(id, !!dossier);
 
   useEffect(() => {
     let cancelled = false;
@@ -516,12 +534,36 @@ export default function LeadDetailPage({
       const data = await res.json();
       setDossier(data.markdown ?? null);
       setDossierCollapsed(false);
+      // Pull the freshly-baked source preview map so the chips in the
+      // new dossier markdown bind to up-to-date data on first render.
+      refetchDossierSources();
     } catch (err) {
       console.error("Dossier generation failed:", err);
       toast.error("Failed to generate dossier. Check your connection and retry.");
     } finally {
       setDossierLoading(false);
     }
+  };
+
+  /**
+   * Jump handler shared by every source-chip drawer. Switches to the
+   * relevant tab, scrolls the matching anchor into view (if it
+   * exists — we tolerate missing anchors so registry entries can
+   * point at sections we'll wire up later), then closes the drawer.
+   */
+  const handleSourceJump = (tab: LeadDetailTab, anchor: string) => {
+    handleTabChange(tab);
+    setDrawerTag(null);
+    // Wait one frame so the tab swap mounts the target panel before
+    // we try to scroll. Without this, anchors inside a tab that's
+    // currently unmounted resolve to null and the scroll silently
+    // no-ops.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(anchor);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   };
 
   const copyDossier = async () => {
@@ -585,15 +627,29 @@ export default function LeadDetailPage({
 
       <HeroBand lead={lead} onPipelineStarted={() => { void refetchLead(); }} />
 
+      {/*
+       * Side drawer triggered by clicking any source chip in the AI
+       * Dossier markdown. Mounted once at the page root so it overlays
+       * the whole layout regardless of which tab is active.
+       */}
+      <DossierSourceDrawer
+        tag={drawerTag}
+        sources={dossierSources}
+        onClose={() => setDrawerTag(null)}
+        onJumpToTab={handleSourceJump}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <aside className="lg:col-span-4 lg:sticky lg:top-6 lg:self-start space-y-5">
-          <IdentityRail
-            lead={lead}
-            contentCheckLoading={contentCheckLoading}
-            websiteSearchLoading={websiteSearchLoading}
-            onContentCheck={runContentCheck}
-            onWebsiteSearch={runWebsiteSearch}
-          />
+          <div id="anchor-identity">
+            <IdentityRail
+              lead={lead}
+              contentCheckLoading={contentCheckLoading}
+              websiteSearchLoading={websiteSearchLoading}
+              onContentCheck={runContentCheck}
+              onWebsiteSearch={runWebsiteSearch}
+            />
+          </div>
         </aside>
 
         <section className="lg:col-span-8 min-w-0 space-y-5">
@@ -614,16 +670,20 @@ export default function LeadDetailPage({
                 loading={dossierLoading}
                 copied={dossierCopied}
                 collapsed={dossierCollapsed}
+                sources={dossierSources}
                 onGenerate={generateDossier}
                 onCopy={copyDossier}
                 onToggle={() => setDossierCollapsed((v) => !v)}
+                onOpenSource={setDrawerTag}
               />
               {opp && (
-                <RecommendedPackageCard
-                  pkg={opp.recommendedPackage}
-                  reason={opp.recommendedPackageReason}
-                  fallbackOffer={opp.suggestedOffer}
-                />
+                <div id="anchor-service-packages">
+                  <RecommendedPackageCard
+                    pkg={opp.recommendedPackage}
+                    reason={opp.recommendedPackageReason}
+                    fallbackOffer={opp.suggestedOffer}
+                  />
+                </div>
               )}
               {opp?.personalizedFirstMessage && (
                 <PersonalizedMessageCard
@@ -639,31 +699,35 @@ export default function LeadDetailPage({
             </TabsContent>
 
             <TabsContent value="website" className="space-y-5">
-              <WebsiteIntelligencePanel
-                websiteUrl={lead.websiteUrl}
-                hasWebsite={lead.hasWebsite}
-                businessName={lead.businessName}
-                workspaceNiche={lead.workspace?.niche ?? null}
-                nicheSlug={lead.nicheSlug}
-                subNicheSlug={lead.subNicheSlug}
-                audit={audit}
-                auditSummary={auditSummary}
-                contentCheck={showContentCheck ? contentCheck : null}
-                contentCheckLoading={contentCheckLoading}
-                websiteSearch={showWebsiteSearch ? websiteSearchResult : null}
-                websiteSearchLoading={websiteSearchLoading}
-                onCrawl={runCrawl}
-                onContentCheck={runContentCheck}
-                onWebsiteSearch={runWebsiteSearch}
-              />
-              <SubNicheOverride
-                leadId={lead.id}
-                nicheSlug={lead.nicheSlug}
-                subNicheSlug={lead.subNicheSlug}
-                subNicheSource={lead.subNicheSource}
-                subNicheConfidence={lead.subNicheConfidence}
-                onChange={refetchLead}
-              />
+              <div id="anchor-website-audit">
+                <WebsiteIntelligencePanel
+                  websiteUrl={lead.websiteUrl}
+                  hasWebsite={lead.hasWebsite}
+                  businessName={lead.businessName}
+                  workspaceNiche={lead.workspace?.niche ?? null}
+                  nicheSlug={lead.nicheSlug}
+                  subNicheSlug={lead.subNicheSlug}
+                  audit={audit}
+                  auditSummary={auditSummary}
+                  contentCheck={showContentCheck ? contentCheck : null}
+                  contentCheckLoading={contentCheckLoading}
+                  websiteSearch={showWebsiteSearch ? websiteSearchResult : null}
+                  websiteSearchLoading={websiteSearchLoading}
+                  onCrawl={runCrawl}
+                  onContentCheck={runContentCheck}
+                  onWebsiteSearch={runWebsiteSearch}
+                />
+              </div>
+              <div id="anchor-niche-pack">
+                <SubNicheOverride
+                  leadId={lead.id}
+                  nicheSlug={lead.nicheSlug}
+                  subNicheSlug={lead.subNicheSlug}
+                  subNicheSource={lead.subNicheSource}
+                  subNicheConfidence={lead.subNicheConfidence}
+                  onChange={refetchLead}
+                />
+              </div>
             </TabsContent>
 
             <TabsContent value="workers" className="space-y-5">
@@ -671,7 +735,9 @@ export default function LeadDetailPage({
                   like one-click pitch pack, deep research, receptionist+KB.
                   The actual per-worker panel below still exposes
                   individual workers. */}
-              <PlannerActions leadId={lead.id} plan="PRO" />
+              <div id="anchor-workers-top">
+                <PlannerActions leadId={lead.id} plan="PRO" />
+              </div>
               <AiWorkersPanel leadId={lead.id} />
               <WebsitePlanSection
                 plan={plan}
@@ -687,17 +753,23 @@ export default function LeadDetailPage({
             </TabsContent>
 
             <TabsContent value="reviews" className="space-y-5">
-              <ReviewIntelligencePanel
-                leadId={lead.id}
-                hasReviews={(lead.googleReviews?.length ?? 0) > 0}
-                storedReviewCount={lead.googleReviews?.length ?? 0}
-                totalReviewCount={lead.reviewCount ?? 0}
-              />
-              <GoogleReviewsAccordion leadId={lead.id} />
-              <VoiceNotesPanel leadId={lead.id} />
+              <div id="anchor-review-analysis">
+                <ReviewIntelligencePanel
+                  leadId={lead.id}
+                  hasReviews={(lead.googleReviews?.length ?? 0) > 0}
+                  storedReviewCount={lead.googleReviews?.length ?? 0}
+                  totalReviewCount={lead.reviewCount ?? 0}
+                />
+              </div>
+              <div id="anchor-reviews">
+                <GoogleReviewsAccordion leadId={lead.id} />
+              </div>
+              <div id="anchor-voice-notes">
+                <VoiceNotesPanel leadId={lead.id} />
+              </div>
             </TabsContent>
 
-            <TabsContent value="outreach" className="space-y-5">
+            <TabsContent value="outreach" className="space-y-5" id="anchor-sales-opportunity">
               {opp ? (
                 <Card>
                   <CardHeader className="pb-4">
@@ -1693,17 +1765,21 @@ function DossierSection({
   loading,
   copied,
   collapsed,
+  sources,
   onGenerate,
   onCopy,
   onToggle,
+  onOpenSource,
 }: {
   dossier: string | null;
   loading: boolean;
   copied: boolean;
   collapsed: boolean;
+  sources: DossierSourcesPayload | null;
   onGenerate: () => void;
   onCopy: () => void;
   onToggle: () => void;
+  onOpenSource: (tag: CanonicalTag) => void;
 }) {
   const hasContent = !!dossier;
 
@@ -1792,7 +1868,11 @@ function DossierSection({
       {hasContent && !collapsed && (
         <CardContent>
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5 max-h-[720px] overflow-y-auto select-text">
-            <MarkdownRenderer content={dossier!} />
+            <DossierMarkdown
+              markdown={dossier!}
+              sources={sources}
+              onOpenSource={onOpenSource}
+            />
           </div>
         </CardContent>
       )}

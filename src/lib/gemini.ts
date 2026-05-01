@@ -979,7 +979,12 @@ ${recommendedPackageSection}
 10. Recommended First Action — one sentence: how to open the first message or call with this lead.
 
 Rules:
-- Cite the source for every meaningful claim in square brackets, e.g. "[review_analyst]", "[APIFY_FACEBOOK_DEEP]", "[website_audit]", "[semantic_memory:SOCIAL_POST]".
+- Citations: every meaningful claim MUST end with exactly ONE token from this fixed set, nothing else allowed. Tokens are rendered as interactive source chips in the UI; invented tokens render as broken chips, so stay strictly within this list:
+  Native tags (lowercase, snake_case): [lead], [website_audit], [sales_opportunity], [review_analysis], [reviews], [voice_notes], [niche_pack], [service_packages]
+  Agent run tags: [run:WORKER_KIND] where WORKER_KIND is one of: WEBSITE_AUDITOR, REVIEW_ANALYST, SALES_OPPORTUNITY_SCORER, SOCIAL_SCRAPER, GOOGLE_PLACES_REVIEWS, SUBVERTICAL_CLASSIFIER, APIFY_FACEBOOK_DEEP, APIFY_INSTAGRAM_DEEP, APIFY_TIKTOK_DEEP, APIFY_LINKEDIN_COMPANY, APIFY_REDDIT_MENTIONS, APIFY_SERP_RANK, APIFY_COMPETITOR_ADS, APIFY_GMAPS_DEEP, APIFY_WEB_CRAWL_DEEP, WEBSITE_MOCKUP_GENERATOR, OPENER_WRITER, VIDEO_SCRIPT_WRITER, EMAIL_VERIFIER, LEAD_INTELLIGENCE_BRIEF
+  Memory tags: [memory:MEMORY_KIND] where MEMORY_KIND is one of: LEAD_PROFILE, REVIEW_CHUNK, VOICE_NOTE, SOCIAL_POST, SERP_SNAPSHOT, COMPETITOR_AD, REDDIT_MENTION, PROSPECT_KB_CHUNK
+- Exactly one token per claim. Never invent your own (NOT [salesOpportunity], NOT [Camden branch], NOT [APIFY_FACEBOOK_DEEP] without the run: prefix).
+- Never put multiple tokens in one bracket pair (NOT [lead, website_audit] — write "claim A [lead] and claim B [website_audit]" instead).
 - If a section has no data, write "no data" there. Do not fabricate or hallucinate.
 - Numbers and strings may be quoted verbatim from the JSON; for prose use an analytical, non-marketing tone.
 - Do not use emojis. Avoid promotional vocabulary (game-changer, unlock, elevate, seamless, etc.).

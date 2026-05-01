@@ -470,7 +470,11 @@ function WorkerRow({
     worker.phase1Enabled && !worker.locked && worker.remaining > 0 && !showSpinner;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+    // The id is consumed by the AI Dossier source-chip drawer:
+    // clicking a `[run:KIND]` chip → "Open in tab" → scrolls this row
+    // into view inside the Workers tab. Safe to land on a tab the row
+    // is mounted on; harmless `scrollIntoView` no-op otherwise.
+    <div id={`worker-${worker.kind}`} className="rounded-xl border border-white/10 bg-white/5 p-3">
       <div className="flex items-start gap-3">
         <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 text-(--leadac-500)">
           <Icon className="w-4 h-4" />
