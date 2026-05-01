@@ -4,7 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Archive,
   Bookmark,
   CheckCircle2,
   ExternalLink,
@@ -29,10 +28,13 @@ import { triggerHaptic } from "@/lib/haptics";
 /**
  * Phone/tablet leads list with native interactions:
  *   - Pull to refresh
- *   - Swipe right = mark contacted (constructive, green)
- *   - Swipe left = add to shortlist or archive (destructive paths)
  *   - Long-press = action sheet (Open, Mark contacted, Shortlist, Archive)
+ *   - Overflow (⋮) opens the same sheet
  *   - Tap card body = open lead detail (Link inside LeadCard)
+ *
+ * Swipe-to-reveal rows are intentionally not used here: glass cards sit on a
+ * semi-transparent layer, so colored underlay panels read as unwanted side bars
+ * on narrow screens.
  *
  * On tablet (768–1023px) we keep the same touch interactions but render two
  * cards per row for better information density.
@@ -225,32 +227,7 @@ export function MobileLeadList({
         
         {leads.map((lead, index) => (
           <li key={lead.id}>
-            <SwipeableRow
-              className="rounded-2xl"
-              leadingAction={{
-                label: "Contacted",
-                icon: CheckCircle2,
-                color: "var(--leadac-success)",
-                onSelect: () => markContacted(lead),
-              }}
-              trailingAction={
-                watchlistLeadIds.has(lead.id)
-                  ? {
-                      label: "Archive",
-                      icon: Archive,
-                      color: "var(--leadac-error)",
-                      onSelect: () => archiveLead(lead),
-                    }
-                  : {
-                      label: "Shortlist",
-                      icon: Bookmark,
-                      color: "var(--leadac-warning)",
-                      textColor: "white",
-                      onSelect: () => onShortlist(lead),
-                    }
-              }
-              onLongPress={() => setLongPressed(lead)}
-            >
+            <SwipeableRow className="rounded-2xl" onLongPress={() => setLongPressed(lead)}>
               <div className="relative">
                 <LeadCard
                   lead={lead}
