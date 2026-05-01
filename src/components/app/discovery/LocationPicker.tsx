@@ -125,6 +125,7 @@ export function LocationPicker({
   // one (classic input-race bug).
   useEffect(() => {
     const trimmed = input.trim();
+    console.log("[LocationPicker] effect fired", { input: trimmed, len: trimmed.length, regionCode, languageCode });
     if (trimmed.length < MIN_QUERY_LEN) {
       setSuggestions([]);
       setLoadingSuggestions(false);
@@ -133,7 +134,9 @@ export function LocationPicker({
     const seq = ++requestSeqRef.current;
     setLoadingSuggestions(true);
     setError(null);
+    console.log("[LocationPicker] timer scheduled", { seq, query: trimmed });
     const timer = setTimeout(async () => {
+      console.log("[LocationPicker] timer fired -> fetch", { seq, query: trimmed });
       try {
         const res = await fetch("/api/places/autocomplete", {
           method: "POST",
@@ -145,6 +148,7 @@ export function LocationPicker({
             languageCode,
           }),
         });
+        console.log("[LocationPicker] fetch returned", { seq, status: res.status });
         if (seq !== requestSeqRef.current) return;
         if (!res.ok) {
           setSuggestions([]);
@@ -156,10 +160,12 @@ export function LocationPicker({
           return;
         }
         const data = (await res.json()) as { suggestions?: AutocompleteSuggestion[] };
+        console.log("[LocationPicker] parsed", { seq, count: data.suggestions?.length ?? 0 });
         if (seq !== requestSeqRef.current) return;
         setSuggestions(data.suggestions ?? []);
         setActiveIndex(0);
-      } catch {
+      } catch (err) {
+        console.error("[LocationPicker] fetch error", err);
         if (seq !== requestSeqRef.current) return;
         setSuggestions([]);
         setError("Couldn't load suggestions.");
@@ -169,7 +175,10 @@ export function LocationPicker({
         }
       }
     }, DEBOUNCE_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      console.log("[LocationPicker] cleanup -> clearTimeout", { seq });
+      clearTimeout(timer);
+    };
   }, [input, regionCode, languageCode]);
 
   const pickSuggestion = useCallback(

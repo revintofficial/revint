@@ -300,7 +300,7 @@ function WebsiteAuditBody({ sources }: { sources: DossierSourcesPayload }) {
 
 function SalesOpportunityBody({ sources }: { sources: DossierSourcesPayload }) {
   const o = sources.salesOpportunity;
-  if (!o) return <Empty>Not scored yet. The sales opportunity scorer hasn't run.</Empty>;
+  if (!o) return <Empty>Not scored yet. The sales opportunity scorer has not run.</Empty>;
   return (
     <>
       <Section title="Score">
@@ -431,7 +431,7 @@ function VoiceNotesBody({ sources }: { sources: DossierSourcesPayload }) {
 
 function NichePackBody({ sources }: { sources: DossierSourcesPayload }) {
   const n = sources.nichePack;
-  if (!n) return <Empty>This lead hasn't been classified into a sub-vertical yet.</Empty>;
+  if (!n) return <Empty>This lead has not been classified into a sub-vertical yet.</Empty>;
   return (
     <>
       <Section title="Pack">
