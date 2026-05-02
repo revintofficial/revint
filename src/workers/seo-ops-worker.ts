@@ -15,6 +15,7 @@
  */
 
 import { Worker, type Job } from "bullmq";
+import IORedis from "ioredis";
 import { getRedis } from "../lib/redis";
 import { getSeoOpsQueue } from "../lib/queues";
 import { logger } from "../lib/logger";
@@ -188,8 +189,20 @@ async function runIndexNowPing(urls: string[]) {
 }
 
 export function startSeoOpsWorker(): Worker<SeoOpsJobData> {
+  // M11 fix - the worker used to share `getRedis()` with the queue
+  // producer, but BullMQ's Worker uses blocking BRPOP commands which
+  // monopolise the connection. Whenever the producer side issued a
+  // GSC cache write (`r.set`) on the same client, the worker's
+  // blocking call would race the SET and either time out or wedge.
+  // A dedicated IORedis instance for the worker avoids the conflict.
+  // `getRedis()` is still used inside the job bodies for caching
+  // because the producer-style traffic is fine to share.
+  const connection = new IORedis(
+    process.env.REDIS_URL || "redis://localhost:6379",
+    { maxRetriesPerRequest: null },
+  );
   const worker = new Worker<SeoOpsJobData>("seo-ops", processJob, {
-    connection: getRedis(),
+    connection,
     concurrency: 2,
   });
 
