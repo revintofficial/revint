@@ -31,12 +31,31 @@ export interface LeadsFilters {
   subNiche: string; // "all" or sub-niche slug
   minScore: number; // 0..100, 0 = no min
   maxScore: number; // 0..100, 100 = no max
+  // Google review rating bounds. null = unset on that side.
+  minRating: number | null;
+  maxRating: number | null;
+  // ISO timestamp; only leads with createdAt >= this are returned.
+  // null = no lower bound.
+  createdSince: string | null;
   sortBy: string; // "createdAt" | "rating" | "reviewCount" | "businessName" | "score" | "nearest" | "queue"
   page: number;
   // GPS-based filters (only set when "near me" toggle is on)
   userLat: number | null;
   userLng: number | null;
   withinMiles: number | null;
+}
+
+/**
+ * Default sort direction per `sortBy`. The UI labels imply a specific
+ * direction (e.g. "Name (A→Z)" must be ascending; "Score (high → low)"
+ * must be descending) so the wire-level `sortOrder` is derived from
+ * `sortBy` rather than hardcoded.
+ */
+function defaultSortOrder(sortBy: string): "asc" | "desc" {
+  if (sortBy === "businessName") return "asc";
+  // rating / reviewCount / score / createdAt / confidence / nearest:
+  // "highest / newest / nearest first" all map to desc.
+  return "desc";
 }
 
 export const DEFAULT_LEADS_FILTERS: LeadsFilters = {
@@ -49,6 +68,9 @@ export const DEFAULT_LEADS_FILTERS: LeadsFilters = {
   subNiche: "all",
   minScore: 0,
   maxScore: 100,
+  minRating: null,
+  maxRating: null,
+  createdSince: null,
   // Phase 1 — Today's Queue is the default view; "queue" sortBy means
   // "next action ASC, sales confidence DESC". Reps see leads they
   // need to act on TODAY at the top.
@@ -119,7 +141,7 @@ export function buildLeadsQuery(filters: LeadsFilters, limit: number): URLSearch
     page: String(filters.page),
     limit: String(limit),
     sortBy: filters.sortBy,
-    sortOrder: "desc",
+    sortOrder: defaultSortOrder(filters.sortBy),
     queue: filters.queue,
   });
   if (filters.borough !== "all") params.set("borough", filters.borough);
@@ -130,6 +152,9 @@ export function buildLeadsQuery(filters: LeadsFilters, limit: number): URLSearch
   if (filters.subNiche !== "all") params.set("subNiche", filters.subNiche);
   if (filters.minScore > 0) params.set("minScore", String(filters.minScore));
   if (filters.maxScore < 100) params.set("maxScore", String(filters.maxScore));
+  if (filters.minRating != null) params.set("minRating", String(filters.minRating));
+  if (filters.maxRating != null) params.set("maxRating", String(filters.maxRating));
+  if (filters.createdSince) params.set("createdSince", filters.createdSince);
   if (filters.userLat != null && filters.userLng != null) {
     params.set("userLat", String(filters.userLat));
     params.set("userLng", String(filters.userLng));

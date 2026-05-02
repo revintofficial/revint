@@ -16,6 +16,15 @@ export async function GET(request: Request) {
     const hasWebsite = searchParams.get("hasWebsite");
     const minScore = searchParams.get("minScore");
     const maxScore = searchParams.get("maxScore");
+    // Rating filter — used by the "Reviews ≤ 3.5" preset which
+    // promised filtering but only sorted before. `minRating`/`maxRating`
+    // are floats (Google rating is 0..5 with one decimal).
+    const minRating = searchParams.get("minRating");
+    const maxRating = searchParams.get("maxRating");
+    // ISO timestamp lower bound on `createdAt`. Used by the
+    // "Today's new" preset to actually scope to today's discoveries
+    // rather than just sorting by createdAt (which is the default).
+    const createdSince = searchParams.get("createdSince");
     const status = searchParams.get("status");
     const niche = searchParams.get("niche");
     const subNiche = searchParams.get("subNiche");
@@ -79,20 +88,46 @@ export async function GET(request: Request) {
     if (hasWebsite === "true") where.hasWebsite = true;
     if (hasWebsite === "false") where.hasWebsite = false;
 
+    if (minRating || maxRating) {
+      const min = minRating ? parseFloat(minRating) : NaN;
+      const max = maxRating ? parseFloat(maxRating) : NaN;
+      const ratingFilter: Record<string, number> = {};
+      if (Number.isFinite(min)) ratingFilter.gte = min;
+      if (Number.isFinite(max)) ratingFilter.lte = max;
+      if (Object.keys(ratingFilter).length > 0) {
+        where.rating = ratingFilter;
+      }
+    }
+
+    if (createdSince) {
+      const since = new Date(createdSince);
+      if (!Number.isNaN(since.getTime())) {
+        where.createdAt = { gte: since };
+      }
+    }
+
     if (search) {
       const terms = search.trim().split(/\s+/).filter(Boolean);
       if (terms.length > 0) {
-        where.AND = terms.map((term) => {
-          const or: Array<Record<string, unknown>> = [
-            { businessName: { contains: term, mode: "insensitive" } },
-            { formattedAddress: { contains: term, mode: "insensitive" } },
-          ];
-          const digits = term.replace(/\D/g, "");
-          if (digits.length >= 3) {
-            or.push({ phone: { contains: digits } });
-          }
-          return { OR: or };
-        });
+        // Append search clauses to any existing AND (e.g. Today's
+        // Queue snooze/assignment/due-date constraints). Previously
+        // we overwrote `where.AND` and silently broadened the query.
+        const existingAnd =
+          (where.AND as Array<Record<string, unknown>> | undefined) ?? [];
+        where.AND = [
+          ...existingAnd,
+          ...terms.map((term) => {
+            const or: Array<Record<string, unknown>> = [
+              { businessName: { contains: term, mode: "insensitive" } },
+              { formattedAddress: { contains: term, mode: "insensitive" } },
+            ];
+            const digits = term.replace(/\D/g, "");
+            if (digits.length >= 3) {
+              or.push({ phone: { contains: digits } });
+            }
+            return { OR: or };
+          }),
+        ];
       }
     }
 
@@ -100,14 +135,27 @@ export async function GET(request: Request) {
     // a sub-niche we also include the parent's children so legacy leads
     // tagged only with `nicheSlug = "fnb"` still surface alongside their
     // classified siblings.
+    //
+    // The parent+children case must be wrapped in AND because
+    // top-level `where.OR` is also used by the "concrete + unscored"
+    // status branch below. Sharing a single `where.OR` collapses the
+    // semantics from "(matches niche) AND (matches status)" to
+    // "(matches niche) OR (matches status)".
     if (niche && niche !== "all") {
       const childSlugs = getChildrenOf(niche).map((c) => c.slug);
       if (subNiche && subNiche !== "all") {
         where.subNicheSlug = subNiche;
       } else if (childSlugs.length > 0) {
-        where.OR = [
-          { nicheSlug: niche },
-          { subNicheSlug: { in: childSlugs } },
+        const existingAnd =
+          (where.AND as Array<Record<string, unknown>> | undefined) ?? [];
+        where.AND = [
+          ...existingAnd,
+          {
+            OR: [
+              { nicheSlug: niche },
+              { subNicheSlug: { in: childSlugs } },
+            ],
+          },
         ];
       } else {
         where.nicheSlug = niche;
@@ -132,11 +180,19 @@ export async function GET(request: Request) {
 
       if (concrete.length > 0 && includesUnscored) {
         // "Has any of these statuses, OR has no opportunity row at all".
-        const existingOr = (where.OR as Array<Record<string, unknown>> | undefined) ?? [];
-        where.OR = [
-          ...existingOr,
-          { salesOpportunity: { status: { in: concrete } } },
-          { salesOpportunity: null },
+        // Wrapped in AND so this OR composes correctly with any other
+        // top-level OR (e.g. niche-children) — sharing a single
+        // `where.OR` would collapse them into a single disjunction.
+        const existingAnd =
+          (where.AND as Array<Record<string, unknown>> | undefined) ?? [];
+        where.AND = [
+          ...existingAnd,
+          {
+            OR: [
+              { salesOpportunity: { status: { in: concrete } } },
+              { salesOpportunity: null },
+            ],
+          },
         ];
       } else if (concrete.length > 0) {
         salesOppFilter = { status: { in: concrete } };
@@ -163,15 +219,29 @@ export async function GET(request: Request) {
       };
     }
 
+    // When sorting by score, exclude leads with no salesOpportunity
+    // row. Postgres orders NULLs FIRST in DESC, so without this guard
+    // unscored leads bubble to the top of "Score (high → low)" — the
+    // exact opposite of what the label promises. If the user already
+    // has a salesOpportunity filter (status/score-range), relation
+    // existence is implicit and we leave the filter alone. Skipped
+    // when the user explicitly asked for unscored.
+    if (sortBy === "score" && !unscoredOnly && !where.salesOpportunity) {
+      where.salesOpportunity = { isNot: null };
+    }
+
     type LeadOrderBy = Record<string, unknown>;
+    // Prisma 6 only accepts plain `asc|desc` (SortOrder) when ordering by
+    // a non-null relation field. `opportunityScore` is `Int @default(0)`
+    // so the `{ sort, nulls }` (SortOrderInput) form throws
+    // "Expected SortOrder, provided Object" at runtime. Nullable direct
+    // fields below (`salesConfidence`, `nextActionDueAt`) keep the
+    // expanded form because they are on `Lead` itself and nullable.
+    const dir: "asc" | "desc" = sortOrder === "asc" ? "asc" : "desc";
     let orderBy: LeadOrderBy | LeadOrderBy[];
     if (sortBy === "score") {
       orderBy = [
-        {
-          salesOpportunity: {
-            opportunityScore: { sort: sortOrder, nulls: "last" },
-          },
-        },
+        { salesOpportunity: { opportunityScore: dir } },
         { createdAt: "desc" },
       ];
     } else if (sortBy === "queue") {
@@ -186,13 +256,13 @@ export async function GET(request: Request) {
       ];
     } else if (sortBy === "confidence") {
       orderBy = [
-        { salesConfidence: { sort: sortOrder, nulls: "last" } },
+        { salesConfidence: { sort: dir, nulls: "last" } },
         { createdAt: "desc" },
       ];
     } else if (sortBy === "nearest") {
-      orderBy = { createdAt: sortOrder };
+      orderBy = { createdAt: dir };
     } else {
-      orderBy = { [sortBy]: sortOrder };
+      orderBy = { [sortBy]: dir };
     }
 
     const isGeoMode = isNearestSort || Number.isFinite(withinMiles);

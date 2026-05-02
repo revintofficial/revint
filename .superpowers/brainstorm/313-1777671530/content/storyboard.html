@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Leadac AI — Video Storyboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900&display=swap" rel="stylesheet"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0603;
+    color: rgba(255,255,255,0.88);
+    font-family: "Inter", -apple-system, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    padding: 32px 24px 80px;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header { text-align: center; margin-bottom: 40px; }
+  .page-header h1 { font-family: "Inter", sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 6px; }
+  .page-header .amber { color: hsl(38,78%,58%); }
+  .page-header p { font-size: 13px; color: rgba(255,255,255,0.4); }
+
+  /* ── SPECS ROW ── */
+  .specs-row {
+    display: flex; gap: 12px; justify-content: center; margin-bottom: 40px; flex-wrap: wrap;
+  }
+  .spec-pill {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 99px;
+    padding: 5px 14px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.02em;
+  }
+  .spec-pill span { color: hsl(38,78%,58%); }
+
+  /* ── TIMELINE ── */
+  .timeline-wrap { margin-bottom: 44px; }
+  .timeline-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.3); margin-bottom: 8px; }
+  .timeline {
+    display: flex; gap: 3px; height: 28px; align-items: stretch;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .tl-seg {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    border-right: 1px solid rgba(255,255,255,0.05);
+    position: relative; overflow: hidden; flex-shrink: 0;
+  }
+  .tl-seg:last-child { border-right: none; }
+  .tl-logo  { background: hsl(38,78%,22%/0.7); color: hsl(38,78%,70%); width: 9%; }
+  .tl-hero  { background: hsl(38,78%,18%/0.7); color: hsl(38,78%,65%); width: 9%; }
+  .tl-disc  { background: hsl(200,50%,18%/0.5); color: hsl(200,60%,65%); width: 12%; }
+  .tl-pipe  { background: hsl(260,45%,18%/0.5); color: hsl(260,60%,70%); width: 12%; }
+  .tl-doss  { background: hsl(38,78%,15%/0.5); color: hsl(38,78%,60%); width: 14%; }
+  .tl-web   { background: hsl(150,40%,15%/0.5); color: hsl(150,50%,60%); width: 12%; }
+  .tl-rev   { background: hsl(0,50%,15%/0.5); color: hsl(0,60%,65%); width: 12%; }
+  .tl-out   { background: hsl(38,78%,18%/0.7); color: hsl(38,78%,65%); flex: 1; }
+
+  .tl-time {
+    display: flex; justify-content: space-between;
+    font-size: 9px; color: rgba(255,255,255,0.22);
+    margin-top: 4px; padding: 0 2px;
+  }
+
+  /* ── SCENE GRID ── */
+  .section-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: rgba(255,255,255,0.28);
+    margin-bottom: 14px; margin-top: 36px;
+    font-family: "Inter", sans-serif;
+  }
+  .scene-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .scene-card {
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.025);
+    overflow: hidden;
+  }
+  .scene-canvas {
+    height: 120px;
+    position: relative;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .scene-meta {
+    padding: 10px 12px 12px;
+  }
+  .scene-num {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.25); margin-bottom: 2px;
+  }
+  .scene-name { font-family: "Inter", sans-serif; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.88); margin-bottom: 3px; letter-spacing: -0.02em; }
+  .scene-timing { font-size: 10.5px; color: hsl(38,78%,58%); font-weight: 600; margin-bottom: 5px; }
+  .scene-desc { font-size: 10.5px; color: rgba(255,255,255,0.38); line-height: 1.45; }
+
+  /* ── SCENE 1: LOGO ── */
+  .sc-logo { background: radial-gradient(ellipse 80% 60% at 50% 55%, hsl(38,78%,50%/0.2), transparent 70%), #050302; }
+  .logo-text {
+    font-family: "Inter", sans-serif;
+    font-size: 17px; font-weight: 700; letter-spacing: -0.03em;
+    background: linear-gradient(135deg, hsl(38,78%,80%), hsl(38,78%,50%));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    animation: logo-in 2.5s cubic-bezier(0.34,1.56,0.64,1) infinite;
+    text-shadow: none;
+  }
+  .logo-particles { position: absolute; inset: 0; }
+  .lp { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: hsl(38,78%,58%); animation: lp-drift 2.5s ease-in-out infinite; }
+  .lp1 { top:20%;left:22%; animation-delay:0s; }
+  .lp2 { top:70%;left:18%; animation-delay:0.3s; }
+  .lp3 { top:25%;right:22%; animation-delay:0.6s; }
+  .lp4 { top:75%;right:20%; animation-delay:0.9s; }
+  .lp5 { top:50%;left:10%; animation-delay:0.45s; opacity:0.6; }
+  .lp6 { top:50%;right:10%; animation-delay:0.75s; opacity:0.6; }
+  @keyframes logo-in { 0%,100%{opacity:0.6;transform:scale(0.88);filter:blur(4px);} 50%{opacity:1;transform:scale(1);filter:blur(0);} }
+  @keyframes lp-drift { 0%,100%{transform:translateY(0) scale(0.7);opacity:0.3;} 50%{transform:translateY(-14px) scale(1.2);opacity:0.9;} }
+
+  /* ── SCENE 2: HERO HEADLINE ── */
+  .sc-hero { background: #050302; }
+  .hero-words { display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .hw {
+    font-family: "Inter", sans-serif;
+    font-size: 14px; font-weight: 700; letter-spacing: -0.03em;
+    color: rgba(255,255,255,0.92);
+    animation: word-flash 3s ease-in-out infinite;
+  }
+  .hw:nth-child(1) { animation-delay: 0s; }
+  .hw:nth-child(2) { animation-delay: 0.5s; color: hsl(38,78%,58%); }
+  .hw:nth-child(3) { animation-delay: 1s; }
+  @keyframes word-flash { 0%,60%,100%{opacity:0.35;transform:translateY(4px);} 20%,40%{opacity:1;transform:translateY(0);} }
+
+  /* ── SCENE 3: DISCOVERY ── */
+  .sc-disc { background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(56,120,180,0.15), transparent 70%), #050302; }
+  .disc-stack { display:flex; flex-direction:column; gap:5px; width:115px; }
+  .disc-row {
+    height: 20px; border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; padding: 0 8px; gap: 5px;
+    animation: disc-fly 2.8s cubic-bezier(0.34,1.56,0.64,1) infinite;
+  }
+  .disc-row:nth-child(1) { animation-delay: 0s; }
+  .disc-row:nth-child(2) { animation-delay: 0.15s; }
+  .disc-row:nth-child(3) { animation-delay: 0.3s; }
+  .disc-dot { width:6px;height:6px;border-radius:50%;flex-shrink:0; }
+  .disc-dot.g { background: hsl(152,48%,50%); }
+  .disc-dot.y { background: hsl(38,70%,52%); }
+  .disc-line { height:4px;border-radius:2px;background:rgba(255,255,255,0.15);flex:1; }
+  @keyframes disc-fly { 0%,100%{transform:translateX(-8px);opacity:0.5;} 50%{transform:translateX(0);opacity:1;} }
+
+  /* ── SCENE 4: PIPELINE ── */
+  .sc-pipe { background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(100,60,180,0.15), transparent 70%), #050302; }
+  .pipe-nodes { display:flex; align-items:center; gap:0; }
+  .pn {
+    width:22px;height:22px;border-radius:8px;
+    border:1.5px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.04);
+    display:flex;align-items:center;justify-content:center;
+    font-size:8px; color:rgba(255,255,255,0.4);
+    animation: node-light 3.5s ease-in-out infinite;
+    flex-shrink:0;
+  }
+  .pn.active { border-color: hsl(38,78%,58%/0.8); background: hsl(38,78%,50%/0.12); color: hsl(38,78%,70%); }
+  .pn:nth-child(odd).active { animation-delay: 0s; }
+  .pn:nth-child(1) { animation-delay: 0s; }
+  .pn:nth-child(3) { animation-delay: 0.4s; }
+  .pn:nth-child(5) { animation-delay: 0.8s; }
+  .pn:nth-child(7) { animation-delay: 1.2s; }
+  .pn:nth-child(9) { animation-delay: 1.6s; }
+  .pc { width:14px; height:1.5px; background: rgba(255,255,255,0.08); flex-shrink:0; }
+  .pc.lit { background: hsl(38,78%,50%/0.5); animation: conn-light 3.5s ease-in-out infinite; }
+  .pc:nth-child(2) { animation-delay: 0.2s; }
+  .pc:nth-child(4) { animation-delay: 0.6s; }
+  .pc:nth-child(6) { animation-delay: 1.0s; }
+  .pc:nth-child(8) { animation-delay: 1.4s; }
+  @keyframes node-light { 0%,80%,100%{box-shadow:none;border-color:rgba(255,255,255,0.15);} 20%,60%{box-shadow:0 0 10px hsl(38,78%,50%/0.6);border-color:hsl(38,78%,58%/0.9);} }
+  @keyframes conn-light { 0%,80%,100%{opacity:0.2;} 30%,60%{opacity:1;} }
+
+  /* ── SCENE 5: DOSSIER ── */
+  .sc-doss { background: radial-gradient(ellipse 70% 50% at 50% 40%, hsl(38,78%,50%/0.12), transparent 70%), #050302; }
+  .doss-stack { display:flex; flex-direction:column; gap:5px; width:120px; }
+  .doss-chip {
+    padding: 5px 8px; border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    font-size: 9px; color: rgba(255,255,255,0.6);
+    display:flex; align-items:center; gap:5px;
+    animation: chip-pop 3s cubic-bezier(0.34,1.56,0.64,1) infinite;
+  }
+  .doss-chip:nth-child(1) { animation-delay:0s; }
+  .doss-chip:nth-child(2) { animation-delay:0.2s; }
+  .doss-chip:nth-child(3) { animation-delay:0.4s; }
+  .chip-icon { width:12px;height:12px;border-radius:4px;flex-shrink:0; background:hsl(38,78%,34%); }
+  @keyframes chip-pop { 0%,100%{transform:scale(0.92) translateY(4px);opacity:0.4;} 50%{transform:scale(1) translateY(0);opacity:1;} }
+
+  /* ── SCENE 6: WEBSITE AUDIT ── */
+  .sc-web { background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(40,160,100,0.12), transparent 70%), #050302; }
+  .audit-center { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .score-ring {
+    width:50px;height:50px;border-radius:50%;
+    border: 3px solid rgba(255,255,255,0.08);
+    position:relative; display:flex; align-items:center; justify-content:center;
+  }
+  .score-ring::before {
+    content:''; position:absolute; inset:0; border-radius:50%;
+    border: 3px solid transparent;
+    border-top-color: hsl(152,48%,50%);
+    border-right-color: hsl(152,48%,50%);
+    animation: ring-spin 3s ease-in-out infinite;
+  }
+  .score-val { font-size: 13px; font-weight: 800; color: hsl(152,48%,60%); }
+  .audit-tags { display:flex; gap:4px; }
+  .a-tag {
+    font-size: 8px; font-weight: 600; padding: 2px 6px; border-radius: 4px;
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5);
+    animation: tag-in 3s ease-in-out infinite;
+  }
+  .a-tag:nth-child(1){ animation-delay:0.2s; }
+  .a-tag:nth-child(2){ animation-delay:0.4s; }
+  .a-tag:nth-child(3){ animation-delay:0.6s; }
+  @keyframes ring-spin { 0%{transform:rotate(-90deg);} 60%{transform:rotate(200deg);} 100%{transform:rotate(270deg);} }
+  @keyframes tag-in { 0%,100%{transform:translateY(5px);opacity:0.3;} 50%{transform:translateY(0);opacity:1;} }
+
+  /* ── SCENE 7: REVIEWS ── */
+  .sc-rev { background: radial-gradient(ellipse 60% 40% at 50% 50%, rgba(200,60,60,0.1), transparent 70%), #050302; }
+  .rev-stack { display:flex; flex-direction:column; gap:5px; width:115px; }
+  .rev-chip {
+    padding: 5px 8px; border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    display:flex; align-items:center; gap:5px;
+    animation: rev-slide 2.8s cubic-bezier(0.34,1.56,0.64,1) infinite;
+  }
+  .rev-chip:nth-child(1){ animation-delay:0s; }
+  .rev-chip:nth-child(2){ animation-delay:0.2s; }
+  .rev-chip:nth-child(3){ animation-delay:0.4s; }
+  .stars { display:flex; gap:1px; }
+  .star { width:6px;height:6px;border-radius:1px;background:hsl(38,70%,52%); }
+  .star.empty { background:rgba(255,255,255,0.12); }
+  .rev-line { height:4px;border-radius:2px;background:rgba(255,255,255,0.12);flex:1; }
+  @keyframes rev-slide { 0%,100%{transform:translateX(8px);opacity:0.4;} 50%{transform:translateX(0);opacity:1;} }
+
+  /* ── SCENE 8: OUTRO ── */
+  .sc-out { background: radial-gradient(ellipse 80% 60% at 50% 55%, hsl(38,78%,50%/0.22), transparent 70%), #050302; }
+  .out-content { display:flex;flex-direction:column;align-items:center;gap:6px; }
+  .out-logo { font-family:"Inter",sans-serif; font-size:16px;font-weight:700;letter-spacing:-0.03em; background:linear-gradient(135deg,hsl(38,78%,80%),hsl(38,78%,50%)); -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; animation:out-glow 2s ease-in-out infinite; }
+  .out-cta {
+    padding:5px 14px;border-radius:99px;
+    background:hsl(38,78%,50%/0.15);
+    border:1px solid hsl(38,78%,50%/0.4);
+    font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+    color:hsl(38,78%,68%);
+    animation:cta-pulse 2s ease-in-out infinite;
+  }
+  @keyframes out-glow { 0%,100%{opacity:0.7;} 50%{opacity:1;} }
+  @keyframes cta-pulse { 0%,100%{box-shadow:none;} 50%{box-shadow:0 0 18px hsl(38,78%,50%/0.4);} }
+
+  /* ── ARCHITECTURE SECTION ── */
+  .arch-wrap {
+    margin-top: 44px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 18px;
+    padding: 24px;
+  }
+  .arch-title { font-size: 13px; font-weight: 700; margin-bottom: 16px; color: rgba(255,255,255,0.8); }
+  .arch-cols { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
+  .arch-col h4 { font-size: 10px; font-weight: 600; text-transform:uppercase; letter-spacing:0.08em; color: hsl(38,78%,58%); margin-bottom: 8px; font-family:"Inter",sans-serif; }
+  .arch-item {
+    font-size: 11px; color: rgba(255,255,255,0.5);
+    padding: 4px 8px; border-radius: 6px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 4px;
+    font-family: "ui-monospace", "SF Mono", "Menlo", monospace;
+    letter-spacing: -0.01em;
+  }
+  .arch-item.highlight { color: hsl(38,78%,65%); border-color: hsl(38,78%,50%/0.2); background: hsl(38,78%,50%/0.06); }
+
+  /* ── SPRING SECTION ── */
+  .spring-wrap {
+    margin-top: 20px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 18px;
+    padding: 24px;
+  }
+  .spring-title { font-size: 13px; font-weight: 700; margin-bottom: 14px; color: rgba(255,255,255,0.8); }
+  .spring-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .spring-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .spring-name { font-size: 11px; font-weight: 700; color: hsl(38,78%,65%); margin-bottom: 3px; }
+  .spring-vals { font-size: 10px; color: rgba(255,255,255,0.4); font-family: "ui-monospace","SF Mono","Menlo",monospace; margin-bottom: 6px; letter-spacing: -0.01em; }
+  .spring-use { font-size: 10.5px; color: rgba(255,255,255,0.5); }
+
+  /* ── FORMAT ROW ── */
+  .format-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+  .format-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 18px;
+    display:flex; gap:14px; align-items:flex-start;
+  }
+  .format-thumb {
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;color:rgba(255,255,255,0.3);font-weight:600;
+  }
+  .fmt-h { width:72px;height:40px; }
+  .fmt-v { width:36px;height:64px; }
+  .format-info h4 { font-size:12px;font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:4px; }
+  .format-info p { font-size:11px;color:rgba(255,255,255,0.4);line-height:1.5; }
+  .format-info .tag { display:inline-block;font-size:9.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:hsl(38,78%,50%/0.12);color:hsl(38,78%,65%);border:1px solid hsl(38,78%,50%/0.25);margin-top:5px;margin-right:3px; }
+</style>
+<body>
+
+<div class="page-header">
+  <h1>Leadac AI — <span class="amber">Launch Video</span> Design</h1>
+  <p>Approach C · Standalone Remotion · Liquid Glass · Fast Hype · Burnt Amber</p>
+</div>
+
+<!-- SPECS -->
+<div class="specs-row">
+  <div class="spec-pill">Tool: <span>Remotion + React + TypeScript</span></div>
+  <div class="spec-pill">Duration: <span>~33s</span></div>
+  <div class="spec-pill">FPS: <span>60</span></div>
+  <div class="spec-pill">Scenes: <span>8 beats</span></div>
+  <div class="spec-pill">Style: <span>iOS 26 Liquid Glass</span></div>
+  <div class="spec-pill">Outputs: <span>1920×1080 + 1080×1920</span></div>
+</div>
+
+<!-- TIMELINE -->
+<div class="timeline-wrap">
+  <div class="timeline-label">Scene timeline · 33 seconds · 60fps</div>
+  <div class="timeline">
+    <div class="tl-seg tl-logo">LOGO</div>
+    <div class="tl-seg tl-hero">HERO</div>
+    <div class="tl-seg tl-disc">DISCOVERY</div>
+    <div class="tl-seg tl-pipe">PIPELINE</div>
+    <div class="tl-seg tl-doss">DOSSIER</div>
+    <div class="tl-seg tl-web">AUDIT</div>
+    <div class="tl-seg tl-rev">REVIEWS</div>
+    <div class="tl-seg tl-out">OUTRO</div>
+  </div>
+  <div class="tl-time">
+    <span>0s</span><span>3s</span><span>6s</span><span>9s</span>
+    <span>12s</span><span>17s</span><span>21s</span><span>25s</span><span>33s</span>
+  </div>
+</div>
+
+<!-- SCENE PREVIEWS -->
+<div class="section-label">Scene previews — animated glass mockup cards (Remotion renders these at 60fps)</div>
+<div class="scene-grid">
+
+  <!-- S1 LOGO -->
+  <div class="scene-card">
+    <div class="scene-canvas sc-logo">
+      <div class="logo-particles">
+        <div class="lp lp1"></div><div class="lp lp2"></div>
+        <div class="lp lp3"></div><div class="lp lp4"></div>
+        <div class="lp lp5"></div><div class="lp lp6"></div>
+      </div>
+      <div class="logo-text">LEADAC AI</div>
+    </div>
+    <div class="scene-meta">
+      <div class="scene-num">Scene 01</div>
+      <div class="scene-name">Logo Reveal</div>
+      <div class="scene-timing">0s → 3s · 180 frames</div>
+      <div class="scene-desc">Wordmark materialises from converging amber particles using spring scale + opacity. Spring: bouncy (stiffness 300).</div>
+    </div>
+  </div>
+
+  <!-- S2 HERO -->
+  <div class="scene-card">
+    <div class="scene-canvas sc-hero">
+      <div class="hero-words">
+        <div class="hw">FIND.</div>
+        <div class="hw">ANALYSE.</div>
+        <div class="hw">CLOSE.</div>
+      </div>
+    </div>
+    <div class="scene-meta">
+      <div class="scene-num">Scene 02</div>
+      <div class="scene-name">Hero Headline</div>
+      <div class="scene-timing">3s → 6s · 180 frames</div>
+      <div class="scene-desc">3 words hit screen one by one. Each: scale 0.7→1 + blur 10→0. Middle word in Burnt Amber. Spring: snappy (stiffness 200).</div>
+    </div>
+  </div>
+
+  <!-- S3 DISCOVERY -->
+  <div class="scene-card">
+    <div class="scene-canvas sc-disc">
+      <div class="disc-stack">
+        <div class="disc-row"><div class="disc-dot g"></div><div class="disc-line"></div></div>
+        <div class="disc-row"><div class="disc-dot y"></div><div class="disc-line"></div></div>
+        <div class="disc-row"><div class="disc-dot g"></div><div class="disc-line"></div></div>
+      </div>
+    </div>
+    <div class="scene-meta">
+      <div class="scene-num">Scene 03</div>
+      <div class="scene-name">Lead Discovery</div>
+      <div class="scene-timing">6s → 9s · 180 frames</div>
+      <div class="scene-desc">Glass lead-list cards fly from left edge to centre. Score dots (green/yellow) pop in with staggered spring delay 4f apart.</div>
+    </div>
+  </div>
+
+  <!-- S4 PIPELINE -->
+  <div class="scene-card">
+    <div class="scene-canvas sc-pipe">
+      <div class="pipe-nodes">
+        <div class="pn active">⚡</div><div class="pc lit"></div>
+        <div class="pn active">🧠</div><div class="pc lit"></div>
+        <div class="pn active">🌐</div><div class="pc"></div>
+        <div class="pn">⭐</div><div class="pc"></div>
+        <div class="pn">✍️</div>
+      </div>
+    </div>
+    <div class="scene-meta">
+      <div class="scene-num">Scene 04</div>
+      <div class="scene-name">AI Workers Pipeline</div>
+      <div class="scene-timing">9s → 13s · 240 frames</div>
+      <div class="scene-desc">Nodes materialise L→R, then amber glow races along connectors. Each node: scale+opacity spring with 10f stagger. Most cinematic scene.</div>
+    </div>
+  </div>
+
+  <!-- S5 DOSSIER -->
+  <div class="scene-card">
+    <div class="scene-canvas sc-doss">
+      <div class="doss-stack">
+        <div class="doss-chip"><div class="chip-icon"></div>Google Reviews · 142</div>
+        <div class="doss-chip"><div class="chip-icon"></div>Website Audit · 78/100</div>
+        <div class="doss-chip"><div class="chip-icon"></div>Social Presence · Low</div>
+      </div>
+    </div>
+    <div class="scene-meta">
+      <div class="scene-num">Scene 05</div>
+      <div class="scene-name">AI Dossier</div>
+      <div class="scene-timing">13s → 17s · 240 frames</div>
+      <div class="scene-desc">Citation chips cascade from centre, stacked glass cards with amber icon. Each chip: Y+20→0 spring, 8f stagger. Background: soft amber halo.</div>
+    </div>
+  </div>
+
+  <!-- S6 AUDIT -->
+  <div class="scene-card">
+    <div class="scene-canvas sc-web">
+      <div class="audit-center">
+        <div class="score-ring"><span class="score-val">78</span></div>
+        <div class="audit-tags">
+          <div class="a-tag">SEO</div>
+          <div class="a-tag">SPEED</div>
+          <div class="a-tag">CTA</div>
+        </div>
+      </div>
+    </div>
+    <div class="scene-meta">
+      <div class="scene-num">Scene 06</div>
+      <div class="scene-name">Website Audit</div>
+      <div class="scene-timing">17s → 21s · 240 frames</div>
+      <div class="scene-desc">Score ring draws clockwise (interpolate stroke-dashoffset). Number counts 0→78. Tag pills fly up from bottom. Green accent (success color).</div>
+    </div>
+  </div>
+
+  <!-- S7 REVIEWS -->
+  <div class="scene-card">
+    <div class="scene-canvas sc-rev">
+      <div class="rev-stack">
+        <div class="rev-chip"><div class="stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star empty"></div></div><div class="rev-line"></div></div>
+        <div class="rev-chip"><div class="stars"><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div><div class="star"></div></div><div class="rev-line"></div></div>
+        <div class="rev-chip"><div class="stars"><div class="star"></div><div class="star"></div><div class="star empty"></div><div class="star empty"></div><div class="star empty"></div></div><div class="rev-line"></div></div>
+      </div>
+    </div>
+    <div class="scene-meta">
+      <div class="scene-num">Scene 07</div>
+      <div class="scene-name">Review Intelligence</div>
+      <div class="scene-timing">21s → 25s · 240 frames</div>
+      <div class="scene-desc">Review cards slide in from right. Stars fill in sequentially with amber glow. Negative reviews show red accent — surfaces the pain point opportunity.</div>
+    </div>
+  </div>
+
+  <!-- S8 OUTRO -->
+  <div class="scene-card">
+    <div class="scene-canvas sc-out">
+      <div class="out-content">
+        <div class="out-logo">LEADAC AI</div>
+        <div class="out-cta">Start Free →</div>
+      </div>
+    </div>
+    <div class="scene-meta">
+      <div class="scene-num">Scene 08</div>
+      <div class="scene-name">Outro + CTA</div>
+      <div class="scene-timing">25s → 33s · 480 frames</div>
+      <div class="scene-desc">Logo fades back in from particles. Tagline slides up. Amber CTA pill pulses with glow. Holds 3s for viewer to read. Fade to black.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- OUTPUT FORMATS -->
+<div class="section-label">Output formats</div>
+<div class="format-row">
+  <div class="format-card">
+    <div class="format-thumb fmt-h">16:9</div>
+    <div class="format-info">
+      <h4>Horizontal — 1920×1080 @ 60fps</h4>
+      <p>Website hero section, YouTube pre-roll, LinkedIn. Components spread wide, type large. Pipeline scene shows all 5 nodes in a row.</p>
+      <span class="tag">Web hero</span><span class="tag">YouTube</span><span class="tag">LinkedIn</span>
+    </div>
+  </div>
+  <div class="format-card">
+    <div class="format-thumb fmt-v">9:16</div>
+    <div class="format-info">
+      <h4>Vertical — 1080×1920 @ 60fps</h4>
+      <p>Instagram Reels, TikTok, iPhone preview. Components stack vertically, fill frame. Pipeline wraps to 2 rows. Type scales up for mobile legibility.</p>
+      <span class="tag">Instagram Reels</span><span class="tag">TikTok</span><span class="tag">Stories</span>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<div class="arch-wrap">
+  <div class="arch-title">Project structure — <code style="color:hsl(38,78%,58%);font-size:11px;font-family:'ui-monospace','SF Mono','Menlo',monospace;letter-spacing:-0.01em;">hustle-video/</code></div>
+  <div class="arch-cols">
+    <div class="arch-col">
+      <h4>Compositions</h4>
+      <div class="arch-item highlight">Root.tsx</div>
+      <div class="arch-item">HorizontalVideo.tsx</div>
+      <div class="arch-item">VerticalVideo.tsx</div>
+      <div class="arch-item">tokens.ts</div>
+    </div>
+    <div class="arch-col">
+      <h4>Scenes (one per beat)</h4>
+      <div class="arch-item">LogoReveal.tsx</div>
+      <div class="arch-item">HeroHeadline.tsx</div>
+      <div class="arch-item">DiscoveryScene.tsx</div>
+      <div class="arch-item">PipelineScene.tsx</div>
+      <div class="arch-item">DossierScene.tsx</div>
+      <div class="arch-item">WebsiteAuditScene.tsx</div>
+      <div class="arch-item">ReviewScene.tsx</div>
+    </div>
+    <div class="arch-col">
+      <h4>Shared components</h4>
+      <div class="arch-item highlight">GlassCard.tsx</div>
+      <div class="arch-item">KineticText.tsx</div>
+      <div class="arch-item">ScoreRing.tsx</div>
+      <div class="arch-item">PipelineNode.tsx</div>
+      <div class="arch-item">CitationChip.tsx</div>
+      <div class="arch-item highlight">spring-presets.ts</div>
+    </div>
+  </div>
+</div>
+
+<!-- SPRING PRESETS -->
+<div class="spring-wrap">
+  <div class="spring-title">iOS 26 spring presets — mapped to Remotion <code style="color:hsl(38,78%,58%);font-size:11px;font-family:'ui-monospace','SF Mono','Menlo',monospace;letter-spacing:-0.01em;">spring()</code></div>
+  <div class="spring-grid">
+    <div class="spring-card">
+      <div class="spring-name">snappy</div>
+      <div class="spring-vals">mass:1 · stiff:200 · damp:20</div>
+      <div class="spring-use">Logo word hits, scene entries, card arrivals</div>
+    </div>
+    <div class="spring-card">
+      <div class="spring-name">bouncy</div>
+      <div class="spring-vals">mass:1 · stiff:300 · damp:15</div>
+      <div class="spring-use">CTA pill, score badge, pipeline node glow</div>
+    </div>
+    <div class="spring-card">
+      <div class="spring-name">smooth</div>
+      <div class="spring-vals">mass:1 · stiff:100 · damp:20</div>
+      <div class="spring-use">Scene fade-out, background halo, outro fade</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

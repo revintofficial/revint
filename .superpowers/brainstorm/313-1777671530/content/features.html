@@ -1,0 +1,138 @@
+<style>
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 8px;
+  }
+  .feat-card {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 20px 16px 16px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+  .feat-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle at 50% 0%, rgba(224,122,18,0.18), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .feat-card:hover { transform: translateY(-3px) scale(1.02); border-color: rgba(224,122,18,0.45); }
+  .feat-card:hover::before { opacity: 1; }
+  .feat-card.selected {
+    border-color: hsl(38,78%,50%);
+    background: rgba(224,122,18,0.12);
+    box-shadow: 0 0 24px hsl(38,78%,50%/0.25);
+  }
+  .feat-card.selected::before { opacity: 1; }
+  .feat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, hsl(38,78%,26%), hsl(38,78%,18%));
+    border: 1px solid hsl(38,78%,34%/0.5);
+  }
+  .feat-card.selected .feat-icon {
+    background: linear-gradient(135deg, hsl(38,78%,42%), hsl(38,78%,30%));
+  }
+  .feat-title { font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 4px; }
+  .feat-desc { font-size: 11.5px; color: rgba(255,255,255,0.45); line-height: 1.45; }
+  .checkmark {
+    position: absolute;
+    top: 10px; right: 12px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: hsl(38,78%,50%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #000;
+    font-weight: 700;
+  }
+  .feat-card.selected .checkmark { display: flex; }
+  .note { font-size: 12px; color: rgba(255,255,255,0.35); margin-top: 18px; text-align: center; }
+</style>
+
+<h2>Which features should the video showcase?</h2>
+<p class="subtitle">Select 3–5 moments. These become the visual "beats" of the video — each one gets its own cinematic reveal scene.</p>
+
+<div class="feature-grid" id="features" data-multiselect>
+  <div class="feat-card" data-choice="discovery" onclick="toggleFeat(this)">
+    <div class="checkmark">✓</div>
+    <div class="feat-icon">🔍</div>
+    <div class="feat-title">Lead Discovery</div>
+    <div class="feat-desc">Search by niche, location, filters — the product finds agencies at scale</div>
+  </div>
+  <div class="feat-card" data-choice="dossier" onclick="toggleFeat(this)">
+    <div class="checkmark">✓</div>
+    <div class="feat-icon">🧠</div>
+    <div class="feat-title">AI Dossier</div>
+    <div class="feat-desc">Deep AI analysis per lead — citations, source chips, worker pipeline visible</div>
+  </div>
+  <div class="feat-card" data-choice="reviews" onclick="toggleFeat(this)">
+    <div class="checkmark">✓</div>
+    <div class="feat-icon">⭐</div>
+    <div class="feat-title">Review Intelligence</div>
+    <div class="feat-desc">Pulls Google/Yelp reviews, surfaces pain points and opportunities</div>
+  </div>
+  <div class="feat-card" data-choice="website-audit" onclick="toggleFeat(this)">
+    <div class="checkmark">✓</div>
+    <div class="feat-icon">🌐</div>
+    <div class="feat-title">Website Audit</div>
+    <div class="feat-desc">AI scores the lead's website — speed, SEO, CTA, mobile — pitch ammo</div>
+  </div>
+  <div class="feat-card" data-choice="pipeline" onclick="toggleFeat(this)">
+    <div class="checkmark">✓</div>
+    <div class="feat-icon">⚡</div>
+    <div class="feat-title">AI Workers Pipeline</div>
+    <div class="feat-desc">Live worker progress — nodes activating one by one as analysis runs</div>
+  </div>
+  <div class="feat-card" data-choice="copilot" onclick="toggleFeat(this)">
+    <div class="checkmark">✓</div>
+    <div class="feat-icon">💬</div>
+    <div class="feat-title">Copilot / Outreach</div>
+    <div class="feat-desc">AI writes personalised pitch emails from the dossier data</div>
+  </div>
+  <div class="feat-card" data-choice="score" onclick="toggleFeat(this)">
+    <div class="checkmark">✓</div>
+    <div class="feat-icon">🎯</div>
+    <div class="feat-title">Lead Score / Fit</div>
+    <div class="feat-desc">Product-fit badges — green/yellow/red signal which leads to prioritise</div>
+  </div>
+  <div class="feat-card" data-choice="logo" onclick="toggleFeat(this)">
+    <div class="checkmark">✓</div>
+    <div class="feat-icon">✨</div>
+    <div class="feat-title">Logo / Brand Reveal</div>
+    <div class="feat-desc">Opening or closing scene — Leadac AI logo materialises from particles</div>
+  </div>
+  <div class="feat-card" data-choice="hero-text" onclick="toggleFeat(this)">
+    <div class="checkmark">✓</div>
+    <div class="feat-icon">📝</div>
+    <div class="feat-title">Hero Headline</div>
+    <div class="feat-desc">Big cinematic statement — "Find. Analyse. Close." — Apple-style type reveal</div>
+  </div>
+</div>
+
+<p class="note">Pick 3–5 · You can always trim later · These map to ~4–8 seconds each in the final video</p>
+
+<script>
+  function toggleFeat(el) {
+    el.classList.toggle('selected');
+    const selected = [...document.querySelectorAll('.feat-card.selected')].map(c => c.dataset.choice);
+    if (window.recordSelection) window.recordSelection(selected.join(','), selected.map(s => s).join(', '));
+  }
+</script>

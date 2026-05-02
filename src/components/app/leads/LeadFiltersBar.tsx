@@ -172,11 +172,17 @@ export function LeadFiltersBar({
 
   const applyQuickFilter = (key: QuickFilterKey) => {
     setFilters((prev) => {
+      // Each preset starts from a fully-cleared baseline so leftover
+      // state from a previous preset (e.g. minScore=70 from "Hot 70+")
+      // doesn't silently combine with the new one.
       const cleared: LeadsFilters = {
         ...prev,
         statuses: [],
         minScore: 0,
         maxScore: 100,
+        minRating: null,
+        maxRating: null,
+        createdSince: null,
         hasWebsite: "all",
         page: 1,
       };
@@ -186,13 +192,26 @@ export function LeadFiltersBar({
         case "no_site":
           return { ...cleared, hasWebsite: "false" };
         case "low_rating":
-          return { ...cleared, sortBy: "rating" };
+          // Actually filter to ratings ≤ 3.5, not just "sort by
+          // rating" (which previously sorted DESC and showed the
+          // HIGHEST ratings first — exact opposite of the label).
+          return { ...cleared, maxRating: 3.5, sortBy: "rating" };
         case "scan_failed":
           return { ...cleared, statuses: ["unscored"] };
         case "never_contacted":
           return { ...cleared, statuses: ["NEW", "unscored"] };
-        case "today":
-          return { ...cleared, sortBy: "createdAt" };
+        case "today": {
+          // Scope to leads discovered since the start of the local
+          // day so the preset is meaningfully different from
+          // "Newest first" (which is the default sort already).
+          const startOfToday = new Date();
+          startOfToday.setHours(0, 0, 0, 0);
+          return {
+            ...cleared,
+            createdSince: startOfToday.toISOString(),
+            sortBy: "createdAt",
+          };
+        }
       }
       return cleared;
     });
@@ -209,6 +228,9 @@ export function LeadFiltersBar({
       subNiche: "all",
       minScore: 0,
       maxScore: 100,
+      minRating: null,
+      maxRating: null,
+      createdSince: null,
       sortBy: "createdAt",
       page: 1,
       userLat: null,
@@ -227,6 +249,9 @@ export function LeadFiltersBar({
     filters.subNiche !== "all" ||
     filters.minScore > 0 ||
     filters.maxScore < 100 ||
+    filters.minRating != null ||
+    filters.maxRating != null ||
+    filters.createdSince != null ||
     geoActive;
 
   return (
@@ -665,7 +690,7 @@ function useQuickFilterMatch(filters: LeadsFilters): QuickFilterKey | null {
   // signature filters match, regardless of user-set extras.
   if (filters.minScore === 70 && filters.sortBy === "score") return "hot";
   if (filters.hasWebsite === "false") return "no_site";
-  if (filters.sortBy === "rating" && filters.statuses.length === 0) return "low_rating";
+  if (filters.maxRating === 3.5 && filters.sortBy === "rating") return "low_rating";
   if (
     filters.statuses.length === 1 &&
     filters.statuses[0] === "unscored" &&
@@ -680,5 +705,6 @@ function useQuickFilterMatch(filters: LeadsFilters): QuickFilterKey | null {
   ) {
     return "never_contacted";
   }
+  if (filters.createdSince && filters.sortBy === "createdAt") return "today";
   return null;
 }

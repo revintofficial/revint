@@ -149,6 +149,13 @@ function buildInitialFilters(
         subNiche: searchParams.get("subNiche") ?? "all",
         minScore: parseInt(searchParams.get("minScore") ?? "0") || 0,
         maxScore: parseInt(searchParams.get("maxScore") ?? "100") || 100,
+        minRating: searchParams.has("minRating")
+          ? parseFloat(searchParams.get("minRating") ?? "")
+          : null,
+        maxRating: searchParams.has("maxRating")
+          ? parseFloat(searchParams.get("maxRating") ?? "")
+          : null,
+        createdSince: searchParams.get("createdSince"),
         sortBy: searchParams.get("sortBy") ?? "createdAt",
         page: parseInt(searchParams.get("page") ?? "1") || 1,
         userLat: searchParams.has("userLat")
@@ -178,6 +185,9 @@ function filtersToUrlParams(
   if (filters.subNiche !== "all") params.set("subNiche", filters.subNiche);
   if (filters.minScore > 0) params.set("minScore", String(filters.minScore));
   if (filters.maxScore < 100) params.set("maxScore", String(filters.maxScore));
+  if (filters.minRating != null) params.set("minRating", String(filters.minRating));
+  if (filters.maxRating != null) params.set("maxRating", String(filters.maxRating));
+  if (filters.createdSince) params.set("createdSince", filters.createdSince);
   if (filters.sortBy !== "createdAt") params.set("sortBy", filters.sortBy);
   if (filters.page > 1) params.set("page", String(filters.page));
   if (filters.userLat != null && filters.userLng != null) {

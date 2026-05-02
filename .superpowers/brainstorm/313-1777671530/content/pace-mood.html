@@ -1,0 +1,178 @@
+<style>
+  .pace-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 12px; }
+
+  .pace-card {
+    border-radius: 20px;
+    padding: 0;
+    cursor: pointer;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+  }
+  .pace-card:hover { transform: translateY(-4px); border-color: rgba(224,122,18,0.4); }
+  .pace-card.selected { border-color: hsl(38,78%,50%); box-shadow: 0 0 32px hsl(38,78%,50%/0.3); }
+
+  .pace-preview {
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Option A — Slow Cinematic */
+  .preview-a {
+    background: radial-gradient(ellipse 80% 60% at 50% 60%, rgba(224,122,18,0.15), transparent 70%), #0a0805;
+  }
+  .preview-a .bars { display: flex; align-items: flex-end; gap: 6px; height: 60px; }
+  .preview-a .bar {
+    width: 10px; border-radius: 4px 4px 0 0;
+    background: linear-gradient(to top, hsl(38,78%,34%), hsl(38,78%,58%));
+    opacity: 0.85;
+  }
+  .preview-a .bar:nth-child(1) { height: 28px; animation: breathe-a 4.2s ease-in-out infinite 0s; }
+  .preview-a .bar:nth-child(2) { height: 45px; animation: breathe-a 4.2s ease-in-out infinite 0.3s; }
+  .preview-a .bar:nth-child(3) { height: 60px; animation: breathe-a 4.2s ease-in-out infinite 0.6s; }
+  .preview-a .bar:nth-child(4) { height: 50px; animation: breathe-a 4.2s ease-in-out infinite 0.9s; }
+  .preview-a .bar:nth-child(5) { height: 35px; animation: breathe-a 4.2s ease-in-out infinite 1.2s; }
+  .preview-a .bar:nth-child(6) { height: 20px; animation: breathe-a 4.2s ease-in-out infinite 1.5s; }
+  @keyframes breathe-a { 0%,100% { transform: scaleY(0.7); opacity:0.5; } 50% { transform: scaleY(1); opacity:1; } }
+
+  /* Option B — Apple Keynote */
+  .preview-b {
+    background: radial-gradient(ellipse 70% 70% at 50% 50%, rgba(224,122,18,0.2), transparent 70%), #080603;
+  }
+  .preview-b .card-fly {
+    position: absolute;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(8px);
+  }
+  .preview-b .c1 { width:88px;height:52px; left:30px; top:25px; animation: fly-b1 2.4s cubic-bezier(0.34,1.56,0.64,1) infinite; }
+  .preview-b .c2 { width:66px;height:40px; right:28px; top:38px; animation: fly-b2 2.4s cubic-bezier(0.34,1.56,0.64,1) infinite 0.3s; }
+  .preview-b .c3 { width:110px;height:30px; left:50%; top:78px; transform:translateX(-50%); animation: fly-b3 2.4s cubic-bezier(0.34,1.56,0.64,1) infinite 0.15s; }
+  .preview-b .glow { width:50px;height:50px;border-radius:50%;background:radial-gradient(hsl(38,78%,50%/0.7),transparent 70%);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);animation:pulse-b 2.4s ease-in-out infinite; }
+  @keyframes fly-b1 { 0%,100%{transform:translate(0,0) scale(0.94);opacity:0.5;} 50%{transform:translate(4px,-6px) scale(1);opacity:1;} }
+  @keyframes fly-b2 { 0%,100%{transform:translate(0,0) scale(0.9);opacity:0.4;} 50%{transform:translate(-5px,-4px) scale(1);opacity:1;} }
+  @keyframes fly-b3 { 0%,100%{transform:translateX(-50%) translateY(0) scale(0.93);opacity:0.5;} 50%{transform:translateX(-50%) translateY(-5px) scale(1);opacity:1;} }
+  @keyframes pulse-b { 0%,100%{opacity:0.3;transform:translate(-50%,-50%) scale(0.8);} 50%{opacity:0.9;transform:translate(-50%,-50%) scale(1.3);} }
+
+  /* Option C — Fast Hype */
+  .preview-c {
+    background: linear-gradient(135deg, #0c0603 0%, #120a04 50%, #080603 100%);
+  }
+  .preview-c .flash-lines { position:absolute;inset:0;overflow:hidden; }
+  .preview-c .fl {
+    position:absolute;
+    height:2px;
+    background:linear-gradient(to right,transparent,hsl(38,78%,58%),transparent);
+    left:-100%; right:-100%;
+    border-radius:2px;
+  }
+  .preview-c .fl1 { top:35px; animation: scan 0.9s linear infinite 0s; }
+  .preview-c .fl2 { top:65px; animation: scan 0.9s linear infinite 0.3s; }
+  .preview-c .fl3 { top:95px; animation: scan 0.9s linear infinite 0.6s; }
+  .preview-c .center-box {
+    width:70px;height:70px;border-radius:14px;
+    border: 1.5px solid hsl(38,78%,58%/0.7);
+    background: rgba(224,122,18,0.1);
+    position:absolute;
+    animation: throb 0.9s ease-in-out infinite;
+  }
+  @keyframes scan { from{transform:translateY(0) scaleX(0.3) translateX(-30%);opacity:0;} 50%{opacity:1;} to{transform:translateY(0) scaleX(1.2) translateX(60%);opacity:0;} }
+  @keyframes throb { 0%,100%{transform:scale(0.88) rotate(-2deg);opacity:0.6;} 50%{transform:scale(1.08) rotate(2deg);opacity:1;} }
+
+  .pace-info { padding: 14px 16px 16px; }
+  .pace-name { font-size:13px;font-weight:700;color:rgba(255,255,255,0.9);margin-bottom:3px; }
+  .pace-duration { font-size:11px;color:hsl(38,78%,58%);font-weight:600;margin-bottom:6px; }
+  .pace-desc { font-size:11.5px;color:rgba(255,255,255,0.45);line-height:1.5; }
+  .pace-refs { font-size:10.5px;color:rgba(255,255,255,0.25);margin-top:5px;font-style:italic; }
+
+  .badge-rec {
+    position:absolute;top:10px;right:10px;
+    background:hsl(38,78%,50%);
+    color:#000;font-size:9px;font-weight:800;
+    padding:2px 8px;border-radius:99px;
+    letter-spacing:0.05em;text-transform:uppercase;
+  }
+
+  .checkmark {
+    position:absolute;top:10px;left:10px;
+    width:20px;height:20px;border-radius:50%;
+    background:hsl(38,78%,50%);
+    display:none;align-items:center;justify-content:center;
+    font-size:11px;color:#000;font-weight:700;
+  }
+  .pace-card.selected .checkmark { display:flex; }
+</style>
+
+<h2>What pace and energy should the video have?</h2>
+<p class="subtitle">This defines the rhythm — how fast scenes cut, how dramatic the entrances are, and the overall emotional feel.</p>
+
+<div class="pace-grid">
+
+  <!-- A: Slow Cinematic -->
+  <div class="pace-card" data-choice="cinematic" onclick="selectPace(this)">
+    <div class="checkmark">✓</div>
+    <div class="pace-preview preview-a">
+      <div class="bars">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div>
+    </div>
+    <div class="pace-info">
+      <div class="pace-name">Slow Cinematic</div>
+      <div class="pace-duration">90–120s · 6–8s per scene</div>
+      <div class="pace-desc">Each feature breathes. Components drift in slowly from depth, long dissolves, ambient score. Feels premium and thoughtful. Best for website hero.</div>
+      <div class="pace-refs">Apple Mac Studio, Apple Vision Pro reveal</div>
+    </div>
+  </div>
+
+  <!-- B: Apple Keynote — RECOMMENDED -->
+  <div class="pace-card" data-choice="keynote" onclick="selectPace(this)">
+    <div class="checkmark">✓</div>
+    <div class="badge-rec">Recommended</div>
+    <div class="pace-preview preview-b">
+      <div class="glow"></div>
+      <div class="card-fly c1"></div>
+      <div class="card-fly c2"></div>
+      <div class="card-fly c3"></div>
+    </div>
+    <div class="pace-info">
+      <div class="pace-name">Apple Keynote Style</div>
+      <div class="pace-duration">60–75s · 4–5s per scene</div>
+      <div class="pace-desc">The Leadac sweet spot. Components spring in from centre with iOS 26 Liquid Glass feel. Confident cuts, but never rushed. Works everywhere — web, social, ads.</div>
+      <div class="pace-refs">iPhone 16 ad, Airpods Pro launch, iOS 18 features film</div>
+    </div>
+  </div>
+
+  <!-- C: Fast Hype -->
+  <div class="pace-card" data-choice="hype" onclick="selectPace(this)">
+    <div class="checkmark">✓</div>
+    <div class="pace-preview preview-c">
+      <div class="flash-lines">
+        <div class="fl fl1"></div><div class="fl fl2"></div><div class="fl fl3"></div>
+      </div>
+      <div class="center-box"></div>
+    </div>
+    <div class="pace-info">
+      <div class="pace-name">Fast Hype / Reel</div>
+      <div class="pace-duration">30–45s · 2–3s per scene</div>
+      <div class="pace-desc">Rapid cuts, kinetic type, quick glances at each feature. High energy. Best for social reels and paid ads where attention must be grabbed in 2 seconds.</div>
+      <div class="pace-refs">Apple Watch Ultra 2, Samsung "Join the Flip Side"</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function selectPace(el) {
+    document.querySelectorAll('.pace-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    if (window.recordSelection) window.recordSelection(el.dataset.choice, el.querySelector('.pace-name').textContent);
+  }
+</script>
