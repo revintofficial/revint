@@ -114,10 +114,38 @@ export function EmailAccountsPanel({ accounts: initial }: { accounts: Account[] 
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => fetch(`/api/email-accounts/${a.id}/sync`, { method: "POST" })}
-                    disabled={busy === a.id || !a.replyAttributionEnabled}
+                    // L18 fix - the previous Sync handler was a fire-and-
+                    // forget `fetch(...)` with no busy state, no error
+                    // toast, and no success feedback. A user clicking
+                    // Sync 5 times in 2 seconds would queue 5 inbox-syncs
+                    // back-to-back and saturate the worker. The new
+                    // handler scopes a per-account busy key (`sync:<id>`)
+                    // so only the clicked row's button shows the spinner
+                    // and rapid clicks short-circuit instead of stacking.
+                    onClick={async () => {
+                      const key = `sync:${a.id}`;
+                      if (busy === key) return;
+                      setBusy(key);
+                      try {
+                        const res = await fetch(
+                          `/api/email-accounts/${a.id}/sync`,
+                          { method: "POST" },
+                        );
+                        if (res.ok) {
+                          toast.success("Sync started");
+                        } else {
+                          toast.error("Sync failed");
+                        }
+                      } catch {
+                        toast.error("Sync failed");
+                      } finally {
+                        setBusy(null);
+                      }
+                    }}
+                    disabled={busy === `sync:${a.id}` || !a.replyAttributionEnabled}
                   >
-                    <RefreshCw className="w-3.5 h-3.5" /> Sync
+                    <RefreshCw className="w-3.5 h-3.5" />{" "}
+                    {busy === `sync:${a.id}` ? "Syncing…" : "Sync"}
                   </Button>
                   <Button
                     size="sm"

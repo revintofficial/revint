@@ -54,6 +54,7 @@ export async function processSequenceTick(): Promise<SequenceTickResult> {
       workspaceId: true,
       leadId: true,
       sequenceId: true,
+      currentStepId: true,
     },
     take: 200,
   });
@@ -101,17 +102,28 @@ export async function processSequenceTick(): Promise<SequenceTickResult> {
   const queue = getQueue();
   await Promise.all(
     eligible.map((state) => {
-      // De-dupe by state id so a second tick that overlaps with an
-      // in-flight step doesn't enqueue a duplicate job. `jobId` is a
-      // BaseJobOptions field on the bullmq side, but the d.ts files
-      // shipped with 5.73.5 widen `JobsOptions` so that the bundler-
-      // mode type checker doesn't see it on the public signature.
-      // Cast the options bag through Record<string, unknown> so the
-      // runtime call matches the documented BullMQ API while keeping
-      // every other field explicitly typed locally. TODO: drop the
-      // cast once bullmq's TS types align.
+      // L13 fix - the previous jobId baked `now.getTime()` into the
+      // dedup key, which meant two parallel ticks (Worker A + Worker
+      // B both holding sequence_tick locks during a Redis hiccup)
+      // would generate distinct jobIds for the same state and BOTH
+      // would enqueue, double-firing the email step. The dedup key
+      // is now `sequence_step:<state.id>:<currentStep>`, which is
+      // stable across tick clock skew but rotates the moment the
+      // step advances - so a stuck job that never completed is
+      // still re-enqueued on the NEXT step (via the natural
+      // sequence advance), and we never double-send the SAME step.
+      //
+      // `jobId` is a BaseJobOptions field on the bullmq side, but
+      // the d.ts files shipped with 5.73.5 widen `JobsOptions` so
+      // that bundler-mode resolution doesn't see it on the public
+      // signature. Cast at the boundary, keep every other field
+      // explicitly typed locally. TODO: drop the cast once bullmq's
+      // TS types align.
+      // currentStepId rotates whenever the sequence advances, so
+      // it's the right key for "this attempt at this step" without
+      // baking in clock skew.
       const opts = {
-        jobId: `sequence_step:${state.id}:${now.getTime()}`,
+        jobId: `sequence_step:${state.id}:${state.currentStepId ?? "init"}`,
         removeOnComplete: 200,
         removeOnFail: 100,
         attempts: 3,
