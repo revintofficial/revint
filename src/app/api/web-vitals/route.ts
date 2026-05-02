@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getRedis } from "@/lib/redis";
+import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
 
 /**
  * Core Web Vitals ingestion.
@@ -37,6 +38,20 @@ type VitalsPayload = {
 };
 
 export async function POST(req: NextRequest) {
+  // M26 fix - this endpoint is unauthenticated (sendBeacon doesn't
+  // forward our auth cookies). Without a rate limit, anyone could
+  // pump arbitrary samples in to grow the ZSET (capped at
+  // MAX_SAMPLES per metric so memory is bounded), but they could
+  // still DoS the SEO dashboard and shadow-pollute the data set
+  // with bogus rating distributions. Bucket per caller IP using the
+  // first non-private hop in `x-forwarded-for`; fall back to a
+  // synthetic "anon" subject when we can't read one (which collapses
+  // every anonymous caller into a single bucket — strict but safe).
+  const ip = extractClientIp(req);
+  const subject = `wvit:${ip ?? "anon"}`;
+  const rl = await checkRateLimit(subject, LIMITS.webVitals);
+  if (!rl.ok) return rateLimitResponse(rl);
+
   let body: VitalsPayload;
   try {
     body = (await req.json()) as VitalsPayload;
@@ -78,4 +93,23 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * Extract a stable client IP from a Next request. We trust the
+ * first hop in `x-forwarded-for` because Next runs behind Vercel /
+ * Cloudflare which strip / append headers as the request enters
+ * our perimeter. `x-real-ip` is the older single-IP variant some
+ * proxies still emit. Returns null when neither is set so the
+ * caller can decide how to bucket anonymous traffic.
+ */
+function extractClientIp(req: NextRequest): string | null {
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) {
+    const first = xff.split(",")[0]?.trim();
+    if (first) return first.slice(0, 45); // IPv6 max length
+  }
+  const xri = req.headers.get("x-real-ip");
+  if (xri) return xri.trim().slice(0, 45);
+  return null;
 }

@@ -43,6 +43,13 @@ export const LIMITS = {
   // Place Details is fired once per picked suggestion, so the budget
   // is dominated by chip selections (max 5 chips × a few retries).
   placesDetails: { bucket: "pdet", windowSec: 60, limit: 30 },
+  // M26 - Web Vitals beacon. Public, anonymous endpoint so we
+  // bucket on the caller's IP (or the synthetic "anon" subject when
+  // we can't read it). 60 requests / minute leaves comfortable
+  // headroom for the ~5 metrics × normal-page navigations a single
+  // session generates while bounding a runaway client / abusive
+  // scraper to 1 write per second per IP.
+  webVitals: { bucket: "wvit", windowSec: 60, limit: 60 },
 } as const satisfies Record<string, RateLimitConfig>;
 
 export async function checkRateLimit(
