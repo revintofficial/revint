@@ -67,16 +67,40 @@ export async function POST(request: Request) {
       }
     }
     if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: session.user.email,
-        name: workspace.name,
-        metadata: { workspaceId: workspace.id, userId: session.user.id },
-      });
+      // M2 fix - two parallel checkout requests from the same workspace
+      // (rapid double-click on Upgrade, race between two browser tabs)
+      // were creating duplicate Stripe customers because each request
+      // hit the same `if (!customerId)` branch before the other could
+      // persist the ID. Stripe's idempotency key collapses retries
+      // server-side: the second request gets back the SAME customer
+      // object instead of a new one. We then re-read the workspace row
+      // to absorb any other request that already persisted the ID.
+      const customer = await stripe.customers.create(
+        {
+          email: session.user.email,
+          name: workspace.name,
+          metadata: { workspaceId: workspace.id, userId: session.user.id },
+        },
+        {
+          idempotencyKey: `ws-customer-${workspace.id}`,
+        },
+      );
       customerId = customer.id;
-      await prisma.workspace.update({
-        where: { id: workspace.id },
+
+      // Race-safe upsert: another request may have just persisted a
+      // different (or same, via idempotency) customer ID. Use
+      // updateMany so we only set when still empty, then re-read.
+      await prisma.workspace.updateMany({
+        where: { id: workspace.id, stripeCustomerId: null },
         data: { stripeCustomerId: customerId },
       });
+      const persisted = await prisma.workspace.findUniqueOrThrow({
+        where: { id: workspace.id },
+        select: { stripeCustomerId: true },
+      });
+      if (persisted.stripeCustomerId) {
+        customerId = persisted.stripeCustomerId;
+      }
     }
 
     const origin = new URL(request.url).origin;
