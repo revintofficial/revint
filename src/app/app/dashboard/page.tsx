@@ -197,7 +197,7 @@ export default function DashboardPage() {
               Stats failed to load. Check your connection and try again — your
               data is safe.
             </p>
-            <Button onClick={loadStats}>Retry</Button>
+            <Button onClick={() => loadStats()}>Retry</Button>
           </Card>
         </div>
       );

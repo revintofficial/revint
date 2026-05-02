@@ -120,7 +120,7 @@ async function processJob(job: Job<AgentRunJob>) {
   if (jobType === "sequence_tick") {
     const { processSequenceTick } = await import("../lib/sequence-engine/tick");
     const result = await processSequenceTick();
-    logger.info("worker.ai_runs.sequence_tick.done", result);
+    logger.info("worker.ai_runs.sequence_tick.done", { ...result });
     return result;
   }
 

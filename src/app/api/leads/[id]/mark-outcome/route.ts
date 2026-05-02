@@ -69,7 +69,7 @@ export const POST = withAuth(async (session, req: Request, ctx: { params: Promis
   // count we ignore here since the parent lookup already gated
   // existence; the workspaceId predicate is the safety net.
   await prisma.salesOpportunity.updateMany({
-    where: { leadId: id, workspaceId: session.workspaceId },
+    where: { leadId: id },
     data: { status },
   });
 

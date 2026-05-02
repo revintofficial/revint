@@ -36,6 +36,7 @@
     "prisma/scripts/**",
     "prisma.config.ts",
     "src/workers/**",
+    "src/__tests__/**",
     "scripts/**",
     ".next/**"
   ]

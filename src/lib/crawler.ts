@@ -198,11 +198,14 @@ async function crawlOnce(url: string, businessType?: string | null): Promise<Web
       // `url` for the result so callers see what they asked for, and
       // the blocked hop's reason goes into the detail field.
       if (blockedHop) {
+        // TS narrows blockedHop to null (async callback assignment not tracked);
+        // cast to escape the false-negative never type.
+        const hop = blockedHop as { url: string; reason: string };
         return createUnreachableResult(
           url,
           "BLOCKED_BY_GUARD",
           null,
-          `Redirect to ${blockedHop.url} blocked: ${blockedHop.reason}`,
+          `Redirect to ${hop.url} blocked: ${hop.reason}`,
         );
       }
       const tag = classifyError(message);

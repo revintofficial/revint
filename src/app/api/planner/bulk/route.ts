@@ -18,7 +18,8 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { emit } from "@/lib/ai-core/events";
-import type { AgentWorkerKind, EventKind, Plan } from "@/generated/prisma/client";
+import type { AgentWorkerKind, Plan } from "@/generated/prisma/client";
+import type { EventKind } from "@/lib/agent-workers/types";
 import {
   ApifyBudgetExceededError,
   PerLeadDailyCapExceededError,
