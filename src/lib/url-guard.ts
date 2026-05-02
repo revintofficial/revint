@@ -71,6 +71,22 @@ export async function assertSafeFetchUrl(rawUrl: string): Promise<URL> {
     throw new UrlGuardError("Only http/https URLs are allowed");
   }
 
+  // L7 - reject URLs that carry credentials in the authority part
+  // (`https://user:pass@host/`). They are a frequent SSRF /
+  // credential-leak shape:
+  //   - "http://attacker.example@internal-host/" is parsed by lots of
+  //     middleware as host=attacker.example (the userinfo is
+  //     attacker.example, host is internal-host). Some clients route
+  //     differently, so the same URL can mean two different things.
+  //   - Credentials in the URL get logged, cached, and forwarded in
+  //     Referer headers; rejecting them at the gate means the rest
+  //     of the app can assume URLs in our DB and prompts are clean.
+  // We check the raw fields rather than the formatted URL because
+  // `URL` decodes percent-encoded credentials transparently.
+  if (parsed.username || parsed.password) {
+    throw new UrlGuardError("URLs with embedded credentials are not allowed");
+  }
+
   const hostname = parsed.hostname.toLowerCase();
   if (!hostname) throw new UrlGuardError("Invalid URL");
   if (BLOCKED_HOSTNAMES.has(hostname)) {

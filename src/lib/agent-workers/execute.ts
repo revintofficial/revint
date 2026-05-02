@@ -594,9 +594,22 @@ async function hydrateContext(run: AgentRun): Promise<AgentWorkerContext> {
     },
   });
 
+  // H6 fix - lead must be scoped by workspaceId, not looked up by id
+  // alone. The previous findUnique({ where: { id } }) trusted that the
+  // run.leadId was correct for run.workspaceId, but a poisoned
+  // AgentRun row OR a buggy enqueue site that paired the wrong leadId
+  // with a workspaceId would hand workspace A's lead data into a
+  // worker hydrated for workspace B - the lead body, audit, and
+  // review analysis would then leak through Gemini prompts.
+  //
+  // Post-fix: findFirst({ where: { id, workspaceId } }) returns null
+  // for any cross-tenant pairing. We treat null-but-leadId-set as a
+  // hard failure: the run is marked FAILED with a clear errorMsg and
+  // the worker is never invoked, so no prompt ever sees the wrong
+  // lead's data.
   const lead = run.leadId
-    ? await prisma.lead.findUnique({
-        where: { id: run.leadId },
+    ? await prisma.lead.findFirst({
+        where: { id: run.leadId, workspaceId: run.workspaceId },
         include: {
           websiteAudit: true,
           salesOpportunity: true,
@@ -604,6 +617,17 @@ async function hydrateContext(run: AgentRun): Promise<AgentWorkerContext> {
         },
       })
     : null;
+  if (run.leadId && !lead) {
+    // Mark the run FAILED in-place. Caller (executeAgentRun) reads
+    // the row state after hydrateContext returns; throwing a
+    // PermanentError stops the worker chain and avoids touching any
+    // Gemini / Apify dependency. We import here to avoid a cycle.
+    const { PermanentError } = await import("./errors");
+    throw new PermanentError(
+      `lead ${run.leadId} not found in workspace ${run.workspaceId} (cross-tenant or deleted)`,
+      "input",
+    );
+  }
 
   const workerMeta = getWorker(run.workerKind);
   const memory: MemoryHit[] = await fetchMemoryReads({
