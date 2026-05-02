@@ -21,7 +21,18 @@ export async function tryEnqueueReviewAnalysis(
     const addPromise = queue.add(
       "analyze",
       { leadId },
-      { removeOnComplete: 100, removeOnFail: 50 },
+      {
+        removeOnComplete: 100,
+        removeOnFail: 50,
+        // M5 - standard retry policy (3 attempts with exponential
+        // backoff). Without this, a transient Gemini blip on the very
+        // first attempt would just FAIL the job and force a manual
+        // re-trigger. The worker's own error classification still
+        // decides whether the rethrow is RetryableError or not, so a
+        // permanent error still terminates after attempt 1.
+        attempts: 3,
+        backoff: { type: "exponential", delay: 2000 },
+      },
     );
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("queue_enqueue_timeout")), timeoutMs),

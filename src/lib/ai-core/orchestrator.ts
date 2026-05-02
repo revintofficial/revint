@@ -53,6 +53,12 @@ export async function enqueueAdvance(sessionId: string): Promise<void> {
       `advance:${sessionId}:${Date.now()}`,
       { type: "orchestrator_advance", sessionId },
       {
+        // M5 - standard retry policy across every queue.add site so
+        // a transient Redis hiccup or Gemini blip while the
+        // orchestrator walks the DAG re-tries with exponential backoff
+        // instead of stranding the planner_session in EXECUTING.
+        attempts: 3,
+        backoff: { type: "exponential", delay: 2000 },
         removeOnComplete: 100,
         removeOnFail: 50,
       },

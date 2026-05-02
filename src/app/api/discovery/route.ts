@@ -127,7 +127,16 @@ export async function POST(request: Request) {
           await queue.add(
             "discover",
             { workspaceId, searchQuery: query, city, country: workspaceCountry, radiusMeters },
-            { removeOnComplete: 100, removeOnFail: 50 },
+            {
+              // M5 - standard retry policy (3 attempts, exponential
+              // backoff) so a transient Google Places 5xx on the
+              // first attempt doesn't permanently lose this leg of
+              // the bulk run.
+              attempts: 3,
+              backoff: { type: "exponential", delay: 2000 },
+              removeOnComplete: 100,
+              removeOnFail: 50,
+            },
           );
           jobs.push({ city, query });
         }
