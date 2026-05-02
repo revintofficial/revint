@@ -42,13 +42,33 @@ export function renderMockupHtml(input: {
   const body = markdownToHtml(escaped);
   const safeName = escapeHtml(input.businessName);
   const safeCity = input.city ? escapeHtml(input.city) : "";
-  const safeWebsite = input.websiteUrl ? escapeHtml(input.websiteUrl) : "";
+  // M7 fix - the website URL is rendered as `<a href="...">`. HTML
+  // entity encoding alone does NOT block `javascript:` /
+  // `data:text/html` schemes — those still execute on click.
+  // `safeUrl()` returns `#` for any non-http(s) scheme so we can
+  // ship the link without worrying about untrusted payloads from
+  // the lead row (which can be edited by anyone with workspace
+  // ADMIN access). Same treatment for the optional logo URL.
+  const safeWebsite = input.websiteUrl
+    ? escapeHtml(safeUrl(input.websiteUrl))
+    : "";
   const branding = input.branding;
-  const accent = branding?.accentColor || "#a5b4fc";
-  const primary = branding?.primaryColor || "#5e6ad2";
+  // M6 fix - branding colors are interpolated raw into the CSS
+  // `:root { --accent: <value>; }` block. A malicious workspace
+  // admin could inject `;}body{background:url(...)}` to break out
+  // of the property and pull in arbitrary CSS / track viewers.
+  // sanitizeHex enforces the `#RGB`/`#RRGGBB`/`#RRGGBBAA` shape and
+  // falls back to the safe defaults below on anything else.
+  const accent = sanitizeHex(branding?.accentColor, "#a5b4fc");
+  const primary = sanitizeHex(branding?.primaryColor, "#5e6ad2");
   const footerText = branding?.footerText || (input.workspaceName ? `Drafted by ${escapeHtml(input.workspaceName)}` : "Drafted by Leadac AI");
   const showLeadacCredit = !branding?.hideLeadacCredit;
-  const safeLogoUrl = branding?.logoUrl ? escapeHtml(branding.logoUrl) : null;
+  // Logo URL is rendered as `<img src="...">`. `data:` is fine for
+  // a tiny PNG; `javascript:` is not. safeUrl() narrows to
+  // http(s) + data: image whitelist.
+  const safeLogoUrl = branding?.logoUrl
+    ? escapeHtml(safeImageUrl(branding.logoUrl))
+    : null;
 
   return `<!doctype html>
 <html lang="en">
@@ -208,4 +228,76 @@ function inlineFormat(text: string): string {
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>")
     .replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+
+/**
+ * M6 - validate a branding hex color before interpolating it raw
+ * into a CSS custom-property declaration. We only ship `#RGB`,
+ * `#RRGGBB`, `#RGBA`, or `#RRGGBBAA`; anything else falls back so
+ * a malicious workspace admin can't inject `; }body{...}` to break
+ * out of the `--accent` property.
+ *
+ * Exported for unit tests; the renderer is the only production
+ * caller.
+ */
+export function sanitizeHex(value: string | null | undefined, fallback: string): string {
+  if (!value || typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(trimmed)) {
+    return trimmed;
+  }
+  return fallback;
+}
+
+/**
+ * M7 - narrow a URL string to safe link schemes only. `javascript:`
+ * and `data:text/html` payloads in an `<a href>` survive
+ * `escapeHtml` (entities don't transform colons) and execute on
+ * click. We allow only `http:` and `https:` here; anything else
+ * (mailto / tel / data / javascript / file / unknown) collapses to
+ * `#` so the link is harmless.
+ */
+export function safeUrl(value: string | null | undefined): string {
+  if (!value || typeof value !== "string") return "#";
+  const trimmed = value.trim();
+  if (trimmed === "") return "#";
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol === "http:" || u.protocol === "https:") {
+      return u.toString();
+    }
+    return "#";
+  } catch {
+    // Allow protocol-relative + path-relative forms by re-parsing
+    // against a placeholder origin. Anything that doesn't start with
+    // `/` or `//` is treated as untrusted and downgraded to `#`.
+    if (trimmed.startsWith("//") || trimmed.startsWith("/")) {
+      return trimmed;
+    }
+    return "#";
+  }
+}
+
+/**
+ * Variant of `safeUrl` for `<img src>` contexts where a small
+ * `data:image/...` payload is legitimate (workspace admin uploads
+ * a base64 logo). Still blocks `javascript:` / `data:text/html`.
+ */
+export function safeImageUrl(value: string | null | undefined): string {
+  if (!value || typeof value !== "string") return "";
+  const trimmed = value.trim();
+  if (trimmed === "") return "";
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol === "http:" || u.protocol === "https:") {
+      return u.toString();
+    }
+    if (u.protocol === "data:" && /^data:image\/(png|jpeg|jpg|gif|webp|svg\+xml);/i.test(trimmed)) {
+      return trimmed;
+    }
+    return "";
+  } catch {
+    if (trimmed.startsWith("/")) return trimmed;
+    return "";
+  }
 }
