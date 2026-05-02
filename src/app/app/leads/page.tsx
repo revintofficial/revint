@@ -220,18 +220,47 @@ function LeadsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // M18 fix - hydration mismatch. The previous initializer read
+  // localStorage synchronously inside useState/useRef, which means
+  // the SSR-rendered HTML (no localStorage) and the first client
+  // render (reading saved filter state) produced different DOM
+  // trees. The hydration warning aside, the briefly-wrong filter
+  // state caused a duplicate /api/leads request right after mount.
+  // The fix uses URL-only initial state (which IS available on the
+  // server via searchParams) and rehydrates from localStorage in a
+  // useEffect that runs only on the client after first paint.
   const initialFilters = useRef(
     buildInitialFilters(
       new URLSearchParams(searchParams?.toString() ?? ""),
-      getSavedState<Partial<LeadsFilters>>(STORAGE_KEY),
+      // M18 - intentionally pass null on first render so SSR + first
+      // CSR render produce identical state. localStorage rehydrate
+      // runs in the effect below.
+      null,
     ),
   ).current;
 
   const [filters, setFilters] = useState<LeadsFilters>(initialFilters);
-  const [density, setDensity] = useState<"comfortable" | "compact">(() => {
-    const saved = getSavedState<"comfortable" | "compact">(DENSITY_KEY);
-    return saved === "compact" ? "compact" : "comfortable";
-  });
+  const [density, setDensity] = useState<"comfortable" | "compact">(
+    "comfortable",
+  );
+
+  // M18 - rehydrate persisted filter / density state after first
+  // commit. We only apply it when the URL didn't pin the relevant
+  // params (so a shared link wins over local memory).
+  useEffect(() => {
+    const saved = getSavedState<Partial<LeadsFilters>>(STORAGE_KEY);
+    const sp = new URLSearchParams(searchParams?.toString() ?? "");
+    if (saved && sp.size === 0) {
+      setFilters((prev) => ({ ...prev, ...saved }));
+    }
+    const savedDensity = getSavedState<"comfortable" | "compact">(DENSITY_KEY);
+    if (savedDensity === "compact") {
+      setDensity("compact");
+    }
+    // searchParams is captured once at mount on purpose - we do NOT
+    // want to re-read localStorage every time the URL changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [view, setView] = useState<LeadsView>(() =>
     parseLeadsView(searchParams?.get("view")),
   );

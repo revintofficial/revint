@@ -340,9 +340,20 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch("/api/workspace/offer")
+    // M19 fix - cancel-on-unmount. The previous version called
+    // setData / setLoading unconditionally inside the .then chain,
+    // so a navigation that unmounted this component before the
+    // /api/workspace/offer round trip resolved would log a
+    // "setState on unmounted component" warning AND keep the
+    // request alive (no AbortController). The new version aborts
+    // the in-flight fetch on unmount and short-circuits the
+    // setState calls if the component is gone.
+    const ctrl = new AbortController();
+    let cancelled = false;
+    fetch("/api/workspace/offer", { signal: ctrl.signal })
       .then((r) => r.json())
-      .then((d) =>
+      .then((d) => {
+        if (cancelled) return;
         setData({
           offerName: d.offerName ?? "",
           valueProposition: d.valueProposition ?? "",
@@ -356,10 +367,22 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
           conversionLink: d.conversionLink ?? "",
           niche: d.niche ?? "WEB_AGENCY",
           targetSubNiches: Array.isArray(d.targetSubNiches) ? d.targetSubNiches : [],
-        }),
-      )
-      .catch(() => toast.error("Couldn't load offer context"))
-      .finally(() => setLoading(false));
+        });
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        // AbortError on unmount is expected; don't toast.
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        toast.error("Couldn't load offer context");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+    };
   }, []);
 
   const save = async (e: React.FormEvent) => {

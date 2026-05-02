@@ -19,28 +19,61 @@ const ACCENT_COLORS = [
 ];
 
 const STORAGE_KEY = "todo-columns";
+const DEFAULT_COLUMNS = ["Team"] as const;
 
-function getSavedColumns(): string[] {
-  if (typeof window === "undefined") return ["Team"];
+/**
+ * M17 fix - hydration mismatch. The previous initializer
+ * synchronously read `localStorage` via the `getSavedColumns`
+ * function reference, which means the client's first render
+ * produced a different DOM tree than the server (which always
+ * returned `["Team"]`). React 19 logs a hydration warning and the
+ * client tree is partially re-rendered, which made the kanban
+ * columns flash.
+ *
+ * The fix uses the same SSR-stable initial state on both sides
+ * (`["Team"]`) and rehydrates from `localStorage` in a useEffect
+ * that runs only on the client after first paint.
+ */
+function readPersistedColumns(): string[] | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : ["Team"];
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.every((c) => typeof c === "string")) {
+      return parsed;
+    }
+    return null;
   } catch {
-    return ["Team"];
+    return null;
   }
 }
 
 export default function TodosPage() {
-  const [columns, setColumns] = useState<string[]>(getSavedColumns);
+  const [columns, setColumns] = useState<string[]>([...DEFAULT_COLUMNS]);
+  const [hydrated, setHydrated] = useState(false);
   const [byColumn, setByColumn] = useState<Record<string, Todo[]>>({});
   const [loading, setLoading] = useState(true);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [newColumnName, setNewColumnName] = useState("");
   const [showAddColumn, setShowAddColumn] = useState(false);
 
+  // M17 - hydrate from localStorage AFTER the SSR-equivalent first
+  // render has committed. A separate `hydrated` flag gates the
+  // localStorage write effect below so we don't overwrite the
+  // saved state with the placeholder on first client paint.
   useEffect(() => {
+    const persisted = readPersistedColumns();
+    if (persisted && persisted.length > 0) {
+      setColumns(persisted);
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(columns));
-  }, [columns]);
+  }, [columns, hydrated]);
 
   const fetchTodos = useCallback(async () => {
     try {

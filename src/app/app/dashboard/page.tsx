@@ -107,33 +107,62 @@ export default function DashboardPage() {
   // network/auth errors look like a fresh-account onboarding nudge.
   const [loadFailed, setLoadFailed] = useState(false);
 
-  const loadStats = useCallback(() => {
-    setLoading(true);
-    setLoadFailed(false);
-    fetch("/api/stats")
-      .then((r) => {
-        if (!r.ok) throw new Error(`API ${r.status}`);
-        return r.json();
-      })
-      .then((data) => {
-        if (data.error) throw new Error(data.error);
-        setStats({
-          ...data,
-          boroughDistribution: data.boroughDistribution ?? [],
-          outreachStatus: data.outreachStatus ?? [],
-          crawlStatus: data.crawlStatus ?? [],
-          analyzeStatus: data.analyzeStatus ?? [],
+  // M19 fix - the previous loadStats called setStats / setLoading
+  // unconditionally inside the .then chain, so a navigation that
+  // unmounted DashboardPage before /api/stats resolved logged the
+  // "setState on unmounted component" warning AND left the request
+  // alive (no AbortController). loadStats now accepts a signal +
+  // cancelled flag from the caller; the useEffect manages the
+  // controller and re-issues a fresh one if loadStats is called
+  // again from an interactive retry (the loadStats reference is
+  // captured once via useCallback so React effect deps don't churn).
+  const loadStats = useCallback(
+    (opts?: { signal?: AbortSignal; isCancelled?: () => boolean }) => {
+      setLoading(true);
+      setLoadFailed(false);
+      const isCancelled = opts?.isCancelled ?? (() => false);
+      fetch("/api/stats", { signal: opts?.signal })
+        .then((r) => {
+          if (!r.ok) throw new Error(`API ${r.status}`);
+          return r.json();
+        })
+        .then((data) => {
+          if (isCancelled()) return;
+          if (data.error) throw new Error(data.error);
+          setStats({
+            ...data,
+            boroughDistribution: data.boroughDistribution ?? [],
+            outreachStatus: data.outreachStatus ?? [],
+            crawlStatus: data.crawlStatus ?? [],
+            analyzeStatus: data.analyzeStatus ?? [],
+          });
+        })
+        .catch((err: unknown) => {
+          if (isCancelled()) return;
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          console.error("dashboard.stats_failed", err);
+          setLoadFailed(true);
+        })
+        .finally(() => {
+          if (isCancelled()) return;
+          setLoading(false);
         });
-      })
-      .catch((err) => {
-        console.error("dashboard.stats_failed", err);
-        setLoadFailed(true);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
-    loadStats();
+    const ctrl = new AbortController();
+    let cancelled = false;
+    // loadStats intentionally toggles loading state at request kickoff;
+    // the effect is the request lifecycle owner so this is the correct
+    // place. The setState happens inside loadStats, not directly here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadStats({ signal: ctrl.signal, isCancelled: () => cancelled });
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+    };
   }, [loadStats]);
 
   if (loading) {

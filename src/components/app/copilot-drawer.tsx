@@ -52,10 +52,35 @@ export function CopilotDrawer() {
 
   useEffect(() => {
     if (!open) return;
-    fetch("/api/copilot")
+    // M19 fix - cancel-on-unmount/close. The previous version
+    // called setMessages / setLoading unconditionally inside the
+    // .then chain, so closing the drawer or unmounting before
+    // /api/copilot resolved fired a "setState on unmounted
+    // component" warning AND left the request hanging. We now
+    // abort on cleanup and short-circuit the setState calls.
+    const ctrl = new AbortController();
+    let cancelled = false;
+    fetch("/api/copilot", { signal: ctrl.signal })
       .then((r) => r.json())
-      .then((data) => setMessages(data.messages || []))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (cancelled) return;
+        setMessages(data.messages || []);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        // Surface load failures softly; the drawer keeps the empty
+        // state instead of throwing.
+        console.error("copilot.load_failed", err);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+    };
   }, [open]);
 
   // Lock body scroll while the full-screen modal is up on phone — without
