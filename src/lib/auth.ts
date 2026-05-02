@@ -4,6 +4,7 @@ import { createSupabaseServer } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { sendEmailAsync } from "@/lib/email/send";
 import { WelcomeEmail } from "@/lib/email/templates/welcome";
+import { internalError } from "@/lib/api-errors";
 
 /** Cookie storing the user's selected workspace id (non-httpOnly for client reads). */
 export const ACTIVE_WORKSPACE_COOKIE = "leadac_active_workspace_id";
@@ -18,6 +19,19 @@ export class UnauthorizedError extends Error {
 export class NotFoundError extends Error {
   status = 404;
   constructor(message = "Workspace not found") {
+    super(message);
+  }
+}
+
+/**
+ * H5 - thrown by `requireWorkspaceAdminApi()` so API route catch
+ * blocks can map it to a clean 403 JSON response without depending
+ * on Next's RSC-only `redirect()` (which leaks `NEXT_REDIRECT` as a
+ * generic 500 inside an API handler).
+ */
+export class ForbiddenError extends Error {
+  status = 403;
+  constructor(message = "Forbidden") {
     super(message);
   }
 }
@@ -83,11 +97,32 @@ export async function requireUser(): Promise<AuthedSession> {
       .replace(/^-|-$/g, "")
       .slice(0, 32) || "workspace";
 
+    // M14 - bound the collision loop so a pathological slug (e.g.
+    // an extremely common "admin"/"info" prefix that hits dozens of
+    // existing rows) doesn't hammer the DB on every signup. After 50
+    // sequential attempts we fall back to a 6-char random suffix
+    // which gives ~16M collision-free options. Anything past that
+    // and we throw instead of looping forever.
     let slug = baseSlug;
     let attempt = 0;
+    const MAX_SEQUENTIAL_ATTEMPTS = 50;
     while (await prisma.workspace.findUnique({ where: { slug } })) {
       attempt++;
-      slug = `${baseSlug}-${attempt}`;
+      if (attempt <= MAX_SEQUENTIAL_ATTEMPTS) {
+        slug = `${baseSlug}-${attempt}`;
+        continue;
+      }
+      const randomSuffix = Math.random().toString(36).slice(2, 8);
+      slug = `${baseSlug}-${randomSuffix}`;
+      // One last collision check — if the random suffix also collides
+      // (~1 in 16M) we give up and surface a 500 instead of looping.
+      const stillTaken = await prisma.workspace.findUnique({ where: { slug } });
+      if (stillTaken) {
+        throw new Error(
+          `slug_generation_exhausted: could not generate unique slug for base "${baseSlug}" after ${attempt} attempts`,
+        );
+      }
+      break;
     }
 
     const workspace = await prisma.workspace.create({
@@ -174,12 +209,37 @@ export async function getOptionalUser(): Promise<AuthedSession | null> {
  * Phase 1 deployment-redesign: pairs with the role-aware
  * SettingsNav to enforce ADMIN-only configuration surfaces
  * (offer, packages, lead pipeline, branding, team, billing).
+ *
+ * NOTE: this calls Next's `redirect()` which throws `NEXT_REDIRECT`.
+ * That works inside Server Components / page.tsx but BREAKS inside
+ * an API route handler — the throw bubbles to the catch block and
+ * is reported as a generic 500. API routes MUST use
+ * `requireWorkspaceAdminApi()` instead, which throws
+ * `ForbiddenError` (mappable to a 403 JSON response).
  */
 export async function requireWorkspaceAdmin(): Promise<AuthedSession> {
   const session = await requireUser();
   if (session.role !== "OWNER" && session.role !== "ADMIN") {
     const { redirect } = await import("next/navigation");
     redirect("/app/settings/account");
+  }
+  return session;
+}
+
+/**
+ * H5 - API-friendly version of `requireWorkspaceAdmin`. Returns the
+ * authed session for OWNER/ADMIN roles; throws `ForbiddenError`
+ * (status 403) for MEMBER roles so the caller's catch block can
+ * return a clean JSON 403 instead of a generic 500.
+ *
+ * Use this in `src/app/api/**\/route.ts` files. Pages keep using
+ * `requireWorkspaceAdmin()` because RSC redirects render the
+ * /app/settings/account fallback transparently.
+ */
+export async function requireWorkspaceAdminApi(): Promise<AuthedSession> {
+  const session = await requireUser();
+  if (session.role !== "OWNER" && session.role !== "ADMIN") {
+    throw new ForbiddenError("Workspace admin access required");
   }
   return session;
 }
@@ -201,15 +261,20 @@ export function withAuth<T extends unknown[]>(
       if (err instanceof UnauthorizedError) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
+      if (err instanceof ForbiddenError) {
+        return NextResponse.json({ error: err.message }, { status: 403 });
+      }
       if (err instanceof NotFoundError) {
         return NextResponse.json({ error: err.message }, { status: 404 });
       }
-      console.error("[withAuth] handler error:", err);
-      const detail = err instanceof Error ? err.message : String(err);
-      return NextResponse.json(
-        { error: "Internal error", detail },
-        { status: 500 }
-      );
+      // H4 fix - never echo `err.message` to the client. Old code put
+      // it under `detail` even in production, which leaked stack
+      // fragments, ORM constraint strings and Supabase project hints
+      // to anyone who could trigger a 500. `internalError()` logs the
+      // full detail server-side under the scope and returns the
+      // generic envelope; in dev it includes the detail to keep the
+      // iteration loop fast.
+      return internalError("withAuth", err);
     }
   };
 }

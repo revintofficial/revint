@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireWorkspaceAdmin, UnauthorizedError } from "@/lib/auth";
+import {
+  requireWorkspaceAdminApi,
+  UnauthorizedError,
+  ForbiddenError,
+} from "@/lib/auth";
+import { internalError } from "@/lib/api-errors";
 import { logger } from "@/lib/logger";
 import type { SequenceChannel } from "@/generated/prisma/client";
 
@@ -23,7 +28,7 @@ interface CreateSequenceBody {
  */
 export async function GET() {
   try {
-    const session = await requireWorkspaceAdmin();
+    const session = await requireWorkspaceAdminApi();
     const sequences = await prisma.sequence.findMany({
       where: { workspaceId: session.workspaceId },
       include: {
@@ -37,14 +42,16 @@ export async function GET() {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.sequences.list_error", { err });
-    return NextResponse.json({ error: "Failed to list sequences" }, { status: 500 });
+    if (err instanceof ForbiddenError) {
+      return NextResponse.json({ error: err.message }, { status: 403 });
+    }
+    return internalError("api.sequences.list_error", err);
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const session = await requireWorkspaceAdmin();
+    const session = await requireWorkspaceAdminApi();
     const body = (await request.json()) as CreateSequenceBody;
 
     if (!body.name || !Array.isArray(body.steps) || body.steps.length === 0) {
@@ -97,7 +104,9 @@ export async function POST(request: Request) {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.sequences.create_error", { err });
-    return NextResponse.json({ error: "Failed to create sequence" }, { status: 500 });
+    if (err instanceof ForbiddenError) {
+      return NextResponse.json({ error: err.message }, { status: 403 });
+    }
+    return internalError("api.sequences.create_error", err);
   }
 }

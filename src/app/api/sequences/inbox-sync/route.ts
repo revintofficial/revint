@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireWorkspaceAdmin, UnauthorizedError } from "@/lib/auth";
+import {
+  requireWorkspaceAdminApi,
+  UnauthorizedError,
+  ForbiddenError,
+} from "@/lib/auth";
 import { syncWorkspaceInbox } from "@/lib/sequence-engine/inbox-sync";
-import { logger } from "@/lib/logger";
+import { internalError } from "@/lib/api-errors";
 
 /**
  * Phase 2 — manual inbox-sync trigger. Admin pulls the last 24h of
@@ -16,14 +20,16 @@ import { logger } from "@/lib/logger";
  */
 export async function POST() {
   try {
-    const session = await requireWorkspaceAdmin();
+    const session = await requireWorkspaceAdminApi();
     const result = await syncWorkspaceInbox(session.workspaceId);
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    logger.error("api.sequences.inbox_sync.error", { err });
-    return NextResponse.json({ error: "Failed to sync inbox" }, { status: 500 });
+    if (err instanceof ForbiddenError) {
+      return NextResponse.json({ error: err.message }, { status: 403 });
+    }
+    return internalError("api.sequences.inbox_sync.error", err);
   }
 }

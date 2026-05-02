@@ -39,6 +39,33 @@ function describe(err: unknown): string {
 }
 
 /**
+ * M25 - Next.js 16 throws an opaque `NEXT_REDIRECT;...` error from
+ * `redirect()` and a `NEXT_NOT_FOUND` error from `notFound()` so it
+ * can render the destination page on the way back up the call stack.
+ * Generic catch blocks (try { ... } catch (err) { return 500 }) will
+ * accidentally swallow these and surface a 500 instead of performing
+ * the navigation. Use `isRedirectOrNotFound(err)` at the top of any
+ * catch block that wraps server-component code (page.tsx, layout.tsx,
+ * server actions) to re-throw and let Next handle it.
+ *
+ * The detection is deliberately string-based — Next doesn't export a
+ * stable `isRedirectError` helper from a public path, but the digest
+ * shape `NEXT_REDIRECT;...` and `NEXT_NOT_FOUND` has been stable
+ * since 13.x.
+ */
+export function isRedirectOrNotFound(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const digest = (err as Error & { digest?: string }).digest ?? "";
+  if (typeof digest === "string" && digest.length > 0) {
+    if (digest.startsWith("NEXT_REDIRECT") || digest === "NEXT_NOT_FOUND") {
+      return true;
+    }
+  }
+  // Fallback: some Next builds put the marker on `message` itself.
+  return err.message === "NEXT_REDIRECT" || err.message === "NEXT_NOT_FOUND";
+}
+
+/**
  * Standard 500 response. Always logs the underlying error under the
  * provided `scope` (use a `domain.action.failed` shape so logs are
  * greppable) and returns a generic body in production.
