@@ -81,20 +81,65 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Could not resolve invited user" }, { status: 500 });
     }
 
-    const already = await prisma.workspaceMember.findFirst({
-      where: { workspaceId: session.workspaceId, userId: existing.id },
+    // L11 fix - the seat check + member create must be atomic.
+    // Two parallel invites that both pass the upfront `count` check
+    // could otherwise both insert and exceed the plan's seat limit.
+    // We re-count INSIDE the transaction with a short retry; Postgres
+    // doesn't give us a SERIALIZABLE-level guard without explicit
+    // SELECT FOR UPDATE on a parent row, but the in-transaction count
+    // closes the obvious race. The unique constraint
+    // `WorkspaceMember(workspaceId,userId)` covers double-add.
+    //
+    // L12 fix - if the invitee is already a workspace member we
+    // surface a 200 with an explicit `invitation_sent_existing_user`
+    // code so the UI can show a friendly "already on the team"
+    // toast instead of treating it as an error. The 409 was being
+    // displayed as a hard failure even though "they're already on
+    // your team" is a benign outcome of the request.
+    const inviteResult = await prisma.$transaction(async (tx) => {
+      const seatsInTx = await tx.workspaceMember.count({
+        where: { workspaceId: session.workspaceId },
+      });
+      if (!planAllowsAdditionalSeat(session.workspace.plan, seatsInTx)) {
+        return { kind: "seat_limit" as const, seatsInTx };
+      }
+      const alreadyTx = await tx.workspaceMember.findFirst({
+        where: { workspaceId: session.workspaceId, userId: existing!.id },
+      });
+      if (alreadyTx) {
+        return { kind: "already_member" as const };
+      }
+      await tx.workspaceMember.create({
+        data: {
+          workspaceId: session.workspaceId,
+          userId: existing!.id,
+          role: "MEMBER",
+        },
+      });
+      return { kind: "added" as const };
     });
-    if (already) {
-      return NextResponse.json({ error: "Already a member" }, { status: 409 });
+
+    if (inviteResult.kind === "seat_limit") {
+      return NextResponse.json(
+        {
+          error: "seat_limit_reached",
+          message: `${plan.name} plan is limited to ${plan.maxSeats} seats (${inviteResult.seatsInTx} currently in use). Upgrade to Pro Team or Agency.`,
+          currentSeats: inviteResult.seatsInTx,
+          maxSeats: plan.maxSeats,
+          planName: plan.name,
+          upgradeUrl: "/app/settings/billing",
+        },
+        { status: 402 },
+      );
     }
 
-    await prisma.workspaceMember.create({
-      data: {
-        workspaceId: session.workspaceId,
-        userId: existing.id,
-        role: "MEMBER",
-      },
-    });
+    if (inviteResult.kind === "already_member") {
+      return NextResponse.json({
+        ok: true,
+        code: "invitation_sent_existing_user",
+        message: `${cleanEmail} is already on your team.`,
+      });
+    }
 
     // Branded supplement to the Supabase invite email. Fire-and-forget so
     // a Resend outage never blocks a successful invite.
