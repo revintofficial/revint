@@ -355,6 +355,81 @@ export async function findScopedMemoryRow(args: {
 }
 
 /**
+ * M23 - non-similarity recency read for the executor's context
+ * hydration. Returns the N newest memory rows for a workspace
+ * (optionally narrowed to a lead) matching the requested kinds.
+ * Recency-ordered, NOT semantic — callers that need cosine ranking
+ * should call `query` instead.
+ *
+ * Why this lives in the facade: `executeAgentRun.fetchMemoryReads`
+ * used to call `prisma.semanticMemory.findMany` directly, which
+ * violated the "all SemanticMemory access goes through this module"
+ * invariant. The direct read also re-implemented the workspace_id
+ * predicate inline, making it easy to forget on the next refactor.
+ * Routing through here means changing the storage engine (or
+ * changing the index strategy) only touches this file.
+ *
+ * Returned shape is the raw row minus `embedding`/`workspaceId`; the
+ * executor shapes them into its own `MemoryHit` (which allows a null
+ * similarity score for non-vector reads).
+ */
+export async function findRecentByKindsScoped(args: {
+  workspaceId: string;
+  leadId: string | null;
+  kinds: MemoryKind[];
+  topK?: number;
+}): Promise<Array<{
+  id: string;
+  kind: MemoryKind;
+  leadId: string | null;
+  refType: string | null;
+  refId: string | null;
+  text: string;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+  nicheScope: string | null;
+}>> {
+  if (!args.workspaceId || args.kinds.length === 0) return [];
+  const where = args.leadId
+    ? {
+        workspaceId: args.workspaceId,
+        leadId: args.leadId,
+        kind: { in: args.kinds },
+      }
+    : {
+        workspaceId: args.workspaceId,
+        kind: { in: args.kinds },
+      };
+  const rows = await prisma.semanticMemory.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take: args.topK ?? 10,
+    select: {
+      id: true,
+      kind: true,
+      leadId: true,
+      refType: true,
+      refId: true,
+      text: true,
+      metadata: true,
+      createdAt: true,
+      nicheScope: true,
+    },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    kind: r.kind,
+    leadId: r.leadId,
+    refType: r.refType,
+    refId: r.refId,
+    text: r.text,
+    metadata: (r.metadata ?? {}) as Record<string, unknown>,
+    createdAt: r.createdAt,
+    nicheScope: r.nicheScope,
+  }));
+}
+
+/**
  * Cosine-similarity search. Scoped to the caller's workspace; optional
  * filters for kind(s) and leadId. Returns results sorted by similarity
  * descending (best match first).

@@ -21,6 +21,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { listRecentInboxMessages } from "@/lib/oauth/email-client";
 import { pauseSequenceForReply } from "./step";
+import { generateWithTimeout } from "@/lib/gemini-client";
 
 interface ClassifyOutput {
   classification: "POSITIVE" | "NEGATIVE" | "OUT_OF_OFFICE" | "UNSUBSCRIBE" | "OTHER";
@@ -73,7 +74,17 @@ Categories:
 Respond with valid JSON only.`;
 
   try {
-    const result = await model.generateContent(prompt);
+    // M22 fix - the bare `model.generateContent(prompt)` call had no
+    // wall-clock deadline, so a Gemini stall (overloaded region, TCP
+    // hang) would consume the inbox-sync worker slot indefinitely
+    // and back up downstream sequence ticks. generateWithTimeout
+    // wraps the call in an AbortController + 30s deadline; on
+    // timeout it throws RetryableError which we catch below and fall
+    // back to OTHER so the worker keeps moving through the inbox.
+    const result = await generateWithTimeout(model, prompt, {
+      timeoutMs: 30_000,
+      label: "inbox_sync.classify",
+    });
     const text = result.response.text();
     return JSON.parse(text) as ClassifyOutput;
   } catch (err) {

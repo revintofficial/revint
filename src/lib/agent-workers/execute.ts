@@ -383,27 +383,23 @@ async function fetchMemoryReads(args: {
 }): Promise<MemoryHit[]> {
   if (!args.specs || args.specs.length === 0) return [];
 
+  // M23 - delegate to the memory facade's `findRecentByKindsScoped`
+  // helper instead of touching `prisma.semanticMemory.findMany`
+  // directly. Keeps every SemanticMemory read in one file so a future
+  // storage swap (or workspace_id predicate audit) only has to look
+  // there.
+  const { findRecentByKindsScoped } = await import("@/lib/ai-core/memory");
+
   const hits: MemoryHit[] = [];
 
   for (const spec of args.specs) {
     if (spec.scope === "lead" && !args.leadId) continue;
 
-    const topK = spec.topK ?? 10;
-    const where =
-      spec.scope === "lead" && args.leadId
-        ? {
-            workspaceId: args.workspaceId,
-            leadId: args.leadId,
-            kind: { in: spec.kinds },
-          }
-        : {
-            workspaceId: args.workspaceId,
-            kind: { in: spec.kinds },
-          };
-    const rows = await prisma.semanticMemory.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: topK,
+    const rows = await findRecentByKindsScoped({
+      workspaceId: args.workspaceId,
+      leadId: spec.scope === "lead" ? args.leadId : null,
+      kinds: spec.kinds,
+      topK: spec.topK ?? 10,
     });
 
     for (const r of rows) {
@@ -414,7 +410,7 @@ async function fetchMemoryReads(args: {
         refType: r.refType,
         refId: r.refId,
         text: r.text,
-        metadata: (r.metadata ?? {}) as Record<string, unknown>,
+        metadata: r.metadata,
         similarity: null,
         createdAt: r.createdAt,
         nicheScope: r.nicheScope,
