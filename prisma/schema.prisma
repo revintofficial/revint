@@ -345,6 +345,15 @@ model Workspace {
   conversionLink   String? @map("conversion_link")
   niche            WorkspaceNiche @default(WEB_AGENCY) @map("niche")
 
+  // M12 - per-workspace HMAC secret for the telephony webhook.
+  // Replaces the single shared TELEPHONY_WEBHOOK_TOKEN env var so a
+  // leaked / reused token can only address one tenant. Lazily
+  // populated on first webhook setup; null means the workspace has
+  // not opted into telephony attribution. The unique constraint
+  // lets the webhook route resolve the workspace from the token
+  // without trusting a `workspaceId` query param.
+  telephonyWebhookSecret String? @unique @map("telephony_webhook_secret")
+
   // Optional sub-niche focus list. When the workspace's parent vertical (e.g.
   // RESTAURANT_TECH → "fnb") has child packs, the rep can narrow which ones
   // their team actually pitches (e.g. only fine-dining + bar + hotel) so the
@@ -655,9 +664,21 @@ model LeadActivity {
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
+  // M13 - external call id for telephony idempotency. Surfaced as a
+  // dedicated column (was previously buried in `payload.externalCallId`)
+  // so the @@unique below enforces "one terminal CALL_LOGGED per
+  // (workspace, lead, externalCallId)" at the DB layer instead of
+  // racing on a JSON-path findFirst pre-check. Nullable because
+  // most kinds don't have an external id (NOTE, SEQUENCE_STEP_FIRED,
+  // etc.); the unique constraint is enforced for non-null values
+  // only via the partial-index pattern Postgres allows on a unique
+  // constraint over a nullable column.
+  externalCallId String? @map("external_call_id")
+
   @@index([workspaceId, leadId, createdAt])
   @@index([workspaceId, kind, createdAt])
   @@index([workspaceId, userId, createdAt])
+  @@unique([workspaceId, leadId, kind, externalCallId])
   @@map("lead_activities")
 }
 
