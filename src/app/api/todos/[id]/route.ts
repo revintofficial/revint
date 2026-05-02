@@ -30,7 +30,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Todo not found" }, { status: 404 });
     }
 
-    const todo = await prisma.teamTodo.findUnique({ where: { id } });
+    // L1 fix - re-fetch via findFirst with workspaceId scope. The
+    // earlier updateMany already gates the write, but using
+    // findUnique({id}) for the response payload was an IDOR shape
+    // (a future PR removing the updateMany guard would silently
+    // leak the row). Belt-and-braces the read so the pattern stays
+    // consistent across the codebase.
+    const todo = await prisma.teamTodo.findFirst({
+      where: { id, workspaceId },
+    });
     return NextResponse.json(todo);
   } catch (error) {
     if (error instanceof UnauthorizedError) {

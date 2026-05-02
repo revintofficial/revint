@@ -20,9 +20,14 @@ export async function PATCH(
 
     const { id } = await params;
 
-    // Scope check: ensure this package belongs to the caller's workspace.
-    const existing = await prisma.servicePackage.findUnique({ where: { id } });
-    if (!existing || existing.workspaceId !== session.workspaceId) {
+    // L3 fix - findFirst({id, workspaceId}) instead of
+    // findUnique({id}) + post-check. Same IDOR shape as L1/L2:
+    // a future PR that drops the post-check would silently expose
+    // every workspace's pricing config.
+    const existing = await prisma.servicePackage.findFirst({
+      where: { id, workspaceId: session.workspaceId },
+    });
+    if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -85,9 +90,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
-    const updated = await prisma.servicePackage.update({
-      where: { id },
+    // L3 - update via updateMany so the workspaceId scope is in
+    // the WHERE clause at the DB layer too. Then re-fetch with the
+    // same scope for the response payload.
+    await prisma.servicePackage.updateMany({
+      where: { id, workspaceId: session.workspaceId },
       data: updates,
+    });
+    const updated = await prisma.servicePackage.findFirst({
+      where: { id, workspaceId: session.workspaceId },
     });
 
     return NextResponse.json(updated);
@@ -112,13 +123,16 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Scope check: ensure this package belongs to the caller's workspace.
-    const existing = await prisma.servicePackage.findUnique({ where: { id } });
-    if (!existing || existing.workspaceId !== session.workspaceId) {
+    // L3 fix - same workspace-scoped lookup + scoped deleteMany so
+    // the (id, workspaceId) tuple is enforced both before and at
+    // the actual delete. deleteMany returns a count we use as the
+    // 404 signal so the response shape is stable.
+    const result = await prisma.servicePackage.deleteMany({
+      where: { id, workspaceId: session.workspaceId },
+    });
+    if (result.count === 0) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-
-    await prisma.servicePackage.delete({ where: { id } });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     if (error instanceof UnauthorizedError) {

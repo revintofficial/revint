@@ -33,14 +33,18 @@ vi.mock("@/lib/auth", () => {
   return { requireUser, UnauthorizedError, NotFoundError, withAuth };
 });
 
-const mockLeadFindUnique = vi.fn();
+// L6 fix - the route migrated from `lead.findUnique({id})` +
+// post-check to `lead.findFirst({id, workspaceId})`. The mock now
+// exposes the new method.
+const mockLeadFindFirst = vi.fn();
 const mockLeadFindMany = vi.fn();
 const mockSemanticMemoryFindFirst = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     lead: {
-      findUnique: (...args: unknown[]) => mockLeadFindUnique(...args),
+      findFirst: (...args: unknown[]) => mockLeadFindFirst(...args),
+      findUnique: vi.fn(),
       findMany: (...args: unknown[]) => mockLeadFindMany(...args),
     },
     semanticMemory: {
@@ -68,7 +72,7 @@ function makeCtx(id: string) {
 describe("GET /api/leads/[id]/lookalikes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLeadFindUnique.mockResolvedValue({ workspaceId: "ws_test" });
+    mockLeadFindFirst.mockResolvedValue({ workspaceId: "ws_test" });
     mockLeadFindMany.mockResolvedValue([]);
     mockSemanticMemoryFindFirst.mockResolvedValue(null);
     mockQuery.mockResolvedValue([]);
@@ -81,14 +85,24 @@ describe("GET /api/leads/[id]/lookalikes", () => {
   });
 
   it("returns 404 when the source lead is in another workspace", async () => {
-    mockLeadFindUnique.mockResolvedValueOnce({ workspaceId: "OTHER_WS" });
+    // L6 - findFirst({id, workspaceId}) returns null directly when
+    // the row is in another tenant. The mock mirrors that.
+    mockLeadFindFirst.mockResolvedValueOnce(null);
     const res = await GET(makeRequest("lead_other"), makeCtx("lead_other"));
     expect(res.status).toBe(404);
     expect(mockQuery).not.toHaveBeenCalled();
+    expect(mockLeadFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: "lead_other",
+          workspaceId: "ws_test",
+        }),
+      }),
+    );
   });
 
   it("returns empty array when the source lead has no LEAD_PROFILE memory", async () => {
-    mockLeadFindUnique.mockResolvedValueOnce({ workspaceId: "ws_test" });
+    mockLeadFindFirst.mockResolvedValueOnce({ workspaceId: "ws_test" });
     mockSemanticMemoryFindFirst.mockResolvedValueOnce(null);
 
     const res = await GET(makeRequest("lead_noprofile"), makeCtx("lead_noprofile"));
@@ -99,7 +113,7 @@ describe("GET /api/leads/[id]/lookalikes", () => {
   });
 
   it("excludes the source lead from results and hydrates the rest", async () => {
-    mockLeadFindUnique.mockResolvedValueOnce({ workspaceId: "ws_test" });
+    mockLeadFindFirst.mockResolvedValueOnce({ workspaceId: "ws_test" });
     mockSemanticMemoryFindFirst.mockResolvedValueOnce({
       id: "mem_src",
       text: "source lead profile text",

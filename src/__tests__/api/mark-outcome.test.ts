@@ -33,16 +33,24 @@ vi.mock("@/lib/auth", () => {
   return { requireUser, UnauthorizedError, NotFoundError, withAuth };
 });
 
-const mockLeadFindUnique = vi.fn();
-const mockSalesOppUpdate = vi.fn();
+// L5 fix - the route migrated from `lead.findUnique({id})` +
+// post-check to `lead.findFirst({id, workspaceId})`, and from
+// `salesOpportunity.update({where:{leadId}})` to a scoped
+// `updateMany({leadId, workspaceId})`. The mocks below mirror the
+// new surface; the old method names are kept as no-ops to surface
+// any accidental call regression.
+const mockLeadFindFirst = vi.fn();
+const mockSalesOppUpdateMany = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     lead: {
-      findUnique: (...args: unknown[]) => mockLeadFindUnique(...args),
+      findFirst: (...args: unknown[]) => mockLeadFindFirst(...args),
+      findUnique: vi.fn(),
     },
     salesOpportunity: {
-      update: (...args: unknown[]) => mockSalesOppUpdate(...args),
+      updateMany: (...args: unknown[]) => mockSalesOppUpdateMany(...args),
+      update: vi.fn(),
     },
   },
 }));
@@ -71,8 +79,8 @@ describe("POST /api/leads/[id]/mark-outcome", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockEmit.mockResolvedValue("sess_mark_1");
-    mockSalesOppUpdate.mockResolvedValue({});
-    mockLeadFindUnique.mockResolvedValue({
+    mockSalesOppUpdateMany.mockResolvedValue({ count: 1 });
+    mockLeadFindFirst.mockResolvedValue({
       workspaceId: "ws_test",
       salesOpportunity: { id: "opp_1" },
     });
@@ -93,14 +101,13 @@ describe("POST /api/leads/[id]/mark-outcome", () => {
     const body = await res.json();
     expect(body.error).toMatch(/INTERESTED.*MEETING.*WON.*LOST/);
     expect(mockEmit).not.toHaveBeenCalled();
-    expect(mockSalesOppUpdate).not.toHaveBeenCalled();
+    expect(mockSalesOppUpdateMany).not.toHaveBeenCalled();
   });
 
   it("returns 404 when the lead belongs to another workspace", async () => {
-    mockLeadFindUnique.mockResolvedValueOnce({
-      workspaceId: "OTHER_WS",
-      salesOpportunity: { id: "opp_999" },
-    });
+    // L5 - findFirst({id, workspaceId}) returns null directly when
+    // the row is in another tenant. The mock mirrors that.
+    mockLeadFindFirst.mockResolvedValueOnce(null);
 
     const res = await POST(
       makeRequest("lead_other", { status: "WON" }),
@@ -110,10 +117,18 @@ describe("POST /api/leads/[id]/mark-outcome", () => {
     const body = await res.json();
     expect(JSON.stringify(body)).not.toContain("OTHER_WS");
     expect(mockEmit).not.toHaveBeenCalled();
+    expect(mockLeadFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: "lead_other",
+          workspaceId: "ws_test",
+        }),
+      }),
+    );
   });
 
   it("returns 409 when the lead has no SalesOpportunity row", async () => {
-    mockLeadFindUnique.mockResolvedValueOnce({
+    mockLeadFindFirst.mockResolvedValueOnce({
       workspaceId: "ws_test",
       salesOpportunity: null,
     });
@@ -126,7 +141,7 @@ describe("POST /api/leads/[id]/mark-outcome", () => {
     const body = await res.json();
     expect(body.error).toMatch(/sales opportunity|intelligence chain/i);
     expect(mockEmit).not.toHaveBeenCalled();
-    expect(mockSalesOppUpdate).not.toHaveBeenCalled();
+    expect(mockSalesOppUpdateMany).not.toHaveBeenCalled();
   });
 
   it("updates status and emits inbox_reply_received on success", async () => {
@@ -141,8 +156,9 @@ describe("POST /api/leads/[id]/mark-outcome", () => {
     expect(body.status).toBe("WON");
     expect(body.sessionId).toBe("sess_reply_1");
 
-    expect(mockSalesOppUpdate).toHaveBeenCalledWith({
-      where: { leadId: "lead_1" },
+    // L5 - updateMany now scopes by both leadId AND workspaceId.
+    expect(mockSalesOppUpdateMany).toHaveBeenCalledWith({
+      where: { leadId: "lead_1", workspaceId: "ws_test" },
       data: { status: "WON" },
     });
 

@@ -33,13 +33,18 @@ vi.mock("@/lib/auth", () => {
   return { requireUser, UnauthorizedError, NotFoundError, withAuth };
 });
 
-const mockSessionFindUnique = vi.fn();
+// L4 fix - the route migrated from findUnique({id}) + post-check
+// to findFirst({id, workspaceId}). The mock now exposes the new
+// method; the legacy `findUnique` mock is kept as a no-op so the
+// shape matches Prisma's surface.
+const mockSessionFindFirst = vi.fn();
 const mockAgentRunFindMany = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     plannerSession: {
-      findUnique: (...args: unknown[]) => mockSessionFindUnique(...args),
+      findFirst: (...args: unknown[]) => mockSessionFindFirst(...args),
+      findUnique: vi.fn(),
     },
     agentRun: {
       findMany: (...args: unknown[]) => mockAgentRunFindMany(...args),
@@ -71,7 +76,7 @@ describe("GET /api/planner/[id]", () => {
   });
 
   it("returns 404 when the session does not exist", async () => {
-    mockSessionFindUnique.mockResolvedValueOnce(null);
+    mockSessionFindFirst.mockResolvedValueOnce(null);
     const res = await GET(makeRequest("sess_missing"), makeCtx("sess_missing"));
     expect(res.status).toBe(404);
     const body = await res.json();
@@ -79,18 +84,10 @@ describe("GET /api/planner/[id]", () => {
   });
 
   it("returns 404 for a session in another workspace without leaking existence", async () => {
-    mockSessionFindUnique.mockResolvedValueOnce({
-      id: "sess_other",
-      workspaceId: "OTHER_WS",
-      leadId: null,
-      goal: "x",
-      status: "RUNNING",
-      plan: {},
-      triggeredBy: "user_one_click_pitch",
-      errorMsg: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    // L4 - findFirst({id, workspaceId}) now scopes at the DB layer,
+    // so a cross-tenant session returns null directly. The mock
+    // resolving null mirrors what Prisma would do.
+    mockSessionFindFirst.mockResolvedValueOnce(null);
 
     const res = await GET(makeRequest("sess_other"), makeCtx("sess_other"));
     expect(res.status).toBe(404);
@@ -99,6 +96,18 @@ describe("GET /api/planner/[id]", () => {
     expect(serialized).not.toContain("sess_other");
     expect(serialized).not.toContain("OTHER_WS");
     expect(body).not.toHaveProperty("session");
+
+    // Belt-and-braces: assert the call was scoped by workspaceId
+    // so a future regression that drops the workspaceId predicate
+    // is caught here.
+    expect(mockSessionFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: "sess_other",
+          workspaceId: "ws_test",
+        }),
+      }),
+    );
   });
 
   it("returns 200 with { session, runs } for an owned session", async () => {
@@ -127,7 +136,7 @@ describe("GET /api/planner/[id]", () => {
         costUsdCents: 5,
       },
     ];
-    mockSessionFindUnique.mockResolvedValueOnce(session);
+    mockSessionFindFirst.mockResolvedValueOnce(session);
     mockAgentRunFindMany.mockResolvedValueOnce(runs);
 
     const res = await GET(makeRequest("sess_ok"), makeCtx("sess_ok"));
@@ -138,9 +147,11 @@ describe("GET /api/planner/[id]", () => {
     expect(body.runs).toHaveLength(1);
     expect(body.runs[0].id).toBe("run_1");
 
+    // L4 - the runs lookup is now also scoped by workspaceId
+    // (denormalized column on AgentRun) as defense in depth.
     expect(mockAgentRunFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { plannerSessionId: "sess_ok" },
+        where: { plannerSessionId: "sess_ok", workspaceId: "ws_test" },
       }),
     );
   });

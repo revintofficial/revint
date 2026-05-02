@@ -45,11 +45,16 @@ export const POST = withAuth(async (session, req: Request, ctx: { params: Promis
     );
   }
 
-  const lead = await prisma.lead.findUnique({
-    where: { id },
+  // L5 fix - findFirst({id, workspaceId}) instead of findUnique +
+  // post-check. Same IDOR shape as L1-L4. The post-check 404 also
+  // leaks timing - cross-tenant lookups complete the lookup before
+  // the post-check rejects, while in-tenant 404s short-circuit on
+  // the empty result.
+  const lead = await prisma.lead.findFirst({
+    where: { id, workspaceId: session.workspaceId },
     select: { workspaceId: true, salesOpportunity: { select: { id: true } } },
   });
-  if (!lead || lead.workspaceId !== session.workspaceId) {
+  if (!lead) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   if (!lead.salesOpportunity) {
@@ -59,8 +64,12 @@ export const POST = withAuth(async (session, req: Request, ctx: { params: Promis
     );
   }
 
-  await prisma.salesOpportunity.update({
-    where: { leadId: id },
+  // L5 - same scope on the SalesOpportunity update so a stale id
+  // can't write into another tenant's row. updateMany returns a
+  // count we ignore here since the parent lookup already gated
+  // existence; the workspaceId predicate is the safety net.
+  await prisma.salesOpportunity.updateMany({
+    where: { leadId: id, workspaceId: session.workspaceId },
     data: { status },
   });
 

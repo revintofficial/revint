@@ -17,8 +17,12 @@ import { prisma } from "@/lib/prisma";
 export const GET = withAuth(async (session, _req: Request, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
 
-  const sessionRow = await prisma.plannerSession.findUnique({
-    where: { id },
+  // L4 fix - findFirst({id, workspaceId}) instead of findUnique({id})
+  // + post-check. The previous version leaked timing info (post-
+  // check 404 ≠ scoped 404) and was an IDOR shape. Same pattern as
+  // L1/L2/L3.
+  const sessionRow = await prisma.plannerSession.findFirst({
+    where: { id, workspaceId: session.workspaceId },
     select: {
       id: true,
       workspaceId: true,
@@ -33,13 +37,17 @@ export const GET = withAuth(async (session, _req: Request, ctx: { params: Promis
     },
   });
 
-  if (!sessionRow || sessionRow.workspaceId !== session.workspaceId) {
+  if (!sessionRow) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Runs belonging to this session - joined for a single round trip.
+  // L4 - the runs lookup was scoped only by plannerSessionId; if a
+  // future PR removes the parent guard above, runs from another
+  // tenant's planner session could leak. Belt-and-braces with the
+  // workspaceId predicate (AgentRun has it as a denormalized
+  // column for exactly this reason).
   const runs = await prisma.agentRun.findMany({
-    where: { plannerSessionId: id },
+    where: { plannerSessionId: id, workspaceId: session.workspaceId },
     select: {
       id: true,
       workerKind: true,

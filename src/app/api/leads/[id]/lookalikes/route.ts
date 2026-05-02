@@ -25,12 +25,17 @@ export const GET = withAuth(async (session, req: Request, ctx: { params: Promise
     Math.max(1, parseInt(url.searchParams.get("topK") ?? `${DEFAULT_K}`, 10) || DEFAULT_K),
   );
 
-  // Scope check.
-  const lead = await prisma.lead.findUnique({
-    where: { id },
+  // L6 fix - findFirst({id, workspaceId}) instead of findUnique +
+  // post-check. Same IDOR shape as L1-L5. Note: the downstream
+  // `query` call already passes `workspaceId: session.workspaceId`
+  // and the Map-based join below scopes by workspace too, so the
+  // exposure was always limited - but the pattern itself is the
+  // bug we're fixing across the codebase.
+  const lead = await prisma.lead.findFirst({
+    where: { id, workspaceId: session.workspaceId },
     select: { workspaceId: true },
   });
-  if (!lead || lead.workspaceId !== session.workspaceId) {
+  if (!lead) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

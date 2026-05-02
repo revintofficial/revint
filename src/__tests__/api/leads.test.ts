@@ -100,9 +100,15 @@ describe("/api/leads GET", () => {
     expect(res.status).toBe(200);
     expect(data.leads).toHaveLength(3);
     expect(data.pagination.total).toBe(3);
+    // The default `queue=all` branch hides archived leads, so the
+    // `where` clause now includes `archivedAt: null` in addition to
+    // the workspace scope.
     expect(mockFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { workspaceId: "test-workspace" },
+        where: expect.objectContaining({
+          workspaceId: "test-workspace",
+          archivedAt: null,
+        }),
         skip: 0,
         take: 20,
       })
@@ -245,8 +251,10 @@ describe("/api/leads GET", () => {
 
     await GET(makeRequest({ status: "new" }));
 
+    // The route now supports comma-joined multi-status select, so a
+    // single `status=new` parameter still becomes an `in: [...]` clause.
     const calledWhere = mockFindMany.mock.calls[0][0].where;
-    expect(calledWhere.salesOpportunity).toEqual({ status: "NEW" });
+    expect(calledWhere.salesOpportunity).toEqual({ status: { in: ["NEW"] } });
   });
 
   it("applies minScore / maxScore filter", async () => {
@@ -269,8 +277,12 @@ describe("/api/leads GET", () => {
     const res = await GET(makeRequest({ search: "test" }));
     const data = await res.json();
 
+    // M25 - the route now uses `internalError()` from
+    // `@/lib/api-errors` which returns the generic "Internal error"
+    // body to avoid leaking ORM detail to the client. The actual
+    // cause is logged server-side under `api.leads.fetch_error`.
     expect(res.status).toBe(500);
-    expect(data.error).toBe("Failed to fetch leads");
+    expect(data.error).toBe("Internal error");
   });
 
   it("applies sorting correctly", async () => {
