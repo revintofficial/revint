@@ -24,6 +24,7 @@
  */
 import type { AgentWorkerKind, Plan } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { PLANS } from "@/lib/plans";
 import { getWorker, planMeetsMinimum } from "./registry";
 
 /**
@@ -292,8 +293,21 @@ const PER_LEAD_DAILY_CAP = 50;
 /**
  * Returns the monthly limit for a worker at the given plan, resolving
  * UNLIMITED to the soft hard cap.
+ *
+ * M4 - WEBSITE_MOCKUP_GENERATOR's monthly cap is the customer-facing
+ * "X website mockups / month" number on the pricing page, which lives
+ * in PLANS[plan].mockupsPerCycle. The two used to drift (this table
+ * said 20/100/500 while pricing copy said 3/50/150/300), letting users
+ * generate ~3x what they paid for. We now derive the limit from PLANS
+ * so the pricing page is the single source of truth and any future
+ * tier change only has to be made in one place.
  */
 export function getLimit(kind: AgentWorkerKind, plan: Plan): number {
+  if (kind === "WEBSITE_MOCKUP_GENERATOR") {
+    const raw = PLANS[plan]?.mockupsPerCycle ?? 0;
+    if (raw === UNLIMITED) return UNLIMITED_HARD_CAP;
+    return raw;
+  }
   const raw = LIMITS[kind]?.[plan] ?? 0;
   if (raw === UNLIMITED) return UNLIMITED_HARD_CAP;
   return raw;

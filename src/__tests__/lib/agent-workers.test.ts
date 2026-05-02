@@ -103,9 +103,17 @@ describe("AI Workers - quota matrix", () => {
     }
   });
 
-  it("AGENCY tier is unlimited (hits soft cap)", () => {
-    const cap = getLimit("WEBSITE_MOCKUP_GENERATOR", "AGENCY");
+  it("AGENCY tier hits the soft cap on a non-mockup worker", () => {
+    // M4 - WEBSITE_MOCKUP_GENERATOR is now sourced from
+    // PLANS.AGENCY.mockupsPerCycle (300) so the pricing page is the
+    // single source of truth. Use OPENER_WRITER which still uses the
+    // launch-policy table (UNLIMITED -> soft cap).
+    const cap = getLimit("OPENER_WRITER", "AGENCY");
     expect(cap).toBeGreaterThan(1000);
+  });
+
+  it("WEBSITE_MOCKUP_GENERATOR AGENCY cap matches the pricing page", () => {
+    expect(getLimit("WEBSITE_MOCKUP_GENERATOR", "AGENCY")).toBe(300);
   });
 
   it("UNLIMITED sentinel is negative", () => {
