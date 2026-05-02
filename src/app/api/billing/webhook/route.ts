@@ -25,9 +25,43 @@ export const runtime = "nodejs";
 
 function detectPlanFromPriceId(priceId: string | null | undefined): Plan | null {
   if (!priceId) return null;
+  // H1 fix - the original loop only matched monthly priceIds.USD/GBP
+  // and missed annualPriceIds, so anyone who upgraded via the annual
+  // CTA had their subscription land on Stripe but Workspace.plan
+  // stayed as the previous tier. Annual subscribers got billed but
+  // never received the higher quota.
   for (const planId of ["PRO", "PRO_TEAM", "AGENCY"] as const) {
-    const ids = PLANS[planId].priceIds;
-    if (priceId === ids.USD || priceId === ids.GBP) return planId;
+    const def = PLANS[planId];
+    if (
+      priceId === def.priceIds.USD ||
+      priceId === def.priceIds.GBP ||
+      priceId === def.annualPriceIds.USD ||
+      priceId === def.annualPriceIds.GBP
+    ) {
+      return planId;
+    }
+  }
+  return null;
+}
+
+/**
+ * Stripe v22 split `current_period_end` between the parent
+ * Subscription object and `items.data[0]`. On some webhook deliveries
+ * only one of the two is populated; on others (newer subs created
+ * after the v22 cutover) the field is on the item, not the parent.
+ *
+ * This helper picks the most-specific available value so
+ * `Workspace.currentPeriodEnd` and `cycleResetAt` stay in sync with
+ * Stripe regardless of which side of the migration the customer's
+ * subscription was created on.
+ */
+function readPeriodEndUnix(
+  sub: Stripe.Subscription & { current_period_end?: number | null },
+): number | null {
+  const itemEnd = sub.items?.data?.[0]?.current_period_end;
+  if (typeof itemEnd === "number" && itemEnd > 0) return itemEnd;
+  if (typeof sub.current_period_end === "number" && sub.current_period_end > 0) {
+    return sub.current_period_end;
   }
   return null;
 }
@@ -90,10 +124,13 @@ export async function POST(request: Request) {
         if (!subscriptionId) break;
 
         const sub = (await stripe.subscriptions.retrieve(subscriptionId)) as unknown as Stripe.Subscription & {
-          current_period_end: number;
+          current_period_end?: number | null;
         };
         const priceId = sub.items.data[0]?.price.id;
         const plan = detectPlanFromPriceId(priceId);
+        // H3 fix - prefer item-level current_period_end over parent.
+        const periodEndUnix = readPeriodEndUnix(sub);
+        const periodEndDate = periodEndUnix ? new Date(periodEndUnix * 1000) : null;
         if (!plan) {
           // Unknown SKU: do not guess. Record the customer link so billing
           // portal still works, but leave the plan untouched.
@@ -124,9 +161,7 @@ export async function POST(request: Request) {
               typeof s.customer === "string"
                 ? s.customer
                 : (sub.customer as string),
-            currentPeriodEnd: sub.current_period_end
-              ? new Date(sub.current_period_end * 1000)
-              : null,
+            currentPeriodEnd: periodEndDate,
             leadsCreatedThisCycle: 0,
             aiCreditsUsedThisCycle: 0,
             cycleResetAt: new Date(),
@@ -137,10 +172,10 @@ export async function POST(request: Request) {
 
       case "customer.subscription.updated": {
         const sub = event.data.object as Stripe.Subscription & {
-          current_period_end: number;
+          current_period_end?: number | null;
         };
         const priceId = sub.items.data[0]?.price.id;
-        const plan = detectPlanFromPriceId(priceId);
+        const detectedPlan = detectPlanFromPriceId(priceId);
         const workspaceId = (sub.metadata?.workspaceId as string) || null;
         const where = workspaceId
           ? { id: workspaceId }
@@ -149,11 +184,42 @@ export async function POST(request: Request) {
           : null;
         if (!where) break;
 
+        // H3 fix - prefer item-level current_period_end over parent.
+        const periodEndUnix = readPeriodEndUnix(sub);
+        const periodEndDate = periodEndUnix ? new Date(periodEndUnix * 1000) : null;
+
+        // H2 fix - if Stripe says the subscription is no longer in good
+        // standing, downgrade the workspace to FREE. Without this gate
+        // a customer whose card stopped working continued to receive
+        // PRO/AGENCY quota indefinitely. We treat the same statuses
+        // Stripe documents as "no entitlement": unpaid, canceled,
+        // incomplete_expired. `past_due` is intentionally left alone
+        // because Stripe's smart retries are still in flight and a
+        // downgrade there would punish customers who recover within
+        // the dunning window.
+        const downgradeStatuses = new Set<Stripe.Subscription.Status>([
+          "unpaid",
+          "canceled",
+          "incomplete_expired",
+        ]);
+        const shouldDowngrade = downgradeStatuses.has(sub.status);
+        const plan = shouldDowngrade ? ("FREE" as Plan) : detectedPlan;
+
+        // H9 fix - read the existing plan BEFORE the update so we can
+        // tell whether anything actually changed and skip the notify
+        // email on no-op updates (Stripe re-emits the same subscription
+        // on every renewal cycle).
+        const existing = await prisma.workspace.findFirst({
+          where,
+          select: { id: true, plan: true },
+        });
+
         if (!plan) {
           // Unknown price - could be a new SKU, a currency change, or an
           // add-on we do not model yet. Leave the plan unchanged so we do
-          // NOT silently downgrade a paying customer. Keep period end in
-          // sync so quota math stays correct.
+          // NOT silently downgrade a paying customer. M3 - keep both
+          // period end and cycleResetAt in sync so quota math stays
+          // correct regardless of which event arrives first.
           logger.warn("stripe.webhook.unknown_price_on_update", {
             workspaceId,
             priceId,
@@ -163,9 +229,8 @@ export async function POST(request: Request) {
             where,
             data: {
               stripeSubscriptionId: sub.id,
-              currentPeriodEnd: sub.current_period_end
-                ? new Date(sub.current_period_end * 1000)
-                : null,
+              currentPeriodEnd: periodEndDate,
+              ...(periodEndDate ? { cycleResetAt: periodEndDate } : {}),
             },
           });
           break;
@@ -176,26 +241,24 @@ export async function POST(request: Request) {
           data: {
             plan,
             stripeSubscriptionId: sub.id,
-            currentPeriodEnd: sub.current_period_end
-              ? new Date(sub.current_period_end * 1000)
-              : null,
+            currentPeriodEnd: periodEndDate,
+            // M3 - subscription.updated should also seed cycleResetAt
+            // so meters reset on the same boundary Stripe is billing
+            // against, even if invoice.paid is delayed or skipped.
+            ...(periodEndDate ? { cycleResetAt: periodEndDate } : {}),
           },
         });
 
-        // Notify owner when the plan actually changed. Skip no-op updates
-        // (e.g. Stripe syncs that leave the price alone) so we don't ping
-        // the user for every invoice renewal.
-        const changed = await prisma.workspace.findFirst({
-          where: workspaceId
-            ? { id: workspaceId }
-            : { stripeCustomerId: sub.customer as string },
-          select: { id: true, plan: true },
-        });
-        if (changed) {
+        // H9 - skip the notify email if the plan didn't actually
+        // change. Stripe sends customer.subscription.updated for many
+        // no-op reasons (cancel_at_period_end toggles, default payment
+        // method changes, metadata edits) and we don't want to spam
+        // the workspace owner each time.
+        if (existing && existing.plan !== plan) {
           await notifyBillingEvent({
-            workspaceId: changed.id,
+            workspaceId: existing.id,
             kind: "plan_updated",
-            planName: PLANS[plan].name,
+            planName: PLANS[plan]?.name ?? plan,
           });
         }
         break;
@@ -225,17 +288,31 @@ export async function POST(request: Request) {
         // will no longer reset counters on Stripe retry storms.
         const inv = event.data.object as Stripe.Invoice & {
           subscription?: string | { id: string } | null;
+          lines?: { data?: Array<{ period?: { end?: number | null } | null }> } | null;
         };
         const rawSub = inv.subscription;
         const subscriptionId =
           typeof rawSub === "string" ? rawSub : rawSub?.id || null;
         if (!subscriptionId) break;
+
+        // M3 - keep currentPeriodEnd in sync with the invoice's billing
+        // period when we have it, so Workspace.currentPeriodEnd stays
+        // authoritative even if customer.subscription.updated is delayed
+        // or skipped. Falls back to "no change" if Stripe didn't include
+        // the line period (e.g. one-off invoice).
+        const linePeriodEndUnix = inv.lines?.data?.[0]?.period?.end;
+        const periodEndDate =
+          typeof linePeriodEndUnix === "number" && linePeriodEndUnix > 0
+            ? new Date(linePeriodEndUnix * 1000)
+            : null;
+
         await prisma.workspace.updateMany({
           where: { stripeSubscriptionId: subscriptionId },
           data: {
             leadsCreatedThisCycle: 0,
             aiCreditsUsedThisCycle: 0,
             cycleResetAt: new Date(),
+            ...(periodEndDate ? { currentPeriodEnd: periodEndDate } : {}),
           },
         });
         break;
