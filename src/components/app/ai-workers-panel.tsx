@@ -285,6 +285,14 @@ export function AiWorkersPanel({ leadId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
+  // H10 fix - debounce rapid clicks on the same worker. setRunningKinds
+  // gates the UI but it relies on a React state update which is async,
+  // so two clicks within the same tick both pass the `runningKinds.has`
+  // check and fire two POSTs. The synchronous ref lock blocks any
+  // duplicate kind that already has an in-flight fetch even before
+  // React commits the state change. Cleared in the finally block.
+  const inflightKindsRef = useRef<Set<string>>(new Set());
+
   const triggerWorker = useCallback(
     async (worker: WorkerItem) => {
       if (!worker.phase1Enabled) {
@@ -302,6 +310,10 @@ export function AiWorkersPanel({ leadId }: Props) {
         return;
       }
 
+      if (inflightKindsRef.current.has(worker.kind)) {
+        return;
+      }
+      inflightKindsRef.current.add(worker.kind);
       setRunningKinds((prev) => new Set(prev).add(worker.kind));
       try {
         const res = await fetch(`/api/leads/${leadId}/workers/${worker.kind}`, {
@@ -316,14 +328,17 @@ export function AiWorkersPanel({ leadId }: Props) {
           });
           if (res.status === 402) {
             toast.error(err.message || "Plan or quota insufficient.");
+          } else if (res.status === 409) {
+            // H8 - server confirmed there's already a run in flight.
+            // Treat this as success: refresh the panel so the existing
+            // run's status appears, no toast needed.
+            void fetchWorkers();
           } else {
             toast.error(err.error || "Failed to start");
           }
           return;
         }
         const { runId } = await res.json();
-        // Refetch workers so the UI clears any "stuck" badge left
-        // over from the cancelled orphan run before polling begins.
         void fetchWorkers();
         pollRun(worker.kind, runId);
       } catch (err) {
@@ -334,6 +349,8 @@ export function AiWorkersPanel({ leadId }: Props) {
           return next;
         });
         toast.error("Connection error");
+      } finally {
+        inflightKindsRef.current.delete(worker.kind);
       }
     },
     [leadId, pollRun, fetchWorkers],

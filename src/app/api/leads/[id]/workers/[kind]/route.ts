@@ -185,6 +185,47 @@ export async function POST(
       });
     }
 
+    // H8 fix - prevent duplicate AgentRun rows for the same
+    // (workspaceId, leadId, workerKind) tuple while one is still
+    // in-flight. The auto-cancel above only nukes runs older than the
+    // mode-appropriate deadline; an active run that just started and
+    // has 30 seconds left would otherwise allow a rapid-fire second
+    // POST to spawn a sibling row, double-billing quota and racing on
+    // the same memory writes. Returning 409 makes the UI's "Run
+    // again" idempotent: the second click resolves with the existing
+    // runId instead of starting a fresh run. (Schema-level @@unique
+    // on (workspaceId, leadId, workerKind, status: PENDING|RUNNING)
+    // would be cleaner but Prisma can't express partial-status
+    // uniqueness, so the contract is enforced application-side.)
+    const inflight = await prisma.agentRun.findFirst({
+      where: {
+        workspaceId: session.workspaceId,
+        leadId,
+        workerKind: kind,
+        status: { in: ["PENDING", "RUNNING"] },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, status: true, createdAt: true },
+    });
+    if (inflight) {
+      logger.info("api.agent_run.duplicate_inflight_blocked", {
+        kind,
+        leadId,
+        existingRunId: inflight.id,
+        existingStatus: inflight.status,
+      });
+      return NextResponse.json(
+        {
+          error: "duplicate_inflight_run",
+          message: "A run for this worker is already pending or running on this lead.",
+          runId: inflight.id,
+          status: inflight.status,
+          startedAt: inflight.createdAt,
+        },
+        { status: 409 },
+      );
+    }
+
     // Snapshot subNicheVersion so the executor can detect a stale
     // ad-hoc run created before a manual override bumped the lead.
     const versionedLead = await prisma.lead.findUnique({

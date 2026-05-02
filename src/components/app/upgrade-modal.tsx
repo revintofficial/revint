@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -61,6 +61,13 @@ export function UpgradeModal({
   const [redirecting, setRedirecting] = useState(false);
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [currency, setCurrency] = useState<Currency>("USD");
+  // H10 fix - the `busy` state gate is async (React batches renders);
+  // a rapid double-click on Upgrade fires two POST /api/billing/checkout
+  // before either request resolves, which under M2's idempotency key
+  // collapses to one Stripe customer but still produces two
+  // checkout.session rows. The synchronous ref blocks the second click
+  // before the network call leaves.
+  const checkoutInflightRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -80,6 +87,10 @@ export function UpgradeModal({
   const targets = upgradeTargets.length > 0 ? upgradeTargets : PLAN_ORDER.filter((id) => id !== "FREE" && id !== currentPlan);
 
   async function startCheckout(target: Plan) {
+    if (checkoutInflightRef.current) {
+      return;
+    }
+    checkoutInflightRef.current = true;
     setBusy(target);
     try {
       const res = await fetch("/api/billing/checkout", {
@@ -91,6 +102,7 @@ export function UpgradeModal({
       if (!res.ok || !data.url) {
         toast.error(data.error || "Failed to start checkout");
         setBusy(null);
+        checkoutInflightRef.current = false;
         return;
       }
       setRedirecting(true);
@@ -98,6 +110,7 @@ export function UpgradeModal({
     } catch (err) {
       toast.error("Network error. Please try again.");
       setBusy(null);
+      checkoutInflightRef.current = false;
       console.error(err);
     }
   }

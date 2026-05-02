@@ -11,18 +11,66 @@ import {
 } from "../lib/quotas";
 import IORedis from "ioredis";
 
-interface DiscoveryJobData {
+/**
+ * H7 fix - the bulk path in `/api/discovery` enqueues the legacy
+ * `{ city, country }` shape, while the per-borough path enqueues
+ * `{ borough: { name, lat, lng } }`. The worker now accepts EITHER
+ * shape so neither path 500s with `Cannot read properties of
+ * undefined (reading 'name')` when the other is in flight. The legacy
+ * shape is resolved into the canonical `{ name, lat, lng }` via
+ * geocodeBorough at worker entry; if geocoding fails we fall back to
+ * the city name with no coords (Google Places will still produce
+ * results, they will just be less geographically precise).
+ */
+type DiscoveryJobBoroughData = {
   workspaceId: string;
   searchQuery: string;
   borough: { name: string; lat: number; lng: number };
   radiusMeters?: number;
+};
+
+type DiscoveryJobCityData = {
+  workspaceId: string;
+  searchQuery: string;
+  city: string;
+  country?: string;
+  radiusMeters?: number;
+};
+
+type DiscoveryJobData = DiscoveryJobBoroughData | DiscoveryJobCityData;
+
+function isCityShape(data: DiscoveryJobData): data is DiscoveryJobCityData {
+  return "city" in data && typeof (data as DiscoveryJobCityData).city === "string";
+}
+
+export async function resolveBorough(
+  data: DiscoveryJobData,
+): Promise<{ name: string; lat: number; lng: number }> {
+  if (!isCityShape(data)) return data.borough;
+
+  const { geocodeBorough } = await import("../lib/geocoding");
+  const coords = await geocodeBorough(data.city, data.country).catch(() => null);
+  if (coords) {
+    return { name: data.city, lat: coords.lat, lng: coords.lng };
+  }
+  // No coords: pass 0/0 so the worker still runs; discoverLeads
+  // treats these as "no locationBias" and falls back to a textQuery-
+  // only Places search, which is the same behaviour the API used to
+  // produce before the picker landed.
+  logger.warn("worker.discovery.geocode_missing_for_city", {
+    city: data.city,
+    country: data.country,
+  });
+  return { name: data.city, lat: 0, lng: 0 };
 }
 
 async function processDiscovery(job: Job<DiscoveryJobData>) {
-  const { workspaceId, searchQuery, borough, radiusMeters } = job.data;
+  const { workspaceId, searchQuery, radiusMeters } = job.data;
   if (!workspaceId) {
     throw new Error("Discovery job missing workspaceId");
   }
+
+  const borough = await resolveBorough(job.data);
 
   logger.info("worker.discovery.starting", { searchQuery, borough: borough.name });
 
