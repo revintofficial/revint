@@ -35,8 +35,29 @@ export default async function SignupPage({ searchParams }: { searchParams: Searc
     redirect("/app/dashboard");
   }
   return (
-    <Suspense>
+    // M20 - Suspense boundary with a real skeleton fallback so the
+    // initial paint shows a card-shaped placeholder instead of an
+    // empty viewport while AuthForm hydrates. Same shape as
+    // /login for visual continuity if the user toggles between
+    // them.
+    <Suspense fallback={<AuthSkeleton />}>
       <AuthForm mode="signup" />
     </Suspense>
+  );
+}
+
+function AuthSkeleton() {
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md space-y-6 rounded-2xl border border-white/8 bg-card-dark p-8">
+        <div className="h-7 w-1/2 mx-auto rounded bg-white/5 animate-pulse" />
+        <div className="h-4 w-3/4 mx-auto rounded bg-white/5 animate-pulse" />
+        <div className="space-y-3 pt-2">
+          <div className="h-10 rounded bg-white/5 animate-pulse" />
+          <div className="h-10 rounded bg-white/5 animate-pulse" />
+        </div>
+        <div className="h-10 rounded bg-white/10 animate-pulse" />
+      </div>
+    </div>
   );
 }
