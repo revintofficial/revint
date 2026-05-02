@@ -10,8 +10,19 @@ export async function GET(request: Request) {
     const { workspaceId, user } = await requireUser();
     const userId = user.id;
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    // M9 fix - cap page + limit to defensive bounds. Without these,
+    // a hostile / curious caller could pass `?limit=999999999` and
+    // either OOM the Postgres planner or pull millions of rows
+    // through the JSON serializer. Defaults preserved so existing
+    // UI / docs still work.
+    const rawPage = parseInt(searchParams.get("page") || "1", 10);
+    const rawLimit = parseInt(searchParams.get("limit") || "20", 10);
+    const page = Number.isFinite(rawPage) && rawPage > 0
+      ? Math.min(rawPage, 10_000)
+      : 1;
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0
+      ? Math.min(Math.max(1, rawLimit), 100)
+      : 20;
     const borough = searchParams.get("borough");
     const hasWebsite = searchParams.get("hasWebsite");
     const minScore = searchParams.get("minScore");

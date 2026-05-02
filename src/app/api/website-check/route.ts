@@ -68,6 +68,55 @@ const PARKING_INDICATORS = [
   "undeveloped.com",
 ];
 
+/**
+ * M10 - read a Response body as text but bail with `null` once we
+ * cross `maxBytes`. The web Response.text() / .arrayBuffer()
+ * helpers buffer the entire body unconditionally, which means a
+ * hostile / runaway server could use this endpoint to OOM us. We
+ * stream the bytes through the body reader and stop the moment the
+ * accumulated size crosses the cap (also calls reader.cancel() so
+ * the connection is torn down). UTF-8 decoding is streaming so we
+ * decode incrementally without buffering raw bytes twice.
+ */
+async function readResponseBodyCapped(
+  response: Response,
+  maxBytes: number,
+): Promise<string | null> {
+  if (!response.body) {
+    return await response.text();
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let total = 0;
+  let out = "";
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        try {
+          await reader.cancel();
+        } catch {
+          // best-effort cancel; if the producer ignores it we still
+          // exit the loop and the parent context tears the socket
+          // down on return.
+        }
+        return null;
+      }
+      out += decoder.decode(value, { stream: true });
+    }
+    out += decoder.decode();
+    return out;
+  } finally {
+    try {
+      reader.releaseLock();
+    } catch {
+      // reader may already be released after cancel(); harmless.
+    }
+  }
+}
+
 function detectBuilder(html: string): string | null {
   const checks: Record<string, RegExp[]> = {
     Wix: [/wix\.com/i, /_wix_/i, /wixstatic\.com/i],
@@ -368,7 +417,33 @@ export async function POST(request: Request) {
         });
       }
 
-      const html = await response.text();
+      // M10 fix - cap response body at 5 MB. Without this, a hostile
+      // (or just badly-implemented) site could stream a multi-GB body
+      // back through `response.text()` and OOM the API server before
+      // we get a chance to bail. We read the body as a stream and
+      // abort the moment we cross the cap. 5 MB comfortably fits even
+      // page-builder-bloated landing pages while keeping the worst
+      // case bounded.
+      const html = await readResponseBodyCapped(response, 5 * 1024 * 1024);
+      if (html === null) {
+        return NextResponse.json({
+          url,
+          reachable: false,
+          verdict: "unreachable",
+          score: 0,
+          signals: [{ label: "Access", status: "bad", detail: "Response exceeded 5 MB cap" }],
+          summary:
+            "The site returned an unusually large response (>5 MB). Skipping analysis to avoid resource exhaustion.",
+          htmlSize: 0,
+          wordCount: 0,
+          imageCount: 0,
+          internalLinkCount: 0,
+          hasCustomContent: false,
+          isParked: false,
+          isComingSoon: false,
+          builderDetected: null,
+        });
+      }
       const analysis = analyzeHtml(html, url);
 
       return NextResponse.json(analysis);
