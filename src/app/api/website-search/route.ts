@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
+import { safeFetchFollow } from "@/lib/safe-fetch";
+import { UrlGuardError } from "@/lib/url-guard";
 import { logger } from "@/lib/logger";
 
 // HEAD-checks multiple domain variants; needs real Node runtime.
@@ -80,20 +82,22 @@ function generateDomainCandidates(businessName: string): string[] {
 
 async function checkUrl(url: string): Promise<{ reachable: boolean; title: string | null; finalUrl: string | null; isParked: boolean }> {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; LeadacBot/1.0; +https://leadac.ai/bot)",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
+    // C3: domain-guess HEAD-checks must NOT silently follow redirects
+    // to private addresses. safeFetchFollow re-validates each hop with
+    // assertSafeFetchUrl. A blocked redirect throws UrlGuardError and
+    // we treat it as unreachable (not a hard error - this function
+    // checks dozens of speculative domains and most will fail).
+    const { response: res, finalUrl } = await safeFetchFollow(url, {
+      init: {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; LeadacBot/1.0; +https://leadac.ai/bot)",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5",
+        },
       },
-      redirect: "follow",
+      maxRedirects: 5,
+      perHopTimeoutMs: 8_000,
     });
-
-    clearTimeout(timeout);
 
     if (!res.ok) return { reachable: false, title: null, finalUrl: null, isParked: false };
 
@@ -114,10 +118,20 @@ async function checkUrl(url: string): Promise<{ reachable: boolean; title: strin
     return {
       reachable: true,
       title,
-      finalUrl: res.url,
+      finalUrl,
       isParked: isParked || isDefault,
     };
-  } catch {
+  } catch (err) {
+    // SSRF guard rejections (initial URL or any redirect hop) are
+    // expected for some of the bulk domain guesses (e.g. internal
+    // hostnames an attacker is trying to surface) - treat as
+    // unreachable. Network failures fall through the same way.
+    if (err instanceof UrlGuardError) {
+      logger.info("api.website_search.checkurl_blocked", {
+        url,
+        reason: err.message,
+      });
+    }
     return { reachable: false, title: null, finalUrl: null, isParked: false };
   }
 }
