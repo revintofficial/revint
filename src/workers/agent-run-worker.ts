@@ -24,7 +24,13 @@ import { isRetryable } from "../lib/agent-workers/errors";
 type AgentRunJob =
   | { type: "agent_run"; runId: string }
   | { type: "orchestrator_advance"; sessionId: string }
-  | { type: "embed"; memoryId: string }
+  // C1 fix: every `embed` job MUST carry the workspaceId of the row
+  // that owns the memory. The worker uses it as the second tenant
+  // guard before writing the embedding back, so a mis-routed payload
+  // pointing at someone else's memoryId no-ops instead of corrupting
+  // a victim workspace's vector. Legacy payloads without it are
+  // refused (see processEmbedJob).
+  | { type: "embed"; memoryId: string; workspaceId: string }
   // Phase 2 — native sequence engine. `sequence_tick` scans for due
   // LeadSequenceState rows and enqueues `sequence_step` jobs for the
   // ones that are ACTIVE + due. `sequence_step` actually fires the
@@ -87,11 +93,27 @@ async function processJob(job: Job<AgentRunJob>) {
 
   if (jobType === "embed") {
     const memoryId = "memoryId" in data ? data.memoryId : undefined;
+    const workspaceId =
+      "workspaceId" in data && typeof (data as { workspaceId?: unknown }).workspaceId === "string"
+        ? (data as { workspaceId: string }).workspaceId
+        : undefined;
     if (!memoryId) {
       logger.warn("worker.ai_runs.embed_missing_memoryId", { jobId: job.id });
       return;
     }
-    await processEmbedJob(memoryId);
+    if (!workspaceId) {
+      // C1: refuse legacy payloads that don't carry the tenant. A
+      // re-embed without a workspaceId could overwrite a victim
+      // workspace's vector if the memoryId was guessed or replayed.
+      // UnrecoverableError stops BullMQ from retrying — the bad
+      // payload won't pass on attempt 2 either.
+      logger.error("worker.ai_runs.embed_missing_workspaceId", {
+        jobId: job.id,
+        memoryId,
+      });
+      throw new UnrecoverableError("embed job payload missing workspaceId");
+    }
+    await processEmbedJob(memoryId, workspaceId);
     return { memoryId };
   }
 
@@ -136,22 +158,28 @@ function inferJobType(
  * Re-embeds a SemanticMemory row. Called when a row was inserted
  * without an embedding (the fast write path) and needs its vector
  * populated asynchronously.
+ *
+ * C1 fix: both reads (the row lookup) and writes (the embedding
+ * UPDATE) are scoped to `workspaceId`. The lookup goes through the
+ * memory facade so the workspace_id constraint is applied at the
+ * Prisma layer; if the row is missing OR belongs to a different
+ * workspace the worker logs and returns without ever calling the
+ * embedding endpoint or touching the DB.
  */
-async function processEmbedJob(memoryId: string): Promise<void> {
-  const { prisma } = await import("../lib/prisma");
-  const row = await prisma.semanticMemory.findUnique({
-    where: { id: memoryId },
-    select: { id: true, text: true },
-  });
+async function processEmbedJob(memoryId: string, workspaceId: string): Promise<void> {
+  const { findScopedMemoryRow, writeEmbedding } = await import("../lib/ai-core/memory");
+  const row = await findScopedMemoryRow({ workspaceId, memoryId });
   if (!row) {
-    logger.warn("worker.ai_runs.embed.row_missing", { memoryId });
+    logger.warn("worker.ai_runs.embed.row_missing_or_cross_tenant", {
+      memoryId,
+      workspaceId,
+    });
     return;
   }
   const { embed } = await import("../lib/ai-core/embed");
-  const { writeEmbedding } = await import("../lib/ai-core/memory");
   const vec = await embed(row.text);
-  await writeEmbedding(memoryId, vec);
-  logger.info("worker.ai_runs.embed.done", { memoryId });
+  await writeEmbedding(memoryId, vec, workspaceId);
+  logger.info("worker.ai_runs.embed.done", { memoryId, workspaceId });
 }
 
 /**

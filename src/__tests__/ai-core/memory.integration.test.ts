@@ -332,7 +332,14 @@ describe("memory - validation", () => {
   });
 
   it("writeEmbedding throws MemoryError when dim is wrong", async () => {
-    await expect(writeEmbedding("nonexistent", [0.1])).rejects.toBeInstanceOf(
+    await expect(
+      writeEmbedding("nonexistent", [0.1], "ws_irrelevant"),
+    ).rejects.toBeInstanceOf(MemoryError);
+  });
+
+  it("writeEmbedding throws MemoryError when workspaceId is empty", async () => {
+    const vec = deterministicEmbedding("anything");
+    await expect(writeEmbedding("some_id", vec, "")).rejects.toBeInstanceOf(
       MemoryError,
     );
   });

@@ -136,7 +136,7 @@ export async function embedLeadProfile(args: {
   } catch (err) {
     if (!(err instanceof EmbeddingError)) throw err;
     const memoryId = await upsert(upsertArgs);
-    await enqueueReembed(memoryId);
+    await enqueueReembed(memoryId, args.workspaceId);
     logger.warn("sentinel.embed_lead_profile.degraded", {
       leadId: args.leadId,
       memoryId,

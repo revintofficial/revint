@@ -156,7 +156,7 @@ export async function upsert(input: MemoryUpsertInput): Promise<string> {
           },
         });
         if (input.embedding) {
-          await writeEmbedding(existing.id, input.embedding);
+          await writeEmbedding(existing.id, input.embedding, input.workspaceId);
         }
         return existing.id;
       }
@@ -176,7 +176,7 @@ export async function upsert(input: MemoryUpsertInput): Promise<string> {
           select: { id: true },
         });
         if (input.embedding) {
-          await writeEmbedding(created.id, input.embedding);
+          await writeEmbedding(created.id, input.embedding, input.workspaceId);
         }
         return created.id;
       } catch (err) {
@@ -207,7 +207,7 @@ export async function upsert(input: MemoryUpsertInput): Promise<string> {
   });
 
   if (input.embedding) {
-    await writeEmbedding(created.id, input.embedding);
+    await writeEmbedding(created.id, input.embedding, input.workspaceId);
   }
   return created.id;
 }
@@ -231,6 +231,11 @@ export async function upsertAndEmbed(
  * unavailable: the row is persisted text-only first, then this helper
  * schedules the vector to be written when Gemini recovers.
  *
+ * `workspaceId` MUST be the workspace that owns the row. The worker
+ * uses it as the second tenant guard when writing the embedding back
+ * (defense in depth — a poisoned job payload pointing at someone
+ * else's memoryId no-ops instead of overwriting).
+ *
  * Best-effort: a Redis outage at enqueue time logs a warning and the
  * embedding stays null. The orchestrator's stuck-session watchdog and
  * the per-AgentRun lazy watchdog don't cover memory rows, so we rely
@@ -239,13 +244,19 @@ export async function upsertAndEmbed(
  * exists in the DB — the worst case is that retrieval doesn't see the
  * text until the next embed job lands.
  */
-export async function enqueueReembed(memoryId: string): Promise<void> {
+export async function enqueueReembed(
+  memoryId: string,
+  workspaceId: string,
+): Promise<void> {
+  if (!workspaceId) {
+    throw new MemoryError("enqueueReembed requires workspaceId");
+  }
   try {
     const { getAgentRunsQueue } = await import("@/lib/queues");
     const queue = getAgentRunsQueue();
     await queue.add(
       `embed:${memoryId}`,
-      { type: "embed", memoryId },
+      { type: "embed", memoryId, workspaceId },
       {
         removeOnComplete: 200,
         removeOnFail: 100,
@@ -257,6 +268,7 @@ export async function enqueueReembed(memoryId: string): Promise<void> {
     const { logger } = await import("@/lib/logger");
     logger.warn("memory.enqueue_reembed_failed", {
       memoryId,
+      workspaceId,
       err: err instanceof Error ? err.message : String(err),
     });
   }
@@ -266,22 +278,80 @@ export async function enqueueReembed(memoryId: string): Promise<void> {
  * Sets the embedding column on an existing row. Used by the async
  * embed job path (memory row inserted first, embedding written when
  * the embed worker runs).
+ *
+ * `workspaceId` is REQUIRED and is enforced inside the SQL `WHERE`
+ * clause. If the row does not belong to that workspace (or no longer
+ * exists), zero rows are updated and a `MemoryError` is thrown so the
+ * caller can surface the cross-tenant attempt or stale row instead of
+ * silently overwriting a victim workspace's vector.
+ *
+ * This guard pairs with `enqueueReembed`'s payload contract: every
+ * embed job carries the workspaceId of the row that owns the memory,
+ * and this function refuses to honour any other.
  */
 export async function writeEmbedding(
   memoryId: string,
   vector: number[],
+  workspaceId: string,
 ): Promise<void> {
   if (vector.length !== EMBEDDING_DIM) {
     throw new MemoryError(
       `Embedding dim mismatch: got ${vector.length}, expected ${EMBEDDING_DIM}`,
     );
   }
+  if (!workspaceId) {
+    throw new MemoryError("writeEmbedding requires workspaceId");
+  }
   const literal = toPgVectorLiteral(vector);
-  await prisma.$executeRawUnsafe(
-    `UPDATE semantic_memory SET embedding = $1::vector WHERE id = $2`,
+  const updated = await prisma.$executeRawUnsafe(
+    `UPDATE semantic_memory SET embedding = $1::vector WHERE id = $2 AND workspace_id = $3`,
     literal,
     memoryId,
+    workspaceId,
   );
+  if (updated === 0) {
+    throw new MemoryError(
+      `writeEmbedding: row ${memoryId} not found in workspace ${workspaceId} (deleted or cross-tenant write attempt)`,
+    );
+  }
+}
+
+/**
+ * Workspace-scoped lookup for a single memory row. Returns `null`
+ * when the row does not exist OR belongs to a different workspace —
+ * the caller cannot distinguish the two by design (both are bugs from
+ * the worker's point of view).
+ *
+ * The selectable fields are intentionally restrictive: the embedding
+ * column is excluded because pgvector cannot be returned by the
+ * Prisma client (raw SQL only) and callers never need it here.
+ */
+export async function findScopedMemoryRow(args: {
+  workspaceId: string;
+  memoryId: string;
+}): Promise<{
+  id: string;
+  workspaceId: string;
+  kind: MemoryKind;
+  leadId: string | null;
+  refType: string | null;
+  refId: string | null;
+  text: string;
+} | null> {
+  if (!args.workspaceId || !args.memoryId) return null;
+  const row = await prisma.semanticMemory.findFirst({
+    where: { id: args.memoryId, workspaceId: args.workspaceId },
+    select: {
+      id: true,
+      workspaceId: true,
+      kind: true,
+      leadId: true,
+      refType: true,
+      refId: true,
+      text: true,
+    },
+  });
+  return row;
 }
 
 /**
