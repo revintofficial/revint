@@ -17,6 +17,11 @@
  *     cost and stays under the per-minute request cap.
  */
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import {
+  getGeminiKey,
+  isGeminiAuthFailure,
+  markGeminiKeyCool,
+} from "@/lib/gemini-keys";
 
 export const EMBEDDING_DIM = 768;
 const MODEL_NAME = "text-embedding-004";
@@ -26,10 +31,15 @@ const BASE_BACKOFF_MS = 500;
 // defensively at ~8k to keep well under that for any language.
 const MAX_CHARS = 8000;
 
-function getClient(): GoogleGenerativeAI {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("GEMINI_API_KEY not set - embeddings unavailable");
-  return new GoogleGenerativeAI(key);
+/**
+ * Picks a key from the rotation pool every call. Embedding is the
+ * single highest-volume Gemini consumer (every memory write +
+ * pre-fetch query + lookalike search), so spreading the load over the
+ * full pool gets the most mileage out of the per-key 1500/day quota.
+ */
+function getClient(): { client: GoogleGenerativeAI; apiKey: string } {
+  const apiKey = getGeminiKey();
+  return { client: new GoogleGenerativeAI(apiKey), apiKey };
 }
 
 export class EmbeddingError extends Error {
@@ -63,27 +73,60 @@ export async function embed(text: string): Promise<number[]> {
     throw new EmbeddingError("Cannot embed empty text");
   }
 
-  const model = getClient().getGenerativeModel({ model: MODEL_NAME });
-
+  // Outer loop: rotate keys on 403. Each iteration picks a fresh key
+  // from the pool. Inner loop: existing 429/5xx exponential backoff
+  // against the chosen key.
   let lastErr: unknown = null;
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+  const triedKeys = new Set<string>();
+  // We try at most MAX_RETRIES distinct keys (capped by what's
+  // configured) before giving up. Default config is 1 key, so this
+  // collapses to a single inner-loop attempt — same behaviour as
+  // before for legacy single-key deploys.
+  const MAX_KEY_ROTATIONS = 3;
+
+  for (let rotation = 0; rotation < MAX_KEY_ROTATIONS; rotation++) {
+    let pickedKey: string;
     try {
-      const res = await model.embedContent(input);
-      const values = res.embedding?.values;
-      if (!values || values.length !== EMBEDDING_DIM) {
-        throw new EmbeddingError(
-          `Unexpected embedding shape: got ${values?.length ?? 0} dims, expected ${EMBEDDING_DIM}`,
-        );
-      }
-      return values;
+      pickedKey = getGeminiKey();
     } catch (err) {
-      lastErr = err;
-      const msg = err instanceof Error ? err.message : String(err);
-      // Only retry on transient errors
-      const transient = /429|rate|quota|5\d\d|timeout|temporarily/i.test(msg);
-      if (!transient || attempt === MAX_RETRIES - 1) break;
-      await sleep(BASE_BACKOFF_MS * 2 ** attempt);
+      throw new EmbeddingError(
+        err instanceof Error ? err.message : String(err),
+        err,
+      );
     }
+    if (triedKeys.has(pickedKey)) break;
+    triedKeys.add(pickedKey);
+
+    const model = new GoogleGenerativeAI(pickedKey).getGenerativeModel({
+      model: MODEL_NAME,
+    });
+
+    let authFailure = false;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        const res = await model.embedContent(input);
+        const values = res.embedding?.values;
+        if (!values || values.length !== EMBEDDING_DIM) {
+          throw new EmbeddingError(
+            `Unexpected embedding shape: got ${values?.length ?? 0} dims, expected ${EMBEDDING_DIM}`,
+          );
+        }
+        return values;
+      } catch (err) {
+        lastErr = err;
+        if (isGeminiAuthFailure(err)) {
+          markGeminiKeyCool(pickedKey, "embed_403");
+          authFailure = true;
+          break;
+        }
+        const msg = err instanceof Error ? err.message : String(err);
+        // Only retry on transient errors
+        const transient = /429|rate|quota|5\d\d|timeout|temporarily/i.test(msg);
+        if (!transient || attempt === MAX_RETRIES - 1) break;
+        await sleep(BASE_BACKOFF_MS * 2 ** attempt);
+      }
+    }
+    if (!authFailure) break; // non-auth failure: don't bother trying another key
   }
   throw new EmbeddingError(
     `Failed to embed after ${MAX_RETRIES} attempts`,
@@ -101,7 +144,9 @@ export async function embedBatch(texts: string[]): Promise<number[][]> {
     throw new EmbeddingError("embedBatch received an empty string");
   }
 
-  const model = getClient().getGenerativeModel({ model: MODEL_NAME });
+  // Rotate keys per CHUNK rather than per-call so a 403 mid-batch
+  // re-tries the failing chunk against a fresh key without re-uploading
+  // the chunks that already succeeded.
   const out: number[][] = [];
   const CHUNK = 50;
 
@@ -111,30 +156,48 @@ export async function embedBatch(texts: string[]): Promise<number[][]> {
     let lastErr: unknown = null;
     let batch: number[][] | null = null;
 
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      try {
-        const res = await model.batchEmbedContents({
-          requests: slice.map((content) => ({
-            content: { role: "user", parts: [{ text: content }] },
-          })),
-        });
-        batch = res.embeddings.map((e) => {
-          const values = e.values ?? [];
-          if (values.length !== EMBEDDING_DIM) {
-            throw new EmbeddingError(
-              `Unexpected embedding shape in batch: ${values.length} dims`,
-            );
+    const triedKeys = new Set<string>();
+    rotation: for (let rotation = 0; rotation < 3; rotation++) {
+      const pickedKey = getClient().apiKey;
+      if (triedKeys.has(pickedKey)) break;
+      triedKeys.add(pickedKey);
+
+      const model = new GoogleGenerativeAI(pickedKey).getGenerativeModel({
+        model: MODEL_NAME,
+      });
+
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          const res = await model.batchEmbedContents({
+            requests: slice.map((content) => ({
+              content: { role: "user", parts: [{ text: content }] },
+            })),
+          });
+          batch = res.embeddings.map((e) => {
+            const values = e.values ?? [];
+            if (values.length !== EMBEDDING_DIM) {
+              throw new EmbeddingError(
+                `Unexpected embedding shape in batch: ${values.length} dims`,
+              );
+            }
+            return values;
+          });
+          break rotation;
+        } catch (err) {
+          lastErr = err;
+          if (isGeminiAuthFailure(err)) {
+            markGeminiKeyCool(pickedKey, "embedBatch_403");
+            continue rotation;
           }
-          return values;
-        });
-        break;
-      } catch (err) {
-        lastErr = err;
-        const msg = err instanceof Error ? err.message : String(err);
-        const transient = /429|rate|quota|5\d\d|timeout|temporarily/i.test(msg);
-        if (!transient || attempt === MAX_RETRIES - 1) break;
-        await sleep(BASE_BACKOFF_MS * 2 ** attempt);
+          const msg = err instanceof Error ? err.message : String(err);
+          const transient = /429|rate|quota|5\d\d|timeout|temporarily/i.test(msg);
+          if (!transient || attempt === MAX_RETRIES - 1) break;
+          await sleep(BASE_BACKOFF_MS * 2 ** attempt);
+        }
       }
+      // Non-auth failure exhausted retries against this key — no point
+      // trying another, the error is not key-specific.
+      break;
     }
 
     if (!batch) {

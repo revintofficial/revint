@@ -22,6 +22,16 @@ export interface PlaceResult {
   businessStatus?: string;
   primaryType?: string;
   primaryTypeDisplayName?: { text: string };
+  /**
+   * Google Places v1 `priceLevel` enum. One of:
+   *   "PRICE_LEVEL_FREE" | "PRICE_LEVEL_INEXPENSIVE" |
+   *   "PRICE_LEVEL_MODERATE" | "PRICE_LEVEL_EXPENSIVE" |
+   *   "PRICE_LEVEL_VERY_EXPENSIVE" | "PRICE_LEVEL_UNSPECIFIED"
+   * Returned only for businesses where Google has price data; absent
+   * for most service businesses. Discovery worker maps this to a 0..4
+   * integer for `Lead.priceLevel`.
+   */
+  priceLevel?: string;
 }
 
 export interface PlacesSearchResponse {
@@ -126,6 +136,7 @@ export type CrawlError =
   | "PLAYWRIGHT_CRASH"  // browser/page crashed mid-navigation
   | "EMPTY_RESPONSE"    // page loaded but produced 0 bytes
   | "BLOCKED_BY_GUARD"  // SSRF guard rejected the URL or a redirect hop
+  | "SOCIAL_MEDIA_ONLY" // websiteUrl points at IG/FB/TikTok — no real site to audit
   | "UNKNOWN";
 
 export interface WebsiteFeatures {
@@ -250,14 +261,15 @@ export interface GeminiAnalysis {
   best_sales_angle: string;
   personalized_first_message: string;
   /**
-   * Workspace-defined ServicePackage id the analyst chose for this
-   * lead. Required when the workspace has packages configured (the
-   * `lead_created` chain is now gated on at least one ServicePackage
-   * row, so this field should always come back populated in the new
-   * pipeline). Null is tolerated for backwards compatibility with
-   * legacy single-shot analyze callers (api/analyze, analyze-worker)
-   * that don't pre-load packages — those rows simply lack a package
-   * recommendation. Free-text id, NOT a Prisma enum.
+   * Beta finding §4: the package id is now picked DETERMINISTICALLY
+   * by `selectPackage()` in `src/lib/agent-workers/package-selector.ts`,
+   * not by Gemini. The model still emits a prose `recommended_package_reason`
+   * but the id field is intentionally absent from the response schema
+   * to remove the popular-tier anchor bias. This optional property is
+   * kept for backwards compatibility with legacy `api/analyze` callers
+   * that haven't been migrated yet — when present it is silently
+   * ignored by the scorer worker, which trusts only the deterministic
+   * selection.
    */
   recommended_package_id?: string | null;
   /**

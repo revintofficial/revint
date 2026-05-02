@@ -46,12 +46,15 @@ import { logger } from "@/lib/logger";
 import { generateWithTimeout } from "@/lib/gemini-client";
 import { safeParseGeminiJson } from "@/lib/gemini";
 import {
+  autoAssignFineDining,
   getChildrenOf,
   rankAllChildren,
+  rankAllChildrenAll,
   ruleBasedClassify,
   verticalRootForWorkspace,
   type ClassifierLeadSignals,
   type NichePack,
+  type RuleClassificationResult,
 } from "@/lib/niches";
 import type {
   AgentWorkerContext,
@@ -59,12 +62,43 @@ import type {
   AgentWorkerRun,
 } from "./types";
 
+/**
+ * Beta finding §5: a hybrid lead like "Lobby Lounge at the Conrad
+ * Hotel" can legitimately fit BOTH `fnb-hotel-fnb` and `fnb-bar-club`.
+ * The classifier still picks ONE primary slug (highest confidence)
+ * but also surfaces the runner-up packs whose confidence cleared the
+ * alternative gate, so the opener / package selector / mockup picker
+ * downstream can match either tag and the lead-detail UI can show a
+ * "Aşağıdakilerden hangisi?" picker when the top two are close.
+ *
+ * Threshold rules:
+ *   - Alternatives are kept only when their confidence ≥ 0.4 (strong
+ *     enough to be worth surfacing, weak enough to not be the primary).
+ *   - At most 2 alternatives are kept (top-3 total including primary)
+ *     so the lead-detail picker doesn't become a six-option menu.
+ *   - The primary slug is NEVER duplicated into the alternatives list.
+ */
+const ALTERNATIVE_CONFIDENCE_FLOOR = 0.4;
+const MAX_ALTERNATIVES = 2;
+
+interface ClassifierAlternative {
+  slug: string;
+  confidence: number;
+  reason: string | null;
+}
+
 interface ClassifierResult {
   slug: string;
   confidence: number;
   reasoning: string | null;
   source: "rule" | "gemini" | "rule-weak" | "rule-default";
   reasons?: { rule: string; weight: number }[];
+  /**
+   * Runner-up sub-niche slugs whose confidence was below the primary
+   * but above ALTERNATIVE_CONFIDENCE_FLOOR. Excludes the primary slug.
+   * Empty when no other child cleared the floor.
+   */
+  alternatives: ClassifierAlternative[];
 }
 
 export const run: AgentWorkerRun = async (
@@ -99,6 +133,13 @@ export const run: AgentWorkerRun = async (
   }
 
   const signals = buildClassifierSignals(ctx);
+
+  // Compute the FULL ranked list once — both the primary classifier
+  // and the alternatives surface come from the same source so they
+  // can never diverge. Each path below picks element 0 as the
+  // primary candidate (or escalates to Gemini); the runners-up are
+  // attached at the end via `pickAlternatives`.
+  const rankedAll = rankAllChildrenAll(signals, children);
   const ruleHit = ruleBasedClassify(signals, children);
 
   let result: ClassifierResult;
@@ -109,11 +150,20 @@ export const run: AgentWorkerRun = async (
       reasoning: ruleHit.reasons.map((r) => r.rule).join(", "),
       source: "rule",
       reasons: ruleHit.reasons,
+      alternatives: pickAlternatives(rankedAll, ruleHit.slug),
     };
   } else {
     const geminiHit = await classifyWithGemini(signals, children, parentSlug);
     if (geminiHit) {
-      result = { ...geminiHit, source: "gemini" };
+      result = {
+        ...geminiHit,
+        source: "gemini",
+        // Gemini picks the primary; alternatives still come from the
+        // rule pass so the runner-up signals surface even when the
+        // rule path didn't clear the floor on its own. Excludes the
+        // Gemini-picked slug.
+        alternatives: pickAlternatives(rankedAll, geminiHit.slug),
+      };
     } else {
       // Both the floored rule pass AND Gemini failed. Rather than
       // park the lead at the parent scope with `subNicheSlug = null`
@@ -129,7 +179,34 @@ export const run: AgentWorkerRun = async (
       //      best-guess sub-vertical metadata so retrieval and
       //      lookalikes don't regress to scope-null.
       const ruleBest = rankAllChildren(signals, children);
-      if (ruleBest) {
+
+      // Phase 2.3: Fine-dining auto-assign. When neither rule (with
+      // floor) nor Gemini nor floorless rule produced a confident
+      // pick, but the lead's Place stats look like fine-dining
+      // (rating ≥ 4.5 + reviews ≥ 200 + priceLevel ≥ 3), promote it
+      // to `fnb-fine-dining` at 0.85 confidence. We apply this BEFORE
+      // accepting the floorless `ruleBest` whenever its confidence is
+      // below the auto-assign target (0.85), so a weak rule pick like
+      // "name_keyword: 'restaurant'" doesn't shadow a much stronger
+      // statistical signal. ctx.lead carries `rating`, `reviewCount`,
+      // and `priceLevel` from Google Places enrichment.
+      const autoFineDining = autoAssignFineDining({
+        parentSlug,
+        rating: ctx.lead.rating,
+        reviewCount: ctx.lead.reviewCount,
+        priceLevel: ctx.lead.priceLevel,
+      });
+
+      if (autoFineDining && (!ruleBest || ruleBest.confidence < autoFineDining.confidence)) {
+        result = {
+          slug: autoFineDining.slug,
+          confidence: autoFineDining.confidence,
+          reasoning: autoFineDining.reason,
+          source: "rule",
+          reasons: [{ rule: "auto_assign_fine_dining", weight: 1 }],
+          alternatives: pickAlternatives(rankedAll, autoFineDining.slug),
+        };
+      } else if (ruleBest) {
         result = {
           slug: ruleBest.slug,
           // Clamp upward to 0.3 so a single weak signal still surfaces
@@ -139,6 +216,7 @@ export const run: AgentWorkerRun = async (
           reasoning: `low-confidence rule pick (Gemini unavailable): ${ruleBest.reasons.map((r) => r.rule).join(", ")}`,
           source: "rule-weak",
           reasons: ruleBest.reasons,
+          alternatives: pickAlternatives(rankedAll, ruleBest.slug),
         };
       } else {
         // No rule fired at all — park at the parent scope (legacy
@@ -149,6 +227,7 @@ export const run: AgentWorkerRun = async (
           confidence: 0,
           reasoning: "no-classification",
           source: "rule-default",
+          alternatives: [],
         };
       }
     }
@@ -163,6 +242,8 @@ export const run: AgentWorkerRun = async (
     slug: result.slug || null,
     confidence: result.confidence,
     source: result.source,
+    alternativesCount: result.alternatives.length,
+    alternativeSlugs: result.alternatives.map((a) => a.slug),
   });
 
   return {
@@ -173,11 +254,38 @@ export const run: AgentWorkerRun = async (
       source: result.source,
       reasoning: result.reasoning,
       ruleReasons: result.reasons ?? null,
+      alternatives: result.alternatives,
       candidatesEvaluated: children.length,
     },
     costTokens: result.source === "gemini" ? 600 : 0,
   };
 };
+
+/**
+ * Selects up to MAX_ALTERNATIVES runner-up slugs from the full ranked
+ * list, excluding the primary slug and applying the confidence floor.
+ * Each alternative carries a short reason string built from the rule
+ * pass's matched rules so the lead-detail picker can show "Bar club
+ * (matched: name_keyword, google_places_type)" instead of an opaque
+ * confidence number.
+ */
+function pickAlternatives(
+  rankedAll: RuleClassificationResult[],
+  primarySlug: string,
+): ClassifierAlternative[] {
+  const out: ClassifierAlternative[] = [];
+  for (const r of rankedAll) {
+    if (r.slug === primarySlug) continue;
+    if (r.confidence < ALTERNATIVE_CONFIDENCE_FLOOR) continue;
+    out.push({
+      slug: r.slug,
+      confidence: r.confidence,
+      reason: r.reasons.length > 0 ? r.reasons.map((x) => x.rule).join(", ") : null,
+    });
+    if (out.length >= MAX_ALTERNATIVES) break;
+  }
+  return out;
+}
 
 /**
  * Hydrates the rule-based classifier's `ClassifierLeadSignals` shape
@@ -198,6 +306,10 @@ function buildClassifierSignals(ctx: AgentWorkerContext): ClassifierLeadSignals 
     // "resort" / "otel" / "inn").
     formattedAddress: lead.formattedAddress ?? null,
     primaryType: lead.primaryType ?? null,
+    // Phase 2.3: priceLevel feeds the priceLevelRange rule (+0.15
+    // weight) AND the fine-dining auto-assign threshold. Captured at
+    // discovery time from Google Places enum (mapped to 0..4).
+    priceLevel: lead.priceLevel ?? null,
     discoverySourceQuery: lead.discoverySourceQuery ?? lead.sourceQuery ?? null,
     bookingProvider: audit?.bookingProvider ?? null,
     audit: audit
@@ -224,8 +336,11 @@ async function classifyWithGemini(
   children: NichePack[],
   parentSlug: string,
 ): Promise<{ slug: string; confidence: number; reasoning: string | null } | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  const { getGeminiKey } = await import("@/lib/gemini-keys");
+  let apiKey: string;
+  try {
+    apiKey = getGeminiKey();
+  } catch {
     logger.warn("subvertical_classifier.no_gemini_key", { parentSlug });
     return null;
   }
@@ -326,6 +441,17 @@ async function persistResult(
   const newSlug = result.slug || null;
   const slugChanged = newSlug !== lead.subNicheSlug;
 
+  // Beta finding §5: build the multi-tag union. `subNicheSlugs` is
+  // the deduped union of the primary slug + alternatives so a single
+  // SQL `subNicheSlugs ?| array['fnb-bar-club']` query catches BOTH
+  // primary-tagged and alternative-tagged hits. Order matters here:
+  // primary first (downstream code may assume slugs[0] === primary
+  // when present) followed by alternatives in confidence order.
+  const allSlugs = [
+    ...(newSlug ? [newSlug] : []),
+    ...result.alternatives.map((a) => a.slug),
+  ];
+
   await prisma.lead.update({
     where: { id: lead.id },
     data: {
@@ -335,6 +461,11 @@ async function persistResult(
       subNicheSlug: newSlug,
       subNicheConfidence: result.confidence,
       subNicheSource: "AUTO",
+      // The Prisma client uses `set` for replacing the entire array
+      // (vs push/append). `subNicheSlugs` is the canonical union;
+      // re-classifying always replaces it.
+      subNicheSlugs: { set: allSlugs },
+      subNicheAlternatives: result.alternatives as unknown as object,
       ...(slugChanged ? { subNicheVersion: { increment: 1 } } : {}),
     },
   });

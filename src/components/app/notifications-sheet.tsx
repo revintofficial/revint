@@ -76,8 +76,9 @@ async function fetchNotifications(): Promise<NotifItem[]> {
     };
     const runs = json.runs ?? [];
     return runs.slice(0, 20).map<NotifItem>((r) => {
+      const isSuccess = r.status === "SUCCEEDED" || r.status === "SUCCEEDED_NO_MEMORY";
       const kind: NotifKind =
-        r.status === "SUCCEEDED"
+        isSuccess
           ? "success"
           : r.status === "FAILED"
             ? "error"
@@ -85,9 +86,11 @@ async function fetchNotifications(): Promise<NotifItem[]> {
       const title =
         r.status === "SUCCEEDED"
           ? `${humanize(r.kind)} finished`
-          : r.status === "FAILED"
-            ? `${humanize(r.kind)} failed`
-            : `${humanize(r.kind)} running`;
+          : r.status === "SUCCEEDED_NO_MEMORY"
+            ? `${humanize(r.kind)} finished (memory degraded)`
+            : r.status === "FAILED"
+              ? `${humanize(r.kind)} failed`
+              : `${humanize(r.kind)} running`;
       return {
         id: r.id,
         kind,

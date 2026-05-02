@@ -25,6 +25,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   SegmentedControl,
   type SegmentedControlItem,
@@ -35,11 +36,11 @@ import { DealSidePanel } from "./deal-side-panel";
 import type { PipelineStage, DealItem } from "./types";
 
 const STAGES: { id: PipelineStage; label: string; accent: string }[] = [
-  { id: "NEW", label: "New", accent: "text-white/60" },
-  { id: "REACHED_OUT", label: "Reached Out", accent: "text-(--leadac-500)" },
-  { id: "IN_TALKS", label: "In Talks", accent: "text-[hsl(38_70%_52%)]" },
-  { id: "WON", label: "Won", accent: "text-[hsl(152_48%_50%)]" },
-  { id: "LOST", label: "Lost", accent: "text-[hsl(4_62%_54%)]" },
+  { id: "NEW", label: "New", accent: "text-[var(--leadac-text-2)]" },
+  { id: "REACHED_OUT", label: "Reached Out", accent: "text-[var(--leadac-warning)]" },
+  { id: "IN_TALKS", label: "In Talks", accent: "text-(--leadac-400)" },
+  { id: "WON", label: "Won", accent: "text-[var(--leadac-success)]" },
+  { id: "LOST", label: "Lost", accent: "text-[var(--leadac-error)]" },
 ];
 
 export default function DealsPage() {
@@ -343,13 +344,12 @@ function DealsBoard() {
               <p className="text-sm text-white/40 max-w-sm">
                 Shortlist a lead from the Leads page and it will land here in the New column.
               </p>
-              <Link
-                href="/app/leads"
-                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--leadac-500) hover:bg-(--leadac-600) text-white text-sm font-medium transition-colors"
-              >
-                <Star className="w-4 h-4" />
-                Go to Leads
-              </Link>
+              <Button asChild size="sm" className="mt-2">
+                <Link href="/app/leads">
+                  <Star className="w-4 h-4" />
+                  Go to Leads
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -476,7 +476,7 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col rounded-2xl border bg-white/[0.02] transition-colors ${
+      className={`flex flex-col rounded-2xl border bg-white/2 transition-colors ${
         isOver ? "border-(--leadac-500)/40 bg-(--leadac-500)/[0.04]" : "border-white/10"
       }`}
     >

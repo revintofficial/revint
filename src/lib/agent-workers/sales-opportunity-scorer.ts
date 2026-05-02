@@ -18,6 +18,7 @@ import {
   type ReviewContextForAnalysis,
 } from "@/lib/gemini";
 import { calculateDeterministicScore } from "@/lib/scoring";
+import { selectPackage } from "./package-selector";
 import type { WebsiteFeatures } from "@/types";
 import type {
   AgentWorkerContext,
@@ -237,23 +238,80 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       activeCampaigns,
     );
 
-    // Validate the package id Gemini returned: it must match an id
-    // we actually sent in the prompt. Models occasionally invent ids
-    // ("pkg-premium-plus") even when given a fixed list, and a
-    // dangling FK-less recommendation in the DB confuses the rep.
-    // Drop unknown ids silently and clear the reason; the UI then
-    // shows the legacy suggestedOffer enum instead.
-    const validPackageIds = new Set(servicePackages.map((p) => p.id));
-    const recommendedPackageId =
-      typeof analysis.recommended_package_id === "string" &&
-      validPackageIds.has(analysis.recommended_package_id)
-        ? analysis.recommended_package_id
-        : null;
-    const recommendedPackageReason = recommendedPackageId
-      ? typeof analysis.recommended_package_reason === "string"
+    // Beta finding §4 — DETERMINISTIC package selection.
+    //
+    // Tier id no longer comes from Gemini; we compute it from the
+    // lead's structural signals via `selectPackage()`. The reasons:
+    //   - removes the popular-tier anchor bias surfaced in beta
+    //     (Gemini converged on `isPopular` ~60% of the time);
+    //   - guarantees reproducibility — two reps looking at the same
+    //     lead see the same tier;
+    //   - lets us unit-test the boundary cases without mocking Gemini.
+    //
+    // Inputs:
+    //   - isHotel: derived from sub-niche slug or Places primaryType.
+    //     The `fnb-hotel-restaurant` slug is the trusted signal; a
+    //     primaryType of "lodging" / containing "hotel" is the
+    //     fallback when classification hasn't run yet.
+    //   - hasMultipleLocations: derived from Gemini's `chain_detected`
+    //     reason code. We trust Gemini's pattern recognition here
+    //     because chain status comes from website / business-name
+    //     analysis the model already does, but we bound the impact
+    //     by capping it at the tier choice (it cannot move the
+    //     opportunity_score directly).
+    //   - painPointCount: post-filter `likely_pain_points` length.
+    const isHotelByNiche = lead.subNicheSlug === "fnb-hotel-restaurant";
+    const primaryTypeLc = (lead.primaryType ?? "").toLowerCase();
+    const isHotelByPrimaryType =
+      primaryTypeLc.includes("hotel") || primaryTypeLc === "lodging";
+    const hasMultipleLocations = analysis.reason_codes.some(
+      (c) => typeof c === "string" && /chain_detected/i.test(c),
+    );
+    const painPointCount = Array.isArray(analysis.likely_pain_points)
+      ? analysis.likely_pain_points.length
+      : 0;
+    const packageSelection = selectPackage({
+      reviewCount: lead.reviewCount ?? 0,
+      rating: lead.rating ?? 0,
+      hasMultipleLocations,
+      isHotel: isHotelByNiche || isHotelByPrimaryType,
+      // Prisma findMany already sorted by sortOrder ASC, so we hand
+      // the selector the position-indexed sortOrder it expects: idx 0
+      // is the cheapest tier (base), idx 1 is premium, idx 2 is
+      // enterprise. Workspaces with fewer than 3 packages reuse the
+      // last entry inside the selector.
+      servicePackages: servicePackages.map((p, idx) => ({
+        id: p.id,
+        name: p.name,
+        sortOrder: idx,
+      })),
+      painPointCount,
+    });
+    const sortedById = new Map(servicePackages.map((p) => [p.id, p]));
+    const recommendedPackageId = packageSelection.id ?? null;
+    // Keep Gemini's prose reason when the deterministic tier was
+    // picked. The prompt no longer asks for `recommended_package_id`
+    // (we silently ignore it if the model still returns one for
+    // backwards compatibility), but `recommended_package_reason` is
+    // still produced and surfaces verbatim in the UI.
+    const geminiReason =
+      typeof analysis.recommended_package_reason === "string"
         ? analysis.recommended_package_reason.slice(0, 600)
-        : null
-      : null;
+        : null;
+    const recommendedPackageReason = recommendedPackageId ? geminiReason : null;
+    if (recommendedPackageId) {
+      logger.info("agent_workers.scorer.package_selected", {
+        leadId,
+        packageId: recommendedPackageId,
+        packageName: sortedById.get(recommendedPackageId)?.name ?? null,
+        tier: packageSelection.tier,
+        reason: packageSelection.reason,
+        painPointCount,
+        hasMultipleLocations,
+        isHotel: isHotelByNiche || isHotelByPrimaryType,
+        reviewCount: lead.reviewCount ?? 0,
+      });
+    }
 
     const blendedScore = Math.round(
       deterministicScore * 0.4 + analysis.opportunity_score * 0.6,

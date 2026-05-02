@@ -335,11 +335,11 @@ export function startAgentRunWorker() {
         where: { id: runId },
         select: { plannerSessionId: true, status: true },
       });
-      if (!run || run.status === "SUCCEEDED") return;
+      if (!run || run.status === "SUCCEEDED" || run.status === "SUCCEEDED_NO_MEMORY") return;
 
       // Ensure the run has a definitive FAILED status with a clear message.
       await p.agentRun.updateMany({
-        where: { id: runId, status: { notIn: ["SUCCEEDED", "CANCELLED"] } },
+        where: { id: runId, status: { notIn: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY", "CANCELLED"] } },
         data: {
           status: "FAILED",
           finishedAt: new Date(),

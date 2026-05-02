@@ -287,6 +287,15 @@ enum AgentRunStatus {
   PENDING
   RUNNING
   SUCCEEDED
+  // Beta finding §7: the worker's primary artifact succeeded but the
+  // post-run memory write or the memoryReads pre-fetch hit an
+  // EmbeddingError (Gemini 429 / 403). The row is logically successful
+  // — downstream chains may proceed, the rep sees the deliverable —
+  // but a backfill embed job needs to run before this row participates
+  // in semantic retrieval. Distinct from SUCCEEDED so the UI can show
+  // an "AI memory degraded" badge and operators can grep for the
+  // bucket without scanning errorMsg.
+  SUCCEEDED_NO_MEMORY
   FAILED
   CANCELLED
 }
@@ -446,12 +455,30 @@ model Lead {
   reviewCount          Int?                 @map("review_count")
   businessStatus       String?              @map("business_status")
   primaryType          String?              @map("primary_type")
+  // Google Places `priceLevel` (0..4 ladder, 0=free, 4=very expensive).
+  // Captured from the v1 enum at discovery time and used by:
+  //   - the rule-based sub-niche classifier (priceLevelRange match,
+  //     +0.15 weight per `src/lib/niches/index.ts`),
+  //   - the fine-dining auto-assign rule (rating ≥ 4.5 + reviews ≥ 200
+  //     + priceLevel ≥ 3 → fnb-fine-dining at 0.85 confidence),
+  //   - downstream package selector heuristics.
+  // Nullable: not every Place returns a priceLevel and legacy rows
+  // predate the field. Use `null` to mean "unknown", NOT 0.
+  priceLevel           Int?                 @map("price_level")
   sourceQuery          String?              @map("source_query")
   sourceLat            Float?               @map("source_lat")
   sourceLng            Float?               @map("source_lng")
   crawlStatus          CrawlStatus          @default(PENDING) @map("crawl_status")
   analyzeStatus        AnalyzeStatus        @default(PENDING) @map("analyze_status")
   reviewAnalysisStatus ReviewAnalysisStatus @default(PENDING) @map("review_analysis_status")
+  // Phase 2.6 — Idempotency guard for the "Apify enrichment populated
+  // a websiteUrl, re-run the auditor" trigger. Stores the URL the
+  // WEBSITE_AUDITOR last successfully crawled. The Apify Gmaps Deep
+  // worker compares this against any newly-discovered website and
+  // only enqueues a re-audit when the two differ. Without this the
+  // post-Apify hook would re-enqueue an audit on every Apify run
+  // even when the site hasn't changed.
+  lastAuditedWebsiteUrl String?              @map("last_audited_website_url")
 
   // Niche pack tagging. `nicheSlug` is the parent NichePack slug (e.g.
   // "fnb", "phone-repair"). `subNicheSlug` is the child slug for hybrid
@@ -473,6 +500,20 @@ model Lead {
   subNicheSource     SubNicheSource? @map("sub_niche_source")
   subNicheConfidence Float?          @map("sub_niche_confidence")
   subNicheVersion    Int             @default(0) @map("sub_niche_version")
+  // Beta finding §5: hybrid leads (e.g. a hotel-bar that's both
+  // "fnb-hotel-fnb" and "fnb-bar-club") need a multi-tag surface so
+  // the opener / package selector / mockup picker can match either
+  // slug. `subNicheSlugs` is the deduped union of `subNicheSlug` (the
+  // primary, classifier-best pick) plus every alternative whose
+  // confidence cleared the gate at classification time. Always
+  // includes `subNicheSlug` when one exists. `subNicheAlternatives`
+  // carries the [{slug, confidence, reason?}] objects so the lead
+  // detail "which one is this?" picker can render the runners-up with
+  // their evidence intact. Both default to empty so legacy rows that
+  // predate this column still resolve cleanly through the existing
+  // `subNicheSlug` codepath.
+  subNicheSlugs        String[] @default([]) @map("sub_niche_slugs")
+  subNicheAlternatives Json     @default("[]") @map("sub_niche_alternatives")
   // Discovery query that surfaced this lead (e.g. "cocktail bar").
   // Used by the rule-based classifier as a strong prior — when the rep
   // searched specifically for "cocktail bar" the resulting lead is

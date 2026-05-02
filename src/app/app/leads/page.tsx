@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/ui/page-header";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -613,31 +614,27 @@ function LeadsPageContent() {
         }
       />
 
-      {/* Phase 1 — top-level queue tabs (Today / Mine / All / Archive). */}
-      <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-white/8 bg-white/3 p-1">
-        {(["today", "mine", "all", "archive"] as const).map((q) => {
-          const active = filters.queue === q;
-          const label =
-            q === "today" ? "Today's queue" :
-            q === "mine" ? "My leads" :
-            q === "all" ? "All leads" :
-            "Archive";
-          return (
-            <button
-              key={q}
-              type="button"
-              onClick={() => setFilters((prev) => ({ ...prev, queue: q, page: 1 }))}
-              className={
-                active
-                  ? "rounded-xl bg-(--leadac-500) px-3 py-1.5 text-[13px] font-medium text-black"
-                  : "rounded-xl px-3 py-1.5 text-[13px] font-medium text-white/60 hover:text-white hover:bg-white/5"
-              }
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
+      {/* Phase 1 — top-level queue tabs (Today / Mine / All / Archive).
+          Uses the Tabs primitive so styling matches every other tab strip
+          in the app. State still lives in `filters.queue` — Tabs is just
+          the presentation layer here. */}
+      <Tabs
+        value={filters.queue}
+        onValueChange={(v) =>
+          setFilters((prev) => ({
+            ...prev,
+            queue: v as (typeof filters)["queue"],
+            page: 1,
+          }))
+        }
+      >
+        <TabsList>
+          <TabsTrigger value="today">Today&apos;s queue</TabsTrigger>
+          <TabsTrigger value="mine">My leads</TabsTrigger>
+          <TabsTrigger value="all">All leads</TabsTrigger>
+          <TabsTrigger value="archive">Archive</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Live heartbeat for background AI work. Shows nothing when the
           workspace is idle; auto-refetches the leads list when the
@@ -812,7 +809,7 @@ function LeadsPageContent() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Globe className="w-5 h-5 text-[hsl(38_70%_52%)]" />
+              <Globe className="w-5 h-5 text-(--leadac-warning)" />
               Website Search Result
             </DialogTitle>
             <DialogDescription>
@@ -823,7 +820,7 @@ function LeadsPageContent() {
           </DialogHeader>
           {websiteSearchLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 text-[hsl(38_70%_52%)] animate-spin" />
+              <Loader2 className="w-8 h-8 text-(--leadac-warning) animate-spin" />
               <p className="text-sm text-white/30 mt-3">
                 Searching for website...
               </p>
@@ -959,18 +956,18 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
   > = {
     placeholder: {
       label: "Placeholder / Empty Site",
-      color: "text-[hsl(4_62%_54%)]",
-      bg: "bg-[hsl(4_62%_54%)]/[0.06] border-[hsl(4_62%_54%)]/20",
+      color: "text-(--leadac-error)",
+      bg: "bg-[color-mix(in_oklab,var(--leadac-error)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-error)_20%,transparent)]",
     },
     basic: {
       label: "Basic Website",
-      color: "text-[hsl(38_70%_52%)]",
-      bg: "bg-[hsl(38_70%_52%)]/[0.06] border-[hsl(38_70%_52%)]/20",
+      color: "text-(--leadac-warning)",
+      bg: "bg-[color-mix(in_oklab,var(--leadac-warning)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-warning)_20%,transparent)]",
     },
     developed: {
       label: "Developed Website",
-      color: "text-[hsl(152_48%_50%)]",
-      bg: "bg-[hsl(152_48%_50%)]/[0.06] border-[hsl(152_48%_50%)]/20",
+      color: "text-(--leadac-success)",
+      bg: "bg-[color-mix(in_oklab,var(--leadac-success)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-success)_20%,transparent)]",
     },
     unreachable: {
       label: "Unreachable",
@@ -992,10 +989,10 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
             <span
               className={`text-lg font-bold ${
                 result.score >= 65
-                  ? "text-[hsl(152_48%_50%)]"
+                  ? "text-(--leadac-success)"
                   : result.score >= 35
-                  ? "text-[hsl(38_70%_52%)]"
-                  : "text-[hsl(4_62%_54%)]"
+                  ? "text-(--leadac-warning)"
+                  : "text-(--leadac-error)"
               }`}
             >
               {result.score}
@@ -1024,7 +1021,7 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
       </div>
 
       {result.builderDetected && (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-(--leadac-500)/[0.06] border border-(--leadac-500)/20">
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-(--leadac-500)/6 border border-(--leadac-500)/20">
           <Info className="w-4 h-4 text-(--leadac-500) shrink-0" />
           <span className="text-sm text-(--leadac-500)">
             Built with <strong>{result.builderDetected}</strong>
@@ -1045,10 +1042,10 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
               <div
                 className={`w-1.5 h-1.5 rounded-full ${
                   signal.status === "good"
-                    ? "bg-[hsl(152_48%_50%)]"
+                    ? "bg-(--leadac-success)"
                     : signal.status === "warning"
-                    ? "bg-[hsl(38_70%_52%)]"
-                    : "bg-[hsl(4_62%_54%)]"
+                    ? "bg-(--leadac-warning)"
+                    : "bg-(--leadac-error)"
                 }`}
               />
               <span className="text-xs font-medium text-white/70">
@@ -1070,14 +1067,14 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
     <div className="space-y-4 pt-2">
       {result.found ? (
         <>
-          <div className="rounded-xl border border-[hsl(152_48%_50%)]/20 bg-[hsl(152_48%_50%)]/[0.06] p-4">
+          <div className="rounded-xl border border-[color-mix(in_oklab,var(--leadac-success)_20%,transparent)] bg-[color-mix(in_oklab,var(--leadac-success)_6%,transparent)] p-4">
             <div className="flex items-center gap-2 mb-2">
-              <CircleCheck className="w-5 h-5 text-[hsl(152_48%_50%)]" />
-              <p className="font-semibold text-[hsl(152_48%_50%)]">
+              <CircleCheck className="w-5 h-5 text-(--leadac-success)" />
+              <p className="font-semibold text-(--leadac-success)">
                 {result.websites.length} website(s) found!
               </p>
             </div>
-            <p className="text-sm text-[hsl(152_48%_50%)]">
+            <p className="text-sm text-(--leadac-success)">
               Website(s) found online that were not listed in Google Places.
               The first match was saved to the lead automatically.
             </p>

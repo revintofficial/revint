@@ -17,6 +17,11 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { analyzeReviewsWithGemini } from "@/lib/gemini";
+import {
+  filterReviewKpis,
+  normalizeForGrounding,
+  isGroundedInCorpus,
+} from "@/lib/review-analysis/kpi-filter";
 import type {
   AgentWorkerContext,
   AgentWorkerOutput,
@@ -37,7 +42,12 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     const lead = await prisma.lead.findUniqueOrThrow({
       where: { id: leadId },
       include: {
-        workspace: { select: { offerName: true, valueProposition: true } },
+        // `niche` is needed by the F&B label-whitelist gate in
+        // analyzeReviewsWithGemini (Beta finding §3). Workspaces with
+        // niche=RESTAURANT_TECH get the canonical KPI label enum
+        // injected at both prompt + responseSchema layer; other
+        // niches keep the legacy free-form clustering.
+        workspace: { select: { offerName: true, valueProposition: true, niche: true } },
         googleReviews: { orderBy: { publishTime: "desc" }, take: 50 },
       },
     });
@@ -66,7 +76,50 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         relativeTime: r.relativeTime,
       })),
       ourOffer,
+      workspaceNiche: lead.workspace.niche,
     });
+
+    // Beta findings §2/§3: filter KPIs that fall below the
+    // 2-distinct-reviews threshold, drop examples that aren't grounded
+    // in any actual review (Gemini sometimes paraphrases), and re-derive
+    // `percent` from the true negative/positive pool size so a
+    // hallucinated 50% on a 5-review sample becomes the honest 20%.
+    // The same `corpusNormalized` is reused below for painPhrases
+    // grounding, which keeps the AI Core path and legacy run-job
+    // behaviour aligned.
+    const corpusNormalized = lead.googleReviews
+      .map((r) => normalizeForGrounding(r.text ?? ""))
+      .filter(Boolean);
+    const negativePoolCount = lead.googleReviews.filter(
+      (r) => r.rating > 0 && r.rating <= 2,
+    ).length;
+    const positivePoolCount = lead.googleReviews.filter(
+      (r) => r.rating >= 4,
+    ).length;
+    const weaknessFiltered = filterReviewKpis(
+      analysis.weaknessKpis,
+      negativePoolCount,
+      corpusNormalized,
+    );
+    const strengthFiltered = filterReviewKpis(
+      analysis.strengthKpis,
+      positivePoolCount,
+      corpusNormalized,
+    );
+    logger.info("agent_workers.review_analyst.kpi_filter", {
+      leadId,
+      weaknessIn: weaknessFiltered.stats.inCount,
+      weaknessOut: weaknessFiltered.stats.outCount,
+      weaknessDroppedLowCount: weaknessFiltered.stats.droppedForLowCount,
+      weaknessDroppedUngrounded: weaknessFiltered.stats.droppedForUngroundedExamples,
+      strengthIn: strengthFiltered.stats.inCount,
+      strengthOut: strengthFiltered.stats.outCount,
+      negativePool: negativePoolCount,
+      positivePool: positivePoolCount,
+      reviewsAnalyzedCount: analysis.reviewsAnalyzedCount,
+    });
+    analysis.weaknessKpis = weaknessFiltered.kpis;
+    analysis.strengthKpis = strengthFiltered.kpis;
 
     await prisma.reviewAnalysis.upsert({
       where: { leadId },
@@ -116,9 +169,10 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     // review. Phrases that fail are dropped from memoryWrites with a
     // log line; the ReviewAnalysis row still holds the raw Gemini
     // output because the UI shows them separately.
-    const corpusNormalized = lead.googleReviews
-      .map((r) => normalizeForGrounding(r.text ?? ""))
-      .filter(Boolean);
+    //
+    // (The same `corpusNormalized` already drives KPI example
+    // grounding above; we reuse the captured list rather than
+    // recomputing it.)
     const painsGrounded = (analysis.painPhrases as unknown[])
       .filter((x): x is string => typeof x === "string")
       .filter((p) => isGroundedInCorpus(p, corpusNormalized));
@@ -239,37 +293,3 @@ export const memoryWrites = (
 
   return writes;
 };
-
-/**
- * Strips punctuation, lowercases, and collapses whitespace so
- * substring comparisons are tolerant to typography differences
- * between Gemini's paraphrase and the raw review text.
- */
-function normalizeForGrounding(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\p{Diacritic}]/gu, "")
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * Returns true when any 3-word window of `phrase` appears as a
- * contiguous substring in any normalized review. 3 words is long
- * enough to rule out coincidental matches ('the service') but short
- * enough to accept paraphrasing of longer phrases.
- */
-function isGroundedInCorpus(phrase: string, corpus: string[]): boolean {
-  const tokens = normalizeForGrounding(phrase).split(" ").filter(Boolean);
-  if (tokens.length === 0) return false;
-  if (tokens.length <= 2) {
-    return corpus.some((c) => c.includes(tokens.join(" ")));
-  }
-  for (let i = 0; i <= tokens.length - 3; i++) {
-    const window = tokens.slice(i, i + 3).join(" ");
-    if (corpus.some((c) => c.includes(window))) return true;
-  }
-  return false;
-}

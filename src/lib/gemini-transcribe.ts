@@ -11,11 +11,10 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
+import { getGeminiKey } from "@/lib/gemini-keys";
 
 function getClient() {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("GEMINI_API_KEY is not set");
-  return new GoogleGenerativeAI(key);
+  return new GoogleGenerativeAI(getGeminiKey());
 }
 
 export async function transcribeAudioWithGemini(

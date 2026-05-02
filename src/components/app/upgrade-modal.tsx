@@ -163,7 +163,10 @@ export function UpgradeModal({
               Annual
               <span
                 className="text-[9.5px] font-semibold px-1 py-0.5 rounded"
-                style={{ background: "hsl(152 48% 50% / 0.2)", color: "hsl(152 28% 70%)" }}
+                style={{
+                  background: "color-mix(in oklab, var(--leadac-success) 20%, transparent)",
+                  color: "var(--leadac-success-soft)",
+                }}
               >
                 -{ANNUAL_DISCOUNT_PCT}%
               </span>

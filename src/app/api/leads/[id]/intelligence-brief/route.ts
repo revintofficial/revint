@@ -31,7 +31,7 @@ export async function GET(
         workspaceId,
         leadId: id,
         workerKind: "LEAD_INTELLIGENCE_BRIEF",
-        status: "SUCCEEDED",
+        status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
       },
       orderBy: { finishedAt: "desc" },
       select: {

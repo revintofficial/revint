@@ -75,6 +75,29 @@ interface BriefOutput {
   replyObjections: string[];
   redFlags: string[];
   evidence: { source: string; note: string }[];
+  /**
+   * Phase 2.5 — Brief-grounded opener guardrail.
+   *
+   * `confirmedPainPoints` is the SHORTLIST of pain phrases that the
+   * brief verified against actual evidence (a quoted review, a
+   * concrete audit signal, or a rep voice-note). Distinct from the
+   * scorer's `likelyPainPoints` which is allowed to extrapolate —
+   * THIS list is what the OPENER may cite in cold outreach. If a
+   * pain isn't on this list, the opener may not pitch it (the LLM
+   * is told this explicitly).
+   *
+   * `confirmedMissingFeatures` is the same idea for features /
+   * modules: only call out a missing feature in outreach when the
+   * audit explicitly returned `false` for it. A `null` audit signal
+   * (audit not run, audit timed out, social-media-only URL) does
+   * NOT count as confirmation that the feature is missing.
+   *
+   * Both arrays default to empty when the brief has insufficient
+   * grounding — the opener then falls back to a generic-but-safe
+   * pitch instead of inventing problems.
+   */
+  confirmedPainPoints: string[];
+  confirmedMissingFeatures: string[];
   generatedAt: string;
   intelligenceVersion: number;
 }
@@ -169,9 +192,8 @@ async function generateBrief(
   input: BriefPromptInput,
   intelligenceVersion: number,
 ): Promise<Omit<BriefOutput, "intelligenceVersion" | "generatedAt">> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
-  const client = new GoogleGenerativeAI(apiKey);
+  const { getGeminiKey } = await import("@/lib/gemini-keys");
+  const client = new GoogleGenerativeAI(getGeminiKey());
   const model = client.getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
@@ -219,6 +241,14 @@ async function generateBrief(
               required: ["source", "note"],
             },
           },
+          confirmedPainPoints: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING },
+          },
+          confirmedMissingFeatures: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING },
+          },
         },
         required: [
           "salesConfidence",
@@ -232,6 +262,8 @@ async function generateBrief(
           "replyObjections",
           "redFlags",
           "evidence",
+          "confirmedPainPoints",
+          "confirmedMissingFeatures",
         ],
       },
     },
@@ -315,6 +347,8 @@ Rules:
 - replyObjections: 2-3 anticipated buyer objections, in their voice.
 - redFlags: pull from review analysis (low rating + dropping trend), shutdown signals, "permanently closed" indicators. Empty array if none.
 - evidence: 3-6 short citations of the actual signals you used.
+- confirmedPainPoints: SHORTLIST (0-5 items) of pain phrases that have AT LEAST ONE concrete supporting signal — a direct review quote from the review analysis above, an audit boolean explicitly set to false, or a rep voice-note transcript. If a pain is plausible but unverified, OMIT it. This list is the WHITELIST that downstream cold-email writers may pitch — anything not on it is forbidden.
+- confirmedMissingFeatures: SHORTLIST (0-5 items) of features/modules where the audit explicitly returned false (e.g. "no online booking" only when audit.hasBookingSystem === false). A null / unknown audit signal does NOT count as confirmation. Use the same vocabulary as the niche pack's highValueSignals when possible so downstream consumers can match cleanly.
 - NO emojis. NO em-dashes. NO marketing buzzwords.
 
 Return ONLY the JSON. No code fences, no preamble.`;
@@ -350,7 +384,7 @@ export const run: AgentWorkerRun = async (
       workspaceId,
       leadId,
       workerKind: "LEAD_DOSSIER_GENERATOR",
-      status: "SUCCEEDED",
+      status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
     },
     orderBy: { finishedAt: "desc" },
     select: { outputJson: true },
@@ -365,7 +399,7 @@ export const run: AgentWorkerRun = async (
     where: {
       workspaceId,
       leadId,
-      status: "SUCCEEDED",
+      status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
       workerKind: { notIn: ["LEAD_INTELLIGENCE_BRIEF", "LEAD_DOSSIER_GENERATOR"] },
     },
     orderBy: { finishedAt: "desc" },
@@ -394,7 +428,7 @@ export const run: AgentWorkerRun = async (
       workspaceId,
       leadId,
       workerKind: "SALES_OPPORTUNITY_SCORER",
-      status: "SUCCEEDED",
+      status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
     },
     orderBy: { finishedAt: "desc" },
     select: { outputJson: true },
@@ -536,6 +570,12 @@ export const run: AgentWorkerRun = async (
       replyObjections: [],
       redFlags: [],
       evidence: [],
+      // Fallback brief has no LLM-grounded pain analysis, so we
+      // intentionally leave both arrays empty. The opener-writer
+      // treats empty arrays as "no whitelist" and falls back to its
+      // generic-but-safe pitch path rather than fabricating pains.
+      confirmedPainPoints: [],
+      confirmedMissingFeatures: [],
     };
   }
 

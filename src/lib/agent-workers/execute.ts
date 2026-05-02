@@ -31,6 +31,7 @@ import {
 } from "./registry";
 import { checkWorkerQuota, QuotaExceededError } from "./quota";
 import { RetryableError } from "./errors";
+import { EmbeddingError } from "@/lib/ai-core/embed";
 import { getAppBaseUrl } from "@/lib/email/from";
 import type {
   AgentWorkerContext,
@@ -259,34 +260,36 @@ export async function executeAgentRun(
     // `memoryWrites` callback; we resolve it lazily (same cache as
     // the run handler) and invoke with the run output + context.
     //
-    // A memory-write failure is treated the same as a worker failure:
-    // the run is marked FAILED and no orchestrator advance is fired
-    // for SUCCEEDED state. Memory is load-bearing (downstream workers
-    // read it via memoryReads; the learning loop reads OPENER_SUCCESS),
-    // so a silent memory gap would surface as a quality regression
-    // weeks later with no diagnostic trail. Better to fail loud now.
-    //
-    // The worker's primary artifact is still preserved in the worker
-    // output: if a reviewer needs to inspect a FAILED run to recover
-    // the Gemini response, it is available in AgentRun.errorMsg as a
-    // short note and the worker logger has the full payload.
+    // Beta finding §7: post-write embedding failures used to flip the
+    // run to FAILED even when the worker's own artifact succeeded.
+    // `persistMemoryWrites` already swallows EmbeddingError per-row
+    // and falls back to a vector-less write, so a 403/429 storm at
+    // Gemini's embedding endpoint produces SUCCEEDED rows. The
+    // additional signal "the run technically succeeded but its
+    // memory was degraded" is captured at the AgentRun level via the
+    // SUCCEEDED_NO_MEMORY status (see status reconciliation below).
+    let memoryDegraded = ctx.memoryDegraded === true;
     const memoryWritesFn = await resolveMemoryWrites(run.workerKind);
     if (memoryWritesFn) {
       const writes = await memoryWritesFn(result.output, ctx);
       if (writes && writes.length > 0) {
-        await persistMemoryWrites(run.workspaceId, writes);
+        const writeResult = await persistMemoryWrites(run.workspaceId, writes);
+        if (writeResult.degraded) memoryDegraded = true;
       }
     }
 
+    const finalStatus = memoryDegraded ? "SUCCEEDED_NO_MEMORY" : "SUCCEEDED";
+    const errorMsg = memoryDegraded ? "embedding_unavailable_degraded" : null;
     await prisma.agentRun.update({
       where: { id: runId },
       data: {
-        status: "SUCCEEDED",
+        status: finalStatus,
         finishedAt: new Date(),
         outputJson: result.output as never,
         artifactUrl: result.artifactUrl ?? null,
         costTokens: result.costTokens ?? 0,
         costUsdCents: result.costUsdCents ?? 0,
+        errorMsg,
       },
     });
 
@@ -295,6 +298,8 @@ export async function executeAgentRun(
       kind: run.workerKind,
       tokens: result.costTokens ?? 0,
       cents: result.costUsdCents ?? 0,
+      status: finalStatus,
+      memoryDegraded,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -380,8 +385,8 @@ async function fetchMemoryReads(args: {
   workspaceId: string;
   leadId: string | null;
   specs: MemorySpec[] | undefined;
-}): Promise<MemoryHit[]> {
-  if (!args.specs || args.specs.length === 0) return [];
+}): Promise<{ hits: MemoryHit[]; degraded: boolean }> {
+  if (!args.specs || args.specs.length === 0) return { hits: [], degraded: false };
 
   // M23 - delegate to the memory facade's `findRecentByKindsScoped`
   // helper instead of touching `prisma.semanticMemory.findMany`
@@ -391,34 +396,56 @@ async function fetchMemoryReads(args: {
   const { findRecentByKindsScoped } = await import("@/lib/ai-core/memory");
 
   const hits: MemoryHit[] = [];
+  let degraded = false;
 
   for (const spec of args.specs) {
     if (spec.scope === "lead" && !args.leadId) continue;
 
-    const rows = await findRecentByKindsScoped({
-      workspaceId: args.workspaceId,
-      leadId: spec.scope === "lead" ? args.leadId : null,
-      kinds: spec.kinds,
-      topK: spec.topK ?? 10,
-    });
-
-    for (const r of rows) {
-      hits.push({
-        id: r.id,
-        kind: r.kind,
-        leadId: r.leadId,
-        refType: r.refType,
-        refId: r.refId,
-        text: r.text,
-        metadata: r.metadata,
-        similarity: null,
-        createdAt: r.createdAt,
-        nicheScope: r.nicheScope,
+    // Beta finding §7: pre-fetch is recency-based today (no vector
+    // query) so EmbeddingError can't surface here in the legacy path.
+    // We still wrap defensively because future MemorySpec types may
+    // add a `text` field that triggers an embed call inside the
+    // facade — the planned `nearText` spec is one such future
+    // addition. When that lands the catch will degrade gracefully
+    // rather than failing the whole run.
+    try {
+      const rows = await findRecentByKindsScoped({
+        workspaceId: args.workspaceId,
+        leadId: spec.scope === "lead" ? args.leadId : null,
+        kinds: spec.kinds,
+        topK: spec.topK ?? 10,
       });
+
+      for (const r of rows) {
+        hits.push({
+          id: r.id,
+          kind: r.kind,
+          leadId: r.leadId,
+          refType: r.refType,
+          refId: r.refId,
+          text: r.text,
+          metadata: r.metadata,
+          similarity: null,
+          createdAt: r.createdAt,
+          nicheScope: r.nicheScope,
+        });
+      }
+    } catch (err) {
+      if (err instanceof EmbeddingError) {
+        logger.warn("agent_run.memory_prefetch_embed_failed_degraded", {
+          workspaceId: args.workspaceId,
+          leadId: args.leadId,
+          kinds: spec.kinds,
+          err: err.message,
+        });
+        degraded = true;
+        continue;
+      }
+      throw err;
     }
   }
 
-  return hits;
+  return { hits, degraded };
 }
 
 /**
@@ -437,7 +464,7 @@ async function fetchMemoryReads(args: {
 async function persistMemoryWrites(
   workspaceId: string,
   writes: MemoryWrite[],
-): Promise<void> {
+): Promise<{ degraded: boolean }> {
   const {
     upsertAndEmbed,
     upsert,
@@ -445,6 +472,7 @@ async function persistMemoryWrites(
     upsertAndEmbedWithNicheScopes,
   } = await import("@/lib/ai-core/memory");
   const { EmbeddingError } = await import("@/lib/ai-core/embed");
+  let degraded = false;
   for (const w of writes) {
     const args = {
       workspaceId,
@@ -512,11 +540,13 @@ async function persistMemoryWrites(
         } else {
           await upsert(args);
         }
+        degraded = true;
         continue;
       }
       throw err;
     }
   }
+  return { degraded };
 }
 
 /**
@@ -626,7 +656,7 @@ async function hydrateContext(run: AgentRun): Promise<AgentWorkerContext> {
   }
 
   const workerMeta = getWorker(run.workerKind);
-  const memory: MemoryHit[] = await fetchMemoryReads({
+  const { hits: memory, degraded: memoryDegraded } = await fetchMemoryReads({
     workspaceId: run.workspaceId,
     leadId: run.leadId,
     specs: workerMeta?.memoryReads,
@@ -654,6 +684,13 @@ async function hydrateContext(run: AgentRun): Promise<AgentWorkerContext> {
     lead,
     workspace,
     memory,
+    // Beta finding §7: signals to the executor that the pre-fetch
+    // returned partial / no hits because the embedding endpoint was
+    // down. The worker's primary path runs unchanged (it can use
+    // whatever memory we did manage to fetch); the executor reads
+    // this flag to flip the AgentRun status to SUCCEEDED_NO_MEMORY
+    // when the run completes.
+    memoryDegraded,
     plannerSessionId: run.plannerSessionId,
     emit,
     runInputs:
@@ -726,18 +763,20 @@ export async function finalizeApifyAgentRun(
     const ctx = await hydrateContext(run);
     const result = await finalize(ctx, payload);
 
+    let memoryDegraded = ctx.memoryDegraded === true;
     const memoryWritesFn = await resolveMemoryWrites(run.workerKind);
     if (memoryWritesFn) {
       const writes = await memoryWritesFn(result.output, ctx);
       if (writes && writes.length > 0) {
-        await persistMemoryWrites(run.workspaceId, writes);
+        const writeResult = await persistMemoryWrites(run.workspaceId, writes);
+        if (writeResult.degraded) memoryDegraded = true;
       }
     }
 
     await prisma.agentRun.update({
       where: { id: runId },
       data: {
-        status: "SUCCEEDED",
+        status: memoryDegraded ? "SUCCEEDED_NO_MEMORY" : "SUCCEEDED",
         finishedAt: new Date(),
         outputJson: result.output as never,
         artifactUrl: result.artifactUrl ?? null,
@@ -747,6 +786,7 @@ export async function finalizeApifyAgentRun(
         // sourced directly from `usageTotalUsd` and is the source of
         // truth for billing.
         costUsdCents: payload.costUsdCents || result.costUsdCents || 0,
+        errorMsg: memoryDegraded ? "embedding_unavailable_degraded" : null,
       },
     });
 

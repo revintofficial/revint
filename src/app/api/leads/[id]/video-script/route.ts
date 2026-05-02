@@ -88,8 +88,11 @@ export async function POST(
       .replaceAll("{workspace_tone}", ws.tone || "friendly")
       .replaceAll("{workspace_language}", ws.language || "en");
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    const { getGeminiKey } = await import("@/lib/gemini-keys");
+    let apiKey: string;
+    try {
+      apiKey = getGeminiKey();
+    } catch {
       return NextResponse.json({ error: "GEMINI_API_KEY not set" }, { status: 503 });
     }
     const client = new GoogleGenerativeAI(apiKey);

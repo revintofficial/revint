@@ -217,9 +217,9 @@ export function DeepResearchProgressPanel({ leadId }: Props) {
     <Card
       className={
         session.status === "FAILED"
-          ? "border-red-500/30 bg-red-500/5"
+          ? "border-[color-mix(in_oklab,var(--leadac-error)_30%,transparent)] bg-[color-mix(in_oklab,var(--leadac-error)_5%,transparent)]"
           : session.status === "COMPLETED"
-            ? "border-emerald-500/25 bg-emerald-500/5"
+            ? "border-[color-mix(in_oklab,var(--leadac-success)_25%,transparent)] bg-[color-mix(in_oklab,var(--leadac-success)_5%,transparent)]"
             : "border-(--leadac-500)/30 bg-(--leadac-500)/5"
       }
     >
@@ -228,9 +228,9 @@ export function DeepResearchProgressPanel({ leadId }: Props) {
           <div className="min-w-0 flex-1">
             <CardTitle className="text-[15px] flex items-center gap-2">
               {session.status === "FAILED" ? (
-                <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <XCircle className="w-4 h-4 text-[var(--leadac-error)] shrink-0" />
               ) : session.status === "COMPLETED" ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-[var(--leadac-success)] shrink-0" />
               ) : (
                 <Search className="w-4 h-4 text-(--leadac-500) shrink-0 animate-pulse" />
               )}
@@ -281,9 +281,9 @@ export function DeepResearchProgressPanel({ leadId }: Props) {
           <div
             className={`h-full transition-all duration-500 ${
               session.status === "FAILED"
-                ? "bg-red-400"
+                ? "bg-[var(--leadac-error)]"
                 : session.status === "COMPLETED"
-                  ? "bg-emerald-400"
+                  ? "bg-[var(--leadac-success)]"
                   : "bg-(--leadac-500)"
             }`}
             style={{ width: `${pct}%` }}
@@ -298,13 +298,27 @@ export function DeepResearchProgressPanel({ leadId }: Props) {
           ))}
 
           {session.status === "FAILED" && session.errorMsg && (
-            <div className="mt-3 rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-[12px] text-red-200/85">
+            <div
+              className="mt-3 rounded-md border px-3 py-2 text-[12px]"
+              style={{
+                background: "color-mix(in oklab, var(--leadac-error) 10%, transparent)",
+                borderColor: "color-mix(in oklab, var(--leadac-error) 20%, transparent)",
+                color: "var(--leadac-error-soft)",
+              }}
+            >
               {session.errorMsg}
             </div>
           )}
 
           {session.status === "COMPLETED" && (
-            <div className="mt-3 rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-[12px] text-emerald-200/85 flex items-center gap-2">
+            <div
+              className="mt-3 rounded-md border px-3 py-2 text-[12px] flex items-center gap-2"
+              style={{
+                background: "color-mix(in oklab, var(--leadac-success) 5%, transparent)",
+                borderColor: "color-mix(in oklab, var(--leadac-success) 20%, transparent)",
+                color: "var(--leadac-success-soft)",
+              }}
+            >
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
               Reviews, dossier, and score have been refreshed with the new evidence.
             </div>
@@ -332,7 +346,7 @@ function DeepStepRow({ step }: { step: PlanStep }) {
         </Badge>
       )}
       {step.status === "FAILED" && (
-        <Badge variant="outline" className="text-[10px] h-4 px-1 border-red-500/30 text-red-300/85">
+        <Badge variant="destructive" className="text-[10px] h-4 px-1">
           failed
         </Badge>
       )}
@@ -363,13 +377,13 @@ function stepIcon(status: StepStatus) {
 function stepColor(status: StepStatus): string {
   switch (status) {
     case "SUCCEEDED":
-      return "text-emerald-400";
+      return "text-[var(--leadac-success)]";
     case "FAILED":
-      return "text-red-400";
+      return "text-[var(--leadac-error)]";
     case "RUNNING":
       return "text-(--leadac-500)";
     case "SKIPPED":
-      return "text-amber-400/70";
+      return "text-[var(--leadac-warning-soft)]";
     default:
       return "text-white/30";
   }

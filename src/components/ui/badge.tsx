@@ -24,23 +24,27 @@ const badgeVariants = cva(
   }
 );
 
+// All tints are the same shape: 14% fill + 25% border + high-contrast
+// soft text variant. `default` uses the darker --leadac-700 so white
+// text on warm ochre stays AA-contrast compliant (the old 500 swatch
+// hit ~2.8:1 which failed WCAG AA).
 const variantBgStyles: Record<string, React.CSSProperties> = {
-  default: { backgroundColor: "var(--leadac-500)", color: "#fff" },
+  default: { backgroundColor: "var(--leadac-700)", color: "#fff" },
   secondary: { backgroundColor: "var(--leadac-hover)", color: "var(--leadac-text-1)" },
   destructive: {
-    backgroundColor: "hsl(4 62% 54% / 0.14)",
-    color: "hsl(4 42% 72%)",
-    borderColor: "hsl(4 62% 54% / 0.25)",
+    backgroundColor: "color-mix(in oklab, var(--leadac-error) 14%, transparent)",
+    color: "var(--leadac-error-soft)",
+    borderColor: "color-mix(in oklab, var(--leadac-error) 25%, transparent)",
   },
   success: {
-    backgroundColor: "hsl(152 48% 50% / 0.14)",
-    color: "hsl(152 28% 70%)",
-    borderColor: "hsl(152 48% 50% / 0.25)",
+    backgroundColor: "color-mix(in oklab, var(--leadac-success) 14%, transparent)",
+    color: "var(--leadac-success-soft)",
+    borderColor: "color-mix(in oklab, var(--leadac-success) 25%, transparent)",
   },
   warning: {
-    backgroundColor: "hsl(38 70% 52% / 0.14)",
-    color: "hsl(38 50% 72%)",
-    borderColor: "hsl(38 70% 52% / 0.25)",
+    backgroundColor: "color-mix(in oklab, var(--leadac-warning) 14%, transparent)",
+    color: "var(--leadac-warning-soft)",
+    borderColor: "color-mix(in oklab, var(--leadac-warning) 25%, transparent)",
   },
   outline: { borderColor: "var(--leadac-border)" },
 };

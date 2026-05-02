@@ -25,13 +25,29 @@ import {
   RefreshCw,
   Star,
   Download,
+  AlertTriangle,
 } from "lucide-react";
 
 interface KpiBar {
   label: string;
+  /**
+   * Distinct review count behind this KPI. Beta finding §2: required
+   * so we can render "3 of 12 reviews" alongside the percentage. Older
+   * ReviewAnalysis rows (pre-stabilization) may not have it; the panel
+   * falls back to inferring from `examples.length` in that case.
+   */
+  count?: number;
   percent: number;
   examples: string[];
 }
+
+/**
+ * Beta finding §3: when fewer than this many reviews were analyzed,
+ * percentages on KPI bars are statistically meaningless. The panel
+ * shows a red disclaimer and offers the "fetch more reviews via Apify"
+ * button as the primary CTA in that regime.
+ */
+const LOW_SAMPLE_THRESHOLD = 10;
 
 interface SwitchSignal {
   from: string;
@@ -253,7 +269,14 @@ export function ReviewIntelligencePanel({
         </CardHeader>
         <CardContent className="space-y-3">
           {showDeepReviewsBanner && (
-            <div className="flex items-center justify-between rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-300/90">
+            <div
+              className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs"
+              style={{
+                background: "color-mix(in oklab, var(--leadac-warning) 10%, transparent)",
+                borderColor: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
+                color: "var(--leadac-warning-soft)",
+              }}
+            >
               <span>
                 {storedReviewCount} reviews saved — add up to {APIFY_EXTRA_REVIEWS} more from Google Maps via
                 Apify
@@ -261,7 +284,11 @@ export function ReviewIntelligencePanel({
               <Button
                 size="sm"
                 variant="outline"
-                className="ml-3 h-6 px-2 text-[11px] border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+                className="ml-3 h-6 px-2 text-[11px]"
+                style={{
+                  borderColor: "color-mix(in oklab, var(--leadac-warning) 30%, transparent)",
+                  color: "var(--leadac-warning-soft)",
+                }}
                 onClick={runDeepReviews}
                 disabled={fetchingDeep}
               >
@@ -301,7 +328,11 @@ export function ReviewIntelligencePanel({
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2 text-[11px] border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+              className="h-7 px-2 text-[11px]"
+              style={{
+                borderColor: "color-mix(in oklab, var(--leadac-warning) 30%, transparent)",
+                color: "var(--leadac-warning-soft)",
+              }}
               onClick={runDeepReviews}
               disabled={fetchingDeep}
             >
@@ -316,6 +347,33 @@ export function ReviewIntelligencePanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
+        {analysis.reviewsAnalyzedCount > 0 &&
+          analysis.reviewsAnalyzedCount < LOW_SAMPLE_THRESHOLD && (
+            <div
+              className="flex items-start gap-2 rounded-lg border px-3 py-2 text-xs"
+              style={{
+                background: "color-mix(in oklab, var(--leadac-error) 10%, transparent)",
+                borderColor: "color-mix(in oklab, var(--leadac-error) 30%, transparent)",
+                color: "var(--leadac-error-soft)",
+              }}
+            >
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-px" />
+              <div>
+                <p className="font-medium">
+                  Low sample size — {analysis.reviewsAnalyzedCount} reviews
+                </p>
+                <p
+                  className="text-[11px] mt-0.5 leading-relaxed"
+                  style={{ color: "color-mix(in oklab, var(--leadac-error-soft) 85%, transparent)" }}
+                >
+                  Percentages below are derived from a tiny pool and can be
+                  misleading. Pull more reviews via Apify before relying on
+                  these KPIs for outreach.
+                </p>
+              </div>
+            </div>
+          )}
+
         {analysis.summary && (
           <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-sm text-white/70 leading-relaxed">
             {analysis.summary}
@@ -338,31 +396,65 @@ export function ReviewIntelligencePanel({
 
         <SentimentBar breakdown={analysis.sentimentBreakdown} />
 
-        {analysis.weaknessKpis.length > 0 && (
-          <div>
-            <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <TrendingDown className="w-3.5 h-3.5 text-[hsl(4_62%_54%)]" /> What customers complain about
-            </p>
-            <div className="space-y-2">
-              {analysis.weaknessKpis.map((k) => (
-                <KpiBarRow key={k.label} kpi={k} variant="weakness" />
-              ))}
-            </div>
-          </div>
-        )}
+        {(() => {
+          // Beta finding §2: derive negative/positive pool sizes for
+          // tooltip context. We only know the sentiment shares, not the
+          // raw counts, so back out the pool from
+          // `reviewsAnalyzedCount × sentiment.{negative|positive}`.
+          // Rounded to the nearest integer; the tooltip caveats this
+          // already by showing the raw KPI count alongside.
+          const negativePool = Math.round(
+            (analysis.sentimentBreakdown?.negative ?? 0) *
+              analysis.reviewsAnalyzedCount,
+          );
+          const positivePool = Math.round(
+            (analysis.sentimentBreakdown?.positive ?? 0) *
+              analysis.reviewsAnalyzedCount,
+          );
+          return (
+            <>
+              {analysis.weaknessKpis.length > 0 && (
+                <div>
+                  <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
+                    <TrendingDown className="w-3.5 h-3.5 text-[var(--leadac-error)]" />{" "}
+                    What customers complain about
+                  </p>
+                  <div className="space-y-2">
+                    {analysis.weaknessKpis.map((k) => (
+                      <KpiBarRow
+                        key={k.label}
+                        kpi={k}
+                        variant="weakness"
+                        poolCount={negativePool}
+                        poolLabel="negative reviews"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-        {analysis.strengthKpis.length > 0 && (
-          <div>
-            <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-[hsl(152_48%_50%)]" /> What customers praise
-            </p>
-            <div className="space-y-2">
-              {analysis.strengthKpis.map((k) => (
-                <KpiBarRow key={k.label} kpi={k} variant="strength" />
-              ))}
-            </div>
-          </div>
-        )}
+              {analysis.strengthKpis.length > 0 && (
+                <div>
+                  <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
+                    <TrendingUp className="w-3.5 h-3.5 text-[var(--leadac-success)]" />{" "}
+                    What customers praise
+                  </p>
+                  <div className="space-y-2">
+                    {analysis.strengthKpis.map((k) => (
+                      <KpiBarRow
+                        key={k.label}
+                        kpi={k}
+                        variant="strength"
+                        poolCount={positivePool}
+                        poolLabel="positive reviews"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {analysis.switchSignals.length > 0 && (
           <div>
@@ -401,7 +493,7 @@ export function ReviewIntelligencePanel({
         {analysis.strengthPhrases.length > 0 && (
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <Star className="w-3.5 h-3.5 text-[hsl(38_70%_52%)]" /> Most common praise
+              <Star className="w-3.5 h-3.5 text-[var(--leadac-warning)]" /> Most common praise
             </p>
             <div className="flex flex-wrap gap-1.5">
               {analysis.strengthPhrases.map((p) => (
@@ -417,15 +509,44 @@ export function ReviewIntelligencePanel({
   );
 }
 
-function KpiBarRow({ kpi, variant }: { kpi: KpiBar; variant: "weakness" | "strength" }) {
-  const color = variant === "weakness" ? "hsl(4 62% 54%)" : "hsl(152 48% 50%)";
-  const bg = variant === "weakness" ? "hsl(4 62% 54% / 0.12)" : "hsl(152 48% 50% / 0.12)";
+function KpiBarRow({
+  kpi,
+  variant,
+  poolCount,
+  poolLabel,
+}: {
+  kpi: KpiBar;
+  variant: "weakness" | "strength";
+  /**
+   * Beta finding §2: total negative pool (for weakness) or positive
+   * pool (for strength) used to compute the percent. Surfaced in the
+   * tooltip so the rep can see "3 of 12 negative reviews" instead of
+   * just "25%". Optional — older ReviewAnalysis rows pass undefined
+   * and the tooltip falls back to "out of N reviews analysed".
+   */
+  poolCount?: number;
+  poolLabel?: string;
+}) {
+  const color = variant === "weakness" ? "var(--leadac-error)" : "var(--leadac-success)";
+  const bg =
+    variant === "weakness"
+      ? "color-mix(in oklab, var(--leadac-error) 12%, transparent)"
+      : "color-mix(in oklab, var(--leadac-success) 12%, transparent)";
   const percent = Math.max(0, Math.min(100, kpi.percent));
+  const count = typeof kpi.count === "number" ? kpi.count : undefined;
+  const tooltip =
+    typeof count === "number" && typeof poolCount === "number" && poolCount > 0
+      ? `${kpi.label} — ${count} of ${poolCount} ${poolLabel ?? "reviews"} (${percent}%)`
+      : typeof count === "number"
+        ? `${kpi.label} — ${count} reviews mention this`
+        : `${kpi.label} — ${percent}% of ${poolLabel ?? "reviews"}`;
   return (
-    <div>
+    <div title={tooltip}>
       <div className="flex items-center justify-between text-xs mb-1">
         <span className="text-white/75 font-medium">{kpi.label}</span>
-        <span className="text-white/55 tabular-nums">%{percent}</span>
+        <span className="text-white/55 tabular-nums">
+          {typeof count === "number" ? `${count} · %${percent}` : `%${percent}`}
+        </span>
       </div>
       <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
         <div
@@ -450,9 +571,9 @@ function SentimentBar({ breakdown }: { breakdown: SentimentBreakdown }) {
     <div>
       <p className="text-[13px] font-medium text-white/60 mb-2">Sentiment breakdown</p>
       <div className="flex h-2 rounded-full overflow-hidden bg-white/5">
-        <div className="bg-[hsl(152_48%_50%)]" style={{ width: `${pos}%` }} />
+        <div style={{ width: `${pos}%`, backgroundColor: "var(--leadac-success)" }} />
         <div className="bg-white/30" style={{ width: `${neu}%` }} />
-        <div className="bg-[hsl(4_62%_54%)]" style={{ width: `${neg}%` }} />
+        <div style={{ width: `${neg}%`, backgroundColor: "var(--leadac-error)" }} />
       </div>
       <div className="flex justify-between text-[11px] text-white/45 mt-1.5">
         <span>{pos}% positive</span>

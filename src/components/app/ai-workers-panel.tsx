@@ -81,7 +81,7 @@ type AgentWorkerKind =
   | "CONTAINMENT_RATE_TRACKER";
 
 type Plan = "FREE" | "PRO" | "PRO_TEAM" | "AGENCY";
-type AgentRunStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
+type AgentRunStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "SUCCEEDED_NO_MEMORY" | "FAILED" | "CANCELLED";
 type Group = "intelligence" | "pitch" | "deliverable" | "ops" | "enrichment";
 
 interface WorkerItem {
@@ -207,7 +207,7 @@ export function AiWorkersPanel({ leadId }: Props) {
           });
           if (!res.ok) return;
           const run = await res.json();
-          if (run.status === "SUCCEEDED" || run.status === "FAILED" || run.status === "CANCELLED") {
+          if (run.status === "SUCCEEDED" || run.status === "SUCCEEDED_NO_MEMORY" || run.status === "FAILED" || run.status === "CANCELLED") {
             window.clearInterval(intervalId);
             pollersRef.current.delete(kind);
             setRunningKinds((prev) => {
@@ -243,6 +243,10 @@ export function AiWorkersPanel({ leadId }: Props) {
             });
             if (run.status === "SUCCEEDED") {
               toast.success("Generation complete.");
+            } else if (run.status === "SUCCEEDED_NO_MEMORY") {
+              toast.success(
+                "Generation complete (memory degraded — re-embed pending).",
+              );
             } else if (run.status === "FAILED") {
               toast.error(
                 "Generation failed: " + (run.errorMsg ?? "unknown error"),
@@ -468,7 +472,8 @@ function WorkerRow({
   const name = worker.displayName;
   const desc = worker.description;
   const latest = worker.latestRun;
-  const succeeded = latest?.status === "SUCCEEDED";
+  const succeeded = latest?.status === "SUCCEEDED" || latest?.status === "SUCCEEDED_NO_MEMORY";
+  const succeededDegraded = latest?.status === "SUCCEEDED_NO_MEMORY";
   const failed = latest?.status === "FAILED";
   const pendingStatus = latest?.status === "PENDING" || latest?.status === "RUNNING";
   // A run is considered "stuck" if it's been inflight past 2x its
@@ -511,9 +516,18 @@ function WorkerRow({
                     Soon
                   </Badge>
                 )}
-                {succeeded && (
+                {succeeded && !succeededDegraded && (
                   <Badge variant="success" className="text-[10px] gap-1">
                     <CircleCheck className="w-3 h-3" /> Ready
+                  </Badge>
+                )}
+                {succeededDegraded && (
+                  <Badge
+                    variant="outline"
+                    title="Generation succeeded but semantic memory could not be embedded. Re-running will retry the embed."
+                    className="text-[10px] gap-1 border-[hsl(38_70%_52%)] text-[hsl(38_70%_60%)]"
+                  >
+                    <AlertTriangle className="w-3 h-3" /> Ready (memory degraded)
                   </Badge>
                 )}
                 {failed && (

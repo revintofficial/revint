@@ -82,6 +82,24 @@ export interface NichePack {
    */
   featuredProductModules?: string[];
   /**
+   * Phase 2.4 — Hard NEGATIVE list. Modules listed here MUST NOT be
+   * pitched in this niche's openers, audits, or mockups, even when a
+   * weakly-related signal would otherwise tempt the LLM to mention
+   * them. Beta finding §6 (Pied à Terre): the opener pitched
+   * "online ordering" to a fine-dining restaurant where the entire
+   * value proposition is white-glove service — wrong fit, wasted
+   * outreach. The opener prompt builder injects this list as a
+   * "NEVER mention" constraint; downstream auditors / package
+   * selectors should also consult it before recommending a tier
+   * built around an inapplicable module.
+   *
+   * Free-form labels are matched verbatim against
+   * `featuredProductModules` and the workspace's offer copy. Keep
+   * each entry short (1-5 words) so the model can parse the rule
+   * cleanly.
+   */
+  notApplicableModules?: string[];
+  /**
    * Hints used by the auto-classifier worker to score this child slug
    * against a candidate lead. All fields optional; the classifier blends
    * whatever's available from Google Places + name + price level signals.
@@ -264,8 +282,43 @@ export const NICHES: NichePack[] = [
       "Tip Collection",
       "Feedback Tool",
     ],
+    // Beta finding §6 — Pied à Terre opener pitched "online ordering"
+    // to a Michelin-tier tasting-menu restaurant. Fine dining sells
+    // white-glove service; delivery / takeaway / tablet ordering all
+    // actively cheapen the brand. NEVER pitch these even if the
+    // restaurant's website happens to lack them.
+    notApplicableModules: [
+      "Online ordering / delivery",
+      "Tablet ordering",
+      "QR-only ordering",
+      "Order ahead",
+      "Self-service kiosk",
+      "Loyalty stamps",
+    ],
     classifierHints: {
-      googlePlacesTypes: ["fine_dining_restaurant", "restaurant"],
+      // Beta finding §5 hızlı kazanç (2.3): Google Places now returns
+      // many cuisine-specific subtypes ("french_restaurant",
+      // "italian_restaurant" etc.) that our old type list missed —
+      // Pied a Terre's primaryType comes back as "french_restaurant",
+      // not "fine_dining_restaurant", so it was falling through into
+      // the parent fnb pack with low confidence. Including the
+      // cuisine subtypes here lets the rule-based classifier match
+      // on type alone; the rating + priceLevel + reviewCount guard
+      // in `findNichePackForPrimaryType` separates a casual bistro
+      // from a fine-dining venue when the type is generic.
+      googlePlacesTypes: [
+        "fine_dining_restaurant",
+        "restaurant",
+        "french_restaurant",
+        "italian_restaurant",
+        "japanese_restaurant",
+        "modern_european_restaurant",
+        "scandinavian_restaurant",
+        "spanish_restaurant",
+        "mediterranean_restaurant",
+        "steak_house",
+        "seafood_restaurant",
+      ],
       keywordsInName: ["fine dining", "tasting", "chef's", "michelin", "sommelier"],
       priceLevelRange: [3, 4],
     },
@@ -301,6 +354,13 @@ export const NICHES: NichePack[] = [
       "Tip Collection",
       "Service Requests",
       "In-App Promotions",
+    ],
+    // Bars run on tab/round dynamics — pitching breakfast loyalty,
+    // dinner reservations, or family-friendly menus is wrong-genre.
+    notApplicableModules: [
+      "Reservation widget",
+      "Allergen filter (kids menu)",
+      "Loyalty stamps (morning routine)",
     ],
     classifierHints: {
       googlePlacesTypes: ["bar", "night_club", "pub"],
@@ -340,7 +400,21 @@ export const NICHES: NichePack[] = [
       "Smart Recommendations",
     ],
     classifierHints: {
-      googlePlacesTypes: ["cafe", "bakery", "coffee_shop"],
+      // Beta finding §5: include modern Places cuisine subtypes that
+      // commonly come back for cafés ("brunch_restaurant",
+      // "breakfast_restaurant" — mostly used for café-style daytime
+      // venues), plus tea_house / juice_shop. The priceLevelRange
+      // guard (1-2) prevents a high-end brunch spot from being
+      // mis-bucketed into café when fine-dining is more accurate.
+      googlePlacesTypes: [
+        "cafe",
+        "bakery",
+        "coffee_shop",
+        "brunch_restaurant",
+        "breakfast_restaurant",
+        "tea_house",
+        "juice_shop",
+      ],
       keywordsInName: ["cafe", "café", "coffee", "bakery", "patisserie", "espresso"],
       priceLevelRange: [1, 2],
     },
@@ -375,6 +449,14 @@ export const NICHES: NichePack[] = [
       "Smart Recommendations",
       "Restaurant CRM",
       "In-App Promotions",
+    ],
+    // Delivery-only operations have no dining room — table /
+    // reservation / sommelier modules don't apply.
+    notApplicableModules: [
+      "Table Management",
+      "Online Reservations",
+      "Tip Collection",
+      "Sommelier / wine pairing",
     ],
     classifierHints: {
       keywordsInName: [
@@ -415,6 +497,13 @@ export const NICHES: NichePack[] = [
       "POS Lite",
       "Mobile Menu",
       "In-App Promotions",
+    ],
+    // Mobile / pop-up — no fixed seating, no reservations, no
+    // multi-room concepts. Pitch flexibility, not infrastructure.
+    notApplicableModules: [
+      "Table Management",
+      "Online Reservations",
+      "Multi-branch Management",
     ],
     classifierHints: {
       keywordsInName: ["food truck", "street food", "truck", "cart", "mobile kitchen"],
@@ -537,6 +626,13 @@ export const NICHES: NichePack[] = [
       "Mobile Order Ahead (Delivery & Pickup)",
       "In-App Promotions (combo upsell)",
       "Restaurant CRM (loyalty)",
+    ],
+    // QSR is throughput-led; reservations / sommelier / table
+    // turn-time UI are wrong-genre.
+    notApplicableModules: [
+      "Online Reservations",
+      "Sommelier / wine pairing",
+      "Tasting menu builder",
     ],
     classifierHints: {
       googlePlacesTypes: ["fast_food_restaurant", "meal_takeaway"],
@@ -689,6 +785,48 @@ export function findNichePackForPrimaryType(
 }
 
 /**
+ * Phase 2.3: Fine-dining auto-assign rule.
+ *
+ * Beta finding §5 — Pied à Terre's Google primaryType comes back as
+ * "french_restaurant" with no fine_dining marker, so neither the
+ * type-only matcher nor keyword rules promoted it past low-confidence.
+ * For F&B leads where the rule classifier returned `null` (or our
+ * normal scoring falls below 0.4), we apply a single deterministic
+ * promotion rule:
+ *
+ *   rating ≥ 4.5 AND reviewCount ≥ 200 AND priceLevel ≥ 3
+ *   → fnb-fine-dining at confidence 0.85
+ *
+ * This is intentionally conservative: all three thresholds together
+ * describe a small, expensive, well-reviewed restaurant — exactly
+ * the fine-dining footprint. The 0.85 confidence sits above the
+ * trust gate (0.7) so the opener pitches the fine-dining pack
+ * without needing manual confirmation.
+ *
+ * Returns `null` when the lead doesn't meet the bar; callers should
+ * keep their existing classification (or none) in that case.
+ */
+export function autoAssignFineDining(input: {
+  parentSlug: string | null;
+  rating: number | null | undefined;
+  reviewCount: number | null | undefined;
+  priceLevel: number | null | undefined;
+}): { slug: string; confidence: number; reason: string } | null {
+  if (input.parentSlug !== "fnb") return null;
+  const rating = input.rating ?? 0;
+  const reviewCount = input.reviewCount ?? 0;
+  const priceLevel = input.priceLevel ?? 0;
+  if (rating >= 4.5 && reviewCount >= 200 && priceLevel >= 3) {
+    return {
+      slug: "fnb-fine-dining",
+      confidence: 0.85,
+      reason: `auto-assign fine-dining: rating=${rating}, reviews=${reviewCount}, priceLevel=${priceLevel}`,
+    };
+  }
+  return null;
+}
+
+/**
  * Workspace niche → primary lead niche slug mapping. Discovery uses this
  * to default the picker when the user opens the page; the picker then
  * lets reps drill into a child slug if the niche is hybrid. Workspaces
@@ -826,13 +964,35 @@ export function rankAllChildren(
   lead: ClassifierLeadSignals,
   children: NichePack[],
 ): RuleClassificationResult | null {
-  if (children.length === 0) return null;
+  const ranked = rankAllChildrenAll(lead, children);
+  return ranked[0] ?? null;
+}
+
+/**
+ * Beta finding §5 — full ranked list of every child that scored > 0.
+ * The classifier worker uses this to surface top-3 alternatives so a
+ * hybrid lead (e.g. hotel-bar) carries multiple viable sub-niche tags
+ * downstream rather than collapsing to a single primary. Sorted
+ * descending by confidence; ties retain the order in `children`.
+ *
+ * Returns an empty array when no child scored at all (all rules
+ * missed). The single-best caller (`rankAllChildren`) takes element
+ * 0; `ruleBasedClassify` further applies a 0.5 floor to that single
+ * pick to decide whether to escalate to Gemini.
+ *
+ * Pure / deterministic: same input always returns the same ordering.
+ */
+export function rankAllChildrenAll(
+  lead: ClassifierLeadSignals,
+  children: NichePack[],
+): RuleClassificationResult[] {
+  if (children.length === 0) return [];
 
   const nameLower = (lead.businessName ?? "").toLowerCase();
   const queryLower = (lead.discoverySourceQuery ?? "").toLowerCase();
   const addressLower = (lead.formattedAddress ?? "").toLowerCase();
 
-  let best: RuleClassificationResult | null = null;
+  const results: RuleClassificationResult[] = [];
 
   for (const child of children) {
     const hints = child.classifierHints;
@@ -975,19 +1135,17 @@ export function rankAllChildren(
 
     if (score === 0) continue;
 
-    const result: RuleClassificationResult = {
+    results.push({
       slug: child.slug,
       confidence: Math.min(score, 1),
       reasons,
-    };
-    if (!best || result.confidence > best.confidence) {
-      best = result;
-    }
+    });
   }
 
-  // No floor here — `ruleBasedClassify` applies the 0.5 threshold above
-  // for the "punt to Gemini" decision. `rankAllChildren` callers want
-  // the best guess regardless so they can persist a rule-weak result
-  // when the Gemini fallback is unavailable.
-  return best;
+  // Sort by confidence descending. Stable for equal scores (insertion
+  // order in `children` decides ties), which keeps the "first
+  // declared" pack winning on perfect ties — matters for tests that
+  // assert specific tie-breaking behaviour.
+  results.sort((a, b) => b.confidence - a.confidence);
+  return results;
 }

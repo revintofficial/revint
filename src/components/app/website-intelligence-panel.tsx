@@ -244,7 +244,7 @@ export function WebsiteIntelligencePanel({
         {audit.crawlError === "BOT_BLOCKED_4XX" && (
           <div className="px-4 sm:px-5 pb-4">
             <div className="rounded-xl border border-(--leadac-warning)/30 bg-(--leadac-warning)/10 px-3.5 py-2.5 text-[12.5px] text-(--leadac-text-2) flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-[hsl(38_70%_52%)] mt-0.5 shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-[var(--leadac-warning)] mt-0.5 shrink-0" />
               <span>
                 Site responded with {audit.httpStatus ?? "4xx"} to our crawler.
                 A real visitor can usually still open it — open the URL manually
@@ -384,10 +384,10 @@ function HeroSection({
 
   const scoreColor =
     scorePct >= 70
-      ? "text-[hsl(152_48%_50%)]"
+      ? "text-[var(--leadac-success)]"
       : scorePct >= 40
-      ? "text-[hsl(38_70%_52%)]"
-      : "text-[hsl(4_62%_54%)]";
+      ? "text-[var(--leadac-warning)]"
+      : "text-[var(--leadac-error)]";
 
   const scoreLabel =
     scorePct >= 70
@@ -613,11 +613,11 @@ function KpiTile({
 }) {
   const color =
     accent === "ok"
-      ? "text-[hsl(152_48%_50%)]"
+      ? "text-[var(--leadac-success)]"
       : accent === "warn"
-      ? "text-[hsl(38_70%_52%)]"
+      ? "text-[var(--leadac-warning)]"
       : accent === "bad"
-      ? "text-[hsl(4_62%_54%)]"
+      ? "text-[var(--leadac-error)]"
       : "text-white";
   return (
     <div className="rounded-xl bg-white/4 border border-white/8 p-3 text-center">
@@ -680,31 +680,42 @@ function StatusChip({
 }) {
   return (
     <div
-      className={`flex items-start gap-2 rounded-lg border px-2.5 py-2 transition-colors ${
-        active
-          ? "border-emerald-500/25 bg-emerald-500/6"
-          : "border-white/[0.07] bg-white/2"
-      }`}
+      className="flex items-start gap-2 rounded-lg border px-2.5 py-2 transition-colors"
+      style={{
+        borderColor: active
+          ? "color-mix(in oklab, var(--leadac-success) 25%, transparent)"
+          : "rgba(255,255,255,0.07)",
+        background: active
+          ? "color-mix(in oklab, var(--leadac-success) 6%, transparent)"
+          : "rgba(255,255,255,0.02)",
+      }}
       title={hint}
     >
       <Icon
-        className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
-          active ? "text-emerald-400" : "text-white/30"
-        }`}
+        className="w-3.5 h-3.5 mt-0.5 shrink-0"
+        style={{
+          color: active ? "var(--leadac-success)" : "rgba(255,255,255,0.3)",
+        }}
       />
       <div className="min-w-0">
         <p
-          className={`text-[12px] font-medium leading-tight ${
-            active ? "text-emerald-100/95" : "text-white/55"
-          }`}
+          className="text-[12px] font-medium leading-tight"
+          style={{
+            color: active
+              ? "color-mix(in oklab, var(--leadac-success-soft) 95%, white)"
+              : "rgba(255,255,255,0.55)",
+          }}
         >
           {label}
         </p>
         {hint && (
           <p
-            className={`text-[10.5px] mt-0.5 leading-snug ${
-              active ? "text-emerald-300/70" : "text-white/35"
-            }`}
+            className="text-[10.5px] mt-0.5 leading-snug"
+            style={{
+              color: active
+                ? "color-mix(in oklab, var(--leadac-success-soft) 70%, transparent)"
+                : "rgba(255,255,255,0.35)",
+            }}
           >
             {hint}
           </p>
@@ -951,16 +962,10 @@ function NicheProductFitSection({
           Modules from your <span className="text-white/85 font-medium">{pack.label}</span> offer mapped to this site.
         </p>
         <div className="flex items-center gap-1.5">
-          <Badge
-            variant="outline"
-            className="text-[10px] h-5 px-1.5 border-emerald-500/30 text-emerald-300/90"
-          >
+          <Badge variant="success" className="text-[10px] h-5 px-1.5">
             {detectedCount} present
           </Badge>
-          <Badge
-            variant="outline"
-            className="text-[10px] h-5 px-1.5 border-amber-500/30 text-amber-300/90"
-          >
+          <Badge variant="warning" className="text-[10px] h-5 px-1.5">
             {opportunityCount} to pitch
           </Badge>
         </div>
@@ -1004,29 +1009,33 @@ function NicheProductFitSection({
 }
 
 function ModuleChip({ verdict }: { verdict: ModuleVerdict }) {
-  const styles = {
+  const styles: Record<
+    ModuleVerdict["status"],
+    { border: string; bg: string; iconColor: string; labelColor: string; detailColor: string }
+  > = {
     detected: {
-      border: "border-emerald-500/25",
-      bg: "bg-emerald-500/6",
-      iconColor: "text-emerald-400",
-      labelColor: "text-emerald-100/95",
-      detailColor: "text-emerald-300/70",
+      border: "color-mix(in oklab, var(--leadac-success) 25%, transparent)",
+      bg: "color-mix(in oklab, var(--leadac-success) 6%, transparent)",
+      iconColor: "var(--leadac-success)",
+      labelColor: "color-mix(in oklab, var(--leadac-success-soft) 95%, white)",
+      detailColor: "color-mix(in oklab, var(--leadac-success-soft) 70%, transparent)",
     },
     weak: {
-      border: "border-amber-500/20",
-      bg: "bg-amber-500/5",
-      iconColor: "text-amber-400",
-      labelColor: "text-amber-100/95",
-      detailColor: "text-amber-300/70",
+      border: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
+      bg: "color-mix(in oklab, var(--leadac-warning) 5%, transparent)",
+      iconColor: "var(--leadac-warning)",
+      labelColor: "color-mix(in oklab, var(--leadac-warning-soft) 95%, white)",
+      detailColor: "color-mix(in oklab, var(--leadac-warning-soft) 70%, transparent)",
     },
     opportunity: {
-      border: "border-white/8",
-      bg: "bg-white/2",
-      iconColor: "text-white/35",
-      labelColor: "text-white/85",
-      detailColor: "text-white/45",
+      border: "rgba(255,255,255,0.08)",
+      bg: "rgba(255,255,255,0.02)",
+      iconColor: "rgba(255,255,255,0.35)",
+      labelColor: "rgba(255,255,255,0.85)",
+      detailColor: "rgba(255,255,255,0.45)",
     },
-  }[verdict.status];
+  };
+  const s = styles[verdict.status];
 
   const Icon =
     verdict.status === "detected"
@@ -1037,14 +1046,15 @@ function ModuleChip({ verdict }: { verdict: ModuleVerdict }) {
 
   return (
     <div
-      className={`rounded-lg border ${styles.border} ${styles.bg} px-3 py-2 flex items-start gap-2`}
+      className="rounded-lg border px-3 py-2 flex items-start gap-2"
+      style={{ borderColor: s.border, background: s.bg }}
     >
-      <Icon className={`w-3.5 h-3.5 ${styles.iconColor} mt-0.5 shrink-0`} />
+      <Icon className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: s.iconColor }} />
       <div className="min-w-0">
-        <p className={`text-[12px] font-medium ${styles.labelColor} leading-tight`}>
+        <p className="text-[12px] font-medium leading-tight" style={{ color: s.labelColor }}>
           {verdict.module}
         </p>
-        <p className={`text-[11px] ${styles.detailColor} mt-0.5 leading-snug`}>
+        <p className="text-[11px] mt-0.5 leading-snug" style={{ color: s.detailColor }}>
           {verdict.detail}
         </p>
       </div>
@@ -1166,30 +1176,47 @@ function RestaurantSignalsSection({
     },
   ];
 
+  // Semantic tone helper — collapses a trio of (present | critical | important | else)
+  // onto the leadac success/error/warning tokens so all four UI roles (border,
+  // bg, label, detail, icon) stay in lockstep even if the palette shifts.
+  const toneOf = (s: {
+    present: boolean;
+    priority: "critical" | "important" | "nice_to_have";
+  }) => {
+    if (s.present) return "success" as const;
+    if (s.priority === "critical") return "error" as const;
+    if (s.priority === "important") return "warning" as const;
+    return "neutral" as const;
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
       {signals.map((s) => {
-        const tone = s.present
-          ? "border-emerald-500/25 bg-emerald-500/6"
-          : s.priority === "critical"
-          ? "border-red-500/25 bg-red-500/5"
-          : s.priority === "important"
-          ? "border-amber-500/20 bg-amber-500/4"
-          : "border-white/8 bg-white/2";
-        const labelColor = s.present
-          ? "text-emerald-100/95"
-          : s.priority === "critical"
-          ? "text-red-100/95"
-          : s.priority === "important"
-          ? "text-amber-100/95"
-          : "text-white/80";
-        const detailColor = s.present
-          ? "text-emerald-300/70"
-          : s.priority === "critical"
-          ? "text-red-300/75"
-          : s.priority === "important"
-          ? "text-amber-300/70"
-          : "text-white/45";
+        const t = toneOf(s);
+        const borderBg =
+          t === "success"
+            ? { borderColor: "color-mix(in oklab, var(--leadac-success) 25%, transparent)", background: "color-mix(in oklab, var(--leadac-success) 6%, transparent)" }
+            : t === "error"
+            ? { borderColor: "color-mix(in oklab, var(--leadac-error) 25%, transparent)", background: "color-mix(in oklab, var(--leadac-error) 5%, transparent)" }
+            : t === "warning"
+            ? { borderColor: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)", background: "color-mix(in oklab, var(--leadac-warning) 4%, transparent)" }
+            : { borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" };
+        const labelColor =
+          t === "success"
+            ? "color-mix(in oklab, var(--leadac-success-soft) 95%, white)"
+            : t === "error"
+            ? "color-mix(in oklab, var(--leadac-error-soft) 95%, white)"
+            : t === "warning"
+            ? "color-mix(in oklab, var(--leadac-warning-soft) 95%, white)"
+            : "rgba(255,255,255,0.8)";
+        const detailColor =
+          t === "success"
+            ? "color-mix(in oklab, var(--leadac-success-soft) 70%, transparent)"
+            : t === "error"
+            ? "color-mix(in oklab, var(--leadac-error-soft) 75%, transparent)"
+            : t === "warning"
+            ? "color-mix(in oklab, var(--leadac-warning-soft) 70%, transparent)"
+            : "rgba(255,255,255,0.45)";
         const Icon = s.present
           ? CircleCheck
           : s.priority === "critical"
@@ -1197,24 +1224,26 @@ function RestaurantSignalsSection({
           : s.priority === "important"
           ? AlertTriangle
           : Info;
-        const iconColor = s.present
-          ? "text-emerald-400"
-          : s.priority === "critical"
-          ? "text-red-400"
-          : s.priority === "important"
-          ? "text-amber-400"
-          : "text-white/30";
+        const iconColor =
+          t === "success"
+            ? "var(--leadac-success)"
+            : t === "error"
+            ? "var(--leadac-error)"
+            : t === "warning"
+            ? "var(--leadac-warning)"
+            : "rgba(255,255,255,0.3)";
         return (
           <div
             key={s.label}
-            className={`rounded-lg border ${tone} px-3 py-2.5 flex items-start gap-2`}
+            className="rounded-lg border px-3 py-2.5 flex items-start gap-2"
+            style={borderBg}
           >
-            <Icon className={`w-4 h-4 ${iconColor} mt-0.5 shrink-0`} />
+            <Icon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: iconColor }} />
             <div className="min-w-0">
-              <p className={`text-[12.5px] font-medium ${labelColor} leading-tight`}>
+              <p className="text-[12.5px] font-medium leading-tight" style={{ color: labelColor }}>
                 {s.label}
               </p>
-              <p className={`text-[11px] ${detailColor} mt-0.5 leading-snug`}>
+              <p className="text-[11px] mt-0.5 leading-snug" style={{ color: detailColor }}>
                 {s.detail}
               </p>
             </div>
@@ -1343,10 +1372,10 @@ function PerformanceSection({ audit }: { audit: WebsiteAudit }) {
     loadMs == null
       ? "text-white/60"
       : loadMs < 1500
-      ? "text-[hsl(152_48%_50%)]"
+      ? "text-[var(--leadac-success)]"
       : loadMs < 3500
-      ? "text-[hsl(38_70%_52%)]"
-      : "text-[hsl(4_62%_54%)]";
+      ? "text-[var(--leadac-warning)]"
+      : "text-[var(--leadac-error)]";
 
   return (
     <div className="space-y-3.5">
@@ -1360,11 +1389,23 @@ function PerformanceSection({ audit }: { audit: WebsiteAudit }) {
           </p>
         </div>
         {typeof audit.brokenLinksCount === "number" && audit.brokenLinksCount > 0 && (
-          <div className="rounded-lg bg-red-500/6 border border-red-500/25 px-3 py-2">
-            <p className="text-[10.5px] uppercase tracking-[0.08em] text-red-300/80">
+          <div
+            className="rounded-lg border px-3 py-2"
+            style={{
+              background: "color-mix(in oklab, var(--leadac-error) 6%, transparent)",
+              borderColor: "color-mix(in oklab, var(--leadac-error) 25%, transparent)",
+            }}
+          >
+            <p
+              className="text-[10.5px] uppercase tracking-[0.08em]"
+              style={{ color: "color-mix(in oklab, var(--leadac-error-soft) 80%, transparent)" }}
+            >
               Broken links
             </p>
-            <p className="text-[15px] font-semibold text-red-300">
+            <p
+              className="text-[15px] font-semibold"
+              style={{ color: "var(--leadac-error-soft)" }}
+            >
               {audit.brokenLinksCount}
             </p>
           </div>
@@ -1380,9 +1421,9 @@ function PerformanceSection({ audit }: { audit: WebsiteAudit }) {
             {audit.performanceHints.map((hint, i) => (
               <li
                 key={i}
-                className="text-[12.5px] text-[hsl(38_70%_62%)] flex items-start gap-1.5 leading-snug"
+                className="text-[12.5px] text-[var(--leadac-warning-soft)] flex items-start gap-1.5 leading-snug"
               >
-                <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[hsl(38_70%_52%)]" />
+                <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--leadac-warning)]" />
                 {hint}
               </li>
             ))}
@@ -1399,9 +1440,9 @@ function PerformanceSection({ audit }: { audit: WebsiteAudit }) {
             {audit.accessibilityIssues.map((issue, i) => (
               <li
                 key={i}
-                className="text-[12.5px] text-[hsl(4_62%_64%)] flex items-start gap-1.5 leading-snug"
+                className="text-[12.5px] text-[var(--leadac-error-soft)] flex items-start gap-1.5 leading-snug"
               >
-                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[hsl(4_62%_54%)]" />
+                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--leadac-error)]" />
                 {issue}
               </li>
             ))}
@@ -1421,20 +1462,20 @@ function ContentCheckSection({ result }: { result: ContentCheckResult }) {
   > = {
     placeholder: {
       label: "Placeholder / empty site",
-      color: "text-[hsl(4_62%_54%)]",
-      bg: "bg-[hsl(4_62%_54%)]/6 border-[hsl(4_62%_54%)]/20",
+      color: "text-[var(--leadac-error)]",
+      bg: "bg-[color-mix(in_oklab,var(--leadac-error)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-error)_20%,transparent)]",
       Icon: CircleX,
     },
     basic: {
       label: "Basic site",
-      color: "text-[hsl(38_70%_52%)]",
-      bg: "bg-[hsl(38_70%_52%)]/6 border-[hsl(38_70%_52%)]/20",
+      color: "text-[var(--leadac-warning)]",
+      bg: "bg-[color-mix(in_oklab,var(--leadac-warning)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-warning)_20%,transparent)]",
       Icon: AlertTriangle,
     },
     developed: {
       label: "Developed site",
-      color: "text-[hsl(152_48%_50%)]",
-      bg: "bg-[hsl(152_48%_50%)]/6 border-[hsl(152_48%_50%)]/20",
+      color: "text-[var(--leadac-success)]",
+      bg: "bg-[color-mix(in_oklab,var(--leadac-success)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-success)_20%,transparent)]",
       Icon: CircleCheck,
     },
     unreachable: {
@@ -1503,10 +1544,10 @@ function ContentCheckSection({ result }: { result: ContentCheckResult }) {
                 <span
                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                     signal.status === "good"
-                      ? "bg-[hsl(152_48%_50%)]"
+                      ? "bg-[var(--leadac-success)]"
                       : signal.status === "warning"
-                      ? "bg-[hsl(38_70%_52%)]"
-                      : "bg-[hsl(4_62%_54%)]"
+                      ? "bg-[var(--leadac-warning)]"
+                      : "bg-[var(--leadac-error)]"
                   }`}
                 />
                 <span className="text-[12.5px] font-medium text-white/80 truncate">
@@ -1617,9 +1658,21 @@ function WebsiteSearchInlineCard({ result }: { result: WebsiteSearchResult }) {
         </div>
         {result.found ? (
           <>
-            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/6 px-3 py-2 flex items-center gap-2">
-              <CircleCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-              <p className="text-[12.5px] text-emerald-100/95">
+            <div
+              className="rounded-lg border px-3 py-2 flex items-center gap-2"
+              style={{
+                borderColor: "color-mix(in oklab, var(--leadac-success) 20%, transparent)",
+                background: "color-mix(in oklab, var(--leadac-success) 6%, transparent)",
+              }}
+            >
+              <CircleCheck
+                className="w-4 h-4 shrink-0"
+                style={{ color: "var(--leadac-success)" }}
+              />
+              <p
+                className="text-[12.5px]"
+                style={{ color: "color-mix(in oklab, var(--leadac-success-soft) 95%, white)" }}
+              >
                 {result.websites.length} website(s) found — first match saved.
               </p>
             </div>

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
+import { getGeminiKey } from "@/lib/gemini-keys";
 import type { GeminiAnalysis, WebsiteFeatures, AuditChecklistResult } from "@/types";
 import { WEBSITE_PLAN_SYSTEM_CONTEXT, WEBSITE_PLAN_TEMPLATE } from "./prompts/website-plan-prompt";
 import { REVIEW_ANALYSIS_PROMPT_TEMPLATE, type ReviewAnalysisOutput } from "./prompts/review-analysis-prompt";
@@ -153,9 +154,10 @@ export interface ReviewIntelligenceContext {
 }
 
 function getClient() {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("GEMINI_API_KEY is not set");
-  return new GoogleGenerativeAI(key);
+  // Pulls a key from the rotation pool. Each call may pick a different
+  // key — on a 403 the cooldown happens at the call-site (or via
+  // `callWithKeyRotation` for code paths that opt into auto-recovery).
+  return new GoogleGenerativeAI(getGeminiKey());
 }
 
 export interface WebsitePlanInput {
@@ -385,19 +387,28 @@ function buildAnalysisPrompt(
   "outside_icp" (workspace has a target_sub_niches filter and this lead is outside it)`
     : `- reason_codes: string[] — e.g. "no_website", "poor_mobile", "no_booking", "no_whatsapp", "weak_seo", "no_https", "slow_site", "no_ecommerce", "high_rating_weak_site", "icp_fit", "outside_icp"`;
 
-  // ServicePackage block. The new lead_created chain is gated on the
-  // workspace having at least one ServicePackage, so the scorer
-  // ALWAYS sees a non-empty list and Gemini is asked for a required
-  // recommended_package_id keyed to the actual rep price card.
-  // Legacy single-shot callers (api/analyze, analyze-worker) that
-  // don't pre-load packages get the old optional shape so they keep
-  // working — they just don't get a package recommendation.
+  // Beta finding §4 — package selection is now DETERMINISTIC.
+  // `selectPackage()` in `agent-workers/package-selector.ts` picks the
+  // tier id from a hand-coded rule (hotel/multi-location -> enterprise,
+  // ≥2 pain points OR >300 reviews -> premium, otherwise base). This
+  // prompt no longer asks Gemini for `recommended_package_id`; we only
+  // ask it to write the prose `recommended_package_reason` that names
+  // the audit / review signal the rep can cite on the discovery call.
+  // The pre-selected tier is injected into the prompt as context so
+  // Gemini knows which tier it's writing the reason for, but the id
+  // CANNOT be overridden from the model output.
+  //
+  // The `isPopular` flag is intentionally NOT shipped to the model:
+  // beta showed Gemini converged on the popular tier ~60% of the time
+  // regardless of fit, which is exactly the anchor bias the
+  // deterministic selector exists to remove. Pricing UI still shows
+  // the badge to humans; the model just no longer sees it.
   const hasPackages = servicePackages.length > 0;
   const packagesMenu = hasPackages
-    ? `\nWorkspace service packages (the actual tiers the rep sells - ALWAYS pick one of these IDs verbatim, do NOT invent a new tier):\n${servicePackages
+    ? `\nWorkspace service packages (rep's actual price card — for context only; the recommended tier is chosen deterministically by the system, do NOT pick a different one):\n${servicePackages
         .map(
           (p, i) =>
-            `${i + 1}. id: "${p.id}" | name: "${p.name}" | price: ${p.priceLabel}${p.isPopular ? " (most popular)" : ""}${
+            `${i + 1}. id: "${p.id}" | name: "${p.name}" | price: ${p.priceLabel}${
               p.features.length
                 ? `\n   features: ${p.features.slice(0, 6).join("; ")}`
                 : ""
@@ -407,8 +418,7 @@ function buildAnalysisPrompt(
     : "";
   const packageFields = hasPackages
     ? `
-- recommended_package_id: string (REQUIRED) — the EXACT id of one of the packages above. Pick the cheapest tier whose features cover this lead's pain points; only step up if the audit shows multi-location, hotel, or enterprise signals that justify the higher tier.
-- recommended_package_reason: string (REQUIRED, 1-2 sentences explaining why this specific tier fits this specific lead — reference an audit signal or pain point so the rep can quote it on the discovery call)`
+- recommended_package_reason: string (REQUIRED, 1-2 sentences) — explain why the lead's audit / review signals fit a particular tier. Name a concrete signal (review count, pain point label, hotel signal, multi-location signal). Do NOT mention "most popular" or speak about which tier is recommended — the system picks the id, you only write the rationale the rep will cite.`
     : "";
 
   return `${industryContext}${offerContext}${salesFocusBlock}${icpFilterBlock}${activeCampaignsBlock}${icpScoringRule}${confidenceCaveat}${packagesMenu}
@@ -696,6 +706,19 @@ export async function generateWebsitePlan(input: WebsitePlanInput): Promise<stri
  * Aggregates up to 50 raw GoogleReview rows into a structured KPI bar
  * analysis (Mapileads-style). Returns weakness/strength bars, sentiment,
  * pain phrases, switch signals, and a 0-100 lead score.
+ *
+ * Beta finding §3 — when the workspace niche is RESTAURANT_TECH the
+ * F&B label whitelist is injected at TWO layers:
+ *   1. Prompt body — `buildReviewAnalysisPrompt({ labelEnum })` adds
+ *      a "labels MUST be exactly one of:" block.
+ *   2. responseSchema — `enum: [...]` on the label string field, so
+ *      the Gemini API physically rejects an off-vocabulary emission.
+ * Two layers because (a) the API enforces the constraint hard but the
+ * prompt instructions help the model converge on the right label
+ * rather than failing closed (i.e. "I don't know which label fits, so
+ * I'll skip the KPI"), and (b) the responseSchema enum is the only
+ * thing standing between Gemini's "Restrictive Policies"-class
+ * inventions and the canonical KPI vocabulary.
  */
 export async function analyzeReviewsWithGemini(input: {
   businessName: string;
@@ -704,10 +727,24 @@ export async function analyzeReviewsWithGemini(input: {
   reviewCount: number | null;
   reviews: { authorName: string; rating: number; text: string | null; relativeTime: string }[];
   ourOffer: string | null;
+  /**
+   * Workspace niche enum value (e.g. "RESTAURANT_TECH"). Used to
+   * decide whether to enforce the F&B label whitelist. Pass null when
+   * the caller doesn't have it (legacy paths) — falls back to the
+   * free-form clustering behaviour.
+   */
+  workspaceNiche?: string | null;
 }): Promise<ReviewAnalysisOutput> {
   if (input.reviews.length === 0) {
     throw new Error("Cannot analyze reviews: no reviews provided");
   }
+
+  const { shouldEnforceFnbLabels, FNB_WEAKNESS_LABELS, FNB_STRENGTH_LABELS } =
+    await import("@/lib/prompts/fnb-review-labels");
+  const enforceFnb = shouldEnforceFnbLabels(input.workspaceNiche ?? null);
+  const labelEnum = enforceFnb
+    ? { weakness: FNB_WEAKNESS_LABELS, strength: FNB_STRENGTH_LABELS }
+    : null;
 
   const client = getClient();
   const model = client.getGenerativeModel({
@@ -730,11 +767,27 @@ export async function analyzeReviewsWithGemini(input: {
             items: {
               type: SchemaType.OBJECT,
               properties: {
-                label: { type: SchemaType.STRING },
+                // Beta finding §3: hard enum constraint for F&B
+                // workspaces. Gemini's structured-output enforcer will
+                // reject any label not in this list, which is what
+                // stops "Restrictive Policies"-class label inventions.
+                // For non-F&B workspaces this stays free-form (no
+                // enum), preserving legacy clustering behaviour until
+                // each vertical lands its own enum. The SDK requires
+                // `format: "enum"` alongside the enum values to switch
+                // the schema into EnumStringSchema mode.
+                label: labelEnum
+                  ? {
+                      type: SchemaType.STRING,
+                      format: "enum",
+                      enum: labelEnum.weakness as unknown as string[],
+                    }
+                  : { type: SchemaType.STRING },
+                count: { type: SchemaType.NUMBER },
                 percent: { type: SchemaType.NUMBER },
                 examples: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
               },
-              required: ["label", "percent", "examples"],
+              required: ["label", "count", "percent", "examples"],
             },
           },
           strengthKpis: {
@@ -742,11 +795,18 @@ export async function analyzeReviewsWithGemini(input: {
             items: {
               type: SchemaType.OBJECT,
               properties: {
-                label: { type: SchemaType.STRING },
+                label: labelEnum
+                  ? {
+                      type: SchemaType.STRING,
+                      format: "enum",
+                      enum: labelEnum.strength as unknown as string[],
+                    }
+                  : { type: SchemaType.STRING },
+                count: { type: SchemaType.NUMBER },
                 percent: { type: SchemaType.NUMBER },
                 examples: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
               },
-              required: ["label", "percent", "examples"],
+              required: ["label", "count", "percent", "examples"],
             },
           },
           sentimentBreakdown: {
@@ -798,7 +858,10 @@ export async function analyzeReviewsWithGemini(input: {
     )
     .join("\n");
 
-  const prompt = REVIEW_ANALYSIS_PROMPT_TEMPLATE
+  const { buildReviewAnalysisPrompt } = await import("@/lib/prompts/review-analysis-prompt");
+  const promptTemplate = buildReviewAnalysisPrompt({ labelEnum });
+
+  const prompt = promptTemplate
     .replace("{business_name}", input.businessName)
     .replace("{address}", input.address)
     .replace("{rating}", input.rating?.toString() ?? "N/A")
@@ -823,8 +886,39 @@ export async function analyzeReviewsWithGemini(input: {
     throw new Error("Gemini returned malformed review analysis");
   }
 
-  parsed.weaknessKpis = (parsed.weaknessKpis || []).slice(0, 5);
-  parsed.strengthKpis = (parsed.strengthKpis || []).slice(0, 5);
+  // Beta finding §2: backfill `count` for older Gemini responses that
+  // omitted it (the model returns the field most of the time, but a
+  // partial response under tight token budgets occasionally drops it).
+  // We coerce missing/non-number counts to `examples.length` so the
+  // post-process filter in review-analyst.ts always has a real
+  // integer to threshold on.
+  const coerceKpi = (k: { label?: unknown; count?: unknown; percent?: unknown; examples?: unknown }) => ({
+    label: typeof k.label === "string" ? k.label : "",
+    count:
+      typeof k.count === "number" && Number.isFinite(k.count)
+        ? Math.max(0, Math.round(k.count))
+        : Array.isArray(k.examples)
+          ? k.examples.length
+          : 0,
+    percent:
+      typeof k.percent === "number" && Number.isFinite(k.percent)
+        ? Math.max(0, Math.min(100, Math.round(k.percent)))
+        : 0,
+    examples: Array.isArray(k.examples)
+      ? k.examples.filter((x): x is string => typeof x === "string")
+      : [],
+  });
+  parsed.weaknessKpis = (parsed.weaknessKpis || []).slice(0, 5).map(coerceKpi);
+  parsed.strengthKpis = (parsed.strengthKpis || []).slice(0, 5).map(coerceKpi);
+
+  // Beta finding §3: hard cap on small-sample analyses. The prompt
+  // already asks for at-most 2/3 in this regime, but the model can
+  // ignore that under repetition pressure. Truncate defensively before
+  // the post-process filter so downstream surfaces never see >2/3.
+  if (parsed.reviewsAnalyzedCount < 10) {
+    parsed.weaknessKpis = parsed.weaknessKpis.slice(0, 2);
+    parsed.strengthKpis = parsed.strengthKpis.slice(0, 3);
+  }
   parsed.painPhrases = (parsed.painPhrases || []).slice(0, 5);
   parsed.strengthPhrases = (parsed.strengthPhrases || []).slice(0, 5);
   parsed.switchSignals = (parsed.switchSignals || []).slice(0, 3);

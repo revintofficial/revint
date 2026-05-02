@@ -25,7 +25,42 @@ const FIELD_MASK = [
   "places.businessStatus",
   "places.primaryType",
   "places.primaryTypeDisplayName",
+  // Beta finding §5: priceLevel is needed by the sub-niche classifier
+  // (priceLevelRange weight) and the fine-dining auto-assign rule.
+  // Returned as enum string ("PRICE_LEVEL_EXPENSIVE" etc.); the worker
+  // normalizes it to 0..4 before persisting to Lead.priceLevel.
+  "places.priceLevel",
 ].join(",");
+
+/**
+ * Normalize Google Places v1 priceLevel enum to a 0..4 integer.
+ * Returns `null` for "PRICE_LEVEL_UNSPECIFIED" / unknown / absent so
+ * downstream code can distinguish "no data" from "free".
+ *
+ * Mapping:
+ *   PRICE_LEVEL_FREE           -> 0
+ *   PRICE_LEVEL_INEXPENSIVE    -> 1
+ *   PRICE_LEVEL_MODERATE       -> 2
+ *   PRICE_LEVEL_EXPENSIVE      -> 3
+ *   PRICE_LEVEL_VERY_EXPENSIVE -> 4
+ */
+export function normalizePriceLevel(value: string | undefined | null): number | null {
+  if (!value) return null;
+  switch (value) {
+    case "PRICE_LEVEL_FREE":
+      return 0;
+    case "PRICE_LEVEL_INEXPENSIVE":
+      return 1;
+    case "PRICE_LEVEL_MODERATE":
+      return 2;
+    case "PRICE_LEVEL_EXPENSIVE":
+      return 3;
+    case "PRICE_LEVEL_VERY_EXPENSIVE":
+      return 4;
+    default:
+      return null;
+  }
+}
 
 function getApiKey(): string {
   const key = process.env.GOOGLE_PLACES_API_KEY;
@@ -131,6 +166,7 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceResult> {
     "businessStatus",
     "primaryType",
     "primaryTypeDisplayName",
+    "priceLevel",
   ].join(",");
 
   const res = await fetchWithTimeout(`${PLACES_API_BASE}/places/${placeId}`, {

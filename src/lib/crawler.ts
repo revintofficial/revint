@@ -1,6 +1,7 @@
 import { chromium, type Browser, type Page } from "playwright";
 import { extractFeatures } from "./extractor";
 import { assertSafeFetchUrl } from "./url-guard";
+import { detectSocialMediaPlatform } from "./audit/social-url-gate";
 import type { CrawlError, SecurityHeadersResult, WebsiteFeatures } from "@/types";
 
 let browserInstance: Browser | null = null;
@@ -77,6 +78,21 @@ export async function crawlWebsite(
   url: string,
   businessType?: string | null,
 ): Promise<WebsiteFeatures> {
+  // Beta finding §1: gate social-media-only URLs BEFORE the SSRF check.
+  // When a lead has no real website, the discovery worker stores the
+  // venue's IG/FB profile in `websiteUrl`. Loading the page through
+  // Playwright then surfaces social-platform chrome to the extractor,
+  // which keyword-matches "book" / "shop" / "menu" inside it and writes
+  // a wildly wrong audit row. The gate returns SOCIAL_MEDIA_ONLY so
+  // the website-auditor adapter can flip `Lead.hasWebsite=false` and
+  // the UI can render a specific "Instagram only — no website" badge
+  // instead of a misleading "no booking" / "no e-commerce" verdict.
+  const socialPlatform = detectSocialMediaPlatform(url);
+  if (socialPlatform) {
+    const result = createUnreachableResult(url, "SOCIAL_MEDIA_ONLY", null, socialPlatform);
+    return result;
+  }
+
   // C2 fix - SSRF guard at the entry. Crawl callers pass URLs that
   // came from Google Places, lead enrichment, or operator input;
   // none are trusted enough to skip a redirect-aware private-address

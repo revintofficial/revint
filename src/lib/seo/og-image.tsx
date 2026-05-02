@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { LEADAC_HUE, LEADAC_SATURATION } from "@/lib/colors";
 
 /**
  * Shared OG image template. Branded, 1200x630, readable at thumbnail size.
@@ -6,10 +7,18 @@ import { ImageResponse } from "next/og";
  * Every opengraph-image.tsx route in the app should compose this helper
  * rather than hand-rolling its own layout. Keeps the social-preview look
  * consistent across the whole site.
+ *
+ * Note: Next's Edge `<ImageResponse>` does not resolve CSS custom
+ * properties, so we pull the numeric hue/saturation straight from
+ * `src/lib/colors.ts` (the JS mirror of --leadac-h / --leadac-s) and
+ * build literal HSL strings at render time.
  */
 
 export const OG_SIZE = { width: 1200, height: 630 } as const;
 export const OG_CONTENT_TYPE = "image/png" as const;
+
+const DEFAULT_ACCENT = `hsl(${LEADAC_HUE} ${LEADAC_SATURATION}% 78%)`;
+const ACCENT_DEEP = `hsl(${LEADAC_HUE} ${LEADAC_SATURATION}% 50%)`;
 
 export type OgTemplateProps = {
   title: string;
@@ -20,7 +29,7 @@ export type OgTemplateProps = {
 };
 
 export function renderOgImage(props: OgTemplateProps) {
-  const { title, eyebrow, subtitle, badge, accent = "hsl(248 62% 78%)" } = props;
+  const { title, eyebrow, subtitle, badge, accent = DEFAULT_ACCENT } = props;
 
   return new ImageResponse(
     (
@@ -74,7 +83,7 @@ export function renderOgImage(props: OgTemplateProps) {
                 width: 40,
                 height: 40,
                 borderRadius: 10,
-                background: `linear-gradient(135deg, ${accent} 0%, hsl(248 62% 50%) 100%)`,
+                background: `linear-gradient(135deg, ${accent} 0%, ${ACCENT_DEEP} 100%)`,
                 display: "flex",
               }}
             />

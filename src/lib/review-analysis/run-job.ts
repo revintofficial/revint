@@ -6,6 +6,10 @@
 import { analyzeReviewsWithGemini } from "@/lib/gemini";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import {
+  filterReviewKpis,
+  normalizeForGrounding,
+} from "@/lib/review-analysis/kpi-filter";
 
 export async function runReviewAnalysisJob(leadId: string): Promise<{
   leadId: string;
@@ -23,7 +27,7 @@ export async function runReviewAnalysisJob(leadId: string): Promise<{
     const lead = await prisma.lead.findUniqueOrThrow({
       where: { id: leadId },
       include: {
-        workspace: { select: { offerName: true, valueProposition: true } },
+        workspace: { select: { offerName: true, valueProposition: true, niche: true } },
         googleReviews: {
           orderBy: { publishTime: "desc" },
           take: 50,
@@ -56,6 +60,43 @@ export async function runReviewAnalysisJob(leadId: string): Promise<{
         relativeTime: r.relativeTime,
       })),
       ourOffer,
+      workspaceNiche: lead.workspace.niche,
+    });
+
+    // Beta finding §2/§3: same KPI post-process filter the AI Core
+    // path applies in `review-analyst.ts`. Centralised in
+    // `kpi-filter.ts` so both code paths produce identical
+    // (count, percent, examples) tuples — including dropping single-
+    // reviewer KPIs and re-deriving percent from the true pool size.
+    const corpusNormalized = lead.googleReviews
+      .map((r) => normalizeForGrounding(r.text ?? ""))
+      .filter(Boolean);
+    const negativePoolCount = lead.googleReviews.filter(
+      (r) => r.rating > 0 && r.rating <= 2,
+    ).length;
+    const positivePoolCount = lead.googleReviews.filter(
+      (r) => r.rating >= 4,
+    ).length;
+    const weaknessFiltered = filterReviewKpis(
+      analysis.weaknessKpis,
+      negativePoolCount,
+      corpusNormalized,
+    );
+    const strengthFiltered = filterReviewKpis(
+      analysis.strengthKpis,
+      positivePoolCount,
+      corpusNormalized,
+    );
+    analysis.weaknessKpis = weaknessFiltered.kpis;
+    analysis.strengthKpis = strengthFiltered.kpis;
+    logger.info("review_analysis.kpi_filter", {
+      leadId,
+      weaknessIn: weaknessFiltered.stats.inCount,
+      weaknessOut: weaknessFiltered.stats.outCount,
+      strengthIn: strengthFiltered.stats.inCount,
+      strengthOut: strengthFiltered.stats.outCount,
+      negativePool: negativePoolCount,
+      positivePool: positivePoolCount,
     });
 
     await prisma.reviewAnalysis.upsert({

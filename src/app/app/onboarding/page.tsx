@@ -557,7 +557,7 @@ export default function OnboardingPage() {
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                   s.number < step
-                    ? "bg-[hsl(152_48%_50%)] text-white"
+                    ? "bg-[var(--leadac-success)] text-white"
                     : s.number === step
                       ? "bg-(--leadac-500) text-white"
                       : "bg-white/10 text-white/30"
@@ -570,7 +570,7 @@ export default function OnboardingPage() {
               {s.number < TOTAL_STEPS && (
                 <div
                   className={`w-6 h-0.5 rounded-full transition-all ${
-                    s.number < step ? "bg-[hsl(152_48%_50%)]" : "bg-white/15"
+                    s.number < step ? "bg-[var(--leadac-success)]" : "bg-white/10"
                   }`}
                   aria-hidden="true"
                 />

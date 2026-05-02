@@ -36,14 +36,14 @@ type EventKind =
   | "user_deep_research"
   | "user_receptionist_with_kb";
 
-type RunStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
+type RunStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "SUCCEEDED_NO_MEMORY" | "FAILED" | "CANCELLED";
 
 interface PlanStep {
   stepId: string;
   workerKind: string;
   dependsOn: string[];
   optional?: boolean;
-  status: "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "SKIPPED";
+  status: "PENDING" | "RUNNING" | "SUCCEEDED" | "SUCCEEDED_NO_MEMORY" | "FAILED" | "SKIPPED";
   runId?: string;
 }
 
@@ -261,6 +261,7 @@ function PlanStepRow({ step }: { step: PlanStep }) {
 function stepIcon(status: PlanStep["status"]) {
   switch (status) {
     case "SUCCEEDED":
+    case "SUCCEEDED_NO_MEMORY":
       return CheckCircle2;
     case "FAILED":
       return XCircle;
@@ -276,14 +277,16 @@ function stepIcon(status: PlanStep["status"]) {
 function stepColor(status: PlanStep["status"]): string {
   switch (status) {
     case "SUCCEEDED":
-      return "text-emerald-500";
+      return "text-[var(--leadac-success)]";
+    case "SUCCEEDED_NO_MEMORY":
+      return "text-[var(--leadac-warning)]";
     case "FAILED":
-      return "text-red-500";
+      return "text-[var(--leadac-error)]";
     case "RUNNING":
-      return "text-blue-500";
+      return "text-(--leadac-400)";
     case "SKIPPED":
-      return "text-amber-500";
+      return "text-[var(--leadac-warning)]";
     default:
-      return "text-muted-foreground";
+      return "text-[var(--leadac-muted)]";
   }
 }

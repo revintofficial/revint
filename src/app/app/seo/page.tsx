@@ -371,7 +371,10 @@ export default async function SeoDashboardPage() {
       {broken && broken.broken.length > 0 ? (
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle className="text-base text-red-300">
+            <CardTitle
+              className="text-base"
+              style={{ color: "var(--leadac-error-soft)" }}
+            >
               Broken links — {broken.broken.length} of {broken.sampled} sampled
             </CardTitle>
           </CardHeader>
@@ -393,7 +396,8 @@ export default async function SeoDashboardPage() {
                         <a
                           href={b.url}
                           rel="nofollow noopener"
-                          className="font-mono text-xs text-red-300 hover:underline"
+                          className="font-mono text-xs hover:underline"
+                          style={{ color: "var(--leadac-error-soft)" }}
                         >
                           {shortenUrl(b.url)}
                         </a>
@@ -453,15 +457,32 @@ function VitalPill({
   tone: "good" | "ni" | "poor" | "unknown";
   label: string;
 }) {
-  const tones: Record<typeof tone, string> = {
-    good: "bg-emerald-500/15 text-emerald-300 border-emerald-400/20",
-    ni: "bg-amber-500/15 text-amber-300 border-amber-400/20",
-    poor: "bg-red-500/15 text-red-300 border-red-400/20",
-    unknown: "bg-white/5 text-white/50 border-white/10",
+  const tones: Record<typeof tone, React.CSSProperties> = {
+    good: {
+      background: "color-mix(in oklab, var(--leadac-success) 15%, transparent)",
+      color: "var(--leadac-success-soft)",
+      borderColor: "color-mix(in oklab, var(--leadac-success) 20%, transparent)",
+    },
+    ni: {
+      background: "color-mix(in oklab, var(--leadac-warning) 15%, transparent)",
+      color: "var(--leadac-warning-soft)",
+      borderColor: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
+    },
+    poor: {
+      background: "color-mix(in oklab, var(--leadac-error) 15%, transparent)",
+      color: "var(--leadac-error-soft)",
+      borderColor: "color-mix(in oklab, var(--leadac-error) 20%, transparent)",
+    },
+    unknown: {
+      background: "rgba(255,255,255,0.05)",
+      color: "rgba(255,255,255,0.5)",
+      borderColor: "rgba(255,255,255,0.1)",
+    },
   };
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${tones[tone]}`}
+      className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium"
+      style={tones[tone]}
     >
       {label}
     </span>
@@ -477,15 +498,15 @@ function OpsRow({
   status: "ready" | "not-configured" | "pending";
   detail: string;
 }) {
-  const dotClass =
+  const dotStyle: React.CSSProperties =
     status === "ready"
-      ? "bg-emerald-400"
+      ? { background: "var(--leadac-success)" }
       : status === "pending"
-        ? "bg-amber-400"
-        : "bg-white/30";
+        ? { background: "var(--leadac-warning)" }
+        : { background: "rgba(255,255,255,0.3)" };
   return (
     <div className="flex items-start gap-3">
-      <span className={`mt-1 h-2 w-2 flex-none rounded-full ${dotClass}`} />
+      <span className="mt-1 h-2 w-2 flex-none rounded-full" style={dotStyle} />
       <div className="flex-1">
         <div className="text-white">{label}</div>
         <div className="text-xs text-white/50">{detail}</div>

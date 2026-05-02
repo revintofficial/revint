@@ -16,7 +16,11 @@ export interface UsageBadgeProps {
 function bar(used: number, limit: number) {
   const pct = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
   const color =
-    pct >= 90 ? "hsl(4 62% 54%)" : pct >= 70 ? "hsl(38 70% 52%)" : "var(--leadac-500)";
+    pct >= 90
+      ? "var(--leadac-error)"
+      : pct >= 70
+      ? "var(--leadac-warning)"
+      : "var(--leadac-500)";
   return { pct, color };
 }
 

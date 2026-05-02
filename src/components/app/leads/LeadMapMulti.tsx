@@ -72,9 +72,9 @@ const DEFAULT_ZOOM = 11;
 
 function pinColor(score: number | null | undefined): string {
   if (score == null) return "hsl(220 8% 70%)";
-  if (score >= 60) return "hsl(152 48% 50%)";
-  if (score >= 35) return "hsl(38 70% 52%)";
-  return "hsl(4 62% 54%)";
+  if (score >= 60) return "var(--leadac-success)";
+  if (score >= 35) return "var(--leadac-warning)";
+  return "var(--leadac-error)";
 }
 
 function buildPinIcon(score: number | null | undefined, isSelected: boolean) {

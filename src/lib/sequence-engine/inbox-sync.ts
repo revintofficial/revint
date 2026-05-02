@@ -43,8 +43,11 @@ const CLASSIFY_SCHEMA: Schema = {
 };
 
 async function classifyReply(subject: string, fromAddress: string): Promise<ClassifyOutput> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  const { getGeminiKey } = await import("@/lib/gemini-keys");
+  let apiKey: string;
+  try {
+    apiKey = getGeminiKey();
+  } catch {
     return { classification: "OTHER", confidence: 0.4, reason: "no_gemini_key" };
   }
 

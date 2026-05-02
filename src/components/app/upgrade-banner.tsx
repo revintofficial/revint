@@ -52,17 +52,27 @@ export function UpgradeBanner({ usage }: UpgradeBannerProps) {
       <div
         className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
         style={{
-          background: isHard ? "hsl(4 62% 54% / 0.08)" : "hsl(38 70% 52% / 0.07)",
-          border: `0.5px solid ${isHard ? "hsl(4 62% 54% / 0.25)" : "hsl(38 70% 52% / 0.2)"}`,
+          background: isHard
+            ? "color-mix(in oklab, var(--leadac-error) 8%, transparent)"
+            : "color-mix(in oklab, var(--leadac-warning) 7%, transparent)",
+          border: `0.5px solid ${
+            isHard
+              ? "color-mix(in oklab, var(--leadac-error) 25%, transparent)"
+              : "color-mix(in oklab, var(--leadac-warning) 20%, transparent)"
+          }`,
         }}
       >
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-          style={{ background: isHard ? "hsl(4 62% 54% / 0.15)" : "hsl(38 70% 52% / 0.15)" }}
+          style={{
+            background: isHard
+              ? "color-mix(in oklab, var(--leadac-error) 15%, transparent)"
+              : "color-mix(in oklab, var(--leadac-warning) 15%, transparent)",
+          }}
         >
           <Sparkles
             className="w-3.5 h-3.5"
-            style={{ color: isHard ? "hsl(4 62% 54%)" : "hsl(38 70% 52%)" }}
+            style={{ color: isHard ? "var(--leadac-error)" : "var(--leadac-warning)" }}
           />
         </div>
         <p className="flex-1 text-[12.5px]" style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.85)" }}>

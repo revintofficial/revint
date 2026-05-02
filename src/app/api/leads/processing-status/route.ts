@@ -132,7 +132,7 @@ export async function GET() {
       prisma.agentRun.count({
         where: {
           workspaceId,
-          status: "SUCCEEDED",
+          status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
           finishedAt: { gte: recentSince },
         },
       }),

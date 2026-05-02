@@ -62,6 +62,13 @@
   --leadac-error:   hsl(4 62% 54%);
   --leadac-info:    var(--leadac-400);
 
+  /* Soft text variants — designed to read as a tinted category label on
+   * dark glass backgrounds (WCAG AA over --leadac-card).
+   * Use these instead of raw hsl() literals in JSX. */
+  --leadac-success-soft: hsl(152 28% 70%);
+  --leadac-warning-soft: hsl(38 50% 72%);
+  --leadac-error-soft:   hsl(4 42% 72%);
+
   --leadac-glow-soft:   0 0 24px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.22);
   --leadac-glow-medium: 0 0 32px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35);
   --leadac-glow-strong: 0 8px 40px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45);

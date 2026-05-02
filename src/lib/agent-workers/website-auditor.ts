@@ -48,6 +48,62 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       bookingProvider?: string | null;
     };
 
+    // Beta finding §1: when the URL is a social profile (Instagram /
+    // Facebook / TikTok / etc.) we treat the lead as having no
+    // first-party website. The audit row records the gate decision and
+    // we flip `hasWebsite=false` on the lead so downstream workers
+    // (mockup, opener, scorer) see it the same way they see a true
+    // NO_WEBSITE lead. Without this flip the lead silently keeps
+    // hasWebsite=true (set when discovery imported the IG link) and
+    // every audit field reads false-but-meaningless ("no booking",
+    // "no e-commerce" — neither has a real-world meaning on an IG
+    // profile page).
+    if (features.crawlError === "SOCIAL_MEDIA_ONLY") {
+      const baseFields = {
+        url: lead.websiteUrl,
+        reachable: false,
+        crawlAttemptedAt: new Date(),
+        crawlError: "SOCIAL_MEDIA_ONLY" as const,
+        httpStatus: null,
+        loadTimeMs: null,
+        https: lead.websiteUrl.startsWith("https"),
+        mobileFriendlyGuess: false,
+        title: null,
+        metaDescription: null,
+        h1: null,
+        hasContactForm: false,
+        hasWhatsappLink: false,
+        hasBookingSystem: false,
+        bookingProvider: null,
+        hasEcommerce: false,
+        servicesDetected: [],
+        navItems: [],
+        ctaLinks: [],
+        brokenLinksCount: 0,
+        structuredDataPresent: false,
+        rawFeaturesJson: JSON.parse(JSON.stringify(features)),
+        contactEmails: [],
+        socialProfiles: {},
+      } as const;
+      await prisma.websiteAudit.upsert({
+        where: { leadId: lead.id },
+        create: { leadId: lead.id, ...baseFields },
+        update: baseFields,
+      });
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { crawlStatus: "NO_WEBSITE", hasWebsite: false },
+      });
+      logger.info("agent_workers.website_auditor.social_only", {
+        leadId: lead.id,
+        url: lead.websiteUrl,
+      });
+      return {
+        output: { skipped: true, reason: "social_media_only", url: lead.websiteUrl },
+        costTokens: 0,
+      };
+    }
+
     const contactEmails = featuresWithExtras.contactEmails ?? [];
     const socialProfiles = featuresWithExtras.socialProfiles ?? {};
 
@@ -66,6 +122,11 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       hasContactForm: features.hasContactForm,
       hasWhatsappLink: features.hasWhatsappLink,
       hasBookingSystem: features.hasBookingSystem,
+      // Beta finding §1: persist the booking provider name (Calendly,
+      // OpenTable, Resy, ...) so the UI can show "Booking via OpenTable"
+      // instead of just "yes/no", and downstream workers can ground
+      // their pitch on a specific provider.
+      bookingProvider: featuresWithExtras.bookingProvider ?? null,
       hasEcommerce: features.hasEcommerce,
       servicesDetected: features.servicesDetected,
       navItems: features.navItems,
@@ -85,7 +146,15 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
 
     await prisma.lead.update({
       where: { id: lead.id },
-      data: { crawlStatus: "CRAWLED" },
+      data: {
+        crawlStatus: "CRAWLED",
+        // Phase 2.6: stamp the audited URL so the post-Apify
+        // re-audit hook (`maybeEnqueueWebsiteReAudit`) knows this
+        // URL has already been crawled and skips on the next
+        // Apify run when no new URL was discovered. Idempotency
+        // guard against a re-audit storm.
+        lastAuditedWebsiteUrl: lead.websiteUrl,
+      },
     });
 
     logger.info("agent_workers.website_auditor.done", {

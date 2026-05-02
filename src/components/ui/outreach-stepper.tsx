@@ -39,7 +39,7 @@ export function OutreachStepper({
                   compact ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-xs"
                 } font-medium ${
                   isCompleted
-                    ? "bg-[hsl(152_48%_50%/0.14)] text-[hsl(152_28%_70%)]"
+                    ? "bg-[color-mix(in_oklab,var(--leadac-success)_14%,transparent)] text-[color-mix(in_oklab,var(--leadac-success)_70%,white)]"
                     : isCurrent
                       ? "bg-(--leadac-500)/15 text-(--leadac-300) ring-2 ring-(--leadac-500)/25"
                       : isNext
@@ -59,7 +59,9 @@ export function OutreachStepper({
               </button>
               {i < STEPS.length - 1 && (
                 <div className={`h-0.5 flex-1 mx-1 rounded-full transition-all ${
-                  isCompleted ? "bg-[hsl(152_48%_50%/0.3)]" : "bg-white/15"
+                  isCompleted
+                    ? "bg-[color-mix(in_oklab,var(--leadac-success)_30%,transparent)]"
+                    : "bg-white/10"
                 }`} />
               )}
             </div>
@@ -71,7 +73,7 @@ export function OutreachStepper({
         <button
           onClick={() => !disabled && onStatusChange("LOST")}
           disabled={disabled}
-          className="flex items-center gap-1 text-xs text-white/30 hover:text-[hsl(4_42%_72%)] transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 text-xs text-white/30 hover:text-[color-mix(in_oklab,var(--leadac-error)_72%,white)] transition-colors disabled:opacity-50"
         >
           <X className="w-3 h-3" />
           Mark as Lost
@@ -81,8 +83,8 @@ export function OutreachStepper({
       {isLost && (
         <div className="flex items-center gap-1.5 text-xs font-medium rounded-full px-3 py-1.5 w-fit"
           style={{
-            color: "hsl(4 42% 72%)",
-            backgroundColor: "hsl(4 62% 54% / 0.14)",
+            color: "color-mix(in oklab, var(--leadac-error) 72%, white)",
+            backgroundColor: "color-mix(in oklab, var(--leadac-error) 14%, transparent)",
           }}
         >
           <X className="w-3.5 h-3.5" />

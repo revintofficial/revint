@@ -109,12 +109,13 @@ export const PIPELINE_STAGE_LABELS: Record<string, string> = {
   LOST: "Lost",
 };
 
-// Per-stage dot color (kept inline so consumers don't need to import a
-// design-token util just to render a 6×6 dot).
+// Per-stage dot color. Derived from the theme tokens so re-skinning the
+// primary hue shifts the mid-pipeline dot too; semantic colors (success /
+// warning / error) come from --leadac-{success,warning,error}.
 export const PIPELINE_STAGE_DOT: Record<string, string> = {
-  NEW: "hsl(220 8% 70%)",
-  REACHED_OUT: "hsl(38 70% 52%)",
-  IN_TALKS: "hsl(248 62% 60%)",
-  WON: "hsl(152 48% 50%)",
-  LOST: "hsl(4 62% 54%)",
+  NEW: "var(--leadac-muted)",
+  REACHED_OUT: "var(--leadac-warning)",
+  IN_TALKS: "var(--leadac-400)",
+  WON: "var(--leadac-success)",
+  LOST: "var(--leadac-error)",
 };

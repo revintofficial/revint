@@ -30,6 +30,7 @@ import {
 } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { getGeminiKey } from "@/lib/gemini-keys";
 import { query as memoryQuery } from "./memory";
 import { embed } from "./embed";
 import type { MemoryHit } from "@/lib/agent-workers/types";
@@ -83,9 +84,7 @@ Rules:
 - If you don't know, say "I don't know".`;
 
 function getClient(): GoogleGenerativeAI {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("GEMINI_API_KEY not set");
-  return new GoogleGenerativeAI(key);
+  return new GoogleGenerativeAI(getGeminiKey());
 }
 
 const TOOLS: Tool[] = [

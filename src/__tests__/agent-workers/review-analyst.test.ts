@@ -150,16 +150,55 @@ beforeEach(() => {
 
 describe("REVIEW_ANALYST - happy path", () => {
   it("returns analysis output and upserts ReviewAnalysis with the right shape", async () => {
-    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(makeLeadRow());
+    // Beta finding §2/§3: the lead row needs enough negative reviews
+    // to support a count≥2 KPI with two grounded examples after the
+    // post-process filter. We seed two real low-rating reviews whose
+    // text matches the KPI examples verbatim, so grounding passes.
+    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(
+      makeLeadRow({
+        googleReviews: [
+          makeReview({
+            rating: 2,
+            text: "had slow response times all day",
+            authorName: "Bob",
+          }),
+          makeReview({
+            rating: 1,
+            text: "slow response times again, never coming back",
+            authorName: "Carol",
+          }),
+          makeReview({
+            rating: 5,
+            text: "amazing friendly techs always",
+            authorName: "Alice",
+          }),
+          makeReview({
+            rating: 5,
+            text: "the friendly techs deserve a raise",
+            authorName: "Dan",
+          }),
+        ],
+      }),
+    );
     analyzeReviewsWithGeminiMock.mockResolvedValue({
-      reviewsAnalyzedCount: 2,
+      reviewsAnalyzedCount: 4,
       weaknessKpis: [
-        { label: "slow_response", percent: 30, examples: ["Slow response"] },
+        {
+          label: "slow_response",
+          count: 2,
+          percent: 30,
+          examples: ["had slow response times", "slow response times again"],
+        },
       ],
       strengthKpis: [
-        { label: "friendly_staff", percent: 60, examples: ["Amazing!"] },
+        {
+          label: "friendly_staff",
+          count: 2,
+          percent: 60,
+          examples: ["amazing friendly techs", "the friendly techs deserve"],
+        },
       ],
-      sentimentBreakdown: { positive: 60, neutral: 20, negative: 20 },
+      sentimentBreakdown: { positive: 0.5, neutral: 0, negative: 0.5 },
       painPhrases: ["slow response times"],
       strengthPhrases: ["friendly techs"],
       switchSignals: [{ from: "Competitor", to: "Acme", reason: "price" }],
@@ -174,15 +213,18 @@ describe("REVIEW_ANALYST - happy path", () => {
 
     const upsertArgs = prismaMock.reviewAnalysis.upsert.mock.calls[0][0];
     expect(upsertArgs.where).toEqual({ leadId: "lead_1" });
-    expect(upsertArgs.create.reviewsAnalyzedCount).toBe(2);
+    expect(upsertArgs.create.reviewsAnalyzedCount).toBe(4);
     expect(upsertArgs.create.leadScore).toBe(72);
     expect(upsertArgs.create.summary).toBe("Mixed but improving");
     expect(Array.isArray(upsertArgs.create.weaknessKpis)).toBe(true);
-    expect(upsertArgs.create.weaknessKpis[0]).toEqual({
+    // Beta finding §2: KPI carries `count`; `percent` is re-derived
+    // from the actual negative pool (here 2 of 2 = 100%) rather than
+    // trusting whatever Gemini returned.
+    expect(upsertArgs.create.weaknessKpis[0]).toMatchObject({
       label: "slow_response",
-      percent: 30,
-      examples: ["Slow response"],
+      count: 2,
     });
+    expect(upsertArgs.create.weaknessKpis[0].examples.length).toBeGreaterThanOrEqual(2);
 
     const out = result.output as {
       leadScore: number;
@@ -194,7 +236,7 @@ describe("REVIEW_ANALYST - happy path", () => {
     expect(out.leadScore).toBe(72);
     expect(out.painPhrases).toEqual(["slow response times"]);
     expect(out.strengthPhrases).toEqual(["friendly techs"]);
-    expect(out.reviewsAnalyzedCount).toBe(2);
+    expect(out.reviewsAnalyzedCount).toBe(4);
   });
 
   it("transitions reviewAnalysisStatus ANALYZING -> ANALYZED on success", async () => {
@@ -218,17 +260,56 @@ describe("REVIEW_ANALYST - happy path", () => {
     expect(statuses).toEqual(["ANALYZING", "ANALYZED"]);
   });
 
-  it("verifies weaknessKpis shape (label, percent, examples) persists exactly", async () => {
-    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(makeLeadRow());
+  it("verifies weaknessKpis shape (label, count, percent, examples) persists exactly", async () => {
+    // Beta finding §2: the post-process filter requires count≥2 AND
+    // ≥2 examples that are grounded in the actual review corpus. Seed
+    // four low-rating reviews (two for wait_times, two for pricing)
+    // whose normalized text contains the KPI example phrases.
+    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(
+      makeLeadRow({
+        googleReviews: [
+          makeReview({
+            rating: 1,
+            text: "wait was awful, took 3 hours total",
+            authorName: "U1",
+          }),
+          makeReview({
+            rating: 2,
+            text: "took 3 hours just to be seated",
+            authorName: "U2",
+          }),
+          makeReview({
+            rating: 2,
+            text: "too expensive for the portion size",
+            authorName: "U3",
+          }),
+          makeReview({
+            rating: 1,
+            text: "way too expensive given the quality",
+            authorName: "U4",
+          }),
+        ],
+      }),
+    );
     const weakness = [
-      { label: "wait_times", percent: 40, examples: ["took 3 hours"] },
-      { label: "pricing", percent: 25, examples: ["too expensive"] },
+      {
+        label: "wait_times",
+        count: 2,
+        percent: 40,
+        examples: ["took 3 hours total", "took 3 hours just to be"],
+      },
+      {
+        label: "pricing",
+        count: 2,
+        percent: 25,
+        examples: ["too expensive for the portion", "too expensive given the quality"],
+      },
     ];
     analyzeReviewsWithGeminiMock.mockResolvedValue({
-      reviewsAnalyzedCount: 2,
+      reviewsAnalyzedCount: 4,
       weaknessKpis: weakness,
       strengthKpis: [],
-      sentimentBreakdown: { positive: 50, neutral: 30, negative: 20 },
+      sentimentBreakdown: { positive: 0, neutral: 0, negative: 1 },
       painPhrases: [],
       strengthPhrases: [],
       switchSignals: [],
@@ -239,14 +320,19 @@ describe("REVIEW_ANALYST - happy path", () => {
     await run(makeCtx());
 
     const upsertArgs = prismaMock.reviewAnalysis.upsert.mock.calls[0][0];
-    expect(upsertArgs.create.weaknessKpis).toEqual(weakness);
+    // Both KPIs survive the filter (count≥2, ≥2 grounded examples).
+    expect(upsertArgs.create.weaknessKpis).toHaveLength(2);
     for (const kpi of upsertArgs.create.weaknessKpis) {
       expect(kpi).toHaveProperty("label");
+      expect(kpi).toHaveProperty("count");
       expect(kpi).toHaveProperty("percent");
       expect(kpi).toHaveProperty("examples");
       expect(typeof kpi.label).toBe("string");
+      expect(typeof kpi.count).toBe("number");
       expect(typeof kpi.percent).toBe("number");
       expect(Array.isArray(kpi.examples)).toBe(true);
+      expect(kpi.count).toBeGreaterThanOrEqual(2);
+      expect(kpi.examples.length).toBeGreaterThanOrEqual(2);
     }
   });
 });
@@ -278,11 +364,23 @@ describe("REVIEW_ANALYST - skip branches", () => {
 });
 
 describe("REVIEW_ANALYST - failure path", () => {
-  it("re-throws Gemini errors and flips reviewAnalysisStatus to FAILED", async () => {
+  it("returns skipped output (not throw) and flips reviewAnalysisStatus to FAILED on Gemini error", async () => {
+    // Bug #5 / beta finding §7: REVIEW_ANALYST is configured as
+    // soft-fail in the orchestrator — it returns a skipped output
+    // rather than rejecting, so the chain proceeds with whatever
+    // earlier workers produced. The lead UI still surfaces
+    // reviewAnalysisStatus=FAILED so the rep knows reviews didn't
+    // analyze. We assert the contract here so any regression to
+    // throwing breaks loud.
     prismaMock.lead.findUniqueOrThrow.mockResolvedValue(makeLeadRow());
     analyzeReviewsWithGeminiMock.mockRejectedValue(new Error("gemini 500"));
 
-    await expect(run(makeCtx())).rejects.toThrow(/gemini 500/);
+    const result = await run(makeCtx());
+
+    const out = result.output as { skipped: boolean; reason: string; errorMsg: string };
+    expect(out.skipped).toBe(true);
+    expect(out.reason).toBe("analysis_failed");
+    expect(out.errorMsg).toMatch(/gemini 500/);
 
     const statuses = prismaMock.lead.update.mock.calls.map(
       (c) => (c[0] as { data: { reviewAnalysisStatus: string } }).data.reviewAnalysisStatus,

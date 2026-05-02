@@ -170,7 +170,10 @@ describe("WEBSITE_AUDITOR - happy path", () => {
 
     const result = await run(makeCtx());
 
-    expect(crawlWebsiteMock).toHaveBeenCalledWith("https://acme.example");
+    // Worker passes lead.primaryType as the optional 2nd arg (undefined
+    // when not set in the fixture) — used downstream by the crawler's
+    // niche-aware feature extractor.
+    expect(crawlWebsiteMock).toHaveBeenCalledWith("https://acme.example", undefined);
     expect(prismaMock.websiteAudit.upsert).toHaveBeenCalledTimes(1);
     const upsertArgs = prismaMock.websiteAudit.upsert.mock.calls[0][0];
     expect(upsertArgs.where).toEqual({ leadId: "lead_1" });
@@ -245,15 +248,25 @@ describe("WEBSITE_AUDITOR - skip branches", () => {
 });
 
 describe("WEBSITE_AUDITOR - failure path", () => {
-  it("re-throws crawler errors after flipping crawlStatus to FAILED", async () => {
+  it("returns skipped output (not throw) and flips crawlStatus to FAILED on crawler error", async () => {
+    // Bug #4 / beta finding §7: the auditor is configured as
+    // soft-fail in the orchestrator. On crawl error it returns a
+    // skipped output rather than rejecting, so the chain proceeds
+    // (the lead still surfaces crawlStatus=FAILED in the UI). We
+    // assert the contract here so any regression to throwing breaks
+    // loud.
     crawlWebsiteMock.mockRejectedValue(new Error("dns failure"));
 
-    await expect(run(makeCtx())).rejects.toThrow(/dns failure/);
+    const result = await run(makeCtx());
+
+    const out = result.output as { skipped: boolean; reason: string; errorMsg: string };
+    expect(out.skipped).toBe(true);
+    expect(out.reason).toBe("crawl_failed");
+    expect(out.errorMsg).toMatch(/dns failure/);
 
     const statuses = prismaMock.lead.update.mock.calls.map(
       (c) => (c[0] as { data: { crawlStatus: string } }).data.crawlStatus,
     );
-    // CRAWLING -> FAILED; no CRAWLED transition.
     expect(statuses).toEqual(["CRAWLING", "FAILED"]);
     expect(prismaMock.websiteAudit.upsert).not.toHaveBeenCalled();
   });

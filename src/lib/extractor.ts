@@ -103,15 +103,96 @@ const NICHE_SERVICE_KEYWORDS: Record<string, string[]> = {
   ],
 };
 
+// Beta finding §1: BOOKING_KEYWORDS used to be substring-matched
+// against the page body, which caused "Facebook" → "book" false
+// positives on social-only leads (Black Eye Coffee, Brewed,
+// Blackheath Cafe). The new policy uses word-boundary regex AND
+// requires multi-signal confirmation: a single keyword inside body
+// text is no longer enough — we need either a recognised provider
+// fingerprint, JSON-LD reservation markup, or a CTA link whose visible
+// text or href anchors the keyword. The keyword list itself stays
+// conservative; "book" alone is too noisy to count regardless of
+// boundary.
 const BOOKING_KEYWORDS = [
-  "book", "appointment", "schedule", "reserve", "booking",
-  "calendly", "acuity", "setmore", "timely",
+  "appointment", "schedule", "reserve", "reservation", "booking",
+  "calendly", "acuity", "setmore", "timely", "opentable", "resy",
 ];
 
 const ECOMMERCE_KEYWORDS = [
   "add to cart", "add to basket", "buy now", "shop now",
-  "checkout", "shopping cart", "shopify", "woocommerce", "price",
+  "checkout", "shopping cart", "shopify", "woocommerce",
 ];
+
+/**
+ * Beta finding §1: word-boundary keyword check. The previous
+ * `bodyText.includes("book")` implementation matched "Facebook",
+ * "notebook", "ebook" and similar substrings on social-only leads,
+ * inflating `hasBookingSystem` false positives. Word-boundary regex
+ * fixes that without adding any new dependency.
+ */
+function hasKeywordToken(text: string, keyword: string): boolean {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\b${escaped}\\b`, "i").test(text);
+}
+
+/**
+ * Returns true when JSON-LD on the page declares a Restaurant /
+ * LocalBusiness with a `potentialAction.type` of `ReserveAction`
+ * (the schema.org marker for online booking systems).
+ *
+ * Schema.org's structured data is the authoritative signal — a real
+ * booking system that publishes JSON-LD is much more reliable than
+ * loose substring matches on body text. Used as one of the multiple
+ * signals required for `hasBookingSystem = true`.
+ */
+// `ReturnType<typeof cheerio.load>` resolves to whichever Cheerio API
+// type the installed cheerio version exposes; using it directly avoids
+// a clash between cheerio@1.x's built-in `CheerioAPI` and the legacy
+// `@types/cheerio@0.22.x` shim (which still ships the old `Root` type).
+type CheerioRoot = ReturnType<typeof cheerio.load>;
+
+function jsonLdDeclaresReservation($: CheerioRoot): boolean {
+  let found = false;
+  $('script[type="application/ld+json"]').each((_, el) => {
+    if (found) return;
+    try {
+      const content = $(el).html();
+      if (!content) return;
+      const parsed: unknown = JSON.parse(content);
+      const visit = (obj: unknown): void => {
+        if (found || !obj) return;
+        if (Array.isArray(obj)) {
+          obj.forEach(visit);
+          return;
+        }
+        if (typeof obj !== "object") return;
+        const o = obj as Record<string, unknown>;
+        const action = o.potentialAction;
+        if (action) {
+          const flat = Array.isArray(action) ? action : [action];
+          for (const a of flat) {
+            if (!a || typeof a !== "object") continue;
+            const t = (a as Record<string, unknown>)["@type"];
+            if (typeof t === "string" && /reserveaction|orderaction/i.test(t)) {
+              found = true;
+              return;
+            }
+            if (Array.isArray(t) && t.some((x) => typeof x === "string" && /reserveaction|orderaction/i.test(x))) {
+              found = true;
+              return;
+            }
+          }
+        }
+        Object.values(o).forEach(visit);
+      };
+      visit(parsed);
+    } catch {
+      // malformed JSON-LD — silently ignore, the rest of the
+      // extractor's structured-data scan will still surface schemaTypes
+    }
+  });
+  return found;
+}
 
 const CSS_FRAMEWORKS: [string, string][] = [
   ["tailwind", "tailwindcss"],
@@ -169,14 +250,36 @@ export function extractFeatures(html: string, url: string, businessType?: string
       l.href.includes("api.whatsapp")
   );
 
-  const hasBookingSystem =
-    allLinks.some((l) =>
-      BOOKING_KEYWORDS.some(
-        (k) =>
-          l.text.toLowerCase().includes(k) ||
-          l.href.toLowerCase().includes(k)
-      )
-    ) || BOOKING_KEYWORDS.some((k) => bodyText.includes(k));
+  // Beta finding §1: multi-signal threshold for booking detection.
+  //
+  // Old behaviour: any substring match anywhere on the page flipped
+  // `hasBookingSystem=true`. That produced wildly wrong audits for
+  // social-only leads (the social URL gate now blocks those at the
+  // crawler level) AND for content sites that just mention the words
+  // "booking" or "reservation" in copy (e.g. "we recommend booking a
+  // hotel via..."). The new check requires either:
+  //   (a) a recognised third-party booking provider fingerprint
+  //       (OpenTable, Resy, Calendly, Setmore, ...) — see
+  //       `detectBookingProvider`, OR
+  //   (b) a CTA link whose visible text or href ANCHORS one of the
+  //       narrow keyword set with word boundaries, OR
+  //   (c) JSON-LD declares a `ReserveAction` / `OrderAction` on the
+  //       business schema.
+  //
+  // Body-text-only matches no longer count — too many false positives
+  // ("we recommend reservations") and the surviving keywords are
+  // already strong enough that their presence in a real booking link
+  // (a) or (b) catches them. We compute (b) on the link text/href
+  // separately so a link like <a href="/reserve">Book now</a> still
+  // counts via the keyword anchor.
+  const ctaSignalsBooking = allLinks.some((l) => {
+    const text = l.text || "";
+    const href = l.href || "";
+    return BOOKING_KEYWORDS.some(
+      (k) => hasKeywordToken(text, k) || hasKeywordToken(href, k),
+    );
+  });
+  const jsonLdReservation = jsonLdDeclaresReservation($);
 
   const hasEcommerce =
     ECOMMERCE_KEYWORDS.some((k) => bodyText.includes(k)) ||
@@ -426,9 +529,15 @@ export function extractFeatures(html: string, url: string, businessType?: string
   // P0.5 - extended social profile scraping (IG, FB, LinkedIn, TikTok, YouTube, Twitter/X, WhatsApp, Pinterest)
   const socialProfiles = extractSocialProfiles({ html, links: linksForDetection });
 
-  // Strengthen the boolean: keyword-based detection misses iframes, provider
-  // detection catches them. If either says yes, we say yes.
-  const hasBookingSystemFinal = hasBookingSystem || bookingProvider !== null;
+  // Beta finding §1: multi-signal final decision. A specific provider
+  // fingerprint is the strongest signal and stands alone. Without one,
+  // we require BOTH the JSON-LD reservation marker AND a CTA link with
+  // a booking keyword — either signal in isolation is too noisy to
+  // trust. See `BOOKING_KEYWORDS`, `jsonLdDeclaresReservation`, and
+  // the audit booking-detection helper for the underlying signals.
+  const hasBookingSystemFinal =
+    bookingProvider !== null ||
+    (jsonLdReservation && ctaSignalsBooking);
 
   return {
     url,

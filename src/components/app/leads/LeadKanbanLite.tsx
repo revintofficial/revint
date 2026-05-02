@@ -53,11 +53,11 @@ import type { LeadListItem } from "@/components/app/leads/useLeadsQuery";
 type Stage = "NEW" | "REACHED_OUT" | "IN_TALKS" | "WON" | "LOST";
 
 const STAGES: { id: Stage; accent: string }[] = [
-  { id: "NEW", accent: "text-white/60" },
-  { id: "REACHED_OUT", accent: "text-(--leadac-500)" },
-  { id: "IN_TALKS", accent: "text-[hsl(248_62%_60%)]" },
-  { id: "WON", accent: "text-[hsl(152_48%_50%)]" },
-  { id: "LOST", accent: "text-[hsl(4_62%_54%)]" },
+  { id: "NEW", accent: "text-[var(--leadac-text-2)]" },
+  { id: "REACHED_OUT", accent: "text-[var(--leadac-warning)]" },
+  { id: "IN_TALKS", accent: "text-(--leadac-400)" },
+  { id: "WON", accent: "text-[var(--leadac-success)]" },
+  { id: "LOST", accent: "text-[var(--leadac-error)]" },
 ];
 
 export interface LeadKanbanLiteProps {

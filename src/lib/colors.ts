@@ -14,9 +14,9 @@
  * them in sync with the matching --leadac-h / --leadac-s / --leadac-ns
  * declarations in `globals.css`).
  *
- *   LEADAC_HUE         → primary hue   (0-360, default 248 = indigo)
- *   LEADAC_SATURATION  → primary sat   (0-100, default 62)
- *   LEADAC_NEUTRAL_SAT → neutral sat   (0-100, default 7 for surfaces)
+ *   LEADAC_HUE         → primary hue   (0-360, current 38 = warm ochre)
+ *   LEADAC_SATURATION  → primary sat   (0-100, current 78)
+ *   LEADAC_NEUTRAL_SAT → neutral sat   (0-100, current 7 for surfaces)
  *
  * Everything else derives from those three numbers.
  */
@@ -74,8 +74,8 @@ export function getFunnelStepColor(stepIndex: number, totalSteps: number): strin
 }
 
 /**
- * Derive a translucent indigo at a given lightness. Useful for halos,
- * focus rings, and category background tints (e.g., status badges).
+ * Derive a translucent primary-accent at a given lightness. Useful for
+ * halos, focus rings, and category background tints (e.g., status badges).
  */
 export function leadacAlpha(lightness: number, alpha: number): string {
   return `hsl(${H} ${S}% ${lightness}% / ${alpha})`;

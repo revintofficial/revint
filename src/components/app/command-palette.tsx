@@ -278,7 +278,13 @@ export function CommandPalette({
 
         <div className="max-h-[420px] overflow-y-auto py-2">
           {leadsError && (
-            <div className="mx-3 mb-2 px-3 py-2 rounded-lg text-[12px]" style={{ background: "hsl(4 62% 54% / 0.12)", color: "hsl(4 42% 72%)" }}>
+            <div
+              className="mx-3 mb-2 px-3 py-2 rounded-lg text-[12px]"
+              style={{
+                background: "color-mix(in oklab, var(--leadac-error) 12%, transparent)",
+                color: "var(--leadac-error-soft)",
+              }}
+            >
               {leadsError}
             </div>
           )}

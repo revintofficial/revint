@@ -156,9 +156,8 @@ export const run: AgentWorkerRun = async (ctx) => {
     ].join("\n");
     prompt = `${prompt}\n${kbBlock}`;
   }
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
-  const client = new GoogleGenerativeAI(apiKey);
+  const { getGeminiKey } = await import("@/lib/gemini-keys");
+  const client = new GoogleGenerativeAI(getGeminiKey());
   const model = client.getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {

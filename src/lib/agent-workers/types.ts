@@ -185,6 +185,16 @@ export interface AgentWorkerContext {
    */
   memory: MemoryHit[];
   /**
+   * Beta finding §7: true when the executor's memory pre-fetch hit an
+   * EmbeddingError on at least one MemorySpec and degraded to an
+   * empty / partial result. The worker proceeds with whatever memory
+   * we managed to fetch (may be empty), and the executor uses this
+   * flag to flip the AgentRun status to SUCCEEDED_NO_MEMORY when the
+   * worker completes its primary work. Workers themselves rarely
+   * branch on this — it's a signal for the executor / observability.
+   */
+  memoryDegraded?: boolean;
+  /**
    * PlannerSession id when this run was scheduled as part of a DAG.
    * Null for legacy one-shot runs. Workers rarely need this; it is
    * primarily a hook for observability.

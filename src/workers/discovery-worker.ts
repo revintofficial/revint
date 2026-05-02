@@ -1,5 +1,9 @@
 import { Worker, type Job } from "bullmq";
-import { discoverLeads, extractBoroughFromAddress } from "../lib/google-places";
+import {
+  discoverLeads,
+  extractBoroughFromAddress,
+  normalizePriceLevel,
+} from "../lib/google-places";
 import { prisma } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { emit } from "../lib/ai-core/events";
@@ -149,6 +153,7 @@ async function processDiscovery(job: Job<DiscoveryJobData>) {
         reviewCount: place.userRatingCount || null,
         businessStatus: place.businessStatus || null,
         primaryType: place.primaryType || null,
+        priceLevel: normalizePriceLevel(place.priceLevel),
         sourceQuery: `${searchQuery} in ${borough.name} London`,
         sourceLat: borough.lat,
         sourceLng: borough.lng,

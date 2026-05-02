@@ -8,6 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CircularProgress } from "@/components/ui/progress";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
@@ -62,7 +69,6 @@ import {
   MessageCircle,
   Clock,
   ClipboardList,
-  X,
 } from "lucide-react";
 
 interface ContentCheckSignal {
@@ -266,7 +272,10 @@ interface LeadDetail {
   reviewAnalysis?: {
     leadScore: number;
     summary: string | null;
-    weaknessKpis: { label: string; percent: number }[];
+    /** Beta finding §2: `count` is the number of distinct reviews
+     * supporting the KPI; required on new rows, optional here for
+     * compatibility with pre-stabilization analyses. */
+    weaknessKpis: { label: string; count?: number; percent: number }[];
   } | null;
   googleReviews?: { id: string }[];
   sourceLat?: number | null;
@@ -947,25 +956,26 @@ function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
       </p>
       <div className="flex flex-wrap gap-2">
         {opp?.recommendedPackage && (
-          <Badge
-            variant="outline"
-            className="text-[11px] font-normal border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
-          >
+          <Badge variant="success" className="text-[11px] font-normal">
             Package: {opp.recommendedPackage.name}
           </Badge>
         )}
         {opp?.suggestedOffer && (
-          <Badge variant="outline" className="text-[11px] font-normal border-white/15 bg-white/5">
+          <Badge variant="outline" className="text-[11px] font-normal border-white/10 bg-white/5">
             Tier: {OFFER_LABELS[opp.suggestedOffer] ?? opp.suggestedOffer}
           </Badge>
         )}
         {ra != null && (
-          <Badge variant="outline" className="text-[11px] font-normal border-white/15 bg-white/5">
-            Review IQ {ra.leadScore}/100
+          <Badge
+            variant="outline"
+            className="text-[11px] font-normal border-white/10 bg-white/5"
+            title="Sub-score from review analysis only. Sales Fit (hero score) is the rolled-up metric."
+          >
+            Review sub-score {ra.leadScore}/100
           </Badge>
         )}
         {slowLabel && (
-          <Badge variant="outline" className="text-[11px] font-normal border-amber-500/30 bg-amber-500/10 text-amber-100">
+          <Badge variant="warning" className="text-[11px] font-normal">
             {slowLabel}
           </Badge>
         )}
@@ -973,7 +983,7 @@ function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
           <Badge
             key={w}
             variant="outline"
-            className="text-[11px] font-normal border-white/12 bg-white/[0.06] text-white/75"
+            className="text-[11px] font-normal border-white/10 bg-white/5 text-white/75"
           >
             {w}
           </Badge>
@@ -1001,21 +1011,35 @@ function HeroBand({
   onPipelineStarted?: () => void;
 }) {
   const opp = lead.salesOpportunity;
-  // Phase 1 — prefer the unified Sales Confidence rollup written by
-  // LEAD_INTELLIGENCE_BRIEF over the raw opportunityScore. Falls back
-  // to opportunityScore for leads enriched before the brief shipped.
+  // Phase 2.7 — `salesConfidence` (written by LEAD_INTELLIGENCE_BRIEF)
+  // is the canonical PRIMARY metric on the lead detail. The raw
+  // `opportunityScore` and `reviewAnalysis.leadScore` are still
+  // available as "Advanced metrics" further down the page (and via
+  // the Review IQ badge in the priority strip), but the hero tile
+  // ALWAYS shows the brief's roll-up when present so reps don't
+  // confuse "Google rating" with "should I call?". Falls back to
+  // opportunityScore only for leads enriched before the brief shipped
+  // (i.e. a workspace whose intelligenceVersion is 0).
   const score = lead.salesConfidence ?? opp?.opportunityScore ?? null;
-  const scoreLabel = lead.salesConfidence != null ? "Sales Confidence" : "Opportunity";
+  const scoreLabel = lead.salesConfidence != null ? "Sales Fit" : "Opportunity";
+  // Tooltip clarifies the most common misread: reps glance at the
+  // 88 next to a 4.6 Google rating and assume the system is just
+  // surfacing the rating. The metric measures sales-fit (audit gaps
+  // + review pain density + opportunity score), not customer love.
+  const scoreHint =
+    lead.salesConfidence != null
+      ? "Sales Fit measures how well this lead matches your offer (audit gaps + review pains + opportunity score). NOT the Google rating."
+      : "Opportunity score from the sales scorer (raw signal — re-run the intelligence brief for the rolled-up Sales Fit metric).";
   const potentialLabel =
     score == null ? null : score >= 60 ? "High Potential" : score >= 35 ? "Medium Potential" : "Low Potential";
   const potentialColor =
     score == null
       ? "text-white/40"
       : score >= 60
-      ? "text-[hsl(152_48%_50%)]"
+      ? "text-[var(--leadac-success)]"
       : score >= 35
-      ? "text-[hsl(38_70%_52%)]"
-      : "text-[hsl(4_62%_54%)]";
+      ? "text-[var(--leadac-warning)]"
+      : "text-[var(--leadac-error)]";
 
   const appleMapsUrl = (() => {
     if (lead.sourceLat == null || lead.sourceLng == null) return null;
@@ -1040,7 +1064,7 @@ function HeroBand({
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at top right, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18), transparent 55%), radial-gradient(ellipse at bottom left, hsl(152 48% 50% / 0.08), transparent 60%)",
+            "radial-gradient(ellipse at top right, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18), transparent 55%), radial-gradient(ellipse at bottom left, color-mix(in oklab, var(--leadac-success) 8%, transparent), transparent 60%)",
         }}
       />
       <div className="relative p-5 sm:p-7 md:p-8">
@@ -1055,8 +1079,8 @@ function HeroBand({
 
             <div className="flex flex-wrap items-center gap-2 mt-4">
               {lead.rating != null && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1 text-[13px] text-white/85">
-                  <Star className="w-3.5 h-3.5 text-[hsl(38_70%_52%)] fill-[hsl(38_70%_52%)]" />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[13px] text-white/85">
+                  <Star className="w-3.5 h-3.5 text-(--leadac-warning) fill-(--leadac-warning)" />
                   {lead.rating.toFixed(1)}
                   {lead.reviewCount != null && (
                     <span className="text-white/50">({lead.reviewCount})</span>
@@ -1076,7 +1100,10 @@ function HeroBand({
 
           <div className="flex items-center gap-5 md:flex-col md:items-end md:gap-2 shrink-0">
             {score != null ? (
-              <div className="flex items-center gap-4 md:flex-col md:items-center md:gap-2">
+              <div
+                className="flex items-center gap-4 md:flex-col md:items-center md:gap-2"
+                title={scoreHint}
+              >
                 <div className="relative">
                   <CircularProgress value={score} size={96} strokeWidth={7} />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -1086,7 +1113,15 @@ function HeroBand({
                   </div>
                 </div>
                 <div className="md:text-center">
-                  <p className="text-[12px] uppercase tracking-[0.06em] text-white/40">{scoreLabel}</p>
+                  <p className="text-[12px] uppercase tracking-[0.06em] text-white/40 inline-flex items-center gap-1">
+                    {scoreLabel}
+                    <span
+                      aria-hidden
+                      className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/20 text-[9px] text-white/50"
+                    >
+                      ?
+                    </span>
+                  </p>
                   <p className={`text-[13px] font-medium ${potentialColor}`}>{potentialLabel}</p>
                 </div>
               </div>
@@ -1261,7 +1296,7 @@ const DIRECTORY_META: Record<
   pinterest: { label: "Pinterest", dot: "#E60023", category: "social" },
   reddit: { label: "Reddit", dot: "#FF4500", category: "social" },
   yell: { label: "Yell", dot: "#FFD100", category: "directory" },
-  bark: { label: "Bark", dot: "hsl(152 48% 50%)", category: "directory" },
+  bark: { label: "Bark", dot: "var(--leadac-success)", category: "directory" },
   checkatrade: { label: "Checkatrade", dot: "#F8A01B", category: "directory" },
   trustatrader: { label: "TrustATrader", dot: "#0083C1", category: "directory" },
   yellowpages: { label: "Yellow Pages", dot: "#FFD100", category: "directory" },
@@ -2612,23 +2647,13 @@ function LogCallModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-6"
-      style={{ background: "rgba(0,0,0,0.55)" }}
-      onClick={() => onOpenChange(false)}
-    >
-      <div
-        className="w-full max-w-md rounded-t-3xl sm:rounded-3xl border border-white/10 bg-[hsl(var(--leadac-h)_var(--leadac-ns)_10%)] p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[16px] font-medium text-white">Log call outcome</h3>
-          <button onClick={() => onOpenChange(false)} className="text-white/50 hover:text-white">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Log call outcome</DialogTitle>
+        </DialogHeader>
 
-        <div className="space-y-2 mb-4">
+        <div className="space-y-2">
           {Object.entries(DISPOSITION_LABELS).map(([value, label]) => (
             <button
               key={value}
@@ -2637,7 +2662,7 @@ function LogCallModal({
               className={
                 disposition === value
                   ? "w-full text-left rounded-xl border border-(--leadac-500)/40 bg-(--leadac-500)/10 px-3 py-2 text-[13px] text-white"
-                  : "w-full text-left rounded-xl border border-white/8 bg-white/3 px-3 py-2 text-[13px] text-white/70 hover:bg-white/6"
+                  : "w-full text-left rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[13px] text-white/70 hover:bg-white/10"
               }
             >
               {label}
@@ -2645,15 +2670,15 @@ function LogCallModal({
           ))}
         </div>
 
-        <textarea
+        <Textarea
           rows={3}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Optional note for the timeline (e.g. 'asked to call back Tuesday')"
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-[13px] text-white placeholder-white/30 focus:outline-none focus:border-(--leadac-500)/40 resize-none"
+          className="resize-none"
         />
 
-        <div className="mt-4 flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-2">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
@@ -2662,7 +2687,7 @@ function LogCallModal({
             Save
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

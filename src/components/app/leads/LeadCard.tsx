@@ -74,9 +74,23 @@ export function LeadCard({
               {lead.formattedAddress}
             </p>
           </div>
-          {lead.salesOpportunity && (
-            <ScoreBadge score={lead.salesOpportunity.opportunityScore} />
-          )}
+          {/* Phase 2.7: prefer the Sales Fit (LEAD_INTELLIGENCE_BRIEF
+              rollup) when present; fall back to the raw opportunity
+              score for legacy leads. The label flips so reps can tell
+              which signal they're seeing. */}
+          {lead.salesConfidence != null ? (
+            <ScoreBadge
+              score={lead.salesConfidence}
+              label="Fit"
+              title="Sales Fit (rolled-up brief score). NOT the Google rating."
+            />
+          ) : lead.salesOpportunity ? (
+            <ScoreBadge
+              score={lead.salesOpportunity.opportunityScore}
+              label="Opp"
+              title="Opportunity sub-score (brief not yet generated)."
+            />
+          ) : null}
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">

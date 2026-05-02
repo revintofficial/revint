@@ -71,6 +71,25 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   const parentPack = parentSlug ? getNicheBySlug(parentSlug) ?? null : null;
   const activePack = childPack ?? parentPack;
 
+  // Beta finding §5: hybrid leads (e.g. hotel-bar that classifies
+  // primary=fnb-hotel-fnb, alt=fnb-bar-club) carry their alternative
+  // sub-niche tags on `subNicheSlugs[]`. We resolve up to 2 alternative
+  // packs and surface their pitch angles + featured modules to the
+  // opener prompt under a "secondary niches" header so the model can
+  // weave both angles in (e.g. "for the lobby bar tab-split is huge,
+  // and the room-charge integration covers the F&B side"). Only
+  // applied when subNicheTrusted is true — a low-confidence primary
+  // means we can't trust the alternatives either.
+  const altSlugs = subNicheTrusted
+    ? (lead.subNicheSlugs ?? [])
+        .filter((s): s is string => typeof s === "string")
+        .filter((s) => s !== childSlug)
+        .slice(0, 2)
+    : [];
+  const altPacks = altSlugs
+    .map((s) => getNicheBySlug(s))
+    .filter((p): p is NonNullable<typeof p> => p != null);
+
   // Semantically retrieve the most relevant past successes for this
   // lead type. Query vector is built from the lead's pain points so
   // the "dentist with wait-time complaints" gets opener examples
@@ -105,6 +124,47 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     text: h.text,
     similarity: h.similarity ?? 0,
   }));
+
+  // Phase 2.5 — pull the latest LEAD_INTELLIGENCE_BRIEF run so the
+  // opener prompt can use its `confirmedPainPoints` and
+  // `confirmedMissingFeatures` arrays as a hard whitelist. Beta
+  // finding §6: the opener was citing pains the brief had NOT
+  // confirmed (e.g. "your booking system is broken" when the audit
+  // said `hasBookingSystem: true`). By feeding the brief's whitelist
+  // in, the LLM is told it may ONLY pitch pains that survived the
+  // brief's grounding check.
+  //
+  // Empty arrays mean "no constraint" — the opener falls back to the
+  // existing pain-phrases-from-scorer path. We do not BLOCK an opener
+  // when the brief hasn't run; that would create chicken-and-egg
+  // dependencies between OPENER_WRITER and LEAD_INTELLIGENCE_BRIEF
+  // run order. We only ENFORCE when the data exists.
+  const latestBriefRun = await prisma.agentRun.findFirst({
+    where: {
+      workspaceId: ctx.workspaceId,
+      leadId: lead.id,
+      workerKind: "LEAD_INTELLIGENCE_BRIEF",
+      status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
+    },
+    orderBy: { finishedAt: "desc" },
+    select: { outputJson: true },
+  });
+  const briefOutput = (latestBriefRun?.outputJson ?? null) as Record<
+    string,
+    unknown
+  > | null;
+  const confirmedPainPoints = Array.isArray(briefOutput?.confirmedPainPoints)
+    ? (briefOutput!.confirmedPainPoints as unknown[]).filter(
+        (x): x is string => typeof x === "string" && x.trim().length > 0,
+      )
+    : [];
+  const confirmedMissingFeatures = Array.isArray(
+    briefOutput?.confirmedMissingFeatures,
+  )
+    ? (briefOutput!.confirmedMissingFeatures as unknown[]).filter(
+        (x): x is string => typeof x === "string" && x.trim().length > 0,
+      )
+    : [];
 
   // Get the mockup slug if one exists, so the opener can embed it.
   // Read the actual rendered template id (NOT the niche pack's
@@ -158,7 +218,26 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     nichePitchAngle: activePack?.pitchAngle ?? null,
     nicheHighValueSignals: activePack?.highValueSignals ?? [],
     nicheFeaturedModules: activePack?.featuredProductModules ?? [],
+    // Phase 2.4: union of NOT-applicable modules across the primary
+    // and secondary niche packs. The opener prompt enforces these as
+    // a hard "NEVER mention" constraint to prevent wrong-fit pitches
+    // (e.g. online ordering to a Michelin tasting menu, reservations
+    // to a food truck). Deduped because hybrid leads commonly carry
+    // overlapping exclusions across primary + alt packs.
+    nicheNotApplicableModules: Array.from(
+      new Set([
+        ...(activePack?.notApplicableModules ?? []),
+        ...altPacks.flatMap((p) => p.notApplicableModules ?? []),
+      ]),
+    ),
+    confirmedPainPoints,
+    confirmedMissingFeatures,
     isParentFallback: childSlug == null && parentPack != null,
+    secondaryNiches: altPacks.map((p) => ({
+      label: p.label,
+      pitchAngle: p.pitchAngle ?? null,
+      featuredModules: p.featuredProductModules ?? [],
+    })),
     recommendedPackage: recommendedPackage
       ? {
           name: recommendedPackage.name,
@@ -169,9 +248,8 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       : null,
   });
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
-  const client = new GoogleGenerativeAI(apiKey);
+  const { getGeminiKey } = await import("@/lib/gemini-keys");
+  const client = new GoogleGenerativeAI(getGeminiKey());
   const model = client.getGenerativeModel({
     model: MODEL,
     generationConfig: { maxOutputTokens: 512, temperature: 0.7 },
@@ -203,7 +281,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       where: {
         leadId: lead.id,
         workerKind: "OPENER_WRITER",
-        status: "SUCCEEDED",
+        status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
         id: { not: ctx.runId },
       },
       orderBy: { finishedAt: "desc" },
@@ -236,6 +314,11 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     fewShotCount: successExamples.length,
     charLen: message.length,
     preservedManualEdit,
+    confirmedPainPointsCount: confirmedPainPoints.length,
+    confirmedMissingFeaturesCount: confirmedMissingFeatures.length,
+    altPacksCount: altPacks.length,
+    notApplicableModulesCount: (activePack?.notApplicableModules?.length ?? 0)
+      + altPacks.reduce((s, p) => s + (p.notApplicableModules?.length ?? 0), 0),
   });
 
   return {
@@ -278,7 +361,40 @@ function buildOpenerPrompt(input: {
   nichePitchAngle: string | null;
   nicheHighValueSignals: string[];
   nicheFeaturedModules: string[];
+  /**
+   * Phase 2.4: hard NEVER-pitch list. Union of `notApplicableModules`
+   * from the primary + secondary niche packs. Surfaced to the LLM as
+   * an explicit constraint at the top of the rules block so the model
+   * never proposes a wrong-genre module (e.g. "online ordering" to
+   * fine dining) even when the workspace's offer copy lists it.
+   */
+  nicheNotApplicableModules: string[];
+  /**
+   * Phase 2.5: brief-grounded pain whitelist. The LLM may ONLY cite
+   * pain phrases that appear in this list (when non-empty) — pulled
+   * from the latest LEAD_INTELLIGENCE_BRIEF run's `confirmedPainPoints`.
+   * Empty array means "no constraint, fall back to scorer pain phrases".
+   */
+  confirmedPainPoints: string[];
+  /**
+   * Phase 2.5: brief-grounded missing-feature whitelist. Same semantics
+   * as `confirmedPainPoints` but for "you don't have X" claims (e.g.
+   * "no booking widget"). Empty means "no constraint".
+   */
+  confirmedMissingFeatures: string[];
   isParentFallback: boolean;
+  /**
+   * Beta finding §5: secondary niche packs for hybrid leads (e.g.
+   * a hotel-bar where primary=fnb-hotel-fnb and a secondary=fnb-bar-club).
+   * The opener prompt surfaces these as "also relevant angles" so the
+   * model can blend both pitches in 2-3 sentences without picking one
+   * arbitrarily. Empty for single-niche leads.
+   */
+  secondaryNiches: Array<{
+    label: string;
+    pitchAngle: string | null;
+    featuredModules: string[];
+  }>;
   /**
    * Analyst-picked ServicePackage tier (resolved from
    * SalesOpportunity.recommendedPackageId). When present, the opener
@@ -314,6 +430,34 @@ function buildOpenerPrompt(input: {
         : "- The mockup link is a generic preview. Refer to it generically (e.g. 'put together a quick scoped pass'). Do NOT name vertical-specific UI elements (no 'tab-split UI', 'room-charge integration', 'reservation widget' claims) — the mock does not contain them."
     : null;
 
+  // Phase 2.4: hard NEVER-mention rule. Wins over every other module
+  // hint downstream — even if `nicheFeaturedModules` (or the
+  // workspace offer copy) mentions a module, if it appears in
+  // `nicheNotApplicableModules` the opener must not pitch it. We
+  // place it first in the rules block so the LLM reads it before any
+  // tempting positive list.
+  const notApplicableRule = input.nicheNotApplicableModules.length
+    ? tr
+      ? `- KESINLIKLE ASAGIDAKI urunlerden / modullerden BAHSETME (bu sektore uygun degil): ${input.nicheNotApplicableModules.join(", ")}.`
+      : `- NEVER mention or pitch the following modules / products (they don't fit this niche): ${input.nicheNotApplicableModules.join(", ")}.`
+    : null;
+
+  // Phase 2.5: brief-grounded pain / missing-feature whitelist. Only
+  // injected when the brief actually surfaced confirmations (empty
+  // arrays = no constraint, opener stays in legacy mode). When the
+  // whitelist is non-empty, anything outside it is forbidden — the
+  // LLM is told it cannot invent pains the brief did not confirm.
+  const painWhitelistRule = input.confirmedPainPoints.length
+    ? tr
+      ? `- Sadece SU pain noktalarindan birini citi olarak kullan (brief tarafindan dogrulanmis): ${input.confirmedPainPoints.join("; ")}. Bu listede olmayan bir pain'i ASLA pitch etme.`
+      : `- You may ONLY cite pain points from this whitelist (verified by the lead-intelligence brief): ${input.confirmedPainPoints.join("; ")}. NEVER claim or imply any pain not on this list.`
+    : null;
+  const missingFeatureRule = input.confirmedMissingFeatures.length
+    ? tr
+      ? `- "Sizde X yok" iddiasini sadece SU listeden yapabilirsin (audit dogruladi): ${input.confirmedMissingFeatures.join("; ")}. Diger eksiklikleri ASLA varsayma.`
+      : `- "You don't have X" claims may ONLY come from this audit-verified list: ${input.confirmedMissingFeatures.join("; ")}. NEVER assume any other missing feature.`
+    : null;
+
   const rules = tr
     ? [
         "- Kurallar:",
@@ -321,6 +465,9 @@ function buildOpenerPrompt(input: {
         "- Ilk cumle spesifik bir gozlem icermeli (isletme hakkinda kisisel bir detay)",
         "- Satis tonundan kac; yardimci bir komsunun tonu",
         "- Asla 'umarim iyi gunlerindesin' gibi klise acilis yapma",
+        ...(notApplicableRule ? [notApplicableRule] : []),
+        ...(painWhitelistRule ? [painWhitelistRule] : []),
+        ...(missingFeatureRule ? [missingFeatureRule] : []),
         ...(mockupRule ? [mockupRule] : []),
         "- Sonda CTA yerine hafif bir soru sor",
       ].join("\n")
@@ -330,6 +477,9 @@ function buildOpenerPrompt(input: {
         "- Open with a specific observation about this business, not a generic greeting.",
         "- Sound like a helpful neighbor, not a salesperson.",
         "- Avoid cliches like 'hope this finds you well' or 'I came across your business'.",
+        ...(notApplicableRule ? [notApplicableRule] : []),
+        ...(painWhitelistRule ? [painWhitelistRule] : []),
+        ...(missingFeatureRule ? [missingFeatureRule] : []),
         ...(mockupRule ? [mockupRule] : []),
         "- Close with a soft question, not a hard CTA.",
       ].join("\n");
@@ -369,6 +519,27 @@ function buildOpenerPrompt(input: {
         `Relevant product modules (mention at most one, only if it ties to a real pain phrase): ${input.nicheFeaturedModules.slice(0, 5).join(", ")}`,
       );
     }
+  }
+
+  // Secondary niche blocks. Surfaced AFTER the primary so the model
+  // anchors on primary first; secondaries are explicitly framed as
+  // "also relevant" rather than peers, to avoid the opener treating
+  // a hotel-bar like it's primarily a bar when the primary classifier
+  // says it's primarily a hotel F&B operation.
+  if (input.secondaryNiches.length > 0) {
+    lines.push("");
+    lines.push(
+      tr
+        ? "Bu lead birden fazla niche'e uyuyor — asagidaki ikincil acilari da hesaba kat (zorlamadan):"
+        : "This lead also fits other niches — weave in at most one of these secondary angles only if it adds specificity:",
+    );
+    input.secondaryNiches.forEach((sec, i) => {
+      lines.push(`- Secondary ${i + 1}: ${sec.label}`);
+      if (sec.pitchAngle) lines.push(`  angle: ${sec.pitchAngle}`);
+      if (sec.featuredModules.length) {
+        lines.push(`  modules: ${sec.featuredModules.slice(0, 3).join(", ")}`);
+      }
+    });
   }
 
   lines.push("");

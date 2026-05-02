@@ -168,8 +168,13 @@ function makeCtx(overrides: Partial<AgentWorkerContext> = {}): AgentWorkerContex
   };
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   process.env.GEMINI_API_KEY = "test-key";
+  // Beta finding §6: getGeminiKey() caches the key pool at module
+  // load. Tests that delete GEMINI_API_KEY mid-suite need to flush
+  // the cache so the next call re-reads env vars.
+  const { _resetGeminiKeysForTests } = await import("@/lib/gemini-keys");
+  _resetGeminiKeysForTests();
   generateContentSpy.mockReset();
   memoryQueryMock.mockReset().mockResolvedValue([]);
   memoryUnionMock.mockReset().mockResolvedValue([]);
@@ -314,6 +319,11 @@ describe("OPENER_WRITER - persistence and output", () => {
 
   it("throws when GEMINI_API_KEY is missing", async () => {
     delete process.env.GEMINI_API_KEY;
+    // Beta finding §6: also clear the numbered slots in case the
+    // dev env has them set; otherwise the pool still returns one.
+    for (let i = 1; i <= 8; i++) delete process.env[`GEMINI_API_KEY_${i}`];
+    const { _resetGeminiKeysForTests } = await import("@/lib/gemini-keys");
+    _resetGeminiKeysForTests();
     memoryUnionMock.mockResolvedValue([]);
     generateContentSpy.mockResolvedValue(textResponse("x"));
     await expect(run(makeCtx())).rejects.toThrow(/GEMINI_API_KEY/);

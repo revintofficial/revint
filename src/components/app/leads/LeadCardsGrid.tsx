@@ -318,10 +318,10 @@ function ScoreRing({ score }: { score: number | null }) {
   const clamped = Math.max(0, Math.min(100, score));
   const color =
     clamped >= 60
-      ? "hsl(152 48% 50%)"
+      ? "var(--leadac-success)"
       : clamped >= 35
-      ? "hsl(38 70% 52%)"
-      : "hsl(4 62% 54%)";
+      ? "var(--leadac-warning)"
+      : "var(--leadac-error)";
   // Conic gradient ring; the inner mask makes it a hollow ring.
   const background = `conic-gradient(${color} ${clamped * 3.6}deg, hsl(0 0% 100% / 0.08) 0deg)`;
   return (

@@ -90,10 +90,10 @@ export function NicheProductFitCard({ nicheSlug, subNicheSlug, auditFeatures }: 
             </p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-emerald-500/30 text-emerald-300/90">
+            <Badge variant="success" className="text-[10px] h-5 px-1.5">
               {detectedCount} present
             </Badge>
-            <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-amber-500/30 text-amber-300/90">
+            <Badge variant="warning" className="text-[10px] h-5 px-1.5">
               {opportunityCount} to pitch
             </Badge>
           </div>
@@ -139,29 +139,33 @@ export function NicheProductFitCard({ nicheSlug, subNicheSlug, auditFeatures }: 
 }
 
 function ModuleChip({ verdict }: { verdict: ModuleVerdict }) {
-  const styles = {
+  const styles: Record<
+    ModuleVerdict["status"],
+    { border: string; bg: string; iconColor: string; labelColor: string; detailColor: string }
+  > = {
     detected: {
-      border: "border-emerald-500/25",
-      bg: "bg-emerald-500/6",
-      iconColor: "text-emerald-400",
-      labelColor: "text-emerald-100/95",
-      detailColor: "text-emerald-300/70",
+      border: "color-mix(in oklab, var(--leadac-success) 25%, transparent)",
+      bg: "color-mix(in oklab, var(--leadac-success) 6%, transparent)",
+      iconColor: "var(--leadac-success)",
+      labelColor: "color-mix(in oklab, var(--leadac-success-soft) 95%, white)",
+      detailColor: "color-mix(in oklab, var(--leadac-success-soft) 70%, transparent)",
     },
     weak: {
-      border: "border-amber-500/20",
-      bg: "bg-amber-500/5",
-      iconColor: "text-amber-400",
-      labelColor: "text-amber-100/95",
-      detailColor: "text-amber-300/70",
+      border: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
+      bg: "color-mix(in oklab, var(--leadac-warning) 5%, transparent)",
+      iconColor: "var(--leadac-warning)",
+      labelColor: "color-mix(in oklab, var(--leadac-warning-soft) 95%, white)",
+      detailColor: "color-mix(in oklab, var(--leadac-warning-soft) 70%, transparent)",
     },
     opportunity: {
-      border: "border-white/8",
-      bg: "bg-white/2",
-      iconColor: "text-white/35",
-      labelColor: "text-white/85",
-      detailColor: "text-white/45",
+      border: "rgba(255,255,255,0.08)",
+      bg: "rgba(255,255,255,0.02)",
+      iconColor: "rgba(255,255,255,0.35)",
+      labelColor: "rgba(255,255,255,0.85)",
+      detailColor: "rgba(255,255,255,0.45)",
     },
-  }[verdict.status];
+  };
+  const s = styles[verdict.status];
 
   const Icon =
     verdict.status === "detected"
@@ -172,14 +176,15 @@ function ModuleChip({ verdict }: { verdict: ModuleVerdict }) {
 
   return (
     <div
-      className={`rounded-lg border ${styles.border} ${styles.bg} px-3 py-2 flex items-start gap-2 transition-colors`}
+      className="rounded-lg border px-3 py-2 flex items-start gap-2 transition-colors"
+      style={{ borderColor: s.border, background: s.bg }}
     >
-      <Icon className={`w-3.5 h-3.5 ${styles.iconColor} mt-0.5 shrink-0`} />
+      <Icon className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: s.iconColor }} />
       <div className="min-w-0">
-        <p className={`text-[12px] font-medium ${styles.labelColor} leading-tight`}>
+        <p className="text-[12px] font-medium leading-tight" style={{ color: s.labelColor }}>
           {verdict.module}
         </p>
-        <p className={`text-[11px] ${styles.detailColor} mt-0.5 leading-snug`}>
+        <p className="text-[11px] mt-0.5 leading-snug" style={{ color: s.detailColor }}>
           {verdict.detail}
         </p>
       </div>

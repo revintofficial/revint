@@ -152,10 +152,23 @@ export function LeadRow({
         )}
       </td>
 
-      {/* Score */}
+      {/* Score — Phase 2.7: prefer the Sales Fit (LEAD_INTELLIGENCE_BRIEF
+          rollup) when it exists; fall back to opportunityScore for leads
+          enriched before the brief shipped. The badge label flips so the
+          rep knows which signal they're looking at. */}
       <td className={padding}>
-        {lead.salesOpportunity ? (
-          <ScoreBadge score={lead.salesOpportunity.opportunityScore} />
+        {lead.salesConfidence != null ? (
+          <ScoreBadge
+            score={lead.salesConfidence}
+            label="Fit"
+            title="Sales Fit (rolled-up brief score). NOT the Google rating."
+          />
+        ) : lead.salesOpportunity ? (
+          <ScoreBadge
+            score={lead.salesOpportunity.opportunityScore}
+            label="Opp"
+            title="Opportunity sub-score (brief not yet generated)."
+          />
         ) : (
           <span className="text-white/20">—</span>
         )}
@@ -304,8 +317,8 @@ export function LeadBadgeRow({ lead }: { lead: LeadListItem }) {
               <span
                 className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium border"
                 style={{
-                  backgroundColor: "hsl(38 70% 52% / 0.08)",
-                  borderColor: "hsl(38 70% 52% / 0.2)",
+                  backgroundColor: "color-mix(in oklab, var(--leadac-warning) 8%, transparent)",
+                  borderColor: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
                   color: "hsl(38 50% 72%)",
                 }}
               >
@@ -375,10 +388,30 @@ export function PipelineStageDot({ stage }: { stage: string }) {
   );
 }
 
-export function ScoreBadge({ score }: { score: number }) {
+export function ScoreBadge({
+  score,
+  label,
+  title,
+}: {
+  score: number;
+  /**
+   * Phase 2.7 — short label appended to the score (e.g. "Fit" or
+   * "Opp") so the rep can tell at a glance whether the badge is the
+   * rolled-up Sales Fit metric or the raw opportunity sub-score.
+   * Optional for backwards compatibility with legacy callers.
+   */
+  label?: string;
+  /** Tooltip for screen-reader / mouse-hover. */
+  title?: string;
+}) {
   const variant: "success" | "warning" | "secondary" =
     score >= 60 ? "success" : score >= 35 ? "warning" : "secondary";
-  return <Badge variant={variant}>{score}</Badge>;
+  return (
+    <Badge variant={variant} title={title}>
+      {score}
+      {label ? <span className="ml-1 text-[9px] opacity-70">{label}</span> : null}
+    </Badge>
+  );
 }
 
 export function StatusBadge({ status }: { status: string }) {

@@ -107,13 +107,23 @@ export async function POST(
       // P0.3 - feed Review Intelligence into the mockup prompt
       reviewIntelligence: lead.reviewAnalysis
         ? {
-            weaknessKpis: lead.reviewAnalysis.weaknessKpis as Array<{
+            // Beta finding §2: KPIs now carry a `count` field; we cast
+            // through `unknown` because Prisma persists them as `Json`
+            // and the runtime shape is guaranteed by the post-process
+            // filter in `review-analyst.ts` / `run-job.ts`. Old rows
+            // (pre-stabilization) may have undefined count, which the
+            // mockup prompt handles gracefully via optional access.
+            weaknessKpis: (lead.reviewAnalysis.weaknessKpis ??
+              []) as unknown as Array<{
               label: string;
+              count: number;
               percent: number;
               examples: string[];
             }>,
-            strengthKpis: lead.reviewAnalysis.strengthKpis as Array<{
+            strengthKpis: (lead.reviewAnalysis.strengthKpis ??
+              []) as unknown as Array<{
               label: string;
+              count: number;
               percent: number;
               examples: string[];
             }>,

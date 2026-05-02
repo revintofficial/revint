@@ -36,7 +36,15 @@ const CURRENCY_LABEL: Record<Currency, string> = { USD: "USD ($)", GBP: "GBP (£
 
 function bar(used: number, limit: number) {
   const pct = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
-  return { pct, color: pct >= 90 ? "hsl(4 62% 54%)" : pct >= 70 ? "hsl(38 70% 52%)" : "var(--leadac-500)" };
+  return {
+    pct,
+    color:
+      pct >= 90
+        ? "var(--leadac-error)"
+        : pct >= 70
+          ? "var(--leadac-warning)"
+          : "var(--leadac-500)",
+  };
 }
 
 export function BillingPanel({ plan, role, billingEnabled, usage }: BillingPanelProps) {
@@ -271,8 +279,8 @@ export function BillingPanel({ plan, role, billingEnabled, usage }: BillingPanel
             <div
               className="mt-4 px-3 py-2 rounded-lg text-[12px]"
               style={{
-                background: "hsl(38 70% 52% / 0.07)",
-                border: "0.5px solid hsl(38 70% 52% / 0.2)",
+                background: "color-mix(in oklab, var(--leadac-warning) 7%, transparent)",
+                border: "0.5px solid color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
                 color: "hsl(38 50% 70%)",
               }}
             >
@@ -327,7 +335,10 @@ export function BillingPanel({ plan, role, billingEnabled, usage }: BillingPanel
                     Annual
                     <span
                       className="text-[9.5px] font-semibold px-1 py-0.5 rounded"
-                      style={{ background: "hsl(152 48% 50% / 0.2)", color: "hsl(152 28% 70%)" }}
+                      style={{
+                        background: "color-mix(in oklab, var(--leadac-success) 20%, transparent)",
+                        color: "var(--leadac-success-soft)",
+                      }}
                     >
                       -{ANNUAL_DISCOUNT_PCT}%
                     </span>

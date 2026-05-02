@@ -47,6 +47,8 @@ process.env.IS_WORKER = "1";
 }
 
 import { startDiscoveryWorker } from "./discovery-worker";
+import { embed, EmbeddingError } from "../lib/ai-core/embed";
+import { allGeminiKeysCool, getGeminiKeyDiagnostics } from "../lib/gemini-keys";
 // Phase 0/B4 — `crawl-worker` and `analyze-worker` are intentionally
 // no longer booted here. Both raced with AI Core (`WEBSITE_AUDITOR`
 // + `SALES_OPPORTUNITY_SCORER`) on the same `WebsiteAudit` /
@@ -88,6 +90,47 @@ logger.info("worker.supervisor.starting", {
   databaseUrlPresent: Boolean(process.env.DATABASE_URL),
   nodeEnv: process.env.NODE_ENV ?? "<unset>",
 });
+
+// Gemini health check. We deliberately fire-and-forget — workers should
+// still boot when the embedding endpoint is wobbly (BullMQ jobs that
+// don't touch Gemini still need to run, and the per-worker degraded
+// path now keeps embed-dependent jobs SUCCEEDED_NO_MEMORY instead of
+// hard-failing). We just want a loud signal in the boot logs so on-call
+// can correlate "Gemini outage" with downstream worker degradation.
+//
+// Skipped under tests / when explicitly disabled to keep CI fast.
+if (
+  process.env.NODE_ENV !== "test" &&
+  process.env.SKIP_GEMINI_HEALTHCHECK !== "1"
+) {
+  void (async () => {
+    try {
+      await embed("ping");
+      logger.info("worker.supervisor.gemini_health_ok", {
+        keys: getGeminiKeyDiagnostics(),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const cool = allGeminiKeysCool();
+      const isAuth = err instanceof EmbeddingError && /403|forbidden|permission|api[_ ]?key|unauthorized/i.test(msg);
+      logger.error("worker.supervisor.gemini_health_failed", {
+        err: msg,
+        cool,
+        isAuth,
+        keys: getGeminiKeyDiagnostics(),
+      });
+      if (isAuth && process.env.NODE_ENV === "production") {
+        // eslint-disable-next-line no-console
+        console.error(
+          `[boot] FATAL: Gemini auth failed at boot (${msg}). ` +
+            "Refusing to start workers — every embed-dependent job would FAIL. " +
+            "Configure GEMINI_API_KEY_1..N with a working key and redeploy.",
+        );
+        process.exit(1);
+      }
+    }
+  })();
+}
 
 const discoveryWorker = startDiscoveryWorker();
 const reviewAnalysisWorker = startReviewAnalysisWorker();
