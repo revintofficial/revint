@@ -58,6 +58,11 @@ export async function proxy(request: NextRequest) {
         path: "/",
         maxAge: 60 * 60 * 24 * 365,
         sameSite: "lax",
+        // M16 - mark Secure in production. The locale cookie is
+        // low-sensitivity but every Set-Cookie we emit should
+        // carry the same hardening profile so a future locale-aware
+        // server action can't be hijacked over plaintext HTTP.
+        secure: process.env.NODE_ENV === "production",
       });
     }
   }

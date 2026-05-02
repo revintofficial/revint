@@ -45,6 +45,17 @@ export function UserMenu({ user, workspace, role, collapsed }: UserMenuProps) {
       toast.error("Sign out failed");
       return;
     }
+    // M15 fix - the Supabase signOut() clears the auth cookie but
+    // not our active-workspace pointer, so when the next user signs
+    // in on the same browser they'd land in the previous user's
+    // workspace until they explicitly switched. Force-expire it
+    // here. Mirror the same attribute set we used on `set` so the
+    // browser actually replaces the cookie (path + sameSite must
+    // match).
+    if (typeof document !== "undefined") {
+      document.cookie =
+        "leadac_active_workspace_id=; Max-Age=0; path=/; SameSite=Lax";
+    }
     router.push("/login");
     router.refresh();
   }

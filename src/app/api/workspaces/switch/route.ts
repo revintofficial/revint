@@ -27,6 +27,11 @@ export async function POST(request: Request) {
       path: "/",
       sameSite: "lax",
       httpOnly: false,
+      // M16 - mark Secure in production so the cookie isn't sent
+      // over plaintext HTTP (man-in-the-middle could otherwise read
+      // the workspace pointer on a downgraded request and pivot
+      // CSRF attempts to the right tenant).
+      secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24 * 365,
     });
 

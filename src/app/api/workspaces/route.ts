@@ -93,6 +93,9 @@ export async function POST(request: Request) {
       path: "/",
       sameSite: "lax",
       httpOnly: false,
+      // M16 - mark Secure in production. See workspaces/switch/route.ts
+      // for the full rationale.
+      secure: process.env.NODE_ENV === "production",
       maxAge: 60 * 60 * 24 * 365,
     });
 
