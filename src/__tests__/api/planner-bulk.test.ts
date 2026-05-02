@@ -47,6 +47,17 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+const mockAssertWorkerQuota = vi.fn();
+vi.mock("@/lib/agent-workers/quota", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/agent-workers/quota")>(
+    "@/lib/agent-workers/quota",
+  );
+  return {
+    ...actual,
+    assertWorkerQuota: (...args: unknown[]) => mockAssertWorkerQuota(...args),
+  };
+});
+
 import { POST } from "@/app/api/planner/bulk/route";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 
@@ -63,6 +74,13 @@ describe("POST /api/planner/bulk", () => {
     vi.clearAllMocks();
     mockEmit.mockImplementation(async () => `sess_${Math.random().toString(36).slice(2, 8)}`);
     mockLeadFindMany.mockResolvedValue([]);
+    mockAssertWorkerQuota.mockResolvedValue({
+      allowed: true,
+      used: 0,
+      limit: 100,
+      remaining: 100,
+      resetAt: null,
+    });
   });
 
   it("returns 401 when unauthenticated", async () => {
