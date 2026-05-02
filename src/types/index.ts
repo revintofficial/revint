@@ -125,6 +125,7 @@ export type CrawlError =
   | "REDIRECT_LOOP"     // too many redirects
   | "PLAYWRIGHT_CRASH"  // browser/page crashed mid-navigation
   | "EMPTY_RESPONSE"    // page loaded but produced 0 bytes
+  | "BLOCKED_BY_GUARD"  // SSRF guard rejected the URL or a redirect hop
   | "UNKNOWN";
 
 export interface WebsiteFeatures {

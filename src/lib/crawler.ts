@@ -1,5 +1,6 @@
 import { chromium, type Browser, type Page } from "playwright";
 import { extractFeatures } from "./extractor";
+import { assertSafeFetchUrl } from "./url-guard";
 import type { CrawlError, SecurityHeadersResult, WebsiteFeatures } from "@/types";
 
 let browserInstance: Browser | null = null;
@@ -76,8 +77,24 @@ export async function crawlWebsite(
   url: string,
   businessType?: string | null,
 ): Promise<WebsiteFeatures> {
-  // First attempt; on transient failure (timeout / playwright crash)
-  // we wait a beat and retry once before giving up.
+  // C2 fix - SSRF guard at the entry. Crawl callers pass URLs that
+  // came from Google Places, lead enrichment, or operator input;
+  // none are trusted enough to skip a redirect-aware private-address
+  // check. assertSafeFetchUrl rejects:
+  //   - non-http(s) protocols (file://, gopher://)
+  //   - loopback / link-local / RFC1918 / cgnat / multicast
+  //   - DNS-rebinding-style hostnames (resolves to private)
+  //   - "metadata.google.internal" + .local + .internal
+  // The guard at crawlOnce's `route()` interceptor enforces the same
+  // policy on every redirect hop the navigation triggers, so a
+  // public host that 302s into 169.254.169.254 still gets blocked.
+  try {
+    await assertSafeFetchUrl(url);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    return createUnreachableResult(url, "BLOCKED_BY_GUARD", null, detail);
+  }
+
   let last: WebsiteFeatures = await crawlOnce(url, businessType);
   const transient: CrawlError[] = ["TIMEOUT", "PLAYWRIGHT_CRASH"];
   if (
@@ -94,6 +111,11 @@ export async function crawlWebsite(
 async function crawlOnce(url: string, businessType?: string | null): Promise<WebsiteFeatures> {
   const browser = await getBrowser();
   let page: Page | null = null;
+  // Set by the route interceptor when a redirect hop is rejected; the
+  // catch block below uses it to surface BLOCKED_BY_GUARD instead of
+  // the generic page.goto error message ("Request was aborted by the
+  // browser") that Playwright produces.
+  let blockedHop: { url: string; reason: string } | null = null;
 
   try {
     page = await browser.newPage({
@@ -109,6 +131,30 @@ async function crawlOnce(url: string, businessType?: string | null): Promise<Web
       bypassCSP: true,
       ignoreHTTPSErrors: true,
       locale: "en-US",
+    });
+
+    // C2 - SSRF redirect-chain guard. Validate every navigation hop
+    // (initial nav + each 30x follow) against the same private-
+    // address policy assertSafeFetchUrl uses for direct fetches. We
+    // only intercept top-frame navigations: sub-resources (images,
+    // scripts, XHR) typically hit CDNs and blocking them would break
+    // legitimate audits. The threat model here is "lead's domain
+    // 302s to internal metadata service"; restricting the navigation
+    // chain covers it.
+    await page.route("**/*", async (route, request) => {
+      if (!request.isNavigationRequest()) {
+        return route.continue();
+      }
+      try {
+        await assertSafeFetchUrl(request.url());
+      } catch (err) {
+        blockedHop = {
+          url: request.url(),
+          reason: err instanceof Error ? err.message : String(err),
+        };
+        return route.abort("blockedbyclient");
+      }
+      return route.continue();
     });
 
     const consoleErrors: string[] = [];
@@ -131,6 +177,18 @@ async function crawlOnce(url: string, businessType?: string | null): Promise<Web
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      // If the route interceptor rejected a hop, prefer that over the
+      // generic abort message. The original requested URL stays in
+      // `url` for the result so callers see what they asked for, and
+      // the blocked hop's reason goes into the detail field.
+      if (blockedHop) {
+        return createUnreachableResult(
+          url,
+          "BLOCKED_BY_GUARD",
+          null,
+          `Redirect to ${blockedHop.url} blocked: ${blockedHop.reason}`,
+        );
+      }
       const tag = classifyError(message);
       return createUnreachableResult(url, tag, null, message);
     }
