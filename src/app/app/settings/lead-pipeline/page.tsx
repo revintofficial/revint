@@ -20,7 +20,6 @@ import {
 import { estimateChainCost } from "@/lib/agent-workers/cost-estimator";
 import { listWorkers } from "@/lib/agent-workers/registry";
 import { LeadPipelineEditor } from "@/components/app/lead-pipeline-editor";
-import { PageHeader } from "@/components/ui/page-header";
 import type { PipelinePreset } from "@/generated/prisma/client";
 
 export default async function LeadPipelineSettingsPage() {
@@ -73,10 +72,28 @@ export default async function LeadPipelineSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Lead Pipeline"
-        subtitle="Configure what runs automatically when a new lead is added. Pick a preset for one-click defaults or toggle individual workers."
-      />
+      {/* Section heading rather than full PageHeader — the parent
+          settings layout already renders the "Settings" page header
+          and a duplicate H1 here would compete with it. */}
+      <div className="space-y-1">
+        <h2
+          className="font-semibold tracking-tight"
+          style={{
+            color: "var(--leadac-text-1)",
+            fontSize: "var(--text-title-2)",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          Lead Pipeline
+        </h2>
+        <p
+          className="text-[13px]"
+          style={{ color: "var(--leadac-text-2)" }}
+        >
+          Configure what runs automatically when a new lead is added. Pick a
+          preset for one-click defaults or toggle individual workers.
+        </p>
+      </div>
       <LeadPipelineEditor
         workspaceId={ws.id}
         plan={ws.plan}

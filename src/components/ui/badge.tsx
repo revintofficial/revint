@@ -6,7 +6,7 @@ import type { HTMLAttributes } from "react";
 // soft semantic text + matching translucent border. Pure neon backgrounds
 // are gone; everything reads as a subtle category, not an alert.
 const badgeVariants = cva(
-  "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-(--leadac-500) focus:ring-offset-2 focus:ring-offset-black",
+  "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--leadac-500)/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
   {
     variants: {
       variant: {

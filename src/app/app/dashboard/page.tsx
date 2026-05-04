@@ -56,9 +56,9 @@ interface Stats {
   };
 }
 
-// Mono-indigo KPI cards: every icon shares the same primary hue, only the
-// surrounding tint background gives it a distinct silhouette. The "highlight"
-// KPI (averageScore) sits one step lighter.
+// Mono-primary KPI cards: every icon shares --leadac-h, only the
+// surrounding tint background gives it a distinct silhouette. The
+// "highlight" KPI (averageScore) sits one step lighter on the scale.
 const KPI_CONFIG = [
   { key: "totalLeads", label: "Total Leads", icon: Users, color: LEADAC.primary400 },
   { key: "withWebsite", label: "Have Website", icon: Globe, color: LEADAC.primary400 },
@@ -226,9 +226,9 @@ export default function DashboardPage() {
     .reduce((sum, s) => sum + s.count, 0);
   const wonCount = stats.outreachStatus.find((s) => s.status === "WON")?.count || 0;
 
-  // Mono palette: lightness ramps from 42% (Discovered) to 66% (Won), keeping
-  // a single indigo hue. The eye reads stage progression without the rainbow
-  // noise of mixed hues.
+  // Mono palette: lightness ramps from 42% (Discovered) to 66% (Won),
+  // keeping a single --leadac-h. The eye reads stage progression without
+  // the rainbow noise of mixed hues.
   const funnelStages = [
     { name: "Discovered", value: stats.totalLeads },
     { name: "Scanned", value: scannedCount },
@@ -267,7 +267,7 @@ export default function DashboardPage() {
         }
       />
 
-      {/* Next Action Prompt — landing-style hero CTA with indigo glow */}
+      {/* Next Action Prompt — landing-style hero CTA with primary glow */}
       {nextAction && (
         <Card
           className="overflow-hidden"
@@ -300,7 +300,7 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* KPI Cards — mono indigo icons on subtle indigo tint backgrounds */}
+      {/* KPI Cards — mono primary icons on subtle primary tint backgrounds */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {KPI_CONFIG.map((kpi) => {
           const value = stats[kpi.key as keyof Stats] as number;

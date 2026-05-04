@@ -1070,10 +1070,27 @@ function HeroBand({
       <div className="relative p-5 sm:p-7 md:p-8">
         <div className="flex flex-col-reverse md:flex-row md:items-start md:justify-between gap-6">
           <div className="min-w-0 flex-1">
-            <h1 className="text-[26px] sm:text-[32px] md:text-[40px] font-semibold tracking-[-0.02em] text-white leading-[1.1] break-words">
+            <h1
+              className="font-semibold leading-[1.1] wrap-break-word"
+              style={{
+                color: "var(--leadac-text-1)",
+                /* Lead detail is the only "hero" page in the app, so it
+                 * sits one step larger than --text-title-1 (which the
+                 * shared PageHeader uses). Anything bigger fights with
+                 * the address line and the metric column on the right. */
+                fontSize: "var(--text-display)",
+                letterSpacing: "-0.02em",
+              }}
+            >
               {lead.businessName}
             </h1>
-            <p className="text-[13.5px] sm:text-[15px] mt-2 text-white/60 max-w-2xl">
+            <p
+              className="mt-2 max-w-2xl"
+              style={{
+                color: "var(--leadac-text-2)",
+                fontSize: "var(--text-callout)",
+              }}
+            >
               {lead.formattedAddress}
             </p>
 

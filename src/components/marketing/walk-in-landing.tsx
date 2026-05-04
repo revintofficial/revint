@@ -29,7 +29,7 @@ import type { VerticalCopy } from "@/components/marketing/vertical-landing";
  * WalkInLanding - dedicated layout for /for/walk-in-web-agencies.
  *
  * Same Apple-style design language as the shared VerticalLanding (dark glass
- * cards, indigo gradient hero, RevealOnScroll, ScrollStage, soft shadows),
+ * cards, primary-accent gradient hero, RevealOnScroll, ScrollStage, soft shadows),
  * but every demo lives inside a literal iPad bezel. The proof tour is
  * reordered to put the "magic moment" (mockup generated, owner reaches for
  * the tablet) at scene 2, and the kanban PipelineBoard is dropped entirely

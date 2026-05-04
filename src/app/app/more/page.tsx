@@ -15,6 +15,7 @@ import {
   Tag,
   User as UserIcon,
 } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { requireUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -147,121 +148,106 @@ export default async function MorePage() {
   const isAdmin = role === "OWNER" || role === "ADMIN";
 
   return (
-    <div className="min-h-full pb-12">
+    <div className="p-4 sm:p-6 md:p-8 lg:p-10 pb-12 max-w-2xl space-y-4 sm:space-y-5 md:space-y-6">
+      {/* Hint banner — only meaningful on tablet/desktop where the sidebar
+          duplicates everything in this list. Phone users see it as their
+          primary navigation. */}
       <div
-        className="hidden md:block px-4 sm:px-6 md:px-8 lg:px-10 pt-4 sm:pt-5 md:pt-6"
+        className="hidden md:flex rounded-xl px-4 py-3 items-center gap-3"
+        style={{
+          background: "hsl(0 0% 100% / 0.04)",
+          border: "0.5px solid hsl(0 0% 100% / 0.08)",
+        }}
       >
-        <div
-          className="rounded-xl px-4 py-3 flex items-center gap-3"
-          style={{
-            background: "hsl(0 0% 100% / 0.04)",
-            border: "0.5px solid hsl(0 0% 100% / 0.08)",
-          }}
-        >
-          <Bell className="w-4 h-4" style={{ color: "var(--leadac-text-3)" }} />
-          <p
-            className="text-[13px]"
-            style={{ color: "var(--leadac-text-2)" }}
-          >
-            On larger screens you can use the sidebar. This list is optimised for phones.
-          </p>
-        </div>
+        <Bell className="w-4 h-4" style={{ color: "var(--leadac-text-3)" }} />
+        <p className="text-[13px]" style={{ color: "var(--leadac-text-2)" }}>
+          On larger screens you can use the sidebar. This list is optimised for phones.
+        </p>
       </div>
 
-      <div className="px-4 sm:px-6 md:px-8 lg:px-10 pt-3 md:pt-5 max-w-2xl">
-        <h1
-          className="font-semibold tracking-tight mb-4"
-          style={{
-            color: "var(--leadac-text-1)",
-            fontSize: "var(--text-title-1)",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          More
-        </h1>
+      <PageHeader title="More" />
 
-        <div className="space-y-6">
-          {SECTIONS.map((section) => {
-            const visibleRows = section.rows.filter(
-              (r) => !r.adminOnly || isAdmin,
-            );
-            if (visibleRows.length === 0) return null;
-            return (
-              <section key={section.title}>
-                <h2
-                  className="text-[11px] font-semibold uppercase tracking-wider mb-2 px-1"
-                  style={{ color: "var(--leadac-muted)" }}
-                >
-                  {section.title}
-                </h2>
-                <ul
-                  role="list"
-                  className="rounded-2xl overflow-hidden"
-                  style={{
-                    background: "hsl(0 0% 100% / 0.04)",
-                    border: "0.5px solid hsl(0 0% 100% / 0.06)",
-                  }}
-                >
-                  {visibleRows.map((row, idx) => (
-                    <li
-                      key={row.href}
-                      style={{
-                        borderTop:
-                          idx === 0
-                            ? "none"
-                            : "0.5px solid hsl(0 0% 100% / 0.04)",
-                      }}
+      <div className="space-y-6">
+        {SECTIONS.map((section) => {
+          const visibleRows = section.rows.filter(
+            (r) => !r.adminOnly || isAdmin,
+          );
+          if (visibleRows.length === 0) return null;
+          return (
+            <section key={section.title}>
+              <h2
+                className="text-[11px] font-semibold uppercase tracking-wider mb-2 px-1"
+                style={{ color: "var(--leadac-muted)" }}
+              >
+                {section.title}
+              </h2>
+              <ul
+                role="list"
+                className="rounded-2xl overflow-hidden"
+                style={{
+                  background: "hsl(0 0% 100% / 0.04)",
+                  border: "0.5px solid hsl(0 0% 100% / 0.06)",
+                }}
+              >
+                {visibleRows.map((row, idx) => (
+                  <li
+                    key={row.href}
+                    style={{
+                      borderTop:
+                        idx === 0
+                          ? "none"
+                          : "0.5px solid hsl(0 0% 100% / 0.04)",
+                    }}
+                  >
+                    <Link
+                      href={row.href}
+                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500) focus-visible:-outline-offset-2"
+                      style={{ minHeight: "var(--touch-target-large)" }}
                     >
-                      <Link
-                        href={row.href}
-                        className="flex items-center gap-3 px-4 py-3.5 hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500) focus-visible:-outline-offset-2"
-                        style={{ minHeight: "var(--touch-target-large)" }}
+                      <div
+                        className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                        style={{
+                          background:
+                            "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)",
+                          color: "var(--leadac-300)",
+                        }}
                       >
+                        <row.icon className="w-4.5 h-4.5" strokeWidth={2} />
+                      </div>
+                      <div className="flex-1 min-w-0">
                         <div
-                          className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                          className="font-medium truncate"
                           style={{
-                            background:
-                              "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)",
-                            color: "var(--leadac-300)",
+                            color: "var(--leadac-text-1)",
+                            fontSize: "var(--text-callout)",
                           }}
                         >
-                          <row.icon className="w-4.5 h-4.5" strokeWidth={2} />
+                          {row.label}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        {row.description && (
                           <div
-                            className="font-medium truncate"
+                            className="truncate mt-0.5"
                             style={{
-                              color: "var(--leadac-text-1)",
-                              fontSize: "var(--text-callout)",
+                              color: "var(--leadac-text-3)",
+                              fontSize: "var(--text-footnote)",
                             }}
                           >
-                            {row.label}
+                            {row.description}
                           </div>
-                          {row.description && (
-                            <div
-                              className="truncate mt-0.5"
-                              style={{
-                                color: "var(--leadac-text-3)",
-                                fontSize: "var(--text-footnote)",
-                              }}
-                            >
-                              {row.description}
-                            </div>
-                          )}
-                        </div>
-                        <ChevronRight
-                          className="w-4 h-4 shrink-0"
-                          style={{ color: "var(--leadac-muted)" }}
-                          aria-hidden="true"
-                        />
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
+                        )}
+                      </div>
+                      <ChevronRight
+                        className="w-4 h-4 shrink-0"
+                        style={{ color: "var(--leadac-muted)" }}
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
       </div>
     </div>
   );

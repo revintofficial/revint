@@ -17,7 +17,7 @@ const SCENES: ScrollScene[] = [
     id: "discover",
     eyebrow: "01 — Discover",
     title: "Pick a postcode and a niche.",
-    body: "Leadac AI pulls every matching local business straight from Google Maps the moment you ask. The data is live, never a recycled Apollo export the whole industry already burned.",
+    body: "Every matching business pulled straight from Google Maps. Live data, not a recycled list the whole industry already emailed.",
     visual: (
       <DiscoveryDemo
         cities={DemoData.HOME_CITIES}
@@ -29,8 +29,8 @@ const SCENES: ScrollScene[] = [
   {
     id: "audit",
     eyebrow: "02 — Audit & score",
-    title: "We open the hood on every site.",
-    body: "Twenty-plus signals: HTTPS, mobile fit, booking flow, page weight, last-updated year. Gemini scores the opportunity 0-100 and tells you exactly why it landed there.",
+    title: "Every site gets opened up.",
+    body: "20+ signals checked: HTTPS, mobile, booking flow, page speed. Each business gets a 0-100 score and you can see exactly why.",
     visual: (
       <div className="rounded-2xl p-4" style={{
         background: "linear-gradient(180deg, rgba(32,32,36,0.92), rgba(22,22,26,0.96))",
@@ -47,15 +47,15 @@ const SCENES: ScrollScene[] = [
   {
     id: "mockup",
     eyebrow: "03 — Mockup",
-    title: "Show, don't pitch.",
-    body: "One click drafts a custom one-page mockup using the prospect's real name, reviews, and missing features. Drop the link in your email and the message stops being 'hi, can I help' and starts being 'I built you a draft.'",
+    title: "Show them, don't pitch them.",
+    body: "One click builds a page with their real name, reviews, and the features they're missing. Drop the link in the email. You're not asking to help anymore, you already started.",
     visual: <MockupGeneratorDemo lead={FEATURED_LEAD} />,
   },
   {
     id: "opener",
     eyebrow: "04 — Opener",
-    title: "AI writes the first draft. You ship.",
-    body: "The opener references their actual site, not a Mad Lib. You read it, edit the line that sounds off, and push the file to Smartlead or Instantly. Auto-send is off by default, on purpose.",
+    title: "AI writes the draft. You send it.",
+    body: "References their actual site, not a template. Read it, fix anything that sounds off, export to Smartlead or Instantly. Auto-send stays off.",
     visual: <OpenerComposer lead={FEATURED_LEAD} />,
   },
 ];

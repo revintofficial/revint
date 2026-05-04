@@ -198,14 +198,8 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
           Sidebar still available via a "Workspace" sheet from the left, but
           primary nav lives in the bottom tab bar. */}
       <div
-        className="fixed top-0 left-0 right-0 z-40 flex items-center gap-1 px-2 md:hidden safe-pt"
-        style={{
-          background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.85)",
-          backdropFilter: "saturate(180%) blur(30px)",
-          WebkitBackdropFilter: "saturate(180%) blur(30px)",
-          borderBottom: "0.5px solid hsl(0 0% 100% / 0.08)",
-          minHeight: "var(--app-bar-height)",
-        }}
+        className="app-chrome-glass app-chrome-glass--top fixed top-0 left-0 right-0 z-40 flex items-center gap-1 px-2 md:hidden safe-pt"
+        style={{ minHeight: "var(--app-bar-height)" }}
       >
         <button
           onClick={() => setSidebarOpen(true)}
@@ -267,13 +261,7 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
       >
         <div className="h-full p-3">
           <div
-            className="h-full flex flex-col overflow-hidden rounded-2xl"
-            style={{
-              background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.85)",
-              backdropFilter: "saturate(180%) blur(30px)",
-              WebkitBackdropFilter: "saturate(180%) blur(30px)",
-              border: "0.5px solid hsl(0 0% 100% / 0.08)",
-            }}
+            className="app-chrome-glass h-full flex flex-col overflow-hidden rounded-2xl"
           >
             <div
               className="px-4 pt-5 pb-4"
@@ -441,15 +429,7 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden relative z-10">
-        <header
-          className="mx-3 sm:mx-4 mt-3 sm:mt-4 rounded-xl overflow-hidden hidden md:block"
-          style={{
-            background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.85)",
-            backdropFilter: "saturate(180%) blur(30px)",
-            WebkitBackdropFilter: "saturate(180%) blur(30px)",
-            border: "0.5px solid hsl(0 0% 100% / 0.08)",
-          }}
-        >
+        <header className="app-chrome-glass mx-3 sm:mx-4 mt-3 sm:mt-4 rounded-xl overflow-hidden hidden md:block">
           <div className="h-12 flex items-center px-4">
             <div className="flex-1">
               <h2

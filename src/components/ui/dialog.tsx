@@ -34,19 +34,13 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-1.5rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-4 sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
+        "app-panel-glass fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-1.5rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 p-4 sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
         className
       )}
-      style={{
-        background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.95)",
-        backdropFilter: "saturate(180%) blur(30px)",
-        border: "0.5px solid hsl(0 0% 100% / 0.12)",
-        boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3)",
-      }}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 opacity-70 transition-all hover:opacity-100 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-(--leadac-500)/50 focus:ring-offset-2 focus:ring-offset-black disabled:pointer-events-none text-white">
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 opacity-70 transition-all hover:opacity-100 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--leadac-500)/55 focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:pointer-events-none text-white">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>

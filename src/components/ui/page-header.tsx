@@ -5,23 +5,48 @@ interface PageHeaderProps {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
+  /**
+   * Optional breadcrumb / eyebrow row rendered above the title — useful
+   * for nested routes that want the parent context (e.g. "Settings ›
+   * Billing"). When omitted, the title sits flush at the top.
+   */
   breadcrumb?: ReactNode;
   className?: string;
 }
 
-export function PageHeader({ title, subtitle, actions, breadcrumb, className }: PageHeaderProps) {
+// Single source of truth for product page chrome. Every authed page
+// should use this rather than hand-rolling its own <h1>; that's how the
+// title size, subtitle color, and breadcrumb spacing stay aligned across
+// dashboard / leads / settings / more.
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+  breadcrumb,
+  className,
+}: PageHeaderProps) {
   return (
     <div className={cn("space-y-1", className)}>
       {breadcrumb && <div className="mb-2">{breadcrumb}</div>}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-[22px] sm:text-[28px] font-bold tracking-tight text-white break-words">
+          <h1
+            className="font-bold tracking-tight wrap-break-word"
+            style={{
+              color: "var(--leadac-text-1)",
+              fontSize: "var(--text-title-1)",
+              letterSpacing: "-0.02em",
+            }}
+          >
             {title}
           </h1>
           {subtitle && (
             <p
-              className="text-[13.5px] sm:text-[15px] mt-1"
-              style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.6)" }}
+              className="mt-1"
+              style={{
+                color: "var(--leadac-text-2)",
+                fontSize: "var(--text-callout)",
+              }}
             >
               {subtitle}
             </p>

@@ -35,13 +35,13 @@ export function CineFeatures() {
         }}
       >
         <div className="flex flex-col items-center text-center gap-4 mb-12 md:mb-14 max-w-3xl mx-auto">
-          <span className="vx-badge-light">Why it works</span>
+          <span className="vx-badge-light">How it works</span>
           <h2 className="vx-display text-[clamp(30px,4.4vw,52px)] leading-[1.04] text-[color:var(--vx-ink)] max-w-[24ch]">
-            Cold email is broken because it sounds{" "}
+            Cold email fails when it sounds{" "}
             <span className="vx-text-gradient">cold.</span>
           </h2>
           <p className="text-[14.5px] md:text-[15.5px] text-[color:var(--vx-ink-mute)] max-w-xl leading-relaxed">
-            What gets a reply is proof you did your homework. We do it for you on every prospect — audit, opener, mockup — and ship it on the first line.
+            Replies come from proof you did the homework. We do it on every prospect.
           </p>
         </div>
 
@@ -51,8 +51,8 @@ export function CineFeatures() {
             tinted
             className="col-span-full lg:row-span-1 overflow-hidden pl-6 pt-6 pr-6"
             icon={<FileSearch className="w-5 h-5" />}
-            title="The homework, attached to email one"
-            body="Booking flow, mobile fit, page speed, schema, up to 500 Google reviews — read for you on every lead. The 0-100 score, the angle, the offer tier and the price band are waiting before you write the first line."
+            title="Every site audited before you write a word"
+            body="Booking flow, mobile speed, schema, up to 500 reviews. All checked. 0-100 score with the angle and price band waiting."
           >
             <AuditPanelIllustration />
           </FeatureCard>
@@ -61,8 +61,8 @@ export function CineFeatures() {
           <FeatureCard
             className="overflow-hidden p-6"
             icon={<MapPin className="w-5 h-5" />}
-            title="Fresh local data"
-            body="Postcode plus niche pulls 50 businesses live off Google Maps. The list you get this morning, no other agency has tonight."
+            title="Data nobody else has"
+            body="Your list pulls straight off Google Maps this morning. No other agency is emailing these tonight."
           >
             <MapIllustration />
           </FeatureCard>
@@ -71,8 +71,8 @@ export function CineFeatures() {
           <FeatureCard
             className="group overflow-hidden p-6"
             icon={<Mail className="w-5 h-5" />}
-            title="An opener that did the research"
-            body="The draft references the exact thing the audit found. The reply asks what it would cost — not who you are."
+            title="Emails that mention actual problems"
+            body="The draft references what the audit found. Their reply asks how much, not who you are."
           >
             <OpenerIllustration />
           </FeatureCard>
@@ -81,8 +81,8 @@ export function CineFeatures() {
           <FeatureCard
             className="group overflow-hidden p-6"
             icon={<Inbox className="w-5 h-5" />}
-            title="Your inbox. Your brand."
-            body="Auto-send stays off. Review and ship from Gmail or Outlook so the deliverability score and the quality floor both stay yours."
+            title="Your inbox. Your rules."
+            body="Auto-send stays off. Review everything and send from your own Gmail or Outlook."
           >
             <InboxIllustration />
           </FeatureCard>

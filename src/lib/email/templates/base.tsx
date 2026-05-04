@@ -32,7 +32,7 @@ interface BaseEmailProps {
   children: ReactNode;
   /** Appended to the footer — useful for per-template legal / opt-out notes. */
   footerNote?: ReactNode;
-  /** Drives the top accent bar color. Defaults to "accent" (indigo). */
+  /** Drives the top accent bar color. Defaults to "accent" (primary). */
   tone?: Tone;
   /** Optional language for the <html lang=""> attribute. Defaults to "en". */
   lang?: "tr" | "en";

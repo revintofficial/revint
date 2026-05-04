@@ -21,7 +21,7 @@
    * Leadac theme system — single mathematical HSL scale.
    *
    * To re-skin the entire application, change ONLY these knobs:
-   *   --leadac-h    → primary hue  (0-360, default 248 = indigo)
+   *   --leadac-h    → primary hue  (0-360, current 38 = warm ochre)
    *   --leadac-s    → primary sat  (0-100%, default 62%)
    *   --leadac-ns   → neutral surface sat (default 7%)
    *   --leadac-nts  → neutral text sat    (default 10%)
@@ -82,8 +82,9 @@
   --bg-tertiary: var(--leadac-card);
   --bg-elevated: var(--leadac-hover);
 
-  /* iOS Dark Mode System Colors — values remapped to indigo, names preserved
-   * so `var(--system-blue)` consumers shift automatically. Do not rename. */
+  /* iOS Dark Mode System Colors — names preserved (do not rename) but
+   * every value is remapped onto the leadac scale, so a re-skin of
+   * --leadac-h shifts every `var(--system-*)` consumer in lockstep. */
   --system-blue: var(--leadac-500);
   --system-blue-hover: var(--leadac-400);
   --system-green: var(--leadac-success);
@@ -91,7 +92,7 @@
   --system-red: var(--leadac-error);
   --system-purple: var(--leadac-400);
   --system-teal: var(--leadac-300);
-  --system-yellow: hsl(38 60% 64%);
+  --system-yellow: hsl(var(--leadac-h) var(--leadac-s) 64%);
 
   /* Label / Text */
   --label-primary: var(--leadac-text-1);
@@ -330,31 +331,64 @@ body {
   display: none;
 }
 
-/* Glass utilities - defined outside @layer for Tailwind v4 compatibility */
+/* Glass utilities - defined outside @layer for Tailwind v4 compatibility.
+ * Backgrounds derive from --leadac-h/--leadac-ns so a re-skin shifts
+ * the surface tint along with the rest of the system instead of staying
+ * locked to the old iOS-dark slate. */
 .glass {
-  background: rgba(28, 28, 30, 0.72) !important;
+  background: hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.72) !important;
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border: 0.5px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .glass-strong {
-  background: rgba(28, 28, 30, 0.85) !important;
+  background: hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.85) !important;
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border: 0.5px solid rgba(255, 255, 255, 0.12) !important;
 }
 
 .glass-card {
-  background: rgba(28, 28, 30, 0.68) !important;
+  background: hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.68) !important;
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border: 0.5px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.25);
 }
 
+/* App-shell chrome surface — used by the phone top bar, the desktop
+ * sidebar wrapper, and the desktop header. They all need the same
+ * deep-glass tone (one shade darker than .glass-card so floating
+ * navigation reads as "above" the page content). Centralised here so
+ * a re-skin of --leadac-h/--leadac-ns flows through chrome too. */
+.app-chrome-glass {
+  background: hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.85);
+  backdrop-filter: saturate(180%) blur(30px);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  border: 0.5px solid hsl(0 0% 100% / 0.08);
+}
+.app-chrome-glass--top {
+  border: 0;
+  border-bottom: 0.5px solid hsl(0 0% 100% / 0.08);
+}
+
+/* Floating-panel glass — used by Dialog content, DropdownMenu content,
+ * Select content. They sit "on top" of the page so the surface is one
+ * shade lighter than .app-chrome-glass and the border slightly stronger
+ * to lift the panel off the backdrop. */
+.app-panel-glass {
+  background: hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.95);
+  backdrop-filter: saturate(180%) blur(30px);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  border: 0.5px solid hsl(0 0% 100% / 0.12);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
 .glass-liquid {
-  background: rgba(20, 20, 22, 0.75) !important;
+  background: hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.75) !important;
   backdrop-filter: saturate(180%) blur(30px);
   -webkit-backdrop-filter: saturate(180%) blur(30px);
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -469,9 +503,21 @@ body {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
 }
+/* Pre-rebrand purple/blue glow has been replaced with the warm-ochre
+ * primary so `animate-glow` reads as on-brand. The keyframe is currently
+ * unused in the codebase but kept so future opt-ins inherit the right
+ * tone without another patch. */
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.3), 0 0 40px rgba(59, 130, 246, 0.2); }
-  50% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.5), 0 0 60px rgba(59, 130, 246, 0.3); }
+  0%, 100% {
+    box-shadow:
+      0 0 20px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.3),
+      0 0 40px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 30px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.5),
+      0 0 60px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.3);
+  }
 }
 @keyframes slideUp {
   from { transform: translateY(20px); opacity: 0; }
@@ -682,8 +728,10 @@ button, a, .cursor-pointer {
  * --------------------------------------------------------------------- */
 
 :root {
-  /* Purple accent (single hue, shifted for light vs dark backgrounds) */
-  /* Voxr landing tokens — values remapped to indigo so landing inherits theme. */
+  /* Voxr landing accent — values remapped to the leadac scale so the
+   * landing inherits whatever the active --leadac-h/--leadac-s is.
+   * Variable names are kept (--vx-purple-*) for backwards compatibility
+   * with the marketing components; do not rename. */
   --vx-purple-50:  hsl(var(--leadac-h) var(--leadac-s) 95%);
   --vx-purple-100: var(--leadac-100);
   --vx-purple-200: var(--leadac-100);

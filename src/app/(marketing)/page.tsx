@@ -24,9 +24,9 @@ import { buildMetadata } from "@/lib/seo/metadata";
 export const metadata = buildMetadata({
   path: "/",
   title:
-    "Leadac — Client acquisition system for agencies. Turn Google Maps into your next 50 clients.",
+    "Leadac — Find local clients off Google Maps. Audit, email, mockup, close.",
   description:
-    "Client acquisition system for agencies selling into local businesses. Postcode plus niche pulls 50 fresh businesses off Google Maps, reads every site for you, drafts a personalised first email from what the audit found, and ships a one-page mockup the prospect can click. Replies that don't crash mid-quarter. Plugs into Smartlead, Instantly, GHL, Gmail, Outlook.",
+    "Postcode plus niche pulls 50 fresh businesses off Google Maps. Every site audited, a personalised opener drafted, and a one-page mockup the prospect can click. Works with Smartlead, Instantly, GHL, Gmail, Outlook.",
   keywords: [
     "client acquisition system",
     "client acquisition system for agencies",
@@ -61,23 +61,23 @@ const HERO_FRAME_EXT = "jpg" as const;
 const REASONS: CineReason[] = [
   {
     icon: "Package",
-    title: "The reply is the product",
-    body: "Apollo hands you a contact and says good luck. Clay enriches a row. Smartlead sends. Leadac gives you the shape of the first two emails — the opener grounded in what the audit found, the mockup link that turns the reply into a discovery call. You stop buying lists. You start buying conversations.",
+    title: "Conversations, not contacts",
+    body: "Apollo gives you a name and wishes you luck. Clay enriches a row. Smartlead sends it. Leadac gives you the opener, the mockup, and the angle that actually gets a response.",
   },
   {
     icon: "TrendingUp",
-    title: "Month three writes better copy than month one",
-    body: "Most outbound tools reset every lead. Leadac watches what works. Winning openers are saved and pulled back in as examples the next time you draft — your voice sharpens with every reply, and your AI stops needing a fresh prompt for every client account.",
+    title: "Gets better the longer you use it",
+    body: "Winning openers get saved and pulled back as examples next time. The drafts sound more like you with every campaign. No re-prompting per client.",
   },
   {
     icon: "ShieldCheck",
-    title: "One subscription, no credit math",
-    body: "Fresh Google Maps data on every search. Up to 500 reviews, competitor ads, LinkedIn hiring, Reddit mentions — under one monthly cap. No mid-campaign credit panic. No per-row enrichment budget.",
+    title: "One subscription, no credit maths",
+    body: "Maps data, reviews, competitor ads, LinkedIn, Reddit mentions. One monthly cap. No panic mid-campaign because you ran out of credits.",
   },
   {
     icon: "Scale",
-    title: "AI drafts. You ship. Brand stays yours.",
-    body: "Auto-send is off by default. The AI runs the research, the audit, the opener, the mockup. You review and send from your own inbox — every cold-email operator on Reddit agrees that the moment the human leaves the loop, the quality floor collapses.",
+    title: "AI writes. You review. Your brand.",
+    body: "Auto-send off by default. You check everything before it goes out from your own inbox. Take the human out and quality tanks. Every cold email operator on Reddit will tell you the same.",
   },
 ];
 
@@ -85,35 +85,35 @@ const STEPS: CineStep[] = [
   {
     n: "1",
     title: "Discover",
-    body: "Postcode plus niche. Google Places live. Name, website, phone, rating, opening hours — back in seconds.",
+    body: "Postcode, niche. Name, website, phone, rating, hours. Back in seconds.",
   },
   {
     n: "2",
     title: "Score",
-    body: "Open any lead. A 20-signal site audit, up to 500 Google reviews scanned, and a 0-100 opportunity score with the best angle, offer tier, and price band already waiting.",
+    body: "20 signals, up to 500 reviews, 0-100 score. Best angle and price band ready.",
   },
   {
     n: "3",
     title: "Pitch",
-    body: "One click drafts the opener off the audit findings and hosts a one-page mockup on a private branded link. That link in the email is the thing that gets replied to.",
+    body: "One click: opener draft plus a mockup on a branded link. That link is what gets replied to.",
   },
   {
     n: "4",
     title: "Send",
-    body: "Review the draft, push from Gmail or Outlook, or export a CSV to Smartlead or Instantly. Replies attribute to the lead automatically — the pipeline stage advances without you touching it.",
+    body: "Gmail, Outlook, or export to Smartlead/Instantly. Replies track back to the lead automatically.",
   },
   {
     n: "5",
     title: "Install",
-    body: "When the prospect signs, Leadac exports the AI receptionist, review-reply agent, and lead-response tree you pitched. Booking widget and GBP auto-post are in beta.",
+    body: "Prospect signs? Export the AI receptionist, review-reply agent, and lead-response flow you pitched. Booking widget and GBP posting in beta.",
   },
 ];
 
 const STATS: CineStat[] = [
-  { value: "47", label: "Audited leads in five minutes" },
+  { value: "47", label: "Leads audited in five minutes" },
   { value: "500", label: "Google reviews scanned per lead" },
   { value: "20+", label: "Site signals scored, 0-100" },
-  { value: "0", label: "Apollo contacts reused" },
+  { value: "0", label: "Apollo contacts recycled" },
 ];
 
 /**
@@ -137,13 +137,13 @@ const TESTIMONIALS: CineTestimonial[] = [
   },
   {
     quote:
-      "If you’re using AI for cold outreach, are you OK with the damages?",
+      "If you're using AI for cold outreach, are you OK with the damages?",
     name: "r/coldemail",
     role: "AI-cold-email thread",
   },
   {
     quote:
-      "3–4% reply and 96%+ deliverability is the realistic bar. Everything else is vanity.",
+      "3-4% reply and 96%+ deliverability is the realistic bar. Everything else is vanity.",
     name: "r/coldemail",
     role: "60k-email operator",
   },
@@ -155,13 +155,13 @@ const TESTIMONIALS: CineTestimonial[] = [
   },
   {
     quote:
-      "I need a predictable way to get clients — not another course, not another tool, a system.",
+      "I need a predictable way to get clients. Not another course, not another tool. A system.",
     name: "r/SMMA",
     role: "Top comment, April 2026",
   },
   {
     quote:
-      "I worked as an executor for four years. I know Klaviyo cold. I don’t know how agencies actually acquire clients.",
+      "I worked as an executor for four years. I know Klaviyo cold. I don't know how agencies actually acquire clients.",
     name: "r/agency",
     role: "Klaviyo specialist, going solo",
   },
@@ -170,43 +170,43 @@ const TESTIMONIALS: CineTestimonial[] = [
 const FAQ_ITEMS: CineFaqItem[] = [
   {
     q: "Is this a tool or a system?",
-    a: "Both. The tool is the surface — it runs the discovery, the audit, the mockup, the opener draft, the export. The system is the thing that actually books the call: fresh local data nobody else has, the homework hand-attached to every first email, and a memory that learns which lines land. Most agencies arrive with four tools and leave with one.",
+    a: "Both. Discovery, audit, mockup, opener draft, export — that's the tool. The system is the part that actually books the call: fresh data nobody else has, homework attached to every first email, and a memory that learns which lines land.",
   },
   {
     q: "How is this different from Apollo or Clay?",
-    a: "Apollo and Clay own the enterprise-SaaS contact database. Leadac does not try to fight on that ground. We are the upstream layer for local-service outbound: fresh Google Maps data (not a shared 50M dump), a 20-signal site audit on every lead, a 0-100 opportunity score, and a personalised opener built from what the audit found. Most agencies end up running Leadac in front of Apollo, not instead of it.",
+    a: "Apollo and Clay own the enterprise contact database. We don't compete there. Leadac is the upstream layer for local business outbound: fresh Google Maps data, a site audit on every lead, a 0-100 score, and a personalised opener built from what the audit found. Most agencies end up running Leadac in front of Apollo, not instead of it.",
   },
   {
-    q: "What does the ‘install’ part actually ship?",
-    a: "Three products live today, each one trained on the prospect’s own site so it speaks like their business, not a template: (1) an AI receptionist that exports to Synthflow, Retell, Vapi, or GHL; (2) a review-reply agent with a 50-reply pool, your tone, and a human approval gate on 1- and 2-star reviews; (3) a 60-second lead-response sequence (SMS or email) that exports to GHL, n8n, or Make. In beta: an embeddable booking widget and a 30-day Google Business Profile post schedule. We don’t advertise what hasn’t shipped.",
+    q: "What does 'install' actually mean?",
+    a: "Three products you can sell to the prospect, each trained on their own site: an AI receptionist (exports to Synthflow, Retell, Vapi, or GHL), a review-reply agent with human approval on 1 and 2 star reviews, and a 60-second lead-response sequence (GHL, n8n, or Make). Booking widget and GBP posting are in beta. We don't advertise what hasn't shipped.",
   },
   {
-    q: "How does the AI actually improve over time?",
-    a: "Every reply you send teaches it. Openers that landed get saved as wins; weak ones get marked. The next time you draft, the system quietly pulls your three best past wins as examples before it writes — so your voice sharpens with every campaign, and the AI stops sounding like generic AI. Your offer and positioning are learned once and applied to every opener and mockup; you don’t re-prompt it for every client.",
+    q: "How does the AI improve over time?",
+    a: "Every reply teaches it. Good openers get saved as examples for next time. Your voice and positioning are learned once and applied everywhere. You stop re-prompting it for every client.",
   },
   {
-    q: "Does it integrate with Smartlead or Instantly?",
-    a: "Yes. Pro and Agency plans export a CSV formatted for both, with custom variables for the mockup link and the audit signals. You can also send natively from your connected Gmail or Outlook — Leadac then matches inbound replies back to the lead automatically and advances the pipeline stage without you touching it.",
+    q: "Does it work with Smartlead or Instantly?",
+    a: "Yes. Pro and Agency plans export a CSV formatted for both, with custom variables for the mockup link and audit signals. You can also send from connected Gmail or Outlook. Replies match back to the lead and the pipeline stage moves on its own.",
   },
   {
     q: "Is the AI sending emails for me?",
-    a: "No, and it won’t unless you flip a toggle. Auto-send is off by default. Leadac generates the audit, the mockup, and the draft opener. You review and ship. AI outreach with no human in the loop burns brand and deliverability — the default stays conservative.",
+    a: "No. Auto-send is off by default and it stays that way unless you flip a toggle. Leadac generates the audit, the mockup, and the draft. You review and send. AI outreach without a human in the loop burns deliverability.",
   },
   {
     q: "Where do the leads come from?",
-    a: "Live Google Maps on every search: business name, website, phone, rating, opening hours. Because each business keeps its own Google Business Profile current, the data is dramatically cleaner than any scraped list — and fresher than an Apollo export ten other agencies worked this quarter. On top of that, the deep enrichment layer adds up to 500 reviews, social posts, competitor ads, LinkedIn hiring signals, and Reddit mentions — all inside your monthly cap.",
+    a: "Live Google Maps on every search. Businesses keep their own profiles current, so the data is cleaner than any scraped list. Deep enrichment adds reviews, social posts, competitor ads, LinkedIn signals, and Reddit mentions. All inside your monthly cap.",
   },
   {
-    q: "Can I white-label it for clients?",
-    a: "Agency tier ships per-workspace branding today — your logo, colour, and domain on the hosted mockup pages. Full white-label (custom domain across the whole workspace, invoiced to your entity) lands mid-2026.",
+    q: "Can I white-label it?",
+    a: "Agency tier has workspace branding today: your logo, colours, and domain on mockup pages. Full white-label with a custom domain across the whole workspace lands mid-2026.",
   },
   {
     q: "Can I cancel any time?",
-    a: "Yes, from Settings → Billing. Access continues through the end of the cycle. Data is held for 30 days in case you come back. Free plan never charges a card.",
+    a: "Yes. Settings, billing, done. Access runs till the end of your cycle. Data kept 30 days. Free plan never touches a card.",
   },
   {
     q: "Is my data private?",
-    a: "Leads, notes, pipeline, shortlists, voice notes, and your saved memory are scoped to your workspace. Only invited members see them. We do not share or resell your data and we do not use it to train third-party models.",
+    a: "Leads, notes, pipeline, shortlists, voice notes, and saved memory are scoped to your workspace. Only invited members see them. We don't share or resell your data and we don't use it to train models.",
   },
 ];
 
@@ -217,15 +217,15 @@ const COPILOT_TOOLS = [
   },
   {
     name: "Search by meaning",
-    hint: "Pull leads by intent, not just keywords.",
+    hint: "Pull leads by intent, not keywords.",
   },
   {
     name: "Start a pitch",
-    hint: "Spin up the mockup, opener, and plan for any lead.",
+    hint: "Mockup, opener, and plan for any lead.",
   },
   {
     name: "Run deep research",
-    hint: "Pull web, socials, reviews, and competitor signals.",
+    hint: "Web, socials, reviews, competitor signals.",
   },
   {
     name: "Find lookalikes",
@@ -236,15 +236,15 @@ const COPILOT_TOOLS = [
 const MEMORY_KINDS = [
   {
     name: "Winning openers",
-    hint: "Your best first messages, pulled in as examples next time.",
+    hint: "Best first messages, pulled in as examples next time.",
   },
   {
     name: "Your positioning",
-    hint: "Your offer and voice, learned once and applied to every draft.",
+    hint: "Offer and voice, learned once, applied everywhere.",
   },
   {
     name: "Prospect knowledge",
-    hint: "Their own site, ready for the receptionist to answer questions.",
+    hint: "Their own site, ready for the receptionist.",
   },
   {
     name: "Review pain points",
@@ -252,7 +252,7 @@ const MEMORY_KINDS = [
   },
   {
     name: "Mockup blocks that converted",
-    hint: "Hero, service, and CTA sections that got replies before.",
+    hint: "Sections that got replies before.",
   },
 ];
 
@@ -264,16 +264,16 @@ export default function LandingPage() {
         frameCount={HERO_FRAME_COUNT}
         frameExt={HERO_FRAME_EXT}
         badge="New"
-        tagline="Client acquisition system for agencies"
-        headline="Turn Google Maps into your next 50 clients."
-        sub="Postcode plus niche. Leadac pulls 50 fresh businesses off Google Maps, reads every site in the background, and drafts a personalised first email from what the audit found — paired with a one-page mockup the prospect can click on the same line. Five minutes from your first search to a list nobody else is emailing tonight."
+        tagline="For agencies selling to local businesses"
+        headline="Google Maps to signed clients."
+        sub="Postcode, niche, go. 50 fresh leads off Maps, every site audited, a draft email and clickable mockup ready to send. Five minutes."
         ctaPrimary={
           MARKETING_COMING_SOON
             ? { label: "Launching soon" }
-            : { label: "Get my first 50 clients", href: "/signup" }
+            : { label: "Get my first 50 leads", href: "/signup" }
         }
         ctaSecondary={{ label: "Watch the tour", href: "#tour" }}
-        partnersLabel="Plugs into your sender. We don’t replace it."
+        partnersLabel="Works with your sender. We don't replace it."
         partners={["Smartlead", "Instantly", "GHL", "Gmail", "Outlook"]}
       />
 
@@ -287,8 +287,8 @@ export default function LandingPage() {
           ScrollStage inside HomeScrollTour relies on `position: sticky`, and
           any ancestor with `overflow: hidden` / `overflow: auto` turns into
           a scroll container, which silently breaks sticky and leaves only
-          scene 1’s visual on screen while the rest scroll off. `clip`
-          doesn’t create a scroll container, so sticky keeps working. */}
+          scene 1's visual on screen while the rest scroll off. `clip`
+          doesn't create a scroll container, so sticky keeps working. */}
       <section
         id="tour"
         className="vx-dark-section-soft relative py-24 md:py-36 overflow-x-clip"
@@ -322,8 +322,7 @@ export default function LandingPage() {
               )}
             </h2>
             <p className="text-[15px] md:text-[16.5px] text-white/55 max-w-xl leading-relaxed">
-              No sales call. No scripted demo. Scroll, and four screens play in order with real data —
-              discover, audit, mockup, opener. Same screens you&apos;ll be using ten minutes from now.
+              No sales call, no demo script. Scroll through four screens with real data. Same ones you&apos;ll be using ten minutes from now.
             </p>
           </div>
           <HomeScrollTour />
@@ -332,15 +331,15 @@ export default function LandingPage() {
 
       <CineWhy
         eyebrow="What changes"
-        headline="Fewer emails. More replies. Paid retainers, not pilot calls."
-        sub="Four reasons the agencies running a pilot keep the card on file past month three."
+        headline="Fewer emails. More replies. Retainers, not pilot calls."
+        sub="Why agencies stick around after month three."
         reasons={REASONS}
       />
 
       <CineProcess
-        eyebrow="Five moves"
-        headline="From empty screen to signed client."
-        sub="No onboarding call. No 60-page doc. You open the app, type a postcode, hit go — the tool carries the rest."
+        eyebrow="Five steps"
+        headline="Empty screen to signed client."
+        sub="Open the app, type a postcode, hit go."
         steps={STEPS}
       />
 
@@ -366,11 +365,11 @@ export default function LandingPage() {
               The compounding part
             </span>
               <h2 className="vx-display text-[clamp(32px,5vw,60px)] leading-[1.02] tracking-[-0.03em] max-w-[22ch] text-white">
-              The tool that{" "}
-              <span className="vx-text-gradient">gets sharper the more you use it.</span>
+              Gets sharper{" "}
+              <span className="vx-text-gradient">the more you use it.</span>
             </h2>
             <p className="text-[15px] md:text-[16.5px] text-white/55 max-w-xl leading-relaxed">
-              Most outbound tools look the same on day 90 as day one. Two things make Leadac different: a copilot that runs real actions from chat, and a memory that watches every reply and teaches the next draft how to sound more like you.
+              A copilot that runs real actions from chat, and a memory that learns from every reply you get.
             </p>
           </div>
 
@@ -403,10 +402,10 @@ export default function LandingPage() {
                 </p>
               </div>
               <h3 className="text-[22px] md:text-[26px] font-semibold tracking-[-0.01em] text-white leading-[1.15]">
-                Ask your pipeline, not a spreadsheet.
+                Talk to your pipeline.
               </h3>
               <p className="text-[13.5px] text-white/60 leading-relaxed">
-                Skip the four-step workflow in your head. Say “find 20 lookalikes of my best closer in Manchester and draft the openers” — the copilot runs the real tools, attributes the work back to each lead, and hands you the drafts. No more clicking through filters.
+                &quot;Find 20 lookalikes of my best closer in Manchester and draft the openers.&quot; It runs the tools, links work back to each lead, hands you the drafts.
               </p>
               <ul className="flex flex-col gap-2 mt-2">
                 {COPILOT_TOOLS.map((t) => (
@@ -460,10 +459,10 @@ export default function LandingPage() {
                 </p>
               </div>
               <h3 className="text-[22px] md:text-[26px] font-semibold tracking-[-0.01em] text-white leading-[1.15]">
-                Your winning openers train the next one.
+                Best openers train the next one.
               </h3>
               <p className="text-[13.5px] text-white/60 leading-relaxed">
-                Every reply tells the system which lines landed and which didn’t. The next time you draft, it quietly pulls your three best past wins as examples before writing — your voice sharpens with every campaign, the AI stops drifting, and you never re-prompt it for every client account.
+                Every reply teaches it which lines worked. Next draft pulls your three best past wins as examples. Voice gets sharper, AI stops drifting.
               </p>
               <ul className="flex flex-col gap-2 mt-2">
                 {MEMORY_KINDS.map((m) => (
@@ -492,11 +491,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <CineStats eyebrow="The thesis, in numbers" stats={STATS} />
+      <CineStats eyebrow="The numbers" stats={STATS} />
 
       <CineTestimonials
-        eyebrow="What the operators say"
-        headline="The math the threads keep posting."
+        eyebrow="From the threads"
+        headline="What the operators keep posting."
         testimonials={TESTIMONIALS}
       />
 
@@ -529,15 +528,15 @@ export default function LandingPage() {
                 </>
               ) : (
                 <>
-                  Stop stacking tools.{" "}
-                  <span className="vx-text-gradient">Start stacking replies.</span>
+                  One subscription.{" "}
+                  <span className="vx-text-gradient">Stop stacking tools.</span>
                 </>
               )}
             </h2>
             <p className="text-[15px] md:text-[16.5px] text-white/55 max-w-xl leading-relaxed">
               {MARKETING_COMING_SOON
-                ? "We’re finishing packaging for launch. Same thesis: one workspace instead of a four-tool spreadsheet stack — details when signup opens."
-                : "A typical Apollo + Clay + Smartlead + AI-receptionist stack runs $300–$475 a month before your agency retainer. Leadac’s Agency tier does the same work for roughly 15% of that. One subscription. One workspace. One card on file."}
+                ? "Finishing the packaging. One workspace instead of four tools. Details when signup opens."
+                : "Apollo + Clay + Smartlead + a receptionist runs $300-$475 a month before your agency retainer. Leadac Agency does it all for about 15% of that. One card on file."}
             </p>
           </div>
           <PricingCards ctaDisabled={MARKETING_COMING_SOON} />
@@ -547,35 +546,35 @@ export default function LandingPage() {
       {/* Integrations orbit — after pricing so plan choice is answered, then stack fit. */}
       <MultiOrbitSemiCircle
         eyebrow="Integrations"
-        title="Plugs into the stack you already pay for."
-        subtitle="Send from Gmail or Outlook. Export to Smartlead, Instantly, or GHL. Install the AI receptionist into Synthflow, Retell, or Vapi. One subscription, every layer — no new contracts to sign."
+        title="Works with what you already use."
+        subtitle="Gmail or Outlook for sending. Smartlead, Instantly, or GHL for sequences. Synthflow, Retell, or Vapi for the receptionist. One subscription."
       />
 
       <CineFaq
         eyebrow="Questions"
         headline={
-          MARKETING_COMING_SOON ? "Answers before launch." : "Read this before you sign up."
+          MARKETING_COMING_SOON ? "Answers before launch." : "Before you sign up."
         }
         sub={
           MARKETING_COMING_SOON
-            ? "Short answers — full story when we open signup."
-            : "Short answers. The long answers are one email away."
+            ? "Quick answers. Full story when signup opens."
+            : "Quick answers. Longer ones are one email away."
         }
         contactCta={{ label: "Email the founder", href: "mailto:mert@leadac.ai" }}
         items={FAQ_ITEMS}
       />
 
       <CineCta
-        headline="Your next 50 clients aren’t on Apollo."
+        headline="Your next 50 clients aren't on Apollo."
         sub={
           MARKETING_COMING_SOON
-            ? "They’re on Google Maps — same workflow when we open the doors. Until then, watch the tour above or drop us a line."
-            : "They’re on Google Maps. Pick a postcode, pick a niche, open the first audited lead in five minutes. If the list doesn’t beat what you’re emailing to today, walk away. No card taken, nothing to cancel."
+            ? "They're on Google Maps. Watch the tour above or drop us a line."
+            : "They're on Google Maps. Pick a postcode, pick a niche, open the first audited lead in five minutes. If the list doesn't beat what you're emailing now, close the tab."
         }
         primary={
           MARKETING_COMING_SOON
             ? { label: "Launching soon" }
-            : { label: "Get my first 50 clients", href: "/signup" }
+            : { label: "Get my first 50 leads", href: "/signup" }
         }
         secondary={
           MARKETING_COMING_SOON
