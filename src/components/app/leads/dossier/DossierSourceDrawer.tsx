@@ -21,6 +21,7 @@ import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ExternalLink, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { humanizePrimaryType } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import {
   chipClassesForTone,
@@ -248,7 +249,7 @@ function LeadBody({ sources }: { sources: DossierSourcesPayload }) {
   return (
     <Section title="Business profile">
       <Field label="Name" value={l.businessName} />
-      <Field label="Type" value={l.primaryType ?? "—"} />
+      <Field label="Type" value={humanizePrimaryType(l.primaryType)} />
       <Field label="Address" value={l.formattedAddress} />
       <Field label="Phone" value={l.phone ?? "—"} />
       <Field label="Website" value={l.websiteUrl ?? "—"} />

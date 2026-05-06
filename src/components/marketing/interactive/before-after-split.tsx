@@ -137,7 +137,7 @@ export function BeforeAfterSplit({
         </div>
         <LeadCardLive lead={freshLead} defaultExpanded />
         <p className="text-[11px] text-white/40 mt-2 leading-snug">
-          Live from Google Maps. No one else has this list.
+          Live from our local-business index. No one else has this list.
         </p>
       </motion.div>
     </div>

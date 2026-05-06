@@ -81,11 +81,13 @@ export async function runReviewAnalysisJob(leadId: string): Promise<{
       analysis.weaknessKpis,
       negativePoolCount,
       corpusNormalized,
+      { kind: "weakness" },
     );
     const strengthFiltered = filterReviewKpis(
       analysis.strengthKpis,
       positivePoolCount,
       corpusNormalized,
+      { kind: "strength" },
     );
     analysis.weaknessKpis = weaknessFiltered.kpis;
     analysis.strengthKpis = strengthFiltered.kpis;
@@ -93,8 +95,12 @@ export async function runReviewAnalysisJob(leadId: string): Promise<{
       leadId,
       weaknessIn: weaknessFiltered.stats.inCount,
       weaknessOut: weaknessFiltered.stats.outCount,
+      weaknessDroppedPoolFloor: weaknessFiltered.stats.droppedForPoolFloor,
+      weaknessDroppedCountInflation: weaknessFiltered.stats.droppedForCountInflation,
+      weaknessDroppedLabelFusion: weaknessFiltered.stats.droppedForLabelFusion,
       strengthIn: strengthFiltered.stats.inCount,
       strengthOut: strengthFiltered.stats.outCount,
+      strengthDroppedPoolFloor: strengthFiltered.stats.droppedForPoolFloor,
       negativePool: negativePoolCount,
       positivePool: positivePoolCount,
     });

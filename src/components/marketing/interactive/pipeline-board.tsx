@@ -13,7 +13,7 @@ const STEPS = [
 ] as const;
 
 const STEP_NOTES: Record<string, string> = {
-  NEW: "Pulled from Google Maps · 87 / 100",
+  NEW: "Pulled from local-business index · 87 / 100",
   CONTACTED: "Opener sent via Smartlead · Mon 09:14",
   INTERESTED: "Replied: 'Send the mockup over' · Tue 16:42",
   MEETING: "Loom + 30-min discovery booked · Thu 11:00",

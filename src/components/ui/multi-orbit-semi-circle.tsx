@@ -15,7 +15,6 @@ export const INNER_RING_ORBIT: OrbitIntegration[] = [
   { name: "Smartlead", logoSrc: "/integrations/smartlead.svg" },
   { name: "Instantly", logoSrc: "/integrations/instantly.svg" },
   { name: "GoHighLevel", logoSrc: "/integrations/gohighlevel.svg" },
-  { name: "Google Maps", logoSrc: "/integrations/googlemaps.svg" },
 ];
 
 export const MIDDLE_RING_ORBIT: OrbitIntegration[] = [

@@ -28,7 +28,15 @@ import type {
 } from "@/components/app/leads/dossier/source-registry";
 import { OutreachStepper } from "@/components/ui/outreach-stepper";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { CRAWL_LABELS, ANALYZE_LABELS, OUTREACH_LABELS, REASON_LABELS, OFFER_LABELS } from "@/lib/labels";
+import {
+  CRAWL_LABELS,
+  ANALYZE_LABELS,
+  OUTREACH_LABELS,
+  REASON_LABELS,
+  humanizePrimaryType,
+  normalizeWedgeKey,
+  SUPPRESS_WHEN_NO_WEBSITE,
+} from "@/lib/labels";
 import { ReviewIntelligencePanel } from "@/components/app/review-intelligence-panel";
 import { GoogleReviewsAccordion } from "@/components/app/google-reviews-accordion";
 import { VoiceNotesPanel } from "@/components/app/voice-notes-panel";
@@ -921,13 +929,13 @@ function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
   const ra = lead.reviewAnalysis;
   const raw = audit?.rawFeaturesJson;
 
-  const reasonCodes = Array.from(
+  const rawReasonCodes = Array.from(
     new Set(
       Array.isArray(opp?.reasonCodes)
         ? (opp.reasonCodes as unknown[]).filter((x): x is string => typeof x === "string" && x.trim().length > 0)
         : [],
     ),
-  ).slice(0, 5);
+  );
 
   const slowMs = audit?.loadTimeMs;
   const slowLabel =
@@ -938,10 +946,23 @@ function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
   if (audit?.hasContactForm === false) wedges.push("No contact form");
   if (raw?.hasQrMenu === true) wedges.push("QR menu detected");
 
+  // Audit-derived wedges are the high-trust source; reasonCodes that
+  // collide with them under normalization get dropped.
+  const auditDerivedSet = new Set(wedges.map(normalizeWedgeKey));
+  const hasNoWebsite = rawReasonCodes.includes("no_website");
+
+  const filteredReasonCodes = rawReasonCodes
+    .filter((code) => {
+      if (hasNoWebsite && SUPPRESS_WHEN_NO_WEBSITE.has(code)) return false;
+      const labelText = REASON_LABELS[code] ?? code.replace(/_/g, " ");
+      if (auditDerivedSet.has(normalizeWedgeKey(labelText))) return false;
+      return true;
+    })
+    .slice(0, 5);
+
   const showStrip =
     opp?.recommendedPackage != null ||
-    opp?.suggestedOffer != null ||
-    reasonCodes.length > 0 ||
+    filteredReasonCodes.length > 0 ||
     slowLabel != null ||
     wedges.length > 0 ||
     ra != null;
@@ -958,11 +979,6 @@ function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
         {opp?.recommendedPackage && (
           <Badge variant="success" className="text-[11px] font-normal">
             Package: {opp.recommendedPackage.name}
-          </Badge>
-        )}
-        {opp?.suggestedOffer && (
-          <Badge variant="outline" className="text-[11px] font-normal border-white/10 bg-white/5">
-            Tier: {OFFER_LABELS[opp.suggestedOffer] ?? opp.suggestedOffer}
           </Badge>
         )}
         {ra != null && (
@@ -988,7 +1004,7 @@ function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
             {w}
           </Badge>
         ))}
-        {reasonCodes.map((code) => (
+        {filteredReasonCodes.map((code) => (
           <Badge
             key={code}
             variant="outline"
@@ -1049,7 +1065,7 @@ function HeroBand({
 
   const chips: { label: string; icon?: typeof Star }[] = [];
   if (lead.borough) chips.push({ label: lead.borough });
-  if (lead.primaryType) chips.push({ label: lead.primaryType });
+  if (lead.primaryType) chips.push({ label: humanizePrimaryType(lead.primaryType) });
   if (lead.businessStatus && lead.businessStatus !== "OPERATIONAL") chips.push({ label: lead.businessStatus });
 
   return (
@@ -1595,7 +1611,7 @@ function IdentityRail({
               <span className="text-[14px] text-white/85">{lead.borough || "—"}</span>
             </RailRow>
             <RailRow label="Type">
-              <span className="text-[14px] text-white/85 truncate">{lead.primaryType || "—"}</span>
+              <span className="text-[14px] text-white/85 truncate">{humanizePrimaryType(lead.primaryType)}</span>
             </RailRow>
             <RailRow label="Status">
               <span className="text-[14px] text-white/85">{lead.businessStatus || "—"}</span>

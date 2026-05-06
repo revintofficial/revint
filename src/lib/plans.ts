@@ -42,6 +42,13 @@ export interface PlanDefinition {
   mockupsPerCycle: number;
   features: string[];
   highlight?: boolean;
+  /**
+   * Web-overhaul Phase A: hide the plan from public marketing surfaces
+   * without deleting it from the enum or the database. Used to sunset FREE
+   * while grandfathering existing FREE-tier workspaces. See
+   * docs/decisions/free-plan-sunset.md.
+   */
+  hidden?: boolean;
 }
 
 /**
@@ -60,7 +67,7 @@ export const PLANS: Record<Plan, PlanDefinition> = {
   FREE: {
     id: "FREE",
     name: "Free",
-    tagline: "Test it on your next prospect list.",
+    tagline: "Grandfathered tier — not offered to new signups.",
     monthlyPrice: 0,
     monthlyPrices: { USD: 0, GBP: 0 },
     priceId: null,
@@ -76,12 +83,15 @@ export const PLANS: Record<Plan, PlanDefinition> = {
       "3 website mockups",
       "Pipeline & shortlist",
       "Co-pilot chat (preview)",
-      "No credit card required",
     ],
+    // Sunset per docs/decisions/free-plan-sunset.md. Existing FREE workspaces
+    // grandfather; new public signups go through the 14-day trial flow on
+    // Solo / Studio / Agency+ instead.
+    hidden: true,
   },
   PRO: {
     id: "PRO",
-    name: "Pro Solo",
+    name: "Solo",
     tagline: "For solo SDRs and vertical specialists.",
     monthlyPrice: 79,
     monthlyPrices: { USD: 79, GBP: 59 },
@@ -111,8 +121,8 @@ export const PLANS: Record<Plan, PlanDefinition> = {
   },
   PRO_TEAM: {
     id: "PRO_TEAM",
-    name: "Pro Team",
-    tagline: "For walk-in web agency starters and small teams.",
+    name: "Studio",
+    tagline: "For 2-3 person agencies and small SMMA shops.",
     monthlyPrice: 149,
     monthlyPrices: { USD: 149, GBP: 99 },
     priceId: process.env.STRIPE_PRICE_PRO_TEAM_USD || process.env.STRIPE_PRICE_PRO_TEAM || null,
@@ -143,7 +153,7 @@ export const PLANS: Record<Plan, PlanDefinition> = {
   },
   AGENCY: {
     id: "AGENCY",
-    name: "Agency",
+    name: "Agency+",
     tagline: "For agencies running outbound for clients.",
     monthlyPrice: 249,
     monthlyPrices: { USD: 249, GBP: 199 },
@@ -175,6 +185,16 @@ export const PLANS: Record<Plan, PlanDefinition> = {
 };
 
 export const PLAN_ORDER: Plan[] = ["FREE", "PRO", "PRO_TEAM", "AGENCY"];
+
+/**
+ * Plan ids ordered for public marketing surfaces (pricing cards, signup
+ * checkout). Filters out plans flagged `hidden: true` so sunsetted tiers
+ * (e.g. FREE post-overhaul) stay queryable from server code without
+ * polluting the buyer-facing pricing UI.
+ */
+export const VISIBLE_PLAN_ORDER: Plan[] = PLAN_ORDER.filter(
+  (id) => !PLANS[id].hidden
+);
 
 export function getPlan(plan: Plan): PlanDefinition {
   return PLANS[plan];

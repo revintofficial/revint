@@ -11,8 +11,18 @@ const mockAgentRunCount = vi.fn();
 const mockAgentRunAggregate = vi.fn();
 const mockWorkspaceFindUniqueOrThrow = vi.fn();
 
-vi.mock("@/lib/prisma", () => ({
-  prisma: {
+vi.mock("@/lib/prisma", () => {
+  // Round 2 §3.6 — quota.ts now resolves all counters inside a single
+  // `prisma.$transaction(async tx => ...)` snapshot. Forward `tx` to
+  // the same mocks so existing test cases keep working without rewriting
+  // every assertion against the old non-transactional reads.
+  const txProxy = {
+    agentRun: {
+      count: (...args: unknown[]) => mockAgentRunCount(...args),
+      aggregate: (...args: unknown[]) => mockAgentRunAggregate(...args),
+    },
+  };
+  const prisma: Record<string, unknown> = {
     agentRun: {
       count: (...args: unknown[]) => mockAgentRunCount(...args),
       aggregate: (...args: unknown[]) => mockAgentRunAggregate(...args),
@@ -21,8 +31,13 @@ vi.mock("@/lib/prisma", () => ({
       findUniqueOrThrow: (...args: unknown[]) =>
         mockWorkspaceFindUniqueOrThrow(...args),
     },
-  },
-}));
+    $transaction: async (
+      fn: (tx: typeof txProxy) => Promise<unknown>,
+      _opts?: unknown,
+    ) => fn(txProxy),
+  };
+  return { prisma };
+});
 
 const APIFY_KINDS = [
   "APIFY_GMAPS_DEEP",

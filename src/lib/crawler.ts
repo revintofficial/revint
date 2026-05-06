@@ -23,6 +23,66 @@ export async function closeBrowser(): Promise<void> {
   }
 }
 
+// Round 2 §3.7 — narrow expired/parked-domain heuristic. Three signals,
+// any one of which is enough:
+//   1. Title matches the parking phrase regex. The phrases are
+//      *deliberately specific* — bare "expired" matches body copy
+//      like "Coffee shop expired its menu" and is a smoke-test
+//      regression we caught in Sprint 1. The list anchors each token
+//      to a vendor-fingerprint phrase ("Website Expired",
+//      "Domain Expired", parking lander text, etc.).
+//   2. The final response URL's hostname matches one of the well-known
+//      parking / for-sale hosts (GoDaddy, Sedo, Bodis, plus the
+//      Squarespace and Wix expired-domain landings).
+//   3. The HTML body contains a vendor's own expired-page fingerprint
+//      (e.g. Squarespace's `<title>Squarespace - Website Expired</title>`
+//      followed by their canonical "renew this domain" copy).
+const EXPIRED_TITLE_RE =
+  /\b(?:website expired|domain expired|account (?:has been )?suspended|page unavailable|this domain is parked|domain (?:is )?for sale|domain for sale|parked domain|coming soon)\b/i;
+
+const EXPIRED_HOST_HINTS: string[] = [
+  "domaincontrol.com",       // GoDaddy parking
+  "sedo.com",                 // Sedo for-sale lander
+  "sedoparking.com",
+  "bodis.com",                // Bodis parking
+  "parkingcrew.net",
+  "above.com",                // Above (Snapnames / NameJet) parking
+  "registrar-servers.com",
+];
+
+const EXPIRED_BODY_HINTS: RegExp[] = [
+  /squarespace[\s\S]{0,40}website expired/i,
+  /this domain is for sale/i,
+  /buy this domain/i,
+  /renew (?:this )?domain/i,
+  /godaddy[\s\S]{0,40}(expired|parked)/i,
+  /wix[\s\S]{0,40}(expired|unavailable)/i,
+];
+
+/**
+ * Round 2 §3.5 — exported for the Sprint 1 smoke-test runner so the
+ * detection logic can be exercised against synthetic fixtures
+ * without booting a Playwright browser. The crawler's own call site
+ * (`classifyCrawlError`) consumes this directly.
+ */
+export function detectExpiredOrParked(
+  title: string | null,
+  finalUrl: string | null,
+  html: string,
+): boolean {
+  if (title && EXPIRED_TITLE_RE.test(title)) return true;
+  if (finalUrl) {
+    try {
+      const host = new URL(finalUrl).hostname.toLowerCase();
+      if (EXPIRED_HOST_HINTS.some((h) => host.endsWith(h))) return true;
+    } catch {
+      // ignore — falls through to body hints
+    }
+  }
+  if (html && EXPIRED_BODY_HINTS.some((re) => re.test(html))) return true;
+  return false;
+}
+
 function extractSecurityHeaders(headers: Record<string, string>): SecurityHeadersResult {
   const lowerHeaders: Record<string, string> = {};
   for (const [k, v] of Object.entries(headers)) {
@@ -250,12 +310,48 @@ async function crawlOnce(url: string, businessType?: string | null): Promise<Web
     features.consoleErrors = consoleErrors.slice(0, 10);
     features.httpStatus = status;
 
-    // 4xx with usable HTML: mark crawlError but keep `reachable=true`
-    // so the rest of the audit (title/meta/etc.) still surfaces. The UI
-    // will show a "Site responded with 4xx — verify manually" warning.
+    // Round 2 §3.7 — domain expired / parked / for-sale detection.
+    //
+    // Fable and Falcon (Round 2) was a `404 Squarespace - Website
+    // Expired` page; the previous classifier flagged it as `UNKNOWN`
+    // and the opener still said "sitenizi inceledim". We now lift that
+    // signal into a first-class `WEBSITE_EXPIRED` crawlError so the UI
+    // shows a "domain expired — open it manually" hint and the opener
+    // (Hafta 2 PR-W2.E) can route into the NO_WEBSITE branch.
+    //
+    // Detection is deliberately narrow: a strict title regex anchored
+    // on the parking phrase, plus a small list of known parking-host
+    // hints. Body-text mentions of "expired" alone do NOT trigger the
+    // tag — that would re-introduce false positives the Fable opener
+    // already burned us on.
+    const finalUrl = (() => {
+      try {
+        return response.url();
+      } catch {
+        return url;
+      }
+    })();
+    const isExpiredOrParked = detectExpiredOrParked(
+      features.title,
+      finalUrl,
+      html,
+    );
+
     if (status >= 400) {
-      features.crawlError = status === 401 || status === 403 ? "BOT_BLOCKED_4XX" : "UNKNOWN";
+      if (isExpiredOrParked) {
+        features.crawlError = "WEBSITE_EXPIRED";
+      } else if (status === 401 || status === 403) {
+        features.crawlError = "BOT_BLOCKED_4XX";
+      } else {
+        features.crawlError = "UNKNOWN";
+      }
       features.reachable = false; // strict definition kept for sales-confidence rollup
+    } else if (isExpiredOrParked) {
+      // Some parked-domain providers serve a 200 OK page with the
+      // "Website Expired" copy. Still treat as expired even though the
+      // status was 2xx/3xx — the audit body is meaningless either way.
+      features.crawlError = "WEBSITE_EXPIRED";
+      features.reachable = false;
     } else {
       features.crawlError = null;
       features.reachable = true;

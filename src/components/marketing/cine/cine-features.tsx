@@ -35,13 +35,13 @@ export function CineFeatures() {
         }}
       >
         <div className="flex flex-col items-center text-center gap-4 mb-12 md:mb-14 max-w-3xl mx-auto">
-          <span className="vx-badge-light">How it works</span>
+          <span className="vx-badge-light">The system between AI slop and hand-written</span>
           <h2 className="vx-display text-[clamp(30px,4.4vw,52px)] leading-[1.04] text-[color:var(--vx-ink)] max-w-[24ch]">
-            Cold email fails when it sounds{" "}
-            <span className="vx-text-gradient">cold.</span>
+            Generating text is easy. Doing the homework is what gets a{" "}
+            <span className="vx-text-gradient">reply.</span>
           </h2>
           <p className="text-[14.5px] md:text-[15.5px] text-[color:var(--vx-ink-mute)] max-w-xl leading-relaxed">
-            Replies come from proof you did the homework. We do it on every prospect.
+            Every prospect gets researched before a single word is written. Site signals, reviews, sub-niche, competitor ads, social posts. The draft starts from what we found, not from a generic prompt.
           </p>
         </div>
 
@@ -51,8 +51,8 @@ export function CineFeatures() {
             tinted
             className="col-span-full lg:row-span-1 overflow-hidden pl-6 pt-6 pr-6"
             icon={<FileSearch className="w-5 h-5" />}
-            title="Every site audited before you write a word"
-            body="Booking flow, mobile speed, schema, up to 500 reviews. All checked. 0-100 score with the angle and price band waiting."
+            title="Deep research on every prospect, before you write a word"
+            body="Site signals, up to 500 reviews scanned for sentiment, sub-niche classification, competitor ads, social posts. All run before the draft. 0-100 score with the angle and price band waiting. Skip the research and you're guessing, same as everyone else in the inbox."
           >
             <AuditPanelIllustration />
           </FeatureCard>
@@ -62,7 +62,7 @@ export function CineFeatures() {
             className="overflow-hidden p-6"
             icon={<MapPin className="w-5 h-5" />}
             title="Data nobody else has"
-            body="Your list pulls straight off Google Maps this morning. No other agency is emailing these tonight."
+            body="Your list pulls fresh from our local-business index this morning. No other agency is emailing these tonight."
           >
             <MapIllustration />
           </FeatureCard>
@@ -72,7 +72,7 @@ export function CineFeatures() {
             className="group overflow-hidden p-6"
             icon={<Mail className="w-5 h-5" />}
             title="Emails that mention actual problems"
-            body="The draft references what the audit found. Their reply asks how much, not who you are."
+            body="The draft references something the prospect can see on their own homepage. They read it and think 'wait, we're actually missing this.' After that, you don't have to sell."
           >
             <OpenerIllustration />
           </FeatureCard>
@@ -145,9 +145,12 @@ function FeatureCard({
 /* ---------- Illustrations ---------- */
 
 /**
- * Hero card illustration: a composed "lead audit panel". Shows what a single
- * lead actually looks like in the product — business name, score arc, signal
- * pills, and the "draft opener" CTA the user clicks next.
+ * Hero card illustration: the full "lead research" panel as it appears
+ * inside the product. Layered vertically to surface every research stage
+ * the system runs on a single prospect: site audit, review intelligence
+ * (themes + verbatim pain phrases), sub-niche detection, and reason
+ * codes feeding the score. Real beta-cohort data (Fabler Bakery Camden,
+ * NW1 0LT, May 2026) — not mock numbers.
  */
 function AuditPanelIllustration() {
   return (
@@ -161,48 +164,49 @@ function AuditPanelIllustration() {
         }}
         aria-hidden
       >
-        <div className="grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-6 p-6 md:p-8">
-          {/* Left column — business + signals */}
+        {/* Header band: business + score */}
+        <div className="grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-6 p-6 md:p-8 pb-5 md:pb-6">
+          {/* Left column — business + site signals */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <span
                 className="text-[10.5px] uppercase tracking-[0.14em] font-semibold"
                 style={{ color: "var(--vx-purple-700)" }}
               >
-                Lead audit
+                Lead research
               </span>
               <span
                 className="text-[10.5px] font-medium"
                 style={{ color: "var(--vx-ink-mute)" }}
               >
-                · M14 4PH · dental
+                · NW1 0LT · cafés
               </span>
             </div>
             <h4 className="text-[20px] md:text-[24px] font-semibold tracking-[-0.01em] text-[color:var(--vx-ink)] leading-[1.15]">
-              Greenfield Dental Practice
+              Fabler Bakery Camden
             </h4>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1 text-[12px] text-[color:var(--vx-ink-soft)]">
                 <Star className="w-3.5 h-3.5 fill-[color:var(--vx-purple-700)] text-[color:var(--vx-purple-700)]" />
-                4.6 · 312 reviews
+                4.9 · 1,141 reviews
               </span>
               <span className="text-[12px] text-[color:var(--vx-ink-mute)]">·</span>
               <span className="text-[12px] text-[color:var(--vx-ink-mute)]">
-                Open · Mon–Fri
+                Open · daily
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 mt-1">
-              <SignalPill label="Mobile booking fails" tone="warn" />
+              <SignalPill label="No HTTPS" tone="bad" />
+              <SignalPill label="No online booking" tone="warn" />
               <SignalPill label="Schema missing" tone="warn" />
-              <SignalPill label="1★ review unreplied" tone="bad" />
-              <SignalPill label="LCP 4.8s" tone="warn" />
+              <SignalPill label="QR menu missing" tone="warn" />
             </div>
           </div>
 
-          {/* Right column — score arc + actions */}
+          {/* Right column — score arc + recommended angle + draft */}
           <div className="flex flex-col gap-3 items-start md:items-end">
-            <ScoreArc score={87} />
+            <ScoreArc score={80} />
             <div className="flex flex-col gap-2 w-full md:items-end">
               <span className="text-[11px] uppercase tracking-[0.14em] font-semibold text-[color:var(--vx-ink-mute)]">
                 Recommended angle
@@ -216,7 +220,7 @@ function AuditPanelIllustration() {
                   border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.22)",
                 }}
               >
-                Booking widget · £1,800 setup
+                QR table ordering · £2,200 setup
               </span>
               <span
                 className="inline-flex items-center gap-2 mt-2 rounded-full px-4 py-2 text-[12.5px] font-semibold shadow-sm"
@@ -234,6 +238,111 @@ function AuditPanelIllustration() {
           </div>
         </div>
 
+        {/* Review intelligence band */}
+        <div
+          className="px-6 md:px-8 py-5 border-t"
+          style={{ borderColor: "var(--vx-rule, rgba(22,19,31,0.06))" }}
+        >
+          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            <span
+              className="text-[10.5px] uppercase tracking-[0.14em] font-semibold"
+              style={{ color: "var(--vx-purple-700)" }}
+            >
+              Review intelligence
+            </span>
+            <span
+              className="text-[10.5px] inline-flex items-center gap-3 flex-wrap"
+              style={{ color: "var(--vx-ink-mute)" }}
+            >
+              <span>50 reviews scanned</span>
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: "#30A46C" }}
+                  aria-hidden
+                />
+                96% positive
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: "#E5484D" }}
+                  aria-hidden
+                />
+                4% negative
+              </span>
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-7 gap-y-4">
+            {/* Strength themes */}
+            <div className="flex flex-col gap-2">
+              <div
+                className="text-[10px] uppercase tracking-[0.12em] font-semibold mb-0.5"
+                style={{ color: "var(--vx-ink-mute)" }}
+              >
+                Strength themes · count · share
+              </div>
+              <ThemeBar label="Great food" count={30} percent={61} />
+              <ThemeBar label="Friendly staff" count={19} percent={39} />
+              <ThemeBar label="Cozy atmosphere" count={8} percent={16} />
+            </div>
+            {/* Pain phrases verbatim */}
+            <div className="flex flex-col gap-1.5">
+              <div
+                className="text-[10px] uppercase tracking-[0.12em] font-semibold mb-0.5"
+                style={{ color: "var(--vx-ink-mute)" }}
+              >
+                Pain phrases · verbatim from reviewers
+              </div>
+              <PainQuote text="very little space, very cramped" />
+              <PainQuote text="the waiter is VERY rude" />
+              <PainQuote text="it was quite expensive" />
+            </div>
+          </div>
+        </div>
+
+        {/* Sub-niche + reason codes band */}
+        <div
+          className="px-6 md:px-8 py-3.5 border-t flex items-center justify-between gap-x-5 gap-y-2 flex-wrap"
+          style={{ borderColor: "var(--vx-rule, rgba(22,19,31,0.06))" }}
+        >
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className="text-[10px] uppercase tracking-[0.12em] font-semibold"
+              style={{ color: "var(--vx-ink-mute)" }}
+            >
+              Sub-niche
+            </span>
+            <span
+              className="rounded-md px-2 py-0.5 text-[11.5px] font-medium"
+              style={{
+                background:
+                  "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)",
+                color: "var(--vx-purple-700)",
+                border:
+                  "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.22)",
+              }}
+            >
+              café-bakery · 55% confidence
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span
+              className="text-[10px] uppercase tracking-[0.12em] font-semibold"
+              style={{ color: "var(--vx-ink-mute)" }}
+            >
+              Reason codes · 5 of 13
+            </span>
+            <span
+              className="text-[10.5px] font-mono truncate"
+              style={{ color: "var(--vx-ink-soft)" }}
+            >
+              icp_fit · high_review_volume · high_rating_weak_site · no_qr_menu · no_reservation
+            </span>
+          </div>
+        </div>
+
+        {/* Footer status */}
         <div
           className="border-t flex items-center justify-between px-6 py-3 text-[11.5px]"
           style={{
@@ -243,7 +352,7 @@ function AuditPanelIllustration() {
         >
           <span className="inline-flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            Audit complete · 22 signals · 312 reviews scanned
+            Research complete · 22 signals · 50 reviews analyzed · sub-niche tagged
           </span>
           <span>Mockup ready</span>
         </div>
@@ -281,6 +390,89 @@ function SignalPill({
       />
       {label}
     </span>
+  );
+}
+
+/**
+ * Strength theme row inside Review intelligence band. Bar width is
+ * `percent` of the row, label and count sit on the left, percent label
+ * on the right. Visualises that we don't just count reviews — we
+ * cluster them by theme and quantify the share.
+ */
+function ThemeBar({
+  label,
+  count,
+  percent,
+}: {
+  label: string;
+  count: number;
+  percent: number;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-[12px]">
+      <span
+        className="font-medium truncate"
+        style={{ color: "var(--vx-ink)", minWidth: "112px", maxWidth: "112px" }}
+      >
+        {label}
+      </span>
+      <span
+        className="text-[10.5px] tabular-nums"
+        style={{ color: "var(--vx-ink-mute)", minWidth: "20px" }}
+      >
+        {count}
+      </span>
+      <div
+        className="flex-1 h-1.5 rounded-full overflow-hidden"
+        style={{ background: "rgba(22,19,31,0.06)" }}
+      >
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${percent}%`,
+            background:
+              "linear-gradient(90deg, var(--vx-purple-500), var(--vx-purple-700))",
+          }}
+        />
+      </div>
+      <span
+        className="text-[11px] tabular-nums font-semibold"
+        style={{
+          color: "var(--vx-purple-700)",
+          minWidth: "30px",
+          textAlign: "right",
+        }}
+      >
+        {percent}%
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Verbatim review pain phrase chip. Uses a soft red surface so the
+ * complaint reads as a real-customer quote, not as a system label —
+ * this is the "wait, we're actually missing this" moment in card form.
+ */
+function PainQuote({ text }: { text: string }) {
+  return (
+    <div
+      className="text-[11.5px] leading-snug rounded-md px-2.5 py-1.5"
+      style={{
+        background: "rgba(229,72,77,0.06)",
+        border: "1px solid rgba(229,72,77,0.14)",
+        color: "var(--vx-ink-soft)",
+      }}
+    >
+      <span
+        className="text-[9px] mr-1.5 align-middle"
+        style={{ color: "#E5484D" }}
+        aria-hidden
+      >
+        ●
+      </span>
+      &quot;{text}&quot;
+    </div>
   );
 }
 
@@ -388,15 +580,15 @@ function MapIllustration() {
       {/* Postcode chip */}
       <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold shadow-sm border border-black/5 text-[color:var(--vx-ink)]">
         <MapPin className="w-3 h-3" style={{ color: "var(--vx-purple-700)" }} />
-        M14 + dental
+        NW1 + cafés
       </div>
 
       {/* Bottom strip — three mini lead rows */}
       <div className="absolute left-3 right-3 bottom-3 rounded-xl bg-white/95 backdrop-blur border border-black/5 shadow-sm p-2 flex flex-col gap-1.5">
         {[
-          { name: "Greenfield Dental", score: 87 },
-          { name: "Northside Smile Co", score: 73 },
-          { name: "Trafford Family Dental", score: 64 },
+          { name: "Brew's", score: 94 },
+          { name: "Fabler Bakery Camden", score: 80 },
+          { name: "LUMI Camden", score: 78 },
         ].map((row) => (
           <div
             key={row.name}
@@ -471,14 +663,14 @@ function OpenerIllustration() {
               color: "white",
             }}
           >
-            G
+            F
           </div>
           <div className="flex flex-col">
             <span className="text-[12.5px] font-medium text-[color:var(--vx-ink)] leading-none">
-              To: Greenfield Dental
+              To: Fabler Bakery Camden
             </span>
             <span className="text-[10.5px] text-[color:var(--vx-ink-mute)] mt-1">
-              Subject — your booking page on mobile
+              Subject: your cramped-space reviews
             </span>
           </div>
         </div>
@@ -553,7 +745,7 @@ function InboxIllustration() {
         </span>
       </div>
       <p className="text-[12.5px] text-[color:var(--vx-ink-soft)] leading-snug line-clamp-2">
-        Saw your booking widget on Greenfield Dental — it’s freezing on iPhone after the “next slot” tap…
+        Saw &quot;cramped space&quot; come up in your weekend reviews at Fabler. QR table ordering would clear the Saturday rush…
       </p>
 
       <div

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { humanizePrimaryType } from "@/lib/labels";
 import type { PublicLeadCard } from "@/lib/seo/programmatic";
 
 /**
@@ -168,7 +169,7 @@ export function LeadCardList({ items }: { items: PublicLeadCard[] }) {
                 </span>
               )}
               {item.websiteUrl && <span>Has site</span>}
-              {item.primaryType && <span>{item.primaryType}</span>}
+              {item.primaryType && <span>{humanizePrimaryType(item.primaryType)}</span>}
             </div>
           </Link>
         </li>

@@ -45,7 +45,7 @@ const COPY: VerticalCopy = {
   proofHeading: "What changes for you.",
   proofTourTitle: "From 8 hours to 15 minutes for your first 10 emails.",
   proofPoints: [
-    "Pick a city and a niche. Leadac AI pulls 50 real local businesses from Google Maps in 30 seconds. No Apollo seat required.",
+    "Pick a city and a niche. Leadac AI pulls 50 real local businesses from our local-business index in 30 seconds. No Apollo seat required.",
     "Each lead arrives with a website audit telling you what's broken. That's the conversation starter you didn't have to invent.",
     "One click generates a custom one-page mockup for each prospect. Show it on the call and watch the conversation shift from 'who are you' to 'how do we start'.",
     "First-draft opener written for you, referencing their actual site. Edit, hit send. Your first 10 emails take 15 minutes, not 8 hours.",

@@ -23,8 +23,11 @@
  * PENDING/RUNNING rows younger than `PENDING_GRACE_MS`.
  */
 import type { AgentWorkerKind, Plan } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { PLANS } from "@/lib/plans";
+import { logger } from "@/lib/logger";
+import { PermanentError } from "./errors";
 import { getWorker, planMeetsMinimum } from "./registry";
 
 /**
@@ -217,36 +220,109 @@ export function isApifyKind(kind: AgentWorkerKind): boolean {
   return APIFY_KINDS.has(kind);
 }
 
-export class QuotaExceededError extends Error {
+// Round 2 §3.6 — quota error taxonomy. All four extend PermanentError
+// so BullMQ's `agent-runs` worker treats them as terminal (1 attempt
+// instead of the default 3). Burning two extra retries on a quota
+// failure is wasted Gemini / Apify cost; the user has to upgrade or
+// wait for cycle reset before any retry can succeed anyway.
+export class QuotaExceededError extends PermanentError {
   used: number;
   limit: number;
   kind: AgentWorkerKind;
   status = 402;
   constructor(used: number, limit: number, kind: AgentWorkerKind) {
-    super(`Quota exceeded for ${kind}: ${used}/${limit}`);
+    super(`Quota exceeded for ${kind}: ${used}/${limit}`, "quota");
+    this.name = "QuotaExceededError";
     this.used = used;
     this.limit = limit;
     this.kind = kind;
   }
 }
 
-export class PlanTooLowError extends Error {
+export class PlanTooLowError extends PermanentError {
   kind: AgentWorkerKind;
   minPlan: Plan;
   status = 402;
   constructor(kind: AgentWorkerKind, minPlan: Plan) {
-    super(`Worker ${kind} requires plan ${minPlan} or higher`);
+    super(`Worker ${kind} requires plan ${minPlan} or higher`, "plan");
+    this.name = "PlanTooLowError";
     this.kind = kind;
     this.minPlan = minPlan;
   }
 }
 
+export class ApifyBudgetExceededError extends PermanentError {
+  usedCents: number;
+  limitCents: number;
+  status = 402;
+  constructor(usedCents: number, limitCents: number) {
+    super(
+      `Apify monthly USD budget exhausted: ${usedCents}¢/${limitCents}¢`,
+      "quota",
+    );
+    this.name = "ApifyBudgetExceededError";
+    this.usedCents = usedCents;
+    this.limitCents = limitCents;
+  }
+}
+
+export class PerLeadDailyCapExceededError extends PermanentError {
+  leadId: string;
+  used: number;
+  limit: number;
+  status = 402;
+  constructor(leadId: string, used: number, limit: number) {
+    super(
+      `Daily per-lead cap exceeded for lead ${leadId}: ${used}/${limit}`,
+      "quota",
+    );
+    this.name = "PerLeadDailyCapExceededError";
+    this.leadId = leadId;
+    this.used = used;
+    this.limit = limit;
+  }
+}
+
+/**
+ * Round 2 §3.6 — discriminated reason for a quota block. Surfaced on
+ * `QuotaCheckResult.blockReason` so `assertWorkerQuota` can fan out
+ * into the right error class (and the UI can render the right copy)
+ * without re-running the same SQL again. `null` means the request is
+ * allowed.
+ */
+export type QuotaBlockReason =
+  | "WORKER_MONTHLY_QUOTA"
+  | "PER_LEAD_DAILY_CAP"
+  | "APIFY_USD_BUDGET"
+  | "PLAN_TOO_LOW"
+  | "WORKER_DISABLED"
+  | null;
+
 export interface QuotaCheckResult {
   allowed: boolean;
+  /**
+   * Round 2 §3.6 — the specific gate that fired (or `null` when
+   * allowed). Distinct from the legacy `allowed` flag because the UI
+   * needs separate copy for "your account is on the wrong plan" vs
+   * "this lead has hit its daily AI budget" vs "your $25 Apify
+   * envelope for this cycle is empty".
+   */
+  blockReason: QuotaBlockReason;
+  /** Worker-monthly counter (legacy `used` / `limit`). */
   used: number;
   limit: number;
   remaining: number;
   resetAt: Date | null;
+  /**
+   * Round 2 §3.6 — explicit field aliases so the UI / API doesn't have
+   * to know which counter was the binding constraint. `workerMonthly*`
+   * mirrors `used` / `limit`; `perLeadDaily*` is populated when the
+   * call carries `leadId`.
+   */
+  workerMonthlyUsed: number;
+  workerMonthlyLimit: number;
+  perLeadDailyUsed: number | null;
+  perLeadDailyLimit: number | null;
   /**
    * Populated only for Apify kinds: the current USD cents spent this
    * billing cycle and the per-plan ceiling. UI surfaces this as a
@@ -255,30 +331,6 @@ export interface QuotaCheckResult {
    */
   apifyCentsUsed?: number;
   apifyCentsLimit?: number;
-}
-
-export class ApifyBudgetExceededError extends Error {
-  usedCents: number;
-  limitCents: number;
-  status = 402;
-  constructor(usedCents: number, limitCents: number) {
-    super(`Apify monthly USD budget exhausted: ${usedCents}¢/${limitCents}¢`);
-    this.usedCents = usedCents;
-    this.limitCents = limitCents;
-  }
-}
-
-export class PerLeadDailyCapExceededError extends Error {
-  leadId: string;
-  used: number;
-  limit: number;
-  status = 402;
-  constructor(leadId: string, used: number, limit: number) {
-    super(`Daily per-lead cap exceeded for lead ${leadId}: ${used}/${limit}`);
-    this.leadId = leadId;
-    this.used = used;
-    this.limit = limit;
-  }
 }
 
 /**
@@ -314,8 +366,39 @@ export function getLimit(kind: AgentWorkerKind, plan: Plan): number {
 }
 
 /**
+ * Round 2 §3.6 — terminal counts that consume monthly / per-lead /
+ * Apify-USD quota. Both completion variants (`SUCCEEDED` and
+ * `SUCCEEDED_NO_MEMORY`) get charged: a degraded run still produced a
+ * Gemini call and may have spent Apify cents, so excluding it would
+ * let a workspace silently burn double its budget by repeatedly
+ * triggering the embedding-degraded path.
+ */
+const TERMINAL_BILLABLE_STATUSES = ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] as const;
+
+const PER_LEAD_BILLABLE_STATUSES = [
+  "PENDING",
+  "RUNNING",
+  "SUCCEEDED",
+  "SUCCEEDED_NO_MEMORY",
+] as const;
+
+/**
  * Returns current cycle usage + whether a new run is allowed. Does not
  * throw; callers decide how to respond (402 in API, error in worker).
+ *
+ * Round 2 §3.6 — every counter is now resolved inside a single
+ * `RepeatableRead` snapshot so two concurrent calls cannot both see
+ * `used = limit - 1` and both succeed (the legacy implementation read
+ * each counter via a separate query and was vulnerable to that race).
+ *
+ * pgBouncer note: the project uses Supabase + pgBouncer in
+ * transaction-pool mode. RepeatableRead works across multiple
+ * statements within a single Prisma `$transaction(async tx => {...})`
+ * because Prisma pins the underlying connection for the whole
+ * callback. If the deploy environment ever switches to "session" mode
+ * pooler with a different proxy, fall back to the sequential reads
+ * path — the snapshot semantics are nice-to-have, not load-bearing
+ * (the per-lead cap is the primary defense against runaway loops).
  */
 export async function checkWorkerQuota(args: {
   workspaceId: string;
@@ -330,14 +413,14 @@ export async function checkWorkerQuota(args: {
 }): Promise<QuotaCheckResult> {
   const worker = getWorker(args.kind);
   if (!worker) {
-    return { allowed: false, used: 0, limit: 0, remaining: 0, resetAt: null };
+    return blockedResult("WORKER_DISABLED");
   }
   if (!planMeetsMinimum(args.plan, worker.minPlan)) {
-    return { allowed: false, used: 0, limit: 0, remaining: 0, resetAt: null };
+    return blockedResult("PLAN_TOO_LOW");
   }
   const limit = getLimit(args.kind, args.plan);
   if (limit === 0) {
-    return { allowed: false, used: 0, limit: 0, remaining: 0, resetAt: null };
+    return blockedResult("WORKER_DISABLED");
   }
 
   const ws = await prisma.workspace.findUniqueOrThrow({
@@ -346,84 +429,209 @@ export async function checkWorkerQuota(args: {
   });
 
   const pendingCutoff = new Date(Date.now() - PENDING_GRACE_MS);
-  const used = await prisma.agentRun.count({
-    where: {
-      workspaceId: args.workspaceId,
-      workerKind: args.kind,
-      createdAt: { gte: ws.cycleResetAt },
-      OR: [
-        { status: "SUCCEEDED" },
-        // In-flight work counts only while fresh. Stuck PENDING/RUNNING
-        // rows (worker crashed, queue paused) are ignored so the same
-        // stuck row cannot burn the quota forever.
-        { status: { in: ["PENDING", "RUNNING"] }, createdAt: { gte: pendingCutoff } },
-      ],
+  const dayCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const isApify = isApifyKind(args.kind);
+  const apifyLimitCents = isApify
+    ? MONTHLY_APIFY_USD_CENTS[args.plan] ?? 0
+    : 0;
+
+  // Round 2 §3.6 — single transaction snapshot. We build all 3
+  // counters (worker-monthly, per-lead-daily, apify-cents-cycle)
+  // against the same MVCC snapshot so concurrent calls cannot both
+  // observe usage one row below the limit. Each counter is conditional
+  // on its own input (`leadId`, `isApify`) but the transaction body
+  // unconditionally returns the tuple shape so TypeScript can destructure.
+  const snapshot = await prisma.$transaction(
+    async (tx) => {
+      const monthly = await tx.agentRun.count({
+        where: {
+          workspaceId: args.workspaceId,
+          workerKind: args.kind,
+          createdAt: { gte: ws.cycleResetAt },
+          OR: [
+            { status: { in: [...TERMINAL_BILLABLE_STATUSES] } },
+            // In-flight work counts only while fresh. Stuck PENDING/RUNNING
+            // rows (worker crashed, queue paused) are ignored so the same
+            // stuck row cannot burn the quota forever.
+            {
+              status: { in: ["PENDING", "RUNNING"] },
+              createdAt: { gte: pendingCutoff },
+            },
+          ],
+        },
+      });
+
+      const perLead = args.leadId
+        ? await tx.agentRun.count({
+            where: {
+              workspaceId: args.workspaceId,
+              leadId: args.leadId,
+              // Round 2 §3.6 — include `SUCCEEDED_NO_MEMORY` so a
+              // runaway loop that repeatedly hits the embedding-
+              // degraded path can no longer hide from the per-lead
+              // cap (was the main "44/50000 quota exceeded" UX bug).
+              status: { in: [...PER_LEAD_BILLABLE_STATUSES] },
+              createdAt: { gte: dayCutoff },
+            },
+          })
+        : null;
+
+      const apifyCents = isApify
+        ? (
+            await tx.agentRun.aggregate({
+              where: {
+                workspaceId: args.workspaceId,
+                workerKind: { in: Array.from(APIFY_KINDS) },
+                createdAt: { gte: ws.cycleResetAt },
+                OR: [
+                  { status: { in: [...TERMINAL_BILLABLE_STATUSES] } },
+                  {
+                    status: { in: ["PENDING", "RUNNING"] },
+                    createdAt: { gte: pendingCutoff },
+                  },
+                ],
+              },
+              _sum: { costUsdCents: true },
+            })
+          )._sum.costUsdCents ?? 0
+        : 0;
+
+      return { monthly, perLead, apifyCents };
     },
+    {
+      // Race-free snapshot of the three counters. See doc above for
+      // the pgBouncer caveat.
+      isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+    },
+  ).catch((err) => {
+    // pgBouncer transaction-pool mode rejects RepeatableRead with
+    // SQLSTATE 0A000 ("feature not supported"). Fall back to the
+    // sequential reads path so the deploy environment doesn't break
+    // the gate entirely. We log so we know if the fallback fires more
+    // than expected.
+    if (err instanceof Error && /isolation/i.test(err.message)) {
+      logger.warn("quota.snapshot.isolation_unsupported", {
+        message: err.message,
+        kind: args.kind,
+      });
+      return null;
+    }
+    throw err;
   });
 
-  const base: QuotaCheckResult = {
-    allowed: used < limit,
-    used,
-    limit,
-    remaining: Math.max(0, limit - used),
-    resetAt: ws.cycleResetAt,
-  };
+  let monthly: number;
+  let perLead: number | null;
+  let apifyCents: number;
 
-  // Per-lead daily cap. A runaway retry loop or UI bug firing the
-  // same chain repeatedly on one lead would otherwise burn the whole
-  // workspace monthly budget on a single place. Counted across ALL
-  // worker kinds for the lead (not per-kind) so spreading runs
-  // across kinds cannot bypass it.
-  if (args.leadId) {
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const leadUsed = await prisma.agentRun.count({
+  if (snapshot) {
+    ({ monthly, perLead, apifyCents } = snapshot);
+  } else {
+    // Sequential fallback (see catch above).
+    monthly = await prisma.agentRun.count({
       where: {
         workspaceId: args.workspaceId,
-        leadId: args.leadId,
-        status: { in: ["PENDING", "RUNNING", "SUCCEEDED"] },
-        createdAt: { gte: since },
-      },
-    });
-    if (leadUsed >= PER_LEAD_DAILY_CAP) {
-      base.allowed = false;
-    }
-  }
-
-  // Apify kinds: second gate on USD budget. Summed across ALL Apify
-  // kinds in the same cycle; one workspace cannot bypass the cap by
-  // spreading runs across actor types. We include fresh PENDING/RUNNING
-  // rows (within PENDING_GRACE_MS) because their costUsdCents is set to
-  // the actor cost estimate at kickoff — not including them would allow a
-  // burst of concurrent Apify jobs to each pass the budget gate before
-  // any of them completes, collectively blowing the cap.
-  if (isApifyKind(args.kind)) {
-    const apifyLimitCents = MONTHLY_APIFY_USD_CENTS[args.plan] ?? 0;
-    const sum = await prisma.agentRun.aggregate({
-      where: {
-        workspaceId: args.workspaceId,
-        workerKind: { in: Array.from(APIFY_KINDS) },
+        workerKind: args.kind,
         createdAt: { gte: ws.cycleResetAt },
         OR: [
-          { status: "SUCCEEDED" },
-          { status: { in: ["PENDING", "RUNNING"] }, createdAt: { gte: pendingCutoff } },
+          { status: { in: [...TERMINAL_BILLABLE_STATUSES] } },
+          {
+            status: { in: ["PENDING", "RUNNING"] },
+            createdAt: { gte: pendingCutoff },
+          },
         ],
       },
-      _sum: { costUsdCents: true },
     });
-    const usedCents = sum._sum.costUsdCents ?? 0;
-    base.apifyCentsUsed = usedCents;
-    base.apifyCentsLimit = apifyLimitCents;
-    if (usedCents >= apifyLimitCents) {
-      base.allowed = false;
-    }
+    perLead = args.leadId
+      ? await prisma.agentRun.count({
+          where: {
+            workspaceId: args.workspaceId,
+            leadId: args.leadId,
+            status: { in: [...PER_LEAD_BILLABLE_STATUSES] },
+            createdAt: { gte: dayCutoff },
+          },
+        })
+      : null;
+    apifyCents = isApify
+      ? (
+          await prisma.agentRun.aggregate({
+            where: {
+              workspaceId: args.workspaceId,
+              workerKind: { in: Array.from(APIFY_KINDS) },
+              createdAt: { gte: ws.cycleResetAt },
+              OR: [
+                { status: { in: [...TERMINAL_BILLABLE_STATUSES] } },
+                {
+                  status: { in: ["PENDING", "RUNNING"] },
+                  createdAt: { gte: pendingCutoff },
+                },
+              ],
+            },
+            _sum: { costUsdCents: true },
+          })
+        )._sum.costUsdCents ?? 0
+      : 0;
   }
 
-  return base;
+  // Resolve the binding constraint. Order matters: per-lead cap binds
+  // first because it's the user-facing "this lead burned its budget"
+  // copy; Apify USD next; worker-monthly last. A request that would
+  // fail multiple gates reports the most specific (most-narrowly-
+  // scoped) one so the UI's upgrade CTA matches the actual blocker.
+  let blockReason: QuotaBlockReason = null;
+  if (perLead != null && perLead >= PER_LEAD_DAILY_CAP) {
+    blockReason = "PER_LEAD_DAILY_CAP";
+  } else if (isApify && apifyCents >= apifyLimitCents) {
+    blockReason = "APIFY_USD_BUDGET";
+  } else if (monthly >= limit) {
+    blockReason = "WORKER_MONTHLY_QUOTA";
+  }
+
+  const result: QuotaCheckResult = {
+    allowed: blockReason === null,
+    blockReason,
+    used: monthly,
+    limit,
+    remaining: Math.max(0, limit - monthly),
+    resetAt: ws.cycleResetAt,
+    workerMonthlyUsed: monthly,
+    workerMonthlyLimit: limit,
+    perLeadDailyUsed: perLead,
+    perLeadDailyLimit: args.leadId ? PER_LEAD_DAILY_CAP : null,
+  };
+  if (isApify) {
+    result.apifyCentsUsed = apifyCents;
+    result.apifyCentsLimit = apifyLimitCents;
+  }
+  return result;
+}
+
+function blockedResult(reason: QuotaBlockReason): QuotaCheckResult {
+  return {
+    allowed: false,
+    blockReason: reason,
+    used: 0,
+    limit: 0,
+    remaining: 0,
+    resetAt: null,
+    workerMonthlyUsed: 0,
+    workerMonthlyLimit: 0,
+    perLeadDailyUsed: null,
+    perLeadDailyLimit: null,
+  };
 }
 
 /**
- * Throws PlanTooLowError or QuotaExceededError if the request cannot
- * proceed. Used by the API route to return a 402 response.
+ * Round 2 §3.6 — fans `checkWorkerQuota` out into the right error
+ * class via the `blockReason` discriminator. Every quota class is now
+ * a `PermanentError` (defined above), so BullMQ's agent-runs worker
+ * skips retries for these and the caller's HTTP layer can map them to
+ * 402 with the correct upgrade copy.
+ *
+ * No extra DB queries: `checkWorkerQuota` already populated
+ * `perLeadDailyUsed` / `apifyCentsUsed` inside the snapshot, so we
+ * read them directly from the result rather than re-running the same
+ * count (which was the legacy bug — the second count could observe a
+ * different value and disagree with the gate).
  */
 export async function assertWorkerQuota(args: {
   workspaceId: string;
@@ -439,39 +647,46 @@ export async function assertWorkerQuota(args: {
     throw new PlanTooLowError(args.kind, worker.minPlan);
   }
   const quota = await checkWorkerQuota(args);
-  if (!quota.allowed) {
-    // Distinguish Apify budget exhaustion so the UI can prompt the
-    // user to upgrade or wait for cycle reset rather than a generic
-    // "quota exceeded" message.
-    if (
-      isApifyKind(args.kind) &&
-      quota.apifyCentsLimit !== undefined &&
-      quota.apifyCentsUsed !== undefined &&
-      quota.apifyCentsUsed >= quota.apifyCentsLimit
-    ) {
-      throw new ApifyBudgetExceededError(quota.apifyCentsUsed, quota.apifyCentsLimit);
-    }
-    // Distinguish per-lead daily cap so the UI can say "this lead
-    // reached its daily AI budget; try another one or wait 24h".
-    if (args.leadId) {
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const leadUsed = await prisma.agentRun.count({
-        where: {
-          workspaceId: args.workspaceId,
-          leadId: args.leadId,
-          status: { in: ["PENDING", "RUNNING", "SUCCEEDED"] },
-          createdAt: { gte: since },
-        },
+  if (quota.allowed) return quota;
+
+  switch (quota.blockReason) {
+    case "PLAN_TOO_LOW":
+      throw new PlanTooLowError(args.kind, worker.minPlan);
+    case "PER_LEAD_DAILY_CAP":
+      throw new PerLeadDailyCapExceededError(
+        args.leadId ?? "unknown",
+        quota.perLeadDailyUsed ?? 0,
+        quota.perLeadDailyLimit ?? PER_LEAD_DAILY_CAP,
+      );
+    case "APIFY_USD_BUDGET":
+      throw new ApifyBudgetExceededError(
+        quota.apifyCentsUsed ?? 0,
+        quota.apifyCentsLimit ?? 0,
+      );
+    case "WORKER_MONTHLY_QUOTA":
+      throw new QuotaExceededError(
+        quota.workerMonthlyUsed,
+        quota.workerMonthlyLimit,
+        args.kind,
+      );
+    case "WORKER_DISABLED":
+      // Worker is locked at this plan (limit = 0). Surface as a plan
+      // upgrade prompt rather than a generic quota error.
+      throw new PlanTooLowError(args.kind, worker.minPlan);
+    case null:
+      // checkWorkerQuota disagreed with itself (allowed=false +
+      // blockReason=null). This is a bug in this file, not user
+      // error — fail closed with the legacy quota error so we still
+      // refuse the request.
+      logger.error("quota.assert.allowed_false_no_reason", {
+        kind: args.kind,
+        used: quota.workerMonthlyUsed,
+        limit: quota.workerMonthlyLimit,
       });
-      if (leadUsed >= PER_LEAD_DAILY_CAP) {
-        throw new PerLeadDailyCapExceededError(
-          args.leadId,
-          leadUsed,
-          PER_LEAD_DAILY_CAP,
-        );
-      }
-    }
-    throw new QuotaExceededError(quota.used, quota.limit, args.kind);
+      throw new QuotaExceededError(
+        quota.workerMonthlyUsed,
+        quota.workerMonthlyLimit,
+        args.kind,
+      );
   }
-  return quota;
 }

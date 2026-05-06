@@ -8,7 +8,7 @@ export const metadata = buildMetadata({
   path: "/signup",
   title: "Sign up — Leadac AI",
   description:
-    "Start free. 50 fresh Google Maps leads, a 20-signal audit on every site, and 3 per-lead website plans. No credit card.",
+    "Start your 14-day trial. 50 fresh leads from our local-business index, a 20-signal audit on every site, and pipeline-ready dossiers for outbound agencies.",
   index: false,
   follow: true,
 });

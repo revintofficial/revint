@@ -50,6 +50,11 @@ export const LIMITS = {
   // session generates while bounding a runaway client / abusive
   // scraper to 1 write per second per IP.
   webVitals: { bucket: "wvit", windowSec: 60, limit: 60 },
+  // Marketing demo-request form. Public, anonymous, IP-bucketed. Real
+  // demo signups arrive at human pace (1-2 per browser session); this
+  // limit blocks form-spam attacks without ever rate-limiting an actual
+  // prospect filling out the form even slowly.
+  demoRequest: { bucket: "demo", windowSec: 600, limit: 5 },
 } as const satisfies Record<string, RateLimitConfig>;
 
 export async function checkRateLimit(

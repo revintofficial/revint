@@ -100,11 +100,13 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       analysis.weaknessKpis,
       negativePoolCount,
       corpusNormalized,
+      { kind: "weakness" },
     );
     const strengthFiltered = filterReviewKpis(
       analysis.strengthKpis,
       positivePoolCount,
       corpusNormalized,
+      { kind: "strength" },
     );
     logger.info("agent_workers.review_analyst.kpi_filter", {
       leadId,
@@ -112,8 +114,12 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       weaknessOut: weaknessFiltered.stats.outCount,
       weaknessDroppedLowCount: weaknessFiltered.stats.droppedForLowCount,
       weaknessDroppedUngrounded: weaknessFiltered.stats.droppedForUngroundedExamples,
+      weaknessDroppedPoolFloor: weaknessFiltered.stats.droppedForPoolFloor,
+      weaknessDroppedCountInflation: weaknessFiltered.stats.droppedForCountInflation,
+      weaknessDroppedLabelFusion: weaknessFiltered.stats.droppedForLabelFusion,
       strengthIn: strengthFiltered.stats.inCount,
       strengthOut: strengthFiltered.stats.outCount,
+      strengthDroppedPoolFloor: strengthFiltered.stats.droppedForPoolFloor,
       negativePool: negativePoolCount,
       positivePool: positivePoolCount,
       reviewsAnalyzedCount: analysis.reviewsAnalyzedCount,

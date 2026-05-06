@@ -94,6 +94,10 @@ Address: {address}
 Overall rating: {rating}/5 ({review_count} reviews)
 Our product/offer: {our_offer}
 
+Pool sizes for this business:
+- Negative pool (rating ≤ 2): {negative_pool_count}
+- Positive pool (rating ≥ 4): {positive_pool_count}
+
 Below are the {reviews_count} most recent Google Maps reviews. Analyse them.
 
 ---
@@ -125,15 +129,24 @@ Rules:
 - For each KPI, set "count" = the integer number of DISTINCT reviews that mention it. Two complaints from the same reviewer count as 1.
 - DROP any KPI whose count < 2. A label needs ≥2 supporting reviews; a single complaint is anecdote, not a pattern.
 - "examples" array MUST contain ≥2 verbatim quotes from DIFFERENT reviews. If you can only find 1 supporting quote, DROP the KPI entirely.
-- When reviewsAnalyzedCount < 10, return AT MOST 2 weaknessKpis and AT MOST 3 strengthKpis. Small samples cannot support more than that without overfitting.
 - "percent" = (count / negativeReviewCount * 100) for weaknessKpis, (count / positiveReviewCount * 100) for strengthKpis. Round to integer 0-100.
-- weaknessKpis: max 5 items overall, most frequent first. Apply the small-sample cap above.
-- strengthKpis: max 5 items overall, most frequent first. Apply the small-sample cap above.
+- weaknessKpis: max 5 items overall, most frequent first. Apply the small-sample cap below.
+- strengthKpis: max 5 items overall, most frequent first. Apply the small-sample cap below.
 - examples must be real verbatim quotes from the supplied reviews, each under 80 characters. Do NOT paraphrase or invent.
 - sentimentBreakdown values must sum to ~1.0 (minor rounding is fine).
 - switchSignals may be an empty array — do not force a pattern that is not there.
 - leadScore: if "{our_offer}" can plausibly address the complaints we see, score higher.
-- summary stays in the output language specified at the top of the prompt.${labelBlock}`;
+- summary stays in the output language specified at the top of the prompt.
+
+HARD RULES (Round 2 — non-negotiable, post-process filter will drop violations):
+
+1. SAMPLE FLOOR. When reviewsAnalyzedCount < 10, return AT MOST 0 weaknessKpis and AT MOST 2 strengthKpis. When reviewsAnalyzedCount < 20, return AT MOST 1 weaknessKpi. Small samples cannot support stronger claims without overfitting.
+
+2. POOL FLOORS. If {negative_pool_count} < 3, return weaknessKpis: []. If {positive_pool_count} < 5, return strengthKpis: []. A KPI requires a real pool to draw from. The literal numbers above ARE the floor — read them and obey.
+
+3. LABEL ≠ EXAMPLE. The "label" is the cluster identity. An "examples" entry that is just the label restated ("Expensive: This place is expensive.") is NOT evidence — it is paraphrase, not quote. Every example must be a verbatim quote ≥4 words long that is NOT a near-copy of the label.
+
+4. LABEL FUSION FORBIDDEN. A label MUST describe ONE concept. Never fuse two complaints with "&" / "and" / "/" / "+". Examples that WILL be dropped: "Rude Staff & Toilet Access", "Pricing/Value", "Slow Service and Wait Times". If two complaints co-occur in the same review, emit two separate KPIs (when each meets the count ≥ 2 floor) or none.${labelBlock}`;
 }
 
 /**

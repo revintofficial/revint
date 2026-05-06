@@ -100,6 +100,37 @@ export interface NichePack {
    */
   notApplicableModules?: string[];
   /**
+   * Round 2 §3.13 — chain-aware copy guard.
+   *
+   * When the lead carries the `chain_detected` reason code, the opener
+   * prompt should know which feature areas are typically owned by the
+   * chain HQ (so a per-location pitch is the wrong unit of work) and
+   * which enterprise-grade modules pitch better at the brand level.
+   * Empty / undefined for niches where chain dynamics don't apply.
+   *
+   * Used by:
+   *   - `opener-writer.ts` (Sprint 1 lite) — builds a `Chain Considerations`
+   *     block and forbids the `likelyCentralizedAtChainRoot` modules.
+   *   - Hafta 2 PR-W2.E will plumb this into the package selector too.
+   */
+  chainConsiderations?: {
+    /**
+     * Modules that are almost always owned at the chain HQ level rather
+     * than per location. Pitching them per-shop makes the rep look
+     * uninformed (e.g. a cafe-chain manager doesn't decide on QR menus,
+     * loyalty stamps, or order-ahead — that's a brand-level decision).
+     */
+    likelyCentralizedAtChainRoot: string[];
+    /** Suggested chain-HQ pitch modules in place of the centralized ones. */
+    chainEnterprisePitchModules: string[];
+    /**
+     * Names of well-known chains in this niche, used to short-circuit
+     * the copy when the business is one of the obvious cases (Black
+     * Sheep, Pret, Costa, …). Empty when the niche has no clear majors.
+     */
+    knownChainsByName: string[];
+  };
+  /**
    * Hints used by the auto-classifier worker to score this child slug
    * against a candidate lead. All fields optional; the classifier blends
    * whatever's available from Google Places + name + price level signals.
@@ -399,6 +430,35 @@ export const NICHES: NichePack[] = [
       "Like & Comment",
       "Smart Recommendations",
     ],
+    chainConsiderations: {
+      // Round 2 §3.13 — Black Sheep / One Shot Coffee / Camden Roastery
+      // are all multi-location chains where these decisions belong to
+      // the brand HQ, not the per-location manager. Pitching them
+      // per-shop is the "wrong unit of work" anti-pattern.
+      likelyCentralizedAtChainRoot: [
+        "QR Mobile Pay (order-ahead)",
+        "Restaurant CRM (loyalty)",
+        "loyalty stamps",
+        "order-ahead",
+      ],
+      chainEnterprisePitchModules: [
+        "multi-property analytics",
+        "central menu management",
+        "brand-level Restaurant CRM",
+        "franchise mockup pack",
+      ],
+      knownChainsByName: [
+        "Black Sheep Coffee",
+        "Pret a Manger",
+        "Pret",
+        "Costa",
+        "Costa Coffee",
+        "Caffè Nero",
+        "Starbucks",
+        "Gail's",
+        "One Shot Coffee",
+      ],
+    },
     classifierHints: {
       // Beta finding §5: include modern Places cuisine subtypes that
       // commonly come back for cafés ("brunch_restaurant",

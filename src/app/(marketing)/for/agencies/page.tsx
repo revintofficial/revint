@@ -11,11 +11,11 @@ const COPY: VerticalCopy = {
   metaTitle:
     "Leadac AI for B2B outbound agencies - fresh local signals, not Apollo's exhaust",
   metaDescription:
-    "AI cold email is tanking everyone's reply rates. Leadac AI pulls fresh local leads from Google Maps every search, audits each site, generates a custom mockup, and writes openers grounded in what the prospect actually sees - not GPT-fabricated 'I noticed you...'",
+    "AI cold email is tanking everyone's reply rates. Leadac AI pulls fresh local leads from our continuously-refreshed local-business index, audits each site, generates a custom mockup, and writes openers grounded in what the prospect actually sees - not GPT-fabricated 'I noticed you...'",
   eyebrow: "For B2B outbound agencies",
   h1: "AI personalization is dying.",
   h1Highlight: "Reply rates: 1 to 2 per 200.",
-  sub: "Six months of AI-generated 'I noticed you...' openers and the receiving inbox figured it out. Reply rates tanked across the industry. Leadac AI doesn't try harder at GPT personalization. It pulls fresh local signals from Google Maps, audits the site, builds the mockup, and grounds the opener in something the prospect sees the moment they open their own homepage. Different fuel, not louder.",
+  sub: "Six months of AI-generated 'I noticed you...' openers and the receiving inbox figured it out. Reply rates tanked across the industry. Leadac AI doesn't try harder at GPT personalization. It pulls fresh local signals from our local-business index, audits the site, builds the mockup, and grounds the opener in something the prospect sees the moment they open their own homepage. Different fuel, not louder.",
   primaryCta: "Try with 50 free leads",
   validationQuote: {
     source: "14 days ago - 8-year cold email vet on what shifted in 2026",
@@ -45,7 +45,7 @@ const COPY: VerticalCopy = {
   proofHeading: "What changes for your team.",
   proofTourTitle: "Same SDR seat, different fuel.",
   proofPoints: [
-    "Discovery is per-search, not bulk-imported. Every list you pull is fresh data from Google Maps, not a recycled Apollo dump.",
+    "Discovery is per-search, not bulk-imported. Every list you pull is fresh data from our continuously-refreshed local-business index, not a recycled Apollo dump.",
     "For each shortlisted lead, the audit pinpoints what's broken on their site. The score and the signals are the conversation starter your SDR used to write themselves.",
     "Generate a custom one-page mockup using the prospect's actual reviews, services, and address. Attach the link in your opener.",
     "First-draft openers reference specific things on the prospect's existing site. Edit the parts that need your voice and push to Smartlead.",

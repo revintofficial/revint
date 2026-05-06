@@ -3,21 +3,44 @@ import * as cheerio from "cheerio";
 import { detectBookingProvider, extractContactEmails } from "@/lib/audit/booking-detection";
 import { extractSocialProfiles } from "@/lib/audit/social-scraper";
 
-// Restaurant niche: QR menu provider patterns (href + HTML matches)
-const QR_MENU_PATTERNS: { pattern: string; label: string }[] = [
+// Restaurant niche: QR menu provider patterns.
+//
+// Round 2 §3.5 split: a single substring search over the entire HTML
+// body produces a flood of false positives whenever the page (a) has
+// the literal phrase "e-menu" / "emenu" in body copy ("our e-menu is
+// coming soon"), or (b) embeds a third-party widget whose URL happens
+// to share a 4-6 char substring with one of our short fingerprints.
+//
+//   • LONG patterns are distinctive enough (≥8 chars, vendor-only) that
+//     a fullHtml `includes` match is acceptable. These rarely collide
+//     with editorial copy.
+//   • SHORT patterns are hostname-only — we only count them when they
+//     appear inside an actual `<a href>`'s hostname (or the menuUrl
+//     parsed by Cheerio), never in body text.
+//
+// `e-menu` and `emenu` were the two worst offenders (Round 2 evidence:
+// Glass Camden, Camden Roastery, Black Sheep Coffee all flagged
+// `detectedMenuTool="E-Menu"` because their pages mentioned the phrase
+// in editorial copy or in unrelated widget URLs). They are intentionally
+// removed from both lists. If a real `e-menu.com` provider needs to be
+// re-introduced, do it as a hostname-only entry in QR_MENU_SHORT_PATTERNS
+// AFTER running the pre-flight SQL gate (`scripts/sprint1-preflight.ts`)
+// to confirm nothing else collides.
+const QR_MENU_LONG_PATTERNS: { pattern: string; label: string }[] = [
   { pattern: "finedinemenu", label: "FineDine" },
   { pattern: "menutiger", label: "MenuTiger" },
   { pattern: "flipmenu", label: "Flipmenu" },
-  { pattern: "plumqr", label: "PlumQR" },
   { pattern: "glorifood", label: "Gloriafood" },
   { pattern: "flipdish", label: "Flipdish" },
+  { pattern: "digitalmenu", label: "Digital Menu" },
+];
+
+const QR_MENU_SHORT_PATTERNS: { pattern: string; label: string }[] = [
+  { pattern: "plumqr", label: "PlumQR" },
   { pattern: "yoello", label: "Yoello" },
   { pattern: "tableqr", label: "TableQR" },
   { pattern: "qr-menu", label: "QR Menu" },
   { pattern: "qrmenu", label: "QR Menu" },
-  { pattern: "digitalmenu", label: "Digital Menu" },
-  { pattern: "e-menu", label: "E-Menu" },
-  { pattern: "emenu", label: "E-Menu" },
 ];
 
 const RESERVATION_PATTERNS = [
@@ -33,6 +56,39 @@ const RESERVATION_PATTERNS = [
   "eat-app",
   "restobooking",
 ];
+
+// Round 2 §3.4 — `hasOnlineReservation` was firing on any body-text
+// mention of "OpenTable", "Resy", etc. (LUMI Camden flipped to true
+// because the press section quoted a Resy review). We now require the
+// pattern to appear inside an actual link's hostname OR href path,
+// matching the Path A symmetry already used by `hasBookingSystemFinal`.
+function hasReservationHostname(
+  links: { href: string }[],
+  pattern: string,
+): boolean {
+  return links.some((l) => {
+    const href = l.href || "";
+    if (!href) return false;
+    try {
+      const parsed = new URL(href);
+      const host = parsed.hostname.toLowerCase();
+      const path = parsed.pathname.toLowerCase();
+      // The provider can show up either as a hostname segment
+      // (`opentable.com`) or as a path segment of an aggregator
+      // (`yelp.com/reservations/...`). Both are real reservation
+      // signals; body-only matches are not.
+      if (host.includes(pattern)) return true;
+      // For multi-segment patterns like "yelp.com/reservations",
+      // build the host+path and check inclusion.
+      if (pattern.includes("/")) {
+        return (host + path).includes(pattern);
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  });
+}
 
 const DELIVERY_PATTERNS = [
   "deliveroo",
@@ -499,15 +555,18 @@ export function extractFeatures(html: string, url: string, businessType?: string
     }
   });
 
-  // Restaurant niche signals — zero extra HTTP cost, pure regex over already-fetched HTML
+  // Restaurant niche signals — zero extra HTTP cost, pure DOM parse.
+  // LONG patterns (≥8 char vendor names) match against the full HTML;
+  // SHORT patterns (≤7 chars, frequent collisions) match only inside
+  // an actual <a href> hostname. See QR_MENU_*_PATTERNS for rationale.
   let hasQrMenu = false;
   let detectedMenuTool: string | null = null;
   let menuUrl: string | null = null;
-  for (const { pattern, label } of QR_MENU_PATTERNS) {
+
+  for (const { pattern, label } of QR_MENU_LONG_PATTERNS) {
     if (fullHtml.includes(pattern)) {
       hasQrMenu = true;
       detectedMenuTool = label;
-      // Try to surface a direct menu link
       const menuLink = allLinks.find(
         (l) =>
           l.href.toLowerCase().includes(pattern) ||
@@ -518,16 +577,48 @@ export function extractFeatures(html: string, url: string, businessType?: string
     }
   }
 
-  const hasOnlineReservation = RESERVATION_PATTERNS.some((p) => fullHtml.includes(p));
-  const hasDeliveryIntegration = DELIVERY_PATTERNS.some((p) => fullHtml.includes(p));
+  if (!hasQrMenu) {
+    for (const { pattern, label } of QR_MENU_SHORT_PATTERNS) {
+      const matchingLink = allLinks.find((l) => {
+        const href = (l.href || "").toLowerCase();
+        if (!href) return false;
+        try {
+          const parsed = new URL(href);
+          return parsed.hostname.includes(pattern);
+        } catch {
+          // Relative or malformed hrefs can't be a menu vendor host.
+          return false;
+        }
+      });
+      if (matchingLink) {
+        hasQrMenu = true;
+        detectedMenuTool = label;
+        menuUrl = matchingLink.href;
+        break;
+      }
+    }
+  }
 
-  // Booking provider + contact emails (used for outreach + segmentation)
+  // Booking provider + contact emails (used for outreach + segmentation).
+  // We resolve `bookingProvider` BEFORE `hasOnlineReservation` so the
+  // latter can reuse the same recognised-hostname signal — Path A of the
+  // multi-signal symmetry.
   const linksForDetection = allLinks.map((l) => ({ href: l.href }));
   const bookingProvider = detectBookingProvider({ html, links: linksForDetection });
   const contactEmails = extractContactEmails({ html, links: linksForDetection });
 
   // P0.5 - extended social profile scraping (IG, FB, LinkedIn, TikTok, YouTube, Twitter/X, WhatsApp, Pinterest)
   const socialProfiles = extractSocialProfiles({ html, links: linksForDetection });
+
+  // Round 2 §3.4 — multi-signal `hasOnlineReservation`, symmetric with
+  // `hasBookingSystemFinal` below. A recognised provider hostname OR
+  // (JSON-LD reservation marker AND CTA link with a booking keyword)
+  // is required. Body-text mentions alone are no longer trusted.
+  const hasOnlineReservation =
+    bookingProvider !== null ||
+    RESERVATION_PATTERNS.some((p) => hasReservationHostname(allLinks, p)) ||
+    (jsonLdReservation && ctaSignalsBooking);
+  const hasDeliveryIntegration = DELIVERY_PATTERNS.some((p) => fullHtml.includes(p));
 
   // Beta finding §1: multi-signal final decision. A specific provider
   // fingerprint is the strongest signal and stands alone. Without one,

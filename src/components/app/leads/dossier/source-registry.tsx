@@ -25,6 +25,7 @@
 "use client";
 
 import * as React from "react";
+import { humanizePrimaryType } from "@/lib/labels";
 import {
   Building2,
   Globe,
@@ -662,7 +663,7 @@ export function buildPreviewMetrics(
         const m: KeyMetric[] = [];
         if (sources.lead.rating != null) m.push({ label: "Rating", value: `${sources.lead.rating}★` });
         if (sources.lead.reviewCount != null) m.push({ label: "Reviews", value: String(sources.lead.reviewCount) });
-        if (sources.lead.primaryType) m.push({ label: "Type", value: sources.lead.primaryType });
+        if (sources.lead.primaryType) m.push({ label: "Type", value: humanizePrimaryType(sources.lead.primaryType) });
         if (sources.lead.phone) m.push({ label: "Phone", value: sources.lead.phone });
         return { metrics: m, loading: false };
       }

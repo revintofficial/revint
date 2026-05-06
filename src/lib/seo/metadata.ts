@@ -27,7 +27,7 @@ export const SITE = {
   legalName: "Leadac AI",
   tagline: "Postcode and a niche. Fresh local leads, audited and pitched.",
   description:
-    "Live Google Maps discovery for local-service outbound agencies. Postcode plus niche gives you 47 fresh leads, a 20-signal Playwright audit on every site, a 0-100 opportunity score, and a personalised opener that references what the audit actually found.",
+    "Local-business lead intelligence for outbound agencies. Postcode plus niche pulls 47 fresh leads from our continuously-refreshed local-business index, runs a 20-signal Playwright audit on every site, scores fit 0-100, and drafts a personalised opener that references what the audit actually found.",
   locale: "en_US",
   defaultLanguage: "en-US" as const,
   supportedLanguages: ["en-US"] as const,

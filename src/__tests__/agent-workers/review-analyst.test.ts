@@ -150,16 +150,19 @@ beforeEach(() => {
 
 describe("REVIEW_ANALYST - happy path", () => {
   it("returns analysis output and upserts ReviewAnalysis with the right shape", async () => {
-    // Beta finding §2/§3: the lead row needs enough negative reviews
-    // to support a count≥2 KPI with two grounded examples after the
-    // post-process filter. We seed two real low-rating reviews whose
-    // text matches the KPI examples verbatim, so grounding passes.
+    // Round 2 §3.10 — the lead row needs ≥3 negative reviews (weakness
+    // pool floor) and ≥5 positive reviews (strength pool floor) for
+    // both KPI sides to survive the post-process filter. We seed real
+    // low/high-rating reviews whose text matches the KPI examples
+    // verbatim so the grounding gate passes too. Each example is also
+    // ≥4 tokens long (tiny-example floor) and adds ≥2 tokens of context
+    // beyond the label (label-echo floor).
     prismaMock.lead.findUniqueOrThrow.mockResolvedValue(
       makeLeadRow({
         googleReviews: [
           makeReview({
             rating: 2,
-            text: "had slow response times all day",
+            text: "had slow response times all day, never got a callback",
             authorName: "Bob",
           }),
           makeReview({
@@ -168,39 +171,68 @@ describe("REVIEW_ANALYST - happy path", () => {
             authorName: "Carol",
           }),
           makeReview({
+            rating: 1,
+            text: "they had slow response times when we filed our ticket",
+            authorName: "Erin",
+          }),
+          makeReview({
             rating: 5,
-            text: "amazing friendly techs always",
+            text: "amazing friendly techs always greeted us with a smile",
             authorName: "Alice",
           }),
           makeReview({
             rating: 5,
-            text: "the friendly techs deserve a raise",
+            text: "the friendly techs deserve a raise for their hard work",
             authorName: "Dan",
+          }),
+          makeReview({
+            rating: 5,
+            text: "their friendly techs are the best part of working with them",
+            authorName: "Fiona",
+          }),
+          makeReview({
+            rating: 4,
+            text: "really friendly techs and quick turnaround on most issues",
+            authorName: "Greg",
+          }),
+          makeReview({
+            rating: 4,
+            text: "we love the friendly techs and the white-glove onboarding",
+            authorName: "Hank",
           }),
         ],
       }),
     );
     analyzeReviewsWithGeminiMock.mockResolvedValue({
-      reviewsAnalyzedCount: 4,
+      reviewsAnalyzedCount: 8,
       weaknessKpis: [
         {
           label: "slow_response",
-          count: 2,
+          count: 3,
           percent: 30,
-          examples: ["had slow response times", "slow response times again"],
+          examples: [
+            "had slow response times all day",
+            "slow response times again, never coming back",
+          ],
         },
       ],
       strengthKpis: [
         {
           label: "friendly_staff",
-          count: 2,
+          count: 5,
           percent: 60,
-          examples: ["amazing friendly techs", "the friendly techs deserve"],
+          examples: [
+            "amazing friendly techs always greeted us",
+            "the friendly techs deserve a raise",
+          ],
         },
       ],
       sentimentBreakdown: { positive: 0.5, neutral: 0, negative: 0.5 },
+      // Phrases ≥3 tokens so the Round 2 grounding floor passes them
+      // through. Short 2-token phrases like "friendly techs" no longer
+      // ground (see kpi-filter §3.10 tightening).
       painPhrases: ["slow response times"],
-      strengthPhrases: ["friendly techs"],
+      strengthPhrases: ["amazing friendly techs"],
       switchSignals: [{ from: "Competitor", to: "Acme", reason: "price" }],
       leadScore: 72,
       summary: "Mixed but improving",
@@ -213,16 +245,17 @@ describe("REVIEW_ANALYST - happy path", () => {
 
     const upsertArgs = prismaMock.reviewAnalysis.upsert.mock.calls[0][0];
     expect(upsertArgs.where).toEqual({ leadId: "lead_1" });
-    expect(upsertArgs.create.reviewsAnalyzedCount).toBe(4);
+    expect(upsertArgs.create.reviewsAnalyzedCount).toBe(8);
     expect(upsertArgs.create.leadScore).toBe(72);
     expect(upsertArgs.create.summary).toBe("Mixed but improving");
     expect(Array.isArray(upsertArgs.create.weaknessKpis)).toBe(true);
-    // Beta finding §2: KPI carries `count`; `percent` is re-derived
-    // from the actual negative pool (here 2 of 2 = 100%) rather than
-    // trusting whatever Gemini returned.
+    // Round 2 §3.10/§3.11 — KPI carries `count`; `percent` is
+    // re-derived from the actual negative pool (here 3 of 3 = 100%
+    // since the new pool floor of 3 means 3 negatives are present and
+    // all 3 mention slow response).
     expect(upsertArgs.create.weaknessKpis[0]).toMatchObject({
       label: "slow_response",
-      count: 2,
+      count: 3,
     });
     expect(upsertArgs.create.weaknessKpis[0].examples.length).toBeGreaterThanOrEqual(2);
 
@@ -235,8 +268,8 @@ describe("REVIEW_ANALYST - happy path", () => {
     };
     expect(out.leadScore).toBe(72);
     expect(out.painPhrases).toEqual(["slow response times"]);
-    expect(out.strengthPhrases).toEqual(["friendly techs"]);
-    expect(out.reviewsAnalyzedCount).toBe(4);
+    expect(out.strengthPhrases).toEqual(["amazing friendly techs"]);
+    expect(out.reviewsAnalyzedCount).toBe(8);
   });
 
   it("transitions reviewAnalysisStatus ANALYZING -> ANALYZED on success", async () => {

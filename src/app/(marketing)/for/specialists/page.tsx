@@ -45,7 +45,7 @@ const COPY: VerticalCopy = {
   proofHeading: "What changes for you.",
   proofTourTitle: "From the deliverable you know to the pipeline you didn't.",
   proofPoints: [
-    "Pick your specialty. Leadac AI pulls a fresh prospect list from Google Maps in 30 seconds. Filtered by site signal, not bought from Apollo.",
+    "Pick your specialty. Leadac AI pulls a fresh prospect list from our local-business index in 30 seconds. Filtered by site signal, not bought from Apollo.",
     "Each lead arrives with a website audit pinpointing what's broken. That's the cold-email opener you couldn't write yourself.",
     "Generate a one-page custom mockup for each shortlisted prospect. Attach the link in the cold email. Replies start with 'how soon can you start' instead of 'who are you'.",
     "First-draft opener references their actual site, in plain English. You edit the parts that need your voice and ship.",

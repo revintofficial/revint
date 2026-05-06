@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CircularProgress } from "@/components/ui/progress";
 import { getNicheBySlug, getParentOf } from "@/lib/niches";
+import { isSocialPlatformDefaultMeta } from "@/lib/labels";
 import {
   Globe,
   ExternalLink,
@@ -728,11 +729,26 @@ function StatusChip({
 /* ---------- Identity & SEO ---------- */
 
 function IdentitySection({ audit }: { audit: WebsiteAudit }) {
+  // Round 2 §3.9 — pre-Round-1 audits captured social platform default
+  // copy (e.g. Instagram's "Create an account or log in to Instagram —
+  // share what you're into …") into `metaDescription` because the
+  // crawler treated the Instagram URL as a website. Strip those defaults
+  // here so reps don't read them as the business's own SEO copy. The
+  // backfill (P0.8) will rewrite the DB rows; this UI mask is the
+  // defense-in-depth.
+  const cleanedTitle =
+    audit.title === "Instagram" || audit.title === "Facebook"
+      ? null
+      : audit.title;
+  const cleanedMeta = isSocialPlatformDefaultMeta(audit.metaDescription)
+    ? null
+    : audit.metaDescription;
+
   const rows: { label: string; value: ReactNode }[] = [
-    { label: "Title", value: audit.title || <Muted>Missing</Muted> },
+    { label: "Title", value: cleanedTitle || <Muted>Missing</Muted> },
     {
       label: "Meta description",
-      value: audit.metaDescription || <Muted>Missing</Muted>,
+      value: cleanedMeta || <Muted>Missing</Muted>,
     },
     { label: "H1", value: audit.h1 || <Muted>Missing</Muted> },
   ];

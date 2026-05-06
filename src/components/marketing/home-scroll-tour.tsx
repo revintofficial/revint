@@ -17,7 +17,7 @@ const SCENES: ScrollScene[] = [
     id: "discover",
     eyebrow: "01 — Discover",
     title: "Pick a postcode and a niche.",
-    body: "Every matching business pulled straight from Google Maps. Live data, not a recycled list the whole industry already emailed.",
+    body: "Every matching business pulled straight from our local-business index. Live data, refreshed continuously — not a recycled list the whole industry already emailed.",
     visual: (
       <DiscoveryDemo
         cities={DemoData.HOME_CITIES}

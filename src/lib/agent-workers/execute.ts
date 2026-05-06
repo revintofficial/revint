@@ -29,7 +29,7 @@ import {
   resolveWorkerStart,
   resolveWorkerFinalize,
 } from "./registry";
-import { checkWorkerQuota, QuotaExceededError } from "./quota";
+import { assertWorkerQuota } from "./quota";
 import { RetryableError } from "./errors";
 import { EmbeddingError } from "@/lib/ai-core/embed";
 import { getAppBaseUrl } from "@/lib/email/from";
@@ -139,15 +139,18 @@ export async function executeAgentRun(
       return;
     }
 
-    const quota = await checkWorkerQuota({
+    // Round 2 §3.6 — the gate now throws the right `PermanentError`
+    // subclass directly (PerLeadDailyCapExceededError /
+    // ApifyBudgetExceededError / QuotaExceededError / PlanTooLowError)
+    // based on the snapshot's `blockReason`. Worker wrapper below
+    // catches PermanentError and marks the run FAILED without retry,
+    // so we don't need to translate the error here anymore.
+    await assertWorkerQuota({
       workspaceId: run.workspaceId,
       plan: ctx.workspace.plan,
       kind: run.workerKind,
       leadId: run.leadId,
     });
-    if (!quota.allowed) {
-      throw new QuotaExceededError(quota.used, quota.limit, run.workerKind);
-    }
 
     // Async-apify mode: kick off the actor with a webhook callback and
     // return without flipping the AgentRun to a terminal state. The

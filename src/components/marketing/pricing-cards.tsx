@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Check, Lock, ShieldCheck } from "lucide-react";
 import {
   PLANS,
-  PLAN_ORDER,
+  VISIBLE_PLAN_ORDER,
   ANNUAL_DISCOUNT_PCT,
   currencySymbol,
   detectBrowserCurrency,
@@ -147,8 +147,8 @@ export function PricingCards({
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
-        {PLAN_ORDER.map((id) => {
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+        {VISIBLE_PLAN_ORDER.map((id) => {
           const plan = PLANS[id];
           const isHighlight = plan.highlight;
           const price = getDisplayPrice(id, currency, cycle);

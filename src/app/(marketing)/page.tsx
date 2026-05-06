@@ -10,36 +10,42 @@ import {
   CineWhy,
   CineProcess,
   CineStats,
-  CineTestimonials,
+  CinePain,
+  CineCaseStudy,
+  CineLogoWall,
+  CineLeadIntelligence,
   CineFaq,
   CineCta,
   type CineReason,
   type CineStep,
   type CineStat,
-  type CineTestimonial,
+  type CinePainPoint,
+  type CineCaseStudyMetric,
+  type CineCaseStudyBeat,
+  type CineLogoWallEntry,
+  type CineIntelligenceFeature,
   type CineFaqItem,
 } from "@/components/marketing/cine";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
   path: "/",
-  title:
-    "Leadac — Find local clients off Google Maps. Audit, email, mockup, close.",
+  title: "LeadAC — Find your next local customer.",
   description:
-    "Postcode plus niche pulls 50 fresh businesses off Google Maps. Every site audited, a personalised opener drafted, and a one-page mockup the prospect can click. Works with Smartlead, Instantly, GHL, Gmail, Outlook.",
+    "Type a postcode and a niche. LeadAC pulls 50 fresh leads from our local-business index, audits every site, and drafts an opener grounded in what the audit found. Pipeline-ready dossiers in five minutes. Built for the local-business segment Apollo doesn't cover. Works with Smartlead, Instantly, GHL, Gmail, Outlook.",
   keywords: [
-    "client acquisition system",
-    "client acquisition system for agencies",
+    "local lead generation for agencies",
+    "agency outbound system",
+    "google maps lead intelligence",
     "google maps lead generation",
-    "google maps scraper for agencies",
     "agency lead generation",
-    "local lead generation software",
-    "personalized cold outreach",
-    "ai cold email that gets replies",
-    "apollo alternative",
-    "smma lead generation",
+    "local business prospecting",
     "outbound system for agencies",
+    "smma lead generation",
     "cold email reply rate",
+    "audit-driven cold email",
+    "lead dossier",
+    "b2b agency outbound",
   ],
 });
 
@@ -58,26 +64,59 @@ const HERO_FRAMES_PATH = "/frames";
 const HERO_FRAME_COUNT = 0;
 const HERO_FRAME_EXT = "jpg" as const;
 
+const PAIN_POINTS: CinePainPoint[] = [
+  {
+    icon: "Database",
+    title: "Recycled lists skip local",
+    body: "Apollo, ZoomInfo, Lusha — agencies share the same 50 million enterprise contacts, pitched by ten other shops this month. Reply rates on shared-list outbound dropped from 3-4% into 1-2%. The fix isn't a better cadence. Apollo's strength is enterprise B2B. Local-business coverage was never theirs. Most local prospects aren't even indexed, and the ones that are sit on stale data nobody re-crawls.",
+    source: {
+      quote:
+        "Same 50M contacts. Same crawls. Same emails to the same prospects.",
+      attribution: "r/coldemail · April 2026",
+    },
+  },
+  {
+    icon: "MessageSquareDashed",
+    title: "AI personalization stopped working",
+    body: "Twelve months of training-data leakage and every GPT first-line generator sounds the same. The receiving inbox figured it out. \"I noticed you launched...\" is a deliverability liability now. Different fuel beats louder personalization.",
+    source: {
+      quote:
+        "If you're using AI for cold outreach, are you OK with the damages?",
+      attribution: "r/coldemail · AI thread",
+    },
+  },
+  {
+    icon: "Layers",
+    title: "Manual research caps at ten a day",
+    body: "A senior SDR can hand-write a great per-prospect message — for ten prospects. That's not a pipeline. The middle path between AI slop at scale and hand-write everything is the gap nothing was filling.",
+    source: {
+      quote:
+        "I need a predictable way to get clients. Not another course, not another tool. A system.",
+      attribution: "r/SMMA · April 2026",
+    },
+  },
+];
+
 const REASONS: CineReason[] = [
   {
     icon: "Package",
-    title: "Conversations, not contacts",
-    body: "Apollo gives you a name and wishes you luck. Clay enriches a row. Smartlead sends it. Leadac gives you the opener, the mockup, and the angle that actually gets a response.",
+    title: "Dossiers, not contact rows",
+    body: "Apollo hands you a contact and a guess. We hand you a dossier: the audit, the score, the angle, and the draft. Same SDR seat, different fuel.",
   },
   {
     icon: "TrendingUp",
-    title: "Gets better the longer you use it",
-    body: "Winning openers get saved and pulled back as examples next time. The drafts sound more like you with every campaign. No re-prompting per client.",
+    title: "Sharper as you keep what works",
+    body: "Saved openers seed the next campaign. Your voice and offer are learned once and applied everywhere. Drafts get sharper because the inputs do.",
   },
   {
     icon: "ShieldCheck",
-    title: "One subscription, no credit maths",
-    body: "Maps data, reviews, competitor ads, LinkedIn, Reddit mentions. One monthly cap. No panic mid-campaign because you ran out of credits.",
+    title: "One subscription, no credit math",
+    body: "Maps data, reviews, competitor ads, LinkedIn signals, Reddit mentions. One monthly cap. No panic mid-campaign because you ran out of credits.",
   },
   {
     icon: "Scale",
-    title: "AI writes. You review. Your brand.",
-    body: "Auto-send off by default. You check everything before it goes out from your own inbox. Take the human out and quality tanks. Every cold email operator on Reddit will tell you the same.",
+    title: "AI drafts. You review. Your brand.",
+    body: "Auto-send is off by default. You check everything before it leaves your own inbox. Take the human out and quality tanks. Every cold email operator on Reddit will tell you the same.",
   },
 ];
 
@@ -89,23 +128,23 @@ const STEPS: CineStep[] = [
   },
   {
     n: "2",
-    title: "Score",
-    body: "20 signals, up to 500 reviews, 0-100 score. Best angle and price band ready.",
+    title: "Research",
+    body: "Site signals, up to 500 reviews scanned for sentiment, sub-niche detection, competitor ads, social posts. 0-100 fit score with the angle and price band ready.",
   },
   {
     n: "3",
     title: "Pitch",
-    body: "One click: opener draft plus a mockup on a branded link. That link is what gets replied to.",
+    body: "Opener draft grounded in what the audit found, not in a generic 'I noticed you...' prompt. One click.",
   },
   {
     n: "4",
     title: "Send",
-    body: "Gmail, Outlook, or export to Smartlead/Instantly. Replies track back to the lead automatically.",
+    body: "Gmail, Outlook, or export to Smartlead/Instantly. Replies match back to the lead automatically.",
   },
   {
     n: "5",
     title: "Install",
-    body: "Prospect signs? Export the AI receptionist, review-reply agent, and lead-response flow you pitched. Booking widget and GBP posting in beta.",
+    body: "Closed prospect? Export the AI receptionist, review-reply agent, and lead-response flow you pitched. Booking widget and GBP posting in beta.",
   },
 ];
 
@@ -113,146 +152,125 @@ const STATS: CineStat[] = [
   { value: "47", label: "Leads audited in five minutes" },
   { value: "500", label: "Google reviews scanned per lead" },
   { value: "20+", label: "Site signals scored, 0-100" },
-  { value: "0", label: "Apollo contacts recycled" },
+  {
+    value: "75x",
+    label: "Year-1 payback on Agency+ if one closed retainer pays $1,500/mo",
+  },
 ];
 
 /**
- * Pre-launch. No paying customers yet. These are market signals from the
- * threads the product was designed to answer — quoted verbatim, attributed
- * to the subreddit and comment count. Replace with real customer quotes as
- * they land.
+ * Beta-cohort case study card. Anonymized as "F&B SaaS BD team" until the
+ * customer grants written permission for their name to appear publicly.
+ * Source: research/finedine/beta-test-round-2-camden-report.md (12 leads,
+ * Camden / North London cafes, May 2026).
  */
-const TESTIMONIALS: CineTestimonial[] = [
+const CASE_STUDY_BEATS: CineCaseStudyBeat[] = [
   {
-    quote:
-      "Google Maps is the most underrated lead database in cold email.",
-    name: "r/coldemail",
-    role: "121 comments · 2026-04",
+    label: "Before",
+    body: "Two BD reps spent 80% of their day juggling tabs and spreadsheets, manually qualifying cafes against the QR-menu and reservations stack they sell. Maybe 30 prospects per rep per day, and most of the research never made it into the opener.",
   },
   {
-    quote:
-      "Same 50M contacts. Same data from the same crawls. Same emails that have been cold emailed by ten other people this month.",
-    name: "r/coldemail",
-    role: "Recurring theme, April 2026",
+    label: "After",
+    body: "12 cafes audited end-to-end in one afternoon. Sub-niche detection, package recommendation, and an opener grounded in what each cafe was missing (online ordering, reservations, loyalty).",
   },
   {
-    quote:
-      "If you're using AI for cold outreach, are you OK with the damages?",
-    name: "r/coldemail",
-    role: "AI-cold-email thread",
+    label: "What landed",
+    body: "Audit signal flagged 6 of 12 cafes as 'no online ordering' — the exact pitch territory their product covers. The team had a shortlist they could send Monday.",
   },
   {
-    quote:
-      "3-4% reply and 96%+ deliverability is the realistic bar. Everything else is vanity.",
-    name: "r/coldemail",
-    role: "60k-email operator",
+    label: "What didn't",
+    body: "Round 2 surfaced 10 bug classes (chain blindness, review small-sample blowups, expired-domain context). The customer found them, not us — and that's the point. Hotfix release this sprint addresses each one.",
+  },
+];
+
+const CASE_STUDY_METRICS: CineCaseStudyMetric[] = [
+  { value: "12", label: "Cafes audited end-to-end in one afternoon" },
+  { value: "6/12", label: "Pitch-ready prospects on the shortlist" },
+  { value: "10", label: "Bug classes the customer reported (we fix, not hide)" },
+];
+
+/**
+ * Logo wall placeholder — text-only slots until 3+ customers grant
+ * written permission for their real logo. The framing line is itself the
+ * trust signal: "we don't ship anonymous claims" beats a row of grey-scale
+ * logos with no source.
+ */
+const LOGO_WALL_ENTRIES: CineLogoWallEntry[] = [
+  { label: "F&B SaaS BD team" },
+  { label: "Local SEO agency" },
+  { label: "Walk-in web agency" },
+  { label: "B2B outbound shop" },
+  { label: "Solo Klaviyo specialist" },
+];
+
+const LEAD_INTELLIGENCE_FEATURES: CineIntelligenceFeature[] = [
+  {
+    icon: "MapPin",
+    title: "Discovery",
+    body: "Pulled live from our local-business index, scoped to your postcode and niche. Refreshed continuously so you don't get stale rows or recycled enterprise contacts.",
   },
   {
-    quote:
-      "Everyone told me cold email was dead in 2026. Then I looked at Google Maps.",
-    name: "r/coldemail",
-    role: "204 comments · 2026-04",
+    icon: "FileSearch",
+    title: "Deep prospect research",
+    body: "Not just a site scrape. 20+ site signals (HTTPS, mobile fit, booking flow, schema, LCP), up to 500 reviews scanned for sentiment, competitor ad presence, recent social posts, hiring signals. 0-100 fit score with each reason listed.",
   },
   {
-    quote:
-      "I need a predictable way to get clients. Not another course, not another tool. A system.",
-    name: "r/SMMA",
-    role: "Top comment, April 2026",
+    icon: "Tag",
+    title: "Sub-niche classification",
+    body: "Detects whether the prospect is a fine-dining restaurant, a coffee shop, or a ghost kitchen, and matches the pitch and package to their sub-niche.",
   },
   {
-    quote:
-      "I worked as an executor for four years. I know Klaviyo cold. I don't know how agencies actually acquire clients.",
-    name: "r/agency",
-    role: "Klaviyo specialist, going solo",
+    icon: "MessageSquare",
+    title: "Opener grounded in the audit",
+    body: "Drafts the first line from the audit, not from a generic 'I noticed you launched...' prompt. The line references something the prospect can see on their own homepage.",
+  },
+  {
+    icon: "Package",
+    title: "Pipeline-ready dossier",
+    body: "Each lead arrives as a dossier: signals, score, suggested package, draft opener. Open Monday, work through Friday.",
   },
 ];
 
 const FAQ_ITEMS: CineFaqItem[] = [
   {
-    q: "Is this a tool or a system?",
-    a: "Both. Discovery, audit, mockup, opener draft, export — that's the tool. The system is the part that actually books the call: fresh data nobody else has, homework attached to every first email, and a memory that learns which lines land.",
-  },
-  {
     q: "How is this different from Apollo or Clay?",
-    a: "Apollo and Clay own the enterprise contact database. We don't compete there. Leadac is the upstream layer for local business outbound: fresh Google Maps data, a site audit on every lead, a 0-100 score, and a personalised opener built from what the audit found. Most agencies end up running Leadac in front of Apollo, not instead of it.",
-  },
-  {
-    q: "What does 'install' actually mean?",
-    a: "Three products you can sell to the prospect, each trained on their own site: an AI receptionist (exports to Synthflow, Retell, Vapi, or GHL), a review-reply agent with human approval on 1 and 2 star reviews, and a 60-second lead-response sequence (GHL, n8n, or Make). Booking widget and GBP posting are in beta. We don't advertise what hasn't shipped.",
-  },
-  {
-    q: "How does the AI improve over time?",
-    a: "Every reply teaches it. Good openers get saved as examples for next time. Your voice and positioning are learned once and applied everywhere. You stop re-prompting it for every client.",
-  },
-  {
-    q: "Does it work with Smartlead or Instantly?",
-    a: "Yes. Pro and Agency plans export a CSV formatted for both, with custom variables for the mockup link and audit signals. You can also send from connected Gmail or Outlook. Replies match back to the lead and the pipeline stage moves on its own.",
-  },
-  {
-    q: "Is the AI sending emails for me?",
-    a: "No. Auto-send is off by default and it stays that way unless you flip a toggle. Leadac generates the audit, the mockup, and the draft. You review and send. AI outreach without a human in the loop burns deliverability.",
+    a: "Apollo and Clay own the enterprise B2B database — that's where they're strong. We're the local-business lead-intelligence layer Apollo doesn't cover well: our own continuously-refreshed local-business index, a real audit on every site, and an opener grounded in the audit. Most agencies run LeadAC in front of Apollo, not instead of it.",
   },
   {
     q: "Where do the leads come from?",
-    a: "Live Google Maps on every search. Businesses keep their own profiles current, so the data is cleaner than any scraped list. Deep enrichment adds reviews, social posts, competitor ads, LinkedIn signals, and Reddit mentions. All inside your monthly cap.",
+    a: "From our local-business index — refreshed continuously so the data is clean and current rather than a scraped list. Deep enrichment adds reviews, social posts, competitor ads, LinkedIn signals, and Reddit mentions on top of every record. All inside your monthly cap.",
   },
   {
-    q: "Can I white-label it?",
-    a: "Agency tier has workspace branding today: your logo, colours, and domain on mockup pages. Full white-label with a custom domain across the whole workspace lands mid-2026.",
+    q: "What does the deep research actually cover?",
+    a: "More than a site scrape. 20+ technical site signals (HTTPS, mobile fit, booking flow integrity, schema markup, Largest Contentful Paint), up to 500 reviews scanned for sentiment, sub-niche classification, competitor ad presence, recent social posts, hiring signals where they exist. 0-100 fit score with each reason listed, so you can sanity-check before pitching.",
   },
   {
-    q: "Can I cancel any time?",
-    a: "Yes. Settings, billing, done. Access runs till the end of your cycle. Data kept 30 days. Free plan never touches a card.",
+    q: "How long until first booked call?",
+    a: "Most operators see their first reply in week 1, first booked call in week 2-3. Retainer-grade clients tend to land in week 4. Faster if you already have a sender warmed and a working ICP.",
+  },
+  {
+    q: "Does it work with Smartlead, Instantly, or GHL?",
+    a: "Yes. Solo and Studio plans export CSV formatted for Smartlead and Instantly with custom variables for the audit signals. Agency+ adds native Gmail and Outlook send with reply attribution back to the lead.",
+  },
+  {
+    q: "Is the AI sending emails for me?",
+    a: "No. Auto-send is off by default and stays that way unless you flip a toggle. We generate the audit and the draft. You review and ship from your own inbox. AI cold email without a human in the loop burns deliverability — we won't ship that.",
+  },
+  {
+    q: "Can I bring my existing client list?",
+    a: "Yes. Import a CSV and we'll audit each row. Fit scoring and sub-niche detection still run, just against the rows you bring instead of a fresh pull from our index.",
+  },
+  {
+    q: "Is there an agency-friendly billing model?",
+    a: "Agency+ is workspace-based, not per-seat: 5 seats included, no per-seat surcharge for adding the next SDR. Custom volume above the Agency+ tier on request.",
+  },
+  {
+    q: "Is there a money-back window?",
+    a: "14-day trial with a card on file. If you don't pull a single fresh lead list and an audit you'd actually send, cancel inside 14 days and the card on file gets a refund. No 'are you sure?' loops.",
   },
   {
     q: "Is my data private?",
-    a: "Leads, notes, pipeline, shortlists, voice notes, and saved memory are scoped to your workspace. Only invited members see them. We don't share or resell your data and we don't use it to train models.",
-  },
-];
-
-const COPILOT_TOOLS = [
-  {
-    name: "Find leads",
-    hint: "Filter by niche, area, score, or pipeline stage.",
-  },
-  {
-    name: "Search by meaning",
-    hint: "Pull leads by intent, not keywords.",
-  },
-  {
-    name: "Start a pitch",
-    hint: "Mockup, opener, and plan for any lead.",
-  },
-  {
-    name: "Run deep research",
-    hint: "Web, socials, reviews, competitor signals.",
-  },
-  {
-    name: "Find lookalikes",
-    hint: "Score similar leads against your best closer.",
-  },
-];
-
-const MEMORY_KINDS = [
-  {
-    name: "Winning openers",
-    hint: "Best first messages, pulled in as examples next time.",
-  },
-  {
-    name: "Your positioning",
-    hint: "Offer and voice, learned once, applied everywhere.",
-  },
-  {
-    name: "Prospect knowledge",
-    hint: "Their own site, ready for the receptionist.",
-  },
-  {
-    name: "Review pain points",
-    hint: "What their customers complain about, ready for the opener.",
-  },
-  {
-    name: "Mockup blocks that converted",
-    hint: "Sections that got replies before.",
+    a: "Leads, notes, pipeline, voice notes, and saved playbook are scoped to your workspace. Only invited members see them. We don't share or resell, and we don't train models on your data.",
   },
 ];
 
@@ -264,17 +282,28 @@ export default function LandingPage() {
         frameCount={HERO_FRAME_COUNT}
         frameExt={HERO_FRAME_EXT}
         badge="New"
-        tagline="For agencies selling to local businesses"
-        headline="Google Maps to signed clients."
-        sub="Postcode, niche, go. 50 fresh leads off Maps, every site audited, a draft email and clickable mockup ready to send. Five minutes."
+        tagline="Local lead generation for outbound agencies"
+        headline="Find your next local customer."
+        sub="Type a postcode and a niche. LeadAC pulls fresh leads from our local-business index, runs deep research on every prospect (site signals, reviews, competitors, social posts, sub-niche), and drafts the opener from what the research found. Pipeline-ready dossiers in your tab in five minutes — for the local-business segment Apollo doesn't cover."
         ctaPrimary={
           MARKETING_COMING_SOON
             ? { label: "Launching soon" }
-            : { label: "Get my first 50 leads", href: "/signup" }
+            : { label: "Audit your first 10 leads", href: "/signup" }
         }
-        ctaSecondary={{ label: "Watch the tour", href: "#tour" }}
+        ctaSecondary={
+          MARKETING_COMING_SOON
+            ? { label: "Watch the tour", href: "#tour" }
+            : { label: "Book a 15-min walkthrough", href: "/demo" }
+        }
         partnersLabel="Works with your sender. We don't replace it."
         partners={["Smartlead", "Instantly", "GHL", "Gmail", "Outlook"]}
+      />
+
+      <CinePain
+        eyebrow="Why outbound stopped paying out"
+        headline="The most-used outbound playbook stopped working."
+        sub="Cold outreach became every agency's default just as reply rates collapsed. Three things broke at once. We built around the third."
+        points={PAIN_POINTS}
       />
 
       <CineFeatures />
@@ -343,161 +372,23 @@ export default function LandingPage() {
         steps={STEPS}
       />
 
-      {/* The brain — copilot tools + learning loop. Dark-soft wrapper
-          between light sections for rhythm. */}
-      <section
-        id="brain"
-        className="vx-dark-section-soft relative py-24 md:py-36 overflow-hidden"
-      >
-        <div
-          className="relative z-10 max-w-(--cine-max) mx-auto"
-          style={{ paddingLeft: "var(--cine-gutter)", paddingRight: "var(--cine-gutter)" }}
-        >
-          <div className="flex flex-col items-center text-center gap-5 mb-16 max-w-3xl mx-auto">
-            <span
-              className="rounded-full px-4 py-1.5 text-[11.5px] font-medium"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 68% / 0.28)",
-                color: "rgba(255,255,255,0.85)",
-              }}
-            >
-              The compounding part
-            </span>
-              <h2 className="vx-display text-[clamp(32px,5vw,60px)] leading-[1.02] tracking-[-0.03em] max-w-[22ch] text-white">
-              Gets sharper{" "}
-              <span className="vx-text-gradient">the more you use it.</span>
-            </h2>
-            <p className="text-[15px] md:text-[16.5px] text-white/55 max-w-xl leading-relaxed">
-              A copilot that runs real actions from chat, and a memory that learns from every reply you get.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* Copilot panel */}
-            <div
-              className="rounded-2xl p-7 md:p-8 flex flex-col gap-5"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(32,32,36,0.92), rgba(22,22,26,0.96))",
-                border: "0.5px solid rgba(255,255,255,0.08)",
-                boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 78% / 0.25), hsl(var(--leadac-h) var(--leadac-s) 50% / 0.15))",
-                    border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.35)",
-                    color: "var(--leadac-300)",
-                  }}
-                  aria-hidden
-                >
-                  <Sparkles className="w-4.5 h-4.5" />
-                </div>
-                <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300)">
-                  Copilot
-                </p>
-              </div>
-              <h3 className="text-[22px] md:text-[26px] font-semibold tracking-[-0.01em] text-white leading-[1.15]">
-                Talk to your pipeline.
-              </h3>
-              <p className="text-[13.5px] text-white/60 leading-relaxed">
-                &quot;Find 20 lookalikes of my best closer in Manchester and draft the openers.&quot; It runs the tools, links work back to each lead, hands you the drafts.
-              </p>
-              <ul className="flex flex-col gap-2 mt-2">
-                {COPILOT_TOOLS.map((t) => (
-                  <li
-                    key={t.name}
-                    className="flex items-start gap-3 rounded-lg px-3 py-2.5"
-                    style={{
-                      background: "rgba(255,255,255,0.025)",
-                      border: "0.5px solid rgba(255,255,255,0.06)",
-                    }}
-                  >
-                    <span
-                      className="text-[12.5px] font-semibold shrink-0"
-                      style={{ color: "var(--leadac-300)" }}
-                    >
-                      {t.name}
-                    </span>
-                    <span className="text-[12.5px] text-white/55 leading-snug">
-                      {t.hint}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Learning loop panel */}
-            <div
-              className="rounded-2xl p-7 md:p-8 flex flex-col gap-5"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(32,32,36,0.92), rgba(22,22,26,0.96))",
-                border: "0.5px solid rgba(255,255,255,0.08)",
-                boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 78% / 0.25), hsl(var(--leadac-h) var(--leadac-s) 50% / 0.15))",
-                    border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.35)",
-                    color: "var(--leadac-300)",
-                  }}
-                  aria-hidden
-                >
-                  <Sparkles className="w-4.5 h-4.5" />
-                </div>
-                <p className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-(--leadac-300)">
-                  Learning loop
-                </p>
-              </div>
-              <h3 className="text-[22px] md:text-[26px] font-semibold tracking-[-0.01em] text-white leading-[1.15]">
-                Best openers train the next one.
-              </h3>
-              <p className="text-[13.5px] text-white/60 leading-relaxed">
-                Every reply teaches it which lines worked. Next draft pulls your three best past wins as examples. Voice gets sharper, AI stops drifting.
-              </p>
-              <ul className="flex flex-col gap-2 mt-2">
-                {MEMORY_KINDS.map((m) => (
-                  <li
-                    key={m.name}
-                    className="flex items-start gap-3 rounded-lg px-3 py-2.5"
-                    style={{
-                      background: "rgba(255,255,255,0.025)",
-                      border: "0.5px solid rgba(255,255,255,0.06)",
-                    }}
-                  >
-                    <span
-                      className="text-[12.5px] font-semibold shrink-0"
-                      style={{ color: "var(--leadac-300)" }}
-                    >
-                      {m.name}
-                    </span>
-                    <span className="text-[12.5px] text-white/55 leading-snug">
-                      {m.hint}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <CineStats eyebrow="The numbers" stats={STATS} />
-
-      <CineTestimonials
-        eyebrow="From the threads"
-        headline="What the operators keep posting."
-        testimonials={TESTIMONIALS}
+      <CineCaseStudy
+        eyebrow="Beta cohort"
+        headline="12 cafes in Camden. One BD team. One afternoon."
+        sub="The first cohort that ran the full motion end-to-end. What landed, what didn't, what we fixed because they reported it."
+        customerLabel="F&B SaaS BD team"
+        customerSetup="2-rep BD team selling QR menu and reservations to local cafes. Camden and North London cohort, May 2026."
+        beats={CASE_STUDY_BEATS}
+        metrics={CASE_STUDY_METRICS}
+        disclosure="Anonymized at customer request. Public case study lands when permission confirmed. Internal artifact: research/finedine/beta-test-round-2-camden-report.md."
       />
+
+      <CineLogoWall
+        entries={LOGO_WALL_ENTRIES}
+        framing="Used by a small group of operators running outbound across the UK. We add a logo here when the customer asks us to. We don't ship anonymous proof."
+      />
+
+      <CineStats eyebrow="The numbers that matter" stats={STATS} />
 
       {/* Pricing — dark wrapper so the existing dark PricingCards component
           continues to read. Purple accent used inside the cards now. */}
@@ -529,19 +420,26 @@ export default function LandingPage() {
               ) : (
                 <>
                   One subscription.{" "}
-                  <span className="vx-text-gradient">Stop stacking tools.</span>
+                  <span className="vx-text-gradient">Stop bolting on a research VA.</span>
                 </>
               )}
             </h2>
             <p className="text-[15px] md:text-[16.5px] text-white/55 max-w-xl leading-relaxed">
               {MARKETING_COMING_SOON
-                ? "Finishing the packaging. One workspace instead of four tools. Details when signup opens."
-                : "Apollo + Clay + Smartlead + a receptionist runs $300-$475 a month before your agency retainer. Leadac Agency does it all for about 15% of that. One card on file."}
+                ? "Finishing the packaging. One workspace instead of four tools and a research VA. Details when signup opens."
+                : "Local outbound is a per-prospect-homework cost line. A research VA at $3-5/hr × 30 hrs/week runs $360-600/month. We collapse that line. Apollo and Smartlead stay where they are."}
             </p>
           </div>
           <PricingCards ctaDisabled={MARKETING_COMING_SOON} />
         </div>
       </section>
+
+      <CineLeadIntelligence
+        eyebrow="The system, not a feature"
+        headline="Five steps we run before you write a word."
+        sub="Cold email is a workflow, not a tool. Skip a step and the next one runs blind."
+        features={LEAD_INTELLIGENCE_FEATURES}
+      />
 
       {/* Integrations orbit — after pricing so plan choice is answered, then stack fit. */}
       <MultiOrbitSemiCircle
@@ -565,26 +463,26 @@ export default function LandingPage() {
       />
 
       <CineCta
-        headline="Your next 50 clients aren't on Apollo."
+        headline="Your next 50 clients are local. They're in our index."
         sub={
           MARKETING_COMING_SOON
-            ? "They're on Google Maps. Watch the tour above or drop us a line."
-            : "They're on Google Maps. Pick a postcode, pick a niche, open the first audited lead in five minutes. If the list doesn't beat what you're emailing now, close the tab."
+            ? "Apollo doesn't cover them. Watch the tour above or drop us a line."
+            : "Apollo and the big B2B databases don't cover them. Pick a postcode, pick a niche, and the first audited dossier lands in your tab in five minutes. If the list doesn't beat what you're emailing now, cancel inside 14 days and the card on file gets a refund."
         }
         primary={
           MARKETING_COMING_SOON
             ? { label: "Launching soon" }
-            : { label: "Get my first 50 leads", href: "/signup" }
+            : { label: "Audit your first 10 leads", href: "/signup" }
         }
         secondary={
           MARKETING_COMING_SOON
             ? { label: "Email the founder", href: "mailto:mert@leadac.ai" }
-            : { label: "See pricing", href: "#pricing" }
+            : { label: "Book a 15-min walkthrough", href: "/demo" }
         }
         microCopy={
           MARKETING_COMING_SOON
             ? undefined
-            : "50 free leads · no credit card · cancel any time"
+            : "14-day trial · cancel any time · refund window if it doesn't earn you a reply"
         }
       />
 
@@ -617,7 +515,7 @@ export default function LandingPage() {
               className="inline-flex items-center gap-1 hover:!text-white transition-colors"
             >
               <Sparkles className="w-3 h-3" />
-              Start free
+              Start your trial
               <ArrowUpRight className="w-3 h-3" />
             </Link>
           )}

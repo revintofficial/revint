@@ -861,12 +861,26 @@ export async function analyzeReviewsWithGemini(input: {
   const { buildReviewAnalysisPrompt } = await import("@/lib/prompts/review-analysis-prompt");
   const promptTemplate = buildReviewAnalysisPrompt({ labelEnum });
 
+  // Round 2 §3.10 — surface the rating-banded pool sizes to the model
+  // so the NEGATIVE/POSITIVE pool floors in the prompt have something
+  // concrete to reason against. The post-process filter
+  // (`kpi-filter.ts`) re-enforces these floors server-side too, so the
+  // prompt rules are belt-and-braces.
+  const negativePoolCount = input.reviews.filter(
+    (r) => typeof r.rating === "number" && r.rating > 0 && r.rating <= 2,
+  ).length;
+  const positivePoolCount = input.reviews.filter(
+    (r) => typeof r.rating === "number" && r.rating >= 4,
+  ).length;
+
   const prompt = promptTemplate
     .replace("{business_name}", input.businessName)
     .replace("{address}", input.address)
     .replace("{rating}", input.rating?.toString() ?? "N/A")
     .replace("{review_count}", input.reviewCount?.toString() ?? input.reviews.length.toString())
     .replace("{reviews_count}", input.reviews.length.toString())
+    .replace("{negative_pool_count}", negativePoolCount.toString())
+    .replace("{positive_pool_count}", positivePoolCount.toString())
     .replace("{our_offer}", input.ourOffer || "Our offer: AI-assisted appointment-setting SaaS for local service businesses.")
     .replace("{reviews}", reviewsText);
 
@@ -911,13 +925,17 @@ export async function analyzeReviewsWithGemini(input: {
   parsed.weaknessKpis = (parsed.weaknessKpis || []).slice(0, 5).map(coerceKpi);
   parsed.strengthKpis = (parsed.strengthKpis || []).slice(0, 5).map(coerceKpi);
 
-  // Beta finding §3: hard cap on small-sample analyses. The prompt
-  // already asks for at-most 2/3 in this regime, but the model can
-  // ignore that under repetition pressure. Truncate defensively before
-  // the post-process filter so downstream surfaces never see >2/3.
+  // Round 2 §3.10 SAMPLE FLOOR — stricter caps than Beta §3:
+  //   reviewsAnalyzedCount <10 → 0 weakness, ≤2 strength
+  //   reviewsAnalyzedCount <20 → ≤1 weakness max (still ≤5 strength)
+  // The prompt asks for the same, but the model occasionally over-emits
+  // under repetition pressure. Truncate defensively before the
+  // post-process filter so downstream surfaces never see violations.
   if (parsed.reviewsAnalyzedCount < 10) {
-    parsed.weaknessKpis = parsed.weaknessKpis.slice(0, 2);
-    parsed.strengthKpis = parsed.strengthKpis.slice(0, 3);
+    parsed.weaknessKpis = [];
+    parsed.strengthKpis = parsed.strengthKpis.slice(0, 2);
+  } else if (parsed.reviewsAnalyzedCount < 20) {
+    parsed.weaknessKpis = parsed.weaknessKpis.slice(0, 1);
   }
   parsed.painPhrases = (parsed.painPhrases || []).slice(0, 5);
   parsed.strengthPhrases = (parsed.strengthPhrases || []).slice(0, 5);

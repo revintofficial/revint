@@ -250,7 +250,7 @@ export function CineHero({
               <span className="vx-pill-icon">
                 <Sparkles className="w-3.5 h-3.5" />
               </span>
-              Your on-demand SDR pod
+              Postcode + niche &rarr; 50 leads
             </motion.div>
 
             <motion.div
@@ -276,7 +276,7 @@ export function CineHero({
               <span className="vx-pill-icon">
                 <Rocket className="w-3.5 h-3.5" />
               </span>
-              4× reply lift with a mockup
+              Lead dossiers, not contact rows
             </motion.div>
 
             {/* Decorative orbs suggest the 3D scene without the asset */}
@@ -348,8 +348,13 @@ export function CineHero({
 
       {/* SR-only description for assistive tech */}
       <p className="sr-only">
-        Leadac AI scans Google Maps for local businesses, scores their
-        websites, and drafts a personalised opener — all in five minutes.
+        LeadAC helps outbound agencies find their next local customer.
+        Type a postcode and a niche to pull fresh leads from our
+        continuously refreshed local-business index. Every site is
+        audited against 20 plus signals, and the opener is drafted
+        from what the audit found. Pipeline-ready dossiers in five
+        minutes. Built for the local-business segment Apollo does
+        not cover.
       </p>
     </section>
   );

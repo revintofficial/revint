@@ -137,6 +137,7 @@ export type CrawlError =
   | "EMPTY_RESPONSE"    // page loaded but produced 0 bytes
   | "BLOCKED_BY_GUARD"  // SSRF guard rejected the URL or a redirect hop
   | "SOCIAL_MEDIA_ONLY" // websiteUrl points at IG/FB/TikTok — no real site to audit
+  | "WEBSITE_EXPIRED"   // domain expired / parked / for sale (Squarespace, GoDaddy, Sedo, Bodis, Wix)
   | "UNKNOWN";
 
 export interface WebsiteFeatures {

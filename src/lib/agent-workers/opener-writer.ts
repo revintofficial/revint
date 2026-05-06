@@ -24,6 +24,7 @@ import {
   getNicheBySlug,
   getParentOf,
   defaultNicheForWorkspaceNiche,
+  type NichePack,
 } from "@/lib/niches";
 import { isHandcraftedMockupTemplate } from "@/lib/mockups/templates";
 import type {
@@ -33,6 +34,32 @@ import type {
 } from "./types";
 
 const MODEL = "gemini-2.5-flash";
+
+/**
+ * Round 2 §3.12 — detect which social platform a `websiteUrl` points
+ * at when the lead has no real website. The opener uses this to write
+ * "I had a quick look at your {Instagram|Facebook} page …" instead of
+ * the generic "I checked out your site" (which is wrong on a no-website
+ * lead) or no-grounding-at-all (which is what the legacy prompt did
+ * when crawlStatus = NO_WEBSITE).
+ *
+ * Returns `null` for normal websites or unparseable URLs.
+ */
+export function detectSocialPlatform(
+  url: string | null | undefined,
+): "instagram" | "facebook" | "tiktok" | "linkedin" | null {
+  if (!url || typeof url !== "string") return null;
+  try {
+    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+    if (host.endsWith("instagram.com")) return "instagram";
+    if (host.endsWith("facebook.com") || host.endsWith("fb.com")) return "facebook";
+    if (host.endsWith("tiktok.com")) return "tiktok";
+    if (host.endsWith("linkedin.com")) return "linkedin";
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Declarative memory read spec. The executor pre-fetches these but
@@ -197,6 +224,42 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         })
       : null;
 
+  // Round 2 §3.12 — websiteContext lite. We surface the crawler's
+  // verdict so the opener prompt can route between three branches:
+  //   - real-site branch (legacy default — "I checked out your site …")
+  //   - NO_WEBSITE + social branch ("I had a quick look at your IG …")
+  //   - WEBSITE_EXPIRED branch (Sprint 1 lite scope: NOT yet inlined,
+  //     handled in Hafta 2 PR-W2.E once the crawler tag has flowed
+  //     through the pipeline; for now the opener falls through to the
+  //     no-website-no-social path).
+  const websiteAudit = lead.websiteAudit;
+  const socialPlatform = detectSocialPlatform(lead.websiteUrl ?? null);
+  const websiteContext = {
+    status: lead.crawlStatus,
+    audit: websiteAudit
+      ? {
+          reachable: websiteAudit.reachable,
+          httpStatus: websiteAudit.httpStatus,
+          title: websiteAudit.title,
+          crawlError: websiteAudit.crawlError,
+          socialPlatform,
+        }
+      : null,
+    socialPlatform,
+  };
+
+  // Round 2 §3.13 — chain-aware copy guard. The scorer sets the
+  // `chain_detected` reason code (Round 1 P0.5) when discovery /
+  // dossier evidence places the lead inside a known multi-location
+  // brand. We re-derive `isChain` from there so the opener can ban
+  // per-location pitch language ("loyalty stamps", "QR order-ahead")
+  // and lean on `chainConsiderations.chainEnterprisePitchModules`.
+  const isChain =
+    Array.isArray(opp?.reasonCodes) &&
+    (opp.reasonCodes as unknown[]).some(
+      (c) => typeof c === "string" && c === "chain_detected",
+    );
+
   const prompt = buildOpenerPrompt({
     businessName: lead.businessName,
     primaryType: lead.primaryType,
@@ -218,6 +281,9 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     nichePitchAngle: activePack?.pitchAngle ?? null,
     nicheHighValueSignals: activePack?.highValueSignals ?? [],
     nicheFeaturedModules: activePack?.featuredProductModules ?? [],
+    nicheChainConsiderations: activePack?.chainConsiderations ?? null,
+    websiteContext,
+    isChain,
     // Phase 2.4: union of NOT-applicable modules across the primary
     // and secondary niche packs. The opener prompt enforces these as
     // a hard "NEVER mention" constraint to prevent wrong-fit pitches
@@ -340,6 +406,25 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
  * few-shot pool with unvalidated examples.
  */
 
+/**
+ * Round 2 §3.12 — opener-side audit context. Status comes from the
+ * Lead row (PENDING / CRAWLING / CRAWLED / FAILED / NO_WEBSITE), the
+ * `audit` block carries the WebsiteAudit fields the prompt cares about
+ * (reachable, crawlError, title, plus a derived `socialPlatform` when
+ * the websiteUrl is actually an IG / FB / TikTok / LinkedIn link).
+ */
+export interface OpenerWebsiteContext {
+  status: string;
+  audit: {
+    reachable: boolean;
+    httpStatus: number | null;
+    title: string | null;
+    crawlError: string | null;
+    socialPlatform: "instagram" | "facebook" | "tiktok" | "linkedin" | null;
+  } | null;
+  socialPlatform: "instagram" | "facebook" | "tiktok" | "linkedin" | null;
+}
+
 function buildOpenerPrompt(input: {
   businessName: string;
   primaryType: string | null;
@@ -361,6 +446,27 @@ function buildOpenerPrompt(input: {
   nichePitchAngle: string | null;
   nicheHighValueSignals: string[];
   nicheFeaturedModules: string[];
+  /**
+   * Round 2 §3.13 — niche-specific chain-aware copy guard. When
+   * `isChain === true`, the opener prompt forbids the modules in
+   * `likelyCentralizedAtChainRoot` and prefers the
+   * `chainEnterprisePitchModules` instead. Null for niches that don't
+   * carry chain considerations (most non-F&B verticals today).
+   */
+  nicheChainConsiderations: NichePack["chainConsiderations"] | null;
+  /**
+   * Round 2 §3.12 — what the crawler actually saw on this lead's
+   * website (or the absence thereof). Drives the NO_WEBSITE+social
+   * branch and the WEBSITE_EXPIRED branch (Hafta 2).
+   */
+  websiteContext: OpenerWebsiteContext;
+  /**
+   * Round 2 §3.13 — derived from `salesOpportunity.reasonCodes`. Tells
+   * the prompt that this lead is part of a multi-location brand, so
+   * per-shop pitch modules (loyalty stamps, QR order-ahead) become
+   * forbidden and the chain-HQ pitch modules take their place.
+   */
+  isChain: boolean;
   /**
    * Phase 2.4: hard NEVER-pitch list. Union of `notApplicableModules`
    * from the primary + secondary niche packs. Surfaced to the LLM as
@@ -458,6 +564,39 @@ function buildOpenerPrompt(input: {
       : `- "You don't have X" claims may ONLY come from this audit-verified list: ${input.confirmedMissingFeatures.join("; ")}. NEVER assume any other missing feature.`
     : null;
 
+  // Round 2 §3.12 (Sprint 1 lite) — NO_WEBSITE + social platform branch.
+  // When the lead's only "website" is an Instagram / Facebook / TikTok /
+  // LinkedIn page, the legacy prompt was happy to write "I checked out
+  // your site" — which is wrong, contradicts the audit row, and burns
+  // trust on the first sentence. We surface the platform name so the
+  // model can write "I had a quick look at your {platform} page …"
+  // and explicitly ban the "site / website" phrasing.
+  const socialPlatform = input.websiteContext.socialPlatform;
+  const noWebsiteSocialRule =
+    input.websiteContext.status === "NO_WEBSITE" && socialPlatform
+      ? tr
+        ? `- Bu isletmenin web sitesi yok; sadece ${socialPlatform} sayfasi var. Acilisi "${input.businessName}'in ${socialPlatform} sayfasini hizlica inceledim …" formatinda yaz. KESINLIKLE "sitenizi inceledim", "websitenizi gordum", "web siteniz" gibi ifadeler KULLANMA.`
+        : `- This lead has NO website — only a ${socialPlatform} page. Open with "I had a quick look at your ${socialPlatform} page for ${input.businessName} …" or similar. NEVER use the phrases "your site", "your website", or "I checked out your website" — they contradict the audit row.`
+      : null;
+
+  // Round 2 §3.13 (Sprint 1 lite) — chain-aware branch. When the lead
+  // is flagged `chain_detected`, ban per-location pitch language
+  // (loyalty stamps / QR order-ahead) and steer toward the brand-HQ
+  // modules. The actual module lists come from the niche pack so the
+  // prompt scales to other F&B sub-verticals without re-shipping.
+  const chainGuardRule =
+    input.isChain && input.nicheChainConsiderations
+      ? tr
+        ? [
+            `- ${input.businessName} cok subeli bir markanin parcasi (chain_detected). Per-sube pitch ETME — KESINLIKLE bahsetme: ${input.nicheChainConsiderations.likelyCentralizedAtChainRoot.join(", ")}.`,
+            `- Bunun yerine merkez/HQ-seviyesi modullerden bahset: ${input.nicheChainConsiderations.chainEnterprisePitchModules.join(", ")}.`,
+          ].join("\n")
+        : [
+            `- ${input.businessName} is part of a multi-location brand (chain_detected). NEVER pitch per-location modules — explicitly forbidden: ${input.nicheChainConsiderations.likelyCentralizedAtChainRoot.join(", ")}.`,
+            `- Steer the angle toward brand / HQ-level modules instead: ${input.nicheChainConsiderations.chainEnterprisePitchModules.join(", ")}.`,
+          ].join("\n")
+      : null;
+
   const rules = tr
     ? [
         "- Kurallar:",
@@ -465,6 +604,8 @@ function buildOpenerPrompt(input: {
         "- Ilk cumle spesifik bir gozlem icermeli (isletme hakkinda kisisel bir detay)",
         "- Satis tonundan kac; yardimci bir komsunun tonu",
         "- Asla 'umarim iyi gunlerindesin' gibi klise acilis yapma",
+        ...(noWebsiteSocialRule ? [noWebsiteSocialRule] : []),
+        ...(chainGuardRule ? [chainGuardRule] : []),
         ...(notApplicableRule ? [notApplicableRule] : []),
         ...(painWhitelistRule ? [painWhitelistRule] : []),
         ...(missingFeatureRule ? [missingFeatureRule] : []),
@@ -477,6 +618,8 @@ function buildOpenerPrompt(input: {
         "- Open with a specific observation about this business, not a generic greeting.",
         "- Sound like a helpful neighbor, not a salesperson.",
         "- Avoid cliches like 'hope this finds you well' or 'I came across your business'.",
+        ...(noWebsiteSocialRule ? [noWebsiteSocialRule] : []),
+        ...(chainGuardRule ? [chainGuardRule] : []),
         ...(notApplicableRule ? [notApplicableRule] : []),
         ...(painWhitelistRule ? [painWhitelistRule] : []),
         ...(missingFeatureRule ? [missingFeatureRule] : []),

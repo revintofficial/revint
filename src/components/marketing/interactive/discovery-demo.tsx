@@ -413,7 +413,7 @@ export function DiscoveryDemo({
                 <Sparkles className="w-5 h-5 mx-auto mb-2 text-white/25" />
                 Pick a city and a niche, hit Run discovery.
                 <br />
-                Live leads from Google Maps in seconds.
+                Live leads from our local-business index in seconds.
               </div>
             )}
             <AnimatePresence>
