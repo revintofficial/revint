@@ -17,6 +17,21 @@ const nextConfig = {
   // /app/watchlist and /app/pipeline collapsed into /app/deals (kanban).
   // Permanent redirects preserve bookmarks, command-palette deep links, and
   // any email body URLs pointing at the old routes.
+  // Proxy PostHog through /ingest to bypass ad blockers. The client-side
+  // SDK uses NEXT_PUBLIC_POSTHOG_HOST=/ingest as its api_host.
+  async rewrites() {
+    return [
+      {
+        source: "/ingest/static/:path*",
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "https://us.i.posthog.com/:path*",
+      },
+    ];
+  },
+
   async redirects() {
     return [
       {

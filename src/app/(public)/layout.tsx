@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { MarketingTracker } from "@/components/analytics/marketing-tracker";
 
 /**
  * Shared layout for the public directory — /b/*, /cities/*, /niches/*, and
@@ -105,6 +107,12 @@ export default function PublicDirectoryLayout({
         </div>
       </header>
       <main>{children}</main>
+      {/* First-party analytics. Same instance as the marketing
+          shell so the founder can also forensic-review programmatic
+          SEO traffic (which is where most low-intent traffic lands). */}
+      <Suspense fallback={null}>
+        <MarketingTracker />
+      </Suspense>
       <footer
         style={{
           borderTop: "0.5px solid rgba(255,255,255,0.08)",

@@ -55,6 +55,13 @@ export const LIMITS = {
   // limit blocks form-spam attacks without ever rate-limiting an actual
   // prospect filling out the form even slowly.
   demoRequest: { bucket: "demo", windowSec: 600, limit: 5 },
+  // Marketing analytics ingest. Public, anonymous, IP-bucketed. The
+  // client tracker batches events every 5 seconds (12 batches/min in
+  // a continuously-active tab) so 120/min gives 10x headroom for
+  // legit traffic while bounding a runaway/spammy client. Each batch
+  // can carry up to 100 events server-side; that ceiling lives in
+  // /api/track/marketing.
+  marketingTrack: { bucket: "mtrack", windowSec: 60, limit: 120 },
 } as const satisfies Record<string, RateLimitConfig>;
 
 export async function checkRateLimit(

@@ -1,6 +1,8 @@
 import Script from "next/script";
+import { Suspense } from "react";
 import { MarketingNav } from "@/components/marketing/nav";
 import { MarketingFooter } from "@/components/marketing/footer";
+import { MarketingTracker } from "@/components/analytics/marketing-tracker";
 import { getOptionalUser } from "@/lib/auth";
 import { MARKETING_COMING_SOON } from "@/lib/marketing-coming-soon";
 
@@ -35,6 +37,12 @@ export default async function MarketingLayout({
       <MarketingNav signedIn={!!session} hidePublicAuth={MARKETING_COMING_SOON} />
       <main className="flex-1">{children}</main>
       <MarketingFooter hidePublicAuth={MARKETING_COMING_SOON} />
+      {/* First-party analytics. Wrapped in Suspense because the
+          tracker reads useSearchParams(). Mounted ONLY on marketing
+          so we never log founder/team behavior in /app or /admin. */}
+      <Suspense fallback={null}>
+        <MarketingTracker />
+      </Suspense>
     </div>
   );
 }

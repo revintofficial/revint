@@ -1349,3 +1349,132 @@ model ServicePackage {
   @@index([workspaceId, sortOrder])
   @@map("service_packages")
 }
+
+// ============================================================================
+// Marketing analytics (founder-level, NOT workspace-scoped)
+// ----------------------------------------------------------------------------
+// First-party tracking for the public marketing surfaces ((marketing) and
+// (public) route groups). These tables are intentionally global because
+// visitors are anonymous and have no workspace yet. Access is gated through
+// `requireAdminEmail()` in src/lib/admin-auth.ts (mirrors the existing
+// HEALTH_ADMIN_EMAILS pattern). The multi-tenant `workspaceId` rule does
+// NOT apply here.
+//
+// PII discipline:
+// - Raw IP is never written; only sha256(ip) -> ipHash.
+// - Property bag rejects form values, emails, names. Stores selectors,
+//   visible CTA text, durations, scroll depths.
+// - Geo derives from edge headers (x-vercel-ip-country etc.); no IP lookup.
+// ============================================================================
+
+// One row per visitor session. A "session" rolls over after 30 minutes of
+// idle time on the client (sessionStorage) or when a new visitorId appears.
+// `posthogSessionId` is the bridge to PostHog session replay so the admin
+// detail view can deep-link "watch the recording".
+model MarketingSession {
+  id String @id @default(cuid())
+
+  // Long-lived browser fingerprint stored in localStorage. NOT a user id;
+  // a single human can have multiple visitorIds (clearing storage, new
+  // device). Index helps with "show me everything this visitor has done".
+  visitorId String @map("visitor_id")
+
+  startedAt      DateTime  @default(now()) @map("started_at")
+  lastActivityAt DateTime  @updatedAt @map("last_activity_at")
+  endedAt        DateTime? @map("ended_at")
+  durationMs     Int?      @map("duration_ms")
+
+  // Attribution snapshot taken at session start.
+  utmSource   String? @map("utm_source")
+  utmMedium   String? @map("utm_medium")
+  utmCampaign String? @map("utm_campaign")
+  utmContent  String? @map("utm_content")
+  utmTerm     String? @map("utm_term")
+  referrer    String? @db.Text
+  landingPath String  @map("landing_path")
+  exitPath    String? @map("exit_path")
+
+  // Device.
+  userAgent      String? @map("user_agent") @db.Text
+  device         String? // "mobile" | "tablet" | "desktop"
+  browser        String?
+  os             String?
+  viewportWidth  Int?    @map("viewport_width")
+  viewportHeight Int?    @map("viewport_height")
+
+  // Geo (edge headers only, no IP lookup).
+  ipHash  String? @map("ip_hash")
+  country String?
+  region  String?
+  city    String?
+
+  // Engagement summary (denormalized for fast list queries).
+  pageCount    Int     @default(0) @map("page_count")
+  maxScrollPct Int     @default(0) @map("max_scroll_pct")
+  hasEngaged   Boolean @default(false) @map("has_engaged")
+  hasConverted Boolean @default(false) @map("has_converted")
+
+  // PostHog cross-link. Set when the client tracker observes
+  // posthog.get_session_id() and the ingest endpoint persists it.
+  posthogSessionId String? @map("posthog_session_id")
+
+  pageViews MarketingPageView[]
+  events    MarketingEvent[]
+
+  @@index([startedAt(sort: Desc)])
+  @@index([visitorId])
+  @@index([hasConverted, startedAt])
+  @@index([utmSource, utmCampaign])
+  @@map("marketing_sessions")
+}
+
+// One row per page entry. Multiple rows per session (one per navigation).
+// `maxScrollPct` and `scrollMilestones` are updated by subsequent batches
+// from the same page; we upsert by (sessionId, path, enteredAt).
+model MarketingPageView {
+  id        String @id @default(cuid())
+  sessionId String @map("session_id")
+
+  path      String
+  title     String?
+  referrer  String? @db.Text
+  enteredAt DateTime  @default(now()) @map("entered_at")
+  leftAt    DateTime? @map("left_at")
+  durationMs Int?     @map("duration_ms")
+
+  maxScrollPct     Int   @default(0) @map("max_scroll_pct")
+  // Subset of [25, 50, 75, 100] reached. Stored as int[] so we can
+  // build distribution histograms in pure SQL via unnest().
+  scrollMilestones Int[] @default([]) @map("scroll_milestones")
+
+  session MarketingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, enteredAt])
+  @@index([path, enteredAt])
+  @@map("marketing_page_views")
+}
+
+// Atomic events. `properties` is a Json bag with shape per `type`:
+//   click       -> { selector, text, x, y }
+//   cta_click   -> { ctaId, text, location }
+//   scroll      -> { pct, path }
+//   form_focus  -> { formName, fieldName }
+//   form_submit -> { formName, fieldCount, durationMs }
+//   error       -> { message, source, lineno, colno }
+//   signup      -> { method?: "email" }
+//   page_view   -> { title?, referrer? }   (denormalised; primary record on MarketingPageView)
+model MarketingEvent {
+  id          String   @id @default(cuid())
+  sessionId   String   @map("session_id")
+  pageViewId  String?  @map("page_view_id")
+  ts          DateTime @default(now())
+  type        String
+  path        String
+  properties  Json?
+
+  session MarketingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, ts])
+  @@index([type, ts(sort: Desc)])
+  @@map("marketing_events")
+}

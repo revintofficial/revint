@@ -38,6 +38,38 @@ export default function PrivacyPage() {
           workspace data never leaves Supabase.
         </p>
 
+        <h2 className="text-[18px] font-semibold text-white mt-6">
+          Marketing-site analytics
+        </h2>
+        <p>
+          When you browse the public Leadac marketing pages we collect a
+          first-party stream of pageviews, scroll depth, clicks on buttons and
+          links, and timing for any forms you focus. We store these in our own
+          Postgres database under a random visitor id (kept in your browser&apos;s
+          localStorage). Your IP address is hashed before storage; we never
+          retain the raw IP. Form values, email addresses and other inputs are
+          never captured.
+        </p>
+        <p>
+          We additionally use{" "}
+          <a
+            href="https://posthog.com/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-(--leadac-300) hover:underline"
+          >
+            PostHog
+          </a>{" "}
+          for session replay, configured to mask all text and form inputs by
+          default so the founder team only sees layout, clicks and scroll —
+          not the words you typed.
+        </p>
+        <p>
+          Both layers honor the browser&apos;s Do Not Track and Global Privacy
+          Control signals. Setting either one disables marketing analytics
+          and replay for your visit.
+        </p>
+
         <h2 className="text-[18px] font-semibold text-white mt-6">Your rights</h2>
         <p>
           Email{" "}
