@@ -43,16 +43,48 @@ export type LeadDetailV2BlockKey =
 export type BlockExpansion = "expanded" | "stub";
 
 /**
- * Stage-driven expand-rules table from RETHINK §4.3.
+ * Stage-driven expand-rules table.
  *
- * `WHY_NOW` and `NEXT_GESTURE` are always part of the layout — the
- * table records their post-stage demotion (e.g. WHY_NOW becomes a
- * stub once a REPLIED lead has had its trigger consumed).
+ * DEV OVERRIDE: every block is forced to `"expanded"` for every stage
+ * while we're still building out the surface. This makes empty-state
+ * copy and partially-populated blocks visible at a glance during dev,
+ * and avoids hiding work-in-progress behind stage-driven collapses.
  *
- * `WON` and `LOST` collapse everything except `HISTORY` and surface
- * the lessons banner instead of the seven-block narrative.
+ * To restore the production rules, swap `LEAD_DETAIL_V2_EXPAND_RULES`
+ * back to `LEAD_DETAIL_V2_EXPAND_RULES_PROD` below — that constant is
+ * the canonical RETHINK §4.3 table (WHY_NOW + NEXT_GESTURE always in
+ * layout; WON / LOST collapse everything except HISTORY).
  */
+
+const ALL_EXPANDED: Readonly<Record<LeadDetailV2BlockKey, BlockExpansion>> = {
+  WHY_NOW: "expanded",
+  NEXT_GESTURE: "expanded",
+  WHO: "expanded",
+  DISCOVERY: "expanded",
+  QUALIFICATION: "expanded",
+  HISTORY: "expanded",
+  ACCOUNT: "expanded",
+};
+
 export const LEAD_DETAIL_V2_EXPAND_RULES: Readonly<
+  Record<LeadDetailV2Stage, Readonly<Record<LeadDetailV2BlockKey, BlockExpansion>>>
+> = {
+  COLD: ALL_EXPANDED,
+  CONTACTED: ALL_EXPANDED,
+  REPLIED: ALL_EXPANDED,
+  MEETING_BOOKED: ALL_EXPANDED,
+  PROPOSAL: ALL_EXPANDED,
+  NEGOTIATING: ALL_EXPANDED,
+  WON: ALL_EXPANDED,
+  LOST: ALL_EXPANDED,
+};
+
+/**
+ * Canonical production expand-rules from RETHINK §4.3. Kept here so
+ * we can restore stage-driven collapsing in one assignment when the
+ * surface is feature-complete.
+ */
+export const LEAD_DETAIL_V2_EXPAND_RULES_PROD: Readonly<
   Record<LeadDetailV2Stage, Readonly<Record<LeadDetailV2BlockKey, BlockExpansion>>>
 > = {
   COLD: {

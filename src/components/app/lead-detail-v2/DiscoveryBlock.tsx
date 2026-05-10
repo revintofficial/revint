@@ -1,13 +1,16 @@
 "use client";
 
 /**
- * DiscoveryBlock — wraps the SPIN board + voice-note FAB anchor for
- * the v2 DISCOVERY block. Mounts with id `discovery-block`.
+ * DiscoveryBlock — wraps the SPIN board for the v2 DISCOVERY block.
+ * Mounts with id `discovery-block`.
  *
  * PRO+ surface — FREE workspaces see the `<PlanLockedBlock>` instead.
- * On mobile (< 640px) the SPIN board collapses to a 4-section
- * accordion; the FAB button is anchored at the top of the body so
- * field reps can drop a voice note before reading the items.
+ * On mobile (< 640px) the SPIN board collapses to a 4-section accordion.
+ *
+ * Phase 5 promoted the voice-note FAB out of this block and into a
+ * global mobile-only floating action button rendered by
+ * `LeadDetailV2Client` so it stays anchored even while the user
+ * scrolls past Discovery. See `VoiceNoteFAB.tsx`.
  */
 
 import type { ReactNode } from "react";
@@ -22,17 +25,12 @@ import {
   type SpinBoardItem,
   type SpinKindKey,
 } from "./SpinBoard";
-import {
-  VoiceNoteFAB,
-  type VoiceNoteFABCopy,
-} from "./VoiceNoteFAB";
 
 export interface DiscoveryBlockCopy {
   loading: string;
   empty: string;
   spin: SpinBoardCopy;
   locked: PlanLockedBlockCopy;
-  voiceNoteFab: VoiceNoteFABCopy;
 }
 
 export interface DiscoveryBlockProps {
@@ -51,7 +49,6 @@ export function DiscoveryBlock({
   if (!spinUnlocked) {
     return (
       <div className="space-y-3" data-testid="discovery-block-locked">
-        <VoiceNoteFAB copy={copy.voiceNoteFab} />
         <PlanLockedBlock copy={copy.locked} />
       </div>
     );
@@ -72,7 +69,6 @@ export function DiscoveryBlock({
   if (!items) {
     return (
       <div className="space-y-3" data-testid="discovery-block-empty">
-        <VoiceNoteFAB copy={copy.voiceNoteFab} />
         <p
           className="text-[13px]"
           style={{ color: "var(--leadac-text-3)" }}
@@ -85,7 +81,6 @@ export function DiscoveryBlock({
 
   return (
     <div className="space-y-3" data-testid="discovery-block-body">
-      <VoiceNoteFAB copy={copy.voiceNoteFab} />
       <SpinBoard items={items} copy={copy.spin} />
     </div>
   );

@@ -24,6 +24,7 @@ const QUEUE_STRIP_RESERVE_PX = 56;
 export function StickyShell({ header, children, queueStrip }: StickyShellProps) {
   return (
     <div
+      data-lead-detail-shell
       className="relative flex flex-col"
       style={{
         minHeight: "calc(100dvh - env(safe-area-inset-bottom, 0px))",
@@ -55,6 +56,7 @@ export function StickyShell({ header, children, queueStrip }: StickyShellProps) 
 
       {queueStrip ? (
         <div
+          data-queue-strip-wrapper
           className="sticky bottom-0 z-30 border-t border-white/8 backdrop-blur-md"
           style={{
             height: QUEUE_STRIP_RESERVE_PX,

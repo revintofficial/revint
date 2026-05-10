@@ -25,8 +25,20 @@
  *     tooltip + drives the `bant` snapshot fed to the contradiction
  *     detector.
  */
-import type { LeadTriggerType } from "@/generated/prisma/client";
+import type {
+  AccountTier,
+  LeadTriggerType,
+  SuggestedOffer,
+} from "@/generated/prisma/client";
 
+/**
+ * SDR-Brain v2 Phase 3 — `BuyingReadinessInput` carries the v1 intel
+ * narrative (ReviewAnalysis, SalesOpportunity, Account) so the BANT
+ * dimensions are computed against the *full* signal set, not the
+ * thin Lead-only baseline. Every new top-level field is optional so
+ * Phase-1 call sites (and the tests that exercise the BALANCED chain
+ * without enriched input) keep working unchanged.
+ */
 export interface BuyingReadinessInput {
   lead: {
     priceLevel: number | null;
@@ -34,6 +46,10 @@ export interface BuyingReadinessInput {
     rating: number | null;
     hasWebsite: boolean;
     icpFitScore: number | null;
+    /** Phase 3 — denormalised rollup from LEAD_INTELLIGENCE_BRIEF. */
+    salesConfidence?: number | null;
+    /** Phase 3 — ICP_SCORER reason narrative; opaque shape, only `length` is used. */
+    icpReasons?: ReadonlyArray<unknown>;
   };
   audit: {
     checklistScorePct: number | null;
@@ -61,6 +77,40 @@ export interface BuyingReadinessInput {
    * we only branch on rough magnitude.
    */
   workspaceExpectedDealSize?: "low" | "medium" | "high";
+  /**
+   * Phase 3 — `ReviewAnalysis` intel. The pain phrases drive Need,
+   * weaknessKpis percent-weighted-sum reinforces it, switchSignals
+   * (operators publicly considering a vendor switch) drive Timing.
+   * Null when the lead has no review corpus yet — the deriver treats
+   * that as "no signal", not "no need".
+   */
+  reviewIntel?: {
+    painPhrases: string[];
+    weaknessKpis: Array<{ label: string; count?: number; percent?: number }>;
+    switchSignals: string[];
+    leadScore: number;
+  } | null;
+  /**
+   * Phase 3 — `SalesOpportunity` intel. `likelyPainPoints` drives
+   * Need, `reasonCodes` drives Timing (e.g. RECENTLY_OPENED →
+   * timing boost), `suggestedOffer` drives Budget (SALES tier =
+   * bigger budget signal), `opportunityScore` is a reasoning fallback.
+   */
+  salesOpportunity?: {
+    likelyPainPoints: string[];
+    reasonCodes: string[];
+    opportunityScore: number;
+    suggestedOffer: SuggestedOffer | null;
+  } | null;
+  /**
+   * Phase 3 — `Account` rollup. Multi-location accounts have larger
+   * budgets (Budget +) and clearer authority paths (Authority +).
+   * `locationsCount` 0/1 = single-location operator; 3+ = chain.
+   */
+  account?: {
+    locationsCount: number | null;
+    tier: AccountTier | null;
+  } | null;
 }
 
 export interface BuyingReadinessReasoning {
@@ -134,6 +184,34 @@ function deriveBudget(input: BuyingReadinessInput): { score: number; reasons: st
     // because its priceLevel is null.
     score += 10;
   }
+
+  // Phase 3 — multi-location accounts have measurably higher
+  // marketing/ops spend per dollar of revenue (the IT team can
+  // amortise across sites).
+  if (input.account?.locationsCount != null && input.account.locationsCount >= 3) {
+    score += 15;
+    reasons.push(`account spans ${input.account.locationsCount} locations (+15)`);
+  }
+  // Phase 3 — analyst-picked SuggestedOffer tier. SALES = boutique
+  // multi-location pitch; GROWTH = mid-market; STARTER = entry. We
+  // only reward the higher tiers because STARTER is the default and
+  // shouldn't add signal.
+  const offer = input.salesOpportunity?.suggestedOffer;
+  if (offer === "SALES") {
+    score += 10;
+    reasons.push(`SuggestedOffer=SALES (premium tier) (+10)`);
+  } else if (offer === "GROWTH") {
+    score += 5;
+    reasons.push(`SuggestedOffer=GROWTH (mid-market) (+5)`);
+  }
+  // Phase 3 — high review volume is a proxy for footfall, which is a
+  // proxy for revenue, which is a proxy for budget. Gate to >= 200
+  // so it sits above the existing >= 100 "established footfall"
+  // bump (additive, both fire on busy operators).
+  if (lead.reviewCount != null && lead.reviewCount >= 200) {
+    score += 8;
+    reasons.push(`${lead.reviewCount} reviews → high-volume operator (+8)`);
+  }
   return { score: clamp(score), reasons };
 }
 
@@ -156,6 +234,14 @@ function deriveAuthority(input: BuyingReadinessInput): { score: number; reasons:
   if (input.stakeholders.length === 0) {
     reasons.push(`No stakeholders mapped — authority unknown`);
     score = Math.min(score, 35);
+  }
+
+  // Phase 3 — Tier-1 accounts are known brands. Authority paths are
+  // more legible (there's a real Marketing Director / Head of Digital
+  // we can hunt for) even when the stakeholder map is empty.
+  if (input.account?.tier === "TIER_1") {
+    score += 15;
+    reasons.push(`Tier-1 account — clearer authority path (+15)`);
   }
   return { score: clamp(score), reasons };
 }
@@ -197,6 +283,45 @@ function deriveNeed(input: BuyingReadinessInput): { score: number; reasons: stri
     score += delta;
     reasons.push(`Trigger ${t.type} (sev=${t.severity}, conf=${t.confidence.toFixed(2)}) (+${delta})`);
   }
+
+  // ---- Phase 3 — v1 review intel ----
+  // `painPhrases` and `weaknessKpis` are the structured customer-side
+  // narrative for unmet need. They reinforce the trigger-driven
+  // score without overwhelming it — each capped so a wall of negative
+  // reviews can't single-handedly push need to 100.
+  const review = input.reviewIntel;
+  if (review) {
+    const phraseDelta = Math.min(30, review.painPhrases.length * 4);
+    if (phraseDelta > 0) {
+      score += phraseDelta;
+      reasons.push(
+        `${review.painPhrases.length} pain phrases extracted from reviews (+${phraseDelta})`,
+      );
+    }
+    const kpiPercentSum = review.weaknessKpis.reduce(
+      (sum, k) => sum + (typeof k.percent === "number" ? k.percent : 0),
+      0,
+    );
+    if (kpiPercentSum > 0) {
+      const delta = Math.min(25, Math.round(kpiPercentSum * 0.4));
+      if (delta > 0) {
+        score += delta;
+        reasons.push(
+          `weakness KPIs sum-of-percent ${kpiPercentSum} (+${delta})`,
+        );
+      }
+    }
+  }
+
+  // ---- Phase 3 — analyst-derived pain points ----
+  const opp = input.salesOpportunity;
+  if (opp && opp.likelyPainPoints.length > 0) {
+    const delta = Math.min(18, opp.likelyPainPoints.length * 3);
+    score += delta;
+    reasons.push(
+      `${opp.likelyPainPoints.length} likely pain points from analyst (+${delta})`,
+    );
+  }
   return { score: clamp(score), reasons };
 }
 
@@ -223,6 +348,25 @@ function deriveTiming(input: BuyingReadinessInput): { score: number; reasons: st
     const delta = Math.min(20, input.recentIntentSignalCount * 6);
     score += delta;
     reasons.push(`${input.recentIntentSignalCount} recent intent signals (+${delta})`);
+  }
+
+  // ---- Phase 3 — vendor-switch intent + recent-opening reason ----
+  // `ReviewAnalysis.switchSignals` is operators publicly considering
+  // a vendor switch (extracted by REVIEW_ANALYST). One match is
+  // enough — this is a binary "are they shopping" indicator.
+  if (input.reviewIntel && input.reviewIntel.switchSignals.length > 0) {
+    score += 25;
+    reasons.push(
+      `${input.reviewIntel.switchSignals.length} vendor-switch signals in reviews (+25)`,
+    );
+  }
+  // RECENTLY_OPENED is a SalesOpportunity.reasonCode that the scorer
+  // sets when the lead has been live < 6 months. It's a strong timing
+  // signal even without a LeadTrigger row.
+  const reasonCodes = input.salesOpportunity?.reasonCodes ?? [];
+  if (reasonCodes.includes("RECENTLY_OPENED")) {
+    score += 20;
+    reasons.push(`SalesOpportunity.reasonCodes RECENTLY_OPENED (+20)`);
   }
   return { score: clamp(score), reasons };
 }

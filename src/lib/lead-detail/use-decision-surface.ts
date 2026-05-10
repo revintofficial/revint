@@ -29,6 +29,7 @@ import type {
 import type { BantBars } from "@/lib/lead-detail/derive-bant";
 import type { ObjectionDiff } from "@/lib/lead-detail/derive-objection-diff";
 import type { IcpDimensionsResult } from "@/lib/icp-fit/dimensions";
+import { mark as perfMark, measure as perfMeasure, flush as perfFlush } from "@/lib/lead-detail/perf-marks";
 
 export interface DecisionSurfaceLeadCore {
   id: string;
@@ -205,6 +206,22 @@ export interface PlanGateDto {
   spinUnlocked: boolean;
 }
 
+export interface ClosestWinDto {
+  insightId: string;
+  insightPerformanceId: string;
+  triggerType: string | null;
+  framework: string | null;
+  score: number;
+  won: number;
+  applied: number;
+  sisterLeadId: string | null;
+}
+
+export interface QueuePositionDto {
+  current: number;
+  totalToday: number;
+}
+
 export interface UseDecisionSurfaceResult {
   leadCore: DecisionSurfaceLeadCore | null;
   nba: DecisionSurfaceNba | null;
@@ -217,14 +234,38 @@ export interface UseDecisionSurfaceResult {
   accountSummary: AccountSummaryDto | null;
   activities: ActivityDto[];
   planGate: PlanGateDto | null;
+  closestWin: ClosestWinDto | null;
+  queuePosition: QueuePositionDto | null;
+  recentDialAt: string | null;
   loading: boolean;
   error: string | null;
   preliminaryShippable: boolean;
   finalLatencyMs: number | null;
 }
 
-const POLL_INTERVAL_MS = 6_000;
+const POLL_INTERVAL_DESKTOP_MS = 6_000;
+const POLL_INTERVAL_MOBILE_MS = 4_000;
 export const PRELIMINARY_SHIPPABLE_THRESHOLD_MS = 25_000;
+
+/**
+ * Phase 5: pick the polling interval based on viewport. Mobile reps
+ * tap dial faster so we shave 2s off the round-trip — but the page
+ * still pauses entirely while the tab is hidden (see fetchOnce loop).
+ *
+ * Server-side and JSDOM (no `matchMedia`) fall back to desktop cadence.
+ */
+function pickPollIntervalMs(): number {
+  if (typeof window === "undefined") return POLL_INTERVAL_DESKTOP_MS;
+  if (typeof window.matchMedia !== "function") return POLL_INTERVAL_DESKTOP_MS;
+  return window.matchMedia("(max-width: 640px)").matches
+    ? POLL_INTERVAL_MOBILE_MS
+    : POLL_INTERVAL_DESKTOP_MS;
+}
+
+function isDocumentHidden(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.visibilityState === "hidden";
+}
 
 interface AggregatorRawResponse {
   leadCore: {
@@ -258,6 +299,9 @@ interface AggregatorRawResponse {
   accountSummary: AccountSummaryDto | null;
   activities: ActivityDto[];
   planGate: PlanGateDto;
+  closestWin: ClosestWinDto | null;
+  queuePosition: QueuePositionDto | null;
+  recentDialAt: string | null;
 }
 
 const EMPTY_OBJECTION_DIFF: ObjectionDiff = {
@@ -280,10 +324,33 @@ export function useDecisionSurface(leadId: string): UseDecisionSurfaceResult {
   useEffect(() => {
     let cancelled = false;
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
+    let pendingResume = false;
     mountedAtRef.current = Date.now();
     finalSeenRef.current = false;
+    // Phase 7: anchor mark so every perf event for this lead has a
+    // shared origin. The PostHog event fires from `perfMeasure` so
+    // dashboards see the same `mount → preliminary → final` story.
+    perfMark(leadId, "mount");
 
-    const fetchOnce = async () => {
+    const clearPoll = () => {
+      if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    const schedulePoll = () => {
+      clearPoll();
+      // Phase 5: don't burn API quota while the tab is hidden. We
+      // resume on the next `visibilitychange → visible` event.
+      if (isDocumentHidden()) {
+        pendingResume = true;
+        return;
+      }
+      pollTimer = setTimeout(fetchOnce, pickPollIntervalMs());
+    };
+
+    async function fetchOnce() {
       try {
         const res = await fetch(`/api/leads/${leadId}/decision-surface`, {
           cache: "no-store",
@@ -299,14 +366,33 @@ export function useDecisionSurface(leadId: string): UseDecisionSurfaceResult {
         setPayload(json);
         setLoading(false);
 
+        // Phase 7 perf: first decision-surface response settles the
+        // page chrome; the perf event lets us catch DB slow-downs
+        // before they regress the felt-latency budget (PLAN §5.6).
+        perfMark(leadId, "first_decision_surface");
+        perfMeasure(
+          leadId,
+          "first_decision_surface",
+          "mount",
+          "first_decision_surface",
+        );
+
+        const preliminary = json.nba?.preliminary ?? null;
+        if (preliminary) {
+          perfMark(leadId, "preliminary");
+          perfMeasure(leadId, "preliminary_to_paint", "mount", "preliminary");
+        }
+
         const final = json.nba?.final ?? null;
         if (final && !finalSeenRef.current) {
           finalSeenRef.current = true;
           setFinalLatencyMs(Date.now() - mountedAtRef.current);
+          perfMark(leadId, "final");
+          perfMeasure(leadId, "final_to_paint", "mount", "final");
         }
 
         if (!final) {
-          pollTimer = setTimeout(fetchOnce, POLL_INTERVAL_MS);
+          schedulePoll();
         }
       } catch {
         if (!cancelled) {
@@ -314,12 +400,38 @@ export function useDecisionSurface(leadId: string): UseDecisionSurfaceResult {
           setLoading(false);
         }
       }
+    }
+
+    const onVisibilityChange = () => {
+      if (cancelled) return;
+      if (isDocumentHidden()) {
+        // Tab was hidden — drop the in-flight timer, mark a resume.
+        if (pollTimer) {
+          clearPoll();
+          pendingResume = true;
+        }
+      } else if (pendingResume && !finalSeenRef.current) {
+        pendingResume = false;
+        // Re-fetch immediately on resume so the rep sees fresh data.
+        void fetchOnce();
+      }
     };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisibilityChange);
+    }
 
     void fetchOnce();
     return () => {
       cancelled = true;
-      if (pollTimer) clearTimeout(pollTimer);
+      clearPoll();
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      }
+      // Phase 7: drop perf marks/measures for this lead so a long
+      // SPA session doesn't accumulate stale entries on the
+      // performance timeline.
+      perfFlush(leadId);
     };
   }, [leadId]);
 
@@ -358,6 +470,9 @@ export function useDecisionSurface(leadId: string): UseDecisionSurfaceResult {
       accountSummary: null,
       activities: [],
       planGate: null,
+      closestWin: null,
+      queuePosition: null,
+      recentDialAt: null,
       loading,
       error,
       preliminaryShippable,
@@ -377,6 +492,9 @@ export function useDecisionSurface(leadId: string): UseDecisionSurfaceResult {
     accountSummary: payload.accountSummary,
     activities: payload.activities,
     planGate: payload.planGate,
+    closestWin: payload.closestWin ?? null,
+    queuePosition: payload.queuePosition ?? null,
+    recentDialAt: payload.recentDialAt ?? null,
     loading,
     error,
     preliminaryShippable,

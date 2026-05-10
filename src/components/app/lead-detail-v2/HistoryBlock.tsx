@@ -12,10 +12,15 @@
 import type { ReactNode } from "react";
 
 import {
+  ClosestWinCallout,
+  type ClosestWinCalloutCopy,
+} from "./ClosestWinCallout";
+import {
   PredictedVsRealObjections,
   type PredictedVsRealObjectionsCopy,
 } from "./PredictedVsRealObjections";
 import type { ObjectionDiff } from "@/lib/lead-detail/derive-objection-diff";
+import type { ClosestWinDto } from "@/lib/lead-detail/use-decision-surface";
 
 export interface HistoryActivityRow {
   id: string;
@@ -31,12 +36,15 @@ export interface HistoryBlockCopy {
   objectionsHeading: string;
   activityKindLabels: Record<string, string>;
   objections: PredictedVsRealObjectionsCopy;
+  closestWin: ClosestWinCalloutCopy;
 }
 
 export interface HistoryBlockProps {
   loading: boolean;
+  leadId: string;
   activities: HistoryActivityRow[];
   objections: ObjectionDiff;
+  closestWin: ClosestWinDto | null;
   copy: HistoryBlockCopy;
 }
 
@@ -53,8 +61,10 @@ function relativeTime(iso: string): string {
 
 export function HistoryBlock({
   loading,
+  leadId,
   activities,
   objections,
+  closestWin,
   copy,
 }: HistoryBlockProps): ReactNode {
   if (loading) {
@@ -75,7 +85,7 @@ export function HistoryBlock({
     objections.predictedNotReal.length === 0 &&
     objections.realOnly.length === 0;
 
-  if (empty) {
+  if (empty && !closestWin) {
     return (
       <p
         className="text-[13px]"
@@ -89,6 +99,13 @@ export function HistoryBlock({
 
   return (
     <div className="space-y-4" data-testid="history-block-body">
+      {closestWin ? (
+        <ClosestWinCallout
+          leadId={leadId}
+          data={closestWin}
+          copy={copy.closestWin}
+        />
+      ) : null}
       {activities.length > 0 ? (
         <section className="space-y-1.5">
           <h3

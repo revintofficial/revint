@@ -17,7 +17,18 @@
  *      worker process writes back to `AgentRun` (SUCCEEDED / FAILED)
  *      and sets `artifactUrl` if the output is publicly shareable.
  */
-import type { AgentWorkerKind, Plan, Lead, Workspace, WebsiteAudit, ReviewAnalysis, SalesOpportunity, MemoryKind } from "@/generated/prisma/client";
+import type {
+  AgentWorkerKind,
+  Plan,
+  Lead,
+  Workspace,
+  WebsiteAudit,
+  ReviewAnalysis,
+  SalesOpportunity,
+  MemoryKind,
+  GoogleReview,
+  Account,
+} from "@/generated/prisma/client";
 
 export type AgentWorkerGroup = "intelligence" | "pitch" | "deliverable" | "ops" | "enrichment";
 
@@ -173,12 +184,26 @@ export interface AgentWorkerContext {
   workspacePlan: Plan;
   leadId: string | null;
   userId: string | null;
-  // Hydrated lead + related records (all workers receive the same shape
-  // so the runtime can cache the DB read across dependent workers).
+  // Hydrated lead + related records. The base shape (websiteAudit,
+  // salesOpportunity, reviewAnalysis) is loaded for every worker so
+  // the executor can cache the DB read across dependent workers in
+  // the same chain.
+  //
+  // SDR-Brain v2 Phase 2 — `googleReviews` (recent-first, capped at
+  // 50) and `account` are opt-in via `AgentWorker.requiredIncludes`.
+  // Always typed as `GoogleReview[] | undefined` / `Account | null |
+  // undefined`: `undefined` means "the worker didn't opt in, don't
+  // assume anything"; `null` (for `account`) means "opted in but the
+  // lead has no account row"; `[]` means "opted in but the lead has
+  // no reviews yet". Workers that need these MUST declare
+  // `requiredIncludes` in the registry — relying on `undefined` from
+  // a non-opt-in worker is a bug.
   lead: (Lead & {
     websiteAudit: WebsiteAudit | null;
     salesOpportunity: SalesOpportunity | null;
     reviewAnalysis: ReviewAnalysis | null;
+    googleReviews?: GoogleReview[];
+    account?: Account | null;
   }) | null;
   workspace: Pick<
     Workspace,
@@ -405,6 +430,28 @@ export interface AgentWorker {
    * reason about memory dependencies before scheduling.
    */
   memoryReads?: MemorySpec[];
+  /**
+   * SDR-Brain v2 (Phase 2) — declarative Lead-relation includes. When
+   * a worker needs more than the default `websiteAudit + salesOpportunity
+   * + reviewAnalysis` shape, set the corresponding flag here. The
+   * executor (`hydrateContext` in `execute.ts`) reads this and adds the
+   * include to the Prisma query. Defaults: every flag is `false` so
+   * the legacy hot path stays untouched and workers that don't opt in
+   * pay no extra DB cost.
+   *
+   * Currently supported:
+   *   - `googleReviews`: pulls up to 50 most-recent `GoogleReview` rows
+   *     for the lead. Used by `TRIGGER_DETECTOR` for rating-trend rules.
+   *   - `account`: includes the lead's `Account` row (multi-location
+   *     intelligence). Used by `TRIGGER_DETECTOR` and `BANT_INFERRER`.
+   *
+   * Add new flags only when an actual worker needs them — every extra
+   * include burns a join on the hot path.
+   */
+  requiredIncludes?: {
+    googleReviews?: boolean;
+    account?: boolean;
+  };
   /**
    * AI Core - memory writes produced from the run output. Called by
    * the executor AFTER the worker succeeds; each returned entry is

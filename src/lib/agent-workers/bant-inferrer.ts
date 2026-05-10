@@ -26,6 +26,7 @@ import type {
   AgentWorkerRun,
   MemoryWrite,
 } from "./types";
+import { REASONING_SUMMARY_REF_TYPES } from "./reasoning-ref-types";
 
 export const run: AgentWorkerRun = async (
   ctx: AgentWorkerContext,
@@ -78,6 +79,52 @@ export const run: AgentWorkerRun = async (
   );
 
   // 5. Derive BANT (pure).
+  //
+  // Phase 3 — pass the full v1-intel narrative so Need/Timing/Budget
+  // dimensions reflect ReviewAnalysis + SalesOpportunity + Account
+  // rather than the thin Lead-only baseline. Every new field is
+  // optional in `BuyingReadinessInput`, so older call sites still
+  // work; the deriver self-skips when the intel isn't present.
+  const ra = lead.reviewAnalysis;
+  const opp = lead.salesOpportunity;
+  const account = lead.account ?? null;
+  const reviewIntel = ra
+    ? {
+        painPhrases: Array.isArray(ra.painPhrases)
+          ? (ra.painPhrases as string[])
+          : [],
+        weaknessKpis: Array.isArray(ra.weaknessKpis)
+          ? (ra.weaknessKpis as Array<{
+              label: string;
+              count?: number;
+              percent?: number;
+            }>)
+          : [],
+        switchSignals: Array.isArray(ra.switchSignals)
+          ? (ra.switchSignals as string[])
+          : [],
+        leadScore: ra.leadScore,
+      }
+    : null;
+  const salesOpportunity = opp
+    ? {
+        likelyPainPoints: Array.isArray(opp.likelyPainPoints)
+          ? (opp.likelyPainPoints as string[])
+          : [],
+        reasonCodes: Array.isArray(opp.reasonCodes)
+          ? (opp.reasonCodes as string[])
+          : [],
+        opportunityScore: opp.opportunityScore,
+        suggestedOffer: opp.suggestedOffer,
+      }
+    : null;
+  const accountIntel = account
+    ? {
+        locationsCount: account.locationsCount,
+        tier: account.tier,
+      }
+    : null;
+
   const bant = deriveBuyingReadiness({
     lead: {
       priceLevel: lead.priceLevel,
@@ -85,6 +132,10 @@ export const run: AgentWorkerRun = async (
       rating: lead.rating,
       hasWebsite: lead.hasWebsite,
       icpFitScore: lead.icpFitScore,
+      salesConfidence: lead.salesConfidence,
+      icpReasons: Array.isArray(lead.icpReasons)
+        ? (lead.icpReasons as unknown[])
+        : [],
     },
     audit: lead.websiteAudit
       ? {
@@ -97,9 +148,17 @@ export const run: AgentWorkerRun = async (
     triggers,
     stakeholders,
     recentIntentSignalCount,
+    reviewIntel,
+    salesOpportunity,
+    account: accountIntel,
   });
 
   // 6. Preliminary NBA derivation.
+  //
+  // Phase 3 — pass the analyst's `likelyPainPoints` so the
+  // preliminary card surfaces predicted objections before the T3
+  // brain pass overwrites them. Empty array when SalesOpportunity
+  // isn't ready yet.
   const preliminary = derivePreliminaryNba({
     bant,
     lead: {
@@ -111,6 +170,7 @@ export const run: AgentWorkerRun = async (
       websiteUrl: lead.websiteUrl,
     },
     triggerCount: triggers.length,
+    likelyPainPoints: salesOpportunity?.likelyPainPoints ?? [],
   });
 
   // 7. Upsert the preliminary LeadNextAction. We supersede any earlier
@@ -147,7 +207,7 @@ export const run: AgentWorkerRun = async (
       channel: preliminary.channel,
       triggerIds: preliminary.triggerIds,
       qualificationGap: preliminary.qualificationGap,
-      predictedObjections: [],
+      predictedObjections: preliminary.predictedObjections,
       whatNotToPitch: [],
       confidence: preliminary.confidence,
       reasoning: preliminary.reasoning,
@@ -190,7 +250,11 @@ export function memoryWrites(output: unknown, ctx: AgentWorkerContext): MemoryWr
       kind: "REASONING_SUMMARY",
       text: `BANT — overall ${o.bant.overall} (B${o.bant.budget}/A${o.bant.authority}/N${o.bant.need}/T${o.bant.timing}).`,
       leadId: ctx.leadId,
-      refType: "BANT_INFERRER",
+      // Phase 0 hot-fix — was "BANT_INFERRER" (SCREAMING_SNAKE_CASE),
+      // but `lead-intelligence-brief.ts` reader expects PascalCase
+      // (`BantInferrer`). Every refType now flows through
+      // `REASONING_SUMMARY_REF_TYPES` so the casing cannot drift.
+      refType: REASONING_SUMMARY_REF_TYPES.BantInferrer,
       refId: ctx.runId,
       metadata: { bant: o.bant },
       skipEmbed: true, // structured numbers — no value in vectorising

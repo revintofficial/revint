@@ -16,6 +16,7 @@ import { render } from "@testing-library/react";
 import { Block } from "@/components/app/lead-detail-v2/Block";
 import {
   LEAD_DETAIL_V2_EXPAND_RULES,
+  LEAD_DETAIL_V2_EXPAND_RULES_PROD,
   type LeadDetailV2BlockKey,
   type LeadDetailV2Stage,
 } from "@/lib/lead-detail/use-pipeline-stage";
@@ -76,8 +77,11 @@ describe("Stage-driven expand rules — per stage matrix", () => {
 });
 
 describe("Stage-driven expand rules — COLD canonical sample", () => {
-  it("WHO is expanded on COLD; DISCOVERY is a stub", () => {
-    expect(LEAD_DETAIL_V2_EXPAND_RULES.COLD.WHO).toBe("expanded");
-    expect(LEAD_DETAIL_V2_EXPAND_RULES.COLD.DISCOVERY).toBe("stub");
+  // The active table is currently a dev override (every block expanded
+  // for every stage). The canonical RETHINK §4.3 contract still has to
+  // hold on the prod table so we can flip back at any time.
+  it("WHO is expanded on COLD; DISCOVERY is a stub (prod table)", () => {
+    expect(LEAD_DETAIL_V2_EXPAND_RULES_PROD.COLD.WHO).toBe("expanded");
+    expect(LEAD_DETAIL_V2_EXPAND_RULES_PROD.COLD.DISCOVERY).toBe("stub");
   });
 });

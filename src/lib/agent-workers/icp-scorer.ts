@@ -14,6 +14,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { scoreIcpFit, type IcpFitResult } from "@/lib/sdr-brain/icp-scorer";
+import { runAuditChecklist } from "@/lib/audit-checklist";
 import type { WebsiteFeatures } from "@/types";
 import type {
   AgentWorkerContext,
@@ -33,6 +34,26 @@ export const run: AgentWorkerRun = async (
   });
 
   const features = (lead.websiteAudit?.rawFeaturesJson as WebsiteFeatures | null) ?? null;
+
+  // Phase 0 hot-fix — `checklistScorePct` was hard-wired to null,
+  // which made the `digitalMaturityFloor` rule in `scoreIcpFit` dead
+  // code (the rule deducts up to 25 points when checklistScorePct
+  // falls below the configured floor). Match what BANT_INFERRER does:
+  // run the deterministic audit checklist against the same features
+  // blob the audit row carries, then pass the percent through.
+  //
+  // The checklist self-skips for leads with no website / no features
+  // so we only feed a real number when there's signal to score.
+  const checklistScorePct =
+    features && lead.websiteAudit
+      ? runAuditChecklist(
+          features,
+          lead.hasWebsite,
+          ctx.workspace.niche,
+          lead.subNicheSlug,
+        ).summary.scorePercent
+      : null;
+
   const result: IcpFitResult = scoreIcpFit({
     icp: icp
       ? {
@@ -59,12 +80,7 @@ export const run: AgentWorkerRun = async (
     },
     audit: lead.websiteAudit
       ? {
-          checklistScorePct: features
-            ? // approximate — the full checklist computation lives in
-              // audit-checklist.ts; passing servicesDetected length as
-              // a coarse proxy keeps this worker dependency-light.
-              null
-            : null,
+          checklistScorePct,
           servicesDetected: Array.isArray(lead.websiteAudit.servicesDetected)
             ? (lead.websiteAudit.servicesDetected as string[])
             : [],
@@ -93,6 +109,8 @@ export const run: AgentWorkerRun = async (
     score: result.score,
     reasonCount: result.reasons.length,
     icpConfigured: icp != null,
+    checklistScorePct,
+    digitalMaturityFloor: icp?.digitalMaturityFloor ?? null,
   });
 
   return {

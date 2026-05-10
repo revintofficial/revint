@@ -1,5 +1,30 @@
 import "@testing-library/jest-dom/vitest";
 
+/**
+ * jsdom doesn't implement `window.matchMedia`. Several Lead Detail v2
+ * client components (`useViewport`, `useIsPhone`, `useIsCoarsePointer`,
+ * `usePrefersReducedMotion`, `BottomSheet`) call it during their
+ * `useEffect` mount, so any test that renders one needs a stub. Default
+ * to "no match" so SSR-safe defaults (desktop + fine pointer + motion
+ * allowed) win in jsdom.
+ */
+if (typeof window !== "undefined" && typeof window.matchMedia !== "function") {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }),
+  });
+}
+
 // Stripe webhook signing helper requires this; set a deterministic
 // dummy secret for unit tests so the helper can construct signatures
 // and the route handler can verify them with the same value.

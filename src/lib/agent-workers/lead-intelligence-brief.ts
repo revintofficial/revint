@@ -57,6 +57,7 @@ import {
   ReasoningGraphBuilder,
   type ReasoningGraph,
 } from "@/lib/sdr-brain/reasoning-graph";
+import { REASONING_SUMMARY_REF_TYPES } from "./reasoning-ref-types";
 import {
   detectContradictions,
   type T2Snapshot,
@@ -613,7 +614,19 @@ export const run: AgentWorkerRun = async (
   });
 
   // Emit the brain-completed event so the UI cache + downstream
-  // listeners (analytics, Slack notifications) can react.
+  // listeners (analytics, Slack notifications) can react, and the
+  // dedicated `sdr_brain_completed` chain (chains.ts) refreshes the
+  // opener + objection list against the locked decision.
+  //
+  // Phase 0 hot-fix — the previous try/catch swallowed every emit
+  // failure because the chain itself was unregistered. Now that the
+  // chain exists in CHAINS, emit must succeed; a failure here is a
+  // real degradation (worker plan/quota issue, DB outage) and should
+  // surface as an AgentRun warning instead of being silently dropped.
+  // We still don't fail the brief itself — the brief output is the
+  // primary rep-facing artifact — but we log at warn level with the
+  // operational context so the SDR Brain v2 Health dashboard (Faz 7)
+  // can alert on it.
   if (sdrBrainResult) {
     try {
       await ctx.emit("sdr_brain_completed", {
@@ -623,7 +636,10 @@ export const run: AgentWorkerRun = async (
     } catch (err) {
       logger.warn("agent_workers.lead_intelligence_brief.sdr_brain_emit_failed", {
         leadId,
+        workspaceId,
+        leadActionId: sdrBrainResult.leadActionId,
         err: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
       });
     }
   }
@@ -725,9 +741,16 @@ async function runSdrBrainPass(args: {
 
   // Pull active triggers and T2 reasoning summaries written by
   // WHY_NOW / INSIGHT_MATCH / COMMITTEE / OBJECTIONS / BANT.
+  //
+  // Phase 0 hot-fix — `LeadTrigger` has no `isActive` column; the
+  // schema uses `decayedAt IS NULL` to mean "currently active". The
+  // previous `isActive: true` filter blew up at runtime (caught by the
+  // outer try/catch), which silently dropped every trigger from the
+  // T2 snapshot and starved the contradiction detector + reasoning
+  // graph. Match `bant-inferrer.ts:38` exactly.
   const [triggers, summaryMemory] = await Promise.all([
     prisma.leadTrigger.findMany({
-      where: { workspaceId, leadId, isActive: true },
+      where: { workspaceId, leadId, decayedAt: null },
       orderBy: [{ severity: "desc" }, { confidence: "desc" }],
       take: 12,
     }),
@@ -745,11 +768,23 @@ async function runSdrBrainPass(args: {
   ]);
 
   // Bucket the T2 reasoning summaries by the worker that wrote them.
-  const whyNow = summaryMemory.find((m) => m.refType === "WhyNowSynthesizer");
-  const bant = summaryMemory.find((m) => m.refType === "BantInferrer");
-  const insightMatch = summaryMemory.find((m) => m.refType === "CommercialInsightMatcher");
-  const committee = summaryMemory.find((m) => m.refType === "BuyingCommitteeMapper");
-  const objections = summaryMemory.find((m) => m.refType === "ObjectionPredictor");
+  // refType keys come from `REASONING_SUMMARY_REF_TYPES` — every
+  // writer + reader shares the same constant so casing cannot drift.
+  const whyNow = summaryMemory.find(
+    (m) => m.refType === REASONING_SUMMARY_REF_TYPES.WhyNowSynthesizer,
+  );
+  const bant = summaryMemory.find(
+    (m) => m.refType === REASONING_SUMMARY_REF_TYPES.BantInferrer,
+  );
+  const insightMatch = summaryMemory.find(
+    (m) => m.refType === REASONING_SUMMARY_REF_TYPES.CommercialInsightMatcher,
+  );
+  const committee = summaryMemory.find(
+    (m) => m.refType === REASONING_SUMMARY_REF_TYPES.BuyingCommitteeMapper,
+  );
+  const objections = summaryMemory.find(
+    (m) => m.refType === REASONING_SUMMARY_REF_TYPES.ObjectionPredictor,
+  );
 
   const whyNowMeta = (whyNow?.metadata as { urgencyScore?: number; recommendedTimingDays?: number } | null) ?? null;
   const bantMeta =

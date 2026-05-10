@@ -18,6 +18,7 @@ import type {
   AgentWorkerRun,
   MemoryWrite,
 } from "./types";
+import { REASONING_SUMMARY_REF_TYPES } from "./reasoning-ref-types";
 
 interface WhyNowOutput {
   headline: string;
@@ -150,7 +151,7 @@ export function memoryWrites(output: unknown, ctx: AgentWorkerContext): MemoryWr
       kind: "REASONING_SUMMARY",
       text: `WHY_NOW: ${o.headline} | urgency=${o.urgencyScore} | timingDays=${o.recommendedTimingDays}`,
       leadId: ctx.leadId,
-      refType: "WhyNowSynthesizer",
+      refType: REASONING_SUMMARY_REF_TYPES.WhyNowSynthesizer,
       metadata: {
         urgencyScore: o.urgencyScore,
         recommendedTimingDays: o.recommendedTimingDays,

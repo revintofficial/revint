@@ -18,8 +18,9 @@ const CASES: Array<[string, ExpectedAction]> = [
   ["#overview", { kind: "noop" }],
   ["#outreach", { kind: "scroll", target: "next-gesture-block" }],
   ["#anchor-sales-opportunity", { kind: "scroll", target: "next-gesture-block" }],
-  ["#workers", { kind: "scroll", target: "power-tools-link" }],
-  ["#anchor-workers-top", { kind: "scroll", target: "power-tools-link" }],
+  // Phase 6: workers hashes navigate to the dedicated /workers route.
+  ["#workers", { kind: "navigate", target: "/workers" }],
+  ["#anchor-workers-top", { kind: "navigate", target: "/workers" }],
   ["#reviews", { kind: "scroll", target: "history-block" }],
   ["#website", { kind: "scroll", target: "why-now-block" }],
 ];
@@ -61,8 +62,8 @@ describe("getRedirectTarget — edge cases", () => {
 
   it("normalizes case-insensitively", () => {
     expect(getRedirectTarget("#WORKERS")).toEqual({
-      kind: "scroll",
-      target: "power-tools-link",
+      kind: "navigate",
+      target: "/workers",
     });
     expect(getRedirectTarget("#OuTrEaCh")).toEqual({
       kind: "scroll",

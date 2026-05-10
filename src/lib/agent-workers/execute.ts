@@ -636,6 +636,17 @@ async function hydrateContext(run: AgentRun): Promise<AgentWorkerContext> {
   // hard failure: the run is marked FAILED with a clear errorMsg and
   // the worker is never invoked, so no prompt ever sees the wrong
   // lead's data.
+  //
+  // SDR-Brain v2 Phase 2 — `requiredIncludes` on the worker registry
+  // adds optional Lead-relation joins (`googleReviews`, `account`)
+  // for workers that need denser intel. Reads `getWorker(run.workerKind)`
+  // up-front so the include set is computed once and the Prisma
+  // query plan stays predictable.
+  const workerMetaForIncludes = getWorker(run.workerKind);
+  const requiredIncludes = workerMetaForIncludes?.requiredIncludes ?? {};
+  const includeGoogleReviews = requiredIncludes.googleReviews === true;
+  const includeAccount = requiredIncludes.account === true;
+
   const lead = run.leadId
     ? await prisma.lead.findFirst({
         where: { id: run.leadId, workspaceId: run.workspaceId },
@@ -643,6 +654,18 @@ async function hydrateContext(run: AgentRun): Promise<AgentWorkerContext> {
           websiteAudit: true,
           salesOpportunity: true,
           reviewAnalysis: true,
+          // Capped at 50 reviews to keep payload size predictable.
+          // Workers that need rating-trend windows look at the recent
+          // half vs the older half so 50 is plenty.
+          ...(includeGoogleReviews
+            ? {
+                googleReviews: {
+                  orderBy: { publishTime: "desc" as const },
+                  take: 50,
+                },
+              }
+            : {}),
+          ...(includeAccount ? { account: true } : {}),
         },
       })
     : null;
@@ -658,11 +681,10 @@ async function hydrateContext(run: AgentRun): Promise<AgentWorkerContext> {
     );
   }
 
-  const workerMeta = getWorker(run.workerKind);
   const { hits: memory, degraded: memoryDegraded } = await fetchMemoryReads({
     workspaceId: run.workspaceId,
     leadId: run.leadId,
-    specs: workerMeta?.memoryReads,
+    specs: workerMetaForIncludes?.memoryReads,
   });
 
   const emit = async (

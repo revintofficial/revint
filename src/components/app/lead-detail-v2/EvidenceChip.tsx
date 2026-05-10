@@ -9,13 +9,12 @@
  * union exists from day 1 so phases 2-3 can drop in stakeholder /
  * BANT / SPIN / discovery chips without touching consumers.
  *
- * Desktop: hover or focus opens the source-quote card.
- * Mobile: a tap opens it; tap-outside, second-tap, or ESC dismiss.
- *
- * The mobile branch is intentionally a portal'd dismiss-on-outside-
- * click panel rather than the bottom-sheet from Phase 5 — building
- * the bottom-sheet primitive is out of Phase 1 scope. The panel uses
- * Radix `Popover` so focus management + ESC are wired for free.
+ * Desktop: hover or focus opens the source-quote popover (Radix).
+ * Mobile (Phase 5): tap opens a slide-up footnote band rendered via
+ * the global `<BottomSheet>` primitive — focus trap, ESC dismiss,
+ * tap-outside dismiss are all inherited. The desktop popover is
+ * never mounted on phone so the `pointer: coarse` chip never
+ * accidentally renders the hover card.
  */
 
 import {
@@ -27,6 +26,7 @@ import {
   useSyncExternalStore,
 } from "react";
 
+import { BottomSheet } from "@/components/ui/bottom-sheet";
 import {
   Popover,
   PopoverContent,
@@ -132,79 +132,113 @@ export function EvidenceChip({
     return `${typeLabel}: ${label}`;
   }, [typeLabel, label]);
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          id={triggerId}
-          type="button"
-          aria-label={ariaLabel}
-          onMouseEnter={handleHoverOpen}
-          onMouseLeave={handleHoverClose}
-          onFocus={handleHoverOpen}
-          onBlur={handleHoverClose}
-          className="inline-flex h-5 max-w-48 items-center gap-1 truncate rounded-full border border-white/10 bg-white/3 px-1.5 text-[11px] leading-none transition-colors hover:bg-white/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--leadac-500)/55"
-          style={{ color: "var(--leadac-text-2)" }}
+  const triggerButton = (
+    <button
+      id={triggerId}
+      type="button"
+      aria-label={ariaLabel}
+      data-testid="evidence-chip-trigger"
+      onMouseEnter={handleHoverOpen}
+      onMouseLeave={handleHoverClose}
+      onFocus={handleHoverOpen}
+      onBlur={handleHoverClose}
+      onClick={coarse ? () => setOpen(true) : undefined}
+      className="inline-flex h-5 max-w-48 items-center gap-1 truncate rounded-full border border-white/10 bg-white/3 px-1.5 text-[11px] leading-none transition-colors hover:bg-white/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--leadac-500)/55"
+      style={{ color: "var(--leadac-text-2)" }}
+    >
+      <span
+        aria-hidden
+        className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-semibold uppercase"
+        style={{
+          background: "color-mix(in srgb, " + tone + " 22%, transparent)",
+          color: tone,
+        }}
+      >
+        {glyph}
+      </span>
+      <span className="truncate">{label}</span>
+    </button>
+  );
+
+  const body = (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+          style={{ color: tone }}
+        >
+          {typeLabel}
+        </span>
+        {typeof confidence === "number" ? (
+          <span className="text-[10px]" style={{ color: "var(--leadac-text-3)" }}>
+            {Math.round(confidence * 100)}%
+          </span>
+        ) : null}
+      </div>
+      {sourceQuote ? (
+        <p
+          className="whitespace-pre-line"
+          style={{ color: "var(--leadac-text-1)" }}
         >
           <span
-            aria-hidden
-            className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-[9px] font-semibold uppercase"
-            style={{
-              background: "color-mix(in srgb, " + tone + " 22%, transparent)",
-              color: tone,
-            }}
+            className="mr-1 text-[10px] uppercase tracking-[0.06em]"
+            style={{ color: "var(--leadac-text-3)" }}
           >
-            {glyph}
+            {copy.sourceLabel}
           </span>
-          <span className="truncate">{label}</span>
-        </button>
-      </PopoverTrigger>
+          {sourceQuote}
+        </p>
+      ) : null}
+      {children}
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-block text-[11px] underline"
+          style={{ color: "var(--leadac-info)" }}
+        >
+          {href}
+        </a>
+      ) : null}
+    </>
+  );
+
+  // Phase 5 — phone tap opens the slide-up footnote band, not a hover
+  // card. We only mount the BottomSheet branch when `pointer: coarse`
+  // matches so the desktop hover popover never ships on phones (and
+  // the mobile sheet never collides with a fine-pointer click).
+  if (coarse) {
+    return (
+      <>
+        {triggerButton}
+        <BottomSheet
+          open={open}
+          onOpenChange={setOpen}
+          title={typeLabel}
+          description={label}
+          snap="auto"
+        >
+          <div
+            data-testid="evidence-chip-sheet"
+            className="space-y-2 text-[14px]"
+          >
+            {body}
+          </div>
+        </BottomSheet>
+      </>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
       <PopoverContent
         align="start"
         className="w-72 space-y-2 text-[12px]"
-        onOpenAutoFocus={(e) => {
-          if (!coarse) e.preventDefault();
-        }}
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="flex items-center justify-between gap-2">
-          <span
-            className="text-[10px] font-semibold uppercase tracking-[0.08em]"
-            style={{ color: tone }}
-          >
-            {typeLabel}
-          </span>
-          {typeof confidence === "number" ? (
-            <span className="text-[10px]" style={{ color: "var(--leadac-text-3)" }}>
-              {Math.round(confidence * 100)}%
-            </span>
-          ) : null}
-        </div>
-        {sourceQuote ? (
-          <p
-            className="whitespace-pre-line"
-            style={{ color: "var(--leadac-text-1)" }}
-          >
-            <span
-              className="mr-1 text-[10px] uppercase tracking-[0.06em]"
-              style={{ color: "var(--leadac-text-3)" }}
-            >
-              {copy.sourceLabel}
-            </span>
-            {sourceQuote}
-          </p>
-        ) : null}
-        {children}
-        {href ? (
-          <a
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-block text-[11px] underline"
-            style={{ color: "var(--leadac-info)" }}
-          >
-            {href}
-          </a>
-        ) : null}
+        {body}
       </PopoverContent>
     </Popover>
   );

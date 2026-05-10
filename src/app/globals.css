@@ -298,6 +298,21 @@ body {
   }
 }
 
+/* Phase 3 — lead detail v2 queue strip auto-hides on mobile when a text
+ * input has focus, so the on-screen keyboard never overlaps the strip's
+ * dial CTA (build plan §5 mobile concern). Uses :has() which is now
+ * baseline in all evergreen browsers.
+ */
+@media (max-width: 640px) {
+  [data-lead-detail-shell]:has(
+    input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):focus,
+    textarea:focus,
+    [contenteditable="true"]:focus
+  ) [data-queue-strip-wrapper] {
+    display: none;
+  }
+}
+
 /* Dark scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

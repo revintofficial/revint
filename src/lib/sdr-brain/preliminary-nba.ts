@@ -28,6 +28,15 @@ export interface PreliminaryNbaInput {
     websiteUrl: string | null;
   };
   triggerCount: number;
+  /**
+   * Phase 3 — analyst-extracted likely pain points (from
+   * `SalesOpportunity.likelyPainPoints`). When supplied, the
+   * preliminary NBA emits the first 3 as `predictedObjections` so
+   * the v2 UI's "anticipate this objection" panel populates before
+   * the T3 brain run finishes (which would otherwise overwrite
+   * them anyway).
+   */
+  likelyPainPoints?: string[];
 }
 
 export interface PreliminaryNbaOutput {
@@ -39,11 +48,20 @@ export interface PreliminaryNbaOutput {
   reasoning: string;
   triggerIds: string[]; // empty here — T3 SDR_BRAIN populates real cite list
   qualificationGap: string[];
+  predictedObjections: string[];
   isPreliminary: true;
 }
 
 export function derivePreliminaryNba(input: PreliminaryNbaInput): PreliminaryNbaOutput {
   const { bant, lead } = input;
+
+  // Phase 3 — surface the top 3 likely pain points as the
+  // preliminary `predictedObjections` so the v2 UI's "anticipate
+  // these objections" panel populates immediately. The T3 brain
+  // overwrites this with the full prediction once it runs.
+  const predictedObjections = (input.likelyPainPoints ?? [])
+    .filter((p) => typeof p === "string" && p.trim().length > 0)
+    .slice(0, 3);
 
   // Hard guards — DNC / opt-out trumps everything.
   if (lead.dnc || lead.optedOutAt) {
@@ -56,6 +74,7 @@ export function derivePreliminaryNba(input: PreliminaryNbaInput): PreliminaryNba
       reasoning: "DNC flag set — outbound forbidden until consent restored.",
       triggerIds: [],
       qualificationGap: [],
+      predictedObjections,
       isPreliminary: true,
     };
   }
@@ -80,6 +99,7 @@ export function derivePreliminaryNba(input: PreliminaryNbaInput): PreliminaryNba
       reasoning: `BANT overall ${overall} with ${input.triggerCount} active trigger(s) — preliminary CALL_NOW; T3 may downgrade.`,
       triggerIds: [],
       qualificationGap,
+      predictedObjections,
       isPreliminary: true,
     };
   }
@@ -96,6 +116,7 @@ export function derivePreliminaryNba(input: PreliminaryNbaInput): PreliminaryNba
       reasoning: `BANT overall ${overall} but no fresh triggers — preliminary CALL_AT_WINDOW.`,
       triggerIds: [],
       qualificationGap,
+      predictedObjections,
       isPreliminary: true,
     };
   }
@@ -111,6 +132,7 @@ export function derivePreliminaryNba(input: PreliminaryNbaInput): PreliminaryNba
       reasoning: `BANT overall ${overall} (mid-tier) — preliminary EMAIL_FIRST. Refine after T3.`,
       triggerIds: [],
       qualificationGap,
+      predictedObjections,
       isPreliminary: true,
     };
   }
@@ -126,6 +148,7 @@ export function derivePreliminaryNba(input: PreliminaryNbaInput): PreliminaryNba
       reasoning: `BANT overall ${overall} too low for outbound — preliminary WAIT_FOR_REPLY pending T3 enrichment.`,
       triggerIds: [],
       qualificationGap,
+      predictedObjections,
       isPreliminary: true,
     };
   }
@@ -140,6 +163,7 @@ export function derivePreliminaryNba(input: PreliminaryNbaInput): PreliminaryNba
     reasoning: `BANT overall ${overall} (cold) — preliminary RE_ENGAGE; T3 may reclassify.`,
     triggerIds: [],
     qualificationGap,
+    predictedObjections,
     isPreliminary: true,
   };
 }

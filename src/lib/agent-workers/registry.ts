@@ -627,6 +627,10 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: true,
     estimatedDurationMs: 2000,
+    // SDR-Brain v2 Phase 3 — BANT_INFERRER reads Account.locationsCount
+    // + Account.tier for the budget / authority dimensions when the
+    // BuyingReadinessInput is enriched.
+    requiredIncludes: { account: true },
     implModule: () =>
       import("./bant-inferrer").then((m) => ({
         run: m.run,
@@ -648,6 +652,12 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     memoryReads: [
       { kinds: ["HIRING_SIGNAL", "SERP_SNAPSHOT", "REDDIT_MENTION", "SOCIAL_POST"], topK: 12, scope: "lead" },
     ],
+    // SDR-Brain v2 Phase 2 — TRIGGER_DETECTOR needs the raw
+    // GoogleReview rows (rating-trend rule: last-30d avg vs prior-30d
+    // avg) and the Account (multi-location rules: NEW_LOCATION_OPENING,
+    // CHAIN_EXPANSION). Both are capped or single rows so the join
+    // is cheap.
+    requiredIncludes: { googleReviews: true, account: true },
     implModule: () =>
       import("./trigger-detector").then((m) => ({
         run: m.run,

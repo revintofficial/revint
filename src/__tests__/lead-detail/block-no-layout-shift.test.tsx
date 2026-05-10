@@ -23,6 +23,25 @@ import { Block } from "@/components/app/lead-detail-v2/Block";
 import { NextGestureBlock } from "@/components/app/lead-detail-v2/NextGestureBlock";
 import type { NextActionResponse } from "@/components/app/nba/NbaCard";
 
+const TRIGGER_LABELS = {
+  NEW_LOCATION_OPENING: "New location opening",
+  CHAIN_EXPANSION: "Chain expansion",
+  HIRING_MARKETING: "Hiring marketing",
+  HIRING_OPS: "Hiring ops",
+  HIRING_TECH: "Hiring tech",
+  BAD_SERVICE_REVIEWS: "Bad service reviews",
+  RATING_DROP: "Rating drop",
+  MENU_REDESIGN_SIGNAL: "Menu redesign signal",
+  BOOKING_PROVIDER_CHANGE: "Booking provider change",
+  DELIVERY_EXPANSION: "Delivery expansion",
+  INTERNATIONAL_AUDIENCE_GROWTH: "International audience growth",
+  SEASONAL_TOURISM: "Seasonal tourism",
+  COMPETITOR_PRESSURE: "Competitor pressure",
+  REBRANDING: "Rebranding",
+  FUNDING_RAISED: "Funding raised",
+  EXEC_CHANGE: "Exec change",
+} as const;
+
 const NEXT_GESTURE_COPY = {
   preliminary: "Preliminary",
   final: "Final",
@@ -33,6 +52,24 @@ const NEXT_GESTURE_COPY = {
   whatsapp: "WhatsApp",
   schedule: "Schedule",
   snooze: "Snooze",
+  snoozeMenu: {
+    trigger: "Snooze",
+    heading: "Snooze this lead",
+    oneDay: "1 day",
+    threeDays: "3 days",
+    oneWeek: "1 week",
+    custom: "Custom date",
+    customDialogTitle: "Snooze until a specific date",
+    customDialogDescription: "Up to 90 days from today.",
+    customPickerLabel: "Date",
+    customSubmit: "Snooze",
+    customCancel: "Cancel",
+    untilTrigger: "Until trigger",
+    untilTriggerDialogTitle: "Snooze until a trigger fires",
+    untilTriggerDialogDescription: "We'll wake the lead when the chosen trigger lands.",
+    cancel: "Cancel",
+    triggerLabels: TRIGGER_LABELS,
+  },
 };
 
 function makeAction(args: { id: string; preliminary: boolean; version: number }) {

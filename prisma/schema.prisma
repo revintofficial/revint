@@ -587,6 +587,17 @@ model Lead {
   archivedAt       DateTime? @map("archived_at")
   discardedAt      DateTime? @map("discarded_at")
   snoozeUntil      DateTime? @map("snooze_until")
+  // Phase 3 — "snooze until trigger" semantics. When the rep picks
+  // "until trigger" in the SnoozeMenu, we set both `snoozeUntil` (a
+  // 90-day safety cap so a stale snooze can't linger forever) AND
+  // this column to the trigger type the rep is waiting for. The
+  // trigger-detector worker post-write hook clears BOTH columns on
+  // any new `LeadTrigger` row whose `type` matches and whose
+  // `workspaceId` matches — so the lead pops back into today's
+  // queue the moment the awaited signal fires anywhere in the
+  // workspace. Null when the rep used a duration / custom-date
+  // snooze (cleared automatically when `snoozeUntil` elapses).
+  snoozeUntilTriggerType LeadTriggerType? @map("snooze_until_trigger_type")
   assignedToUserId String?   @map("assigned_to_user_id") @db.Uuid
 
   // Pipeline gate (Service Packages). Defaults to OK for backwards

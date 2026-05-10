@@ -52,6 +52,10 @@ import {
 } from "@/lib/lead-detail/derive-objection-diff";
 import { deriveBuyingReadiness } from "@/lib/sdr-brain/buying-readiness";
 import { deriveLeadDetailStage } from "@/lib/lead-detail/derive-stage";
+import {
+  findClosestWin,
+  type ClosestWinSummary,
+} from "@/lib/lead-detail/closest-win";
 import type {
   ContradictionRecord,
   ReasoningGraph,
@@ -205,7 +209,14 @@ export interface DecisionSurfaceResponse {
   accountSummary: AccountSummaryShape | null;
   activities: ActivityShape[];
   planGate: PlanGateShape;
+  // Phase 3 additive fields. PRO+ only for `closestWin` (per
+  // PLAN §5.3); the other two are FREE-friendly.
+  closestWin: ClosestWinSummary | null;
+  queuePosition: { current: number; totalToday: number } | null;
+  recentDialAt: string | null;
 }
+
+const MEDDPICC_GATE_FILLED = 4;
 
 const COLD_STAGES = new Set(["COLD"]);
 
@@ -390,6 +401,11 @@ export async function GET(
       objections,
       icpProfile,
       activities,
+      // Phase 3 additive fields:
+      insightPerformance,
+      lastCallActivity,
+      queueTotalToday,
+      queueAheadCount,
     ] = await prisma.$transaction([
       prisma.leadNextAction.findFirst({
         where: { workspaceId, leadId: id, isPreliminary: true, supersededAt: null },
@@ -456,6 +472,61 @@ export async function GET(
           kind: true,
           payload: true,
           createdAt: true,
+        },
+      }),
+      // Phase 3 — closest-win lookup. Bounded by the 50-row cap from
+      // PLAN §5.6: small in-memory filter is cheaper than another
+      // round-trip per request.
+      prisma.insightPerformance.findMany({
+        where: { workspaceId, won: { gt: 0 } },
+        orderBy: [{ won: "desc" }, { applied: "desc" }],
+        take: 50,
+      }),
+      // Phase 3 — most recent CALL_LOGGED or DISPOSITION_LOGGED activity
+      // for the "did the rep dial in the last 5 minutes?" overlay
+      // signal. The client also reads localStorage; this is a
+      // server-side fallback so a freshly-loaded device still knows.
+      prisma.leadActivity.findFirst({
+        where: {
+          workspaceId,
+          leadId: id,
+          kind: { in: ["CALL_LOGGED", "DISPOSITION_LOGGED"] },
+        },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      }),
+      // Phase 3 — queue total for the bottom-strip "Today X/Y" counter.
+      // Per-rep scope (PLAN §6 risk #14 optimistic claim).
+      prisma.lead.count({
+        where: {
+          workspaceId,
+          assignedToUserId: session.user.id,
+          archivedAt: null,
+          discardedAt: null,
+          OR: [
+            { snoozeUntil: null },
+            { snoozeUntil: { lte: new Date() } },
+          ],
+        },
+      }),
+      // Phase 3 — leads ahead of this one in the queue ordering. Used
+      // to derive `queuePosition.current` cheaply without re-running
+      // the full queue findMany. Same predicate as the queue route's
+      // sort: `nextActionDueAt asc nulls last, salesConfidence desc`.
+      prisma.lead.count({
+        where: {
+          workspaceId,
+          assignedToUserId: session.user.id,
+          archivedAt: null,
+          discardedAt: null,
+          id: { not: id },
+          OR: [
+            { snoozeUntil: null },
+            { snoozeUntil: { lte: new Date() } },
+          ],
+          ...(lead.nextActionDueAt
+            ? { nextActionDueAt: { lt: lead.nextActionDueAt } }
+            : { nextActionDueAt: { not: null } }),
         },
       }),
     ]);
@@ -692,6 +763,58 @@ export async function GET(
       spinUnlocked: plan !== "FREE",
     };
 
+    const meddpiccCellsFilled = dealQualificationShape
+      ? [
+          dealQualificationShape.metrics,
+          dealQualificationShape.economicBuyer,
+          dealQualificationShape.decisionCriteria,
+          dealQualificationShape.decisionProcess,
+          dealQualificationShape.identifyPain,
+          dealQualificationShape.champion,
+          dealQualificationShape.competition,
+        ].filter((c) => c.status === "present").length
+      : 0;
+
+    const closestWin =
+      plan !== "FREE" && meddpiccCellsFilled >= MEDDPICC_GATE_FILLED
+        ? findClosestWin(
+            workspaceId,
+            {
+              id: lead.id,
+              workspaceId,
+              nicheSlug: lead.nicheSlug,
+              subNicheSlug: lead.subNicheSlug,
+              accountTier: lead.account?.tier ?? null,
+              triggerTypes: triggers.map((t) => t.type),
+            },
+            insightPerformance.map((p) => ({
+              id: p.id,
+              workspaceId: p.workspaceId,
+              insightId: p.insightId,
+              nicheSlug: p.nicheSlug,
+              triggerType: p.triggerType,
+              segmentTier: p.segmentTier,
+              framework: p.framework,
+              applied: p.applied,
+              won: p.won,
+              meetingBooked: p.meetingBooked,
+            })),
+            [],
+          )
+        : null;
+
+    const queuePosition: { current: number; totalToday: number } | null =
+      plan === "FREE"
+        ? null
+        : {
+            current: queueAheadCount + 1,
+            totalToday: queueTotalToday,
+          };
+
+    const recentDialAt = lastCallActivity?.createdAt
+      ? lastCallActivity.createdAt.toISOString()
+      : null;
+
     const response: DecisionSurfaceResponse = {
       leadCore,
       nba,
@@ -709,6 +832,9 @@ export async function GET(
         createdAt: a.createdAt.toISOString(),
       })),
       planGate,
+      closestWin,
+      queuePosition,
+      recentDialAt,
     };
 
     return NextResponse.json(response, {

@@ -23,6 +23,7 @@ import { cookies } from "next/headers";
 
 import LegacyLeadDetailClient from "@/components/app/leads/LegacyLeadDetailClient";
 import { LeadDetailV2Client } from "@/components/app/lead-detail-v2/LeadDetailV2Client";
+import { LegacyWorkersBeacon } from "@/components/app/lead-detail-v2/LegacyWorkersBeacon";
 import { requireUser } from "@/lib/auth";
 import { isLeadDetailV2Enabled } from "@/lib/feature-flags";
 import { loadLeadDetailDictionary } from "@/i18n";
@@ -50,8 +51,22 @@ export default async function LeadDetailPage({
     cookieStore,
   );
 
+  // Phase 6: emit a deprecation beacon whenever the page is hit
+  // with `?tab=workers`. The legacy 5-tab page (rendered when v2 is
+  // off OR the user explicitly requested `?v=1`) consumes the param
+  // and renders the workers tab as before — but we want to know how
+  // long that legacy traffic persists before we can delete the alias.
+  // The beacon fires once per mount via PostHog client-side so it
+  // only counts real user navigations, not server prefetch.
+  const legacyWorkersLink = sp.tab === "workers";
+
   if (!v2Enabled) {
-    return <LegacyLeadDetailClient id={id} />;
+    return (
+      <>
+        {legacyWorkersLink ? <LegacyWorkersBeacon leadId={id} /> : null}
+        <LegacyLeadDetailClient id={id} />
+      </>
+    );
   }
 
   // Phase 0 i18n: pick the workspace's preferred locale once it lands
@@ -60,6 +75,8 @@ export default async function LeadDetailPage({
   const dict = await loadLeadDetailDictionary(DEFAULT_LOCALE);
   const v2 = dict.common.leadDetailV2;
   return (
+    <>
+      {legacyWorkersLink ? <LegacyWorkersBeacon leadId={id} /> : null}
     <LeadDetailV2Client
       leadId={id}
       workspaceId={session.workspaceId}
@@ -99,6 +116,7 @@ export default async function LeadDetailPage({
           whatsapp: v2.nextGesture.whatsapp,
           schedule: v2.nextGesture.schedule,
           snooze: v2.nextGesture.snooze,
+          snoozeMenu: v2.nextGesture.snoozeMenu,
         },
         preliminaryBanner: { message: v2.preliminaryBanner.message },
         updatedToast: { message: v2.updatedToast.message },
@@ -130,7 +148,6 @@ export default async function LeadDetailPage({
         discovery: {
           loading: v2.discovery.loading,
           empty: v2.discovery.empty,
-          voiceNoteFab: v2.discovery.voiceNoteFab,
           spin: {
             columns: v2.discovery.spin.columns,
             emptyColumn: v2.discovery.spin.emptyColumn,
@@ -156,8 +173,20 @@ export default async function LeadDetailPage({
           objectionsHeading: v2.history.objectionsHeading,
           activityKindLabels: v2.history.activityKindLabels,
           objections: v2.objections,
+          closestWin: {
+            prefix: v2.closestWin.prefix,
+            triggerSuffix: v2.closestWin.triggerSuffix,
+            apply: v2.closestWin.apply,
+            detailsTemplate: v2.closestWin.detailsTemplate,
+          },
         },
+        account: v2.account,
+        queueStrip: v2.queueStrip,
+        disposition: v2.disposition,
+        voiceNoteFab: v2.discovery.voiceNoteFab,
+        mobileStickyCTA: v2.mobileStickyCTA,
       }}
     />
+    </>
   );
 }

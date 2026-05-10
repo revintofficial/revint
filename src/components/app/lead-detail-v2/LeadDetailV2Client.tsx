@@ -19,18 +19,25 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
 
+import { AccountBlock, type AccountBlockCopy } from "./AccountBlock";
 import { Block, type BlockState } from "./Block";
 import { CollapsedStub } from "./CollapsedStub";
+import { DispositionStrip, type DispositionStripCopy } from "./DispositionStrip";
 import { type EvidenceChipCopy } from "./EvidenceChip";
 import { HeaderBar, type HeaderBarCopy } from "./HeaderBar";
+import { MobileStickyCTA, type MobileStickyCTACopy } from "./MobileStickyCTA";
 import { NextGestureBlock, type NextGestureBlockCopy } from "./NextGestureBlock";
 import { type PipelineStageChipCopy } from "./PipelineStageChip";
 import { PowerToolsLink } from "./PowerToolsLink";
 import { PreliminaryBanner } from "./PreliminaryBanner";
+import { QueueStrip, type QueueStripCopy } from "./QueueStrip";
+import { RecentDialProvider } from "./RecentDialContext";
 import { StickyShell } from "./StickyShell";
 import { UpdatedToast } from "./UpdatedToast";
+import { VoiceNoteFAB, type VoiceNoteFABCopy } from "./VoiceNoteFAB";
 import { WhyNowBlock, type WhyNowBlockCopy } from "./WhyNowBlock";
 import {
   QualificationBlock,
@@ -56,6 +63,7 @@ import {
   type LeadDetailV2Stage,
 } from "@/lib/lead-detail/use-pipeline-stage";
 import { useDecisionSurface } from "@/lib/lead-detail/use-decision-surface";
+import { useLeadQueue } from "@/lib/lead-detail/use-lead-queue";
 
 export interface LeadDetailV2Copy {
   placeholderTitle: string;
@@ -86,6 +94,11 @@ export interface LeadDetailV2Copy {
   discovery: DiscoveryBlockCopy;
   who: WhoBlockCopy;
   history: HistoryBlockCopy;
+  account: AccountBlockCopy;
+  queueStrip: QueueStripCopy;
+  disposition: DispositionStripCopy;
+  voiceNoteFab: VoiceNoteFABCopy;
+  mobileStickyCTA: MobileStickyCTACopy;
 }
 
 export interface LeadDetailV2ClientProps {
@@ -108,7 +121,11 @@ function safeCapture(event: string, props: Record<string, unknown>): void {
   }
 }
 
-function applyHashAction(action: LegacyHashAction): boolean {
+function applyHashAction(
+  action: LegacyHashAction,
+  leadId: string,
+  navigate: (href: string) => void,
+): boolean {
   if (action.kind === "noop") return false;
   if (action.kind === "scroll") {
     const el =
@@ -120,10 +137,14 @@ function applyHashAction(action: LegacyHashAction): boolean {
     return true;
   }
   if (action.kind === "navigate") {
-    if (typeof window !== "undefined") {
-      window.location.assign(action.target);
-      return true;
-    }
+    // Phase 6: legacy workers hashes resolve to relative routes
+    // (e.g. "/workers"). Compose with the lead URL via the
+    // App Router so we keep client navigation (no full reload).
+    const href = action.target.startsWith("http")
+      ? action.target
+      : `/app/leads/${leadId}${action.target}`;
+    navigate(href);
+    return true;
   }
   return false;
 }
@@ -138,6 +159,7 @@ export function LeadDetailV2Client({
   workspaceId,
   copy,
 }: LeadDetailV2ClientProps) {
+  const router = useRouter();
   const viewedRef = useRef(false);
   const consumedHashRef = useRef<string | null>(null);
   const preliminarySeenRef = useRef(false);
@@ -154,12 +176,17 @@ export function LeadDetailV2Client({
     dealQualification,
     latestDiscovery,
     recentObjections,
+    accountSummary,
     activities,
     planGate,
+    closestWin,
+    queuePosition,
+    recentDialAt,
     preliminaryShippable,
     finalLatencyMs,
     loading,
   } = surface;
+  const queue = useLeadQueue(3);
 
   const [stageOverride, setStageOverride] = useState<LeadDetailV2Stage | null>(
     null,
@@ -224,7 +251,7 @@ export function LeadDetailV2Client({
     if (action.kind === "noop") return;
 
     const raf = window.requestAnimationFrame(() => {
-      const acted = applyHashAction(action);
+      const acted = applyHashAction(action, leadId, (href) => router.replace(href));
       if (!acted) return;
       consumedHashRef.current = hash;
       safeCapture("lead_detail.legacy_hash_consumed", {
@@ -232,10 +259,20 @@ export function LeadDetailV2Client({
         workspaceId,
         hash,
       });
+      // Phase 6: workers hashes also fire the dedicated
+      // deprecation beacon so dashboards can isolate the
+      // workers-link traffic from the broader hash-consumed
+      // signal during the deprecation window.
+      if (action.kind === "navigate" && action.target === "/workers") {
+        safeCapture("lead_detail.legacy_workers_link_followed", {
+          leadId,
+          workspaceId,
+        });
+      }
     });
 
     return () => window.cancelAnimationFrame(raf);
-  }, [leadId, workspaceId, leadCore?.id]);
+  }, [leadId, workspaceId, leadCore?.id, router]);
 
   const stubLabels: Record<
     Exclude<LeadDetailV2BlockKey, "WHY_NOW" | "NEXT_GESTURE">,
@@ -308,7 +345,33 @@ export function LeadDetailV2Client({
     expanded.ACCOUNT === true,
   );
 
+  const queueStripNode = (
+    <QueueStrip
+      items={queue.items}
+      totalToday={
+        queuePosition?.totalToday ?? queue.totalToday
+      }
+      doneToday={queue.doneToday}
+      locked={queue.locked || (planGate?.plan ?? "FREE") === "FREE"}
+      currentLeadId={leadId}
+      copy={copy.queueStrip}
+      onSnooze={() => {
+        const trig =
+          typeof document !== "undefined"
+            ? (document.querySelector(
+                '[data-testid="snooze-menu-trigger"]',
+              ) as HTMLElement | null)
+            : null;
+        trig?.click();
+      }}
+      onDone={() => queue.mutate()}
+    />
+  );
+
   return (
+    <RecentDialProvider
+      serverRecentDialFor={{ leadId, iso: recentDialAt }}
+    >
     <StickyShell
       header={
         <HeaderBar
@@ -331,6 +394,7 @@ export function LeadDetailV2Client({
           copy={{ ...copy.header, stages: copy.stages }}
         />
       }
+      queueStrip={queueStripNode}
     >
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-3 py-4 sm:gap-4 sm:px-6 sm:py-6">
         <div className="flex items-center justify-end">
@@ -398,6 +462,7 @@ export function LeadDetailV2Client({
             phone={phone}
             email={email}
             copy={copy.nextGesture}
+            onSnoozed={() => queue.mutate()}
           />
         </Block>
 
@@ -453,7 +518,6 @@ export function LeadDetailV2Client({
             copy={{
               loading: copy.discovery.loading,
               empty: copy.discovery.empty,
-              voiceNoteFab: copy.discovery.voiceNoteFab,
               spin: { ...copy.discovery.spin, evidence: copy.evidence },
               locked: copy.discovery.locked,
             }}
@@ -515,6 +579,7 @@ export function LeadDetailV2Client({
         >
           <HistoryBlock
             loading={loading && activities.length === 0}
+            leadId={leadId}
             activities={activities.map((a) => ({
               id: a.id,
               kind: a.kind,
@@ -522,6 +587,7 @@ export function LeadDetailV2Client({
               createdAt: a.createdAt,
             }))}
             objections={recentObjections}
+            closestWin={closestWin}
             copy={{
               loading: copy.history.loading,
               empty: copy.history.empty,
@@ -529,6 +595,7 @@ export function LeadDetailV2Client({
               objectionsHeading: copy.history.objectionsHeading,
               activityKindLabels: copy.history.activityKindLabels,
               objections: copy.history.objections,
+              closestWin: copy.history.closestWin,
             }}
           />
         </Block>
@@ -540,14 +607,27 @@ export function LeadDetailV2Client({
           stub={
             <CollapsedStub
               title={stubLabels.ACCOUNT.title}
-              preview={stubLabels.ACCOUNT.preview}
+              preview={
+                accountSummary
+                  ? accountSummary.locationsCount != null
+                    ? `${accountSummary.name} · ${accountSummary.locationsCount}`
+                    : accountSummary.name
+                  : stubLabels.ACCOUNT.preview
+              }
             />
           }
           onExpand={() => expand("ACCOUNT")}
         >
-          <p className="text-[13px]" style={{ color: "var(--leadac-text-3)" }}>
-            {copy.blocks.placeholderBody}
-          </p>
+          <AccountBlock
+            leadId={leadId}
+            workspaceId={workspaceId}
+            expanded={accountState === "expanded"}
+            accountSummary={accountSummary}
+            accountId={leadCore?.accountId ?? null}
+            plan={planGate?.plan ?? "FREE"}
+            onTelemetry={safeCapture}
+            copy={copy.account}
+          />
         </Block>
       </div>
 
@@ -555,6 +635,38 @@ export function LeadDetailV2Client({
         triggerId={nba?.final?.id ?? null}
         template={copy.updatedToast.message}
       />
+      <DispositionStrip
+        leadId={leadId}
+        copy={copy.disposition}
+        onLogged={() => queue.mutate()}
+      />
+
+      {/*
+       * Phase 5: phone-only sticky action bar (Dial / Voice / More).
+       * Reserves 64px above the queue strip so neither bar reflows
+       * when it appears (CLS = 0).
+       */}
+      <MobileStickyCTA
+        phone={phone}
+        email={email}
+        copy={copy.mobileStickyCTA}
+        onVoiceNote={() => {
+          const fab =
+            typeof document !== "undefined"
+              ? (document.querySelector(
+                  '[data-testid="voice-note-fab-mobile"]',
+                ) as HTMLButtonElement | null)
+              : null;
+          fab?.focus();
+        }}
+      />
+
+      {/*
+       * Phase 5: global mobile-only voice-note FAB. Tap-and-hold to
+       * record, release to upload. Renders only on phone (sm:hidden).
+       */}
+      <VoiceNoteFAB leadId={leadId} copy={copy.voiceNoteFab} />
     </StickyShell>
+    </RecentDialProvider>
   );
 }

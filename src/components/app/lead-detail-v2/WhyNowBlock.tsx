@@ -16,11 +16,11 @@ import { type ReactNode, useMemo } from "react";
 import { Clock } from "lucide-react";
 
 import {
-  EvidenceChip,
   buildTriggerEvidenceChip,
   type EvidenceChipCopy,
   type EvidenceChipType,
 } from "./EvidenceChip";
+import { ClaimWithEvidence } from "./ClaimWithEvidence";
 import type {
   LeadTriggerDto,
   LeadNextActionDto,
@@ -146,33 +146,29 @@ export function WhyNowBlock({
           <span>{urgency}</span>
         </div>
       ) : null}
-      <p
-        className="text-[14px] leading-snug"
-        style={{
-          color: isStale ? "var(--leadac-text-3)" : "var(--leadac-text-1)",
-        }}
-      >
-        {headline.text}
-      </p>
-      {chips.length > 0 ? (
-        <div
-          className="flex flex-wrap gap-1.5"
-          aria-label="Evidence"
-          data-testid="why-now-evidence"
-        >
-          {chips.map((chip) => (
-            <EvidenceChip
-              key={chip.key}
-              type={chip.type}
-              label={chip.label}
-              sourceQuote={chip.sourceQuote}
-              confidence={chip.confidence}
-              href={chip.href}
-              copy={copy.evidence}
-            />
-          ))}
-        </div>
-      ) : null}
+      {/*
+       * Phase 7: every claim renders through `<ClaimWithEvidence>`
+       * so the `claim · chip · chip` pattern is enforced from one
+       * surface. The legacy "evidence row under the headline"
+       * shape becomes a single component call.
+       */}
+      <ClaimWithEvidence
+        claim={
+          <span
+            className="text-[14px] leading-snug"
+            style={{
+              color: isStale ? "var(--leadac-text-3)" : "var(--leadac-text-1)",
+            }}
+            data-testid="why-now-headline"
+          >
+            {headline.text}
+          </span>
+        }
+        evidence={chips}
+        copy={copy.evidence}
+        density="stacked"
+        testid="why-now-evidence"
+      />
     </div>
   );
 }

@@ -43,7 +43,11 @@ interface Lead {
   websiteUrl: string | null;
   primaryType: string | null;
   subNicheSlug: string | null;
+  nicheSlug: string | null;
   accountId: string | null;
+  assignedToUserId: string | null;
+  nextActionDueAt: Date | null;
+  salesConfidence: number | null;
   lastContactedAt: Date | null;
   icpFitScore: number | null;
   priceLevel: number | null;
@@ -89,7 +93,11 @@ const baseLead = (id: string, workspaceId: string, overrides: Partial<Lead> = {}
   websiteUrl: null,
   primaryType: null,
   subNicheSlug: null,
+  nicheSlug: null,
   accountId: null,
+  assignedToUserId: null,
+  nextActionDueAt: null,
+  salesConfidence: null,
   lastContactedAt: null,
   icpFitScore: 50,
   priceLevel: 3,
@@ -118,6 +126,7 @@ vi.mock("@/lib/prisma", () => ({
           leads.find((l) => l.id === id && l.workspaceId === workspaceId) ?? null
         );
       }),
+      count: vi.fn(async () => 0),
     },
     leadNextAction: {
       findFirst: vi.fn(async () => null),
@@ -154,6 +163,10 @@ vi.mock("@/lib/prisma", () => ({
       findFirst: vi.fn(async () => null),
     },
     leadActivity: {
+      findMany: vi.fn(async () => []),
+      findFirst: vi.fn(async () => null),
+    },
+    insightPerformance: {
       findMany: vi.fn(async () => []),
     },
     watchlistItem: {

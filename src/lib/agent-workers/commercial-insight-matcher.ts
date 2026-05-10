@@ -29,6 +29,7 @@ import type {
   AgentWorkerRun,
   MemoryWrite,
 } from "./types";
+import { REASONING_SUMMARY_REF_TYPES } from "./reasoning-ref-types";
 
 const TOP_K = 3;
 
@@ -206,7 +207,9 @@ export function memoryWrites(output: unknown, ctx: AgentWorkerContext): MemoryWr
       kind: "REASONING_SUMMARY",
       text: `Top commercial insight match: "${top.reframe.slice(0, 200)}".`,
       leadId: ctx.leadId,
-      refType: "COMMERCIAL_INSIGHT_MATCHER",
+      // Phase 0 hot-fix — see `reasoning-ref-types.ts`. Was
+      // SCREAMING_SNAKE_CASE; reader expects PascalCase.
+      refType: REASONING_SUMMARY_REF_TYPES.CommercialInsightMatcher,
       refId: ctx.runId,
       metadata: { topPickId: o.topPickId, candidates: o.picks.map((p) => p.id) },
       skipEmbed: true,

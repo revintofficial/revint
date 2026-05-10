@@ -15,6 +15,7 @@ export default defineConfig({
       "**/.next/**",
       "src/__tests__/**/*.integration.test.ts",
     ],
+
   },
   resolve: {
     alias: {

@@ -1,7 +1,29 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gh repo *)"
+      "Bash(gh repo *)",
+      "Bash(npm view *)",
+      "Bash(npx --yes @thedotmack/claude-mem get_observations --ids 652)",
+      "Read(//c/Users/meert/.claude/**)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('mcpServers', {}\\), indent=2\\)\\)\")",
+      "Bash(ls \"C:\\\\Users\\\\meert\\\\.claude\\\\\" 2>/dev/null)",
+      "Read(//c/Users/meert/.claude\" 2>/dev/**)",
+      "PowerShell(node \"C:\\\\Users\\\\meert\\\\.claude\\\\plugins\\\\marketplaces\\\\thedotmack\\\\plugin\\\\scripts\\\\worker-cli.js\" --help 2>&1)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const pkg=require\\('./node_modules/html-encoding-sniffer/package.json'\\); console.log\\(pkg.version\\)\")",
+      "Bash(node -e \"const pkg=require\\('c:/Users/meert/Desktop/hustle/node_modules/html-encoding-sniffer/package.json'\\); console.log\\(pkg.version\\)\")",
+      "PowerShell(if \\(-not $?\\) { \"Not found at top level\" })",
+      "PowerShell(if \\(-not $?\\) { \"Not found in jsdom either\" })",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\meert\\\\Desktop\\\\hustle\\\\node_modules\\\\jsdom\\\\node_modules\\\\html-encoding-sniffer\\\\package.json\" | ConvertFrom-Json\\).version)",
+      "PowerShell(Test-Path \"C:\\\\Users\\\\meert\\\\Desktop\\\\hustle\\\\node_modules\\\\jsdom\\\\node_modules\\\\@exodus\\\\bytes\\\\package.json\"; if \\(Test-Path \"C:\\\\Users\\\\meert\\\\Desktop\\\\hustle\\\\node_modules\\\\jsdom\\\\node_modules\\\\@exodus\\\\bytes\\\\package.json\"\\) { \\(Get-Content \"C:\\\\Users\\\\meert\\\\Desktop\\\\hustle\\\\node_modules\\\\jsdom\\\\node_modules\\\\@exodus\\\\bytes\\\\package.json\" | ConvertFrom-Json\\).version })",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\meert\\\\Desktop\\\\hustle\\\\node_modules\\\\@exodus\\\\bytes\\\\package.json\" | ConvertFrom-Json\\).version)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); console.log\\(d.slice\\(0,20\\)\\)\")",
+      "PowerShell(npm view \"@exodus/bytes\" versions --json 2>&1)",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\meert\\\\Desktop\\\\hustle\\\\node_modules\\\\jsdom\\\\package.json\" | ConvertFrom-Json\\).dependencies.'html-encoding-sniffer')",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.overrides\\)\\)\")",
+      "PowerShell(npm ls html-encoding-sniffer 2>&1)",
+      "Bash(npx vitest *)"
     ]
   }
 }

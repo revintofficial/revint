@@ -22,6 +22,7 @@ import type {
   AgentWorkerRun,
   MemoryWrite,
 } from "./types";
+import { REASONING_SUMMARY_REF_TYPES } from "./reasoning-ref-types";
 
 interface PredictedObjection {
   category: string;
@@ -191,7 +192,7 @@ export function memoryWrites(output: unknown, ctx: AgentWorkerContext): MemoryWr
         .map((p) => `${p.category}(${Math.round(p.likelihood * 100)}%)`)
         .join(", ")}`,
       leadId: ctx.leadId,
-      refType: "ObjectionPredictor",
+      refType: REASONING_SUMMARY_REF_TYPES.ObjectionPredictor,
       metadata: {
         topCategories: o.predicted.map((p) => p.category),
       },

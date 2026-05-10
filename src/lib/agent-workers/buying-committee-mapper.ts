@@ -21,6 +21,7 @@ import type {
   AgentWorkerRun,
   MemoryWrite,
 } from "./types";
+import { REASONING_SUMMARY_REF_TYPES } from "./reasoning-ref-types";
 
 type StakeholderRole =
   | "DECISION_MAKER"
@@ -255,7 +256,7 @@ export function memoryWrites(output: unknown, ctx: AgentWorkerContext): MemoryWr
         .map((s) => `${s.fullName}(${s.role})`)
         .join(", ")}`,
       leadId: ctx.leadId,
-      refType: "BuyingCommitteeMapper",
+      refType: REASONING_SUMMARY_REF_TYPES.BuyingCommitteeMapper,
       metadata: {
         roles: o.stakeholders.map((s) => s.role),
         topInfluence: o.stakeholders[0]?.influence ?? 0,

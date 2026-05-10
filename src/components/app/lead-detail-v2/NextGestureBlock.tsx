@@ -7,12 +7,15 @@
  * (Dial / Email / WhatsApp / Schedule / Snooze), and an "open full
  * graph →" link placeholder (Phase 7 wires the route).
  *
- * Phase 1 only consumes the existing NBA response shape. Phase 2 will
- * thread through the inline evidence chip set (BANT / SPIN /
- * stakeholders) and add objection rebuttals.
+ * Phase 1 shipped the action chips. Phase 3 wires the Snooze CTA to
+ * the real `<SnoozeMenu>` component and signals the
+ * `RecentDialContext` provider when the rep taps Dial so the
+ * `<DispositionStrip>` overlay can appear within the 5-minute
+ * window.
  */
 
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useMemo, useRef } from "react";
+import Link from "next/link";
 import {
   Calendar,
   ExternalLink,
@@ -20,7 +23,6 @@ import {
   MessageCircle,
   Phone,
   Sparkles,
-  ZapOff,
 } from "lucide-react";
 
 import {
@@ -28,6 +30,8 @@ import {
   type NextActionResponse,
 } from "@/components/app/nba/NbaCard";
 import { Badge } from "@/components/ui/badge";
+import { useRecentDial } from "./RecentDialContext";
+import { SnoozeMenu, type SnoozeMenuCopy } from "./SnoozeMenu";
 
 export interface NextGestureBlockCopy {
   preliminary: string;
@@ -39,6 +43,7 @@ export interface NextGestureBlockCopy {
   whatsapp: string;
   schedule: string;
   snooze: string;
+  snoozeMenu: SnoozeMenuCopy;
 }
 
 export interface NextGestureBlockProps {
@@ -48,6 +53,8 @@ export interface NextGestureBlockProps {
   phone: string | null;
   email: string | null;
   copy: NextGestureBlockCopy;
+  /** Optional callback for the parent to invalidate the queue strip. */
+  onSnoozed?: () => void;
 }
 
 function buildTelHref(phone: string | null): string | null {
@@ -66,13 +73,17 @@ function buildWaHref(phone: string | null): string | null {
 export function NextGestureBlock({
   data,
   loading,
+  leadId,
   phone,
   email,
   copy,
+  onSnoozed,
 }: NextGestureBlockProps): ReactNode {
   const tel = useMemo(() => buildTelHref(phone), [phone]);
   const wa = useMemo(() => buildWaHref(phone), [phone]);
   const mail = email ? `mailto:${email}` : null;
+  const dialButtonRef = useRef<HTMLAnchorElement | null>(null);
+  const { markDialed } = useRecentDial();
 
   if (loading && !data) {
     return (
@@ -112,25 +123,34 @@ export function NextGestureBlock({
           <Sparkles className="mr-1 h-3 w-3" />
           {versionLabel}
         </Badge>
-        <button
-          type="button"
+        {/*
+         * Phase 7: deep-link to the dedicated reasoning power
+         * view. The route enforces multi-tenant scope and plan
+         * gating; the link itself is just an anchor so the rep can
+         * cmd-click into a new tab without breaking the SPA flow.
+         */}
+        <Link
+          href={`/app/leads/${leadId}/reasoning/${active.id}`}
           className="inline-flex items-center gap-1 text-[11px] underline"
           style={{ color: "var(--leadac-text-3)" }}
           aria-label={copy.openFullGraph}
-          onClick={() => {
-            // Phase 7 will navigate to the dedicated reasoning route.
-          }}
+          data-testid="next-gesture-open-graph"
         >
           {copy.openFullGraph}
           <ExternalLink className="h-3 w-3" aria-hidden />
-        </button>
+        </Link>
       </div>
 
       <NbaContent data={data} hideReasoningTrace autoExpandTraceOnFinal={false} />
 
       <div className="flex flex-wrap gap-1.5 pt-1">
         {tel ? (
-          <ActionChip href={tel} icon={<Phone className="h-3 w-3" />} label={copy.dial} />
+          <DialChip
+            href={tel}
+            label={copy.dial}
+            anchorRef={dialButtonRef}
+            onClick={() => markDialed(leadId)}
+          />
         ) : (
           <ActionChip disabled icon={<Phone className="h-3 w-3" />} label={copy.dial} />
         )}
@@ -158,10 +178,10 @@ export function NextGestureBlock({
           icon={<Calendar className="h-3 w-3" />}
           label={copy.schedule}
         />
-        <ActionChip
-          disabled
-          icon={<ZapOff className="h-3 w-3" />}
-          label={copy.snooze}
+        <SnoozeMenu
+          leadId={leadId}
+          copy={copy.snoozeMenu}
+          onSnoozed={() => onSnoozed?.()}
         />
       </div>
     </div>
@@ -208,6 +228,33 @@ function ActionChip({ icon, label, href, disabled, external }: ActionChipProps) 
       rel={external ? "noreferrer" : undefined}
     >
       {icon}
+      <span>{label}</span>
+    </a>
+  );
+}
+
+interface DialChipProps {
+  href: string;
+  label: string;
+  anchorRef?: React.RefObject<HTMLAnchorElement | null>;
+  onClick?: () => void;
+}
+
+function DialChip({ href, label, anchorRef, onClick }: DialChipProps) {
+  return (
+    <a
+      ref={anchorRef}
+      data-testid="next-gesture-dial"
+      href={href}
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--leadac-500)/55"
+      style={{
+        borderColor: "color-mix(in srgb, var(--leadac-500) 45%, transparent)",
+        color: "var(--leadac-text-1)",
+        background: "color-mix(in srgb, var(--leadac-500) 8%, transparent)",
+      }}
+    >
+      <Phone className="h-3 w-3" aria-hidden />
       <span>{label}</span>
     </a>
   );
