@@ -19,6 +19,8 @@ export async function PATCH(
       pipelineNotes,
       pipelineStage,
       stageOrder,
+      dealStage,
+      dealStageOrder,
     } = body;
 
     const validOffers = ["STARTER", "GROWTH", "SALES"];
@@ -48,6 +50,28 @@ export async function PATCH(
         ? Math.trunc(stageOrder)
         : undefined;
 
+    const validDealStages = [
+      "PROSPECTING",
+      "PREPARATION",
+      "APPROACH",
+      "DISCOVERY",
+      "PRESENTATION",
+      "OBJECTION_HANDLING",
+      "NEGOTIATION",
+      "CLOSING",
+      "WON",
+      "LOST",
+      "FOLLOWUP",
+    ];
+    const dealStageValue =
+      typeof dealStage === "string" && validDealStages.includes(dealStage)
+        ? dealStage
+        : undefined;
+    const dealStageOrderValue =
+      typeof dealStageOrder === "number" && Number.isFinite(dealStageOrder)
+        ? Math.trunc(dealStageOrder)
+        : undefined;
+
     const existing = await prisma.watchlistItem.findFirst({
       where: { id, lead: { workspaceId } },
     });
@@ -67,6 +91,23 @@ export async function PATCH(
           pipelineStage: stageValue as "NEW" | "REACHED_OUT" | "IN_TALKS" | "WON" | "LOST",
         }),
         ...(orderValue !== undefined && { stageOrder: orderValue }),
+        ...(dealStageValue !== undefined && {
+          dealStage: dealStageValue as
+            | "PROSPECTING"
+            | "PREPARATION"
+            | "APPROACH"
+            | "DISCOVERY"
+            | "PRESENTATION"
+            | "OBJECTION_HANDLING"
+            | "NEGOTIATION"
+            | "CLOSING"
+            | "WON"
+            | "LOST"
+            | "FOLLOWUP",
+        }),
+        ...(dealStageOrderValue !== undefined && {
+          dealStageOrder: dealStageOrderValue,
+        }),
       },
       include: { lead: true },
     });

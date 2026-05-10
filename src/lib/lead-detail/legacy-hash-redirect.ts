@@ -1,0 +1,57 @@
+/**
+ * Legacy-hash → v2 mapping table — Phase 0 of Lead Detail v2.
+ *
+ * The old 5-tab page used hash links (`#overview`, `#workers`,
+ * `#anchor-workers-top`, `#reviews`, `#website`, `#outreach`,
+ * `#anchor-sales-opportunity`) for deep-links from emails, Slack
+ * threads and Zapier flows. v2 has no tabs — this pure module
+ * answers "what should the v2 page do when it boots with one of
+ * those hashes in the URL?"
+ *
+ * Phase 0 returns a `scroll` target id (or `noop`). Phase 6 will
+ * extend the table so `#workers` becomes `navigate` to the
+ * dedicated `/app/leads/[id]/workers` route. Telemetry for
+ * `lead_detail.legacy_hash_consumed` lives in the consuming
+ * effect, not in this pure module — we want the module to stay
+ * importable from server-side test harnesses.
+ *
+ * Mapping (from PLAN §3.2):
+ *
+ *   #overview                            noop (scroll top)
+ *   #outreach                            scroll → next-gesture-block
+ *   #anchor-sales-opportunity            scroll → next-gesture-block
+ *   #workers                             scroll → power-tools-link    (Phase 6: navigate)
+ *   #anchor-workers-top                  scroll → power-tools-link    (Phase 6: navigate)
+ *   #reviews                             scroll → history-block
+ *   #website                             scroll → why-now-block
+ *
+ * Anything else → noop.
+ */
+
+export type LegacyHashAction =
+  | { kind: "scroll"; target: string }
+  | { kind: "navigate"; target: string }
+  | { kind: "noop"; target?: undefined };
+
+const TABLE: Readonly<Record<string, LegacyHashAction>> = {
+  overview: { kind: "noop" },
+  outreach: { kind: "scroll", target: "next-gesture-block" },
+  "anchor-sales-opportunity": { kind: "scroll", target: "next-gesture-block" },
+  workers: { kind: "scroll", target: "power-tools-link" },
+  "anchor-workers-top": { kind: "scroll", target: "power-tools-link" },
+  reviews: { kind: "scroll", target: "history-block" },
+  website: { kind: "scroll", target: "why-now-block" },
+};
+
+function normalize(hash: string): string {
+  return hash.replace(/^#/, "").trim().toLowerCase();
+}
+
+export function getRedirectTarget(hash: string | null | undefined): LegacyHashAction {
+  if (!hash) return { kind: "noop" };
+  const key = normalize(hash);
+  if (!key) return { kind: "noop" };
+  return TABLE[key] ?? { kind: "noop" };
+}
+
+export const LEGACY_HASHES = Object.freeze(Object.keys(TABLE));
