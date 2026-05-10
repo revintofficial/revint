@@ -84,10 +84,10 @@ enum PipelinePreset {
 }
 
 enum WorkspaceNiche {
-  WEB_AGENCY      // default — generic web/marketing agency
+  WEB_AGENCY // default — generic web/marketing agency
   RESTAURANT_TECH // QR menu / digital ordering (FineDine, MenuTiger, etc.)
-  DENTAL          // reserved
-  REAL_ESTATE     // reserved
+  DENTAL // reserved
+  REAL_ESTATE // reserved
 }
 
 // Source of a lead's `subNicheSlug` value. AUTO means the
@@ -241,6 +241,33 @@ enum AgentWorkerKind {
   APIFY_COMPETITOR_ADS
   APIFY_LINKEDIN_COMPANY
   APIFY_REDDIT_MENTIONS
+  // -------- SDR Brain v2 (Sales Cognition Engine) --------
+  // T1 deterministic enrichers — fan out from existing audit/review/classifier
+  // outputs and write Lead-scoped facts (no Gemini call by default).
+  ICP_SCORER
+  STAKEHOLDER_DISCOVERER
+  ACCOUNT_TIER_RANKER
+  // T1 BANT inferrer also persists a preliminary LeadNextAction so the UI
+  // can render an "NBA card" within ~3-5s of lead_created emit, before the
+  // full T3 SDR_BRAIN run finishes ~15-25s later.
+  BANT_INFERRER
+  // T2 reasoners — light Gemini calls + deterministic rules. Output is the
+  // input substrate for T3 SDR_BRAIN's arbitration.
+  TRIGGER_DETECTOR
+  COMMERCIAL_INSIGHT_MATCHER
+  WHY_NOW_SYNTHESIZER
+  BUYING_COMMITTEE_MAPPER
+  OBJECTION_PREDICTOR
+  // T5 event-driven extractors (voice notes / pipeline stage changes).
+  MEDDPICC_EXTRACTOR
+  SPIN_EXTRACTOR
+  // Closed-loop attribution. Walks active LeadNextAction +
+  // InsightApplication rows on terminal events (reply, disposition, stage
+  // change to WON/LOST) and writes outcomes back, then bumps the
+  // InsightPerformance aggregate counters that COMMERCIAL_INSIGHT_MATCHER
+  // uses for win-rate-aware ranking. Also adjusts LeadTrigger.confidence
+  // (false-positive learning).
+  OUTCOME_ATTRIBUTOR
 }
 
 // AI Core - semantic memory kind taxonomy. Every SemanticMemory row
@@ -265,6 +292,30 @@ enum MemoryKind {
   COMPETITOR_AD
   HIRING_SIGNAL
   REDDIT_MENTION
+  // SDR Brain v2 — substrate for sales cognition.
+  // TRIGGER_EVIDENCE: short snippets backing a LeadTrigger detection
+  //   (e.g. the Indeed posting URL+title for a HIRING_MARKETING trigger).
+  // NBA_DECISION:     compact summary of an upserted LeadNextAction so
+  //   future briefs / copilot can recall "we recommended CALL_AT_WINDOW
+  //   yesterday because X".
+  // NBA_OUTCOME:      written by OUTCOME_ATTRIBUTOR on terminal events
+  //   so the system learns which decisions produced which outcomes.
+  // MEDDPICC_FACT:    one row per DealQualificationFact write so
+  //   semantic recall can surface "rep mentioned the budget is $40k" in
+  //   a follow-up call.
+  // SPIN_ITEM:        per DiscoveryItem.
+  // INSIGHT_APPLICATION: chosen reframe + framework so the win-rate
+  //   learning loop can recall context.
+  // REASONING_SUMMARY: T2 reasoner summaries (≤200 tokens each) consumed
+  //   by SDR_BRAIN. Keeps the T3 prompt token budget bounded and lets us
+  //   stream T2 cards into the UI without re-fetching.
+  TRIGGER_EVIDENCE
+  NBA_DECISION
+  NBA_OUTCOME
+  MEDDPICC_FACT
+  SPIN_ITEM
+  INSIGHT_APPLICATION
+  REASONING_SUMMARY
 }
 
 enum PlannerStatus {
@@ -342,16 +393,16 @@ model Workspace {
   // prompt (offer ↔ pain matching) and the website-plan prompt (mockup CTA + hero).
   // Without them every email and mockup is generic; with them they are tailored
   // to what THIS workspace actually sells. See plan.md §4 P0.2.
-  offerName        String? @map("offer_name")
-  valueProposition String? @map("value_proposition") @db.Text
-  socialProof      String? @map("social_proof") @db.Text
-  offerHook        String? @map("offer_hook") @db.Text
-  objective        String? @map("objective")
-  tone             String? @map("tone")
-  length           String? @map("length")
-  language         String  @default("en") @map("language")
-  senderName       String? @map("sender_name")
-  conversionLink   String? @map("conversion_link")
+  offerName        String?        @map("offer_name")
+  valueProposition String?        @map("value_proposition") @db.Text
+  socialProof      String?        @map("social_proof") @db.Text
+  offerHook        String?        @map("offer_hook") @db.Text
+  objective        String?        @map("objective")
+  tone             String?        @map("tone")
+  length           String?        @map("length")
+  language         String         @default("en") @map("language")
+  senderName       String?        @map("sender_name")
+  conversionLink   String?        @map("conversion_link")
   niche            WorkspaceNiche @default(WEB_AGENCY) @map("niche")
 
   // M12 - per-workspace HMAC secret for the telephony webhook.
@@ -383,21 +434,25 @@ model Workspace {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  owner           User                   @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members         WorkspaceMember[]
-  leads           Lead[]
-  todos           TeamTodo[]
-  emailAccounts   EmailAccount[]
-  copilotMessages CopilotMessage[]
-  agentRuns       AgentRun[]
-  websiteMockups  WebsiteMockup[]
-  semanticMemory  SemanticMemory[]
-  plannerSessions PlannerSession[]
-  servicePackages ServicePackage[]
-  leadPipeline    WorkspaceLeadPipeline?
-  leadSegments    LeadSegment[]
-  sequences       Sequence[]
-  accounts        Account[]
+  owner                User                   @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members              WorkspaceMember[]
+  leads                Lead[]
+  todos                TeamTodo[]
+  emailAccounts        EmailAccount[]
+  copilotMessages      CopilotMessage[]
+  agentRuns            AgentRun[]
+  websiteMockups       WebsiteMockup[]
+  semanticMemory       SemanticMemory[]
+  plannerSessions      PlannerSession[]
+  servicePackages      ServicePackage[]
+  leadPipeline         WorkspaceLeadPipeline?
+  leadSegments         LeadSegment[]
+  sequences            Sequence[]
+  accounts             Account[]
+  // SDR Brain v2 back-relations.
+  idealCustomerProfile IdealCustomerProfile?
+  commercialInsights   CommercialInsight[]
+  insightPerformance   InsightPerformance[]
 
   @@map("workspaces")
 }
@@ -441,20 +496,20 @@ model WorkspaceMember {
 }
 
 model Lead {
-  id                   String               @id @default(cuid())
-  workspaceId          String               @map("workspace_id")
-  placeId              String               @map("place_id")
-  businessName         String               @map("business_name")
-  formattedAddress     String               @map("formatted_address")
-  borough              String?
-  phone                String?
-  websiteUrl           String?              @map("website_url")
-  hasWebsite           Boolean              @default(false) @map("has_website")
-  googleMapsUri        String?              @map("google_maps_uri")
-  rating               Float?
-  reviewCount          Int?                 @map("review_count")
-  businessStatus       String?              @map("business_status")
-  primaryType          String?              @map("primary_type")
+  id                    String               @id @default(cuid())
+  workspaceId           String               @map("workspace_id")
+  placeId               String               @map("place_id")
+  businessName          String               @map("business_name")
+  formattedAddress      String               @map("formatted_address")
+  borough               String?
+  phone                 String?
+  websiteUrl            String?              @map("website_url")
+  hasWebsite            Boolean              @default(false) @map("has_website")
+  googleMapsUri         String?              @map("google_maps_uri")
+  rating                Float?
+  reviewCount           Int?                 @map("review_count")
+  businessStatus        String?              @map("business_status")
+  primaryType           String?              @map("primary_type")
   // Google Places `priceLevel` (0..4 ladder, 0=free, 4=very expensive).
   // Captured from the v1 enum at discovery time and used by:
   //   - the rule-based sub-niche classifier (priceLevelRange match,
@@ -464,13 +519,13 @@ model Lead {
   //   - downstream package selector heuristics.
   // Nullable: not every Place returns a priceLevel and legacy rows
   // predate the field. Use `null` to mean "unknown", NOT 0.
-  priceLevel           Int?                 @map("price_level")
-  sourceQuery          String?              @map("source_query")
-  sourceLat            Float?               @map("source_lat")
-  sourceLng            Float?               @map("source_lng")
-  crawlStatus          CrawlStatus          @default(PENDING) @map("crawl_status")
-  analyzeStatus        AnalyzeStatus        @default(PENDING) @map("analyze_status")
-  reviewAnalysisStatus ReviewAnalysisStatus @default(PENDING) @map("review_analysis_status")
+  priceLevel            Int?                 @map("price_level")
+  sourceQuery           String?              @map("source_query")
+  sourceLat             Float?               @map("source_lat")
+  sourceLng             Float?               @map("source_lng")
+  crawlStatus           CrawlStatus          @default(PENDING) @map("crawl_status")
+  analyzeStatus         AnalyzeStatus        @default(PENDING) @map("analyze_status")
+  reviewAnalysisStatus  ReviewAnalysisStatus @default(PENDING) @map("review_analysis_status")
   // Phase 2.6 — Idempotency guard for the "Apify enrichment populated
   // a websiteUrl, re-run the auditor" trigger. Stores the URL the
   // WEBSITE_AUDITOR last successfully crawled. The Apify Gmaps Deep
@@ -495,11 +550,11 @@ model Lead {
   // enqueue time as `inputSubNicheVersion`; workers exit early when
   // the snapshot doesn't match the current version, so a stale audit
   // queued before an override never overwrites the fresh one.
-  nicheSlug          String?         @map("niche_slug")
-  subNicheSlug       String?         @map("sub_niche_slug")
-  subNicheSource     SubNicheSource? @map("sub_niche_source")
-  subNicheConfidence Float?          @map("sub_niche_confidence")
-  subNicheVersion    Int             @default(0) @map("sub_niche_version")
+  nicheSlug            String?         @map("niche_slug")
+  subNicheSlug         String?         @map("sub_niche_slug")
+  subNicheSource       SubNicheSource? @map("sub_niche_source")
+  subNicheConfidence   Float?          @map("sub_niche_confidence")
+  subNicheVersion      Int             @default(0) @map("sub_niche_version")
   // Beta finding §5: hybrid leads (e.g. a hotel-bar that's both
   // "fnb-hotel-fnb" and "fnb-bar-club") need a multi-tag surface so
   // the opener / package selector / mockup picker can match either
@@ -512,14 +567,14 @@ model Lead {
   // their evidence intact. Both default to empty so legacy rows that
   // predate this column still resolve cleanly through the existing
   // `subNicheSlug` codepath.
-  subNicheSlugs        String[] @default([]) @map("sub_niche_slugs")
-  subNicheAlternatives Json     @default("[]") @map("sub_niche_alternatives")
+  subNicheSlugs        String[]        @default([]) @map("sub_niche_slugs")
+  subNicheAlternatives Json            @default("[]") @map("sub_niche_alternatives")
   // Discovery query that surfaced this lead (e.g. "cocktail bar").
   // Used by the rule-based classifier as a strong prior — when the rep
   // searched specifically for "cocktail bar" the resulting lead is
   // almost certainly fnb-bar-club. Distinct from `sourceQuery` which is
   // the raw Google Places query string.
-  discoverySourceQuery String?       @map("discovery_source_query")
+  discoverySourceQuery String?         @map("discovery_source_query")
 
   // Lead lifecycle flags surfaced by the leads list overhaul. `archivedAt`
   // is a soft-delete sentinel (rep removed the lead from active scope —
@@ -529,10 +584,10 @@ model Lead {
   // `snoozeUntil` lets a rep hide a lead for N days; the list filter
   // hides leads where snoozeUntil > now(). `assignedToUserId` is the
   // optional owner inside multi-rep workspaces.
-  archivedAt        DateTime? @map("archived_at")
-  discardedAt       DateTime? @map("discarded_at")
-  snoozeUntil       DateTime? @map("snooze_until")
-  assignedToUserId  String?   @map("assigned_to_user_id") @db.Uuid
+  archivedAt       DateTime? @map("archived_at")
+  discardedAt      DateTime? @map("discarded_at")
+  snoozeUntil      DateTime? @map("snooze_until")
+  assignedToUserId String?   @map("assigned_to_user_id") @db.Uuid
 
   // Pipeline gate (Service Packages). Defaults to OK for backwards
   // compatibility; flipped to BLOCKED_NEEDS_PACKAGES by `emit("lead_created")`
@@ -550,10 +605,10 @@ model Lead {
   // `lastDisposition` is the outcome of the most recent CALL_LOGGED
   // activity, surfaced as a quick-glance status chip on the queue
   // row so the SDR sees "VOICEMAIL last Tue" without opening the lead.
-  lastContactedAt   DateTime?         @map("last_contacted_at")
-  nextActionDueAt   DateTime?         @map("next_action_due_at")
-  sequenceStep      Int               @default(0) @map("sequence_step")
-  lastDisposition   CallDisposition?  @map("last_disposition")
+  lastContactedAt DateTime?        @map("last_contacted_at")
+  nextActionDueAt DateTime?        @map("next_action_due_at")
+  sequenceStep    Int              @default(0) @map("sequence_step")
+  lastDisposition CallDisposition? @map("last_disposition")
 
   // Phase 0/B5 — single rolled-up "Sales Confidence" 0-100 score.
   // Computed by LEAD_INTELLIGENCE_BRIEF as a weighted blend of the
@@ -562,12 +617,25 @@ model Lead {
   // so the leads list query can sort/filter on it without joining
   // three tables. Null means the brief hasn't run yet (or input
   // signals were insufficient).
-  salesConfidence       Int?    @map("sales_confidence")
+  salesConfidence     Int? @map("sales_confidence")
   // Bumps every time LEAD_INTELLIGENCE_BRIEF writes a new brief.
   // The lead detail page's "Re-analyze" button forces a new version;
   // older briefs are kept on AgentRun for audit but the UI shows
   // only the latest.
-  intelligenceVersion   Int     @default(0) @map("intelligence_version")
+  intelligenceVersion Int  @default(0) @map("intelligence_version")
+
+  // SDR Brain v2 — denormalized ICP fit columns. Filled by the
+  // ICP_SCORER worker on every lead_created chain run. Stored on Lead
+  // (not a separate row) because the leads list query needs to sort /
+  // filter on a single number without a join. `icpReasons` is a free-
+  // form Json array of `{ code, weight, note? }` so the UI can show
+  // "Why fit: priceLevel match (+12), no booking system (+10), 142
+  // reviews (+8)". `icpVersion` increments every time the workspace's
+  // IdealCustomerProfile row is edited so a stale ICP score doesn't
+  // mislead the rep.
+  icpFitScore Int? @map("icp_fit_score")
+  icpReasons  Json @default("[]") @map("icp_reasons")
+  icpVersion  Int  @default(0) @map("icp_version")
 
   // KVKK / GDPR consent. `dnc` (do-not-contact) is a hard outbound
   // block — send-email/whatsapp APIs refuse to send when true and
@@ -577,42 +645,49 @@ model Lead {
   // rep records explicit consent; "REFERRED" for warm intros).
   // `consentRecordedAt` timestamps the lawful basis. `optedOutAt`
   // is set when an unsubscribe / "stop calling me" reply lands.
-  dnc                  Boolean   @default(false) @map("dnc")
-  consentSource        String?   @map("consent_source")
-  consentRecordedAt    DateTime? @map("consent_recorded_at")
-  optedOutAt           DateTime? @map("opted_out_at")
+  dnc               Boolean   @default(false) @map("dnc")
+  consentSource     String?   @map("consent_source")
+  consentRecordedAt DateTime? @map("consent_recorded_at")
+  optedOutAt        DateTime? @map("opted_out_at")
 
   // IANA timezone string (e.g. "Europe/Istanbul") inferred at
   // discovery time from formattedAddress / Google Places. Powers
   // "Local time: 14:34" badge so a TR SDR doesn't dial a NYC lead
   // at 4am their time. Phase 2 enrichment.
-  timezone             String?   @map("timezone")
+  timezone String? @map("timezone")
 
   // Phase 2 — optional multi-location grouping. A lead that belongs
   // to a brand with several locations (e.g. FineDine has 5
   // restaurant Places) carries `accountId` so the leads list can
   // roll up under a single brand row. Null = standalone prospect,
   // which remains the default.
-  accountId            String?   @map("account_id")
+  accountId String? @map("account_id")
 
-  createdAt            DateTime             @default(now()) @map("created_at")
-  updatedAt            DateTime             @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  assignedTo       User?             @relation("LeadAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
-  account          Account?          @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  websiteAudit     WebsiteAudit?
-  salesOpportunity SalesOpportunity?
-  watchlistItem    WatchlistItem?
-  googleReviews    GoogleReview[]
-  mockups          Mockup[]
-  reviewAnalysis   ReviewAnalysis?
-  voiceNotes       VoiceNote[]
-  agentRuns        AgentRun[]
-  websiteMockups   WebsiteMockup[]
-  semanticMemory   SemanticMemory[]
-  plannerSessions  PlannerSession[]
-  activities       LeadActivity[]
+  workspace           Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assignedTo          User?                @relation("LeadAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  account             Account?             @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  websiteAudit        WebsiteAudit?
+  salesOpportunity    SalesOpportunity?
+  watchlistItem       WatchlistItem?
+  googleReviews       GoogleReview[]
+  mockups             Mockup[]
+  reviewAnalysis      ReviewAnalysis?
+  voiceNotes          VoiceNote[]
+  agentRuns           AgentRun[]
+  websiteMockups      WebsiteMockup[]
+  semanticMemory      SemanticMemory[]
+  plannerSessions     PlannerSession[]
+  activities          LeadActivity[]
+  // SDR Brain v2 back-relations.
+  triggers            LeadTrigger[]
+  nextActions         LeadNextAction[]
+  stakeholders        Stakeholder[]
+  objections          Objection[]
+  discoverySessions   DiscoverySession[]
+  insightApplications InsightApplication[]
 
   // placeId scoped per workspace so two workspaces can independently track the same business
   @@unique([workspaceId, placeId])
@@ -631,6 +706,8 @@ model Lead {
   @@index([workspaceId, salesConfidence])
   @@index([workspaceId, dnc])
   @@index([workspaceId, accountId])
+  // SDR Brain v2 — leads list "ICP fit" sort + filter.
+  @@index([workspaceId, icpFitScore])
   @@map("leads")
 }
 
@@ -663,8 +740,24 @@ model Account {
   primaryPhone String?   @map("primary_phone")
   notes        String?
   archivedAt   DateTime? @map("archived_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // SDR Brain v2 — Account Tiering signals. Filled by ACCOUNT_TIER_RANKER
+  // worker. `tier` drives Today's Queue ordering + the Settings copy
+  // ("Tier-1 accounts get a 24h SLA"). `strategicValue` is a 0-100 weight
+  // that combines LTV estimate + expansion potential + brand prestige.
+  // `locationsCount` rolls up Lead rows on this account so a chain of 12
+  // shops doesn't get pitched per location at the same priority as a
+  // single independent. Stored on Account (not derived) so the leads
+  // list query stays cheap.
+  tier                    AccountTier? @default(TIER_3)
+  strategicValue          Int?         @map("strategic_value")
+  ltvEstimateUsdCents     Int?         @map("ltv_estimate_usd_cents")
+  expansionPotential      Int?         @map("expansion_potential")
+  locationsCount          Int?         @map("locations_count")
+  locationsCountUpdatedAt DateTime?    @map("locations_count_updated_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   leads     Lead[]
@@ -672,6 +765,7 @@ model Account {
   @@unique([workspaceId, apexDomain])
   @@index([workspaceId, archivedAt])
   @@index([workspaceId, name])
+  @@index([workspaceId, tier])
   @@map("accounts")
 }
 
@@ -716,10 +810,10 @@ model LeadActivity {
   // constraint over a nullable column.
   externalCallId String? @map("external_call_id")
 
+  @@unique([workspaceId, leadId, kind, externalCallId])
   @@index([workspaceId, leadId, createdAt])
   @@index([workspaceId, kind, createdAt])
   @@index([workspaceId, userId, createdAt])
-  @@unique([workspaceId, leadId, kind, externalCallId])
   @@map("lead_activities")
 }
 
@@ -740,8 +834,8 @@ model LeadActivity {
 // queue — see the always-applied workspace rule about not adding
 // queues for AI/automation work.
 model Sequence {
-  id          String   @id @default(cuid())
-  workspaceId String   @map("workspace_id")
+  id          String    @id @default(cuid())
+  workspaceId String    @map("workspace_id")
   name        String
   description String?
   // ICP / niche tags — used as a hint to the rep ("this sequence is
@@ -754,7 +848,7 @@ model Sequence {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   steps     SequenceStep[]
   states    LeadSequenceState[]
 
@@ -802,31 +896,31 @@ enum SequenceState {
 }
 
 model LeadSequenceState {
-  id              String         @id @default(cuid())
-  workspaceId     String         @map("workspace_id")
-  leadId          String         @map("lead_id")
-  sequenceId      String         @map("sequence_id")
+  id               String        @id @default(cuid())
+  workspaceId      String        @map("workspace_id")
+  leadId           String        @map("lead_id")
+  sequenceId       String        @map("sequence_id")
   // Pointer to the step we're currently AT (next to fire), not the
   // last completed step. Null = enrollment finished and the lead
   // dropped off the cadence.
-  currentStepId   String?        @map("current_step_id")
-  state           SequenceState  @default(ACTIVE)
+  currentStepId    String?       @map("current_step_id")
+  state            SequenceState @default(ACTIVE)
   // Inclusive scheduling window. Tick worker picks a row when
   // `state=ACTIVE` and `nextStepAt <= now()`.
-  nextStepAt      DateTime?      @map("next_step_at")
-  pausedAt        DateTime?      @map("paused_at")
+  nextStepAt       DateTime?     @map("next_step_at")
+  pausedAt         DateTime?     @map("paused_at")
   // Why was the cadence paused? "REPLY_RECEIVED" stops outbound
   // until the rep manually resumes; "DNC" stops permanently;
   // "MANAGER_PAUSE" is a soft hand-off. Free-form for now.
-  pausedReason    String?        @map("paused_reason")
-  enrolledAt      DateTime       @default(now()) @map("enrolled_at")
+  pausedReason     String?       @map("paused_reason")
+  enrolledAt       DateTime      @default(now()) @map("enrolled_at")
   enrolledByUserId String?       @map("enrolled_by_user_id") @db.Uuid
-  completedAt     DateTime?      @map("completed_at")
+  completedAt      DateTime?     @map("completed_at")
   // Bumps every time a step fires so we can attribute LeadActivity
   // back to a specific (sequence, step, attempt) tuple.
-  stepsFired      Int            @default(0) @map("steps_fired")
-  createdAt       DateTime       @default(now()) @map("created_at")
-  updatedAt       DateTime       @updatedAt @map("updated_at")
+  stepsFired       Int           @default(0) @map("steps_fired")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
 
   sequence    Sequence      @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
   currentStep SequenceStep? @relation("CurrentStep", fields: [currentStepId], references: [id], onDelete: SetNull)
@@ -889,10 +983,10 @@ model Mockup {
 }
 
 model WebsiteAudit {
-  id                    String   @id @default(cuid())
-  leadId                String   @unique @map("lead_id")
+  id                    String    @id @default(cuid())
+  leadId                String    @unique @map("lead_id")
   url                   String
-  reachable             Boolean  @default(false)
+  reachable             Boolean   @default(false)
   // Phase 0/B1 — extra crawl signals so the UI can disambiguate
   // "we did not crawl yet" vs "the page returned 401/403 to our
   // bot but a human can open it" vs "DNS / SSL hard fail". Before
@@ -909,31 +1003,31 @@ model WebsiteAudit {
   crawlAttemptedAt      DateTime? @map("crawl_attempted_at")
   crawlError            String?   @map("crawl_error")
   httpStatus            Int?      @map("http_status")
-  loadTimeMs            Int?     @map("load_time_ms")
-  https                 Boolean  @default(false)
-  mobileFriendlyGuess   Boolean  @default(false) @map("mobile_friendly_guess")
+  loadTimeMs            Int?      @map("load_time_ms")
+  https                 Boolean   @default(false)
+  mobileFriendlyGuess   Boolean   @default(false) @map("mobile_friendly_guess")
   title                 String?
-  metaDescription       String?  @map("meta_description")
+  metaDescription       String?   @map("meta_description")
   h1                    String?
-  hasContactForm        Boolean  @default(false) @map("has_contact_form")
-  hasWhatsappLink       Boolean  @default(false) @map("has_whatsapp_link")
-  hasBookingSystem      Boolean  @default(false) @map("has_booking_system")
-  bookingProvider       String?  @map("booking_provider")
-  hasEcommerce          Boolean  @default(false) @map("has_ecommerce")
-  servicesDetected      Json     @default("[]") @map("services_detected")
-  navItems              Json     @default("[]") @map("nav_items")
-  ctaLinks              Json     @default("[]") @map("cta_links")
-  contactEmails         Json     @default("[]") @map("contact_emails")
+  hasContactForm        Boolean   @default(false) @map("has_contact_form")
+  hasWhatsappLink       Boolean   @default(false) @map("has_whatsapp_link")
+  hasBookingSystem      Boolean   @default(false) @map("has_booking_system")
+  bookingProvider       String?   @map("booking_provider")
+  hasEcommerce          Boolean   @default(false) @map("has_ecommerce")
+  servicesDetected      Json      @default("[]") @map("services_detected")
+  navItems              Json      @default("[]") @map("nav_items")
+  ctaLinks              Json      @default("[]") @map("cta_links")
+  contactEmails         Json      @default("[]") @map("contact_emails")
   // P0.4: per-email verification status. Shape: [{ email, verified, verifiedAt, status }]
   // where status is the raw provider response ("valid"/"invalid"/"catch-all"/"unknown").
   // CSV export filters by verified=true unless user opts in to raw mode.
-  contactEmailsVerified Json     @default("[]") @map("contact_emails_verified")
+  contactEmailsVerified Json      @default("[]") @map("contact_emails_verified")
   // P0.5: extended social profile scraping. Shape: { instagram, facebook, linkedin, tiktok, youtube, twitter, whatsapp }
-  socialProfiles        Json     @default("{}") @map("social_profiles")
-  brokenLinksCount      Int      @default(0) @map("broken_links_count")
-  structuredDataPresent Boolean  @default(false) @map("structured_data_present")
-  rawFeaturesJson       Json?    @map("raw_features_json")
-  createdAt             DateTime @default(now()) @map("created_at")
+  socialProfiles        Json      @default("{}") @map("social_profiles")
+  brokenLinksCount      Int       @default(0) @map("broken_links_count")
+  structuredDataPresent Boolean   @default(false) @map("structured_data_present")
+  rawFeaturesJson       Json?     @map("raw_features_json")
+  createdAt             DateTime  @default(now()) @map("created_at")
 
   lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
@@ -987,12 +1081,25 @@ model WatchlistItem {
   nextMeetingAt   DateTime?       @map("next_meeting_at")
   meetingProvider String?         @map("meeting_provider")
   meetingEventId  String?         @map("meeting_event_id")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
 
-  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  // SDR Brain v2 — 11-stage canonical deal pipeline. `pipelineStage`
+  // (5 buckets) is kept for backward compat with the existing kanban;
+  // `dealStage` is the finer-grained 11-stage canon used by MEDDPICC
+  // gating and OUTCOME_ATTRIBUTOR (only `WON` and `LOST` are terminal
+  // events that flush attribution). The kanban renders 7 visible
+  // columns; DISCOVERY/NEGOTIATION/WON/LOST/FOLLOWUP show as modal
+  // dispositions on the closing column.
+  dealStage      DealStage @default(PROSPECTING) @map("deal_stage")
+  dealStageOrder Int       @default(0) @map("deal_stage_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  lead          Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  qualification DealQualification?
 
   @@index([pipelineStage, stageOrder])
+  @@index([dealStage, dealStageOrder])
   @@map("watchlist_items")
 }
 
@@ -1156,26 +1263,26 @@ model CopilotMessage {
 // when the worker produces a shareable public link (e.g. a WebsiteMockup
 // slug becomes /m/{slug}). errorMsg captures the failure message for UI.
 model AgentRun {
-  id               String          @id @default(cuid())
-  workspaceId      String          @map("workspace_id")
-  leadId           String?         @map("lead_id")
-  userId           String?         @map("user_id") @db.Uuid
-  workerKind       AgentWorkerKind @map("worker_kind")
-  status           AgentRunStatus  @default(PENDING)
-  inputsJson       Json            @default("{}") @map("inputs_json")
-  outputJson       Json?           @map("output_json")
-  artifactUrl      String?         @map("artifact_url")
-  costTokens       Int             @default(0) @map("cost_tokens")
+  id                   String          @id @default(cuid())
+  workspaceId          String          @map("workspace_id")
+  leadId               String?         @map("lead_id")
+  userId               String?         @map("user_id") @db.Uuid
+  workerKind           AgentWorkerKind @map("worker_kind")
+  status               AgentRunStatus  @default(PENDING)
+  inputsJson           Json            @default("{}") @map("inputs_json")
+  outputJson           Json?           @map("output_json")
+  artifactUrl          String?         @map("artifact_url")
+  costTokens           Int             @default(0) @map("cost_tokens")
   // USD-denominated external cost (primarily Apify actor runs). Gemini
   // usage continues to flow through costTokens; keeping them separate
   // means the UI can split "AI model spend" from "data enrichment spend".
-  costUsdCents     Int             @default(0) @map("cost_usd_cents")
+  costUsdCents         Int             @default(0) @map("cost_usd_cents")
   // DAG coordination. When set, this run was scheduled as part of a
   // PlannerSession; parentRunId points at an upstream run whose output
   // we depended on. Both are nullable so legacy single-shot runs stay
   // working.
-  parentRunId      String?         @map("parent_run_id")
-  plannerSessionId String?         @map("planner_session_id")
+  parentRunId          String?         @map("parent_run_id")
+  plannerSessionId     String?         @map("planner_session_id")
   // Deterministic hash of (workspaceId, workerKind, leadId, inputs).
   // When two callers try to enqueue the same work concurrently the
   // second one collides on the unique index and must re-use the
@@ -1186,7 +1293,7 @@ model AgentRun {
   // prisma/migrations/add_agent_run_idempotency_key.sql so legacy
   // rows with NULL keys do not collide. Prisma cannot express the
   // WHERE clause so we run it out of band after `prisma db push`.
-  idempotencyKey   String?         @map("idempotency_key")
+  idempotencyKey       String?         @map("idempotency_key")
   // Snapshot of `Lead.subNicheVersion` at enqueue time. When the
   // worker resolves and finds the lead's current version is higher,
   // it exits with status SUCCEEDED + reason "stale-subniche-version"
@@ -1194,11 +1301,11 @@ model AgentRun {
   // was queued before a rep override / re-classification overwriting
   // the fresh result. Null for runs unrelated to a lead or for legacy
   // rows pre-dating the version stamp.
-  inputSubNicheVersion Int?         @map("input_sub_niche_version")
-  errorMsg         String?         @map("error_msg") @db.Text
-  startedAt        DateTime?       @map("started_at")
-  finishedAt       DateTime?       @map("finished_at")
-  createdAt        DateTime        @default(now()) @map("created_at")
+  inputSubNicheVersion Int?            @map("input_sub_niche_version")
+  errorMsg             String?         @map("error_msg") @db.Text
+  startedAt            DateTime?       @map("started_at")
+  finishedAt           DateTime?       @map("finished_at")
+  createdAt            DateTime        @default(now()) @map("created_at")
 
   workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   lead           Lead?           @relation(fields: [leadId], references: [id], onDelete: Cascade)
@@ -1278,9 +1385,6 @@ model SemanticMemory {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   lead      Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
-  @@index([workspaceId, kind])
-  @@index([workspaceId, kind, nicheScope])
-  @@index([leadId])
   // Composite uniqueness on (workspaceId, refType, refId, nicheScope)
   // so concurrent upserts cannot duplicate the same source object
   // within the same scope, while still permitting the asymmetric
@@ -1293,6 +1397,9 @@ model SemanticMemory {
   // cafe-bakery retrieval. Postgres treats NULL as distinct, so rows
   // without refType/refId (COPILOT_TURN) are unaffected by this key.
   @@unique([workspaceId, refType, refId, nicheScope])
+  @@index([workspaceId, kind])
+  @@index([workspaceId, kind, nicheScope])
+  @@index([leadId])
   @@map("semantic_memory")
 }
 
@@ -1435,12 +1542,12 @@ model MarketingPageView {
   id        String @id @default(cuid())
   sessionId String @map("session_id")
 
-  path      String
-  title     String?
-  referrer  String? @db.Text
-  enteredAt DateTime  @default(now()) @map("entered_at")
-  leftAt    DateTime? @map("left_at")
-  durationMs Int?     @map("duration_ms")
+  path       String
+  title      String?
+  referrer   String?   @db.Text
+  enteredAt  DateTime  @default(now()) @map("entered_at")
+  leftAt     DateTime? @map("left_at")
+  durationMs Int?      @map("duration_ms")
 
   maxScrollPct     Int   @default(0) @map("max_scroll_pct")
   // Subset of [25, 50, 75, 100] reached. Stored as int[] so we can
@@ -1464,17 +1571,548 @@ model MarketingPageView {
 //   signup      -> { method?: "email" }
 //   page_view   -> { title?, referrer? }   (denormalised; primary record on MarketingPageView)
 model MarketingEvent {
-  id          String   @id @default(cuid())
-  sessionId   String   @map("session_id")
-  pageViewId  String?  @map("page_view_id")
-  ts          DateTime @default(now())
-  type        String
-  path        String
-  properties  Json?
+  id         String   @id @default(cuid())
+  sessionId  String   @map("session_id")
+  pageViewId String?  @map("page_view_id")
+  ts         DateTime @default(now())
+  type       String
+  path       String
+  properties Json?
 
   session MarketingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, ts])
   @@index([type, ts(sort: Desc)])
   @@map("marketing_events")
+}
+
+// ============================================================================
+// SDR Reasoning Brain (v2) — Sales Cognition Engine
+// ----------------------------------------------------------------------------
+// Models the persistent state for a sales-framework-grounded reasoning
+// stack: ICP, Trigger Events, MEDDPICC (normalized per-fact for evidence
+// grounding), SPIN Discovery, Challenger Commercial Insights, Buying
+// Committee, Account Tiering, NBA (Next Best Action) with reasoning
+// graph + arbitration log, and closed-loop learning aggregates.
+//
+// Design choices captured in `.cursor/plans/sdr_brain_v1_*.plan.md` v2:
+//   - BuyingReadiness (BANT) is a pure derive — see
+//     `src/lib/buying-readiness/derive.ts`. No table; recomputed on read.
+//   - MEDDPICC is normalized into `DealQualification` (rollup) +
+//     `DealQualificationFact` (per-field, evidence-grounded) so analytics
+//     can join on `fieldPath` without parsing nested Json.
+//   - `Objection.source = REAL | PREDICTED` keeps customer-evidence
+//     objections separate from brief-output predictions.
+//   - `LeadNextAction.reasoningGraph` Json holds the inline reasoning
+//     graph (≤30 nodes typical). `ReasoningTrace` is the opt-in escape
+//     hatch for very-large or cross-decision lineage.
+//   - `InsightPerformance` aggregate is bumped by OUTCOME_ATTRIBUTOR
+//     and read by COMMERCIAL_INSIGHT_MATCHER for win-rate-aware
+//     priority decay (Wilson lower bound at the consumer site).
+// ============================================================================
+
+// Sales triggers detected on a lead (e.g. "hiring marketing manager",
+// "rating dropped 0.4★ in 90 days"). Persistent because every trigger
+// must back a downstream NBA / opener with traceable evidence; the
+// `OUTCOME_ATTRIBUTOR` worker also bumps `validatedCount` /
+// `falsePositiveCount` based on actual reply outcomes so the system
+// learns which trigger types are actionable per niche.
+enum LeadTriggerType {
+  NEW_LOCATION_OPENING
+  CHAIN_EXPANSION
+  HIRING_MARKETING
+  HIRING_OPS
+  HIRING_TECH
+  BAD_SERVICE_REVIEWS
+  RATING_DROP
+  MENU_REDESIGN_SIGNAL
+  BOOKING_PROVIDER_CHANGE
+  DELIVERY_EXPANSION
+  INTERNATIONAL_AUDIENCE_GROWTH
+  SEASONAL_TOURISM
+  COMPETITOR_PRESSURE
+  REBRANDING
+  FUNDING_RAISED
+  EXEC_CHANGE
+}
+
+// Possible Next Best Action verbs the SDR_BRAIN can recommend. Kept
+// flat (not nested per channel) so the UI can render a single dropdown
+// when a rep wants to override the LLM's pick.
+enum NextActionKind {
+  CALL_NOW
+  CALL_AT_WINDOW
+  EMAIL_FIRST
+  WHATSAPP
+  WAIT_FOR_REPLY
+  DROP_LEAD
+  RE_ENGAGE
+  BOOK_DISCOVERY
+  ENROLL_IN_CAMPAIGN
+  ESCALATE_TO_AE
+}
+
+enum Channel {
+  EMAIL
+  PHONE
+  WHATSAPP
+  LINKEDIN
+  SMS
+}
+
+// Canonical 11-stage deal pipeline. The kanban renders 7 columns
+// (PROSPECTING / PREPARATION / APPROACH / DISCOVERY+PRESENTATION /
+// OBJECTION_HANDLING+NEGOTIATION / CLOSING / WON_LOST_FOLLOWUP modal).
+// Stored on WatchlistItem so a single deal can transition through the
+// stages with a clear log.
+enum DealStage {
+  PROSPECTING
+  PREPARATION
+  APPROACH
+  DISCOVERY
+  PRESENTATION
+  OBJECTION_HANDLING
+  NEGOTIATION
+  CLOSING
+  WON
+  LOST
+  FOLLOWUP
+}
+
+// Account Tiering — TIER_1 = strategic / 24h SLA, TIER_4 = experimental.
+// Drives Today's Queue ordering and the LeadNextAction confidence floor.
+enum AccountTier {
+  TIER_1
+  TIER_2
+  TIER_3
+  TIER_4
+}
+
+// Source of an Objection row. REAL = extracted from a customer reply /
+// voice note / call log. PREDICTED = brief output snapshot generated by
+// SDR_BRAIN before any customer contact. The two are stored side-by-
+// side so a rep can see "we predicted PRICE objection; rep got TRUST
+// objection" — and OUTCOME_ATTRIBUTOR can compute the prediction
+// accuracy per category over time.
+enum ObjectionSource {
+  REAL
+  PREDICTED
+}
+
+// SPIN selling kind for a DiscoveryItem. SITUATION = current state
+// fact; PROBLEM = pain identified; IMPLICATION = downstream effect
+// (revenue / NPS / churn impact); NEED_PAYOFF = customer-articulated
+// payoff if solved. The SPIN_EXTRACTOR worker classifies every
+// transcribed sentence in a voice note into one of these; the SDR
+// dashboard renders them as 4 columns so the rep can see "we have
+// 5 SITUATIONs but no NEED_PAYOFF — this lead is not yet qualified".
+enum SpinKind {
+  SITUATION
+  PROBLEM
+  IMPLICATION
+  NEED_PAYOFF
+}
+
+// Workspace-level Ideal Customer Profile. One row per workspace;
+// edited from Settings → ICP. Read by ICP_SCORER (deterministic
+// weighted-feature scorer) on every lead_created chain run, then
+// persisted as `Lead.icpFitScore` for fast list ordering.
+//
+// Weights are a free-form Json bag because the schema needs to hold
+// niche-specific keys (e.g. `industryWeights = { "fnb-fine-dining":
+// 1.5, "fnb-bar-club": 1.0 }`). The scorer validates the shape at
+// read time.
+model IdealCustomerProfile {
+  id                     String   @id @default(cuid())
+  workspaceId            String   @unique @map("workspace_id")
+  name                   String
+  industryWeights        Json     @default("{}") @map("industry_weights")
+  subNicheWeights        Json     @default("{}") @map("sub_niche_weights")
+  priceLevelMin          Int?     @map("price_level_min")
+  priceLevelMax          Int?     @map("price_level_max")
+  minReviewCount         Int?     @map("min_review_count")
+  minRating              Float?   @map("min_rating")
+  digitalMaturityFloor   Int?     @map("digital_maturity_floor")
+  highValueSignals       String[] @default([]) @map("high_value_signals")
+  negativeSignals        String[] @default([]) @map("negative_signals")
+  locationFit            Json     @default("{}") @map("location_fit")
+  meddpiccRequiredFields String[] @default([]) @map("meddpicc_required_fields")
+  // Bumps every time the row is edited; each Lead.icpVersion stamp
+  // compares against this so a stale ICP-fit score doesn't mislead
+  // the rep after a policy change.
+  version                Int      @default(1)
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("ideal_customer_profiles")
+}
+
+// Source-grounded sales trigger detected on a lead. Persistent so the
+// reasoning graph can cite "we recommended CALL_NOW on May 12 because
+// of LeadTrigger#abc (HIRING_MARKETING) detected on May 10". Decays
+// after a niche-specific window (`decayedAt` set by a nightly cron) so
+// stale triggers don't pollute future briefs.
+//
+// `confidence` is a 0..1 Bayesian-ish posterior; OUTCOME_ATTRIBUTOR
+// nudges it ±0.05 based on whether the cited trigger preceded a
+// REPLY_POSITIVE or a REPLY_NEGATIVE. `validatedCount` and
+// `falsePositiveCount` keep the raw counters around for analytics.
+model LeadTrigger {
+  id                 String          @id @default(cuid())
+  workspaceId        String          @map("workspace_id")
+  leadId             String          @map("lead_id")
+  type               LeadTriggerType
+  severity           Int
+  confidence         Float
+  detectedAt         DateTime        @default(now()) @map("detected_at")
+  decayedAt          DateTime?       @map("decayed_at")
+  evidence           Json
+  impactPrediction   String?         @map("impact_prediction")
+  urgencyWindowDays  Int?            @map("urgency_window_days")
+  validatedCount     Int             @default(0) @map("validated_count")
+  falsePositiveCount Int             @default(0) @map("false_positive_count")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, leadId, type, detectedAt])
+  @@index([workspaceId, leadId, decayedAt])
+  @@index([workspaceId, type, detectedAt])
+  @@map("lead_triggers")
+}
+
+// Challenger-style commercial insight. Workspace-scoped (or system seed
+// when `workspaceId` is null). The COMMERCIAL_INSIGHT_MATCHER worker
+// joins these to active LeadTriggers + ICP to pick the best reframe
+// for the next opener; the priority surface is computed at read time
+// as `basePriority * winRateMultiplier` from InsightPerformance.
+model CommercialInsight {
+  id                    String            @id @default(cuid())
+  workspaceId           String?           @map("workspace_id")
+  nicheSlug             String?           @map("niche_slug")
+  industryMyth          String            @map("industry_myth") @db.Text
+  reframe               String            @db.Text
+  economicImpact        String?           @map("economic_impact") @db.Text
+  contrarianObservation String?           @map("contrarian_observation") @db.Text
+  applicableTriggers    LeadTriggerType[] @default([]) @map("applicable_triggers")
+  applicableSubNiches   String[]          @default([]) @map("applicable_sub_niches")
+  evidenceUrl           String?           @map("evidence_url")
+  basePriority          Int               @default(50) @map("base_priority")
+  createdAt             DateTime          @default(now()) @map("created_at")
+
+  workspace    Workspace?           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  applications InsightApplication[]
+  performance  InsightPerformance[]
+
+  @@index([workspaceId, nicheSlug])
+  @@map("commercial_insights")
+}
+
+// One row per insight surfaced in a real artifact (opener, NBA, brief).
+// Outcome is filled in by OUTCOME_ATTRIBUTOR on terminal events, then
+// rolled up into `InsightPerformance` for win-rate ranking.
+model InsightApplication {
+  id           String    @id @default(cuid())
+  workspaceId  String    @map("workspace_id")
+  leadId       String    @map("lead_id")
+  insightId    String    @map("insight_id")
+  surface      String // "OPENER" | "WHY_NOW" | "NBA"
+  framework    String? // "AIDA" | "PAS" | "CHALLENGER" | null
+  outcome      String? // "REPLY_POSITIVE" | "REPLY_NEGATIVE" | "IGNORED" | "MEETING_BOOKED" | "WON"
+  appliedAt    DateTime  @default(now()) @map("applied_at")
+  outcomeAt    DateTime? @map("outcome_at")
+  attributedBy String?   @map("attributed_by")
+
+  insight CommercialInsight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  lead    Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, leadId])
+  @@index([workspaceId, insightId, outcome])
+  @@map("insight_applications")
+}
+
+// Versioned Next Best Action. The SDR_BRAIN flow writes a
+// `isPreliminary = true` row at the end of T1 (~3-5s after lead_created)
+// from the BANT_INFERRER deterministic output so the UI can render an
+// NBA card immediately. T3 SDR_BRAIN then upserts the final
+// `isPreliminary = false` row and stamps `supersededAt` on the
+// preliminary one. Older versions are kept for the reasoning trail.
+//
+// `reasoningGraph` Json shape (typed in
+// `src/lib/sdr-brain/reasoning-graph.ts`):
+//   { nodes: ReasoningNode[], edges: ReasoningEdge[],
+//     contradictions: ContradictionRecord[], modelVersion, generatedAt }
+//
+// `arbitrationRecords` Json is the de-duped contradiction log produced
+// by the deterministic pre-pass + Gemini arbitration, surfaced in the
+// "Why?" expandable card on the lead detail page so a rep can see "we
+// flagged BANT timing 80 vs WHY_NOW urgency 25 and resolved by
+// preferring trigger-based timing".
+model LeadNextAction {
+  id                   String         @id @default(cuid())
+  workspaceId          String         @map("workspace_id")
+  leadId               String         @map("lead_id")
+  version              Int
+  isPreliminary        Boolean        @default(false) @map("is_preliminary")
+  actionKind           NextActionKind @map("action_kind")
+  timingWindowStart    DateTime?      @map("timing_window_start")
+  timingWindowEnd      DateTime?      @map("timing_window_end")
+  channel              Channel?
+  primaryAngleId       String?        @map("primary_angle_id")
+  triggerIds           String[]       @default([]) @map("trigger_ids")
+  openingHook          String?        @map("opening_hook") @db.Text
+  whatNotToPitch       String[]       @default([]) @map("what_not_to_pitch")
+  qualificationGap     String[]       @default([]) @map("qualification_gap")
+  predictedObjections  String[]       @default([]) @map("predicted_objections")
+  recommendedFramework String?        @map("recommended_framework")
+  confidence           Int
+  reasoning            String         @db.Text
+  reasoningGraph       Json?          @map("reasoning_graph")
+  arbitrationRecords   Json           @default("[]") @map("arbitration_records")
+  supersededAt         DateTime?      @map("superseded_at")
+  outcome              String?
+  outcomeAt            DateTime?      @map("outcome_at")
+  createdAt            DateTime       @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, leadId, supersededAt])
+  @@index([workspaceId, actionKind, timingWindowStart])
+  @@map("lead_next_actions")
+}
+
+// MEDDPICC rollup per WatchlistItem. Aggregated counters denormalized
+// from `DealQualificationFact` so a kanban tile can show "MEDDPICC 70%"
+// without a sub-query per card.
+model DealQualification {
+  watchlistItemId            String    @id @map("watchlist_item_id")
+  workspaceId                String    @map("workspace_id")
+  fillCompletePct            Int       @default(0) @map("fill_complete_pct")
+  riskScore                  Int       @default(0) @map("risk_score")
+  championStakeholderId      String?   @map("champion_stakeholder_id")
+  championStrength           Int?      @map("champion_strength")
+  economicBuyerStakeholderId String?   @map("economic_buyer_stakeholder_id")
+  economicBuyerConfidence    Float?    @map("economic_buyer_confidence")
+  urgencyLevel               Int?      @map("urgency_level")
+  lastExtractedAt            DateTime? @map("last_extracted_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+
+  watchlistItem WatchlistItem           @relation(fields: [watchlistItemId], references: [id], onDelete: Cascade)
+  facts         DealQualificationFact[]
+
+  @@index([workspaceId, fillCompletePct])
+  @@index([workspaceId, riskScore])
+  @@map("deal_qualifications")
+}
+
+// Per-field MEDDPICC fact, evidence-grounded. Each `fieldPath` is a
+// dot-separated address into the Json shape (e.g. "metric.avgOrderValue",
+// "decisionCriteria.<nanoid>.criterion", "competitor.<nanoid>.name",
+// "decisionProcess.<step>.status", "paperProcess.contractApproval").
+//
+// `supersededAt` is set when a newer fact for the same fieldPath
+// arrives — analytics queries always filter on `supersededAt IS NULL`
+// to get the current state.
+model DealQualificationFact {
+  id              String    @id @default(cuid())
+  workspaceId     String    @map("workspace_id")
+  watchlistItemId String    @map("watchlist_item_id")
+  fieldPath       String    @map("field_path")
+  value           Json
+  confidence      Float
+  evidenceSpan    Json?     @map("evidence_span")
+  sourceQuote     String?   @map("source_quote") @db.Text
+  sourceRefType   String?   @map("source_ref_type")
+  sourceRefId     String?   @map("source_ref_id")
+  extractedAt     DateTime  @default(now()) @map("extracted_at")
+  extractedBy     String    @map("extracted_by")
+  supersededAt    DateTime? @map("superseded_at")
+
+  qualification DealQualification @relation(fields: [watchlistItemId], references: [watchlistItemId], onDelete: Cascade)
+
+  @@index([workspaceId, watchlistItemId, fieldPath])
+  @@index([workspaceId, watchlistItemId, supersededAt])
+  @@map("deal_qualification_facts")
+}
+
+// SPIN Discovery session — usually a transcribed voice note or a
+// rep-typed call note. Items are SPIN-classified one row per sentence.
+model DiscoverySession {
+  id              String   @id @default(cuid())
+  workspaceId     String   @map("workspace_id")
+  leadId          String   @map("lead_id")
+  watchlistItemId String?  @map("watchlist_item_id")
+  source          String // "VOICE_NOTE" | "EMAIL_THREAD" | "MANUAL"
+  sourceRefId     String?  @map("source_ref_id")
+  notes           String?  @db.Text
+  conductedBy     String?  @map("conducted_by") @db.Uuid
+  conductedAt     DateTime @default(now()) @map("conducted_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  lead  Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  items DiscoveryItem[]
+
+  @@index([workspaceId, leadId])
+  @@map("discovery_sessions")
+}
+
+model DiscoveryItem {
+  id           String   @id @default(cuid())
+  sessionId    String   @map("session_id")
+  spinKind     SpinKind @map("spin_kind")
+  text         String   @db.Text
+  evidence     String?  @db.Text
+  evidenceSpan Json?    @map("evidence_span")
+  confidence   Float
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  session DiscoverySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, spinKind])
+  @@map("discovery_items")
+}
+
+// Buying Committee mapping. A Stakeholder is a person attached to a
+// Lead (and optionally an Account when multi-location). Filled by
+// STAKEHOLDER_DISCOVERER (company-level Apify + crawl + manual entry)
+// and refined by reps. `championLikelihood` and `isEconomicBuyer` are
+// the two MEDDPICC anchors that gate AE escalation.
+model Stakeholder {
+  id                 String    @id @default(cuid())
+  workspaceId        String    @map("workspace_id")
+  leadId             String?   @map("lead_id")
+  accountId          String?   @map("account_id")
+  name               String?
+  role               String?
+  email              String?
+  phone              String?
+  linkedinUrl        String?   @map("linkedin_url")
+  influence          Int?
+  sentiment          String?
+  championLikelihood Int?      @map("champion_likelihood")
+  isEconomicBuyer    Boolean   @default(false) @map("is_economic_buyer")
+  isBlocker          Boolean   @default(false) @map("is_blocker")
+  contacted          Boolean   @default(false)
+  lastContactedAt    DateTime? @map("last_contacted_at")
+  source             String
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  lead Lead? @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, leadId])
+  @@index([workspaceId, accountId])
+  @@index([workspaceId, isEconomicBuyer])
+  @@map("stakeholders")
+}
+
+// Sales objection — REAL when extracted from customer evidence,
+// PREDICTED when produced by SDR_BRAIN (snapshot of the brief output).
+// Predicted objections cross-link back to the LeadNextAction that
+// produced them so OUTCOME_ATTRIBUTOR can compute prediction accuracy.
+model Objection {
+  id                    String          @id @default(cuid())
+  workspaceId           String          @map("workspace_id")
+  leadId                String          @map("lead_id")
+  text                  String          @db.Text
+  category              String?
+  source                ObjectionSource @default(PREDICTED)
+  rebuttalUsed          String?         @map("rebuttal_used") @db.Text
+  resolvedAt            DateTime?       @map("resolved_at")
+  evidenceRefType       String?         @map("evidence_ref_type")
+  evidenceRefId         String?         @map("evidence_ref_id")
+  predictedFromActionId String?         @map("predicted_from_action_id")
+  createdAt             DateTime        @default(now()) @map("created_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, leadId, source])
+  @@index([workspaceId, leadId, resolvedAt])
+  @@index([workspaceId, category])
+  @@map("objections")
+}
+
+// Per-step orchestrator telemetry. Written from the orchestrator after
+// each AgentRun completes so the admin dashboard can show "p95
+// SDR_BRAIN duration last 7 days = 24s, slaBreach=2.1%". Distinct from
+// AgentRun (which carries the result) — this row carries the
+// observability metadata even when the run is FAILED or SUCCEEDED_NO_MEMORY.
+model ChainTelemetry {
+  id               String   @id @default(cuid())
+  workspaceId      String   @map("workspace_id")
+  plannerSessionId String   @map("planner_session_id")
+  agentRunId       String?  @map("agent_run_id")
+  workerKind       String?  @map("worker_kind")
+  stepId           String?  @map("step_id")
+  durationMs       Int?     @map("duration_ms")
+  costTokens       Int?     @map("cost_tokens")
+  costUsdCents     Int?     @map("cost_usd_cents")
+  memoryHits       Int?     @map("memory_hits")
+  slaBreach        Boolean  @default(false) @map("sla_breach")
+  errorClass       String?  @map("error_class")
+  recordedAt       DateTime @default(now()) @map("recorded_at")
+
+  @@index([workspaceId, plannerSessionId])
+  @@index([workspaceId, workerKind, recordedAt])
+  @@index([workspaceId, slaBreach, recordedAt])
+  @@map("chain_telemetry")
+}
+
+// Insight performance aggregate. Bumped by OUTCOME_ATTRIBUTOR. Read by
+// COMMERCIAL_INSIGHT_MATCHER's deterministic pre-rank to compute Wilson
+// lower bound at the consumer site (so brand-new insights with 0/0
+// don't get ranked above proven 47/200 ones).
+//
+// The unique key is intentionally wide: the same insight × niche ×
+// trigger × framework × tier might exist in many workspaces; we count
+// per-workspace.
+model InsightPerformance {
+  id            String           @id @default(cuid())
+  workspaceId   String           @map("workspace_id")
+  insightId     String           @map("insight_id")
+  nicheSlug     String?          @map("niche_slug")
+  triggerType   LeadTriggerType?
+  framework     String?
+  segmentTier   AccountTier?     @map("segment_tier")
+  applied       Int              @default(0)
+  replyPositive Int              @default(0) @map("reply_positive")
+  replyNegative Int              @default(0) @map("reply_negative")
+  ignored       Int              @default(0)
+  meetingBooked Int              @default(0) @map("meeting_booked")
+  won           Int              @default(0)
+  lastUpdatedAt DateTime         @updatedAt @map("last_updated_at")
+
+  insight   CommercialInsight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Postgres treats NULL as distinct in a unique constraint, so two
+  // rows with the same workspaceId+insightId but different (null vs
+  // not null) nicheSlug are allowed — that's intentional, the
+  // analytics consumer sums across the bucket dimensions it cares about.
+  @@unique([workspaceId, insightId, nicheSlug, triggerType, framework, segmentTier])
+  @@index([workspaceId, insightId])
+  @@index([workspaceId, nicheSlug, triggerType])
+  @@map("insight_performance")
+}
+
+// Opt-in extended reasoning lineage. Used when a LeadNextAction's
+// inline `reasoningGraph` exceeds ~30 nodes or when a decision spans
+// multiple LeadNextAction versions and the rep wants the full trail.
+// Phase 1 keeps every graph inline; Phase 2 will write here when a
+// `--full-trace` debug flag is set on the SDR_BRAIN run.
+model ReasoningTrace {
+  id              String   @id @default(cuid())
+  workspaceId     String   @map("workspace_id")
+  leadId          String?  @map("lead_id")
+  decisionRefType String   @map("decision_ref_type")
+  decisionRefId   String   @map("decision_ref_id")
+  provider        String
+  modelVersion    String   @map("model_version")
+  graph           Json
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([workspaceId, leadId])
+  @@index([workspaceId, decisionRefType, decisionRefId])
+  @@map("reasoning_traces")
 }

@@ -25,6 +25,7 @@ import {
 import { renderLeadacHero } from "@/lib/mockups/renderers/leadac-hero";
 import { parseBranding } from "@/lib/branding";
 import { generateMockupSlug } from "@/lib/mockup";
+import { getVisualIdentityForLead, getNicheBySlug } from "@/lib/niches";
 import type {
   AgentWorkerContext,
   AgentWorkerOutput,
@@ -59,6 +60,15 @@ export const run: AgentWorkerRun = async (ctx) => {
     ? (review.strengthPhrases as unknown[]).filter(isString)
     : [];
 
+  // Look up the niche pack for richer prompt context. We prefer the
+  // child slug (more specific pitch angle) and fall back to the parent
+  // for unclassified leads inside a hybrid niche - same chain used by
+  // `getVisualIdentityForLead` below.
+  const nichePack =
+    (lead.subNicheSlug ? getNicheBySlug(lead.subNicheSlug) : null) ??
+    (lead.nicheSlug ? getNicheBySlug(lead.nicheSlug) : null) ??
+    null;
+
   const promptInput: WebsiteMockupPromptInput = {
     businessName: lead.businessName,
     formattedAddress: lead.formattedAddress,
@@ -74,6 +84,9 @@ export const run: AgentWorkerRun = async (ctx) => {
     strengthPhrases,
     workspaceOfferName: ctx.workspace.offerName ?? null,
     workspaceValueProposition: ctx.workspace.valueProposition ?? null,
+    nicheLabel: nichePack?.label ?? null,
+    nichePitchAngle: nichePack?.pitchAngle ?? null,
+    nicheHighValueSignals: nichePack?.highValueSignals ?? [],
     language: ctx.workspace.language ?? "en",
   };
 
@@ -97,7 +110,25 @@ export const run: AgentWorkerRun = async (ctx) => {
   const text = result.response.text();
   const sections = parseSections(text);
 
+  // Resolve niche-specific palette + photos. The niche pack is the
+  // source of truth for visual identity; Gemini's `theme` block in the
+  // response is now treated as an advisory hint only - we overwrite it
+  // with the niche theme so two mockups for the same niche read as
+  // visually consistent across leads. Same fallback chain as the
+  // mockup template registry: subNiche → niche → generic.
+  const visual = getVisualIdentityForLead({
+    subNicheSlug: lead.subNicheSlug ?? null,
+    nicheSlug: lead.nicheSlug ?? null,
+  });
+  sections.theme = {
+    mode: visual.theme.mode,
+    accent_hex: visual.theme.accentHex,
+    primary_hex: visual.theme.primaryHex,
+  };
+
   // Branding only applies for Agency tier (same rule as legacy Mockup).
+  // When an agency has set its own brand colors we let those win over
+  // the niche palette - the agency reseller's identity comes first.
   const branding =
     ctx.workspace.plan === "AGENCY" ? parseBranding(ctx.workspace.branding) : null;
 
@@ -111,6 +142,8 @@ export const run: AgentWorkerRun = async (ctx) => {
     reviewCount: lead.reviewCount,
     googleMapsUri: lead.googleMapsUri,
     sections,
+    imagery: visual.imagery,
+    secondaryHex: visual.theme.secondaryHex ?? null,
     workspaceName: ctx.workspace.name,
     branding,
     lang: ctx.workspace.language ?? "en",

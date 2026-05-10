@@ -775,6 +775,109 @@ export function getNicheBySlug(slug: string): NichePack | undefined {
   return NICHES.find((n) => n.slug === slug);
 }
 
+/**
+ * Lead-level visual-identity resolver. Mirrors the same
+ * subNiche → niche → generic fallback that `getMockupTemplateForLead`
+ * uses, but for the niche theme + imagery (palette, hero photo,
+ * gallery photos) consumed by the website-mockup renderer.
+ *
+ * Re-exported here (rather than from `niches/theme.ts`) so callers
+ * can do the niche lookup + theme resolve in one import.
+ *
+ * Resolution order:
+ *   1. `subNicheSlug`         — most specific match
+ *   2. `nicheSlug`            — parent fallback
+ *   3. `primaryType`          — Google Places type → niche pack
+ *      (handles leads that haven't been classified yet, so they still
+ *      get themed imagery instead of the generic palette)
+ *   4. `GENERIC` palette + curated neutral business imagery
+ *
+ * When `businessName` is supplied, the resolved imagery is rotated
+ * through `pickImageryForBusiness` so two leads in the same vertical
+ * render with different hero photos (more visual variety) while the
+ * same lead's mockup stays stable across regenerations.
+ */
+import {
+  getNicheTheme,
+  getNicheImagery,
+  pickImageryForBusiness,
+  type NicheTheme,
+  type NicheImagery,
+} from "@/lib/niches/theme";
+
+export type { NicheTheme, NicheImagery } from "@/lib/niches/theme";
+
+export function getVisualIdentityForLead(lead: {
+  subNicheSlug: string | null;
+  nicheSlug: string | null;
+  /**
+   * Optional Google Places `primaryType` (e.g. "restaurant", "bar",
+   * "dental_clinic"). When neither niche slug is set we map this
+   * through `findNichePackForPrimaryType` and use the resulting pack
+   * for both palette and imagery — this is the single biggest reason
+   * the previous version of this resolver shipped photo-less mockups
+   * (un-classified leads silently fell through to GENERIC empty arrays).
+   */
+  primaryType?: string | null;
+  /**
+   * Optional business name — used as a stable seed to pick which
+   * hero / gallery photo variant to ship for this specific lead.
+   * Omit it and the resolver returns the niche imagery in its
+   * declared order (back-compat for unit tests that assert on the
+   * exact URL strings).
+   */
+  businessName?: string | null;
+}): {
+  theme: NicheTheme;
+  imagery: NicheImagery;
+  resolvedFrom: "subNiche" | "niche" | "primaryType" | "generic";
+} {
+  let theme: NicheTheme;
+  let imagery: NicheImagery;
+  let resolvedFrom: "subNiche" | "niche" | "primaryType" | "generic";
+
+  if (lead.subNicheSlug) {
+    const pack = getNicheBySlug(lead.subNicheSlug);
+    const parent = pack?.parentSlug ?? null;
+    theme = getNicheTheme(lead.subNicheSlug, parent);
+    imagery = getNicheImagery(lead.subNicheSlug, parent);
+    resolvedFrom = "subNiche";
+  } else if (lead.nicheSlug) {
+    theme = getNicheTheme(lead.nicheSlug, null);
+    imagery = getNicheImagery(lead.nicheSlug, null);
+    resolvedFrom = "niche";
+  } else {
+    // primaryType fallback — handles leads that have not yet been
+    // through the subvertical-classifier worker. Without this branch
+    // every fresh lead in a workspace without per-niche classification
+    // shipped a photo-less mockup (root cause of the "ruhsuz / robotumsu"
+    // complaint).
+    const primaryPack = lead.primaryType
+      ? findNichePackForPrimaryType(lead.primaryType)
+      : null;
+    if (primaryPack) {
+      const parent = primaryPack.parentSlug ?? null;
+      theme = getNicheTheme(primaryPack.slug, parent);
+      imagery = getNicheImagery(primaryPack.slug, parent);
+      resolvedFrom = "primaryType";
+    } else {
+      theme = getNicheTheme(null, null);
+      imagery = getNicheImagery(null, null);
+      resolvedFrom = "generic";
+    }
+  }
+
+  // Per-business deterministic photo pick. Skipped when no name is
+  // supplied so unit tests calling `getVisualIdentityForLead({ ... })`
+  // without a business name keep getting the imagery in its declared
+  // order.
+  if (lead.businessName) {
+    imagery = pickImageryForBusiness(imagery, lead.businessName);
+  }
+
+  return { theme, imagery, resolvedFrom };
+}
+
 export function getNicheByQuery(query: string): NichePack | undefined {
   // Some niche searchQueries are wrapped in literal double quotes
   // (e.g. `'"food truck"'`) so Google Places treats them as a phrase

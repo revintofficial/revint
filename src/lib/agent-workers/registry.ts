@@ -85,6 +85,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: true,
     estimatedDurationMs: 4000,
+    // FineDine deployment redesign — Places API caps at 5 reviews/business,
+    // which biases sentiment too much. Replaced by APIFY_GMAPS_DEEP in
+    // every default chain. Hidden so reps don't accidentally re-trigger
+    // a flow we deliberately deprecated.
+    hiddenFromPanel: true,
     implModule: () =>
       import("./google-places-reviews").then((m) => ({
         run: m.run,
@@ -159,6 +164,9 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: false,
     estimatedDurationMs: 35000,
+    // Legacy "website plan" surface predates SDR Brain v2; not in any
+    // chain. Hidden until/unless we revive a website-redesign upsell.
+    hiddenFromPanel: true,
   },
   WEBSITE_MOCKUP_GENERATOR: {
     kind: "WEBSITE_MOCKUP_GENERATOR",
@@ -193,12 +201,16 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     kind: "VIDEO_SCRIPT_WRITER",
     group: "pitch",
     displayName: "Video Script Writer",
-    displayNameTr: "Video Script Yazici",
+    displayNameTr: "Sesli Not Transkribe Edici",
     description: "30-second Loom / Vidyard personalized video script per lead.",
     descriptionTr: "Her lead icin 30-saniyelik Loom / Vidyard kisisellestirilmis video script.",
     minPlan: "PRO",
     phase1Enabled: false,
     estimatedDurationMs: 10000,
+    // Pitch deliverable — outside the SDR cycle. Stays in registry for
+    // the user_one_click_pitch chain (where it's optional) but hidden
+    // from the per-lead panel.
+    hiddenFromPanel: true,
   },
   VOICE_NOTE_TRANSCRIBER: {
     kind: "VOICE_NOTE_TRANSCRIBER",
@@ -210,6 +222,10 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: false,
     estimatedDurationMs: 6000,
+    // Server-side only — fired by POST /api/leads/[id]/voice-notes
+    // (which then emits voice_note_added). No useful manual trigger
+    // surface on the lead-detail panel.
+    hiddenFromPanel: true,
   },
   LEAD_DOSSIER_GENERATOR: {
     kind: "LEAD_DOSSIER_GENERATOR",
@@ -248,6 +264,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
   },
 
   // -------- Grup C: Deliverable (prospect-install packs) --------
+  // SDR Brain v2 redesign — deliverables are install packs the agency
+  // sells to the client AFTER the deal closes. They're not part of the
+  // SDR cycle (qualify → outreach → discover → close) so every entry
+  // here is `hiddenFromPanel`. Re-enable per workspace if/when we
+  // ship a "Client Workspace" view that surfaces them.
   AI_RECEPTIONIST_BUILDER: {
     kind: "AI_RECEPTIONIST_BUILDER",
     group: "deliverable",
@@ -260,6 +281,7 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: true,
     estimatedDurationMs: 40000,
+    hiddenFromPanel: true,
     exportFormats: ["synthflow", "retell", "vapi", "ghl", "json", "kb_json"],
     memoryReads: [{ kinds: ["PROSPECT_KB_CHUNK"], topK: 30, scope: "lead" }],
     implModule: () => import("./ai-receptionist").then((m) => ({ run: m.run })),
@@ -275,6 +297,7 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: true,
     estimatedDurationMs: 25000,
+    hiddenFromPanel: true,
     exportFormats: ["json", "zip"],
     implModule: () => import("./review-reply").then((m) => ({ run: m.run })),
   },
@@ -289,6 +312,7 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: true,
     estimatedDurationMs: 20000,
+    hiddenFromPanel: true,
     exportFormats: ["ghl", "n8n", "make", "json"],
     implModule: () => import("./lead-response").then((m) => ({ run: m.run })),
   },
@@ -302,6 +326,7 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO",
     phase1Enabled: false,
     estimatedDurationMs: 15000,
+    hiddenFromPanel: true,
     exportFormats: ["html", "json"],
   },
   GBP_AUTOPOST_AGENT: {
@@ -314,10 +339,17 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO_TEAM",
     phase1Enabled: false,
     estimatedDurationMs: 30000,
+    hiddenFromPanel: true,
     exportFormats: ["json", "zip"],
   },
 
   // -------- Grup D: Ops (platform-level, agency-side) --------
+  // All ops workers fire from server triggers (inbox sync cron, send
+  // queue, deployed receptionist calls). Surfacing them on the lead
+  // detail panel just confuses the rep — there's no "Generate" they
+  // can usefully click. Hidden but kept registered so the orchestrator
+  // can still resolve them (INBOX_REPLY_ATTRIBUTOR is part of the
+  // inbox_reply_received chain).
   COPILOT_CHAT: {
     kind: "COPILOT_CHAT",
     group: "ops",
@@ -328,6 +360,7 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: false,
     estimatedDurationMs: 4000,
+    hiddenFromPanel: true,
   },
   INBOX_REPLY_ATTRIBUTOR: {
     kind: "INBOX_REPLY_ATTRIBUTOR",
@@ -339,6 +372,7 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO",
     phase1Enabled: true,
     estimatedDurationMs: 5000,
+    hiddenFromPanel: true,
     implModule: () =>
       import("./inbox-reply-attributor").then((m) => ({ run: m.run })),
   },
@@ -352,6 +386,7 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO",
     phase1Enabled: false,
     estimatedDurationMs: 3000,
+    hiddenFromPanel: true,
   },
   CONTAINMENT_RATE_TRACKER: {
     kind: "CONTAINMENT_RATE_TRACKER",
@@ -363,6 +398,7 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO_TEAM",
     phase1Enabled: false,
     estimatedDurationMs: 0,
+    hiddenFromPanel: true,
   },
 
   // -------- Grup E: Enrichment (Apify external data sources) --------
@@ -447,6 +483,9 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO",
     phase1Enabled: true,
     estimatedDurationMs: 60000,
+    // No chain wires this in (TikTok signal isn't part of the
+    // restaurant-tech ICP). Hidden until a niche pack pulls it in.
+    hiddenFromPanel: true,
     implModule: () =>
       import("./apify/tiktok-deep").then((m) => ({
         run: m.run,
@@ -503,6 +542,11 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "PRO_TEAM",
     phase1Enabled: true,
     estimatedDurationMs: 75000,
+    // Not currently wired into any chain — hiring signals come from
+    // SERP + dedicated trigger detection rules instead. Keep the
+    // implementation around for the Phase 2 STAKEHOLDER_DISCOVERER
+    // worker that will actually consume LinkedIn employee data.
+    hiddenFromPanel: true,
     implModule: () =>
       import("./apify/linkedin-company").then((m) => ({
         run: m.run,
@@ -525,6 +569,221 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
         memoryWrites: m.memoryWrites,
       })),
   },
+
+  // -------- Grup F: SDR Brain v2 (Sales Cognition Engine) --------
+  // T1 deterministic enrichers — no Gemini call, derived from existing
+  // Lead / WebsiteAudit / ReviewAnalysis substrate. Fast (<2s) so they
+  // can run on every `lead_created` chain without affecting tail latency.
+  ICP_SCORER: {
+    kind: "ICP_SCORER",
+    group: "intelligence",
+    displayName: "ICP Scorer",
+    displayNameTr: "ICP Skorlayici",
+    description: "Deterministic 0-100 fit score against the workspace's Ideal Customer Profile. Reads price level, reviews, niche, signals; persists to Lead.icpFitScore for fast list ordering.",
+    descriptionTr: "Workspace'in ICP tanimina karsi deterministik 0-100 uyum skoru. Fiyat seviyesi, yorumlar, nis, sinyalleri okur; hizli liste siralama icin Lead.icpFitScore'a yazar.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 1500,
+    implModule: () =>
+      import("./icp-scorer").then((m) => ({ run: m.run })),
+  },
+  STAKEHOLDER_DISCOVERER: {
+    kind: "STAKEHOLDER_DISCOVERER",
+    group: "intelligence",
+    displayName: "Stakeholder Discoverer",
+    displayNameTr: "Karar Verici Bulucu",
+    description: "Discovers candidate stakeholders from website team pages, Google Maps owner fields, and LinkedIn-company enrichment. Phase 2 placeholder.",
+    descriptionTr: "Site ekip sayfalari, Google Maps sahip alanlari ve LinkedIn sirket zenginlestirmesi'nden aday paydaslar bulur. Faz 2 placeholder.",
+    minPlan: "FREE",
+    phase1Enabled: false,
+    estimatedDurationMs: 6000,
+    // Phase 2 placeholder — no implModule yet. The newly shipped
+    // BUYING_COMMITTEE_MAPPER covers the SDR Brain v2 stakeholder
+    // surface, so this entry stays hidden until we build the
+    // dedicated discovery worker that will feed it.
+    hiddenFromPanel: true,
+  },
+  ACCOUNT_TIER_RANKER: {
+    kind: "ACCOUNT_TIER_RANKER",
+    group: "intelligence",
+    displayName: "Account Tier Ranker",
+    displayNameTr: "Hesap Seviye Belirleyici",
+    description: "Buckets the lead's parent Account into TIER_1/TIER_2/TIER_3/TIER_4 based on locations, ICP fit, sales confidence, contact density, and sub-niche signals.",
+    descriptionTr: "Lead'in ust hesabini lokasyon sayisi, ICP uyumu, satis guveni, iletisim yogunlugu ve alt-nis sinyallerine gore TIER_1/TIER_2/TIER_3/TIER_4'e gruplar.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 1500,
+    dependsOn: ["ICP_SCORER", "SALES_OPPORTUNITY_SCORER"],
+    implModule: () =>
+      import("./account-tier-ranker").then((m) => ({ run: m.run })),
+  },
+  BANT_INFERRER: {
+    kind: "BANT_INFERRER",
+    group: "intelligence",
+    displayName: "BANT Inferrer",
+    displayNameTr: "BANT Cikartici",
+    description: "Derives Budget/Authority/Need/Timing scores from existing lead signals (no Gemini call). Persists a preliminary LeadNextAction so the UI can render an NBA card within 3-5s of lead_created.",
+    descriptionTr: "Mevcut lead sinyallerinden Butce/Yetki/Ihtiyac/Zamanlama skorlarini cikarir (Gemini cagrisi yok). UI'in lead_created sonrasi 3-5s icinde NBA karti gostermesi icin on-LeadNextAction yazar.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 2000,
+    implModule: () =>
+      import("./bant-inferrer").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
+  },
+
+  // T2 reasoners — light Gemini call + deterministic rules.
+  TRIGGER_DETECTOR: {
+    kind: "TRIGGER_DETECTOR",
+    group: "intelligence",
+    displayName: "Trigger Detector",
+    displayNameTr: "Tetikleyici Bulucu",
+    description: "Walks audit, reviews, social, hiring, and SERP signals to detect sales triggers (NEW_LOCATION_OPENING, RATING_DROP, HIRING_MARKETING, etc.) with severity + confidence + decay window.",
+    descriptionTr: "Audit, yorumlar, sosyal, ise alim, SERP sinyallerini tarar; satis tetikleyicilerini (NEW_LOCATION_OPENING, RATING_DROP, HIRING_MARKETING, vs.) siddet + guven + decay penceresi ile bulur.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 6000,
+    memoryReads: [
+      { kinds: ["HIRING_SIGNAL", "SERP_SNAPSHOT", "REDDIT_MENTION", "SOCIAL_POST"], topK: 12, scope: "lead" },
+    ],
+    implModule: () =>
+      import("./trigger-detector").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
+  },
+  COMMERCIAL_INSIGHT_MATCHER: {
+    kind: "COMMERCIAL_INSIGHT_MATCHER",
+    group: "intelligence",
+    displayName: "Commercial Insight Matcher",
+    displayNameTr: "Ticari Insight Eslestirici",
+    description: "Matches workspace CommercialInsights to the lead's niche + active triggers, ranked by Wilson lower-bound win-rate from InsightPerformance. Output feeds SDR_BRAIN's reframe choice.",
+    descriptionTr: "Workspace CommercialInsights'larini lead'in nisi + aktif tetikleyicileriyle eslestirir; InsightPerformance'dan Wilson lower-bound kazanma oraniyla siralar. Cikti SDR_BRAIN'in reframe secimini besler.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 1500,
+    dependsOn: ["TRIGGER_DETECTOR"],
+    implModule: () =>
+      import("./commercial-insight-matcher").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
+  },
+  WHY_NOW_SYNTHESIZER: {
+    kind: "WHY_NOW_SYNTHESIZER",
+    group: "intelligence",
+    displayName: "Why-Now Synthesizer",
+    displayNameTr: "Neden-Simdi Ozetleyici",
+    description: "Reads active LeadTrigger rows, weights by severity * confidence * recency, and returns a single SDR-ready 'why now' headline + opener-friendly quote + recommended timing window.",
+    descriptionTr: "Aktif LeadTrigger satirlarini okur; siddet * guven * yenilik ile agirliklandirir; tek bir SDR-hazir 'neden simdi' baslik + opener'a uygun alinti + onerilen zamanlama penceresi dondurur.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 6000,
+    dependsOn: ["TRIGGER_DETECTOR"],
+    implModule: () =>
+      import("./why-now-synthesizer").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
+  },
+  BUYING_COMMITTEE_MAPPER: {
+    kind: "BUYING_COMMITTEE_MAPPER",
+    group: "intelligence",
+    displayName: "Buying Committee Mapper",
+    displayNameTr: "Karar Verici Haritalayici",
+    description: "Maps stakeholders into Challenger roles (DECISION_MAKER, INFLUENCER, BLOCKER, CHAMPION, GATEKEEPER, USER) with influence + sentiment, persisted as Stakeholder rows.",
+    descriptionTr: "Paydaslari Challenger rollerine (DECISION_MAKER, INFLUENCER, BLOCKER, CHAMPION, GATEKEEPER, USER) etki + duygu durumu ile haritalar; Stakeholder satirlari olarak saklar.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 8000,
+    memoryReads: [
+      { kinds: ["SOCIAL_POST", "SERP_SNAPSHOT", "HIRING_SIGNAL"], topK: 10, scope: "lead" },
+    ],
+    implModule: () =>
+      import("./buying-committee-mapper").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
+  },
+  OBJECTION_PREDICTOR: {
+    kind: "OBJECTION_PREDICTOR",
+    group: "intelligence",
+    displayName: "Objection Predictor",
+    displayNameTr: "Itiraz Tahmin Edici",
+    description: "Forecasts the top 5 objections this prospect is most likely to raise (PRICE / TIMING / AUTHORITY / TRUST / COMPETITOR) with a pre-built preemptive response per objection.",
+    descriptionTr: "Bu prospect'in en olasi 5 itirazini (FIYAT / ZAMANLAMA / YETKI / GUVEN / RAKIP) tahmin eder; her itiraza onceden hazirlanmis preemptive cevap saglar.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 6000,
+    implModule: () =>
+      import("./objection-predictor").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
+  },
+
+  // T5 event-driven extractors (voice notes / pipeline stage changes).
+  MEDDPICC_EXTRACTOR: {
+    kind: "MEDDPICC_EXTRACTOR",
+    group: "intelligence",
+    displayName: "MEDDPICC Extractor",
+    displayNameTr: "MEDDPICC Cikartici",
+    description: "Extracts evidence-grounded MEDDPICC facts (Metrics, Economic Buyer, Decision Criteria, Process, Paper Process, Pain, Champion, Competition) from voice notes / email threads. Rolls up DealQualification.fillCompletePct + riskScore.",
+    descriptionTr: "Sesli not / email yazismalarindan kanit-temelli MEDDPICC faktlarini (Metrikler, Ekonomik Alici, Karar Kriterleri, Surec, Kagit Sureci, Aci, Sampiyon, Rekabet) cikarir. DealQualification.fillCompletePct + riskScore'u toplar.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 8000,
+    memoryReads: [{ kinds: ["VOICE_NOTE", "COPILOT_TURN"], topK: 6, scope: "lead" }],
+    implModule: () =>
+      import("./meddpicc-extractor").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
+  },
+  SPIN_EXTRACTOR: {
+    kind: "SPIN_EXTRACTOR",
+    group: "intelligence",
+    displayName: "SPIN Extractor",
+    displayNameTr: "SPIN Cikartici",
+    description: "Classifies discovery transcript sentences into SPIN buckets (SITUATION / PROBLEM / IMPLICATION / NEED_PAYOFF). Surfaces qualification gaps the rep can fill on the next call.",
+    descriptionTr: "Kesif transkript cumlelerini SPIN bolumlerine (SITUATION / PROBLEM / IMPLICATION / NEED_PAYOFF) siniflandirir. Temsilcinin sonraki gorusmede dolduracagi kalifikasyon eksikliklerini ortaya cikarir.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 8000,
+    implModule: () =>
+      import("./spin-extractor").then((m) => ({
+        run: m.run,
+        memoryWrites: m.memoryWrites,
+      })),
+  },
+
+  // Closed-loop attribution. Walks active LeadNextAction +
+  // InsightApplication on terminal events (reply, disposition, stage
+  // change). Bumps InsightPerformance counters + adjusts
+  // LeadTrigger.confidence (false-positive learning).
+  OUTCOME_ATTRIBUTOR: {
+    kind: "OUTCOME_ATTRIBUTOR",
+    group: "ops",
+    displayName: "Outcome Attributor",
+    displayNameTr: "Sonuc Eslestirici",
+    description: "Maps inbound replies, call dispositions, and pipeline stage changes back onto the LeadNextAction + CommercialInsight that produced them. Updates win-rate counters that COMMERCIAL_INSIGHT_MATCHER uses to rank reframes.",
+    descriptionTr: "Gelen cevaplari, call dispositionlarini ve pipeline asama degisikliklerini onlari ureten LeadNextAction + CommercialInsight'a baglar. COMMERCIAL_INSIGHT_MATCHER'in reframeleri siralamak icin kullandigi kazanma orani sayaclarini gunceller.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    estimatedDurationMs: 4000,
+    // Pure event-driven attribution worker — fires from
+    // inbox_reply_received / disposition_logged / watchlist_stage_changed
+    // chains. Surfacing a manual "Run Outcome Attributor" button on
+    // the lead panel makes no sense (the outcome hasn't happened yet),
+    // so hide it. Performance is visible in /app/settings/insight-performance.
+    hiddenFromPanel: true,
+    implModule: () =>
+      import("./outcome-attributor").then((m) => ({
+        run: m.run,
+      })),
+  },
 };
 
 /**
@@ -545,9 +804,29 @@ function toPublicWorker(m: AgentWorkerMeta): AgentWorker {
  * Returns the list of workers visible to the given plan, ordered by
  * group then kind. Workers below the user's plan are still returned
  * with `minPlan` so the UI can render them as "upgrade to unlock".
+ *
+ * NOTE: `listWorkers()` returns EVERY registered worker — including
+ * server-internal ones (`OUTCOME_ATTRIBUTOR`, `INBOX_REPLY_ATTRIBUTOR`),
+ * deprecated entries (`GOOGLE_PLACES_REVIEWS`), client deliverables
+ * (`AI_RECEPTIONIST_BUILDER`, `REVIEW_REPLY_AGENT`, ...), and Phase 2
+ * placeholders. Use `listPanelWorkers()` for surfaces that show a
+ * per-lead "Run worker" UI (the lead-detail AI Workers tab).
  */
 export function listWorkers(): AgentWorker[] {
   return Object.values(WORKERS);
+}
+
+/**
+ * Returns the subset of workers that should be surfaced on the
+ * lead-detail "AI Workers" panel. Filters out anything flagged
+ * `hiddenFromPanel: true` in the registry — i.e. deliverables, ops
+ * jobs, deprecated workers, and Phase 2 placeholders. The lead-detail
+ * panel API uses this; the platform-level `/app/agent-runs` history
+ * view should keep using `listWorkers()` so legacy AgentRun rows still
+ * resolve a display name.
+ */
+export function listPanelWorkers(): AgentWorker[] {
+  return Object.values(WORKERS).filter((w) => !w.hiddenFromPanel);
 }
 
 export function getWorker(kind: AgentWorkerKind): AgentWorker | undefined {

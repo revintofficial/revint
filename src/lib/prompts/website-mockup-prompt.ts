@@ -72,6 +72,17 @@ export interface WebsiteMockupPromptInput {
   strengthPhrases: string[];
   workspaceOfferName: string | null;
   workspaceValueProposition: string | null;
+  /**
+   * Niche pack metadata for the lead. Lets the model lean into the
+   * vertical's actual sales angle (e.g. "QR pay + tab split for bars",
+   * "premium reservation widget for fine dining") rather than producing
+   * generic local-business copy. Theme/colors are NOT included here —
+   * those are resolved server-side from the niche pack and overwritten
+   * into `sections.theme` after the model returns.
+   */
+  nicheLabel: string | null;
+  nichePitchAngle: string | null;
+  nicheHighValueSignals: string[];
   language: string; // "tr" | "en"
 }
 
@@ -80,7 +91,8 @@ export const WEBSITE_MOCKUP_SYSTEM_CONTEXT = `You are a senior web designer and 
 1. High-conversion: every section exists to push the visitor toward calling, booking, or requesting a quote.
 2. Grounded: use ONLY the facts provided about this business. Do not invent hours, prices, staff count, certifications, or years in business. If a detail is not supplied, keep the copy general.
 3. Audience-aware: the reader is a local homeowner or small business owner looking for this service NOW. Copy should feel local, trustworthy, and urgent without being pushy.
-4. Design-system-aligned: use Leadac's landing-page aesthetic - dark background, glass panels, single accent gradient, one clear primary CTA. Theme colors should harmonize with the business vertical (plumbing = blue, HVAC = teal, dental = light blue/mint, food = warm amber).
+4. Vertical-aware: when a niche pitch angle and high-value signals are provided, lean the headline + services + CTA into that angle. Example: a bar's hero should mention peak-hour throughput / tab split, not generic "great drinks"; a fine-dining hero should sell the experience, not online ordering.
+5. Design-system-aligned: use Leadac's landing-page aesthetic - dark background, glass panels, single accent gradient, one clear primary CTA. The theme colors are picked deterministically by the system based on the business's vertical; you may still emit a "theme" object in the response (the renderer ignores it and substitutes the niche palette), but do not waste effort tuning it.
 
 Respond ONLY with valid JSON matching the schema exactly. No markdown, no preface, no trailing prose.`;
 
@@ -142,6 +154,12 @@ export function buildWebsiteMockupPrompt(input: WebsiteMockupPromptInput): strin
     ? input.servicesDetected.join(", ")
     : "(not detected - infer 3-5 plausible services for this business type)";
 
+  const nicheBlock = input.nicheLabel
+    ? `- Vertical: ${input.nicheLabel}
+- Pitch angle: ${input.nichePitchAngle ?? "(none)"}
+- High-value signals to lean into: ${input.nicheHighValueSignals.length ? input.nicheHighValueSignals.join("; ") : "(none)"}`
+    : "(no niche metadata available - treat as generic local service business)";
+
   return `${WEBSITE_MOCKUP_SYSTEM_CONTEXT}
 
 ${WEBSITE_MOCKUP_SCHEMA_DESCRIPTION}
@@ -158,6 +176,9 @@ BUSINESS CONTEXT:
 - Google rating: ${input.rating ?? "(no rating)"} (${input.reviewCount ?? 0} reviews)
 - Services detected: ${servicesBlock}
 
+NICHE CONTEXT:
+${nicheBlock}
+
 REVIEW SIGNAL:
 Top reviews:
 ${reviewsBlock}
@@ -173,10 +194,10 @@ AGENCY OFFER CONTEXT (the agency selling this site):
 - Value proposition: ${input.workspaceValueProposition ?? "(generic)"}
 
 INSTRUCTIONS:
-1. Write a hero headline that promises the single most valuable outcome for THIS business's customers, grounded in the pain/strength signals.
-2. Services section: 3-6 services, prefer the ones actually detected. If none detected, infer from the primary_type.
+1. Write a hero headline that promises the single most valuable outcome for THIS business's customers, grounded in the pain/strength signals AND the vertical's pitch angle when supplied.
+2. Services section: 3-6 services, prefer the ones actually detected. If none detected, infer from the primary_type and the niche label.
 3. Testimonial: paraphrase the strongest review into a single-voice quote. If no review text exists, return null.
 4. About: 2-4 sentences. DO NOT invent years in business, number of employees, or awards. Speak to their neighborhood and the trust signals you have.
-5. Theme: pick a color scheme that fits the business vertical. Default mode is "dark".
+5. Theme: emit any reasonable hex pair - the system will substitute the niche palette before rendering. Default mode "dark" is fine.
 6. Respond with ONLY the JSON object. No prose before or after.`;
 }

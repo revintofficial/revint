@@ -1,7 +1,7 @@
 /**
  * P0.1 - Review Intelligence v1 prompt.
  *
- * Reads up to 50 GoogleReview rows for a single business and returns a
+ * Reads up to 500 GoogleReview rows for a single business and returns a
  * structured JSON aggregation with KPI bars (weakness % / strength %),
  * sentiment breakdown, top pain phrases, top strength phrases, switch
  * signals (positive reviews mentioning prior tools they abandoned), and a

@@ -48,7 +48,11 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         // injected at both prompt + responseSchema layer; other
         // niches keep the legacy free-form clustering.
         workspace: { select: { offerName: true, valueProposition: true, niche: true } },
-        googleReviews: { orderBy: { publishTime: "desc" }, take: 50 },
+        // 500 matches APIFY_GMAPS_DEEP's DEFAULT_MAX_REVIEWS and the
+        // slice cap inside `analyzeReviewsWithGemini`. After a deep
+        // Apify scrape we want the full corpus to feed the KPI
+        // aggregator, not just the freshest 50.
+        googleReviews: { orderBy: { publishTime: "desc" }, take: 500 },
       },
     });
 

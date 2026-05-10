@@ -49,7 +49,33 @@ export type EventKind =
   | "inbox_reply_received"
   | "user_one_click_pitch"
   | "user_deep_research"
-  | "user_receptionist_with_kb";
+  | "user_receptionist_with_kb"
+  // SDR Brain v2 — events that gate closed-loop attribution and
+  // discovery extraction. Naming convention: `<noun>_<verb>` so the
+  // planner registry stays grep-friendly.
+  //
+  // voice_note_added:        rep dropped a voice memo on a lead.
+  //   Triggers SPIN_EXTRACTOR + MEDDPICC_EXTRACTOR (when the lead is
+  //   already in the watchlist) so the discovery + qualification
+  //   surface refreshes before the rep opens the lead detail page.
+  // disposition_logged:      rep marked the outcome of a call (replied,
+  //   not interested, scheduled callback, etc.). Triggers
+  //   OUTCOME_ATTRIBUTOR so the active LeadNextAction + applied
+  //   CommercialInsight close the loop.
+  // watchlist_stage_changed: a deal advanced (or regressed) on the
+  //   pipeline kanban. Triggers OUTCOME_ATTRIBUTOR for WON/LOST
+  //   terminal moves; lighter-weight refresh otherwise.
+  // outcome_attributed:      emitted by OUTCOME_ATTRIBUTOR after it
+  //   writes outcomes back. Listeners can fan out to UI cache busts
+  //   or post-mortem analytics jobs without polling the worker output.
+  // sdr_brain_completed:     emitted by SDR_BRAIN once the final NBA
+  //   + reasoning graph + arbitration are persisted. UI uses this
+  //   to swap the preliminary card for the final one.
+  | "voice_note_added"
+  | "disposition_logged"
+  | "watchlist_stage_changed"
+  | "outcome_attributed"
+  | "sdr_brain_completed";
 
 export interface MemorySpec {
   kinds: MemoryKind[];
@@ -344,6 +370,28 @@ export interface AgentWorker {
    * Typical wall-clock runtime shown in the UI as a countdown label.
    */
   estimatedDurationMs: number;
+  /**
+   * Hide this worker from the lead-detail "AI Workers" panel. Used for
+   * workers that:
+   *   - belong to a deprecated/replaced flow (e.g. `GOOGLE_PLACES_REVIEWS`
+   *     replaced by `APIFY_GMAPS_DEEP`),
+   *   - are client-side deliverables sold as install packs and not part
+   *     of the SDR cycle (`AI_RECEPTIONIST_BUILDER`, `REVIEW_REPLY_AGENT`,
+   *     `BOOKING_WIDGET_BUILDER`, etc.),
+   *   - are pure server-side / event-driven internal jobs that should
+   *     never be manually tetiklenecek (`OUTREACH_SENDER`,
+   *     `CONTAINMENT_RATE_TRACKER`),
+   *   - are Phase 2 placeholders without an implModule
+   *     (`STAKEHOLDER_DISCOVERER`),
+   *   - sit in the registry but no chain wires them in (`APIFY_TIKTOK_DEEP`,
+   *     `APIFY_LINKEDIN_COMPANY`).
+   *
+   * The worker stays in the registry — historical `AgentRun` rows still
+   * resolve, the planner / chain validator still type-checks, and any
+   * niche-specific tooling can re-enable it by flipping the flag. The
+   * lead-detail workers API filters these out before sending to the UI.
+   */
+  hiddenFromPanel?: boolean;
   /**
    * Export formats this worker's output can be serialized to. Only
    * relevant for deliverable workers (receptionist, review reply,

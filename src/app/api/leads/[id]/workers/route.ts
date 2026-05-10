@@ -16,7 +16,7 @@ import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { internalError } from "@/lib/api-errors";
-import { listWorkers, planMeetsMinimum } from "@/lib/agent-workers/registry";
+import { listPanelWorkers, planMeetsMinimum } from "@/lib/agent-workers/registry";
 import { getLimit } from "@/lib/agent-workers/quota";
 import type { AgentWorkerKind } from "@/generated/prisma/client";
 
@@ -151,9 +151,17 @@ export async function GET(
     const usageByKind = new Map<AgentWorkerKind, number>();
     for (const row of cycleUsageRows) usageByKind.set(row.workerKind, row._count._all);
 
-    // Registry-driven projection: include every worker so the UI can
-    // render locked / upgrade state for tiers the user has not paid for.
-    const workers = listWorkers().map((w) => {
+    // Registry-driven projection: include every PANEL worker so the
+    // UI can render locked / upgrade state for tiers the user has not
+    // paid for. `listPanelWorkers()` filters out registry entries
+    // flagged `hiddenFromPanel: true` — server-internal jobs (outcome
+    // attributor, inbox attributor), client deliverables (receptionist,
+    // review-reply), Phase 2 placeholders, and deprecated workers
+    // (google-places-reviews replaced by apify-gmaps-deep). The
+    // `runs` array below still includes those kinds when historical
+    // AgentRun rows exist, so the lead detail timeline doesn't lose
+    // legacy entries.
+    const workers = listPanelWorkers().map((w) => {
       const limit = getLimit(w.kind, ws.plan);
       const used = usageByKind.get(w.kind) ?? 0;
       const latest = latestByKind.get(w.kind);

@@ -21,6 +21,7 @@
 
 import type { WebsiteMockupSections } from "@/lib/prompts/website-mockup-prompt";
 import type { WorkspaceBranding } from "@/lib/branding";
+import type { NicheImagery } from "@/lib/niches/theme";
 
 export interface LeadacHeroRenderInput {
   businessName: string;
@@ -32,6 +33,21 @@ export interface LeadacHeroRenderInput {
   reviewCount: number | null;
   googleMapsUri: string | null;
   sections: WebsiteMockupSections;
+  /**
+   * Niche-resolved photo URLs. When `imagery.hero[0]` is set the renderer
+   * paints it as a gradient-masked hero background; when `imagery.gallery`
+   * has 2+ entries the renderer adds a "see the space" gallery section
+   * between services and about. Empty / missing → pure-gradient hero, no
+   * gallery section. Source URLs are CDN-stable Unsplash photos curated
+   * per niche in `src/lib/niches/theme.ts`.
+   */
+  imagery?: NicheImagery | null;
+  /**
+   * Optional second-stop hex for the hero radial gradient. Niche packs
+   * supply a `secondaryHex` to deepen the visual identity (e.g. burgundy
+   * + ivory for fine dining). Falls back to mixing primary + accent.
+   */
+  secondaryHex?: string | null;
   workspaceName?: string;
   branding?: WorkspaceBranding | null;
   showLeadacCredit?: boolean;
@@ -49,6 +65,23 @@ export function renderLeadacHero(input: LeadacHeroRenderInput): string {
   const border = isLight ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.08)";
   const accent = sanitizeHex(theme.accent_hex) ?? "#a5b4fc";
   const primary = sanitizeHex(theme.primary_hex) ?? "#5e6ad2";
+  // Niche-supplied second gradient stop. Sanitised through the same
+  // hex regex as user-supplied colors so a malformed value never lands
+  // raw in the <style> body. Falls back to `accent` when absent.
+  const secondary = sanitizeHex(input.secondaryHex ?? null) ?? accent;
+
+  // Hero photo: stable Unsplash CDN URL or null. We HTML-escape the URL
+  // since it's embedded in a `style="background-image:url('...')"` attr
+  // and a `'` would otherwise break out. Beyond the existing `escapeHtml`
+  // we additionally reject anything that doesn't look like an https URL
+  // - the niche imagery file should never produce one, but a guard here
+  // means a future workspace-supplied override can't smuggle a `javascript:`
+  // payload through this codepath either.
+  const heroPhotoUrl = pickSafePhotoUrl(input.imagery?.hero?.[0] ?? null);
+  const galleryPhotoUrls = (input.imagery?.gallery ?? [])
+    .map(pickSafePhotoUrl)
+    .filter((u): u is string => u !== null)
+    .slice(0, 3);
 
   const brand = input.branding;
   const footerText =
@@ -104,9 +137,46 @@ export function renderLeadacHero(input: LeadacHeroRenderInput): string {
   a { color: inherit; }
   .hero-bg {
     background:
-      radial-gradient(60% 50% at 20% 10%, ${hexWithAlpha(accent, 0.18)} 0%, transparent 60%),
-      radial-gradient(40% 40% at 80% 30%, ${hexWithAlpha(primary, 0.12)} 0%, transparent 60%),
+      radial-gradient(60% 50% at 20% 10%, ${hexWithAlpha(accent, 0.22)} 0%, transparent 60%),
+      radial-gradient(45% 45% at 82% 28%, ${hexWithAlpha(primary, 0.20)} 0%, transparent 60%),
+      radial-gradient(40% 40% at 50% 100%, ${hexWithAlpha(secondary, 0.18)} 0%, transparent 60%),
       var(--bg);
+  }
+  /* Hero photo panel - sits to the right of the headline on desktop, on
+     top on mobile. The gradient over the photo keeps the niche palette
+     dominant; without it stock photos pull the eye away from the CTA. */
+  .hero-flex { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 36px; align-items: center; }
+  .hero-photo {
+    position: relative; width: 100%; aspect-ratio: 4 / 5; border-radius: 22px;
+    overflow: hidden; border: 0.5px solid var(--border);
+    background-color: ${hexWithAlpha(primary, 0.18)};
+    background-size: cover; background-position: center;
+  }
+  .hero-photo::after {
+    content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, transparent 0%, ${hexWithAlpha(bg, 0.35)} 100%),
+      radial-gradient(60% 60% at 30% 30%, ${hexWithAlpha(primary, 0.18)} 0%, transparent 75%),
+      radial-gradient(60% 60% at 80% 80%, ${hexWithAlpha(secondary, 0.18)} 0%, transparent 70%);
+    pointer-events: none;
+  }
+  @media (max-width: 760px) {
+    .hero-flex { grid-template-columns: 1fr; gap: 28px; }
+    .hero-photo { aspect-ratio: 16 / 10; }
+  }
+  /* Gallery - shown only when the niche has at least 2 stable photos. */
+  section.gallery { padding: 28px 0 16px; }
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .gallery-tile {
+    aspect-ratio: 4 / 3; border-radius: 16px;
+    border: 0.5px solid var(--border);
+    background-color: ${hexWithAlpha(secondary, 0.18)};
+    background-size: cover; background-position: center;
+    position: relative; overflow: hidden;
+  }
+  .gallery-tile::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 60%, ${hexWithAlpha(bg, 0.55)} 100%);
   }
   .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
   header.nav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); background: ${hexWithAlpha(bg, 0.6)}; border-bottom: 0.5px solid var(--border); }
@@ -173,7 +243,8 @@ export function renderLeadacHero(input: LeadacHeroRenderInput): string {
 
 <section class="hero">
   <div class="wrap">
-    <p class="lede">${borough ? borough + " · " : ""}${escapeHtml(labels.open_for)}</p>
+    ${heroPhotoUrl ? `<div class="hero-flex"><div>` : ""}
+    <p class="lede">${borough ? borough + " &middot; " : ""}${escapeHtml(labels.open_for)}</p>
     <h1 class="hero-title">${escapeHtml(hero.headline)}</h1>
     <p class="hero-sub">${escapeHtml(hero.subline)}</p>
     <div class="hero-ctas">
@@ -182,8 +253,19 @@ export function renderLeadacHero(input: LeadacHeroRenderInput): string {
       ${mapsHref ? `<a class="btn-secondary" href="${mapsHref}" target="_blank" rel="noopener">${escapeHtml(labels.get_directions)}</a>` : ""}
     </div>
     ${trust ? `<div class="trust">${escapeHtml(trust)}</div>` : ""}
+    ${heroPhotoUrl ? `</div><div class="hero-photo" role="img" aria-label="${name}" style="background-image:url('${heroPhotoUrl}')"></div></div>` : ""}
   </div>
 </section>
+
+${galleryPhotoUrls.length >= 2 ? `
+<section class="gallery">
+  <div class="wrap">
+    <div class="gallery-grid">
+      ${galleryPhotoUrls.map((u) => `<div class="gallery-tile" role="img" aria-label="${name}" style="background-image:url('${u}')"></div>`).join("")}
+    </div>
+  </div>
+</section>
+` : ""}
 
 ${s.services.length ? `
 <section class="services">
@@ -357,4 +439,37 @@ function encodeTelHref(phone: string): string {
 function encodeWhatsappHref(phone: string): string {
   const digits = phone.replace(/[^\d]/g, "");
   return `https://wa.me/${digits}`;
+}
+
+/**
+ * Validates a photo URL before it lands in a `style="background-image:url('...')"`
+ * attribute. We accept ONLY https URLs from a fixed allowlist of CDN
+ * hosts (Unsplash, Pexels, the workspace's own CDN if added later).
+ *
+ * This guard exists in addition to `escapeHtml` because the URL is
+ * embedded inside a CSS `url('...')` token: a quote-balanced injection
+ * could escape the property even after HTML-encoding. Returning null
+ * for anything outside the allowlist makes the renderer fall back to
+ * the gradient hero / skip the gallery, which is always safe.
+ */
+function pickSafePhotoUrl(input: string | null | undefined): string | null {
+  if (!input) return null;
+  const trimmed = String(input).trim();
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "https:") return null;
+  const host = parsed.hostname.toLowerCase();
+  const ALLOWED_HOSTS = [
+    "images.unsplash.com",
+    "images.pexels.com",
+  ];
+  if (!ALLOWED_HOSTS.includes(host)) return null;
+  // Strip any embedded quote chars defensively. URL spec disallows them
+  // unencoded, but a copy-paste mistake in the niche imagery file would
+  // otherwise blow up the CSS at render time.
+  return parsed.toString().replace(/['"\s]/g, "");
 }

@@ -83,6 +83,9 @@ export const CHAINS: Partial<Record<EventKind, Chain>> = {
   // Fires when the inbox sync worker finds a reply matching a sent
   // opener. The attributor updates pipeline state; the sentinel write
   // stores OPENER_SUCCESS / OPENER_FAILURE memory for the learning loop.
+  // SDR Brain v2 — `outcome_attribute` ALSO runs on every inbound
+  // reply so the active LeadNextAction + applied CommercialInsight
+  // close the loop and bump InsightPerformance counters.
   inbox_reply_received: [
     {
       stepId: "attribute",
@@ -94,6 +97,12 @@ export const CHAINS: Partial<Record<EventKind, Chain>> = {
       workerKind: "INBOX_REPLY_ATTRIBUTOR", // handled via sentinel
       dependsOn: ["attribute"],
       inputs: { __sentinel: SENTINEL_STEPS.WRITE_OPENER_OUTCOME },
+    },
+    {
+      stepId: "outcome_attribute",
+      workerKind: "OUTCOME_ATTRIBUTOR",
+      dependsOn: ["attribute"],
+      optional: true,
     },
   ],
 
@@ -160,6 +169,51 @@ export const CHAINS: Partial<Record<EventKind, Chain>> = {
       stepId: "receptionist",
       workerKind: "AI_RECEPTIONIST_BUILDER",
       dependsOn: ["webcrawl"],
+    },
+  ],
+
+  // ---------- SDR Brain — voice note added ----------
+  // Triggered by `POST /api/leads/[id]/voice-notes` after the audio
+  // is transcribed. Refreshes SPIN discovery + MEDDPICC qualification
+  // so the lead detail page shows the new evidence within ~10s. Both
+  // optional so a transcript that doesn't surface qualifying signal
+  // doesn't fail the session.
+  voice_note_added: [
+    {
+      stepId: "spin",
+      workerKind: "SPIN_EXTRACTOR",
+      dependsOn: [],
+      optional: true,
+    },
+    {
+      stepId: "meddpicc",
+      workerKind: "MEDDPICC_EXTRACTOR",
+      dependsOn: [],
+      optional: true,
+    },
+  ],
+
+  // ---------- SDR Brain — disposition logged ----------
+  // Triggered when the rep marks a call outcome (replied / not
+  // interested / scheduled callback). The attributor closes the loop
+  // on the active LeadNextAction + applied CommercialInsight.
+  disposition_logged: [
+    {
+      stepId: "attribute",
+      workerKind: "OUTCOME_ATTRIBUTOR",
+      dependsOn: [],
+    },
+  ],
+
+  // ---------- SDR Brain — watchlist stage changed ----------
+  // Triggered when a deal advances or regresses in the kanban. The
+  // attributor only writes a terminal outcome on WON/LOST moves;
+  // intermediate moves get a lighter-weight refresh.
+  watchlist_stage_changed: [
+    {
+      stepId: "attribute",
+      workerKind: "OUTCOME_ATTRIBUTOR",
+      dependsOn: [],
     },
   ],
 
@@ -236,6 +290,7 @@ export const LEAD_PIPELINE_ALLOWED_WORKERS: ReadonlySet<AgentWorkerKind> = new S
   "EMAIL_VERIFIER",
   "SALES_OPPORTUNITY_SCORER",
   "LEAD_DOSSIER_GENERATOR",
+  "LEAD_INTELLIGENCE_BRIEF",
   "OPENER_WRITER",
   "APIFY_GMAPS_DEEP",
   "APIFY_SERP_RANK",
@@ -243,6 +298,16 @@ export const LEAD_PIPELINE_ALLOWED_WORKERS: ReadonlySet<AgentWorkerKind> = new S
   "APIFY_INSTAGRAM_DEEP",
   "APIFY_FACEBOOK_DEEP",
   "APIFY_REDDIT_MENTIONS",
+  // SDR Brain v2 — every brain step runs on every lead; allow them
+  // in CUSTOM pipelines too. STAKEHOLDER_DISCOVERER is omitted (Phase 2).
+  "ICP_SCORER",
+  "ACCOUNT_TIER_RANKER",
+  "BANT_INFERRER",
+  "TRIGGER_DETECTOR",
+  "COMMERCIAL_INSIGHT_MATCHER",
+  "WHY_NOW_SYNTHESIZER",
+  "BUYING_COMMITTEE_MAPPER",
+  "OBJECTION_PREDICTOR",
 ]);
 
 /**
@@ -370,6 +435,63 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   // lead detail page when they're actually about to use it, which
   // fires `user_one_click_pitch` (mockup → opener) on demand.
 
+  // ----- SDR Brain v2 — T1 deterministic enrichers + T2 reasoners -----
+  // T1 fans out from `score` (which is the last "data layer" step). All
+  // T1s are pure functions over Lead/Audit/Review data, so they're cheap
+  // and write Lead-scoped facts (icpFitScore, account.tier, preliminary
+  // LeadNextAction). BANT also emits a preliminary NBA so the UI can
+  // render an action card within ~3-5s of lead_created.
+  const icpScorer: ChainStep = {
+    stepId: "icp_scorer",
+    workerKind: "ICP_SCORER",
+    dependsOn: ["score"],
+    optional: true,
+  };
+  const accountTier: ChainStep = {
+    stepId: "account_tier",
+    workerKind: "ACCOUNT_TIER_RANKER",
+    dependsOn: ["icp_scorer"],
+    optional: true,
+  };
+  const bant: ChainStep = {
+    stepId: "bant",
+    workerKind: "BANT_INFERRER",
+    dependsOn: ["score"],
+    optional: true,
+  };
+  // T2 reasoners — trigger detector first (rule-based + light Gemini),
+  // then everything that depends on triggers fans out in parallel.
+  const triggers: ChainStep = {
+    stepId: "triggers",
+    workerKind: "TRIGGER_DETECTOR",
+    dependsOn: ["score", "apify_webcrawl"],
+    optional: true,
+  };
+  const insightMatch: ChainStep = {
+    stepId: "insight_match",
+    workerKind: "COMMERCIAL_INSIGHT_MATCHER",
+    dependsOn: ["triggers"],
+    optional: true,
+  };
+  const whyNow: ChainStep = {
+    stepId: "why_now",
+    workerKind: "WHY_NOW_SYNTHESIZER",
+    dependsOn: ["triggers"],
+    optional: true,
+  };
+  const committee: ChainStep = {
+    stepId: "committee",
+    workerKind: "BUYING_COMMITTEE_MAPPER",
+    dependsOn: ["score"],
+    optional: true,
+  };
+  const objections: ChainStep = {
+    stepId: "objections",
+    workerKind: "OBJECTION_PREDICTOR",
+    dependsOn: ["score"],
+    optional: true,
+  };
+
   // Phase 0/B5 — the unified "Sales Confidence" brief. Runs at the
   // END of the chain (after every enrichment + scoring + dossier
   // has either finished or been SKIPPED) so it can read every
@@ -378,10 +500,28 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   // confidence" payload. Also writes Lead.salesConfidence and bumps
   // Lead.intelligenceVersion. Optional because a Gemini hiccup here
   // shouldn't FAIL the session — the dossier is still useful on its own.
+  //
+  // SDR Brain v2 — `intelligence_brief` is the T3 SDR_BRAIN: it reads
+  // every T1 + T2 artifact via memory and writes the final
+  // LeadNextAction with the reasoning graph + arbitration record. The
+  // dependsOn list grows accordingly so the orchestrator schedules it
+  // after the brain substrate has been written.
   const intelligenceBrief: ChainStep = {
     stepId: "intelligence_brief",
     workerKind: "LEAD_INTELLIGENCE_BRIEF",
-    dependsOn: ["score", "embed_profile", "dossier"],
+    dependsOn: [
+      "score",
+      "embed_profile",
+      "dossier",
+      "icp_scorer",
+      "account_tier",
+      "bant",
+      "triggers",
+      "insight_match",
+      "why_now",
+      "committee",
+      "objections",
+    ],
     optional: true,
   };
 
@@ -450,6 +590,14 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     deepScore,
     embedProfile,
     dossier,
+    icpScorer,
+    accountTier,
+    bant,
+    triggers,
+    insightMatch,
+    whyNow,
+    committee,
+    objections,
     intelligenceBrief,
   ];
 
@@ -475,10 +623,17 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   // want the mockup link in the opener trigger the explicit
   // `user_one_click_pitch` chain instead, which runs mockup → opener
   // sequentially and substitutes the URL.
+  //
+  // SDR Brain v2 — opener also depends on `intelligence_brief` so the
+  // cold-email body can ground itself in the SDR_BRAIN's WHY_NOW
+  // headline + matched CommercialInsight reframe + the top predicted
+  // objection's preemptive response. The brief is `optional` so a
+  // Gemini hiccup there doesn't block the opener entirely (opener
+  // falls back to dossier-only context the same way it did pre-brain).
   const opener: ChainStep = {
     stepId: "opener",
     workerKind: "OPENER_WRITER",
-    dependsOn: ["score", "dossier"],
+    dependsOn: ["score", "dossier", "intelligence_brief"],
     optional: true,
   };
 
@@ -496,8 +651,16 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     deepScore,
     embedProfile,
     dossier,
-    opener,
+    icpScorer,
+    accountTier,
+    bant,
+    triggers,
+    insightMatch,
+    whyNow,
+    committee,
+    objections,
     intelligenceBrief,
+    opener,
   ];
 
   if (preset === "AGGRESSIVE") {

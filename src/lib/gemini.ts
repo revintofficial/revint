@@ -703,9 +703,14 @@ export async function generateWebsitePlan(input: WebsitePlanInput): Promise<stri
 
 /**
  * P0.1 - Review Intelligence v1.
- * Aggregates up to 50 raw GoogleReview rows into a structured KPI bar
+ * Aggregates up to 500 raw GoogleReview rows into a structured KPI bar
  * analysis (Mapileads-style). Returns weakness/strength bars, sentiment,
  * pain phrases, switch signals, and a 0-100 lead score.
+ *
+ * The 500 cap matches APIFY_GMAPS_DEEP's `DEFAULT_MAX_REVIEWS` so a
+ * lead with a deep scrape gets every ingested review fed back into the
+ * analysis (vs the previous 50-row truncation that silently discarded
+ * 90% of an Apify-funded review pull).
  *
  * Beta finding §3 — when the workspace niche is RESTAURANT_TECH the
  * F&B label whitelist is injected at TWO layers:
@@ -850,8 +855,12 @@ export async function analyzeReviewsWithGemini(input: {
     },
   });
 
+  // Cap at 500 reviews to bound prompt token cost (worst case ~500 × 80
+  // tokens ≈ 40k input tokens, well under Gemini 2.5 Flash's 1M context).
+  // Anything beyond 500 is diminishing-return signal — the KPI clusters
+  // converge long before we run out of corpus.
   const reviewsText = input.reviews
-    .slice(0, 50)
+    .slice(0, 500)
     .map(
       (r, i) =>
         `${i + 1}. ${r.authorName} (${r.rating}/5, ${r.relativeTime}): ${r.text || "[No review text, star rating only]"}`,

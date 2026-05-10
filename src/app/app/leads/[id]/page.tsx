@@ -38,12 +38,14 @@ import {
   SUPPRESS_WHEN_NO_WEBSITE,
 } from "@/lib/labels";
 import { ReviewIntelligencePanel } from "@/components/app/review-intelligence-panel";
+import { ReviewTimelineChart } from "@/components/app/review-timeline-chart";
 import { GoogleReviewsAccordion } from "@/components/app/google-reviews-accordion";
 import { VoiceNotesPanel } from "@/components/app/voice-notes-panel";
 import { SocialProfileIcons } from "@/components/app/social-profile-icons";
 import { LeadMapView } from "@/components/app/lead-map-view";
 import { AiWorkersPanel } from "@/components/app/ai-workers-panel";
 import { PlannerActions } from "@/components/app/planner-actions";
+import { NbaCard } from "@/components/app/nba/NbaCard";
 import { WebsiteIntelligencePanel } from "@/components/app/website-intelligence-panel";
 import {
   ArrowLeft,
@@ -719,6 +721,12 @@ export default function LeadDetailPage({
             </div>
 
             <TabsContent value="overview" className="space-y-5">
+              {/* SDR Brain v2 — Next Best Action card. Renders the
+                  preliminary (T1, BANT-only) recommendation immediately
+                  on lead_created and morphs into the final SDR_BRAIN
+                  card once T3 finishes. Card polls its own endpoint;
+                  do not pass refetchLead. */}
+              <NbaCard leadId={lead.id} />
               <DossierSection
                 dossier={dossier}
                 loading={dossierLoading}
@@ -814,6 +822,9 @@ export default function LeadDetailPage({
                   storedReviewCount={lead.googleReviews?.length ?? 0}
                   totalReviewCount={lead.reviewCount ?? 0}
                 />
+              </div>
+              <div id="anchor-review-timeline">
+                <ReviewTimelineChart leadId={lead.id} />
               </div>
               <div id="anchor-reviews">
                 <GoogleReviewsAccordion leadId={lead.id} />

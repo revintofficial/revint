@@ -84,6 +84,16 @@ function eventToTrigger(event: EventKind): PlannerTrigger {
       return "USER_BUTTON";
     case "user_deep_research":
       return "USER_DEEP_RESEARCH";
+    // SDR Brain v2 — discovery + outcome events. The voice note +
+    // disposition events originate from the rep clicking a button in
+    // the UI, so they're USER_BUTTON-triggered. Stage changes and the
+    // brain-completed reaction event are system EVENTs.
+    case "voice_note_added":
+    case "disposition_logged":
+      return "USER_BUTTON";
+    case "watchlist_stage_changed":
+    case "outcome_attributed":
+    case "sdr_brain_completed":
     case "lead_created":
     case "lead_reviews_updated":
     case "inbox_reply_received":
@@ -107,6 +117,16 @@ function humanGoal(event: EventKind, payload: EventPayload): string {
       return `Deep research enrichment${lead}`;
     case "user_receptionist_with_kb":
       return `AI receptionist with knowledge base${lead}`;
+    case "voice_note_added":
+      return `Refresh discovery + qualification from voice note${lead}`;
+    case "disposition_logged":
+      return `Attribute call disposition${lead}`;
+    case "watchlist_stage_changed":
+      return `Attribute pipeline stage change${lead}`;
+    case "outcome_attributed":
+      return `Outcome attributed${lead}`;
+    case "sdr_brain_completed":
+      return `SDR Brain completed${lead}`;
     default:
       return `Run chain ${event}${lead}`;
   }

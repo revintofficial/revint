@@ -30,7 +30,11 @@ export async function runReviewAnalysisJob(leadId: string): Promise<{
         workspace: { select: { offerName: true, valueProposition: true, niche: true } },
         googleReviews: {
           orderBy: { publishTime: "desc" },
-          take: 50,
+          // 500 matches APIFY_GMAPS_DEEP's DEFAULT_MAX_REVIEWS and the
+          // slice cap inside `analyzeReviewsWithGemini`. A deep Apify
+          // scrape can land 500 reviews per lead; truncating to 50
+          // here threw away 90% of that paid corpus.
+          take: 500,
         },
       },
     });

@@ -52,6 +52,15 @@ import { listByLead as listMemoryByLead } from "@/lib/ai-core/memory";
 import { runAuditChecklist } from "@/lib/audit-checklist";
 import { getNicheBySlug } from "@/lib/niches";
 import type { WebsiteFeatures } from "@/types";
+import type { NextActionKind, Channel, Prisma } from "@/generated/prisma/client";
+import {
+  ReasoningGraphBuilder,
+  type ReasoningGraph,
+} from "@/lib/sdr-brain/reasoning-graph";
+import {
+  detectContradictions,
+  type T2Snapshot,
+} from "@/lib/sdr-brain/contradictions";
 import type {
   AgentWorkerContext,
   AgentWorkerOutput,
@@ -589,10 +598,41 @@ export const run: AgentWorkerRun = async (
     },
   });
 
-  const output: BriefOutput = {
+  // ----- SDR Brain v2 — reasoning + arbitration + final NBA upsert -----
+  // Reads the T1 + T2 substrate from semantic memory and active
+  // LeadTrigger rows, runs the deterministic contradiction pre-pass,
+  // and persists the final LeadNextAction with a typed reasoningGraph.
+  const sdrBrainResult = await runSdrBrainPass({
+    workspaceId,
+    leadId,
+    lead,
+    brief,
+    auditScorePct,
+    reviewLeadScore,
+    opportunityScore,
+  });
+
+  // Emit the brain-completed event so the UI cache + downstream
+  // listeners (analytics, Slack notifications) can react.
+  if (sdrBrainResult) {
+    try {
+      await ctx.emit("sdr_brain_completed", {
+        leadActionId: sdrBrainResult.leadActionId,
+        confidence: sdrBrainResult.confidence,
+      });
+    } catch (err) {
+      logger.warn("agent_workers.lead_intelligence_brief.sdr_brain_emit_failed", {
+        leadId,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  const output: BriefOutput & { sdrBrain?: typeof sdrBrainResult } = {
     ...brief,
     intelligenceVersion: newVersion,
     generatedAt: new Date().toISOString(),
+    sdrBrain: sdrBrainResult,
   };
 
   logger.info("agent_workers.lead_intelligence_brief.done", {
@@ -600,6 +640,7 @@ export const run: AgentWorkerRun = async (
     intelligenceVersion: newVersion,
     salesConfidence: brief.salesConfidence,
     hasDossier: dossierMarkdown != null,
+    sdrBrainContradictionCount: sdrBrainResult?.contradictionCount ?? 0,
   });
 
   return {
@@ -607,3 +648,404 @@ export const run: AgentWorkerRun = async (
     costTokens: 0,
   };
 };
+
+/**
+ * Maps a free-form `BriefOutput.nextAction.kind` string to the
+ * `NextActionKind` enum used by `LeadNextAction.actionKind`. Unknown
+ * values fall back to `WAIT_FOR_REPLY` (the safe default — we don't
+ * want a typo in Gemini output to escalate every lead to AE).
+ */
+function mapNextActionKind(raw: string | undefined | null): NextActionKind {
+  const allowed: NextActionKind[] = [
+    "CALL_NOW",
+    "CALL_AT_WINDOW",
+    "EMAIL_FIRST",
+    "WHATSAPP",
+    "WAIT_FOR_REPLY",
+    "DROP_LEAD",
+    "RE_ENGAGE",
+    "BOOK_DISCOVERY",
+    "ENROLL_IN_CAMPAIGN",
+    "ESCALATE_TO_AE",
+  ];
+  if (raw && allowed.includes(raw as NextActionKind)) return raw as NextActionKind;
+  return "WAIT_FOR_REPLY";
+}
+
+function inferChannel(actionKind: NextActionKind): Channel | null {
+  switch (actionKind) {
+    case "CALL_NOW":
+    case "CALL_AT_WINDOW":
+      return "PHONE";
+    case "EMAIL_FIRST":
+      return "EMAIL";
+    case "WHATSAPP":
+      return "WHATSAPP";
+    case "BOOK_DISCOVERY":
+    case "RE_ENGAGE":
+    case "ENROLL_IN_CAMPAIGN":
+      return "EMAIL";
+    case "WAIT_FOR_REPLY":
+    case "DROP_LEAD":
+    case "ESCALATE_TO_AE":
+    default:
+      return null;
+  }
+}
+
+/**
+ * Builds the SDR Brain reasoning graph + persists the final
+ * LeadNextAction. Returns null when the brain has nothing to write
+ * (no triggers, no T2 substrate) — the brief alone is enough.
+ *
+ * Side effects:
+ *   - Supersedes any `isPreliminary = true` LeadNextAction rows.
+ *   - Inserts a new `isPreliminary = false` row with the reasoning
+ *     graph + arbitration log.
+ *   - Inserts InsightApplication rows for each insight that the
+ *     brain selected (top 1 by Wilson lower-bound).
+ */
+async function runSdrBrainPass(args: {
+  workspaceId: string;
+  leadId: string;
+  lead: AgentWorkerContext["lead"];
+  brief: Omit<BriefOutput, "intelligenceVersion" | "generatedAt">;
+  auditScorePct: number | null;
+  reviewLeadScore: number | null;
+  opportunityScore: number | null;
+}): Promise<{
+  leadActionId: string;
+  actionKind: NextActionKind;
+  confidence: number;
+  contradictionCount: number;
+  insightApplied: string | null;
+} | null> {
+  const { workspaceId, leadId, lead, brief } = args;
+  if (!lead) return null;
+
+  // Pull active triggers and T2 reasoning summaries written by
+  // WHY_NOW / INSIGHT_MATCH / COMMITTEE / OBJECTIONS / BANT.
+  const [triggers, summaryMemory] = await Promise.all([
+    prisma.leadTrigger.findMany({
+      where: { workspaceId, leadId, isActive: true },
+      orderBy: [{ severity: "desc" }, { confidence: "desc" }],
+      take: 12,
+    }),
+    prisma.semanticMemory.findMany({
+      where: { workspaceId, leadId, kind: "REASONING_SUMMARY" },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: {
+        id: true,
+        text: true,
+        refType: true,
+        metadata: true,
+      },
+    }),
+  ]);
+
+  // Bucket the T2 reasoning summaries by the worker that wrote them.
+  const whyNow = summaryMemory.find((m) => m.refType === "WhyNowSynthesizer");
+  const bant = summaryMemory.find((m) => m.refType === "BantInferrer");
+  const insightMatch = summaryMemory.find((m) => m.refType === "CommercialInsightMatcher");
+  const committee = summaryMemory.find((m) => m.refType === "BuyingCommitteeMapper");
+  const objections = summaryMemory.find((m) => m.refType === "ObjectionPredictor");
+
+  const whyNowMeta = (whyNow?.metadata as { urgencyScore?: number; recommendedTimingDays?: number } | null) ?? null;
+  const bantMeta =
+    (bant?.metadata as {
+      totalScore?: number;
+      overall?: number;
+      timing?: number;
+      budget?: number;
+      authority?: number;
+      need?: number;
+    } | null) ?? null;
+  const insightMeta =
+    (insightMatch?.metadata as { topInsightId?: string; topInsightTitle?: string; wilson?: number } | null) ?? null;
+  const committeeMeta = (committee?.metadata as { roles?: string[]; topInfluence?: number } | null) ?? null;
+  const objectionsMeta = (objections?.metadata as { topCategories?: string[] } | null) ?? null;
+
+  // Bail when we have literally nothing to reason about — the brief
+  // alone is the rep-facing artifact.
+  if (
+    triggers.length === 0 &&
+    !whyNow &&
+    !bant &&
+    !insightMatch &&
+    !committee &&
+    !objections
+  ) {
+    return null;
+  }
+
+  // Build the T2 snapshot in the shape the contradiction detector wants.
+  const t2Snapshot: T2Snapshot = {
+    bant: bantMeta
+      ? {
+          budget: bantMeta.budget ?? 0,
+          authority: bantMeta.authority ?? 0,
+          need: bantMeta.need ?? 0,
+          timing: bantMeta.timing ?? 0,
+          overall: bantMeta.overall ?? bantMeta.totalScore ?? 0,
+        }
+      : null,
+    whyNow: whyNowMeta
+      ? {
+          urgency: whyNowMeta.urgencyScore ?? 0,
+          headline: whyNow?.text ?? "",
+        }
+      : null,
+    scorer:
+      args.opportunityScore != null
+        ? {
+            opportunityScore: args.opportunityScore,
+            icpFit: lead.icpFitScore ?? null,
+          }
+        : null,
+    triggers: triggers.map((t) => ({
+      id: t.id,
+      type: t.type,
+      severity: t.severity,
+      confidence: t.confidence,
+    })),
+    insights: insightMeta?.topInsightId
+      ? [{ id: insightMeta.topInsightId, appliedTriggers: [] }]
+      : [],
+    committee: committeeMeta
+      ? {
+          hasIdentifiedChampion: (committeeMeta.roles ?? []).includes("CHAMPION"),
+          hasIdentifiedEconomicBuyer: (committeeMeta.roles ?? []).includes("DECISION_MAKER"),
+        }
+      : null,
+    objectionsPredicted: objectionsMeta?.topCategories ?? [],
+    competitorsMentionedCount: 0,
+    audit: lead.websiteAudit
+      ? {
+          checklistScorePct: args.auditScorePct,
+          hasBookingSystem: lead.websiteAudit.hasBookingSystem,
+          hasEcommerce: lead.websiteAudit.hasEcommerce,
+        }
+      : null,
+    lead: {
+      priceLevel: lead.priceLevel ?? null,
+      reviewCount: lead.reviewCount ?? null,
+      rating: lead.rating ?? null,
+    },
+  };
+
+  // Run the deterministic contradiction detector pre-pass.
+  const contradictionResults = detectContradictions(t2Snapshot);
+
+  // Build the reasoning graph using the actual builder API. Node ids
+  // follow the conventions documented in `reasoning-graph.ts`:
+  //   trigger.<id>, audit.checklist, ev.review.<id>, bant.*, whyNow.*,
+  //   insight.<id>, committee.<role>, objections.predicted, decision.
+  const builder = new ReasoningGraphBuilder("sdr-brain-v2");
+  const declaredNodeIds = new Set<string>();
+  const declare = (id: string): string => {
+    declaredNodeIds.add(id);
+    return id;
+  };
+
+  const evidenceIds: string[] = [];
+  for (const trig of triggers.slice(0, 6)) {
+    const id = declare(`trigger.${trig.id}`);
+    builder.addEvidence(
+      id,
+      `${trig.type} severity=${trig.severity} confidence=${Math.round(trig.confidence * 100)}%`,
+      trig.severity / 100,
+      trig.confidence,
+      { workerKind: "TRIGGER_DETECTOR", refType: "LeadTrigger", refId: trig.id },
+    );
+    evidenceIds.push(id);
+  }
+  if (args.auditScorePct != null) {
+    const id = declare("audit.checklist");
+    builder.addEvidence(id, `${args.auditScorePct}% audit checks passed`, 0.4, 0.9, {
+      workerKind: "WEBSITE_AUDITOR",
+    });
+    evidenceIds.push(id);
+  }
+  if (args.reviewLeadScore != null) {
+    const id = declare("ev.reviews");
+    builder.addEvidence(id, `Review lead score ${args.reviewLeadScore}/100`, 0.3, 0.85, {
+      workerKind: "REVIEW_ANALYST",
+    });
+    evidenceIds.push(id);
+  }
+  if (args.opportunityScore != null) {
+    const id = declare("scorer.opportunity");
+    builder.addEvidence(id, `Opportunity score ${args.opportunityScore}/100`, 0.3, 0.8, {
+      workerKind: "SALES_OPPORTUNITY_SCORER",
+    });
+    evidenceIds.push(id);
+  }
+
+  // Inference nodes per T2 reasoner. Map each to a stable id so
+  // contradiction edges can reference them.
+  const inferenceIds: string[] = [];
+  if (bant) {
+    const id = declare("bant.overall");
+    builder.addInference(id, bant.text.slice(0, 200), 0.6, 0.7);
+    inferenceIds.push(id);
+    for (const ev of evidenceIds) builder.link(ev, id, "DERIVES");
+  }
+  if (whyNow) {
+    const id = declare("whyNow.urgency");
+    builder.addInference(id, whyNow.text.slice(0, 200), 0.7, 0.75);
+    inferenceIds.push(id);
+    for (const ev of evidenceIds.slice(0, 3)) builder.link(ev, id, "SUPPORTS");
+  }
+  if (insightMatch && insightMeta?.topInsightId) {
+    const id = declare(`insight.${insightMeta.topInsightId}`);
+    builder.addInference(id, insightMatch.text.slice(0, 200), 0.6, insightMeta.wilson ?? 0.6);
+    inferenceIds.push(id);
+  }
+  if (committee) {
+    const id = declare("committee.map");
+    builder.addInference(id, committee.text.slice(0, 200), 0.5, 0.7);
+    inferenceIds.push(id);
+  }
+  if (objections) {
+    const id = declare("objections.predicted");
+    builder.addInference(id, objections.text.slice(0, 200), 0.5, 0.6);
+    inferenceIds.push(id);
+  }
+
+  // Apply the contradiction detector results: each becomes a record
+  // on the graph + a CONTRADICTS edge (the builder mirrors it
+  // automatically inside addContradiction). Contradictions referencing
+  // node ids we didn't declare still surface in the arbitration log
+  // but are NOT mirrored as graph edges (assertGraphIntegrity guard).
+  const contradictionRecords: import("@/lib/sdr-brain/reasoning-graph").ContradictionRecord[] = [];
+  for (const c of contradictionResults) {
+    const record: import("@/lib/sdr-brain/reasoning-graph").ContradictionRecord = {
+      code: c.code,
+      fromNodeId: c.fromNodeId,
+      toNodeId: c.toNodeId,
+      reason: c.reason,
+      // Phase 1 default: prefer the FIRST node when it's a bant.*
+      // signal (BANT wins on conflict by convention), else BLEND so
+      // the brief still presents both sides.
+      resolution: c.fromNodeId.startsWith("bant.") ? "PREFER_FIRST" : "BLEND",
+      resolverNote: "Phase 1 deterministic policy; Gemini arbitration is Phase 2.",
+    };
+    if (declaredNodeIds.has(c.fromNodeId) && declaredNodeIds.has(c.toNodeId)) {
+      builder.addContradiction(record);
+    }
+    contradictionRecords.push(record);
+  }
+
+  // Decision node — the final NBA.
+  const actionKind = mapNextActionKind(brief.nextAction.kind);
+  const channel = inferChannel(actionKind);
+  const decisionConfidence = brief.salesConfidence;
+  declare("decision");
+  builder.addDecision(
+    "decision",
+    `NBA=${actionKind}: ${brief.nextAction.note.slice(0, 160)}`,
+    1,
+    decisionConfidence / 100,
+  );
+  for (const inf of inferenceIds) builder.link(inf, "decision", "DERIVES");
+  for (const ev of evidenceIds.slice(0, 4)) builder.link(ev, "decision", "SUPPORTS");
+
+  const reasoningGraph: ReasoningGraph = builder.build();
+
+  // Compute timing window.
+  const recommendedDays = whyNowMeta?.recommendedTimingDays ?? 14;
+  const timingWindowEnd = new Date(Date.now() + recommendedDays * 24 * 60 * 60 * 1000);
+
+  // Supersede any preliminary NBA + insert the final one.
+  const nextVersion = await nextLeadActionVersion(workspaceId, leadId);
+
+  await prisma.leadNextAction.updateMany({
+    where: {
+      workspaceId,
+      leadId,
+      isPreliminary: true,
+      supersededAt: null,
+    },
+    data: { supersededAt: new Date() },
+  });
+
+  // Also supersede any prior FINAL NBA so only the latest version is
+  // the "active" recommendation. The OUTCOME_ATTRIBUTOR queries
+  // `supersededAt IS NULL` to attach outcomes — we don't want a stale
+  // recommendation to absorb the credit / blame for a fresh reply.
+  await prisma.leadNextAction.updateMany({
+    where: {
+      workspaceId,
+      leadId,
+      isPreliminary: false,
+      supersededAt: null,
+    },
+    data: { supersededAt: new Date() },
+  });
+
+  const created = await prisma.leadNextAction.create({
+    data: {
+      workspaceId,
+      leadId,
+      version: nextVersion,
+      isPreliminary: false,
+      actionKind,
+      timingWindowStart: new Date(),
+      timingWindowEnd,
+      channel,
+      primaryAngleId: insightMeta?.topInsightId ?? null,
+      triggerIds: triggers.slice(0, 6).map((t) => t.id),
+      openingHook: brief.openerSeed.slice(0, 800),
+      whatNotToPitch: brief.confirmedMissingFeatures.slice(0, 5),
+      qualificationGap: [],
+      predictedObjections: brief.replyObjections.slice(0, 5),
+      recommendedFramework: insightMeta?.topInsightId ? "CHALLENGER" : "AIDA",
+      confidence: decisionConfidence,
+      reasoning: brief.headline.slice(0, 4000),
+      reasoningGraph: reasoningGraph as unknown as Prisma.InputJsonValue,
+      arbitrationRecords: contradictionRecords as unknown as Prisma.InputJsonValue,
+    },
+  });
+
+  // Persist InsightApplication for the chosen insight (if any).
+  let insightApplied: string | null = null;
+  if (insightMeta?.topInsightId) {
+    try {
+      await prisma.insightApplication.create({
+        data: {
+          workspaceId,
+          leadId,
+          insightId: insightMeta.topInsightId,
+          surface: "NBA",
+          framework: "CHALLENGER",
+          attributedBy: "SDR_BRAIN",
+        },
+      });
+      insightApplied = insightMeta.topInsightId;
+    } catch (err) {
+      logger.warn("agent_workers.lead_intelligence_brief.insight_application_failed", {
+        leadId,
+        insightId: insightMeta.topInsightId,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  return {
+    leadActionId: created.id,
+    actionKind,
+    confidence: decisionConfidence,
+    contradictionCount: contradictionRecords.length,
+    insightApplied,
+  };
+}
+
+async function nextLeadActionVersion(workspaceId: string, leadId: string): Promise<number> {
+  const latest = await prisma.leadNextAction.findFirst({
+    where: { workspaceId, leadId },
+    orderBy: { version: "desc" },
+    select: { version: true },
+  });
+  return (latest?.version ?? 0) + 1;
+}

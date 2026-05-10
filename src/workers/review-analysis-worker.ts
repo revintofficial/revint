@@ -1,7 +1,7 @@
 /**
  * P0.1 - Review Intelligence v1 worker.
  *
- * Reads up to 50 GoogleReview rows for a lead, calls Gemini 2.5 Flash to
+ * Reads up to 500 GoogleReview rows for a lead, calls Gemini 2.5 Flash to
  * produce KPI bar aggregation (weakness/strength %, sentiment, pain phrases,
  * switch signals, lead score), and upserts the result into ReviewAnalysis.
  *

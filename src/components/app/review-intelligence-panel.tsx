@@ -86,8 +86,14 @@ interface Props {
 
 type Status = "PENDING" | "ANALYZING" | "ANALYZED" | "FAILED" | "NO_REVIEWS";
 
-/** Batch size for Review Intelligence “fetch more” (Apify `maxReviews` cap). */
-const APIFY_EXTRA_REVIEWS = 60;
+/**
+ * Batch size for Review Intelligence "fetch more" (Apify `maxReviews` cap).
+ * 500 matches `APIFY_GMAPS_DEEP`'s server-side `DEFAULT_MAX_REVIEWS` and
+ * the slice cap inside `analyzeReviewsWithGemini`, so the deep-scrape
+ * button pulls (and the analyzer consumes) the full corpus rather than
+ * the previous truncated 60-review batch.
+ */
+const APIFY_EXTRA_REVIEWS = 500;
 
 export function ReviewIntelligencePanel({
   leadId,
@@ -181,7 +187,7 @@ export function ReviewIntelligencePanel({
         return;
       }
       toast.success(
-        `Fetching up to ${APIFY_EXTRA_REVIEWS} Google Maps reviews via Apify — refresh analysis after it finishes.`,
+        `Fetching up to ${APIFY_EXTRA_REVIEWS} Google Maps reviews via Apify — this can take a few minutes; refresh analysis after it finishes.`,
       );
     } catch {
       toast.error("Couldn't trigger deep review fetch.");
@@ -190,12 +196,16 @@ export function ReviewIntelligencePanel({
     }
   };
 
-  // Show "Get More Reviews" banner when stored count is low relative to
-  // total available on Google Maps.
+  // Show "Get More Reviews" banner whenever we have meaningfully fewer
+  // reviews stored than Google Maps reports for the lead. The bar is
+  // capped at 500 (Apify cap), so we compare against
+  // min(totalReviewCount, 500). We still show it if we have <500 stored
+  // and Google has more — so a lead with 200 reviews on Maps and only 5
+  // stored gets the prompt to pull the rest.
   const showDeepReviewsBanner =
     totalReviewCount > 0 &&
-    storedReviewCount < Math.min(totalReviewCount, 20) &&
-    totalReviewCount > storedReviewCount;
+    totalReviewCount > storedReviewCount &&
+    storedReviewCount < Math.min(totalReviewCount, APIFY_EXTRA_REVIEWS);
 
   if (loading) {
     return (
@@ -278,7 +288,7 @@ export function ReviewIntelligencePanel({
               }}
             >
               <span>
-                {storedReviewCount} reviews saved — add up to {APIFY_EXTRA_REVIEWS} more from Google Maps via
+                {storedReviewCount} reviews saved — pull up to {APIFY_EXTRA_REVIEWS} from Google Maps via
                 Apify
               </span>
               <Button
@@ -293,12 +303,12 @@ export function ReviewIntelligencePanel({
                 disabled={fetchingDeep}
               >
                 {fetchingDeep ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-                <span className="ml-1">+{APIFY_EXTRA_REVIEWS} more (Apify)</span>
+                <span className="ml-1">Pull {APIFY_EXTRA_REVIEWS} (Apify)</span>
               </Button>
             </div>
           )}
           <p className="text-sm text-white/50 leading-relaxed">
-            Run up to 50 Google reviews for this lead through Gemini in a KPI-bar format.
+            Run up to 500 Google reviews for this lead through Gemini in a KPI-bar format.
             The strongest play here: the thing customers complain about most lands straight
             in the mockup hero, praise goes into Services, and switch signals feed the pitch.
           </p>
@@ -337,7 +347,7 @@ export function ReviewIntelligencePanel({
               disabled={fetchingDeep}
             >
               {fetchingDeep ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-              <span className="ml-1">+{APIFY_EXTRA_REVIEWS} more (Apify)</span>
+              <span className="ml-1">Pull {APIFY_EXTRA_REVIEWS} (Apify)</span>
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={runAnalysis} disabled={running}>

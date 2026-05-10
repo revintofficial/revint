@@ -4,6 +4,7 @@ import { getMockupRenderer } from "@/lib/mockups/templates";
 import { renderLeadacHero } from "@/lib/mockups/renderers/leadac-hero";
 import { parseBranding } from "@/lib/branding";
 import type { WebsiteMockupSections } from "@/lib/prompts/website-mockup-prompt";
+import { getVisualIdentityForLead } from "@/lib/niches";
 
 /**
  * Public mockup view route. Served as raw HTML (not React) because the page
@@ -61,6 +62,13 @@ export async function GET(
       const branding = wm.lead.workspace.plan === "AGENCY"
         ? parseBranding(wm.lead.workspace.branding)
         : null;
+      // Re-resolve the niche visual identity so the re-render matches
+      // what the worker would have produced. Cheap (pure data lookup);
+      // only runs on the rare cache-miss path.
+      const visual = getVisualIdentityForLead({
+        subNicheSlug: wm.lead.subNicheSlug ?? null,
+        nicheSlug: wm.lead.nicheSlug ?? null,
+      });
       html = renderLeadacHero({
         businessName: wm.lead.businessName,
         formattedAddress: wm.lead.formattedAddress,
@@ -71,6 +79,8 @@ export async function GET(
         reviewCount: wm.lead.reviewCount,
         googleMapsUri: wm.lead.googleMapsUri,
         sections: wm.sectionsJson as unknown as WebsiteMockupSections,
+        imagery: visual.imagery,
+        secondaryHex: visual.theme.secondaryHex ?? null,
         workspaceName: wm.lead.workspace.name,
         branding,
         lang: wm.lead.workspace.language ?? "en",
