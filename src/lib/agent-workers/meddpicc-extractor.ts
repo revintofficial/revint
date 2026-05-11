@@ -74,7 +74,7 @@ export const run: AgentWorkerRun = async (
   // Find the active watchlist item for this lead. MEDDPICC only makes
   // sense for deals in pipeline; bail out cleanly otherwise.
   const watchlistItem = await prisma.watchlistItem.findFirst({
-    where: { workspaceId: ctx.workspaceId, leadId: lead.id },
+    where: { leadId: lead.id, lead: { workspaceId: ctx.workspaceId } },
     orderBy: { createdAt: "desc" },
   });
   if (!watchlistItem) {

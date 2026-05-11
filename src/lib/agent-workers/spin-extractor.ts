@@ -57,7 +57,7 @@ export const run: AgentWorkerRun = async (
 
   // Find an active watchlist item if any so the session links into the deal.
   const watchlistItem = await prisma.watchlistItem.findFirst({
-    where: { workspaceId: ctx.workspaceId, leadId: lead.id },
+    where: { leadId: lead.id, lead: { workspaceId: ctx.workspaceId } },
     orderBy: { createdAt: "desc" },
     select: { id: true },
   });

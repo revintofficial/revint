@@ -414,7 +414,7 @@ export const run: AgentWorkerRun = async (
   if (lead.reviewAnalysis) {
     const ra = lead.reviewAnalysis;
     const kpis: WeaknessKpi[] = Array.isArray(ra.weaknessKpis)
-      ? (ra.weaknessKpis as WeaknessKpi[])
+      ? (ra.weaknessKpis as unknown as WeaknessKpi[])
       : [];
 
     // ---- Rule C: BAD_SERVICE_REVIEWS via structured KPIs ----
@@ -671,7 +671,7 @@ export const run: AgentWorkerRun = async (
         : [];
       const reviewSummary =
         ra?.weaknessKpis && Array.isArray(ra.weaknessKpis)
-          ? (ra.weaknessKpis as WeaknessKpi[])
+          ? (ra.weaknessKpis as unknown as WeaknessKpi[])
               .slice(0, 5)
               .map((k) => `${k.label} (${k.count ?? 0})`)
               .join(", ")

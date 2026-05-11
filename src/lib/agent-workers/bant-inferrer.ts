@@ -211,7 +211,6 @@ export const run: AgentWorkerRun = async (
       whatNotToPitch: [],
       confidence: preliminary.confidence,
       reasoning: preliminary.reasoning,
-      reasoningGraph: null,
       arbitrationRecords: [],
     },
   });

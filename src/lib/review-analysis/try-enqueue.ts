@@ -35,14 +35,14 @@ async function hasActiveWorker(timeoutMs: number): Promise<boolean> {
     return cachedHasWorker;
   }
   try {
-    const queue = getReviewAnalysisQueue();
+    const queue = getReviewAnalysisQueue() as unknown as {
+      getWorkers: () => Promise<unknown[]>;
+    };
     const probe = queue.getWorkers();
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("worker_probe_timeout")), timeoutMs),
     );
-    const workers = (await Promise.race([probe, timeout])) as Awaited<
-      ReturnType<typeof queue.getWorkers>
-    >;
+    const workers = (await Promise.race([probe, timeout])) as unknown[];
     cachedHasWorker = Array.isArray(workers) && workers.length > 0;
     workerProbeAt = Date.now();
     return cachedHasWorker;

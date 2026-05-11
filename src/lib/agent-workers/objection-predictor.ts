@@ -45,9 +45,8 @@ export const run: AgentWorkerRun = async (
   const features: string[] = [];
   if (audit?.hasBookingSystem) features.push("has booking system");
   else features.push("no booking system");
-  if (audit?.hasOnlineOrdering) features.push("has online ordering");
+  if (audit?.hasEcommerce) features.push("has online ordering");
   if (audit?.bookingProvider) features.push(`booking provider: ${audit.bookingProvider}`);
-  if (audit?.posProvider) features.push(`POS: ${audit.posProvider}`);
   if (lead.rating != null) features.push(`rating ${lead.rating}/5`);
   if (lead.reviewCount != null) features.push(`${lead.reviewCount} reviews`);
   if (review?.painPhrases) {
