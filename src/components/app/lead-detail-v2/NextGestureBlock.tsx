@@ -31,7 +31,12 @@ import {
 } from "@/components/app/nba/NbaCard";
 import { Badge } from "@/components/ui/badge";
 import { useRecentDial } from "./RecentDialContext";
+import {
+  RecommendedApproach,
+  type RecommendedApproachCopy,
+} from "./RecommendedApproach";
 import { SnoozeMenu, type SnoozeMenuCopy } from "./SnoozeMenu";
+import type { RecommendedPackageDto } from "@/lib/lead-detail/use-decision-surface";
 
 export interface NextGestureBlockCopy {
   preliminary: string;
@@ -44,6 +49,8 @@ export interface NextGestureBlockCopy {
   schedule: string;
   snooze: string;
   snoozeMenu: SnoozeMenuCopy;
+  // Phase 2.5 — additive copy for the recommended-approach subsection.
+  recommendedApproach?: RecommendedApproachCopy;
 }
 
 export interface NextGestureBlockProps {
@@ -52,6 +59,12 @@ export interface NextGestureBlockProps {
   leadId: string;
   phone: string | null;
   email: string | null;
+  // Phase 2.5 — package + first-message recommendations from the
+  // V1 SCORER worker (absorbed into the NEXT_GESTURE block per
+  // PLAN §5.9 rows 11/12).
+  recommendedPackage?: RecommendedPackageDto | null;
+  personalizedFirstMessage?: string | null;
+  plan?: "FREE" | "PRO" | "PRO_TEAM" | "AGENCY" | null;
   copy: NextGestureBlockCopy;
   /** Optional callback for the parent to invalidate the queue strip. */
   onSnoozed?: () => void;
@@ -76,6 +89,9 @@ export function NextGestureBlock({
   leadId,
   phone,
   email,
+  recommendedPackage,
+  personalizedFirstMessage,
+  plan,
   copy,
   onSnoozed,
 }: NextGestureBlockProps): ReactNode {
@@ -96,10 +112,26 @@ export function NextGestureBlock({
   }
 
   if (!data || (!data.preliminary && !data.final)) {
+    // Phase 2.5 — even when there's no NBA yet, we still want to
+    // surface the absorbed V1 RecommendedApproach signal if the
+    // worker pre-computed a package + first message. Hide entirely
+    // when both are missing AND we're not on FREE (no upgrade nudge
+    // to render).
     return (
-      <p className="text-[13px]" style={{ color: "var(--leadac-text-3)" }}>
-        {copy.empty}
-      </p>
+      <div className="space-y-3">
+        <p className="text-[13px]" style={{ color: "var(--leadac-text-3)" }}>
+          {copy.empty}
+        </p>
+        {copy.recommendedApproach &&
+        (recommendedPackage || personalizedFirstMessage || plan === "FREE") ? (
+          <RecommendedApproach
+            recommendedPackage={recommendedPackage ?? null}
+            personalizedFirstMessage={personalizedFirstMessage ?? null}
+            plan={plan ?? null}
+            copy={copy.recommendedApproach}
+          />
+        ) : null}
+      </div>
     );
   }
 
@@ -184,6 +216,22 @@ export function NextGestureBlock({
           onSnoozed={() => onSnoozed?.()}
         />
       </div>
+
+      {/*
+       * Phase 2.5 — RecommendedApproach absorption (PLAN §5.9 rows
+       * 11/12). Collapsed by default so the block stays scannable.
+       * Hidden when there's nothing to recommend AND no FREE-tier
+       * upgrade nudge to show.
+       */}
+      {copy.recommendedApproach &&
+      (recommendedPackage || personalizedFirstMessage || plan === "FREE") ? (
+        <RecommendedApproach
+          recommendedPackage={recommendedPackage ?? null}
+          personalizedFirstMessage={personalizedFirstMessage ?? null}
+          plan={plan ?? null}
+          copy={copy.recommendedApproach}
+        />
+      ) : null}
     </div>
   );
 }

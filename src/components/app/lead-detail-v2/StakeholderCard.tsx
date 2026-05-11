@@ -18,6 +18,11 @@ import {
   buildStakeholderEvidenceChip,
   type EvidenceChipCopy,
 } from "./EvidenceChip";
+import {
+  StakeholderOnlinePresence,
+  type StakeholderOnlinePresenceCopy,
+  type StakeholderOnlinePresenceLink,
+} from "./StakeholderOnlinePresence";
 
 export type StakeholderBantRole =
   | "champion"
@@ -47,11 +52,16 @@ export interface StakeholderCardCopy {
   championLabel: string;
   influenceLabel: string;
   evidence: EvidenceChipCopy;
+  // Phase 2.5 — additive copy for the online-presence icon strip.
+  onlinePresence?: StakeholderOnlinePresenceCopy;
 }
 
 export interface StakeholderCardProps {
   data: StakeholderCardData;
   copy: StakeholderCardCopy;
+  // Phase 2.5 — slice of `decision-surface.discoveredLinks.socials`
+  // matched to this stakeholder by the parent. May be empty.
+  onlineLinks?: ReadonlyArray<StakeholderOnlinePresenceLink>;
 }
 
 const ROSETTE_TONE: Record<StakeholderBantRole, string> = {
@@ -73,6 +83,7 @@ function rosetteIcon(role: StakeholderBantRole): ReactNode {
 export function StakeholderCard({
   data,
   copy,
+  onlineLinks,
 }: StakeholderCardProps): ReactNode {
   const [open, setOpen] = useState(false);
   const tone = ROSETTE_TONE[data.bantRole];
@@ -158,6 +169,12 @@ export function StakeholderCard({
           />
         ) : null}
       </div>
+      {onlineLinks && onlineLinks.length > 0 && copy.onlinePresence ? (
+        <StakeholderOnlinePresence
+          links={onlineLinks}
+          copy={copy.onlinePresence}
+        />
+      ) : null}
     </div>
   );
 }

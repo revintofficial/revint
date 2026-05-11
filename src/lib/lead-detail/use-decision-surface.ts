@@ -20,7 +20,7 @@
  * fields the aggregator embeds.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type {
   ContradictionRecord,
@@ -46,6 +46,9 @@ export interface DecisionSurfaceLeadCore {
   whyNow: string | null;
   urgencyWindowDays: number | null;
   icpFitScore: number | null;
+  // Phase 2.5 — coordinates for the AccountBlock map mini.
+  sourceLat: number | null;
+  sourceLng: number | null;
   watchlist: {
     id: string;
     pipelineStage: PipelineStageValue;
@@ -222,6 +225,104 @@ export interface QueuePositionDto {
   totalToday: number;
 }
 
+// ===== Phase 2.5 — V1 richness summary DTOs =====
+
+export interface IntelligenceBriefDto {
+  runId: string;
+  generatedAt: string;
+  salesConfidence: number | null;
+  headline: string | null;
+  painPoints: string[];
+  whyGoodTarget: string | null;
+}
+
+export interface RecommendedPackageDto {
+  id: string;
+  name: string;
+  priceLabel: string;
+  features: string[];
+  reason: string | null;
+}
+
+export interface ReviewIntelSummaryDto {
+  leadScore: number;
+  summary: string | null;
+  sentimentBreakdown: {
+    positive: number | null;
+    neutral: number | null;
+    negative: number | null;
+  };
+  weaknessKpisTop3: Array<{ label: string; count: number | null; percent: number | null }>;
+  strengthKpisTop3: Array<{ label: string; count: number | null; percent: number | null }>;
+  switchSignalsTop3: string[];
+  reviewsAnalyzedCount: number;
+  lastAnalyzedAt: string | null;
+}
+
+export interface WebsiteIntelSummaryDto {
+  hasBookingSystem: boolean;
+  bookingProvider: string | null;
+  loadTimeMs: number | null;
+  https: boolean;
+  mobileFriendlyGuess: boolean;
+  hasContactForm: boolean;
+  hasWhatsappLink: boolean;
+  hasEcommerce: boolean;
+  servicesDetectedTop5: string[];
+  title: string | null;
+  metaDescription: string | null;
+  crawlStatus: "ok" | "blocked" | "error" | "never" | null;
+  lastAuditedAt: string | null;
+}
+
+export interface ReviewVelocityDto {
+  recentCount30d: number;
+  priorCount30d: number;
+  deltaPct: number;
+  recent30dAvgRating: number | null;
+  prior30dAvgRating: number | null;
+  ratingDelta: number | null;
+}
+
+export interface DiscoveredLinksDto {
+  socials: Array<{ platform: string; url: string }>;
+  directories: Array<{ name: string; url: string }>;
+}
+
+export interface SubNicheStateDto {
+  current: { slug: string | null; label: string | null };
+  override: {
+    source:
+      | "AUTO"
+      | "MANUAL"
+      | "REP_OVERRIDE"
+      | "DISCOVERY_QUERY"
+      | "RULE"
+      | null;
+    confidence: number | null;
+    version: number;
+  };
+  alternatives: Array<{
+    slug: string;
+    confidence: number | null;
+    reason: string | null;
+  }>;
+}
+
+export interface DossierStubDto {
+  hasDossier: boolean;
+  lastGeneratedAt: string | null;
+  summarySnippet: string | null;
+}
+
+export interface PipelineStateDto {
+  crawl: "PENDING" | "CRAWLING" | "CRAWLED" | "FAILED" | "NO_WEBSITE";
+  analyze: "PENDING" | "ANALYZING" | "ANALYZED" | "FAILED";
+  reviews: "PENDING" | "ANALYZING" | "ANALYZED" | "FAILED" | "NO_REVIEWS";
+  outreach: PipelineStageValue | null;
+  dnc: boolean;
+}
+
 export interface UseDecisionSurfaceResult {
   leadCore: DecisionSurfaceLeadCore | null;
   nba: DecisionSurfaceNba | null;
@@ -237,10 +338,28 @@ export interface UseDecisionSurfaceResult {
   closestWin: ClosestWinDto | null;
   queuePosition: QueuePositionDto | null;
   recentDialAt: string | null;
+  // Phase 2.5 — V1 richness absorption (always defined; absent
+  // signals come back as null so consumers can render empty state
+  // without an extra null-guard).
+  intelligenceBrief: IntelligenceBriefDto | null;
+  recommendedPackage: RecommendedPackageDto | null;
+  personalizedFirstMessage: string | null;
+  reviewIntelSummary: ReviewIntelSummaryDto | null;
+  websiteIntelSummary: WebsiteIntelSummaryDto | null;
+  reviewVelocity: ReviewVelocityDto | null;
+  discoveredLinks: DiscoveredLinksDto;
+  subNicheState: SubNicheStateDto | null;
+  dossierStub: DossierStubDto;
+  pipelineState: PipelineStateDto | null;
   loading: boolean;
   error: string | null;
   preliminaryShippable: boolean;
   finalLatencyMs: number | null;
+  /** Phase 2.5 — manual revalidation for parents that mutate
+   * server-side state (e.g. sub-niche override, pipeline re-run)
+   * and need the surface to refetch immediately. No-op while a
+   * fetch is in-flight. */
+  refresh: () => void;
 }
 
 const POLL_INTERVAL_DESKTOP_MS = 6_000;
@@ -268,27 +387,7 @@ function isDocumentHidden(): boolean {
 }
 
 interface AggregatorRawResponse {
-  leadCore: {
-    id: string;
-    businessName: string;
-    subNicheSlug: string | null;
-    subNicheLabel: string | null;
-    primaryType: string | null;
-    phone: string | null;
-    websiteUrl: string | null;
-    formattedAddress: string | null;
-    accountTier: AccountTierValue | null;
-    accountId: string | null;
-    lastContactedAt: string | null;
-    whyNow: string | null;
-    urgencyWindowDays: number | null;
-    icpFitScore: number | null;
-    watchlist: {
-      id: string;
-      pipelineStage: PipelineStageValue;
-      dealStage: DealStageValue;
-    } | null;
-  };
+  leadCore: DecisionSurfaceLeadCore;
   nba: DecisionSurfaceNba | null;
   bant: BantBars | null;
   icpDimensions: IcpDimensionsResult | null;
@@ -302,6 +401,17 @@ interface AggregatorRawResponse {
   closestWin: ClosestWinDto | null;
   queuePosition: QueuePositionDto | null;
   recentDialAt: string | null;
+  // Phase 2.5 — V1 richness absorption.
+  intelligenceBrief: IntelligenceBriefDto | null;
+  recommendedPackage: RecommendedPackageDto | null;
+  personalizedFirstMessage: string | null;
+  reviewIntelSummary: ReviewIntelSummaryDto | null;
+  websiteIntelSummary: WebsiteIntelSummaryDto | null;
+  reviewVelocity: ReviewVelocityDto;
+  discoveredLinks: DiscoveredLinksDto;
+  subNicheState: SubNicheStateDto;
+  dossierStub: DossierStubDto;
+  pipelineState: PipelineStateDto;
 }
 
 const EMPTY_OBJECTION_DIFF: ObjectionDiff = {
@@ -320,6 +430,11 @@ export function useDecisionSurface(leadId: string): UseDecisionSurfaceResult {
   const mountedAtRef = useRef<number>(0);
   const finalSeenRef = useRef(false);
   const elapsedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Phase 2.5 — bumping `revalidateTick` re-runs the fetch effect.
+  const [revalidateTick, setRevalidateTick] = useState(0);
+  const refresh = useCallback(() => {
+    setRevalidateTick((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -433,7 +548,7 @@ export function useDecisionSurface(leadId: string): UseDecisionSurfaceResult {
       // performance timeline.
       perfFlush(leadId);
     };
-  }, [leadId]);
+  }, [leadId, revalidateTick]);
 
   useEffect(() => {
     const preliminary = payload?.nba?.preliminary ?? null;
@@ -473,10 +588,23 @@ export function useDecisionSurface(leadId: string): UseDecisionSurfaceResult {
       closestWin: null,
       queuePosition: null,
       recentDialAt: null,
+      // Phase 2.5 — pre-payload defaults so consumers can render
+      // skeletons / empty states without hitting an undefined slot.
+      intelligenceBrief: null,
+      recommendedPackage: null,
+      personalizedFirstMessage: null,
+      reviewIntelSummary: null,
+      websiteIntelSummary: null,
+      reviewVelocity: null,
+      discoveredLinks: EMPTY_DISCOVERED_LINKS,
+      subNicheState: null,
+      dossierStub: EMPTY_DOSSIER_STUB,
+      pipelineState: null,
       loading,
       error,
       preliminaryShippable,
       finalLatencyMs,
+      refresh,
     };
   }
 
@@ -495,9 +623,32 @@ export function useDecisionSurface(leadId: string): UseDecisionSurfaceResult {
     closestWin: payload.closestWin ?? null,
     queuePosition: payload.queuePosition ?? null,
     recentDialAt: payload.recentDialAt ?? null,
+    // Phase 2.5 — V1 richness absorption.
+    intelligenceBrief: payload.intelligenceBrief ?? null,
+    recommendedPackage: payload.recommendedPackage ?? null,
+    personalizedFirstMessage: payload.personalizedFirstMessage ?? null,
+    reviewIntelSummary: payload.reviewIntelSummary ?? null,
+    websiteIntelSummary: payload.websiteIntelSummary ?? null,
+    reviewVelocity: payload.reviewVelocity ?? null,
+    discoveredLinks: payload.discoveredLinks ?? EMPTY_DISCOVERED_LINKS,
+    subNicheState: payload.subNicheState ?? null,
+    dossierStub: payload.dossierStub ?? EMPTY_DOSSIER_STUB,
+    pipelineState: payload.pipelineState ?? null,
     loading,
     error,
     preliminaryShippable,
     finalLatencyMs,
+    refresh,
   };
 }
+
+const EMPTY_DISCOVERED_LINKS: DiscoveredLinksDto = {
+  socials: [],
+  directories: [],
+};
+
+const EMPTY_DOSSIER_STUB: DossierStubDto = {
+  hasDossier: false,
+  lastGeneratedAt: null,
+  summarySnippet: null,
+};

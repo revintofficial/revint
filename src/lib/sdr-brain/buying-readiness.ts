@@ -129,7 +129,25 @@ export interface BuyingReadiness {
   reasoning: BuyingReadinessReasoning;
 }
 
-const TRIGGER_NEED_WEIGHTS: Partial<Record<LeadTriggerType, number>> = {
+/**
+ * Phase 8 — `REVIEW_VOLUME_SURGE` and `REVIEW_VOLUME_DIP` join the
+ * weight maps. Dip outranks surge on both dimensions because an
+ * operations-gap signal (negative-trending review volume) is the
+ * stronger SDR opening — operators who are stretched thin actually
+ * pick up the phone, ones who are on a momentum upswing rarely do.
+ *
+ * The Record key type is widened with the two literals so this
+ * file type-checks before `npm run db:generate` picks up the new
+ * enum values; the union is redundant after regen.
+ */
+type TriggerTypeWithReviewVolume =
+  | LeadTriggerType
+  | "REVIEW_VOLUME_SURGE"
+  | "REVIEW_VOLUME_DIP";
+
+const TRIGGER_NEED_WEIGHTS: Partial<
+  Record<TriggerTypeWithReviewVolume, number>
+> = {
   BAD_SERVICE_REVIEWS: 22,
   RATING_DROP: 18,
   COMPETITOR_PRESSURE: 14,
@@ -138,9 +156,13 @@ const TRIGGER_NEED_WEIGHTS: Partial<Record<LeadTriggerType, number>> = {
   HIRING_MARKETING: 12,
   HIRING_OPS: 8,
   REBRANDING: 12,
+  REVIEW_VOLUME_SURGE: 10,
+  REVIEW_VOLUME_DIP: 20,
 };
 
-const TRIGGER_TIMING_WEIGHTS: Partial<Record<LeadTriggerType, number>> = {
+const TRIGGER_TIMING_WEIGHTS: Partial<
+  Record<TriggerTypeWithReviewVolume, number>
+> = {
   NEW_LOCATION_OPENING: 30,
   CHAIN_EXPANSION: 24,
   FUNDING_RAISED: 24,
@@ -151,6 +173,8 @@ const TRIGGER_TIMING_WEIGHTS: Partial<Record<LeadTriggerType, number>> = {
   INTERNATIONAL_AUDIENCE_GROWTH: 14,
   HIRING_MARKETING: 14,
   HIRING_TECH: 10,
+  REVIEW_VOLUME_SURGE: 15,
+  REVIEW_VOLUME_DIP: 25,
 };
 
 function clamp(n: number): number {

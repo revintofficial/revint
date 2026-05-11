@@ -21,9 +21,19 @@ import {
   type EvidenceChipType,
 } from "./EvidenceChip";
 import { ClaimWithEvidence } from "./ClaimWithEvidence";
+import {
+  ReviewVelocityBadge,
+  type ReviewVelocityBadgeCopy,
+} from "./ReviewVelocityBadge";
+import {
+  WebsiteSignalStrip,
+  type WebsiteSignalStripCopy,
+} from "./WebsiteSignalStrip";
 import type {
   LeadTriggerDto,
   LeadNextActionDto,
+  ReviewVelocityDto,
+  WebsiteIntelSummaryDto,
 } from "@/lib/lead-detail/use-decision-surface";
 
 export interface WhyNowBlockCopy {
@@ -31,6 +41,11 @@ export interface WhyNowBlockCopy {
   windowDays: string;
   windowToday: string;
   evidence: EvidenceChipCopy;
+  // Phase 2.5 — additive copy keys for the website chip strip and
+  // Phase 3's review-velocity badge. Optional so existing callers
+  // don't break before the i18n layer ships.
+  websiteSignals?: WebsiteSignalStripCopy;
+  reviewVelocity?: ReviewVelocityBadgeCopy;
 }
 
 export interface WhyNowBlockProps {
@@ -38,6 +53,18 @@ export interface WhyNowBlockProps {
   preliminary: LeadNextActionDto | null;
   final: LeadNextActionDto | null;
   isStale?: boolean;
+  // Phase 2.5 — chip strip + velocity badge inputs.
+  websiteIntelSummary?: WebsiteIntelSummaryDto | null;
+  reviewVelocity?: ReviewVelocityDto | null;
+  /**
+   * When the WhyNow chips include a `REVIEW_VOLUME_*` trigger
+   * (Phase 8) the velocity badge promotes to a stronger tone.
+   * Default false.
+   */
+  reviewVelocityPromoted?: boolean;
+  /** Called when the rep taps "View full website panel →" — parent
+   * should expand the HISTORY block. */
+  onOpenWebsitePanel?: () => void;
   copy: WhyNowBlockCopy;
 }
 
@@ -58,6 +85,12 @@ const TRIGGER_TYPE_TO_CHIP: Record<string, EvidenceChipType> = {
   REBRANDING: "audit",
   FUNDING_RAISED: "linkedin",
   EXEC_CHANGE: "linkedin",
+  // Phase 8 — review-volume triggers map onto the existing "review"
+  // chip family. EvidenceChip already renders structured numeric
+  // evidence (Phase 3), so the chip surfaces `recentCount` /
+  // `priorCount` / `deltaPct` for the new types for free.
+  REVIEW_VOLUME_SURGE: "review",
+  REVIEW_VOLUME_DIP: "review",
 };
 
 function shortLabel(type: string): string {
@@ -107,6 +140,10 @@ export function WhyNowBlock({
   preliminary,
   final,
   isStale,
+  websiteIntelSummary,
+  reviewVelocity,
+  reviewVelocityPromoted,
+  onOpenWebsitePanel,
   copy,
 }: WhyNowBlockProps): ReactNode {
   const headline = useMemo(
@@ -169,6 +206,34 @@ export function WhyNowBlock({
         density="stacked"
         testid="why-now-evidence"
       />
+
+      {/*
+       * Phase 3 — review velocity badge. Renders only when
+       * `classifyVelocityBadge` returns a kind (≥ 25% delta + 3
+       * recent reviews). The `promoted` flag flips on when a
+       * Phase 8 `REVIEW_VOLUME_*` trigger sits in the chip row.
+       */}
+      {reviewVelocity && copy.reviewVelocity ? (
+        <ReviewVelocityBadge
+          velocity={reviewVelocity}
+          promoted={reviewVelocityPromoted ?? false}
+          copy={copy.reviewVelocity}
+        />
+      ) : null}
+
+      {/*
+       * Phase 2.5 — website signal chip strip below the trigger row.
+       * Renders even when there's no audit (placeholder text). The
+       * full panel sits behind a lazy `/website-intel` fetch in the
+       * HISTORY block.
+       */}
+      {copy.websiteSignals ? (
+        <WebsiteSignalStrip
+          summary={websiteIntelSummary ?? null}
+          onOpenFullPanel={onOpenWebsitePanel}
+          copy={copy.websiteSignals}
+        />
+      ) : null}
     </div>
   );
 }

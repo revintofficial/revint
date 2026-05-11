@@ -310,6 +310,46 @@ describe("POST /api/leads/[id]/snooze — idempotent re-snooze", () => {
   });
 });
 
+describe("POST /api/leads/[id]/snooze — Phase 8 review-volume allowlist", () => {
+  beforeEach(() => {
+    leads.push({
+      id: "lead_a",
+      workspaceId: wsA,
+      snoozeUntil: null,
+      snoozeUntilTriggerType: null,
+    });
+    setSession(wsA);
+  });
+
+  it("accepts REVIEW_VOLUME_SURGE as a valid 'until trigger' type", async () => {
+    const res = await POST(
+      makeReq({
+        kind: "until_trigger",
+        triggerType: "REVIEW_VOLUME_SURGE",
+        maxHorizonDays: 30,
+      }),
+      makeParams("lead_a"),
+    );
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { snoozeUntilTriggerType: string };
+    expect(json.snoozeUntilTriggerType).toBe("REVIEW_VOLUME_SURGE");
+  });
+
+  it("accepts REVIEW_VOLUME_DIP as a valid 'until trigger' type", async () => {
+    const res = await POST(
+      makeReq({
+        kind: "until_trigger",
+        triggerType: "REVIEW_VOLUME_DIP",
+        maxHorizonDays: 30,
+      }),
+      makeParams("lead_a"),
+    );
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as { snoozeUntilTriggerType: string };
+    expect(json.snoozeUntilTriggerType).toBe("REVIEW_VOLUME_DIP");
+  });
+});
+
 describe("POST /api/leads/[id]/snooze — auth", () => {
   it("returns 401 when requireUser throws Unauthorized", async () => {
     leads.push({

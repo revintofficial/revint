@@ -16,6 +16,10 @@
 import type { ReactNode } from "react";
 
 import {
+  DossierExpand,
+  type DossierExpandCopy,
+} from "./DossierExpand";
+import {
   PlanLockedBlock,
   type PlanLockedBlockCopy,
 } from "./PlanLockedBlock";
@@ -25,18 +29,25 @@ import {
   type SpinBoardItem,
   type SpinKindKey,
 } from "./SpinBoard";
+import type { DossierStubDto } from "@/lib/lead-detail/use-decision-surface";
 
 export interface DiscoveryBlockCopy {
   loading: string;
   empty: string;
   spin: SpinBoardCopy;
   locked: PlanLockedBlockCopy;
+  // Phase 2.5 — additive copy for the dossier lazy-expand button.
+  dossier?: DossierExpandCopy;
 }
 
 export interface DiscoveryBlockProps {
   loading: boolean;
   spinUnlocked: boolean;
   items: Record<SpinKindKey, SpinBoardItem[]> | null;
+  // Phase 2.5 — dossier stub from `decision-surface.dossierStub`.
+  // `hasDossier=false` hides the expand button entirely.
+  dossierStub?: DossierStubDto;
+  leadId?: string;
   copy: DiscoveryBlockCopy;
 }
 
@@ -44,6 +55,8 @@ export function DiscoveryBlock({
   loading,
   spinUnlocked,
   items,
+  dossierStub,
+  leadId,
   copy,
 }: DiscoveryBlockProps): ReactNode {
   if (!spinUnlocked) {
@@ -82,6 +95,13 @@ export function DiscoveryBlock({
   return (
     <div className="space-y-3" data-testid="discovery-block-body">
       <SpinBoard items={items} copy={copy.spin} />
+      {dossierStub?.hasDossier && leadId && copy.dossier ? (
+        <DossierExpand
+          leadId={leadId}
+          stub={dossierStub}
+          copy={copy.dossier}
+        />
+      ) : null}
     </div>
   );
 }

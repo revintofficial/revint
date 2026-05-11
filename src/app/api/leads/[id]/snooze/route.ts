@@ -53,6 +53,14 @@ export const dynamic = "force-dynamic";
 
 const ALLOWED_DURATIONS = new Set<number>([1, 3, 7]);
 const MAX_HORIZON_DAYS = 90;
+/**
+ * Phase 8 adds `REVIEW_VOLUME_SURGE` and `REVIEW_VOLUME_DIP` to the
+ * allowlist so reps can snooze a lead "until the next review-volume
+ * shift". The cast on the new entries is the bridge between the
+ * schema enum (which carries the values after `db:push`) and the
+ * generated `LeadTriggerType` union (which carries them after
+ * `npm run db:generate`).
+ */
 const ALLOWED_TRIGGER_TYPES: ReadonlySet<LeadTriggerType> = new Set<LeadTriggerType>([
   "NEW_LOCATION_OPENING",
   "CHAIN_EXPANSION",
@@ -70,6 +78,8 @@ const ALLOWED_TRIGGER_TYPES: ReadonlySet<LeadTriggerType> = new Set<LeadTriggerT
   "REBRANDING",
   "FUNDING_RAISED",
   "EXEC_CHANGE",
+  "REVIEW_VOLUME_SURGE" as LeadTriggerType,
+  "REVIEW_VOLUME_DIP" as LeadTriggerType,
 ]);
 
 type SnoozePayload =

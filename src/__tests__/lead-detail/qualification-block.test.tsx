@@ -108,6 +108,7 @@ describe("QualificationBlock — render states", () => {
         icpDimensions={null}
         meddpicc={null}
         meddpiccUnlocked
+        leadId="lead_test"
         copy={COPY}
       />,
     );
@@ -122,6 +123,7 @@ describe("QualificationBlock — render states", () => {
         icpDimensions={null}
         meddpicc={null}
         meddpiccUnlocked
+        leadId="lead_test"
         copy={COPY}
       />,
     );
@@ -136,6 +138,7 @@ describe("QualificationBlock — render states", () => {
         icpDimensions={SAMPLE_ICP}
         meddpicc={SAMPLE_MEDDPICC}
         meddpiccUnlocked
+        leadId="lead_test"
         copy={COPY}
       />,
     );
@@ -153,6 +156,7 @@ describe("QualificationBlock — render states", () => {
         icpDimensions={SAMPLE_ICP}
         meddpicc={null}
         meddpiccUnlocked={false}
+        leadId="lead_test"
         copy={COPY}
       />,
     );

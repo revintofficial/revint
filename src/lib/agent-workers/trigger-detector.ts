@@ -22,6 +22,10 @@ import type {
   Prisma,
 } from "@/generated/prisma/client";
 import { getStructuredInferenceProvider, type SchemaDefinition } from "@/lib/ai-core/providers";
+import {
+  classifyVelocityTrigger,
+  computeReviewVelocity,
+} from "@/lib/lead-detail/review-velocity";
 import type {
   AgentWorkerContext,
   AgentWorkerOutput,
@@ -127,8 +131,23 @@ function weaknessHits(
   return kpis.filter((k) => patterns.test(k.label.toLowerCase()));
 }
 
-/** Default urgency windows per trigger type (days). */
-const URGENCY_WINDOW: Record<LeadTriggerType, number> = {
+/**
+ * Default urgency windows per trigger type (days).
+ *
+ * Phase 8 — `REVIEW_VOLUME_SURGE` / `REVIEW_VOLUME_DIP` join the map
+ * with a 30-day window (same as `RATING_DROP` — both fire off the
+ * 30/30 rolling-review buckets so the SDR shouldn't sit on either
+ * for longer than the window the math is built on).
+ *
+ * The Record key type is widened to a union with the two new
+ * literals so this file type-checks before `npm run db:generate`
+ * picks up the schema enum addition. After regen the union is
+ * redundant but harmless.
+ */
+const URGENCY_WINDOW: Record<
+  LeadTriggerType | "REVIEW_VOLUME_SURGE" | "REVIEW_VOLUME_DIP",
+  number
+> = {
   NEW_LOCATION_OPENING: 90,
   CHAIN_EXPANSION: 90,
   HIRING_MARKETING: 90,
@@ -145,6 +164,8 @@ const URGENCY_WINDOW: Record<LeadTriggerType, number> = {
   REBRANDING: 90,
   FUNDING_RAISED: 180,
   EXEC_CHANGE: 90,
+  REVIEW_VOLUME_SURGE: 30,
+  REVIEW_VOLUME_DIP: 30,
 };
 
 export const run: AgentWorkerRun = async (
@@ -297,6 +318,66 @@ export const run: AgentWorkerRun = async (
           urgencyWindowDays: URGENCY_WINDOW.RATING_DROP,
         });
       }
+    }
+  }
+
+  // ---- Rule J (Phase 8): REVIEW_VOLUME_SURGE / REVIEW_VOLUME_DIP ----
+  // Reads the same `googleReviews` corpus Rule A consumed and pipes
+  // it through the SHARED `computeReviewVelocity` /
+  // `classifyVelocityTrigger` helpers (`src/lib/lead-detail/
+  // review-velocity.ts`). The Phase 3 `ReviewVelocityBadge` calls the
+  // same helpers, so by construction the badge UI and the trigger
+  // row never disagree on the same lead (PLAN §6 risk #20).
+  //
+  // Thresholds (defined in the helper, NOT here, so the badge and
+  // detector share one source of truth):
+  //   - SURGE: deltaPct >= +50% AND recent30dCount >= 8
+  //   - DIP:   deltaPct <= -30% AND prior30dCount >= 5
+  //   - both:  recent + prior < 6 → no fire (micro-volume guard)
+  //
+  // Severity comes back from the helper so the surge/dip math lives
+  // in one place; we only translate the kind into a `LeadTrigger` row.
+  if (recentReviews && recentReviews.length >= 6) {
+    const velocity = computeReviewVelocity(
+      recentReviews.map((r) => ({
+        rating: r.rating,
+        publishTime: r.publishTime,
+      })),
+    );
+    const trig = classifyVelocityTrigger(velocity);
+    if (trig) {
+      const isSurge = trig.kind === "REVIEW_VOLUME_SURGE";
+      detected.push({
+        // Cast: until `npm run db:generate` runs against the updated
+        // schema, the generated `LeadTriggerType` union doesn't carry
+        // the two new values. The DB enum DOES once `db:push` runs;
+        // the cast is the bridge between the two regen steps.
+        type: trig.kind as LeadTriggerType,
+        severity: trig.severity,
+        // Surge gets a slightly lower confidence (a +50% delta over
+        // a small 30d window can be a single-event spike). Dip is
+        // higher because operations gaps tend to persist long enough
+        // to be a durable buying signal.
+        confidence: isSurge ? 0.7 : 0.8,
+        evidence: {
+          source: "GoogleReview.velocity",
+          quote: isSurge
+            ? `Review surge +${velocity.deltaPct}% / 30d (recent ${velocity.recentCount30d}, prior ${velocity.priorCount30d})`
+            : `Review dip ${velocity.deltaPct}% / 30d (recent ${velocity.recentCount30d}, prior ${velocity.priorCount30d})`,
+          recentCount: velocity.recentCount30d,
+          priorCount: velocity.priorCount30d,
+          deltaPct: velocity.deltaPct,
+          recent30dAvgRating: velocity.recent30dAvgRating,
+          prior30dAvgRating: velocity.prior30dAvgRating,
+          ratingDelta: velocity.ratingDelta,
+        },
+        impactPrediction: isSurge
+          ? "Momentum window — strike before competitor catches up."
+          : "Operations stretched / coverage gap — high-leverage SDR opening.",
+        urgencyWindowDays: isSurge
+          ? URGENCY_WINDOW.REVIEW_VOLUME_SURGE
+          : URGENCY_WINDOW.REVIEW_VOLUME_DIP,
+      });
     }
   }
 

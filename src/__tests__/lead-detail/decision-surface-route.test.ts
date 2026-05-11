@@ -58,6 +58,27 @@ interface Lead {
   websiteAudit: null;
   watchlistItem: { id: string; pipelineStage: string; dealStage: string } | null;
   account: null;
+  // Phase 2.5 — extended Lead shape for the decision-surface
+  // aggregator's V1 richness fields. Default everything to "no
+  // signal" so existing tests keep their original behaviour.
+  sourceLat: number | null;
+  sourceLng: number | null;
+  subNicheSource: "AUTO" | "MANUAL" | null;
+  subNicheConfidence: number | null;
+  subNicheVersion: number;
+  subNicheAlternatives: unknown;
+  crawlStatus: "PENDING" | "CRAWLING" | "CRAWLED" | "FAILED" | "NO_WEBSITE";
+  analyzeStatus: "PENDING" | "ANALYZING" | "ANALYZED" | "FAILED";
+  reviewAnalysisStatus:
+    | "PENDING"
+    | "ANALYZING"
+    | "ANALYZED"
+    | "FAILED"
+    | "NO_REVIEWS";
+  discardedAt: Date | null;
+  salesOpportunity: null;
+  reviewAnalysis: null;
+  googleReviews: Array<{ rating: number; publishTime: Date }>;
 }
 
 interface DealQualificationFact {
@@ -108,6 +129,21 @@ const baseLead = (id: string, workspaceId: string, overrides: Partial<Lead> = {}
   websiteAudit: null,
   watchlistItem: null,
   account: null,
+  // Phase 2.5 defaults — null/empty so the derivations produce
+  // null summaries (no V1 richness signal).
+  sourceLat: null,
+  sourceLng: null,
+  subNicheSource: null,
+  subNicheConfidence: null,
+  subNicheVersion: 0,
+  subNicheAlternatives: [],
+  crawlStatus: "PENDING",
+  analyzeStatus: "PENDING",
+  reviewAnalysisStatus: "PENDING",
+  discardedAt: null,
+  salesOpportunity: null,
+  reviewAnalysis: null,
+  googleReviews: [],
   ...overrides,
 });
 
@@ -167,6 +203,14 @@ vi.mock("@/lib/prisma", () => ({
       findFirst: vi.fn(async () => null),
     },
     insightPerformance: {
+      findMany: vi.fn(async () => []),
+    },
+    // Phase 2.5 — the aggregator now fetches cached AgentRun rows
+    // for the intelligenceBrief / dossier / discoveredLinks
+    // summaries. Default everything to "no run" so existing
+    // assertions about null fields still hold.
+    agentRun: {
+      findFirst: vi.fn(async () => null),
       findMany: vi.fn(async () => []),
     },
     watchlistItem: {

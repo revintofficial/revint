@@ -9,7 +9,7 @@
  * `derive-objection-diff` (which the aggregator runs server-side).
  */
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import {
   ClosestWinCallout,
@@ -19,8 +19,19 @@ import {
   PredictedVsRealObjections,
   type PredictedVsRealObjectionsCopy,
 } from "./PredictedVsRealObjections";
+import {
+  ReviewIntelligenceSummary,
+  type ReviewIntelligenceSummaryCopy,
+} from "./ReviewIntelligenceSummary";
+import {
+  ReviewTimelineMini,
+  type ReviewTimelineMiniCopy,
+} from "./ReviewTimelineMini";
 import type { ObjectionDiff } from "@/lib/lead-detail/derive-objection-diff";
-import type { ClosestWinDto } from "@/lib/lead-detail/use-decision-surface";
+import type {
+  ClosestWinDto,
+  ReviewIntelSummaryDto,
+} from "@/lib/lead-detail/use-decision-surface";
 
 export interface HistoryActivityRow {
   id: string;
@@ -37,6 +48,10 @@ export interface HistoryBlockCopy {
   activityKindLabels: Record<string, string>;
   objections: PredictedVsRealObjectionsCopy;
   closestWin: ClosestWinCalloutCopy;
+  // Phase 2.5 — additive copy for the absorbed V1 review panels.
+  // (AccountMapMini lives in AccountBlock per PLAN §5.9 row 5.)
+  reviewIntel?: ReviewIntelligenceSummaryCopy;
+  reviewTimeline?: ReviewTimelineMiniCopy;
 }
 
 export interface HistoryBlockProps {
@@ -45,6 +60,10 @@ export interface HistoryBlockProps {
   activities: HistoryActivityRow[];
   objections: ObjectionDiff;
   closestWin: ClosestWinDto | null;
+  // Phase 2.5 — review-intel summary from `decision-surface`. Passing
+  // `undefined` keeps the legacy panel hidden; passing an explicit
+  // `null` renders the "no review intel yet" placeholder.
+  reviewIntelSummary?: ReviewIntelSummaryDto | null;
   copy: HistoryBlockCopy;
 }
 
@@ -65,8 +84,14 @@ export function HistoryBlock({
   activities,
   objections,
   closestWin,
+  reviewIntelSummary,
   copy,
 }: HistoryBlockProps): ReactNode {
+  // Lazy-mount toggle for the review timeline mini chart. The fetch
+  // is gated on this flag so the companion endpoint only fires when
+  // the rep actually clicks "view timeline".
+  const [timelineExpanded, setTimelineExpanded] = useState(false);
+
   if (loading) {
     return (
       <p
@@ -83,7 +108,8 @@ export function HistoryBlock({
     activities.length === 0 &&
     objections.predictedAndReal.length === 0 &&
     objections.predictedNotReal.length === 0 &&
-    objections.realOnly.length === 0;
+    objections.realOnly.length === 0 &&
+    !reviewIntelSummary;
 
   if (empty && !closestWin) {
     return (
@@ -143,6 +169,40 @@ export function HistoryBlock({
         </h3>
         <PredictedVsRealObjections data={objections} copy={copy.objections} />
       </section>
+
+      {/*
+       * Phase 2.5 — review intelligence summary + lazy timeline.
+       * Hidden when the parent omits both `reviewIntelSummary` and
+       * `copy.reviewIntel` (the cinematic legacy block doesn't need
+       * the absorbed V1 panel).
+       */}
+      {copy.reviewIntel && reviewIntelSummary !== undefined ? (
+        <section
+          className="space-y-2 rounded-lg border px-3 py-2.5"
+          style={{
+            borderColor: "var(--leadac-border)",
+            background: "var(--leadac-card)",
+          }}
+        >
+          <ReviewIntelligenceSummary
+            summary={reviewIntelSummary}
+            onExpandTimeline={
+              copy.reviewTimeline
+                ? () => setTimelineExpanded((v) => !v)
+                : undefined
+            }
+            copy={copy.reviewIntel}
+          />
+          {copy.reviewTimeline ? (
+            <ReviewTimelineMini
+              leadId={leadId}
+              mounted={timelineExpanded}
+              copy={copy.reviewTimeline}
+            />
+          ) : null}
+        </section>
+      ) : null}
+
     </div>
   );
 }

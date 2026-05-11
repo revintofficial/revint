@@ -20,6 +20,10 @@ import {
   type IcpDimensionBarsCopy,
 } from "./IcpDimensionBars";
 import {
+  IntelligenceBriefCard,
+  type IntelligenceBriefCardCopy,
+} from "./IntelligenceBriefCard";
+import {
   MeddpiccChecklist,
   type MeddpiccChecklistCopy,
   type MeddpiccChecklistData,
@@ -30,6 +34,7 @@ import {
 } from "./PlanLockedBlock";
 import type { BantBars as BantBarsData } from "@/lib/lead-detail/derive-bant";
 import type { IcpDimensionsResult } from "@/lib/icp-fit/dimensions";
+import type { IntelligenceBriefDto } from "@/lib/lead-detail/use-decision-surface";
 
 export interface QualificationBlockCopy {
   loading: string;
@@ -39,6 +44,8 @@ export interface QualificationBlockCopy {
   meddpiccLocked: PlanLockedBlockCopy;
   bant: BantBarsCopy;
   icp: IcpDimensionBarsCopy;
+  // Phase 2.5 — additive copy for the intelligence brief card.
+  intelligenceBrief?: IntelligenceBriefCardCopy;
 }
 
 export interface QualificationBlockProps {
@@ -47,6 +54,11 @@ export interface QualificationBlockProps {
   icpDimensions: IcpDimensionsResult | null;
   meddpicc: MeddpiccChecklistData | null;
   meddpiccUnlocked: boolean;
+  // Phase 2.5 — pre-aggregated brief from the cached worker run.
+  intelligenceBrief?: IntelligenceBriefDto | null;
+  /** Phase 7 — set when the reasoning route ships. */
+  reasoningRouteEnabled?: boolean;
+  leadId: string;
   copy: QualificationBlockCopy;
 }
 
@@ -56,6 +68,9 @@ export function QualificationBlock({
   icpDimensions,
   meddpicc,
   meddpiccUnlocked,
+  intelligenceBrief,
+  reasoningRouteEnabled = false,
+  leadId,
   copy,
 }: QualificationBlockProps): ReactNode {
   if (loading) {
@@ -70,7 +85,7 @@ export function QualificationBlock({
     );
   }
 
-  if (!bant && !icpDimensions && !meddpicc) {
+  if (!bant && !icpDimensions && !meddpicc && !intelligenceBrief) {
     return (
       <p
         className="text-[13px]"
@@ -84,6 +99,20 @@ export function QualificationBlock({
 
   return (
     <div className="space-y-4" data-testid="qualification-block-body">
+      {/*
+       * Phase 2.5 — IntelligenceBriefCard sits at the top of the
+       * block (PLAN §5.9 row 7-8 absorption). Hidden when both the
+       * brief and the i18n copy are missing — never renders an
+       * empty shell.
+       */}
+      {intelligenceBrief && copy.intelligenceBrief ? (
+        <IntelligenceBriefCard
+          brief={intelligenceBrief}
+          reasoningRouteEnabled={reasoningRouteEnabled}
+          leadId={leadId}
+          copy={copy.intelligenceBrief}
+        />
+      ) : null}
       {icpDimensions ? <IcpDimensionBars data={icpDimensions} copy={copy.icp} /> : null}
       {bant ? <BantBars data={bant} copy={copy.bant} /> : null}
       <section className="space-y-2">

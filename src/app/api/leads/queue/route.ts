@@ -40,6 +40,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { internalError } from "@/lib/api-errors";
 import type { Prisma } from "@/generated/prisma/client";
+import { buildQueueHeadline } from "@/lib/lead-detail/queue-headline";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -164,7 +165,7 @@ export async function GET(request: Request) {
             where: { decayedAt: null },
             orderBy: [{ severity: "desc" }, { confidence: "desc" }],
             take: 1,
-            select: { type: true, impactPrediction: true },
+            select: { type: true, impactPrediction: true, evidence: true },
           },
         },
         orderBy: [
@@ -179,9 +180,10 @@ export async function GET(request: Request) {
 
     const items: QueueItem[] = rows.map((r) => {
       const trigger = r.triggers[0] ?? null;
-      const whyNow = trigger
-        ? trigger.impactPrediction ?? trigger.type.toLowerCase().replace(/_/g, " ")
-        : null;
+      // Phase 3: deterministic headline via shared helper so the queue
+      // strip cites a real `LeadTriggerType` (no fake mock copy) and
+      // Phase 8's REVIEW_VOLUME_* types render their delta numbers.
+      const whyNow = buildQueueHeadline(trigger);
       return {
         id: r.id,
         name: r.businessName,

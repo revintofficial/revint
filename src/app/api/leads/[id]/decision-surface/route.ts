@@ -56,6 +56,18 @@ import {
   findClosestWin,
   type ClosestWinSummary,
 } from "@/lib/lead-detail/closest-win";
+import {
+  resolveRecommendedPackage,
+  type RecommendedPackage,
+} from "@/lib/lead-detail/recommended-package";
+import {
+  computeReviewVelocity,
+  type ReviewVelocity,
+} from "@/lib/lead-detail/review-velocity";
+import {
+  extractDiscoveredLinks,
+  type AgentRunForLinks,
+} from "@/lib/discovered-links";
 import type {
   ContradictionRecord,
   ReasoningGraph,
@@ -110,6 +122,99 @@ interface LeadCoreShape {
   whyNow: string | null;
   urgencyWindowDays: number | null;
   icpFitScore: number | null;
+  // Phase 2.5 — coordinates for the AccountBlock map mini.
+  sourceLat: number | null;
+  sourceLng: number | null;
+}
+
+// =====================================================================
+// Phase 2.5 — V1 richness absorption types.
+// Every field below is a SUMMARY (not a full V1 row). The full payloads
+// stay lazy under the companion endpoints `/review-intel`, `/website-intel`,
+// `/explain`, `/dossier-sources` so the aggregator stays under the
+// 400ms p95 ceiling. Per PLAN §4 Phase 2.5.
+// =====================================================================
+
+interface IntelligenceBriefShape {
+  runId: string;
+  generatedAt: string;
+  salesConfidence: number | null;
+  headline: string | null;
+  painPoints: string[];
+  whyGoodTarget: string | null;
+}
+
+interface ReviewIntelSummaryShape {
+  leadScore: number;
+  summary: string | null;
+  sentimentBreakdown: {
+    positive: number | null;
+    neutral: number | null;
+    negative: number | null;
+  };
+  weaknessKpisTop3: Array<{ label: string; count: number | null; percent: number | null }>;
+  strengthKpisTop3: Array<{ label: string; count: number | null; percent: number | null }>;
+  switchSignalsTop3: string[];
+  reviewsAnalyzedCount: number;
+  lastAnalyzedAt: string | null;
+}
+
+interface WebsiteIntelSummaryShape {
+  hasBookingSystem: boolean;
+  bookingProvider: string | null;
+  loadTimeMs: number | null;
+  https: boolean;
+  mobileFriendlyGuess: boolean;
+  hasContactForm: boolean;
+  hasWhatsappLink: boolean;
+  hasEcommerce: boolean;
+  servicesDetectedTop5: string[];
+  title: string | null;
+  metaDescription: string | null;
+  /** Crawl status — null when no audit attempted, "ok" when reachable. */
+  crawlStatus: "ok" | "blocked" | "error" | "never" | null;
+  lastAuditedAt: string | null;
+}
+
+interface DiscoveredLinksShape {
+  socials: Array<{ platform: string; url: string }>;
+  directories: Array<{ name: string; url: string }>;
+}
+
+interface SubNicheStateShape {
+  current: { slug: string | null; label: string | null };
+  override: {
+    /**
+     * Mirrors `SubNicheSource` in `prisma/schema.prisma` (currently
+     * `AUTO | MANUAL`). PLAN §4 Phase 2.5 anticipated future values
+     * (`REP_OVERRIDE`, `DISCOVERY_QUERY`, `RULE`); keep this widened
+     * so a follow-up schema bump doesn't break clients reading the
+     * field. UI must treat unknown values as "AUTO".
+     */
+    source: "AUTO" | "MANUAL" | "REP_OVERRIDE" | "DISCOVERY_QUERY" | "RULE" | null;
+    confidence: number | null;
+    version: number;
+  };
+  alternatives: Array<{
+    slug: string;
+    confidence: number | null;
+    reason: string | null;
+  }>;
+}
+
+interface DossierStubShape {
+  hasDossier: boolean;
+  lastGeneratedAt: string | null;
+  summarySnippet: string | null;
+}
+
+interface PipelineStateShape {
+  crawl: "PENDING" | "CRAWLING" | "CRAWLED" | "FAILED" | "NO_WEBSITE";
+  analyze: "PENDING" | "ANALYZING" | "ANALYZED" | "FAILED";
+  reviews: "PENDING" | "ANALYZING" | "ANALYZED" | "FAILED" | "NO_REVIEWS";
+  outreach: "NEW" | "REACHED_OUT" | "IN_TALKS" | "WON" | "LOST" | null;
+  /** Set when the lead has been marked Do-Not-Contact (writes to DiscardedAt or a flag). */
+  dnc: boolean;
 }
 
 interface NbaShape {
@@ -214,6 +319,25 @@ export interface DecisionSurfaceResponse {
   closestWin: ClosestWinSummary | null;
   queuePosition: { current: number; totalToday: number } | null;
   recentDialAt: string | null;
+  // ===== Phase 2.5 — V1 richness absorption summary fields =====
+  // (PLAN §4 Phase 2.5; PLAN §5.9 V1 richness parity checklist).
+  // FREE-friendly: intelligenceBrief.headline, recommendedPackage.id,
+  //                websiteIntelSummary chip-level data,
+  //                reviewIntelSummary leadScore + sentiment, reviewVelocity,
+  //                discoveredLinks, subNicheState, dossierStub, pipelineState.
+  // PRO+:         personalizedFirstMessage, intelligenceBrief.whyGoodTarget
+  //               (full prose), reviewIntelSummary KPI arrays, full
+  //               website panel deep-dive (lazy via /website-intel).
+  intelligenceBrief: IntelligenceBriefShape | null;
+  recommendedPackage: RecommendedPackage | null;
+  personalizedFirstMessage: string | null;
+  reviewIntelSummary: ReviewIntelSummaryShape | null;
+  websiteIntelSummary: WebsiteIntelSummaryShape | null;
+  reviewVelocity: ReviewVelocity;
+  discoveredLinks: DiscoveredLinksShape;
+  subNicheState: SubNicheStateShape;
+  dossierStub: DossierStubShape;
+  pipelineState: PipelineStateShape;
 }
 
 const MEDDPICC_GATE_FILLED = 4;
@@ -381,6 +505,17 @@ export async function GET(
         websiteAudit: true,
         watchlistItem: true,
         account: true,
+        // Phase 2.5 — richness absorption inputs. All scoped via the
+        // parent `Lead.workspaceId` so the cross-tenant audit holds.
+        salesOpportunity: true,
+        reviewAnalysis: true,
+        // 50 reviews is the same corpus size the trigger-detector
+        // ingests (PLAN §5.6). Reused by `computeReviewVelocity` so
+        // we never make a second round-trip for the badge math.
+        googleReviews: {
+          orderBy: { publishTime: "desc" },
+          take: 50,
+        },
       },
     });
 
@@ -406,6 +541,13 @@ export async function GET(
       lastCallActivity,
       queueTotalToday,
       queueAheadCount,
+      // Phase 2.5 additive fields. All scoped via the parent
+      // `Lead.workspaceId` (or directly via `workspaceId` on
+      // workspace-owned tables) per `multi-tenant-scope.mdc`.
+      // Round-trip ceiling raised to ≤ 12 (was 8) per PLAN §6 R17.
+      intelligenceBriefRun,
+      dossierRun,
+      enrichmentRuns,
     ] = await prisma.$transaction([
       prisma.leadNextAction.findFirst({
         where: { workspaceId, leadId: id, isPreliminary: true, supersededAt: null },
@@ -527,6 +669,72 @@ export async function GET(
           ...(lead.nextActionDueAt
             ? { nextActionDueAt: { lt: lead.nextActionDueAt } }
             : { nextActionDueAt: { not: null } }),
+        },
+      }),
+      // Phase 2.5 — cached LEAD_INTELLIGENCE_BRIEF AgentRun.output.
+      // Single most-recent SUCCEEDED run; the analyst writes one
+      // brief per refresh. We project a small subset of the
+      // outputJson into `IntelligenceBriefShape` below so the wire
+      // payload stays small.
+      prisma.agentRun.findFirst({
+        where: {
+          workspaceId,
+          leadId: id,
+          workerKind: "LEAD_INTELLIGENCE_BRIEF",
+          status: "SUCCEEDED",
+        },
+        orderBy: { finishedAt: "desc" },
+        select: {
+          id: true,
+          outputJson: true,
+          finishedAt: true,
+        },
+      }),
+      // Phase 2.5 — most-recent dossier-style run for the
+      // "AI dossier →" lazy expand stub. The full markdown body
+      // stays under `POST /api/leads/[id]/explain`; here we only
+      // need to know whether one exists and surface a snippet.
+      prisma.agentRun.findFirst({
+        where: {
+          workspaceId,
+          leadId: id,
+          workerKind: "LEAD_DOSSIER_GENERATOR",
+          status: "SUCCEEDED",
+        },
+        orderBy: { finishedAt: "desc" },
+        select: {
+          id: true,
+          outputJson: true,
+          finishedAt: true,
+        },
+      }),
+      // Phase 2.5 — recent SUCCEEDED enrichment runs feeding the
+      // discovered-links extractor (socials + directories). Same
+      // shape the legacy `GET /api/leads/[id]` route consumes; we
+      // dedup-by-kind (latest run per worker wins) below.
+      prisma.agentRun.findMany({
+        where: {
+          workspaceId,
+          leadId: id,
+          status: "SUCCEEDED",
+          workerKind: {
+            in: [
+              "APIFY_GMAPS_DEEP",
+              "APIFY_WEB_CRAWL_DEEP",
+              "APIFY_INSTAGRAM_DEEP",
+              "APIFY_FACEBOOK_DEEP",
+              "APIFY_TIKTOK_DEEP",
+              "APIFY_LINKEDIN_COMPANY",
+              "APIFY_REDDIT_MENTIONS",
+              "SOCIAL_SCRAPER",
+            ],
+          },
+        },
+        orderBy: { finishedAt: "desc" },
+        take: 30,
+        select: {
+          workerKind: true,
+          outputJson: true,
         },
       }),
     ]);
@@ -738,6 +946,8 @@ export async function GET(
       whyNow: why.whyNow,
       urgencyWindowDays: why.urgencyWindowDays,
       icpFitScore: lead.icpFitScore,
+      sourceLat: lead.sourceLat,
+      sourceLng: lead.sourceLng,
     };
 
     const reasoningGraph =
@@ -815,6 +1025,115 @@ export async function GET(
       ? lastCallActivity.createdAt.toISOString()
       : null;
 
+    // ===== Phase 2.5 — V1 richness absorption derivations =====
+
+    // 1. Intelligence brief — projection of cached
+    //    LEAD_INTELLIGENCE_BRIEF AgentRun.outputJson.
+    const intelligenceBrief = projectIntelligenceBrief(intelligenceBriefRun);
+
+    // 2. Recommended package — workspace-scoped helper resolves the
+    //    free-text id; missing/deleted packages return null.
+    const recommendedPackage = await resolveRecommendedPackage({
+      workspaceId,
+      recommendedPackageId: lead.salesOpportunity?.recommendedPackageId ?? null,
+      recommendedPackageReason:
+        lead.salesOpportunity?.recommendedPackageReason ?? null,
+    });
+
+    // 3. Personalized first message — PRO+ surface (FREE sees null,
+    //    UI renders the locked CTA).
+    const personalizedFirstMessage =
+      plan === "FREE"
+        ? null
+        : (lead.salesOpportunity?.personalizedFirstMessage ?? null);
+
+    // 4. Review intel summary — projection of ReviewAnalysis with
+    //    server-side top-3 trims.
+    const reviewIntelSummary = projectReviewIntelSummary(lead.reviewAnalysis);
+
+    // 5. Website intel summary — projection of WebsiteAudit.
+    const websiteIntelSummary = projectWebsiteIntelSummary(lead.websiteAudit);
+
+    // 6. Review velocity — derived from the same googleReviews rows
+    //    BANT timing already needs (no extra query). Per PLAN §4
+    //    Phase 2.5 + §6 R20: same shared helper as Phase 8 detector.
+    const reviewVelocity = computeReviewVelocity(
+      (lead.googleReviews ?? []).map((r) => ({
+        rating: r.rating,
+        publishTime: r.publishTime,
+      })),
+    );
+
+    // 7. Discovered links — extractor reuses the legacy logic. We
+    //    fetched up to 30 SUCCEEDED enrichment runs; dedup-by-kind
+    //    so multiple runs of the same actor don't bias the list.
+    const latestRunsByKind = new Map<string, AgentRunForLinks>();
+    for (const r of enrichmentRuns) {
+      if (!latestRunsByKind.has(r.workerKind)) {
+        latestRunsByKind.set(r.workerKind, {
+          workerKind: r.workerKind,
+          outputJson: r.outputJson,
+        });
+      }
+    }
+    const websiteSocials = lead.websiteAudit?.socialProfiles as
+      | Record<string, unknown>
+      | null
+      | undefined;
+    const discoveredIgnoreUrls = [
+      lead.websiteUrl,
+      ...(websiteSocials
+        ? Object.values(websiteSocials).filter(
+            (v): v is string => typeof v === "string" && v.length > 0,
+          )
+        : []),
+    ].filter((v): v is string => typeof v === "string" && v.length > 0);
+    const discoveredLinks = projectDiscoveredLinks(
+      Array.from(latestRunsByKind.values()),
+      discoveredIgnoreUrls,
+    );
+
+    // 8. Sub-niche state — current + version + alternatives. The
+    //    `available` list (full sub-niche catalog for the niche pack)
+    //    stays under `GET /api/leads/sub-niches`; the lazy menu fetches
+    //    it on open so first paint isn't bloated.
+    const subNicheState: SubNicheStateShape = {
+      current: { slug: lead.subNicheSlug, label: subNicheLabel },
+      override: {
+        source: lead.subNicheSource,
+        confidence: lead.subNicheConfidence,
+        version: lead.subNicheVersion,
+      },
+      alternatives: Array.isArray(lead.subNicheAlternatives)
+        ? (lead.subNicheAlternatives as Array<{
+            slug?: string;
+            confidence?: number;
+            reason?: string;
+          }>)
+            .filter((a) => typeof a?.slug === "string")
+            .map((a) => ({
+              slug: a.slug as string,
+              confidence: typeof a.confidence === "number" ? a.confidence : null,
+              reason: typeof a.reason === "string" ? a.reason : null,
+            }))
+            .slice(0, 5)
+        : [],
+    };
+
+    // 9. Dossier stub — boolean + last-generated + 220-char snippet.
+    //    Full markdown stays lazy under POST /api/leads/[id]/explain.
+    const dossierStub = projectDossierStub(dossierRun);
+
+    // 10. Pipeline state — chip-row replacement for the legacy
+    //     IdentityRail. DNC = lead has been discarded explicitly.
+    const pipelineState: PipelineStateShape = {
+      crawl: lead.crawlStatus,
+      analyze: lead.analyzeStatus,
+      reviews: lead.reviewAnalysisStatus,
+      outreach: lead.watchlistItem?.pipelineStage ?? null,
+      dnc: lead.discardedAt != null,
+    };
+
     const response: DecisionSurfaceResponse = {
       leadCore,
       nba,
@@ -835,6 +1154,17 @@ export async function GET(
       closestWin,
       queuePosition,
       recentDialAt,
+      // Phase 2.5 — V1 richness absorption.
+      intelligenceBrief,
+      recommendedPackage,
+      personalizedFirstMessage,
+      reviewIntelSummary,
+      websiteIntelSummary,
+      reviewVelocity,
+      discoveredLinks,
+      subNicheState,
+      dossierStub,
+      pipelineState,
     };
 
     return NextResponse.json(response, {
@@ -896,4 +1226,216 @@ function parseNumberRecord(
     if (typeof v === "number" && Number.isFinite(v)) out[k] = v;
   }
   return out;
+}
+
+// ===== Phase 2.5 — projection helpers =====
+
+interface IntelligenceBriefRunShape {
+  id: string;
+  outputJson: unknown;
+  finishedAt: Date | null;
+}
+
+function projectIntelligenceBrief(
+  run: IntelligenceBriefRunShape | null,
+): IntelligenceBriefShape | null {
+  if (!run) return null;
+  const out = parseRecord(run.outputJson);
+  if (!out) return null;
+  // The brief writer's payload shape is `{ salesConfidence,
+  // headline, painPoints[], whyGoodTarget, ... }`. Be defensive —
+  // older brief versions might not carry every field.
+  const salesConfidence =
+    typeof out.salesConfidence === "number" ? out.salesConfidence : null;
+  const headline = typeof out.headline === "string" ? out.headline : null;
+  const painPoints = Array.isArray(out.painPoints)
+    ? (out.painPoints as unknown[])
+        .filter((p): p is string => typeof p === "string")
+        .slice(0, 6)
+    : [];
+  const whyGoodTarget =
+    typeof out.whyGoodTarget === "string" ? out.whyGoodTarget : null;
+  return {
+    runId: run.id,
+    generatedAt: (run.finishedAt ?? new Date()).toISOString(),
+    salesConfidence,
+    headline,
+    painPoints,
+    whyGoodTarget,
+  };
+}
+
+interface ReviewAnalysisShape {
+  weaknessKpis: unknown;
+  strengthKpis: unknown;
+  sentimentBreakdown: unknown;
+  switchSignals: unknown;
+  leadScore: number;
+  summary: string | null;
+  reviewsAnalyzedCount: number;
+  analyzedAt: Date;
+}
+
+function topKpis(
+  raw: unknown,
+  limit: number,
+): Array<{ label: string; count: number | null; percent: number | null }> {
+  if (!Array.isArray(raw)) return [];
+  return (raw as unknown[])
+    .filter(
+      (k): k is { label: string; count?: number; percent?: number } =>
+        !!k && typeof (k as { label?: unknown }).label === "string",
+    )
+    .slice(0, limit)
+    .map((k) => ({
+      label: k.label,
+      count: typeof k.count === "number" ? k.count : null,
+      percent: typeof k.percent === "number" ? k.percent : null,
+    }));
+}
+
+function projectReviewIntelSummary(
+  ra: ReviewAnalysisShape | null,
+): ReviewIntelSummaryShape | null {
+  if (!ra) return null;
+  const sentiment = parseRecord(ra.sentimentBreakdown) ?? {};
+  return {
+    leadScore: ra.leadScore,
+    summary: ra.summary,
+    sentimentBreakdown: {
+      positive:
+        typeof sentiment.positive === "number" ? sentiment.positive : null,
+      neutral:
+        typeof sentiment.neutral === "number" ? sentiment.neutral : null,
+      negative:
+        typeof sentiment.negative === "number" ? sentiment.negative : null,
+    },
+    weaknessKpisTop3: topKpis(ra.weaknessKpis, 3),
+    strengthKpisTop3: topKpis(ra.strengthKpis, 3),
+    switchSignalsTop3: Array.isArray(ra.switchSignals)
+      ? (ra.switchSignals as unknown[])
+          .filter((s): s is string => typeof s === "string")
+          .slice(0, 3)
+      : [],
+    reviewsAnalyzedCount: ra.reviewsAnalyzedCount,
+    lastAnalyzedAt: ra.analyzedAt.toISOString(),
+  };
+}
+
+interface WebsiteAuditShape {
+  reachable: boolean;
+  crawlError: string | null;
+  crawlAttemptedAt: Date | null;
+  httpStatus: number | null;
+  loadTimeMs: number | null;
+  https: boolean;
+  mobileFriendlyGuess: boolean;
+  hasContactForm: boolean;
+  hasWhatsappLink: boolean;
+  hasBookingSystem: boolean;
+  bookingProvider: string | null;
+  hasEcommerce: boolean;
+  servicesDetected: unknown;
+  title: string | null;
+  metaDescription: string | null;
+}
+
+function projectWebsiteIntelSummary(
+  audit: WebsiteAuditShape | null,
+): WebsiteIntelSummaryShape | null {
+  if (!audit) return null;
+  let crawlStatus: WebsiteIntelSummaryShape["crawlStatus"] = null;
+  if (audit.crawlAttemptedAt == null) {
+    crawlStatus = "never";
+  } else if (audit.reachable) {
+    crawlStatus = "ok";
+  } else if (
+    audit.crawlError === "BOT_BLOCKED_4XX" ||
+    (audit.httpStatus != null && audit.httpStatus >= 400 && audit.httpStatus < 500)
+  ) {
+    crawlStatus = "blocked";
+  } else {
+    crawlStatus = "error";
+  }
+  return {
+    hasBookingSystem: audit.hasBookingSystem,
+    bookingProvider: audit.bookingProvider,
+    loadTimeMs: audit.loadTimeMs,
+    https: audit.https,
+    mobileFriendlyGuess: audit.mobileFriendlyGuess,
+    hasContactForm: audit.hasContactForm,
+    hasWhatsappLink: audit.hasWhatsappLink,
+    hasEcommerce: audit.hasEcommerce,
+    servicesDetectedTop5: Array.isArray(audit.servicesDetected)
+      ? (audit.servicesDetected as unknown[])
+          .filter((s): s is string => typeof s === "string")
+          .slice(0, 5)
+      : [],
+    title: audit.title,
+    metaDescription: audit.metaDescription,
+    crawlStatus,
+    lastAuditedAt: audit.crawlAttemptedAt?.toISOString() ?? null,
+  };
+}
+
+function projectDiscoveredLinks(
+  runs: AgentRunForLinks[],
+  ignoreUrls: string[],
+): DiscoveredLinksShape {
+  const extracted = extractDiscoveredLinks({
+    agentRuns: runs,
+    ignoreUrls,
+    maxPerPlatform: 3,
+  });
+  // The extractor returns a flat `DiscoveredLink[]`. The V2 UI wants
+  // the social/directory split (per PLAN §4 Phase 2.5
+  // `WhoBlock`/`StakeholderOnlinePresence` + `AccountBlock` directories
+  // strip), so we partition by category here.
+  const socials: DiscoveredLinksShape["socials"] = [];
+  const directories: DiscoveredLinksShape["directories"] = [];
+  for (const link of extracted) {
+    if (link.category === "social") {
+      socials.push({ platform: link.platform, url: link.url });
+    } else if (link.category === "directory" || link.category === "review" || link.category === "registry") {
+      directories.push({
+        name: link.title ?? link.platform,
+        url: link.url,
+      });
+    }
+    // `maps` (google_maps) is the lead's own GMB — already on the
+    // lead row, no need to surface again.
+  }
+  return { socials, directories };
+}
+
+interface DossierRunShape {
+  id: string;
+  outputJson: unknown;
+  finishedAt: Date | null;
+}
+
+function projectDossierStub(
+  run: DossierRunShape | null,
+): DossierStubShape {
+  if (!run) {
+    return { hasDossier: false, lastGeneratedAt: null, summarySnippet: null };
+  }
+  const out = parseRecord(run.outputJson) ?? {};
+  // The dossier writer stores the markdown on a `markdown` (or
+  // `summary`) key; either one becomes the snippet. Hard-cap at
+  // 220 chars so the wire payload stays small.
+  const candidate =
+    (typeof out.summary === "string" ? out.summary : null) ??
+    (typeof out.markdown === "string" ? out.markdown : null) ??
+    (typeof out.body === "string" ? out.body : null);
+  let snippet: string | null = null;
+  if (candidate) {
+    const oneLine = candidate.replace(/\s+/g, " ").trim();
+    snippet = oneLine.length > 220 ? `${oneLine.slice(0, 219)}…` : oneLine;
+  }
+  return {
+    hasDossier: true,
+    lastGeneratedAt: (run.finishedAt ?? new Date()).toISOString(),
+    summarySnippet: snippet,
+  };
 }

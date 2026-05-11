@@ -182,9 +182,21 @@ export function LeadDetailV2Client({
     closestWin,
     queuePosition,
     recentDialAt,
+    // Phase 2.5 — V1 richness absorption.
+    intelligenceBrief,
+    recommendedPackage,
+    personalizedFirstMessage,
+    reviewIntelSummary,
+    websiteIntelSummary,
+    reviewVelocity,
+    discoveredLinks,
+    subNicheState,
+    dossierStub,
+    pipelineState,
     preliminaryShippable,
     finalLatencyMs,
     loading,
+    refresh,
   } = surface;
   const queue = useLeadQueue(3);
 
@@ -391,6 +403,10 @@ export function LeadDetailV2Client({
                 : null;
             if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
           }}
+          leadId={leadId}
+          subNicheState={subNicheState}
+          onSubNicheSaved={() => refresh()}
+          onPipelineRerun={() => refresh()}
           copy={{ ...copy.header, stages: copy.stages }}
         />
       }
@@ -423,11 +439,21 @@ export function LeadDetailV2Client({
             preliminary={nba?.preliminary ?? null}
             final={nba?.final ?? null}
             isStale={isStaleWhyNow}
+            websiteIntelSummary={websiteIntelSummary}
+            reviewVelocity={reviewVelocity}
+            reviewVelocityPromoted={(nba?.triggers ?? []).some(
+              (t) =>
+                t.type === "REVIEW_VOLUME_SURGE" ||
+                t.type === "REVIEW_VOLUME_DIP",
+            )}
+            onOpenWebsitePanel={() => expand("HISTORY")}
             copy={{
               empty: copy.whyNow.empty,
               windowDays: copy.whyNow.windowDays,
               windowToday: copy.whyNow.windowToday,
               evidence: copy.evidence,
+              websiteSignals: copy.whyNow.websiteSignals,
+              reviewVelocity: copy.whyNow.reviewVelocity,
             }}
           />
         </Block>
@@ -461,6 +487,9 @@ export function LeadDetailV2Client({
             leadId={leadId}
             phone={phone}
             email={email}
+            recommendedPackage={recommendedPackage}
+            personalizedFirstMessage={personalizedFirstMessage}
+            plan={planGate?.plan ?? null}
             copy={copy.nextGesture}
             onSnoozed={() => queue.mutate()}
           />
@@ -485,6 +514,7 @@ export function LeadDetailV2Client({
           <WhoBlock
             loading={loading && stakeholders.length === 0}
             stakeholders={stakeholders}
+            discoveredLinks={discoveredLinks}
             copy={{
               loading: copy.who.loading,
               empty: copy.who.empty,
@@ -515,11 +545,14 @@ export function LeadDetailV2Client({
             loading={loading && latestDiscovery == null}
             spinUnlocked={planGate?.spinUnlocked ?? false}
             items={latestDiscovery ? latestDiscovery.items : null}
+            dossierStub={dossierStub}
+            leadId={leadId}
             copy={{
               loading: copy.discovery.loading,
               empty: copy.discovery.empty,
               spin: { ...copy.discovery.spin, evidence: copy.evidence },
               locked: copy.discovery.locked,
+              dossier: copy.discovery.dossier,
             }}
           />
         </Block>
@@ -546,6 +579,9 @@ export function LeadDetailV2Client({
             icpDimensions={icpDimensions}
             meddpicc={dealQualification}
             meddpiccUnlocked={planGate?.meddpiccUnlocked ?? false}
+            intelligenceBrief={intelligenceBrief}
+            reasoningRouteEnabled={planGate?.plan === "AGENCY"}
+            leadId={leadId}
             copy={{
               loading: copy.qualification.loading,
               empty: copy.qualification.empty,
@@ -557,6 +593,7 @@ export function LeadDetailV2Client({
                 evidence: copy.evidence,
               },
               meddpiccLocked: copy.qualification.meddpiccLocked,
+              intelligenceBrief: copy.qualification.intelligenceBrief,
             }}
           />
         </Block>
@@ -588,6 +625,9 @@ export function LeadDetailV2Client({
             }))}
             objections={recentObjections}
             closestWin={closestWin}
+            reviewIntelSummary={
+              copy.history.reviewIntel ? reviewIntelSummary : undefined
+            }
             copy={{
               loading: copy.history.loading,
               empty: copy.history.empty,
@@ -596,6 +636,8 @@ export function LeadDetailV2Client({
               activityKindLabels: copy.history.activityKindLabels,
               objections: copy.history.objections,
               closestWin: copy.history.closestWin,
+              reviewIntel: copy.history.reviewIntel,
+              reviewTimeline: copy.history.reviewTimeline,
             }}
           />
         </Block>
@@ -626,6 +668,10 @@ export function LeadDetailV2Client({
             accountId={leadCore?.accountId ?? null}
             plan={planGate?.plan ?? "FREE"}
             onTelemetry={safeCapture}
+            sourceLat={leadCore?.sourceLat ?? null}
+            sourceLng={leadCore?.sourceLng ?? null}
+            pipelineState={pipelineState}
+            discoveredLinks={discoveredLinks}
             copy={copy.account}
           />
         </Block>

@@ -1645,6 +1645,11 @@ enum LeadTriggerType {
   REBRANDING
   FUNDING_RAISED
   EXEC_CHANGE
+  // Phase 8 — review-volume detector (PLAN §4 Phase 8). Forward-
+  // compatible additions: old code reading the enum still functions,
+  // new values fall through default branches.
+  REVIEW_VOLUME_SURGE
+  REVIEW_VOLUME_DIP
 }
 
 // Possible Next Best Action verbs the SDR_BRAIN can recommend. Kept

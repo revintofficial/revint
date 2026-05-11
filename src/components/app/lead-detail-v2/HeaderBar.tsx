@@ -18,8 +18,15 @@
  * scrolls to / opens the existing voice-note recorder. The kebab is
  * a Radix dropdown with Edit / Archive / Discard placeholders — they
  * fire `onEdit` / `onArchive` / `onDiscard` if the parent wires them.
+ *
+ * Phase 2.5 additions:
+ *   - "Override sub-niche…" kebab item → controls the
+ *     `SubNicheOverrideMenu` popover via controlled `open` state.
+ *   - "Re-run pipeline" kebab item → POSTs to
+ *     `/api/leads/[id]/pipeline-rerun` (existing route).
  */
 
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -39,8 +46,15 @@ import {
   PipelineStageChip,
   type PipelineStageChipCopy,
 } from "./PipelineStageChip";
+import {
+  SubNicheOverrideMenu,
+  type SubNicheOverrideMenuCopy,
+} from "./SubNicheOverrideMenu";
 import type { LeadDetailV2Stage } from "@/lib/lead-detail/use-pipeline-stage";
-import type { AccountTierValue } from "@/lib/lead-detail/use-decision-surface";
+import type {
+  AccountTierValue,
+  SubNicheStateDto,
+} from "@/lib/lead-detail/use-decision-surface";
 
 export interface HeaderBarCopy {
   tierLabel: string;
@@ -54,6 +68,12 @@ export interface HeaderBarCopy {
   archive: string;
   discard: string;
   stages: PipelineStageChipCopy["stages"];
+  // Phase 2.5 — additive copy for the kebab additions.
+  overrideSubNiche?: string;
+  rerunPipeline?: string;
+  rerunningPipeline?: string;
+  rerunPipelineError?: string;
+  subNicheOverride?: SubNicheOverrideMenuCopy;
 }
 
 export interface HeaderBarProps {
@@ -71,6 +91,12 @@ export interface HeaderBarProps {
   onEdit?: () => void;
   onArchive?: () => void;
   onDiscard?: () => void;
+  // Phase 2.5 — sub-niche state from `decision-surface.subNicheState`
+  // and the lead id used by the override popover + pipeline-rerun.
+  leadId?: string;
+  subNicheState?: SubNicheStateDto | null;
+  onSubNicheSaved?: () => void;
+  onPipelineRerun?: () => void;
   copy: HeaderBarCopy;
 }
 
@@ -125,10 +151,35 @@ export function HeaderBar({
   onEdit,
   onArchive,
   onDiscard,
+  leadId,
+  subNicheState,
+  onSubNicheSaved,
+  onPipelineRerun,
   copy,
 }: HeaderBarProps) {
   const tel = buildTel(phone);
   const mail = email ? `mailto:${email}` : null;
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [rerunning, setRerunning] = useState(false);
+  const [rerunError, setRerunError] = useState<string | null>(null);
+
+  const handleRerunPipeline = useCallback(async () => {
+    if (!leadId || rerunning) return;
+    setRerunning(true);
+    setRerunError(null);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/pipeline-rerun`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      });
+      if (!res.ok) throw new Error(`status_${res.status}`);
+      onPipelineRerun?.();
+    } catch {
+      setRerunError(copy.rerunPipelineError ?? "Failed to re-run pipeline");
+    } finally {
+      setRerunning(false);
+    }
+  }, [leadId, rerunning, onPipelineRerun, copy.rerunPipelineError]);
 
   return (
     <div className="flex w-full items-center gap-2 px-3 sm:gap-3 sm:px-6">
@@ -202,8 +253,67 @@ export function HeaderBar({
             <DropdownMenuItem onSelect={() => onDiscard?.()}>
               {copy.discard}
             </DropdownMenuItem>
+            {/*
+             * Phase 2.5 — sub-niche override + pipeline re-run kebab
+             * items (PLAN §5.9 rows 6 & 14). Hidden when the parent
+             * doesn't pass the necessary copy / leadId.
+             */}
+            {leadId && copy.subNicheOverride && copy.overrideSubNiche ? (
+              <DropdownMenuItem
+                data-testid="header-kebab-override-sub-niche"
+                onSelect={(e) => {
+                  // Keep the dropdown closed but defer the popover
+                  // open so Radix doesn't fight focus management.
+                  e.preventDefault();
+                  setTimeout(() => setOverrideOpen(true), 0);
+                }}
+              >
+                {copy.overrideSubNiche}
+              </DropdownMenuItem>
+            ) : null}
+            {leadId && copy.rerunPipeline ? (
+              <DropdownMenuItem
+                data-testid="header-kebab-rerun-pipeline"
+                disabled={rerunning}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  void handleRerunPipeline();
+                }}
+              >
+                {rerunning && copy.rerunningPipeline
+                  ? copy.rerunningPipeline
+                  : copy.rerunPipeline}
+              </DropdownMenuItem>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
+        {/*
+         * SubNicheOverrideMenu in controlled mode — the kebab item
+         * above flips `overrideOpen` and Radix anchors the popover to
+         * a 0-size sibling sitting at this position in the DOM.
+         */}
+        {leadId && copy.subNicheOverride ? (
+          <SubNicheOverrideMenu
+            leadId={leadId}
+            state={subNicheState ?? null}
+            open={overrideOpen}
+            onOpenChange={setOverrideOpen}
+            onSaved={() => {
+              setOverrideOpen(false);
+              onSubNicheSaved?.();
+            }}
+            copy={copy.subNicheOverride}
+          />
+        ) : null}
+        {rerunError ? (
+          <span
+            role="status"
+            className="absolute right-3 top-12 rounded-md border border-white/10 bg-white/3 px-2 py-1 text-[11px]"
+            style={{ color: "var(--leadac-error)" }}
+          >
+            {rerunError}
+          </span>
+        ) : null}
       </div>
     </div>
   );

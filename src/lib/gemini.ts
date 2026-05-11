@@ -751,16 +751,34 @@ export async function analyzeReviewsWithGemini(input: {
     ? { weakness: FNB_WEAKNESS_LABELS, strength: FNB_STRENGTH_LABELS }
     : null;
 
+  // 2026-05-10 prod incident: review_analyst was returning
+  // finishReason=MAX_TOKENS at 16k, producing ~2.5k chars of JSON cut
+  // mid-string ("food came out lukewarm, waiter took it back saying
+  // he..."). Root cause is gemini-2.5-flash's internal "thinking"
+  // tokens — on a 500-review corpus + complex schema (5 weakness KPIs
+  // × 2+ examples × verbatim quotes + 5 strength KPIs + 5 pain
+  // phrases + 5 strength phrases + 3 switch signals) the model
+  // burns most of the 16k budget reasoning before emitting JSON.
+  // The legacy @google/generative-ai SDK (v0.24.x) cannot pass
+  // `thinkingConfig.thinkingBudget = 0` to disable thinking, so the
+  // only knob is to raise the cap.
+  //
+  // Two-tier strategy:
+  //   1. First attempt: 32k tokens + full 500-review corpus. Fits
+  //      P95 thinking pass + ~4k JSON comfortably.
+  //   2. On MAX_TOKENS: retry once with 65k tokens AND slice the
+  //      corpus to 250 reviews so input weight is halved → less
+  //      thinking pressure → JSON gets emitted cleanly.
+  // gemini-2.5-flash supports up to 65,536 output tokens.
+  const FIRST_ATTEMPT_MAX_OUTPUT = 32768;
+  const RETRY_MAX_OUTPUT = 65536;
+  const RETRY_REVIEW_LIMIT = 250;
+
   const client = getClient();
-  const model = client.getGenerativeModel({
+  const buildModel = (maxOutputTokens: number) => client.getGenerativeModel({
     model: "gemini-2.5-flash",
     generationConfig: {
-      // gemini-2.5-flash spends a chunk of its output budget on internal
-      // "thinking" tokens that the legacy @google/generative-ai SDK
-      // (v0.24.x) cannot disable via thinkingConfig. We need ~3-4k
-      // tokens of actual JSON; 16k leaves enough headroom for the
-      // model's reasoning pass on top of that.
-      maxOutputTokens: 16384,
+      maxOutputTokens,
       temperature: 0.3,
       responseMimeType: "application/json",
       responseSchema: {
@@ -855,21 +873,6 @@ export async function analyzeReviewsWithGemini(input: {
     },
   });
 
-  // Cap at 500 reviews to bound prompt token cost (worst case ~500 × 80
-  // tokens ≈ 40k input tokens, well under Gemini 2.5 Flash's 1M context).
-  // Anything beyond 500 is diminishing-return signal — the KPI clusters
-  // converge long before we run out of corpus.
-  const reviewsText = input.reviews
-    .slice(0, 500)
-    .map(
-      (r, i) =>
-        `${i + 1}. ${r.authorName} (${r.rating}/5, ${r.relativeTime}): ${r.text || "[No review text, star rating only]"}`,
-    )
-    .join("\n");
-
-  const { buildReviewAnalysisPrompt } = await import("@/lib/prompts/review-analysis-prompt");
-  const promptTemplate = buildReviewAnalysisPrompt({ labelEnum });
-
   // Round 2 §3.10 — surface the rating-banded pool sizes to the model
   // so the NEGATIVE/POSITIVE pool floors in the prompt have something
   // concrete to reason against. The post-process filter
@@ -882,26 +885,91 @@ export async function analyzeReviewsWithGemini(input: {
     (r) => typeof r.rating === "number" && r.rating >= 4,
   ).length;
 
-  const prompt = promptTemplate
-    .replace("{business_name}", input.businessName)
-    .replace("{address}", input.address)
-    .replace("{rating}", input.rating?.toString() ?? "N/A")
-    .replace("{review_count}", input.reviewCount?.toString() ?? input.reviews.length.toString())
-    .replace("{reviews_count}", input.reviews.length.toString())
-    .replace("{negative_pool_count}", negativePoolCount.toString())
-    .replace("{positive_pool_count}", positivePoolCount.toString())
-    .replace("{our_offer}", input.ourOffer || "Our offer: AI-assisted appointment-setting SaaS for local service businesses.")
-    .replace("{reviews}", reviewsText);
+  const { buildReviewAnalysisPrompt } = await import("@/lib/prompts/review-analysis-prompt");
+  const promptTemplate = buildReviewAnalysisPrompt({ labelEnum });
 
-  const result = await generateWithTimeout(model, prompt, {
+  // Builds a fully-substituted prompt for the given review-corpus
+  // slice. Factored out so the MAX_TOKENS retry path can re-render
+  // the prompt with a smaller corpus without duplicating the
+  // placeholder substitution logic.
+  const renderPrompt = (sliceLimit: number): string => {
+    const reviewsText = input.reviews
+      .slice(0, sliceLimit)
+      .map(
+        (r, i) =>
+          `${i + 1}. ${r.authorName} (${r.rating}/5, ${r.relativeTime}): ${r.text || "[No review text, star rating only]"}`,
+      )
+      .join("\n");
+    return promptTemplate
+      .replace("{business_name}", input.businessName)
+      .replace("{address}", input.address)
+      .replace("{rating}", input.rating?.toString() ?? "N/A")
+      .replace("{review_count}", input.reviewCount?.toString() ?? input.reviews.length.toString())
+      .replace("{reviews_count}", Math.min(input.reviews.length, sliceLimit).toString())
+      .replace("{negative_pool_count}", negativePoolCount.toString())
+      .replace("{positive_pool_count}", positivePoolCount.toString())
+      .replace("{our_offer}", input.ourOffer || "Our offer: AI-assisted appointment-setting SaaS for local service businesses.")
+      .replace("{reviews}", reviewsText);
+  };
+
+  // First attempt: full 500-review corpus + 32k output budget.
+  // The 500 cap matches APIFY_GMAPS_DEEP's DEFAULT_MAX_REVIEWS — KPI
+  // clusters converge well before that, but we want the deep scrape
+  // fully fed in when budget allows.
+  let attempt = 1;
+  let prompt = renderPrompt(500);
+  let result = await generateWithTimeout(buildModel(FIRST_ATTEMPT_MAX_OUTPUT), prompt, {
     timeoutMs: WORKER_TIMEOUTS.REVIEW_ANALYST,
     label: "review_analyst",
   });
-  const finishReason = result.response.candidates?.[0]?.finishReason;
+  let finishReason = result.response.candidates?.[0]?.finishReason;
+
+  // MAX_TOKENS retry: gemini-2.5-flash's thinking pass occasionally
+  // exhausts even a 32k budget on a 500-review corpus. Halving the
+  // corpus to 250 slashes input weight (≈40k → ≈20k input tokens) so
+  // the model needs less reasoning to converge, AND we double the
+  // output budget to 65k (the per-request hard cap for 2.5-flash).
+  // Empirically one of those two changes is always enough to land
+  // STOP; doing both keeps the retry path single-shot rather than a
+  // multi-step ladder.
+  if (finishReason === "MAX_TOKENS") {
+    logger.warn("review_analyst.max_tokens_retry", {
+      attempt,
+      firstAttemptMaxOutput: FIRST_ATTEMPT_MAX_OUTPUT,
+      reviewCorpusSize: Math.min(input.reviews.length, 500),
+    });
+    attempt = 2;
+    prompt = renderPrompt(RETRY_REVIEW_LIMIT);
+    result = await generateWithTimeout(buildModel(RETRY_MAX_OUTPUT), prompt, {
+      timeoutMs: WORKER_TIMEOUTS.REVIEW_ANALYST,
+      label: "review_analyst_retry",
+    });
+    finishReason = result.response.candidates?.[0]?.finishReason;
+  }
+
   if (finishReason && finishReason !== "STOP") {
-    logger.warn("review_analyst.gemini_finish_reason", { finishReason });
+    logger.warn("review_analyst.gemini_finish_reason", { finishReason, attempt });
   }
   const text = result.response.text();
+
+  // Surface MAX_TOKENS as a typed failure BEFORE handing the
+  // truncated buffer to safeParseGeminiJson. The parser's
+  // best-effort recovery (substring extraction, control-char
+  // strip) cannot resurrect a JSON object whose final string
+  // value is cut mid-quote — letting it try just produces a
+  // misleading "Expected ',' or ']'" error in logs that hides
+  // the real upstream cause (token budget exhausted).
+  if (finishReason === "MAX_TOKENS") {
+    logger.error("review_analyst.max_tokens_exhausted", {
+      attempt,
+      rawLength: text.length,
+      retryCorpusSize: RETRY_REVIEW_LIMIT,
+      retryMaxOutput: RETRY_MAX_OUTPUT,
+    });
+    throw new Error(
+      `review_analyst: Gemini hit MAX_TOKENS even after retry with ${RETRY_REVIEW_LIMIT}-review corpus + ${RETRY_MAX_OUTPUT} output budget. Output truncated at ${text.length} chars.`,
+    );
+  }
 
   const parsed = safeParseGeminiJson<ReviewAnalysisOutput>(text, "review_analyst");
 
