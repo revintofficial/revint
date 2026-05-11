@@ -39,10 +39,18 @@ export const run: AgentWorkerRun = async (
   if (!ctx.lead) throw new Error("WHY_NOW_SYNTHESIZER requires a lead context");
   const lead = ctx.lead;
 
-  // Pull recent active triggers (decay-aware on read; we filter by
-  // urgency window from the column, no need for a separate decay table).
+  // Pull recent active triggers (decay-aware on read; the recency
+  // curve below downweights stale rows and we filter out hard-decayed
+  // ones via `decayedAt: null`). The schema's
+  // `@@index([workspaceId, leadId, decayedAt])` is purpose-built for
+  // this query — workspaceId-scoped first so cross-tenant leak is
+  // structurally impossible.
   const triggers = await prisma.leadTrigger.findMany({
-    where: { workspaceId: ctx.workspaceId, leadId: lead.id, isActive: true },
+    where: {
+      workspaceId: ctx.workspaceId,
+      leadId: lead.id,
+      decayedAt: null,
+    },
     orderBy: [{ severity: "desc" }, { confidence: "desc" }, { detectedAt: "desc" }],
     take: 12,
   });
@@ -120,10 +128,19 @@ Return JSON only.`,
     });
   }
 
-  // Recommended timing = min urgency window across the top 3 triggers.
-  const recommendedTimingDays = Math.min(
-    ...triggers.slice(0, 3).map((t) => t.urgencyWindowDays),
-  );
+  // Recommended timing = min urgency window across the top 3
+  // triggers. `urgencyWindowDays` is nullable on the schema so we
+  // strip nulls first; if every top-3 trigger lacks a window we
+  // fall back to the same 30-day default the empty-trigger branch
+  // returns above. Without the strip a single null coerced to 0
+  // and `Math.min(..., 0, ...)` poisoned the recommendation to "act
+  // immediately" on every trigger that omitted the column.
+  const candidateWindows = triggers
+    .slice(0, 3)
+    .map((t) => t.urgencyWindowDays)
+    .filter((d): d is number => typeof d === "number" && Number.isFinite(d));
+  const recommendedTimingDays =
+    candidateWindows.length > 0 ? Math.min(...candidateWindows) : 30;
 
   const output: WhyNowOutput = {
     headline,

@@ -509,12 +509,19 @@ export async function GET(
         // parent `Lead.workspaceId` so the cross-tenant audit holds.
         salesOpportunity: true,
         reviewAnalysis: true,
-        // 50 reviews is the same corpus size the trigger-detector
-        // ingests (PLAN §5.6). Reused by `computeReviewVelocity` so
-        // we never make a second round-trip for the badge math.
+        // 500 reviews matches the trigger-detector's own corpus
+        // (`execute.ts` → `requiredIncludes.googleReviews`). Reused
+        // by `computeReviewVelocity` so the UI badge and the Phase 8
+        // REVIEW_VOLUME_* trigger row share one source of truth — at
+        // 50 a high-volume operator clipped the prior-30d bucket and
+        // the badge would silently disagree with the trigger row.
+        // 500 rows ≈ 100-300KB; well under the aggregator's payload
+        // budget. The Gemini KPI bar still consumes only 220 (in
+        // review-analyst.ts) because that path is the only one
+        // paying a context-window tax.
         googleReviews: {
           orderBy: { publishTime: "desc" },
-          take: 50,
+          take: 500,
         },
       },
     });

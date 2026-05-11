@@ -48,11 +48,16 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         // injected at both prompt + responseSchema layer; other
         // niches keep the legacy free-form clustering.
         workspace: { select: { offerName: true, valueProposition: true, niche: true } },
-        // 500 matches APIFY_GMAPS_DEEP's DEFAULT_MAX_REVIEWS and the
-        // slice cap inside `analyzeReviewsWithGemini`. After a deep
-        // Apify scrape we want the full corpus to feed the KPI
-        // aggregator, not just the freshest 50.
-        googleReviews: { orderBy: { publishTime: "desc" }, take: 500 },
+        // 220 is the Gemini KPI-bar context cap — empirically the
+        // largest corpus that fits gemini-2.5-flash's input budget +
+        // 32k output + thinking pass without tripping MAX_TOKENS or
+        // INTERNAL context-overflow errors on F&B label-whitelist
+        // schemas. APIFY_GMAPS_DEEP still ingests up to 500 reviews;
+        // the trigger-detector's review-volume rule + the decision-
+        // surface badge math both still see the full 500 via
+        // `execute.ts` (workers) and the aggregator's own `take`.
+        // Only THIS Gemini-bound path is narrowed.
+        googleReviews: { orderBy: { publishTime: "desc" }, take: 220 },
       },
     });
 

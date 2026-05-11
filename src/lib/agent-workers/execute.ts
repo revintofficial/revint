@@ -654,14 +654,22 @@ async function hydrateContext(run: AgentRun): Promise<AgentWorkerContext> {
           websiteAudit: true,
           salesOpportunity: true,
           reviewAnalysis: true,
-          // Capped at 50 reviews to keep payload size predictable.
-          // Workers that need rating-trend windows look at the recent
-          // half vs the older half so 50 is plenty.
+          // Capped at 500 reviews — same cap APIFY_GMAPS_DEEP ingests
+          // (DEFAULT_MAX_REVIEWS). The Phase 8 review-volume rule's
+          // 30/30 day rolling window needs every review in the last
+          // 60 days and high-traffic operators (e.g. Camden tourist-
+          // strip restaurants pulling 100+ reviews/month) clip badly
+          // at 50 → false-negative on REVIEW_VOLUME_DIP fires.
+          // 500 rows ≈ 100-300KB on the wire; cheap for a per-lead
+          // worker hop. The Gemini KPI bar (review-analyst) capped
+          // its OWN query at 220 because that path pays a context-
+          // window tax — none of the workers reading via this path
+          // do.
           ...(includeGoogleReviews
             ? {
                 googleReviews: {
                   orderBy: { publishTime: "desc" as const },
-                  take: 50,
+                  take: 500,
                 },
               }
             : {}),

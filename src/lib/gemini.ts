@@ -752,27 +752,31 @@ export async function analyzeReviewsWithGemini(input: {
     : null;
 
   // 2026-05-10 prod incident: review_analyst was returning
-  // finishReason=MAX_TOKENS at 16k, producing ~2.5k chars of JSON cut
-  // mid-string ("food came out lukewarm, waiter took it back saying
-  // he..."). Root cause is gemini-2.5-flash's internal "thinking"
-  // tokens — on a 500-review corpus + complex schema (5 weakness KPIs
-  // × 2+ examples × verbatim quotes + 5 strength KPIs + 5 pain
-  // phrases + 5 strength phrases + 3 switch signals) the model
-  // burns most of the 16k budget reasoning before emitting JSON.
-  // The legacy @google/generative-ai SDK (v0.24.x) cannot pass
-  // `thinkingConfig.thinkingBudget = 0` to disable thinking, so the
-  // only knob is to raise the cap.
+  // finishReason=MAX_TOKENS at 16k on a 500-review corpus. Followed
+  // by 2026-05-11 incident: even with 32k output budget, a 500-row
+  // F&B corpus + label-whitelist responseSchema occasionally tripped
+  // an INTERNAL "context too long" error from Gemini before the
+  // model started emitting tokens (input + thinking pass blew past
+  // the practical context ceiling).
   //
-  // Two-tier strategy:
-  //   1. First attempt: 32k tokens + full 500-review corpus. Fits
+  // Resolution: cap the upstream corpus at 220 reviews in
+  // `review-analyst.ts`. KPI clusters converge well before 220
+  // anyway — every 5-star review past the first 50 is variance, not
+  // signal. The volume-analysis path (Phase 8 REVIEW_VOLUME_* rule)
+  // and the decision-surface badge math still see the full 500
+  // corpus because they don't pay a Gemini context tax.
+  //
+  // Two-tier strategy (now operating against the 220 cap):
+  //   1. First attempt: 32k tokens + 220-review corpus. Fits
   //      P95 thinking pass + ~4k JSON comfortably.
-  //   2. On MAX_TOKENS: retry once with 65k tokens AND slice the
-  //      corpus to 250 reviews so input weight is halved → less
-  //      thinking pressure → JSON gets emitted cleanly.
+  //   2. On MAX_TOKENS: retry once with 65k tokens AND halve the
+  //      corpus to 110 reviews so input weight drops further →
+  //      less thinking pressure → JSON gets emitted cleanly.
   // gemini-2.5-flash supports up to 65,536 output tokens.
   const FIRST_ATTEMPT_MAX_OUTPUT = 32768;
   const RETRY_MAX_OUTPUT = 65536;
-  const RETRY_REVIEW_LIMIT = 250;
+  const FIRST_ATTEMPT_REVIEW_LIMIT = 220;
+  const RETRY_REVIEW_LIMIT = 110;
 
   const client = getClient();
   const buildModel = (maxOutputTokens: number) => client.getGenerativeModel({
@@ -912,12 +916,15 @@ export async function analyzeReviewsWithGemini(input: {
       .replace("{reviews}", reviewsText);
   };
 
-  // First attempt: full 500-review corpus + 32k output budget.
-  // The 500 cap matches APIFY_GMAPS_DEEP's DEFAULT_MAX_REVIEWS — KPI
-  // clusters converge well before that, but we want the deep scrape
-  // fully fed in when budget allows.
+  // First attempt: 220-review corpus + 32k output budget.
+  // 220 is the empirical ceiling that fits gemini-2.5-flash's input +
+  // thinking pass on a F&B label-whitelist responseSchema without
+  // tripping MAX_TOKENS or INTERNAL context errors. The upstream
+  // caller (review-analyst.ts) caps its DB query at the same 220 so
+  // this slice is a no-op in practice — left explicit so a future
+  // caller passing more reviews still gets the safety cap.
   let attempt = 1;
-  let prompt = renderPrompt(500);
+  let prompt = renderPrompt(FIRST_ATTEMPT_REVIEW_LIMIT);
   let result = await generateWithTimeout(buildModel(FIRST_ATTEMPT_MAX_OUTPUT), prompt, {
     timeoutMs: WORKER_TIMEOUTS.REVIEW_ANALYST,
     label: "review_analyst",
@@ -925,18 +932,17 @@ export async function analyzeReviewsWithGemini(input: {
   let finishReason = result.response.candidates?.[0]?.finishReason;
 
   // MAX_TOKENS retry: gemini-2.5-flash's thinking pass occasionally
-  // exhausts even a 32k budget on a 500-review corpus. Halving the
-  // corpus to 250 slashes input weight (≈40k → ≈20k input tokens) so
-  // the model needs less reasoning to converge, AND we double the
-  // output budget to 65k (the per-request hard cap for 2.5-flash).
-  // Empirically one of those two changes is always enough to land
-  // STOP; doing both keeps the retry path single-shot rather than a
-  // multi-step ladder.
+  // exhausts even a 32k budget on the 220-review corpus. Halving the
+  // corpus to 110 slashes input weight further so the model needs
+  // less reasoning to converge, AND we double the output budget to
+  // 65k (the per-request hard cap for 2.5-flash). Empirically one of
+  // those two changes is always enough to land STOP; doing both
+  // keeps the retry path single-shot rather than a multi-step ladder.
   if (finishReason === "MAX_TOKENS") {
     logger.warn("review_analyst.max_tokens_retry", {
       attempt,
       firstAttemptMaxOutput: FIRST_ATTEMPT_MAX_OUTPUT,
-      reviewCorpusSize: Math.min(input.reviews.length, 500),
+      reviewCorpusSize: Math.min(input.reviews.length, FIRST_ATTEMPT_REVIEW_LIMIT),
     });
     attempt = 2;
     prompt = renderPrompt(RETRY_REVIEW_LIMIT);
