@@ -17,7 +17,12 @@ import { GoogleGenerativeAI, type Schema } from "@google/generative-ai";
 import { getGeminiKey } from "@/lib/gemini-keys";
 import { generateWithTimeout } from "@/lib/gemini-client";
 import { safeParseGeminiJson } from "@/lib/gemini";
-import { embed as embedOne, embedBatch as embedBatchInternal, EMBEDDING_DIM } from "@/lib/ai-core/embed";
+import {
+  embed as embedOne,
+  embedBatch as embedBatchInternal,
+  EMBEDDING_DIM,
+  EMBEDDING_MODEL_NAME,
+} from "@/lib/ai-core/embed";
 import type {
   EmbeddingProvider,
   StructuredInferenceArgs,
@@ -80,7 +85,7 @@ export const geminiEmbeddingProvider: EmbeddingProvider = {
     return {
       vector,
       tokensIn: Math.ceil(text.length / 4), // rough proxy; SDK doesn't return real count
-      modelVersion: `text-embedding-004:${EMBEDDING_DIM}`,
+      modelVersion: `${EMBEDDING_MODEL_NAME}:${EMBEDDING_DIM}`,
     };
   },
   async embedBatch(texts: string[]) {
@@ -89,7 +94,7 @@ export const geminiEmbeddingProvider: EmbeddingProvider = {
     return {
       vectors,
       tokensIn: Math.ceil(totalChars / 4),
-      modelVersion: `text-embedding-004:${EMBEDDING_DIM}`,
+      modelVersion: `${EMBEDDING_MODEL_NAME}:${EMBEDDING_DIM}`,
     };
   },
 };

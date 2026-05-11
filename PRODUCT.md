@@ -20,7 +20,7 @@ LeadAC, **lokal işletmelere outbound satış yapan ajansların** kullandığı 
 | ORM / DB | **Prisma 6** + **PostgreSQL** + **pgvector** (768-boyutlu embedding) |
 | Auth | **Supabase** (`auth.users` ↔ `User` trigger ile senkron) |
 | Queue | **BullMQ** + **Redis** (ioredis) — supervisor 7 worker süreci yönetir |
-| LLM | **Google Gemini** (`@google/generative-ai`) — embedding `text-embedding-004`, JSON-mode generation |
+| LLM | **Google Gemini** (`@google/generative-ai`) — embedding `gemini-embedding-001` (`outputDimensionality=768`), JSON-mode generation |
 | Crawl | **Playwright** (site denetimi için Chromium headless) |
 | Enrichment | **Apify** actor'ları — Google Maps deep, web crawl deep, sosyal medya, SERP, rakip reklamlar, LinkedIn, Reddit |
 | Email | **Resend** (transactional), **OAuth Gmail/Outlook** (kullanıcı gönderimi) |
@@ -286,7 +286,7 @@ Sentinel'ler tam worker olarak sarmaya değmeyen küçük SQL-step'lerdir; orche
 
 ### 8.1 Şema
 
-`SemanticMemory` tablosu pgvector(768) embedding'i ile her bilgi parçasını saklar. Gemini `text-embedding-004` ile embed edilir (`EMBEDDING_DIM = 768`). HNSW index `embedding vector_cosine_ops` üzerine raw SQL migration ile kurulu.
+`SemanticMemory` tablosu pgvector(768) embedding'i ile her bilgi parçasını saklar. Gemini `gemini-embedding-001` ile embed edilir (`outputDimensionality=768`, `EMBEDDING_DIM = 768` — daha önce kullanılan `text-embedding-004` Google tarafından emekliye ayrıldı, 404 NOT_FOUND dönüyordu). HNSW index `embedding vector_cosine_ops` üzerine raw SQL migration ile kurulu.
 
 ### 8.2 `MemoryKind` enum
 

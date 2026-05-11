@@ -39,6 +39,12 @@ type AgentRunJob =
   // no new BullMQ queue per the architecture rule.
   | { type: "sequence_tick" }
   | { type: "sequence_step"; stateId: string }
+  // PLAN §Phase 7 — pipeline stuck-status reset. Scans `leads` for
+  // CRAWLING / ANALYZING / ANALYZING-review rows older than 30
+  // minutes and flips them back to PENDING so the next pipeline emit
+  // (or the user) can re-trigger work. Database-side complement to
+  // BullMQ's stalled-job reclamation.
+  | { type: "stuck_status_reset" }
   // Legacy payload shape (pre-discriminator). Anything posted before
   // this worker upgrade lands without a `type` field. We infer
   // `agent_run` when `runId` is present.
@@ -136,19 +142,33 @@ async function processJob(job: Job<AgentRunJob>) {
     return result;
   }
 
+  if (jobType === "stuck_status_reset") {
+    const { resetStuckStatuses } = await import("../lib/cron/stuck-status-reset");
+    const result = await resetStuckStatuses();
+    return result;
+  }
+
   logger.warn("worker.ai_runs.unknown_job_type", { jobId: job.id, type: jobType });
 }
 
 function inferJobType(
   data: AgentRunJob,
-): "agent_run" | "orchestrator_advance" | "embed" | "sequence_tick" | "sequence_step" | "unknown" {
+):
+  | "agent_run"
+  | "orchestrator_advance"
+  | "embed"
+  | "sequence_tick"
+  | "sequence_step"
+  | "stuck_status_reset"
+  | "unknown" {
   if ("type" in data && typeof data.type === "string") {
     return data.type as
       | "agent_run"
       | "orchestrator_advance"
       | "embed"
       | "sequence_tick"
-      | "sequence_step";
+      | "sequence_step"
+      | "stuck_status_reset";
   }
   if ("runId" in data && typeof data.runId === "string") return "agent_run";
   return "unknown";

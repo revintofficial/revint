@@ -1364,8 +1364,11 @@ model WebsiteMockup {
 
 // AI Core - semantic memory substrate. Every worker reads/writes here
 // through `src/lib/ai-core/memory.ts`. `embedding` is a pgvector
-// vector(768) column populated by Gemini text-embedding-004; an HNSW
-// index on `embedding vector_cosine_ops` is created via a raw SQL
+// vector(768) column populated by Gemini gemini-embedding-001 (with
+// outputDimensionality=768 — the model also supports 1536/3072 but
+// 768 keeps the schema unchanged from the legacy text-embedding-004
+// integration). An HNSW index on `embedding vector_cosine_ops` is
+// created via a raw SQL
 // migration (see prisma/migrations/add_ai_core.sql). `metadata` carries
 // kind-specific extras (e.g. social platform, SERP query, reply outcome).
 model SemanticMemory {

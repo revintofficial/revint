@@ -48,16 +48,19 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         // injected at both prompt + responseSchema layer; other
         // niches keep the legacy free-form clustering.
         workspace: { select: { offerName: true, valueProposition: true, niche: true } },
-        // 220 is the Gemini KPI-bar context cap — empirically the
-        // largest corpus that fits gemini-2.5-flash's input budget +
-        // 32k output + thinking pass without tripping MAX_TOKENS or
-        // INTERNAL context-overflow errors on F&B label-whitelist
-        // schemas. APIFY_GMAPS_DEEP still ingests up to 500 reviews;
+        // 200 is the Gemini KPI-bar context cap — PLAN §Phase 5
+        // tightened from 220 to relieve context-window pressure on
+        // high-volume leads (Bianco43: 1572 reviews) that were
+        // tripping the 60s outer deadline before the deadline bump.
+        // 200 still gives KPI bars enough signal to be statistically
+        // stable. APIFY_GMAPS_DEEP still ingests up to 500 reviews;
         // the trigger-detector's review-volume rule + the decision-
         // surface badge math both still see the full 500 via
         // `execute.ts` (workers) and the aggregator's own `take`.
-        // Only THIS Gemini-bound path is narrowed.
-        googleReviews: { orderBy: { publishTime: "desc" }, take: 220 },
+        // Only THIS Gemini-bound path is narrowed. Pair with the
+        // registry bump to 30 000 ms estimatedDurationMs so the
+        // outer deadline gets 90s of runway.
+        googleReviews: { orderBy: { publishTime: "desc" }, take: 200 },
       },
     });
 

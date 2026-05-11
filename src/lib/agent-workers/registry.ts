@@ -71,7 +71,14 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     descriptionTr: "50 Google yorumunu KPI cubuklarina cevirir (zayif yon / guclu yon / aci ifadeleri).",
     minPlan: "FREE",
     phase1Enabled: true,
-    estimatedDurationMs: 20000,
+    // PLAN §Phase 5 — bumped 20s → 30s. High-volume leads
+    // (Bianco43: 1572 reviews) trip the 60s outer deadline
+    // (3 × estimatedDurationMs) at 20s. 30s gives the executor a
+    // 90s outer budget, headroom for the 200-review Gemini context
+    // window. Pair this with the sample reduction in
+    // `review-analyst.ts` (220 → 200) so the per-call cost falls
+    // even as the safety budget rises.
+    estimatedDurationMs: 30000,
     dependsOn: ["GOOGLE_PLACES_REVIEWS"],
     implModule: () => import("./review-analyst").then((m) => ({ run: m.run, memoryWrites: m.memoryWrites })),
   },

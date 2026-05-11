@@ -152,6 +152,22 @@ import("./../lib/sequence-engine/scheduler")
     });
   });
 
+// PLAN §Phase 7 — install the 5-minute pipeline stuck-status reset
+// cron. Same fire-and-forget pattern as the sequence tick: a Redis
+// blip at boot drops the schedule until the next supervisor restart,
+// which is acceptable because the side effect (a stuck-status badge
+// taking >35 min to clear) is observable in the UI and self-heals
+// on the next install. The cron runs platform-wide, but each row
+// update is scoped to its own workspace_id by virtue of the row
+// already carrying it.
+import("./../lib/cron/stuck-status-reset")
+  .then(({ installStuckStatusResetCron }) => installStuckStatusResetCron())
+  .catch((err) => {
+    logger.error("worker.supervisor.stuck_status_cron_install_failed", {
+      err: err instanceof Error ? err.message : String(err),
+    });
+  });
+
 logger.info("worker.supervisor.started");
 
 async function shutdown() {

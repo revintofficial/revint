@@ -1,20 +1,32 @@
 /**
  * AI Core - embedding helper.
  *
- * Wraps Gemini `text-embedding-004` (768-dimensional, multilingual, free
- * tier 1500 requests/day at time of writing). Every SemanticMemory.text
- * flows through this single function so that if we ever swap providers
- * (to a local model, OpenAI, or Voyage) the change is one file.
+ * Wraps Gemini `gemini-embedding-001` with `outputDimensionality=768`
+ * (multilingual, Matryoshka — the 768 prefix is loss-trained so it is
+ * comparable to the legacy `text-embedding-004` vectors at the same
+ * dim). Every SemanticMemory.text flows through this single function
+ * so that if we ever swap providers (to a local model, OpenAI, or
+ * Voyage) the change is one file.
  *
  * Design notes:
  *   - 768 dims is a hard contract with the pgvector column type in
- *     prisma/migrations/add_ai_core.sql. Do not change without running
- *     a migration to resize the vector column and reindex.
+ *     prisma/migrations/add_ai_core.sql. We MUST pass
+ *     `outputDimensionality: 768` explicitly — Gemini's default for
+ *     `gemini-embedding-001` is 3072 and would error against
+ *     `vector(768)` on insert.
+ *   - The legacy `text-embedding-004` model was retired by Google;
+ *     `embedContent` returns 404 NOT_FOUND for it. Migrating to
+ *     `gemini-embedding-001` is what unsticks every memory query.
  *   - Retries use exponential backoff on 429/5xx. Other errors fail
  *     fast so callers don't silently degrade to zero vectors.
  *   - `embedBatch()` is preferred over a loop of `embed()` calls
  *     because Gemini's batchEmbedContents endpoint amortises network
  *     cost and stays under the per-minute request cap.
+ *   - The `@google/generative-ai` v0.24.x SDK's `EmbedContentRequest`
+ *     type does not yet declare `outputDimensionality`, but at runtime
+ *     the SDK `JSON.stringify`s the params object as-is, so the field
+ *     survives to the REST call. We pass it through with a tight cast
+ *     rather than maintaining a parallel REST fallback.
  */
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
@@ -24,9 +36,17 @@ import {
 } from "@/lib/gemini-keys";
 
 export const EMBEDDING_DIM = 768;
-const MODEL_NAME = "text-embedding-004";
+export const EMBEDDING_MODEL_NAME = "gemini-embedding-001";
+const MODEL_NAME = EMBEDDING_MODEL_NAME;
 const MAX_RETRIES = 3;
 const BASE_BACKOFF_MS = 500;
+/**
+ * `gemini-embedding-001` ships Matryoshka-trained outputs at
+ * 768/1536/3072. Anything else gets rejected by the API. Keep 768 in
+ * lock-step with `EMBEDDING_DIM` above and with the pgvector column
+ * width — never change one without the other.
+ */
+const OUTPUT_DIMENSIONALITY = 768;
 // Gemini's input limit for this model is 2048 tokens; we cap chars
 // defensively at ~8k to keep well under that for any language.
 const MAX_CHARS = 8000;
@@ -104,7 +124,14 @@ export async function embed(text: string): Promise<number[]> {
     let authFailure = false;
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
-        const res = await model.embedContent(input);
+        // SDK type lags the REST API — `outputDimensionality` is a
+        // valid field but not declared in `EmbedContentRequest` in
+        // v0.24.x. Cast through `unknown` to bypass the narrow type
+        // while preserving the runtime shape the API expects.
+        const res = await model.embedContent({
+          content: { role: "user", parts: [{ text: input }] },
+          outputDimensionality: OUTPUT_DIMENSIONALITY,
+        } as unknown as Parameters<typeof model.embedContent>[0]);
         const values = res.embedding?.values;
         if (!values || values.length !== EMBEDDING_DIM) {
           throw new EmbeddingError(
@@ -171,7 +198,10 @@ export async function embedBatch(texts: string[]): Promise<number[][]> {
           const res = await model.batchEmbedContents({
             requests: slice.map((content) => ({
               content: { role: "user", parts: [{ text: content }] },
-            })),
+              // Same SDK type-lag note as in `embed()` above: the field
+              // is wire-valid, just not in the TS interface.
+              outputDimensionality: OUTPUT_DIMENSIONALITY,
+            })) as unknown as Parameters<typeof model.batchEmbedContents>[0]["requests"],
           });
           batch = res.embeddings.map((e) => {
             const values = e.values ?? [];

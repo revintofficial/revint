@@ -3122,7 +3122,7 @@ ve uygulanan da bu. Nedenleri:
 - Supabase uzerinde built-in, ek servis/fatura yok.
 - Prisma transaction icinde `SemanticMemory` row + embed atomik yazilabilir.
 - HNSW index `vector_cosine_ops` ile cosine similarity direkt SQL.
-- Gemini `text-embedding-004` 768 dim, pgvector 2000 dim limitinin altinda.
+- Gemini `gemini-embedding-001` 768 dim (`outputDimensionality=768`, legacy `text-embedding-004` retired by Google), pgvector 2000 dim limitinin altinda.
 - Tenant izolasyonu `workspace_id` filter ile saglaniyor; Pinecone'un
   namespace modeli ile islevsel olarak esdeger.
 - 5M+ vector'e cikinca Pinecone'a mal olmadan geciste de kolay: embedding
@@ -3224,7 +3224,7 @@ Platformun para harcadigi her vendor:
 | Surface | Vendor | Pricing modeli | Aylik fixed | Variable per kullanim |
 |---|---|---|---|---|
 | LLM (analiz, mockup, opener, copilot) | **Google Gemini** | Token bazli | $0 | ~$0.01-0.013 / lead |
-| Embedding (semantic memory) | **Google Gemini** (text-embedding-004) | Token bazli | $0 | ~$0.000025 / kayit |
+| Embedding (semantic memory) | **Google Gemini** (gemini-embedding-001, outputDimensionality=768) | Token bazli | $0 | ~$0.000025 / kayit |
 | Lead discovery | **Google Places API (New)** | Per request | $0 | ~$0.019 / lead |
 | Deep enrichment | **Apify** | Per actor / cred | $5-199 | $0.01-2.00 / actor run |
 | Email verification | **ZeroBounce** | Per email | $0 | $0.0008-0.008 / email |
@@ -3247,7 +3247,7 @@ sahip; tenant'lar paylasiyor.
 | Model | Input ($/1M token) | Output ($/1M token) |
 |---|---|---|
 | `gemini-2.5-flash` | ~$0.30 | ~$2.50 |
-| `text-embedding-004` | ~$0.025 | yok |
+| `gemini-embedding-001` (outputDimensionality=768) | ~$0.025 | yok |
 
 ### Worker basina tipik tuketim
 

@@ -37,6 +37,13 @@ const created: Array<{
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     leadTrigger: {
+      // Phase 6 soft-dedup adds a findFirst lookup before write;
+      // return null so every row still routes through `create` here.
+      findFirst: vi.fn(async () => null),
+      update: vi.fn(async (args: { where: { id: string }; data: unknown }) => ({
+        id: args.where.id,
+        ...(args.data as Record<string, unknown>),
+      })),
       create: vi.fn(async (args: typeof created[number]) => {
         created.push(args);
         return { id: `t-${created.length}`, ...args.data };

@@ -499,29 +499,101 @@ export async function GET(
     const plan = session.workspace.plan;
     const { id } = await params;
 
+    // PLAN §Phase 4 — every sub-relation is hand-projected to the
+    // fields the downstream consumers actually read. Full-row includes
+    // were the dominant chunk of the 3.7s p95 — `WebsiteAudit.rawFeaturesJson`
+    // alone can be hundreds of KB, and 500 GoogleReview rows × the
+    // `text` field tipped the wire payload over 1MB on high-volume
+    // restaurants (Bianco43 had 1572 reviews; we still take=500 but
+    // now ship rating+publishTime only because `computeReviewVelocity`
+    // is the only consumer in this route).
+    const t0 = Date.now();
     const lead = await prisma.lead.findFirst({
       where: { id, workspaceId },
       include: {
-        websiteAudit: true,
-        watchlistItem: true,
-        account: true,
+        websiteAudit: {
+          // Mirror `WebsiteAuditShape` in `projectWebsiteIntelSummary`
+          // + the three booleans + `socialProfiles` read inline below.
+          select: {
+            reachable: true,
+            crawlError: true,
+            crawlAttemptedAt: true,
+            httpStatus: true,
+            loadTimeMs: true,
+            https: true,
+            mobileFriendlyGuess: true,
+            hasContactForm: true,
+            hasWhatsappLink: true,
+            hasBookingSystem: true,
+            bookingProvider: true,
+            hasEcommerce: true,
+            title: true,
+            metaDescription: true,
+            servicesDetected: true,
+            socialProfiles: true,
+          },
+        },
+        watchlistItem: {
+          // Only id + the two stage fields are consumed downstream.
+          select: {
+            id: true,
+            dealStage: true,
+            pipelineStage: true,
+          },
+        },
+        account: {
+          select: {
+            id: true,
+            name: true,
+            tier: true,
+            locationsCount: true,
+          },
+        },
         // Phase 2.5 — richness absorption inputs. All scoped via the
         // parent `Lead.workspaceId` so the cross-tenant audit holds.
-        salesOpportunity: true,
-        reviewAnalysis: true,
+        salesOpportunity: {
+          select: {
+            recommendedPackageId: true,
+            recommendedPackageReason: true,
+            personalizedFirstMessage: true,
+          },
+        },
+        reviewAnalysis: {
+          // Mirror `ReviewAnalysisShape` consumed by
+          // `projectReviewIntelSummary`. `painPhrases` /
+          // `strengthPhrases` are not surfaced by this route — the
+          // copilot reads them separately.
+          select: {
+            weaknessKpis: true,
+            strengthKpis: true,
+            sentimentBreakdown: true,
+            switchSignals: true,
+            leadScore: true,
+            summary: true,
+            reviewsAnalyzedCount: true,
+            analyzedAt: true,
+          },
+        },
         // 500 reviews matches the trigger-detector's own corpus
         // (`execute.ts` → `requiredIncludes.googleReviews`). Reused
         // by `computeReviewVelocity` so the UI badge and the Phase 8
         // REVIEW_VOLUME_* trigger row share one source of truth — at
         // 50 a high-volume operator clipped the prior-30d bucket and
         // the badge would silently disagree with the trigger row.
-        // 500 rows ≈ 100-300KB; well under the aggregator's payload
-        // budget. The Gemini KPI bar still consumes only 220 (in
-        // review-analyst.ts) because that path is the only one
-        // paying a context-window tax.
+        // The Gemini KPI bar still consumes only 200 (in
+        // review-analyst.ts, PLAN §Phase 5) because that path is the
+        // only one paying a context-window tax.
+        // Phase 4 projection — only the two fields
+        // `computeReviewVelocity` reads, dropping `text` (the heavy
+        // 500-3000-char field) cuts the wire payload by ~80% on
+        // high-volume leads.
         googleReviews: {
           orderBy: { publishTime: "desc" },
           take: 500,
+          select: {
+            rating: true,
+            publishTime: true,
+          },
         },
       },
     });
@@ -1174,9 +1246,21 @@ export async function GET(
       pipelineState,
     };
 
+    // Phase 4 — surface end-to-end duration so the 3.7s → ≤ 400ms
+    // budget per PLAN §6 R17 can be tracked from logs without an APM
+    // wire-up. Logged at `debug` so prod logs aren't spammed unless
+    // the operator opts in (DEBUG=true).
+    const durationMs = Date.now() - t0;
+    if (process.env.DEBUG === "true" || durationMs > 1000) {
+      console.log(
+        `[decision-surface] leadId=${id} workspaceId=${workspaceId} durationMs=${durationMs}`,
+      );
+    }
+
     return NextResponse.json(response, {
       headers: {
         "Cache-Control": "private, max-age=0, must-revalidate",
+        "Server-Timing": `decision-surface;dur=${durationMs}`,
       },
     });
   } catch (err) {

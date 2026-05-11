@@ -729,28 +729,101 @@ Return JSON only.`,
     }
   }
 
-  // ---- Persist detected triggers (idempotent on the unique key) ----
+  // ---- Persist detected triggers (PLAN §Phase 6 soft-dedup) ----
+  // The composite unique key `(workspaceId, leadId, type, detectedAt)`
+  // only catches dupes within the same millisecond — two re-runs of
+  // the detector minutes apart produced different `detectedAt`
+  // values, which is how Bianco43 ended up with REBRANDING × 2 and
+  // COMPETITOR_PRESSURE × 2 in the Beta corpus. Switch the per-row
+  // insert to a soft upsert keyed on `evidence.refId` (or
+  // `evidence.source` when the rule has no stable refId), scoped to
+  // active (`decayedAt = null`) triggers so resurrection of a decayed
+  // trigger still creates a fresh row. The hard partial-unique
+  // pgvector index proposed as a follow-up in the plan can land on
+  // top of this without churn.
   let writtenCount = 0;
+  let updatedCount = 0;
   const writtenTypes = new Set<LeadTriggerType>();
   for (const t of detected) {
     try {
-      await prisma.leadTrigger.create({
-        data: {
-          workspaceId,
-          leadId: lead.id,
-          type: t.type,
-          severity: t.severity,
-          confidence: t.confidence,
-          evidence: t.evidence as unknown as Prisma.InputJsonValue,
-          impactPrediction: t.impactPrediction ?? null,
-          urgencyWindowDays: t.urgencyWindowDays,
-        },
+      const refId = typeof t.evidence.refId === "string" ? t.evidence.refId : null;
+      const source = typeof t.evidence.source === "string" ? t.evidence.source : null;
+
+      // Dedup query: prefer `refId` when present (most specific) and
+      // fall back to `source` so velocity / windowed rules that have
+      // no stable id still collapse on re-run. If neither is set we
+      // skip dedup entirely — that's a rule-author bug, not a
+      // data-volume problem worth catching here.
+      let existing: { id: string } | null = null;
+      if (refId) {
+        existing = await prisma.leadTrigger.findFirst({
+          where: {
+            workspaceId,
+            leadId: lead.id,
+            type: t.type,
+            decayedAt: null,
+            evidence: { path: ["refId"], equals: refId },
+          },
+          orderBy: { detectedAt: "desc" },
+          select: { id: true },
+        });
+      } else if (source) {
+        existing = await prisma.leadTrigger.findFirst({
+          where: {
+            workspaceId,
+            leadId: lead.id,
+            type: t.type,
+            decayedAt: null,
+            evidence: { path: ["source"], equals: source },
+          },
+          orderBy: { detectedAt: "desc" },
+          select: { id: true },
+        });
+      }
+
+      if (existing) {
+        // Refresh `detectedAt` + confidence/severity/evidence so the
+        // surface that orders by `detectedAt DESC` still treats this
+        // as fresh, and the opener writer sees the most recent quote
+        // (e.g. a worsened review delta) instead of a stale one.
+        await prisma.leadTrigger.update({
+          where: { id: existing.id },
+          data: {
+            detectedAt: new Date(),
+            severity: t.severity,
+            confidence: t.confidence,
+            evidence: t.evidence as unknown as Prisma.InputJsonValue,
+            impactPrediction: t.impactPrediction ?? null,
+            urgencyWindowDays: t.urgencyWindowDays,
+          },
+        });
+        updatedCount += 1;
+        writtenTypes.add(t.type);
+      } else {
+        await prisma.leadTrigger.create({
+          data: {
+            workspaceId,
+            leadId: lead.id,
+            type: t.type,
+            severity: t.severity,
+            confidence: t.confidence,
+            evidence: t.evidence as unknown as Prisma.InputJsonValue,
+            impactPrediction: t.impactPrediction ?? null,
+            urgencyWindowDays: t.urgencyWindowDays,
+          },
+        });
+        writtenCount += 1;
+        writtenTypes.add(t.type);
+      }
+    } catch (err) {
+      // Unique constraint collision (same millisecond detectedAt) or
+      // a transient write failure — log + drop. Don't take the entire
+      // worker FAILED for one trigger row's hiccup.
+      logger.warn("agent_workers.trigger_detector.persist_failed", {
+        leadId: lead.id,
+        type: t.type,
+        err: err instanceof Error ? err.message : String(err),
       });
-      writtenCount += 1;
-      writtenTypes.add(t.type);
-    } catch {
-      // Unique constraint collision = same trigger detected within
-      // the same minute (detectedAt is the dedup axis). Safe to ignore.
     }
   }
 
@@ -790,6 +863,7 @@ Return JSON only.`,
     workspaceId,
     detectedCount: detected.length,
     writtenCount,
+    updatedCount,
     snoozesCleared,
   });
 
@@ -797,6 +871,7 @@ Return JSON only.`,
     output: {
       detected,
       writtenCount,
+      updatedCount,
       snoozesCleared,
     },
     costTokens: 0,

@@ -25,6 +25,16 @@ const created: Array<{ data: { type: string; severity: number; confidence: numbe
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     leadTrigger: {
+      // Phase 6 soft-dedup adds a findFirst lookup keyed on
+      // `evidence.refId` (or `.source`) before write. Returning null
+      // takes the path that creates a fresh row — what these tests
+      // are validating. Dedup-specific behaviour gets its own
+      // dedicated spec.
+      findFirst: vi.fn(async () => null),
+      update: vi.fn(async (args: { where: { id: string }; data: unknown }) => ({
+        id: args.where.id,
+        ...(args.data as Record<string, unknown>),
+      })),
       create: vi.fn(async (args: { data: { type: string; severity: number; confidence: number; evidence: unknown; impactPrediction: string | null } }) => {
         created.push(args);
         return { id: `t-${created.length}`, ...args.data };

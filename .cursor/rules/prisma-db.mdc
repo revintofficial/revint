@@ -75,7 +75,7 @@ await prisma.websiteAudit.findFirst({
 
 ## pgvector
 
-- `SemanticMemory.embedding` is `vector(768)` (Gemini `text-embedding-004`).
+- `SemanticMemory.embedding` is `vector(768)` (Gemini `gemini-embedding-001` with `outputDimensionality=768`; replaced the retired `text-embedding-004`).
 - Raw SQL with vector literals goes through `src/lib/ai-core/memory.ts`. Never write raw vectors elsewhere.
 - The `add_pgvector_extension.sql` migration must run before `add_ai_core.sql` on a fresh DB; `npm run db:ai-core` chains them.
 

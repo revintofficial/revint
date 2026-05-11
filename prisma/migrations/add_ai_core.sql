@@ -33,7 +33,9 @@ END $$;
 -- 3. HNSW index for cosine similarity --------------------------------
 -- HNSW is strictly better than IVFFlat for write-heavy workloads (no
 -- reindex after large inserts). Cosine is the standard similarity
--- metric for Gemini text-embedding-004 output.
+-- metric for Gemini gemini-embedding-001 output (and the retired
+-- text-embedding-004 it replaced — both produce L2-normalised vectors
+-- where cosine and dot product coincide).
 CREATE INDEX IF NOT EXISTS semantic_memory_embedding_hnsw
   ON semantic_memory
   USING hnsw (embedding vector_cosine_ops);
