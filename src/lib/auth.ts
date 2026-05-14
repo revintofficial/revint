@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmailAsync } from "@/lib/email/send";
 import { WelcomeEmail } from "@/lib/email/templates/welcome";
 import { internalError } from "@/lib/api-errors";
+import type { WorkspaceNiche } from "@/generated/prisma/client";
 
 /** Cookie storing the user's selected workspace id (non-httpOnly for client reads). */
 export const ACTIVE_WORKSPACE_COOKIE = "leadac_active_workspace_id";
@@ -50,6 +51,7 @@ export interface AuthedSession {
     slug: string;
     plan: "FREE" | "PRO" | "PRO_TEAM" | "AGENCY";
     country: string | null;
+    niche: WorkspaceNiche;
     onboardingCompletedAt: Date | null;
   };
   role: "OWNER" | "ADMIN" | "MEMBER";
@@ -183,6 +185,7 @@ export async function requireUser(): Promise<AuthedSession> {
       slug: membership.workspace.slug,
       plan: membership.workspace.plan,
       country: membership.workspace.country,
+      niche: membership.workspace.niche,
       onboardingCompletedAt: membership.workspace.onboardingCompletedAt,
     },
     role: membership.role,

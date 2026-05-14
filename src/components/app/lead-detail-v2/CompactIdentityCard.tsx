@@ -196,7 +196,7 @@ export function CompactIdentityCard({
                 className="inline-flex items-center gap-1 truncate font-medium capitalize hover:underline"
                 style={{ color: "var(--leadac-500)" }}
               >
-                {primaryDirectory.platform}
+                {primaryDirectory.name}
                 <ExternalLink className="h-3 w-3" aria-hidden />
               </a>
             }
