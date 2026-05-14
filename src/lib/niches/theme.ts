@@ -164,6 +164,16 @@ const NICHE_THEMES: Record<string, NicheTheme> = {
     accentHex: "#a3e635",
     secondaryHex: "#0a0a0a",
   },
+  "driving-school": {
+    // Trafik mavisi + sarı: a TR driver instantly reads "yol levhası /
+    // güven" because every road sign in Türkiye uses this exact pair.
+    // CTA stays warm-yellow so "ÜCRETSİZ DENEME / RANDEVU AL"
+    // pops against the deep navy frame.
+    mode: "dark",
+    primaryHex: "#1d4ed8",
+    accentHex: "#facc15",
+    secondaryHex: "#0f172a",
+  },
 
   // ============================================================
   // Hybrid F&B parent + children.
@@ -369,6 +379,21 @@ const NICHE_IMAGERY: Record<string, NicheImagery> = {
     gallery: [
       unsplash("1571019613454-1cb2f99b2d8b", { w: 800 }),
       unsplash("1517836357463-d25dfeac3438", { w: 800 }),
+    ],
+  },
+  "driving-school": {
+    // Direksiyon başında öğrenci, çift pedal aracı, sınıf, eğitmen.
+    // All HEAD-verified Unsplash photo ids — the renderer's
+    // `pickSafePhotoUrl` rejects anything outside the allowlist so a
+    // future 404 silently falls back to the gradient hero.
+    hero: [
+      unsplash("1449965408869-eaa3f722e40d"), // driver behind wheel
+      unsplash("1502877338535-766e1452684a"), // student + instructor
+      unsplash("1471174466529-de76a4f5fa7d"), // car interior, hands on wheel
+    ],
+    gallery: [
+      unsplash("1486006920555-c77dcf18193c", { w: 800 }), // road / open lane
+      unsplash("1532751203793-812308a10d8e", { w: 800 }), // driving lesson
     ],
   },
 

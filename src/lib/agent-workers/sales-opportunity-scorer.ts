@@ -90,9 +90,84 @@ function computeIcpFitAdjustment(
   return { delta: 0, code: null, matchedCampaignId: null };
 }
 
+/**
+ * Idempotency window. A scorer run costs ~1 Gemini call which is the
+ * single most expensive worker we ship; re-running it within minutes
+ * of a fresh result (e.g. user clicks "pitch pack" twice in a row)
+ * burns budget for no signal change. We treat any row written within
+ * the last 24h as authoritative unless the caller passes
+ * `inputs.force = true` (manual "Re-score" button).
+ *
+ * The window is intentionally generous because the scorer's inputs
+ * (audit, review analysis, workspace targetSubNiches) change at most
+ * daily — a re-run inside 24h almost never produces a different
+ * score, and when it does the rep can hit Re-score manually.
+ *
+ * The 24h check is bypassed automatically when the upstream signal
+ * actually changed: `lead_reviews_updated` and `user_deep_research`
+ * chains pass `force: true` in their step inputs so a fresh review
+ * corpus re-scores instantly.
+ */
+const SCORER_TTL_MS = 24 * 60 * 60 * 1000;
+
 export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   if (!ctx.lead) throw new Error("SALES_OPPORTUNITY_SCORER requires a lead context");
   const leadId = ctx.lead.id;
+
+  // Idempotency gate: short-circuit when we already have a fresh
+  // SalesOpportunity row and the caller didn't ask for a force
+  // refresh. Returning the persisted row keeps the chain DAG happy
+  // (downstream `mockup` step still has its sales-opportunity
+  // inputs) without paying for another Gemini round-trip.
+  const force = (ctx.runInputs?.force as boolean | undefined) === true;
+  if (!force) {
+    const existing = await prisma.salesOpportunity.findUnique({
+      where: { leadId },
+      select: {
+        updatedAt: true,
+        opportunityScore: true,
+        reasonCodes: true,
+        whyGoodTarget: true,
+        likelyPainPoints: true,
+        bestSalesAngle: true,
+        personalizedFirstMessage: true,
+        recommendedPackageId: true,
+        recommendedPackageReason: true,
+      },
+    });
+    const ageMs = existing
+      ? Date.now() - existing.updatedAt.getTime()
+      : Number.POSITIVE_INFINITY;
+    if (existing && ageMs < SCORER_TTL_MS) {
+      logger.info("agent_workers.scorer.idempotent_skip", {
+        leadId,
+        ageMs,
+        score: existing.opportunityScore,
+      });
+      // Ensure the lead row is in the consistent post-analyze state
+      // even though we didn't run Gemini — older versions may have
+      // landed on ANALYZING / FAILED while the row already existed.
+      await prisma.lead.updateMany({
+        where: { id: leadId, workspaceId: ctx.workspaceId },
+        data: { analyzeStatus: "ANALYZED" },
+      });
+      return {
+        output: {
+          opportunityScore: existing.opportunityScore,
+          reasonCodes: existing.reasonCodes as unknown as string[],
+          whyGoodTarget: existing.whyGoodTarget,
+          likelyPainPoints: existing.likelyPainPoints as unknown as string[],
+          bestSalesAngle: existing.bestSalesAngle,
+          personalizedFirstMessage: existing.personalizedFirstMessage,
+          recommendedPackageId: existing.recommendedPackageId,
+          recommendedPackageReason: existing.recommendedPackageReason,
+          icpFit: { delta: 0, code: null, matchedCampaignId: null },
+          cached: true,
+        },
+        costTokens: 0,
+      };
+    }
+  }
 
   await prisma.lead.update({
     where: { id: leadId },

@@ -102,7 +102,11 @@ export async function textSearch(
 ): Promise<PlacesSearchResponse> {
   const body: Record<string, unknown> = {
     textQuery: query.textQuery,
-    languageCode: "en",
+    // Per-call language hint. Falls back to "en" for back-compat
+    // with the original hardcoded behaviour; TR-country callers
+    // (Discovery + Emirhan WS) pass "tr" so Türkçe primaryType
+    // display names + addresses come back natively.
+    languageCode: query.languageCode ?? "en",
     maxResultCount: 20,
   };
 
@@ -264,8 +268,17 @@ export async function discoverLeads(
     };
   }
 
+  // Country → BCP-47 language hint. Conservative table: only the
+  // handful of countries where Türkçe / English are clearly not the
+  // local lingua need a flip today. Anything else stays "en" so we
+  // don't regress existing UK / US discovery copy. Expanded as new
+  // verticals are added in non-EN markets.
+  const country = (location.country ?? "").toUpperCase().trim();
+  const languageCode = country === "TR" ? "tr" : "en";
+
   const query: DiscoveryQuery = {
     textQuery: `${searchQuery} in ${location.name}${countryPart}`,
+    languageCode,
     ...(restriction ? { locationRestriction: restriction } : {}),
     ...(options.includedTypes && options.includedTypes.length > 0
       ? { includedTypes: options.includedTypes }

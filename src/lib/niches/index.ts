@@ -239,6 +239,51 @@ export const NICHES: NichePack[] = [
     commonBookingProviders: ["Mindbody", "Calendly", "Setmore"],
     mockupTemplateId: "gym",
   },
+  {
+    // TR sürücü kursu (driving school) — added for the Emirhan
+    // Yeşildağ web-agency tenant who targets İstanbul B-class
+    // ehliyet kursları. Discovery routes the canonical Turkish
+    // queries through Google Places' official `driving_school`
+    // primaryType, so the rule classifier picks this pack up
+    // even when the rep types "ehliyet kursu" or pastes a
+    // mixed-locale string. Pitch angle anchors on online
+    // booking + WhatsApp pre-fill which (per the rep's calls
+    // with 30+ kurslar) is the #1 thing competitors lack.
+    slug: "driving-school",
+    label: "Sürücü kursu",
+    tagline: "B / A2 / motosiklet ehliyet kursları ve direksiyon eğitimi merkezleri.",
+    searchQueries: [
+      "sürücü kursu",
+      "ehliyet kursu",
+      "motosiklet ehliyet kursu",
+      "driving school",
+    ],
+    discoveryPlaceTypes: ["driving_school"],
+    // `findNichePackForPrimaryType` reads classifierHints to map a
+    // Google Places primaryType back to a pack — required so leads
+    // discovered without `nicheSlug` (e.g. workspace default
+    // discovery, free-text "sürücü kursu") still get the right
+    // theme + imagery + audit pitch angle resolved by
+    // `getVisualIdentityForLead`.
+    classifierHints: {
+      googlePlacesTypes: ["driving_school"],
+      keywordsInName: ["sürücü kursu", "surucu kursu", "ehliyet", "driving school"],
+    },
+    pitchAngle:
+      "Online randevu, eğitmen profilleri, sınav başarı oranı vitrini ve WhatsApp-ilk-temas akışı — telefon trafiğini yarıya indirir, kayıt 2x.",
+    highValueSignals: [
+      "no online lesson booking",
+      "no instructor profile / photos",
+      "no pass-rate / success indicator",
+      "no price-package transparency (B, A2, motosiklet)",
+      "no WhatsApp CTA",
+      "no MEB / SRC certificate badge",
+      "outdated mobile experience",
+      "Instagram-only contact",
+    ],
+    commonBookingProviders: ["WhatsApp", "Calendly"],
+    mockupTemplateId: "driving-school",
+  },
 
   // ============================================================
   // Hybrid niche: F&B (Food & Beverage)

@@ -5,7 +5,7 @@
  *   - Registry exhaustiveness (every AgentWorkerKind has a registry entry)
  *   - Plan gating (planMeetsMinimum)
  *   - Quota limits match the plan matrix expectations
- *   - leadac-hero renderer produces safe HTML (no script injection,
+ *   - leadac-showcase renderer produces safe HTML (no script injection,
  *     required sections, escapes untrusted user-controlled fields)
  *   - Exporters for receptionist / review-reply / lead-response
  *     produce the platform-specific JSON shape
@@ -19,7 +19,7 @@ import {
   getWorker,
 } from "@/lib/agent-workers/registry";
 import { getLimit, UNLIMITED } from "@/lib/agent-workers/quota";
-import { renderLeadacHero } from "@/lib/mockups/renderers/leadac-hero";
+import { renderLeadacShowcase } from "@/lib/mockups/renderers/leadac-showcase";
 import type { WebsiteMockupSections } from "@/lib/prompts/website-mockup-prompt";
 import {
   exportReceptionistArtifact,
@@ -124,32 +124,107 @@ describe("AI Workers - quota matrix", () => {
   });
 });
 
-describe("AI Workers - leadac-hero renderer", () => {
+describe("AI Workers - leadac-showcase renderer", () => {
   const sections: WebsiteMockupSections = {
     hero: {
       headline: "Fast, honest HVAC in Brooklyn",
       subline: "Same-day service, upfront pricing, no surprises.",
       cta_primary_text: "Book now",
+      cta_secondary_text: "WhatsApp",
       trust_line: "4.8 on Google - 127 reviews",
+      stat_strip: [
+        { value: "10+ yrs", label: "Experience" },
+        { value: "1.2k", label: "Jobs done" },
+        { value: "<60min", label: "Response" },
+      ],
     },
     services: [
       { title: "Emergency Repair", body: "24/7 response.", icon_hint: "bolt" },
       { title: "Installs", body: "We size it right.", icon_hint: "shield" },
       { title: "Maintenance", body: "Annual tune-ups.", icon_hint: "clock" },
     ],
-    testimonial: {
-      body: "They showed up within the hour and fixed the leak.",
-      attribution: "Sarah M.",
-      rating: 5,
+    stats: [
+      { value: "4.8★", label: "Google rating", icon_hint: "star" },
+      { value: "127", label: "Reviews", icon_hint: "users" },
+    ],
+    features: [
+      { title: "Diagnose", body: "On-site check.", icon_hint: "check" },
+      { title: "Quote", body: "Upfront.", icon_hint: "shield" },
+      { title: "Fix", body: "Same-day.", icon_hint: "wrench" },
+      { title: "Warranty", body: "1 year.", icon_hint: "award" },
+    ],
+    courses: [
+      {
+        title: "Starter",
+        body: "Single-room AC repair.",
+        price_label: "$199",
+        duration: "1 visit",
+        feature_list: ["On-site diagnose", "Filter swap"],
+        is_popular: false,
+        icon_hint: "wrench",
+      },
+      {
+        title: "Pro",
+        body: "Full-home maintenance package.",
+        price_label: "$499",
+        duration: "Annual",
+        feature_list: ["4 visits/year", "Priority emergency line", "20% parts discount"],
+        is_popular: true,
+        icon_hint: "shield",
+      },
+    ],
+    trust_points: [
+      { title: "Licensed crew", body: "Every tech is certified." },
+      { title: "Upfront pricing", body: "No surprise invoices." },
+      { title: "Same-day callouts", body: "Most jobs done in one visit." },
+    ],
+    testimonials: [
+      {
+        body: "They showed up within the hour and fixed the leak.",
+        attribution: "Sarah M.",
+        rating: 5,
+      },
+    ],
+    testimonial: null,
+    faqs: [
+      { question: "How much does a callout cost?", answer: "Diagnose is free." },
+      { question: "Do you work weekends?", answer: "Yes, 24/7." },
+    ],
+    about: {
+      paragraph: "Family-run shop serving Brooklyn since forever.",
+      instructors: [],
     },
-    about: { paragraph: "Family-run shop serving Brooklyn since forever." },
-    cta_final: { headline: "Got a problem? We're close.", button_text: "Call now" },
+    booking_widget: {
+      title: "Pick a slot",
+      subtitle: "Open this week",
+      slot_label_today: "Today",
+      slot_label_tomorrow: "Tomorrow",
+      slot_label_day3: "Wed",
+      time_slots: ["09:00", "11:00", "14:00", "16:00", "18:00"],
+    },
+    contact_form: {
+      title: "Contact us",
+      subtitle: "We reply fast.",
+      name_label: "Name",
+      phone_label: "Phone",
+      class_label: "Service",
+      message_label: "Message",
+      submit_text: "Send",
+      privacy_note: "We reply on WhatsApp.",
+    },
+    map: { iframe_query: "Acme HVAC 123 Main St Brooklyn" },
+    cta_final: {
+      headline: "Got a problem? We're close.",
+      subline: null,
+      button_text: "Call now",
+      secondary_button_text: "WhatsApp",
+    },
     theme: { mode: "dark", accent_hex: "#a5b4fc", primary_hex: "#5e6ad2" },
-    section_order: ["hero", "services", "social_proof", "about", "contact"],
+    section_order: ["hero", "stats", "process", "courses"],
   };
 
   it("renders required sections and primary CTA", () => {
-    const html = renderLeadacHero({
+    const html = renderLeadacShowcase({
       businessName: "Acme HVAC",
       formattedAddress: "123 Main St, Brooklyn, NY",
       borough: "Brooklyn",
@@ -165,22 +240,31 @@ describe("AI Workers - leadac-hero renderer", () => {
     expect(html).toContain("<!doctype html>");
     expect(html).toContain("Acme HVAC");
     expect(html).toContain("Fast, honest HVAC");
-    expect(html).toContain("Emergency Repair");
+    // v2 priced courses card with popular badge.
+    expect(html).toContain("Pro");
+    expect(html).toContain("$499");
+    expect(html).toContain("Popular");
+    // FAQ accordion uses native <details>.
+    expect(html).toContain("<details");
+    // Booking slot pre-fills WhatsApp.
+    expect(html).toMatch(/href="https:\/\/wa\.me\/15551234567\?text=/);
+    // Hero testimonial paraphrased into review card.
     expect(html).toContain("Sarah M.");
     expect(html).toContain("tel:+15551234567");
-    expect(html).toContain("https://wa.me/15551234567");
     expect(html).toContain("noindex");
+    // JSON-LD schema.org marker.
+    expect(html).toContain("\"@type\":\"LocalBusiness\"");
   });
 
   it("escapes untrusted content", () => {
-    const malicious = {
+    const malicious: WebsiteMockupSections = {
       ...sections,
       hero: {
         ...sections.hero,
         headline: "<script>alert(1)</script>",
       },
     };
-    const html = renderLeadacHero({
+    const html = renderLeadacShowcase({
       businessName: "<img src=x onerror=alert(1) />",
       formattedAddress: "1 Main",
       borough: null,
@@ -198,7 +282,7 @@ describe("AI Workers - leadac-hero renderer", () => {
   });
 
   it("renders tr labels when lang=tr", () => {
-    const html = renderLeadacHero({
+    const html = renderLeadacShowcase({
       businessName: "Demo",
       formattedAddress: "A",
       borough: null,
@@ -210,8 +294,27 @@ describe("AI Workers - leadac-hero renderer", () => {
       sections,
       lang: "tr",
     });
-    expect(html).toContain("Hizmetler");
-    expect(html).toContain("Simdi Ara");
+    expect(html).toContain("Hemen Ara");
+    expect(html).toContain("Paketler");
+    expect(html).toContain("S.S.S.");
+  });
+
+  it("omits booking section when no phone is set", () => {
+    const html = renderLeadacShowcase({
+      businessName: "Demo",
+      formattedAddress: "A",
+      borough: null,
+      phone: null,
+      websiteUrl: null,
+      rating: null,
+      reviewCount: null,
+      googleMapsUri: null,
+      sections,
+      lang: "en",
+    });
+    // Booking widget renders slots as wa.me links; without a phone
+    // there's nothing to link to, so the section is suppressed.
+    expect(html).not.toContain("id=\"booking\"");
   });
 });
 

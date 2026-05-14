@@ -107,10 +107,47 @@ export const CHAINS: Partial<Record<EventKind, Chain>> = {
   ],
 
   // ---------- User: one-click pitch pack ----------
-  // Mockup + opener (sequential, opener references the mockup URL) +
-  // optional video script in parallel with opener.
+  // Strict pre-flight: audit + review + scorer MUST land before
+  // mockup so the showcase prompt receives the full
+  // SalesOpportunity context (likely_pain_points, best_sales_angle,
+  // recommendedPackage). Prior to this rewire the chain fanned out
+  // mockup in parallel with opener and the scorer was on a different
+  // event entirely, which meant the rep saw a "ruhsuz" generic
+  // mockup whenever they clicked pitch-pack on a cold lead.
+  //
+  // Each pre-flight is `optional` so a transient crawler / Gemini
+  // hiccup doesn't fail the whole pitch pack — the downstream
+  // mockup + opener degrade gracefully (use whatever signals they
+  // can find, e.g. parent-niche pitch angle alone).
+  //
+  // The scorer carries `inputs.force: false` (default) — the
+  // 24h idempotency gate inside the worker short-circuits when a
+  // fresh SalesOpportunity row already exists, so a rep clicking
+  // pitch-pack a second time only re-runs the cheap steps
+  // (mockup + opener).
   user_one_click_pitch: [
-    { stepId: "mockup", workerKind: "WEBSITE_MOCKUP_GENERATOR", dependsOn: [] },
+    {
+      stepId: "audit",
+      workerKind: "WEBSITE_AUDITOR",
+      dependsOn: [],
+      optional: true,
+    },
+    {
+      stepId: "review",
+      workerKind: "REVIEW_ANALYST",
+      dependsOn: ["audit"],
+      optional: true,
+    },
+    {
+      stepId: "score",
+      workerKind: "SALES_OPPORTUNITY_SCORER",
+      dependsOn: ["audit", "review"],
+    },
+    {
+      stepId: "mockup",
+      workerKind: "WEBSITE_MOCKUP_GENERATOR",
+      dependsOn: ["score"],
+    },
     { stepId: "opener", workerKind: "OPENER_WRITER", dependsOn: ["mockup"] },
     {
       stepId: "video",
@@ -146,6 +183,10 @@ export const CHAINS: Partial<Record<EventKind, Chain>> = {
       stepId: "score_refresh",
       workerKind: "SALES_OPPORTUNITY_SCORER",
       dependsOn: ["review_refresh"],
+      // Bypass the 24h idempotency gate — deep research just
+      // ingested a richer review corpus, so we WANT the scorer to
+      // re-run against the fresh evidence.
+      inputs: { force: true },
     },
     {
       stepId: "embed_profile",
@@ -263,6 +304,9 @@ export const CHAINS: Partial<Record<EventKind, Chain>> = {
       stepId: "score_refresh",
       workerKind: "SALES_OPPORTUNITY_SCORER",
       dependsOn: ["review_refresh"],
+      // Reviews just changed — force-skip the 24h idempotency gate
+      // so the scorer re-runs against the new corpus.
+      inputs: { force: true },
     },
     {
       stepId: "embed_profile",

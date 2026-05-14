@@ -74,6 +74,15 @@ export interface DiscoveryQuery {
   // return only those primary types — the cheapest way to keep
   // "food truck" from matching a truck dealer.
   includedTypes?: string[];
+  // BCP-47 language hint passed to Google. Affects
+  // `primaryTypeDisplayName` (localised), `formattedAddress`, and
+  // (for some place types) the rendered business name. Default
+  // "en" preserves existing behaviour; the discovery layer flips
+  // this to "tr" for TR-country searches so Türkçe işyeri isimleri
+  // and `primaryTypeDisplayName` ("Sürücü Kursu" instead of
+  // "Driving School") come back natively — opener writes naturally
+  // in TR without us having to post-translate.
+  languageCode?: string;
 }
 
 /**

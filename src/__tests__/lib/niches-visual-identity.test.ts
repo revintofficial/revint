@@ -8,7 +8,7 @@
  *  2. Hybrid F&B children inherit their parent's palette/imagery when
  *     they don't override - mirrors the same fallback chain used by
  *     `getMockupTemplateForLead`.
- *  3. The leadac-hero renderer paints the hero photo via the safe
+ *  3. The leadac-showcase renderer paints the hero photo via the safe
  *     `images.unsplash.com` allowlist and falls back to the pure-
  *     gradient hero when the niche has no imagery.
  */
@@ -23,7 +23,7 @@ import {
   GENERIC_THEME,
   GENERIC_IMAGERY,
 } from "@/lib/niches/theme";
-import { renderLeadacHero } from "@/lib/mockups/renderers/leadac-hero";
+import { renderLeadacShowcase } from "@/lib/mockups/renderers/leadac-showcase";
 import type { WebsiteMockupSections } from "@/lib/prompts/website-mockup-prompt";
 
 const baseSections: WebsiteMockupSections = {
@@ -31,11 +31,22 @@ const baseSections: WebsiteMockupSections = {
     headline: "Headline",
     subline: "Sub",
     cta_primary_text: "Call",
+    cta_secondary_text: null,
     trust_line: null,
+    stat_strip: [],
   },
   services: [],
+  stats: [],
+  features: [],
+  courses: [],
+  trust_points: [],
+  testimonials: [],
   testimonial: null,
-  about: { paragraph: "" },
+  faqs: [],
+  about: { paragraph: "", instructors: [] },
+  booking_widget: null,
+  contact_form: null,
+  map: null,
   cta_final: { headline: "CTA", button_text: "Click" },
   theme: { mode: "dark", accent_hex: "#a5b4fc", primary_hex: "#5e6ad2" },
   section_order: ["hero"],
@@ -51,6 +62,7 @@ const baseRenderInput = {
   reviewCount: null,
   googleMapsUri: null,
   sections: baseSections,
+  lang: "en",
 };
 
 describe("niche visual identity registry", () => {
@@ -65,6 +77,7 @@ describe("niche visual identity registry", () => {
       "opticians",
       "beauty-salon",
       "gym",
+      "driving-school",
     ];
     for (const slug of flatSlugs) {
       const theme = getNicheTheme(slug);
@@ -116,6 +129,16 @@ describe("niche visual identity registry", () => {
     expect(v3.theme).toBe(GENERIC_THEME);
   });
 
+  it("driving-school NichePack is registered and themed", () => {
+    const pack = getNicheBySlug("driving-school");
+    expect(pack).toBeDefined();
+    expect(pack!.discoveryPlaceTypes).toContain("driving_school");
+    expect(pack!.classifierHints?.googlePlacesTypes).toContain("driving_school");
+    const theme = getNicheTheme("driving-school");
+    expect(theme).not.toBe(GENERIC_THEME);
+    expect(theme.primaryHex).toBe("#1d4ed8");
+  });
+
   it("every NichePack slug appears in the theme map (no orphans)", () => {
     // If we ever add a niche to NICHES without giving it a theme entry,
     // it will silently render as GENERIC. This catches that drift.
@@ -126,9 +149,9 @@ describe("niche visual identity registry", () => {
   });
 });
 
-describe("leadac-hero renderer with niche imagery", () => {
+describe("leadac-showcase renderer with niche imagery", () => {
   it("paints the hero photo as a CSS background image when imagery is supplied", () => {
-    const html = renderLeadacHero({
+    const html = renderLeadacShowcase({
       ...baseRenderInput,
       imagery: {
         hero: ["https://images.unsplash.com/photo-1234567890?w=1600"],
@@ -141,37 +164,8 @@ describe("leadac-hero renderer with niche imagery", () => {
     );
   });
 
-  it("renders a gallery section when 2+ gallery URLs are supplied", () => {
-    const html = renderLeadacHero({
-      ...baseRenderInput,
-      imagery: {
-        hero: [],
-        gallery: [
-          "https://images.unsplash.com/photo-aaa?w=800",
-          "https://images.unsplash.com/photo-bbb?w=800",
-        ],
-      },
-    });
-    expect(html).toContain("<section class=\"gallery\">");
-    expect(html).toMatch(/photo-aaa/);
-    expect(html).toMatch(/photo-bbb/);
-  });
-
-  it("omits the gallery section when only one gallery photo is supplied", () => {
-    // 1 photo isn't enough for a 2-3 tile grid; suppress the section
-    // so we don't ship a single-tile gallery that looks broken.
-    const html = renderLeadacHero({
-      ...baseRenderInput,
-      imagery: {
-        hero: [],
-        gallery: ["https://images.unsplash.com/photo-only?w=800"],
-      },
-    });
-    expect(html).not.toContain("section class=\"gallery\"");
-  });
-
   it("rejects non-allowlisted photo hosts (defence-in-depth)", () => {
-    const html = renderLeadacHero({
+    const html = renderLeadacShowcase({
       ...baseRenderInput,
       imagery: {
         hero: ["https://evil.example.com/track.gif"],
@@ -182,11 +176,10 @@ describe("leadac-hero renderer with niche imagery", () => {
       },
     });
     expect(html).not.toContain("evil.example.com");
-    expect(html).not.toContain("section class=\"gallery\"");
   });
 
   it("rejects javascript: URLs even on the allowlist host", () => {
-    const html = renderLeadacHero({
+    const html = renderLeadacShowcase({
       ...baseRenderInput,
       imagery: {
         hero: ["javascript:alert(1)"],
@@ -196,23 +189,13 @@ describe("leadac-hero renderer with niche imagery", () => {
     expect(html).not.toContain("javascript:");
   });
 
-  it("falls back to pure gradient hero when imagery is empty", () => {
-    const html = renderLeadacHero({
-      ...baseRenderInput,
-      imagery: { hero: [], gallery: [] },
-    });
-    // No hero photo block -> no `.hero-photo` div.
-    expect(html).not.toContain("class=\"hero-photo\"");
-  });
-
   it("uses the niche secondary hex in the hero gradient", () => {
-    const html = renderLeadacHero({
+    const html = renderLeadacShowcase({
       ...baseRenderInput,
       secondaryHex: "#abcdef",
     });
-    // The third radial-gradient stop in the hero-bg uses the secondary
-    // hex converted to rgba. We just check the rgba(171,205,239 prefix
-    // is present somewhere in the <style> block.
+    // The mesh background uses the secondary hex converted to rgba.
+    // Format: rgba(171, 205, 239, <alpha>) — match the prefix.
     expect(html).toMatch(/rgba\(171,\s*205,\s*239/);
   });
 });

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getMockupRenderer } from "@/lib/mockups/templates";
-import { renderLeadacHero } from "@/lib/mockups/renderers/leadac-hero";
+import { renderLeadacShowcase } from "@/lib/mockups/renderers/leadac-showcase";
 import { parseBranding } from "@/lib/branding";
 import type { WebsiteMockupSections } from "@/lib/prompts/website-mockup-prompt";
-import { getVisualIdentityForLead } from "@/lib/niches";
+import { getVisualIdentityForLead, getNicheBySlug } from "@/lib/niches";
 
 /**
  * Public mockup view route. Served as raw HTML (not React) because the page
@@ -56,20 +56,27 @@ export async function GET(
       .catch((err) => console.error("WebsiteMockup view counter failed:", err));
 
     // Prefer the cached HTML for instant response; re-render from
-    // sections if cache is missing (should be rare).
+    // sections if cache is missing (should be rare). Older
+    // `leadac-hero-v1` rows hit this path too — the showcase
+    // renderer reads only the v1-compatible fields from sectionsJson
+    // and falls back to safe defaults for any v2 field that's
+    // missing, so a stale v1 row still renders without crashing.
     let html = wm.htmlCache;
     if (!html) {
       const branding = wm.lead.workspace.plan === "AGENCY"
         ? parseBranding(wm.lead.workspace.branding)
         : null;
-      // Re-resolve the niche visual identity so the re-render matches
-      // what the worker would have produced. Cheap (pure data lookup);
-      // only runs on the rare cache-miss path.
       const visual = getVisualIdentityForLead({
         subNicheSlug: wm.lead.subNicheSlug ?? null,
         nicheSlug: wm.lead.nicheSlug ?? null,
+        primaryType: wm.lead.primaryType ?? null,
+        businessName: wm.lead.businessName,
       });
-      html = renderLeadacHero({
+      const nichePack =
+        (wm.lead.subNicheSlug ? getNicheBySlug(wm.lead.subNicheSlug) : null) ??
+        (wm.lead.nicheSlug ? getNicheBySlug(wm.lead.nicheSlug) : null) ??
+        null;
+      html = renderLeadacShowcase({
         businessName: wm.lead.businessName,
         formattedAddress: wm.lead.formattedAddress,
         borough: wm.lead.borough,
@@ -84,6 +91,7 @@ export async function GET(
         workspaceName: wm.lead.workspace.name,
         branding,
         lang: wm.lead.workspace.language ?? "en",
+        nicheLabel: nichePack?.label ?? null,
       });
     }
 
