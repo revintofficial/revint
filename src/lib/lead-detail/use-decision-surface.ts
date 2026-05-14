@@ -49,6 +49,16 @@ export interface DecisionSurfaceLeadCore {
   // Phase 2.5 — coordinates for the AccountBlock map mini.
   sourceLat: number | null;
   sourceLng: number | null;
+  // Phase 1.4 (V2 Richness Absorption) — HUD + CompactIdentityCard.
+  // `dnc` flips the red DNC pill in the sticky header and gates
+  // outbound `tel:` / `mailto:` anchors. `salesConfidence` is the
+  // 0-100 dot rendered next to the stage chip. The remaining three
+  // round out the identity card V1 used to render in `IdentityRail`.
+  dnc: boolean;
+  salesConfidence: number | null;
+  googleMapsUri: string | null;
+  businessStatus: string | null;
+  reviewCount: number | null;
   watchlist: {
     id: string;
     pipelineStage: PipelineStageValue;
@@ -313,6 +323,13 @@ export interface DossierStubDto {
   hasDossier: boolean;
   lastGeneratedAt: string | null;
   summarySnippet: string | null;
+  /**
+   * Phase 1.7 — three discovery questions for the FourThingsCard
+   * "3 SORU" row. Always populated by the API (niche-aware generic
+   * fallback when no signal is available) so the card renders three
+   * real lines from first paint.
+   */
+  questions: string[];
 }
 
 export interface PipelineStateDto {
@@ -344,6 +361,13 @@ export interface UseDecisionSurfaceResult {
   intelligenceBrief: IntelligenceBriefDto | null;
   recommendedPackage: RecommendedPackageDto | null;
   personalizedFirstMessage: string | null;
+  /**
+   * Phase 1.3 (V2 Richness Absorption) — markdown body of the legacy
+   * "Sales Talking Points" card (formerly `WebsitePlanSection`).
+   * Null when the user hasn't generated one yet — UI shows the
+   * inline "Build talking points" CTA in that case.
+   */
+  salesTalkingPointsMarkdown: string | null;
   reviewIntelSummary: ReviewIntelSummaryDto | null;
   websiteIntelSummary: WebsiteIntelSummaryDto | null;
   reviewVelocity: ReviewVelocityDto | null;
@@ -405,6 +429,7 @@ interface AggregatorRawResponse {
   intelligenceBrief: IntelligenceBriefDto | null;
   recommendedPackage: RecommendedPackageDto | null;
   personalizedFirstMessage: string | null;
+  salesTalkingPointsMarkdown: string | null;
   reviewIntelSummary: ReviewIntelSummaryDto | null;
   websiteIntelSummary: WebsiteIntelSummaryDto | null;
   reviewVelocity: ReviewVelocityDto;
@@ -593,6 +618,7 @@ export function useDecisionSurface(leadId: string): UseDecisionSurfaceResult {
       intelligenceBrief: null,
       recommendedPackage: null,
       personalizedFirstMessage: null,
+      salesTalkingPointsMarkdown: null,
       reviewIntelSummary: null,
       websiteIntelSummary: null,
       reviewVelocity: null,
@@ -627,6 +653,7 @@ export function useDecisionSurface(leadId: string): UseDecisionSurfaceResult {
     intelligenceBrief: payload.intelligenceBrief ?? null,
     recommendedPackage: payload.recommendedPackage ?? null,
     personalizedFirstMessage: payload.personalizedFirstMessage ?? null,
+    salesTalkingPointsMarkdown: payload.salesTalkingPointsMarkdown ?? null,
     reviewIntelSummary: payload.reviewIntelSummary ?? null,
     websiteIntelSummary: payload.websiteIntelSummary ?? null,
     reviewVelocity: payload.reviewVelocity ?? null,
@@ -651,4 +678,5 @@ const EMPTY_DOSSIER_STUB: DossierStubDto = {
   hasDossier: false,
   lastGeneratedAt: null,
   summarySnippet: null,
+  questions: [],
 };

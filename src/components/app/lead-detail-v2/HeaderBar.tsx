@@ -26,7 +26,7 @@
  *     `/api/leads/[id]/pipeline-rerun` (existing route).
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -34,6 +34,8 @@ import {
   Mic,
   MoreHorizontal,
   Phone,
+  ShieldAlert,
+  Sparkle,
 } from "lucide-react";
 
 import {
@@ -74,6 +76,13 @@ export interface HeaderBarCopy {
   rerunningPipeline?: string;
   rerunPipelineError?: string;
   subNicheOverride?: SubNicheOverrideMenuCopy;
+  // Phase 1.4 (V2 Richness Absorption) — sticky HUD strings absorbed
+  // from V1's `SalesCallSheet`. All optional so call sites that
+  // haven't migrated their copy bundle simply don't render the HUD.
+  dncBadge?: string;
+  confidenceLabel?: string;
+  lastCallLabel?: string;
+  neverCalledLabel?: string;
 }
 
 export interface HeaderBarProps {
@@ -97,6 +106,14 @@ export interface HeaderBarProps {
   subNicheState?: SubNicheStateDto | null;
   onSubNicheSaved?: () => void;
   onPipelineRerun?: () => void;
+  // Phase 1.4 (V2 Richness Absorption) — sticky HUD inputs.
+  // `dnc` flips the red badge AND disables the tel/mailto anchors.
+  // `salesConfidence` (0-100) drives the colored confidence dot.
+  // `recentDialAt` (ISO string) renders the "last call" relative
+  // timestamp; null collapses into the "never called" hint.
+  dnc?: boolean;
+  salesConfidence?: number | null;
+  recentDialAt?: string | null;
   copy: HeaderBarCopy;
 }
 
@@ -136,6 +153,48 @@ function buildTel(phone: string | null | undefined): string | null {
   return cleaned ? `tel:${cleaned}` : null;
 }
 
+/**
+ * Phase 1.4 — confidence dot tone. Maps 0-100 → success / warn /
+ * neutral consistently with the rest of the LeadAC palette
+ * (see `globals.css` --leadac-* tokens).
+ */
+function confidenceTone(score: number): string {
+  if (score >= 70) return "var(--leadac-success)";
+  if (score >= 40) return "var(--leadac-500)";
+  if (score >= 20) return "var(--leadac-warn, hsl(38 92% 60%))";
+  return "var(--leadac-text-3)";
+}
+
+/**
+ * Phase 1.4 — humanises an ISO timestamp into a "5m / 3h / 2d ago"
+ * label for the sticky HUD. Returns null when both inputs are
+ * missing so the parent collapses the chip entirely. The
+ * `neverCalled` template renders when `iso` is null but the copy
+ * key is wired (rep wants explicit confirmation, not a missing
+ * chip).
+ */
+function formatLastCall(
+  iso: string | null | undefined,
+  lastCallLabel: string | undefined,
+  neverCalled: string | undefined,
+): string | null {
+  if (!iso) {
+    return neverCalled ?? null;
+  }
+  if (!lastCallLabel) return null;
+  const parsed = Date.parse(iso);
+  if (Number.isNaN(parsed)) return null;
+  const diffMs = Date.now() - parsed;
+  if (diffMs < 0) return lastCallLabel.replace("{rel}", "now");
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1) return lastCallLabel.replace("{rel}", "now");
+  if (minutes < 60) return lastCallLabel.replace("{rel}", `${minutes}m`);
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return lastCallLabel.replace("{rel}", `${hours}h`);
+  const days = Math.floor(hours / 24);
+  return lastCallLabel.replace("{rel}", `${days}d`);
+}
+
 export function HeaderBar({
   businessName,
   subNicheLabel,
@@ -155,10 +214,19 @@ export function HeaderBar({
   subNicheState,
   onSubNicheSaved,
   onPipelineRerun,
+  dnc,
+  salesConfidence,
+  recentDialAt,
   copy,
 }: HeaderBarProps) {
-  const tel = buildTel(phone);
-  const mail = email ? `mailto:${email}` : null;
+  // Phase 1.4 — DNC kills outbound; tel/mailto anchors become
+  // disabled buttons so the rep can't dial through the UI.
+  const tel = dnc ? null : buildTel(phone);
+  const mail = dnc ? null : email ? `mailto:${email}` : null;
+  const lastCallLabel = useMemo(
+    () => formatLastCall(recentDialAt, copy.lastCallLabel, copy.neverCalledLabel),
+    [recentDialAt, copy.lastCallLabel, copy.neverCalledLabel],
+  );
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [rerunning, setRerunning] = useState(false);
   const [rerunError, setRerunError] = useState<string | null>(null);
@@ -214,6 +282,66 @@ export function HeaderBar({
           onStageChange={onStageChange}
           copy={{ changeStage: copy.changeStage, stages: copy.stages }}
         />
+        {/*
+         * Phase 1.4 (V2 Richness Absorption) — sticky HUD strip.
+         * Renders only when the parent wires the inputs; lives
+         * inside the same horizontal flex line as the stage chip so
+         * the 56px sticky header doesn't grow vertically.
+         */}
+        {dnc && copy.dncBadge ? (
+          <span
+            data-testid="header-dnc-badge"
+            className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold uppercase tracking-[0.06em]"
+            style={{
+              borderColor:
+                "color-mix(in srgb, var(--leadac-error) 55%, transparent)",
+              color: "var(--leadac-error)",
+              background:
+                "color-mix(in srgb, var(--leadac-error) 14%, transparent)",
+            }}
+            aria-label={copy.dncBadge}
+          >
+            <ShieldAlert className="h-3 w-3" aria-hidden />
+            {copy.dncBadge}
+          </span>
+        ) : null}
+        {typeof salesConfidence === "number" && copy.confidenceLabel ? (
+          <span
+            data-testid="header-confidence-dot"
+            className="hidden h-6 shrink-0 items-center gap-1.5 rounded-full border px-2 text-[10px] font-medium uppercase tracking-[0.05em] md:inline-flex"
+            style={{
+              borderColor:
+                "color-mix(in srgb, " +
+                confidenceTone(salesConfidence) +
+                " 45%, transparent)",
+              color: confidenceTone(salesConfidence),
+              background:
+                "color-mix(in srgb, " +
+                confidenceTone(salesConfidence) +
+                " 10%, transparent)",
+            }}
+            aria-label={`${copy.confidenceLabel}: ${salesConfidence}`}
+            title={`${copy.confidenceLabel}: ${salesConfidence}`}
+          >
+            <Sparkle className="h-3 w-3" aria-hidden />
+            {salesConfidence}
+          </span>
+        ) : null}
+        {lastCallLabel ? (
+          <span
+            data-testid="header-last-call"
+            className="hidden h-6 shrink-0 items-center gap-1 rounded-full border px-2 text-[10px] uppercase tracking-[0.05em] lg:inline-flex"
+            style={{
+              borderColor: "hsl(0 0% 100% / 0.10)",
+              color: "var(--leadac-text-3)",
+              background: "hsl(0 0% 100% / 0.03)",
+            }}
+            title={recentDialAt ?? undefined}
+          >
+            <Phone className="h-3 w-3" aria-hidden />
+            {lastCallLabel}
+          </span>
+        ) : null}
       </div>
 
       <div className="flex shrink-0 items-center gap-1">

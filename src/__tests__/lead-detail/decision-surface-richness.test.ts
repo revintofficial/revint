@@ -390,11 +390,16 @@ describe("/api/leads/[id]/decision-surface — Phase 2.5 richness fields", () =>
     expect(body.reviewVelocity.recentCount30d).toBe(0);
     expect(body.reviewVelocity.priorCount30d).toBe(0);
     expect(body.discoveredLinks).toEqual({ socials: [], directories: [] });
-    expect(body.dossierStub).toEqual({
+    // Phase 1.7 — even a fully-empty COLD lead still gets three
+    // niche-aware generic discovery questions so the FourThingsCard
+    // can render three real lines. We only assert shape + count here;
+    // the precise wording belongs to derive-call-questions tests.
+    expect(body.dossierStub).toMatchObject({
       hasDossier: false,
       lastGeneratedAt: null,
       summarySnippet: null,
     });
+    expect(body.dossierStub.questions).toHaveLength(3);
     expect(body.pipelineState).toMatchObject({
       crawl: "PENDING",
       analyze: "PENDING",

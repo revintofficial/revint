@@ -96,6 +96,11 @@ export default async function LeadDetailPage({
           archive: v2.header.archive,
           discard: v2.header.discard,
           stages: v2.stages,
+          // Phase 1.4 (V2 Richness Absorption) — sticky HUD copy.
+          dncBadge: v2.header.dncBadge,
+          confidenceLabel: v2.header.confidenceLabel,
+          lastCallLabel: v2.header.lastCallLabel,
+          neverCalledLabel: v2.header.neverCalledLabel,
         },
         stages: v2.stages,
         whyNow: {
@@ -104,6 +109,9 @@ export default async function LeadDetailPage({
           windowDays: v2.whyNow.windowDays,
           windowToday: v2.whyNow.windowToday,
           evidence: v2.evidence,
+          // Phase 1.1 — disclosure label for the absorbed full
+          // WebsiteIntelligencePanel below the chip strip.
+          fullPanelLabel: v2.whyNow.fullPanelLabel,
         },
         nextGesture: {
           title: v2.nextGesture.title,
@@ -117,6 +125,14 @@ export default async function LeadDetailPage({
           schedule: v2.nextGesture.schedule,
           snooze: v2.nextGesture.snooze,
           snoozeMenu: v2.nextGesture.snoozeMenu,
+          // Phase 1.7 — FourThingsCard copy. Optional on the type
+          // but always passed here so the card mounts everywhere
+          // the new V2 surface renders.
+          fourThings: v2.nextGesture.fourThings,
+          // Phase 1.3 (V2 Richness Absorption) — SalesTalkingPoints
+          // copy (re-skin of legacy WebsitePlanSection). Same
+          // wire-everywhere policy as `fourThings`.
+          salesTalkingPoints: v2.nextGesture.salesTalkingPoints,
         },
         preliminaryBanner: { message: v2.preliminaryBanner.message },
         updatedToast: { message: v2.updatedToast.message },
@@ -165,6 +181,10 @@ export default async function LeadDetailPage({
             influenceLabel: v2.who.card.influenceLabel,
             evidence: v2.evidence,
           },
+          // Phase 1.4 (V2 Richness Absorption) — CompactIdentityCard
+          // copy. Wired everywhere V2 renders so the rep always sees
+          // the contact rail at the top of WHO.
+          identity: v2.who.identity,
         },
         history: {
           loading: v2.history.loading,
@@ -179,6 +199,15 @@ export default async function LeadDetailPage({
             apply: v2.closestWin.apply,
             detailsTemplate: v2.closestWin.detailsTemplate,
           },
+          // Phase 1.2 — disclosure labels for the absorbed V1
+          // review surfaces (ReviewIntelligencePanel, timeline,
+          // raw reviews accordion).
+          fullReviewIntelLabel: v2.history.fullReviewIntelLabel,
+          fullReviewTimelineLabel: v2.history.fullReviewTimelineLabel,
+          rawReviewsLabel: v2.history.rawReviewsLabel,
+          // Phase 1.5 (V2 Richness Absorption) — disclosure label
+          // for the absorbed voice-notes list inside HistoryBlock.
+          voiceNotesLabel: v2.history.voiceNotesLabel,
         },
         account: v2.account,
         queueStrip: v2.queueStrip,

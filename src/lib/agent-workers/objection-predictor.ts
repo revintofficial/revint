@@ -12,6 +12,33 @@
  *     based on lead-specific signals (rating, review themes, audit
  *     features, watchlist stage history).
  *   - We cap at 5 to keep the SDR_BRAIN prompt budget bounded.
+ *
+ * Phase 2.1 (V2 Richness Absorption) rewire:
+ *   The audit flagged this worker as THIN — it was building a tiny
+ *   string from `(rating, count, first pain phrase)` and asking
+ *   Gemini to invent objections from scratch. Meanwhile
+ *   `LEAD_INTELLIGENCE_BRIEF` already runs upstream and writes a
+ *   `replyObjections` array PLUS a `confirmedPainPoints` whitelist
+ *   that names the buyer's actual friction points. Bypassing that
+ *   data caused the worker to hallucinate objections that
+ *   contradicted the brief.
+ *
+ *   The rewire below:
+ *     1. Reads the latest LEAD_INTELLIGENCE_BRIEF AgentRun cache
+ *        for this lead (no extra Gemini round-trip).
+ *     2. Treats `brief.replyObjections` as a SEED list — each one
+ *        becomes a predicted Objection row directly, with the
+ *        opener-seed used as the preemptive response template.
+ *     3. Asks Gemini to ENRICH the seed list with categories +
+ *        likelihoods + extra rows, but ONLY citing the verified
+ *        signals (confirmedPainPoints + confirmedMissingFeatures +
+ *        rating/count + audit booleans).
+ *
+ *   When the brief hasn't run yet we fall back to the legacy
+ *   "from-scratch" path so we still produce useful predictions for
+ *   leads in the pre-brief window. The fallback path stays in this
+ *   file for backwards compat; the new path is the default whenever
+ *   a brief exists.
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
@@ -30,6 +57,69 @@ interface PredictedObjection {
   likelihood: number;
   preemptiveResponse: string;
   evidence: { source: string; quote?: string };
+}
+
+/**
+ * Subset of `LEAD_INTELLIGENCE_BRIEF` output we consume here. Kept
+ * narrow so a schema drift in the brief doesn't ripple into this
+ * worker (`outputJson` is `unknown` at the DB level).
+ */
+interface BriefSlice {
+  headline: string | null;
+  talkingPoints: string[];
+  openerSeed: string | null;
+  replyObjections: string[];
+  confirmedPainPoints: string[];
+  confirmedMissingFeatures: string[];
+  redFlags: string[];
+}
+
+function pickStringArray(input: unknown, key: string): string[] {
+  if (!input || typeof input !== "object") return [];
+  const raw = (input as Record<string, unknown>)[key];
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (x): x is string => typeof x === "string" && x.trim().length > 0,
+  );
+}
+
+function pickString(input: unknown, key: string): string | null {
+  if (!input || typeof input !== "object") return null;
+  const raw = (input as Record<string, unknown>)[key];
+  return typeof raw === "string" && raw.trim().length > 0 ? raw : null;
+}
+
+function projectBriefSlice(raw: unknown): BriefSlice | null {
+  if (!raw || typeof raw !== "object") return null;
+  return {
+    headline: pickString(raw, "headline"),
+    talkingPoints: pickStringArray(raw, "talkingPoints"),
+    openerSeed: pickString(raw, "openerSeed"),
+    replyObjections: pickStringArray(raw, "replyObjections"),
+    confirmedPainPoints: pickStringArray(raw, "confirmedPainPoints"),
+    confirmedMissingFeatures: pickStringArray(raw, "confirmedMissingFeatures"),
+    redFlags: pickStringArray(raw, "redFlags"),
+  };
+}
+
+/**
+ * Map a raw objection string into a category tag. Cheap heuristic
+ * — pattern-match the brief's voice-of-buyer phrasing to one of
+ * the well-known SDR taxonomy buckets. Anything that doesn't match
+ * falls into a generic "GENERAL" bucket which is still useful for
+ * dedup on subsequent re-runs.
+ */
+function categorizeObjection(text: string): string {
+  const lower = text.toLowerCase();
+  if (/price|cost|budget|expens|afford/.test(lower)) return "PRICE";
+  if (/time|busy|later|right now|momento|şu an/.test(lower)) return "TIMING";
+  if (/boss|partner|owner|need to ask|approval/.test(lower)) return "AUTHORITY";
+  if (/need|do we even|don't need|fine without/.test(lower)) return "NEED";
+  if (/trust|legit|scam|guarantee|reference/.test(lower)) return "TRUST";
+  if (/already (use|have|using)|competitor|switch/.test(lower)) return "COMPETITOR";
+  if (/integration|stack|api|connect/.test(lower)) return "INTEGRATION";
+  if (/effort|hard|complicated|too much work/.test(lower)) return "EFFORT";
+  return "GENERAL";
 }
 
 export const run: AgentWorkerRun = async (
@@ -54,39 +144,185 @@ export const run: AgentWorkerRun = async (
     if (phrases.length > 0) features.push(`pain phrases: ${phrases.join(", ")}`);
   }
 
+  // Phase 2.1 — read the latest LEAD_INTELLIGENCE_BRIEF run so we
+  // can seed the predictor with grounded objections the brief
+  // already inferred. Single DB query, no extra Gemini round-trip.
+  const latestBriefRun = await prisma.agentRun.findFirst({
+    where: {
+      workspaceId: ctx.workspaceId,
+      leadId: lead.id,
+      workerKind: "LEAD_INTELLIGENCE_BRIEF",
+      status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
+    },
+    orderBy: { finishedAt: "desc" },
+    select: { outputJson: true },
+  });
+  const brief = projectBriefSlice(latestBriefRun?.outputJson ?? null);
+
   let predicted: PredictedObjection[] = [];
-  try {
-    const provider = getStructuredInferenceProvider();
-    const schema: SchemaDefinition = {
-      type: "OBJECT",
-      properties: {
-        objections: {
-          type: "ARRAY",
-          items: {
-            type: "OBJECT",
-            properties: {
-              category: { type: "STRING" },
-              text: { type: "STRING" },
-              likelihood: { type: "NUMBER" },
-              preemptiveResponse: { type: "STRING" },
-              quote: { type: "STRING" },
+
+  if (brief && brief.replyObjections.length > 0) {
+    // Brief-grounded path: every objection text starts as a verified
+    // brief signal, then Gemini fills in the category + likelihood +
+    // preemptive response. We still ask the LLM for up to 2 EXTRA
+    // entries from the niche/audit context so the rep gets the full
+    // 5 slots when the brief was conservative.
+    const seedObjections = brief.replyObjections.slice(0, 5);
+    const briefContext: string[] = [];
+    if (brief.headline) briefContext.push(`brief headline: ${brief.headline}`);
+    if (brief.confirmedPainPoints.length > 0) {
+      briefContext.push(
+        `confirmed pains: ${brief.confirmedPainPoints.slice(0, 5).join(" | ")}`,
+      );
+    }
+    if (brief.confirmedMissingFeatures.length > 0) {
+      briefContext.push(
+        `missing features: ${brief.confirmedMissingFeatures
+          .slice(0, 5)
+          .join(" | ")}`,
+      );
+    }
+    if (brief.redFlags.length > 0) {
+      briefContext.push(`red flags: ${brief.redFlags.slice(0, 3).join(" | ")}`);
+    }
+
+    try {
+      const provider = getStructuredInferenceProvider();
+      const schema: SchemaDefinition = {
+        type: "OBJECT",
+        properties: {
+          objections: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                category: { type: "STRING" },
+                text: { type: "STRING" },
+                likelihood: { type: "NUMBER" },
+                preemptiveResponse: { type: "STRING" },
+                quote: { type: "STRING" },
+              },
+              required: [
+                "category",
+                "text",
+                "likelihood",
+                "preemptiveResponse",
+              ],
             },
-            required: ["category", "text", "likelihood", "preemptiveResponse"],
           },
         },
-      },
-      required: ["objections"],
-    };
-    const result = await provider.structuredInfer<{
-      objections: Array<{
-        category: string;
-        text: string;
-        likelihood: number;
-        preemptiveResponse: string;
-        quote?: string;
-      }>;
-    }>({
-      prompt: `Predict the TOP 5 objections this prospect is most likely to raise to a cold outreach pitch.
+        required: ["objections"],
+      };
+      const result = await provider.structuredInfer<{
+        objections: Array<{
+          category: string;
+          text: string;
+          likelihood: number;
+          preemptiveResponse: string;
+          quote?: string;
+        }>;
+      }>({
+        prompt: `You are enriching a pre-computed list of likely buyer objections for a cold outreach pitch.
+
+Lead: ${lead.businessName ?? "(no name)"} (niche: ${lead.subNicheSlug ?? lead.nicheSlug ?? "unknown"})
+Signals: ${features.join(" | ") || "(none)"}
+Brief context: ${briefContext.join(" | ") || "(none)"}
+
+Seed objections (from LEAD_INTELLIGENCE_BRIEF, verbatim voice of buyer):
+${seedObjections.map((s, i) => `${i + 1}. ${s}`).join("\n")}
+
+Constraints:
+- Return EXACTLY the same number of seed entries first (keep their text verbatim), then add UP TO 2 more if the signals support them.
+- category: short label (PRICE, TIMING, AUTHORITY, NEED, TRUST, COMPETITOR, INTEGRATION, EFFORT, GENERAL).
+- text: voice of buyer, 1 sentence — keep the seed's wording for seeded rows.
+- likelihood: 0-1 (seed rows: 0.6-0.9; new rows: <= 0.6).
+- preemptiveResponse: 1-2 sentences the SDR can fold into the opener to defuse this objection. MUST only cite signals listed in "Brief context" or "Signals" — do NOT invent new pains.
+- Order by likelihood DESC.
+
+Return JSON only. Max 5 entries total.`,
+        schema,
+        temperature: 0.25,
+        maxTokens: 1024,
+        timeoutMs: 30_000,
+        label: "objection_predictor_brief",
+      });
+      predicted = result.data.objections.slice(0, 5).map((o) => ({
+        category: o.category.slice(0, 60),
+        text: o.text.slice(0, 600),
+        likelihood: Math.max(0, Math.min(1, o.likelihood)),
+        preemptiveResponse: o.preemptiveResponse.slice(0, 800),
+        evidence: {
+          source: "LEAD_INTELLIGENCE_BRIEF:objection_predictor",
+          quote: o.quote?.slice(0, 200),
+        },
+      }));
+    } catch (err) {
+      logger.warn("agent_workers.objection_predictor.brief_gemini_failed", {
+        leadId: lead.id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+      // Hard fallback to the seed-only path: if Gemini fails we
+      // still emit the brief's objections directly (categorized via
+      // the local heuristic) so the rep gets SOMETHING usable.
+      predicted = seedObjections.map((text) => ({
+        category: categorizeObjection(text),
+        text: text.slice(0, 600),
+        likelihood: 0.7,
+        preemptiveResponse:
+          brief.openerSeed?.slice(0, 800) ??
+          "Acknowledge the concern, name a customer who shared the same worry, share the 30-day outcome.",
+        evidence: {
+          source: "LEAD_INTELLIGENCE_BRIEF:seed",
+          quote: text.slice(0, 200),
+        },
+      }));
+    }
+  } else {
+    // Legacy from-scratch path: the brief hasn't run yet, so we
+    // continue to use the original prompt with the audit/review
+    // feature string. We log a counter so we can monitor how often
+    // the new path is bypassed in production.
+    logger.info("agent_workers.objection_predictor.no_brief_fallback", {
+      leadId: lead.id,
+      workspaceId: ctx.workspaceId,
+    });
+    try {
+      const provider = getStructuredInferenceProvider();
+      const schema: SchemaDefinition = {
+        type: "OBJECT",
+        properties: {
+          objections: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                category: { type: "STRING" },
+                text: { type: "STRING" },
+                likelihood: { type: "NUMBER" },
+                preemptiveResponse: { type: "STRING" },
+                quote: { type: "STRING" },
+              },
+              required: [
+                "category",
+                "text",
+                "likelihood",
+                "preemptiveResponse",
+              ],
+            },
+          },
+        },
+        required: ["objections"],
+      };
+      const result = await provider.structuredInfer<{
+        objections: Array<{
+          category: string;
+          text: string;
+          likelihood: number;
+          preemptiveResponse: string;
+          quote?: string;
+        }>;
+      }>({
+        prompt: `Predict the TOP 5 objections this prospect is most likely to raise to a cold outreach pitch.
 
 Lead: ${lead.businessName ?? "(no name)"} (niche: ${lead.subNicheSlug ?? lead.nicheSlug ?? "unknown"})
 Signals: ${features.join(" | ") || "(none)"}
@@ -99,24 +335,28 @@ Constraints:
 - Order by likelihood DESC
 
 Return JSON only. Max 5 entries.`,
-      schema,
-      temperature: 0.3,
-      maxTokens: 1024,
-      timeoutMs: 30_000,
-      label: "objection_predictor",
-    });
-    predicted = result.data.objections.slice(0, 5).map((o) => ({
-      category: o.category.slice(0, 60),
-      text: o.text.slice(0, 600),
-      likelihood: Math.max(0, Math.min(1, o.likelihood)),
-      preemptiveResponse: o.preemptiveResponse.slice(0, 800),
-      evidence: { source: "Gemini:objection_predictor", quote: o.quote?.slice(0, 200) },
-    }));
-  } catch (err) {
-    logger.warn("agent_workers.objection_predictor.gemini_failed", {
-      leadId: lead.id,
-      err: err instanceof Error ? err.message : String(err),
-    });
+        schema,
+        temperature: 0.3,
+        maxTokens: 1024,
+        timeoutMs: 30_000,
+        label: "objection_predictor",
+      });
+      predicted = result.data.objections.slice(0, 5).map((o) => ({
+        category: o.category.slice(0, 60),
+        text: o.text.slice(0, 600),
+        likelihood: Math.max(0, Math.min(1, o.likelihood)),
+        preemptiveResponse: o.preemptiveResponse.slice(0, 800),
+        evidence: {
+          source: "Gemini:objection_predictor",
+          quote: o.quote?.slice(0, 200),
+        },
+      }));
+    } catch (err) {
+      logger.warn("agent_workers.objection_predictor.gemini_failed", {
+        leadId: lead.id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   // Persist as PREDICTED Objection rows. Dedup on (workspaceId, leadId,

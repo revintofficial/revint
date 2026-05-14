@@ -11,6 +11,27 @@
  * influencer, blocker, champion, gatekeeper) using a short Gemini
  * prompt. The output is upserted as Stakeholder rows scoped to the
  * lead/account so the SDR_BRAIN can pick the right opener angle.
+ *
+ * Phase 2.2 (V2 Richness Absorption) rewire:
+ *   Audit flagged this worker as THIN — it was running off raw
+ *   memory crumbs + an audit team snippet only. It never read the
+ *   dossier markdown or the brief narrative, which meant Gemini had
+ *   to RE-INFER context the upstream workers had already established.
+ *   Result: stakeholder names hallucinated when the memory crumbs
+ *   were thin (LinkedIn API rate-limited, no team page).
+ *
+ *   The rewire below:
+ *     1. Reads the latest LEAD_INTELLIGENCE_BRIEF + LEAD_DOSSIER_GENERATOR
+ *        AgentRun caches (no extra Gemini round-trips).
+ *     2. Injects dossier markdown + brief headline + talkingPoints
+ *        as extra context blocks in the prompt — Gemini can quote
+ *        from them rather than invent.
+ *     3. Requests an explicit `confidence` field on every inferred
+ *        stakeholder. Rows with `confidence < 0.5` get
+ *        `source = "AI_INFERRED_LOW"` so the UI can render them
+ *        with a "AI guess" warning chip; high-confidence rows keep
+ *        the legacy `Gemini:buying_committee_map` source string so
+ *        downstream rendering is unchanged.
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
@@ -40,6 +61,52 @@ interface InferredStakeholder {
   linkedinUrl: string | null;
   emailHint: string | null;
   evidence: { source: string; quote?: string };
+  /**
+   * Phase 2.2 — Gemini-reported confidence in this inference.
+   * Range 0-1. We persist it implicitly via the `source` string
+   * (`AI_INFERRED_LOW` < 0.5; otherwise the legacy source string)
+   * and surface it on the output payload so the UI can render a
+   * "low confidence" chip without re-reading the source column.
+   */
+  confidence: number;
+}
+
+/**
+ * Phase 2.2 — minimal projection of `LEAD_INTELLIGENCE_BRIEF.outputJson`.
+ * Kept narrow on purpose (the schema changes faster than this worker).
+ */
+interface BriefSlice {
+  headline: string | null;
+  talkingPoints: string[];
+}
+
+function pickString(input: unknown, key: string): string | null {
+  if (!input || typeof input !== "object") return null;
+  const raw = (input as Record<string, unknown>)[key];
+  return typeof raw === "string" && raw.trim().length > 0 ? raw : null;
+}
+
+function pickStringArray(input: unknown, key: string): string[] {
+  if (!input || typeof input !== "object") return [];
+  const raw = (input as Record<string, unknown>)[key];
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (x): x is string => typeof x === "string" && x.trim().length > 0,
+  );
+}
+
+function projectBriefSlice(raw: unknown): BriefSlice | null {
+  if (!raw || typeof raw !== "object") return null;
+  return {
+    headline: pickString(raw, "headline"),
+    talkingPoints: pickStringArray(raw, "talkingPoints"),
+  };
+}
+
+function projectDossierMarkdown(raw: unknown): string | null {
+  if (!raw || typeof raw !== "object") return null;
+  const md = (raw as Record<string, unknown>).markdown;
+  return typeof md === "string" && md.trim().length > 0 ? md : null;
 }
 
 export const run: AgentWorkerRun = async (
@@ -66,7 +133,39 @@ export const run: AgentWorkerRun = async (
     .join("\n")
     .slice(0, 1200);
 
-  if (hints.length === 0 && !crawlSnippet) {
+  // Phase 2.2 — pull brief + dossier caches in parallel so Gemini
+  // can ground its inferences in upstream-verified narrative
+  // instead of guessing from raw memory crumbs.
+  const [latestBriefRun, latestDossierRun] = await Promise.all([
+    prisma.agentRun.findFirst({
+      where: {
+        workspaceId: ctx.workspaceId,
+        leadId: lead.id,
+        workerKind: "LEAD_INTELLIGENCE_BRIEF",
+        status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
+      },
+      orderBy: { finishedAt: "desc" },
+      select: { outputJson: true },
+    }),
+    prisma.agentRun.findFirst({
+      where: {
+        workspaceId: ctx.workspaceId,
+        leadId: lead.id,
+        workerKind: "LEAD_DOSSIER_GENERATOR",
+        status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
+      },
+      orderBy: { finishedAt: "desc" },
+      select: { outputJson: true },
+    }),
+  ]);
+  const brief = projectBriefSlice(latestBriefRun?.outputJson ?? null);
+  const dossierMarkdown =
+    projectDossierMarkdown(latestDossierRun?.outputJson ?? null) ?? null;
+  const dossierExcerpt = dossierMarkdown
+    ? dossierMarkdown.slice(0, 2000)
+    : "(none)";
+
+  if (hints.length === 0 && !crawlSnippet && !brief && !dossierMarkdown) {
     logger.info("agent_workers.buying_committee.empty", { leadId: lead.id });
     return { output: { stakeholders: [] }, costTokens: 0 };
   }
@@ -91,18 +190,41 @@ export const run: AgentWorkerRun = async (
               emailHint: { type: "STRING" },
               quote: { type: "STRING" },
               source: { type: "STRING" },
+              confidence: { type: "NUMBER" },
             },
-            required: ["fullName", "role", "influence", "sentiment"],
+            required: [
+              "fullName",
+              "role",
+              "influence",
+              "sentiment",
+              "confidence",
+            ],
           },
         },
       },
       required: ["stakeholders"],
     };
-    const prompt = `Map the buying committee for this restaurant tech prospect.
+    const briefBlock = brief
+      ? [
+          brief.headline ? `Headline: ${brief.headline}` : null,
+          brief.talkingPoints.length > 0
+            ? `Talking points: ${brief.talkingPoints.slice(0, 5).join(" | ")}`
+            : null,
+        ]
+          .filter((x): x is string => x != null)
+          .join("\n")
+      : "(none)";
+    const prompt = `Map the buying committee for this prospect.
 Lead: ${lead.businessName ?? "(no name)"} (${lead.subNicheSlug ?? lead.nicheSlug ?? lead.primaryType ?? "unknown"})
 
-Sources:
-${hints.map((h, i) => `[H${i}] ${h.text.slice(0, 300)}`).join("\n")}
+Brief context (LEAD_INTELLIGENCE_BRIEF):
+${briefBlock}
+
+Dossier excerpt (LEAD_DOSSIER_GENERATOR — first 2000 chars):
+${dossierExcerpt}
+
+Memory hints:
+${hints.map((h, i) => `[H${i}] ${h.text.slice(0, 300)}`).join("\n") || "(none)"}
 
 Website team snippets:
 ${crawlSnippet || "(none)"}
@@ -110,12 +232,14 @@ ${crawlSnippet || "(none)"}
 Rules:
 - role MUST be one of: DECISION_MAKER, INFLUENCER, BLOCKER, CHAMPION, GATEKEEPER, USER
 - influence is 0-100 (executive/owner ~80, manager ~50, FOH staff ~20)
-- sentiment ∈ {POSITIVE, NEUTRAL, NEGATIVE, UNKNOWN}
-- Use UNKNOWN when no quote justifies positive/negative
-- Skip duplicates; prefer the strongest evidence per person
-- Do NOT invent emails — leave emailHint blank unless it's literally in the source
-
-Return JSON only.`;
+- sentiment ∈ {POSITIVE, NEUTRAL, NEGATIVE, UNKNOWN}; use UNKNOWN when no quote justifies positive/negative.
+- Skip duplicates; prefer the strongest evidence per person.
+- Do NOT invent emails — leave emailHint blank unless it's literally in a source.
+- confidence MUST be 0-1:
+    * 0.9-1.0: a memory hint, dossier excerpt, or website snippet contains the person's name + role explicitly.
+    * 0.5-0.89: name OR role is concrete but the other is inferred from context.
+    * < 0.5: you are GUESSING based on industry norms (no concrete evidence). Be honest — low confidence triggers a UI "AI guess" warning so the rep can vet manually.
+- Output is JSON only.`;
     const result = await provider.structuredInfer<{
       stakeholders: Array<{
         fullName: string;
@@ -127,6 +251,7 @@ Return JSON only.`;
         emailHint?: string;
         quote?: string;
         source?: string;
+        confidence: number;
       }>;
     }>({
       prompt,
@@ -134,7 +259,7 @@ Return JSON only.`;
       temperature: 0.2,
       maxTokens: 1024,
       timeoutMs: 30_000,
-      label: "buying_committee_map",
+      label: "buying_committee_map_v2",
     });
 
     const allowedRoles: StakeholderRole[] = [
@@ -147,18 +272,34 @@ Return JSON only.`;
     ];
     inferred = result.data.stakeholders
       .filter((s) => allowedRoles.includes(s.role as StakeholderRole))
-      .map((s) => ({
-        fullName: s.fullName.slice(0, 200),
-        title: s.title?.slice(0, 200) ?? null,
-        role: s.role as StakeholderRole,
-        influence: Math.max(0, Math.min(100, Math.round(s.influence))),
-        sentiment: ["POSITIVE", "NEUTRAL", "NEGATIVE", "UNKNOWN"].includes(s.sentiment)
-          ? (s.sentiment as InferredStakeholder["sentiment"])
-          : "UNKNOWN",
-        linkedinUrl: s.linkedinUrl?.startsWith("http") ? s.linkedinUrl : null,
-        emailHint: s.emailHint && s.emailHint.includes("@") ? s.emailHint : null,
-        evidence: { source: s.source ?? "Gemini:buying_committee_map", quote: s.quote ?? "" },
-      }));
+      .map((s) => {
+        const confidence = Math.max(
+          0,
+          Math.min(1, typeof s.confidence === "number" ? s.confidence : 0.5),
+        );
+        const sourceTag =
+          confidence < 0.5
+            ? "AI_INFERRED_LOW"
+            : s.source ?? "Gemini:buying_committee_map";
+        return {
+          fullName: s.fullName.slice(0, 200),
+          title: s.title?.slice(0, 200) ?? null,
+          role: s.role as StakeholderRole,
+          influence: Math.max(0, Math.min(100, Math.round(s.influence))),
+          sentiment: [
+            "POSITIVE",
+            "NEUTRAL",
+            "NEGATIVE",
+            "UNKNOWN",
+          ].includes(s.sentiment)
+            ? (s.sentiment as InferredStakeholder["sentiment"])
+            : "UNKNOWN",
+          linkedinUrl: s.linkedinUrl?.startsWith("http") ? s.linkedinUrl : null,
+          emailHint: s.emailHint && s.emailHint.includes("@") ? s.emailHint : null,
+          evidence: { source: sourceTag, quote: s.quote ?? "" },
+          confidence,
+        };
+      });
   } catch (err) {
     logger.warn("agent_workers.buying_committee.gemini_failed", {
       leadId: lead.id,

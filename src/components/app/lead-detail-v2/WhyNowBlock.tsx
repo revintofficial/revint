@@ -12,7 +12,7 @@
  * extends this with arbitration deltas + multi-trigger merging.
  */
 
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { Clock } from "lucide-react";
 
 import {
@@ -29,12 +29,14 @@ import {
   WebsiteSignalStrip,
   type WebsiteSignalStripCopy,
 } from "./WebsiteSignalStrip";
+import { WebsiteIntelLazyPanel } from "./WebsiteIntelLazyPanel";
 import type {
   LeadTriggerDto,
   LeadNextActionDto,
   ReviewVelocityDto,
   WebsiteIntelSummaryDto,
 } from "@/lib/lead-detail/use-decision-surface";
+import type { LeadDetailV2Stage } from "@/lib/lead-detail/use-pipeline-stage";
 
 export interface WhyNowBlockCopy {
   empty: string;
@@ -46,6 +48,9 @@ export interface WhyNowBlockCopy {
   // don't break before the i18n layer ships.
   websiteSignals?: WebsiteSignalStripCopy;
   reviewVelocity?: ReviewVelocityBadgeCopy;
+  // Phase 1.1 (V2 Richness Absorption) — disclosure label for the
+  // lazy full WebsiteIntelligencePanel below the chip strip.
+  fullPanelLabel?: string;
 }
 
 export interface WhyNowBlockProps {
@@ -65,6 +70,22 @@ export interface WhyNowBlockProps {
   /** Called when the rep taps "View full website panel →" — parent
    * should expand the HISTORY block. */
   onOpenWebsitePanel?: () => void;
+  // Phase 1.1 (V2 Richness Absorption) — lazy full-panel inputs.
+  // All optional so existing call sites continue to render only the
+  // chip strip until they pass these props.
+  leadId?: string;
+  websiteUrl?: string | null;
+  hasWebsite?: boolean;
+  businessName?: string;
+  workspaceNiche?: string | null;
+  nicheSlug?: string | null;
+  subNicheSlug?: string | null;
+  /**
+   * Pipeline stage drives whether the full WebsiteIntelligencePanel
+   * is mounted expanded (`REPLIED+`) or collapsed (`COLD`/`CONTACTED`).
+   * Aligned with PLAN §4.3 stage-driven expansion rules.
+   */
+  stage?: LeadDetailV2Stage | null;
   copy: WhyNowBlockCopy;
 }
 
@@ -144,6 +165,14 @@ export function WhyNowBlock({
   reviewVelocity,
   reviewVelocityPromoted,
   onOpenWebsitePanel,
+  leadId,
+  websiteUrl,
+  hasWebsite,
+  businessName,
+  workspaceNiche,
+  nicheSlug,
+  subNicheSlug,
+  stage,
   copy,
 }: WhyNowBlockProps): ReactNode {
   const headline = useMemo(
@@ -151,6 +180,20 @@ export function WhyNowBlock({
     [triggers, preliminary, final],
   );
   const urgency = useMemo(() => pickUrgency(triggers, copy), [triggers, copy]);
+
+  // Phase 1.1 — full WebsiteIntelligencePanel is mounted under the
+  // chip strip. Default open on REPLIED+ (rep is deep in the
+  // conversation and wants the audit data on screen). Default
+  // closed on COLD/CONTACTED so the 3-minute call-prep view stays
+  // scannable.
+  const fullPanelDefaultOpen =
+    stage === "REPLIED" ||
+    stage === "MEETING_BOOKED" ||
+    stage === "PROPOSAL" ||
+    stage === "NEGOTIATING" ||
+    stage === "WON" ||
+    stage === "LOST";
+  const [fullPanelOpen, setFullPanelOpen] = useState(fullPanelDefaultOpen);
 
   const chips = useMemo(() => {
     return triggers.map((t) =>
@@ -223,16 +266,53 @@ export function WhyNowBlock({
 
       {/*
        * Phase 2.5 — website signal chip strip below the trigger row.
-       * Renders even when there's no audit (placeholder text). The
-       * full panel sits behind a lazy `/website-intel` fetch in the
-       * HISTORY block.
+       * Renders even when there's no audit (placeholder text).
        */}
       {copy.websiteSignals ? (
         <WebsiteSignalStrip
           summary={websiteIntelSummary ?? null}
-          onOpenFullPanel={onOpenWebsitePanel}
+          onOpenFullPanel={
+            onOpenWebsitePanel ?? (leadId ? () => setFullPanelOpen(true) : undefined)
+          }
           copy={copy.websiteSignals}
         />
+      ) : null}
+
+      {/*
+       * Phase 1.1 (V2 Richness Absorption) — full V1
+       * `WebsiteIntelligencePanel` mounted below the chip strip.
+       * Lazy: the `<details>` element holds an unmounted child
+       * until the rep opens it (or stage rules pre-open it). The
+       * wrapper component handles the `/website-intel` fetch + the
+       * content-check / website-search action callbacks so the V2
+       * shell stays free of audit-specific state.
+       */}
+      {leadId && businessName ? (
+        <details
+          className="mt-3 rounded-lg border border-white/8 bg-white/3"
+          open={fullPanelOpen}
+          onToggle={(e) => setFullPanelOpen(e.currentTarget.open)}
+          data-testid="why-now-website-panel-details"
+        >
+          <summary
+            className="cursor-pointer select-none px-3 py-2 text-[12px] font-medium uppercase tracking-[0.06em]"
+            style={{ color: "var(--leadac-text-3)" }}
+          >
+            {copy.fullPanelLabel ?? "Full website panel"}
+          </summary>
+          <div className="px-3 pb-3 pt-1">
+            <WebsiteIntelLazyPanel
+              leadId={leadId}
+              websiteUrl={websiteUrl ?? null}
+              hasWebsite={hasWebsite ?? false}
+              businessName={businessName}
+              workspaceNiche={workspaceNiche ?? null}
+              nicheSlug={nicheSlug ?? null}
+              subNicheSlug={subNicheSlug ?? null}
+              active={fullPanelOpen}
+            />
+          </div>
+        </details>
       ) : null}
     </div>
   );

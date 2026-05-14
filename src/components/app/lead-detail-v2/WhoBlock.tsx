@@ -18,11 +18,20 @@ import {
 } from "./StakeholderCard";
 import type { StakeholderOnlinePresenceLink } from "./StakeholderOnlinePresence";
 import type { DiscoveredLinksDto } from "@/lib/lead-detail/use-decision-surface";
+import {
+  CompactIdentityCard,
+  type CompactIdentityCardCopy,
+} from "./CompactIdentityCard";
 
 export interface WhoBlockCopy {
   loading: string;
   empty: string;
   card: StakeholderCardCopy;
+  // Phase 1.4 (V2 Richness Absorption) — copy for the compact
+  // identity card. Optional so existing test scaffolds that haven't
+  // migrated their copy bundle don't break — the card just doesn't
+  // render in that case.
+  identity?: CompactIdentityCardCopy;
 }
 
 export interface WhoBlockProps {
@@ -31,6 +40,17 @@ export interface WhoBlockProps {
   // Phase 2.5 — `decision-surface.discoveredLinks` so we can render
   // a stakeholder-specific online-presence strip on each card.
   discoveredLinks?: DiscoveredLinksDto;
+  // Phase 1.4 (V2 Richness Absorption) — CompactIdentityCard inputs.
+  // All optional so absent values render a graceful "—" row.
+  identity?: {
+    businessName: string;
+    phone: string | null;
+    websiteUrl: string | null;
+    googleMapsUri: string | null;
+    businessStatus: string | null;
+    reviewCount: number | null;
+    dnc: boolean;
+  };
   copy: WhoBlockCopy;
 }
 
@@ -67,29 +87,55 @@ export function WhoBlock({
   loading,
   stakeholders,
   discoveredLinks,
+  identity,
   copy,
 }: WhoBlockProps): ReactNode {
+  // Phase 1.4 (V2 Richness Absorption) — render the compact identity
+  // card ABOVE the stakeholder grid (and ABOVE the loading/empty
+  // states) so the rep always has the contact rail in view even
+  // while the buying committee is still being inferred.
+  const identityNode: ReactNode =
+    identity && copy.identity ? (
+      <CompactIdentityCard
+        businessName={identity.businessName}
+        phone={identity.phone}
+        websiteUrl={identity.websiteUrl}
+        googleMapsUri={identity.googleMapsUri}
+        businessStatus={identity.businessStatus}
+        reviewCount={identity.reviewCount}
+        dnc={identity.dnc}
+        discoveredLinks={discoveredLinks ?? null}
+        copy={copy.identity}
+      />
+    ) : null;
+
   if (loading) {
     return (
-      <p
-        className="text-[13px]"
-        style={{ color: "var(--leadac-text-3)", minHeight: 56 }}
-        data-testid="who-loading"
-      >
-        {copy.loading}
-      </p>
+      <>
+        {identityNode}
+        <p
+          className="text-[13px]"
+          style={{ color: "var(--leadac-text-3)", minHeight: 56 }}
+          data-testid="who-loading"
+        >
+          {copy.loading}
+        </p>
+      </>
     );
   }
 
   if (stakeholders.length === 0) {
     return (
-      <p
-        className="text-[13px]"
-        style={{ color: "var(--leadac-text-3)", minHeight: 56 }}
-        data-testid="who-empty"
-      >
-        {copy.empty}
-      </p>
+      <>
+        {identityNode}
+        <p
+          className="text-[13px]"
+          style={{ color: "var(--leadac-text-3)", minHeight: 56 }}
+          data-testid="who-empty"
+        >
+          {copy.empty}
+        </p>
+      </>
     );
   }
 
@@ -97,6 +143,7 @@ export function WhoBlock({
 
   return (
     <div data-testid="who-block-body">
+      {identityNode}
       <div className="hidden gap-2 sm:grid sm:grid-cols-3">
         {stakeholders.map((s) => (
           <StakeholderCard

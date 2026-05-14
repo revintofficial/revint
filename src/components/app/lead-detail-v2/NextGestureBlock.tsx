@@ -36,7 +36,20 @@ import {
   type RecommendedApproachCopy,
 } from "./RecommendedApproach";
 import { SnoozeMenu, type SnoozeMenuCopy } from "./SnoozeMenu";
-import type { RecommendedPackageDto } from "@/lib/lead-detail/use-decision-surface";
+import {
+  FourThingsCard,
+  type FourThingsCardCopy,
+} from "./FourThingsCard";
+import {
+  SalesTalkingPoints,
+  type SalesTalkingPointsCopy,
+} from "./SalesTalkingPoints";
+import type {
+  IntelligenceBriefDto,
+  LeadTriggerDto,
+  RecommendedPackageDto,
+} from "@/lib/lead-detail/use-decision-surface";
+import type { LeadDetailV2Stage } from "@/lib/lead-detail/use-pipeline-stage";
 
 export interface NextGestureBlockCopy {
   preliminary: string;
@@ -51,12 +64,32 @@ export interface NextGestureBlockCopy {
   snoozeMenu: SnoozeMenuCopy;
   // Phase 2.5 — additive copy for the recommended-approach subsection.
   recommendedApproach?: RecommendedApproachCopy;
+  // Phase 1.7 — copy for the new FourThingsCard (headline of the
+  // V2 Richness Absorption work). Optional so existing call sites
+  // that haven't migrated their copy bundles don't break — the
+  // card simply doesn't render in that case.
+  fourThings?: FourThingsCardCopy;
+  // Phase 1.3 (V2 Richness Absorption) — copy for the SalesTalkingPoints
+  // card (re-skin of legacy WebsitePlanSection). Optional for the same
+  // call-site-migration reason as `fourThings`.
+  salesTalkingPoints?: SalesTalkingPointsCopy;
 }
 
 export interface NextGestureBlockProps {
   data: NextActionResponse | null;
   loading: boolean;
   leadId: string;
+  /** Workspace id, used for PostHog telemetry on the FourThingsCard. */
+  workspaceId?: string;
+  /** Business name powers the OPENER fallback template. */
+  businessName?: string;
+  /**
+   * Pipeline stage drives default visibility of the FourThingsCard:
+   * COLD / CONTACTED show it expanded by default (highest priority);
+   * REPLIED+ collapses it behind a "Show call prep card" disclosure
+   * so the rep's attention stays on the live conversation context.
+   */
+  stage?: LeadDetailV2Stage | null;
   phone: string | null;
   email: string | null;
   // Phase 2.5 — package + first-message recommendations from the
@@ -65,9 +98,24 @@ export interface NextGestureBlockProps {
   recommendedPackage?: RecommendedPackageDto | null;
   personalizedFirstMessage?: string | null;
   plan?: "FREE" | "PRO" | "PRO_TEAM" | "AGENCY" | null;
+  // Phase 1.7 — FourThingsCard inputs. All optional so the card
+  // gracefully degrades when a parent hasn't wired them through.
+  intelligenceBrief?: IntelligenceBriefDto | null;
+  triggers?: LeadTriggerDto[];
+  callQuestions?: string[];
+  // Phase 1.3 (V2 Richness Absorption) — markdown for the
+  // SalesTalkingPoints card (already cached on
+  // `WatchlistItem.websitePlan`, surfaced via decision-surface).
+  salesTalkingPointsMarkdown?: string | null;
   copy: NextGestureBlockCopy;
   /** Optional callback for the parent to invalidate the queue strip. */
   onSnoozed?: () => void;
+  /**
+   * Phase 1.3 — fired after the SalesTalkingPoints card finishes
+   * generating a new plan so the parent can re-fetch the
+   * decision-surface and pick up the cached markdown.
+   */
+  onSalesTalkingPointsGenerated?: () => void;
 }
 
 function buildTelHref(phone: string | null): string | null {
@@ -87,13 +135,21 @@ export function NextGestureBlock({
   data,
   loading,
   leadId,
+  workspaceId,
+  businessName,
+  stage,
   phone,
   email,
   recommendedPackage,
   personalizedFirstMessage,
   plan,
+  intelligenceBrief,
+  triggers,
+  callQuestions,
+  salesTalkingPointsMarkdown,
   copy,
   onSnoozed,
+  onSalesTalkingPointsGenerated,
 }: NextGestureBlockProps): ReactNode {
   const tel = useMemo(() => buildTelHref(phone), [phone]);
   const wa = useMemo(() => buildWaHref(phone), [phone]);
@@ -101,12 +157,71 @@ export function NextGestureBlock({
   const dialButtonRef = useRef<HTMLAnchorElement | null>(null);
   const { markDialed } = useRecentDial();
 
+  // Phase 1.7 — the FourThingsCard is the highest-priority artifact
+  // on COLD/CONTACTED leads (industry SDR 3-minute formula). On
+  // REPLIED+ we still surface it but collapse behind a disclosure
+  // because the rep's attention should be on the live thread.
+  const fourThingsNode: ReactNode = copy.fourThings && businessName ? (
+    <FourThingsCard
+      businessName={businessName}
+      brief={intelligenceBrief ?? null}
+      triggers={triggers ?? []}
+      personalizedFirstMessage={personalizedFirstMessage ?? null}
+      recommendedPackage={recommendedPackage ?? null}
+      questions={callQuestions ?? []}
+      loading={loading}
+      leadId={leadId}
+      workspaceId={workspaceId ?? ""}
+      copy={copy.fourThings}
+    />
+  ) : null;
+
+  const fourThingsDefaultOpen = stage === "COLD" || stage === "CONTACTED" || stage == null;
+  const fourThingsBlock = fourThingsNode != null ? (
+    fourThingsDefaultOpen ? (
+      <div className="mb-3">{fourThingsNode}</div>
+    ) : (
+      <details className="mb-3 rounded-lg border border-white/8 bg-white/3">
+        <summary
+          className="cursor-pointer select-none px-3 py-2 text-[11px] font-medium uppercase tracking-[0.06em]"
+          style={{ color: "var(--leadac-text-3)" }}
+        >
+          {copy.fourThings?.title ?? "Call prep"}
+        </summary>
+        <div className="px-3 pb-3 pt-1">{fourThingsNode}</div>
+      </details>
+    )
+  ) : null;
+
+  // Phase 1.3 (V2 Richness Absorption) — SalesTalkingPoints is the
+  // SDR's deep-context companion to the FourThingsCard. Plan says:
+  //   COLD       → render collapsed (FourThingsCard already covers
+  //                the surface area the rep needs pre-dial).
+  //   CONTACTED+ → render expanded (the rep is actively dialing /
+  //                following up and wants the full markdown live).
+  const salesTalkingPointsBlock: ReactNode =
+    copy.salesTalkingPoints && businessName ? (
+      <SalesTalkingPoints
+        leadId={leadId}
+        businessName={businessName}
+        markdown={salesTalkingPointsMarkdown ?? null}
+        defaultOpen={stage != null && stage !== "COLD"}
+        onGenerated={onSalesTalkingPointsGenerated}
+        copy={copy.salesTalkingPoints}
+      />
+    ) : null;
+
   if (loading && !data) {
+    // Phase 1.7 — even on the pure-loading path we render the
+    // FourThingsCard if its inputs have already landed (the
+    // decision-surface response can resolve before the NBA does).
     return (
       <div className="space-y-2 text-[13px]">
+        {fourThingsBlock}
         <div className="h-3 w-32 rounded bg-white/5" />
         <div className="h-3 w-3/4 rounded bg-white/5" />
         <div className="h-3 w-2/3 rounded bg-white/5" />
+        {salesTalkingPointsBlock}
       </div>
     );
   }
@@ -117,8 +232,13 @@ export function NextGestureBlock({
     // worker pre-computed a package + first message. Hide entirely
     // when both are missing AND we're not on FREE (no upgrade nudge
     // to render).
+    // Phase 1.7 — FourThingsCard renders FIRST on this path because
+    // the rep needs *something* dial-able when the NBA is still
+    // cooking. The card uses its own fallbacks (generic opener,
+    // niche-aware questions) so it always shows four real lines.
     return (
       <div className="space-y-3">
+        {fourThingsBlock}
         <p className="text-[13px]" style={{ color: "var(--leadac-text-3)" }}>
           {copy.empty}
         </p>
@@ -131,6 +251,7 @@ export function NextGestureBlock({
             copy={copy.recommendedApproach}
           />
         ) : null}
+        {salesTalkingPointsBlock}
       </div>
     );
   }
@@ -143,6 +264,7 @@ export function NextGestureBlock({
 
   return (
     <div className="space-y-3">
+      {fourThingsBlock}
       <div className="flex items-center justify-between gap-2">
         <Badge
           variant="outline"
@@ -232,6 +354,7 @@ export function NextGestureBlock({
           copy={copy.recommendedApproach}
         />
       ) : null}
+      {salesTalkingPointsBlock}
     </div>
   );
 }

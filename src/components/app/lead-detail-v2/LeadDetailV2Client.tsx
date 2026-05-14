@@ -186,6 +186,7 @@ export function LeadDetailV2Client({
     intelligenceBrief,
     recommendedPackage,
     personalizedFirstMessage,
+    salesTalkingPointsMarkdown,
     reviewIntelSummary,
     websiteIntelSummary,
     reviewVelocity,
@@ -407,6 +408,9 @@ export function LeadDetailV2Client({
           subNicheState={subNicheState}
           onSubNicheSaved={() => refresh()}
           onPipelineRerun={() => refresh()}
+          dnc={leadCore?.dnc ?? false}
+          salesConfidence={leadCore?.salesConfidence ?? null}
+          recentDialAt={recentDialAt ?? null}
           copy={{ ...copy.header, stages: copy.stages }}
         />
       }
@@ -446,7 +450,14 @@ export function LeadDetailV2Client({
                 t.type === "REVIEW_VOLUME_SURGE" ||
                 t.type === "REVIEW_VOLUME_DIP",
             )}
-            onOpenWebsitePanel={() => expand("HISTORY")}
+            leadId={leadId}
+            websiteUrl={leadCore?.websiteUrl ?? null}
+            hasWebsite={leadCore?.websiteUrl != null}
+            businessName={businessName}
+            workspaceNiche={null}
+            nicheSlug={null}
+            subNicheSlug={leadCore?.subNicheSlug ?? null}
+            stage={stage}
             copy={{
               empty: copy.whyNow.empty,
               windowDays: copy.whyNow.windowDays,
@@ -454,6 +465,7 @@ export function LeadDetailV2Client({
               evidence: copy.evidence,
               websiteSignals: copy.whyNow.websiteSignals,
               reviewVelocity: copy.whyNow.reviewVelocity,
+              fullPanelLabel: copy.whyNow.fullPanelLabel,
             }}
           />
         </Block>
@@ -485,13 +497,21 @@ export function LeadDetailV2Client({
             data={nba}
             loading={loading}
             leadId={leadId}
+            workspaceId={workspaceId}
+            businessName={businessName}
+            stage={stage}
             phone={phone}
             email={email}
             recommendedPackage={recommendedPackage}
             personalizedFirstMessage={personalizedFirstMessage}
             plan={planGate?.plan ?? null}
+            intelligenceBrief={intelligenceBrief}
+            triggers={nba?.triggers ?? []}
+            callQuestions={dossierStub.questions}
+            salesTalkingPointsMarkdown={salesTalkingPointsMarkdown}
             copy={copy.nextGesture}
             onSnoozed={() => queue.mutate()}
+            onSalesTalkingPointsGenerated={refresh}
           />
         </Block>
 
@@ -515,10 +535,24 @@ export function LeadDetailV2Client({
             loading={loading && stakeholders.length === 0}
             stakeholders={stakeholders}
             discoveredLinks={discoveredLinks}
+            identity={
+              leadCore
+                ? {
+                    businessName,
+                    phone,
+                    websiteUrl: leadCore.websiteUrl ?? null,
+                    googleMapsUri: leadCore.googleMapsUri ?? null,
+                    businessStatus: leadCore.businessStatus ?? null,
+                    reviewCount: leadCore.reviewCount ?? null,
+                    dnc: leadCore.dnc ?? false,
+                  }
+                : undefined
+            }
             copy={{
               loading: copy.who.loading,
               empty: copy.who.empty,
               card: { ...copy.who.card, evidence: copy.evidence },
+              identity: copy.who.identity,
             }}
           />
         </Block>
@@ -628,6 +662,9 @@ export function LeadDetailV2Client({
             reviewIntelSummary={
               copy.history.reviewIntel ? reviewIntelSummary : undefined
             }
+            stage={stage}
+            storedReviewCount={reviewIntelSummary?.reviewsAnalyzedCount ?? 0}
+            totalReviewCount={reviewIntelSummary?.reviewsAnalyzedCount ?? 0}
             copy={{
               loading: copy.history.loading,
               empty: copy.history.empty,
@@ -638,6 +675,9 @@ export function LeadDetailV2Client({
               closestWin: copy.history.closestWin,
               reviewIntel: copy.history.reviewIntel,
               reviewTimeline: copy.history.reviewTimeline,
+              fullReviewIntelLabel: copy.history.fullReviewIntelLabel,
+              fullReviewTimelineLabel: copy.history.fullReviewTimelineLabel,
+              rawReviewsLabel: copy.history.rawReviewsLabel,
             }}
           />
         </Block>

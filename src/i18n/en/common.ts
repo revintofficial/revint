@@ -48,6 +48,11 @@ export const common = {
       archive: "Archive",
       discard: "Discard",
       powerTools: "Power tools",
+      // Phase 1.4 (V2 Richness Absorption) — sticky HUD strings.
+      dncBadge: "DNC",
+      confidenceLabel: "Confidence",
+      lastCallLabel: "{rel} ago",
+      neverCalledLabel: "Never called",
     },
     stages: {
       COLD: "Cold",
@@ -64,6 +69,7 @@ export const common = {
       empty: "No active trigger. Run discovery to surface a reason to act.",
       windowDays: "Act within {days}d",
       windowToday: "Act today",
+      fullPanelLabel: "Full website panel",
     },
     nextGesture: {
       title: "Next gesture",
@@ -110,6 +116,36 @@ export const common = {
           FUNDING_RAISED: "Funding raised",
           EXEC_CHANGE: "Exec change",
         },
+      },
+      fourThings: {
+        title: "In your hand in 3 minutes",
+        subtitle: "Cold-call ready",
+        openerLabel: "Opener",
+        wedgeLabel: "Wedge",
+        questionsLabel: "3 questions",
+        askLabel: "Ask",
+        copyAll: "Copy all",
+        copied: "Copied",
+        editBeforeCall: "Edit before call",
+        openerFallback:
+          "Hi, I noticed a few things about {business} I think are worth two minutes of your time.",
+        wedgeFallback:
+          "Most agencies in this space pay for marketing they can't measure.",
+        askFallback:
+          "Got 15 minutes Thursday to walk through what we're seeing?",
+        generatingHint: "Brief is generating — a usable draft is on screen.",
+      },
+      salesTalkingPoints: {
+        title: "Sales talking points",
+        empty: "No talking points yet — generate one to give the rep a deeper script.",
+        build: "Build talking points",
+        rebuild: "Rebuild",
+        building: "Building…",
+        show: "Show",
+        hide: "Hide",
+        copy: "Copy",
+        copied: "Copied",
+        downloadMd: "Download .md",
       },
     },
     preliminaryBanner: {
@@ -236,6 +272,21 @@ export const common = {
         championLabel: "Champion",
         influenceLabel: "Influence",
       },
+      // Phase 1.4 (V2 Richness Absorption) — copy for the
+      // CompactIdentityCard mounted at the top of the WHO block.
+      identity: {
+        title: "Contact",
+        phoneLabel: "Phone",
+        websiteLabel: "Website",
+        mapsLabel: "Maps",
+        primarySocialLabel: "Social",
+        primaryDirectoryLabel: "Directory",
+        reviewsLabel: "Reviews",
+        statusLabel: "Status",
+        openLink: "Open",
+        dncBadge: "DNC",
+        missing: "—",
+      },
     },
     history: {
       loading: "Loading activity timeline…",
@@ -256,6 +307,11 @@ export const common = {
         SNOOZED: "Snoozed",
         DISPOSITION_LOGGED: "Disposition captured",
       },
+      // Phase 1.2 — disclosure labels for the absorbed V1 review panels.
+      fullReviewIntelLabel: "Full review intelligence",
+      fullReviewTimelineLabel: "Review timeline",
+      rawReviewsLabel: "Raw Google reviews",
+      voiceNotesLabel: "Voice notes",
     },
     closestWin: {
       prefix: "Closest win:",

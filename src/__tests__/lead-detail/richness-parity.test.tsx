@@ -295,6 +295,7 @@ describe("Phase 2.5 richness parity — block-level wiring", () => {
           hasDossier: true,
           lastGeneratedAt: new Date().toISOString(),
           summarySnippet: "Acme has a strong inbound funnel.",
+          questions: [],
         }}
         copy={{
           loading: "Loading…",

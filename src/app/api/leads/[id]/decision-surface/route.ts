@@ -64,6 +64,7 @@ import {
   computeReviewVelocity,
   type ReviewVelocity,
 } from "@/lib/lead-detail/review-velocity";
+import { deriveCallQuestions } from "@/lib/lead-detail/derive-call-questions";
 import {
   extractDiscoveredLinks,
   type AgentRunForLinks,
@@ -125,6 +126,23 @@ interface LeadCoreShape {
   // Phase 2.5 — coordinates for the AccountBlock map mini.
   sourceLat: number | null;
   sourceLng: number | null;
+  // Phase 1.4 (V2 Richness Absorption) — HUD signals the HeaderBar
+  // surfaces in 56px sticky chrome:
+  //   - `dnc`             → red "Do not contact" badge; blocks dial/email.
+  //   - `salesConfidence` → 0-100 dot used as the confidence indicator
+  //     next to the stage chip (V1 SalesCallSheet equivalent).
+  // Both columns are on the `Lead` row we already select; this is a
+  // pure projection (no extra round-trip).
+  dnc: boolean;
+  salesConfidence: number | null;
+  // Phase 1.4 (V2 Richness Absorption) — CompactIdentityCard inputs.
+  // `googleMapsUri` is already selected at the row level; we surface
+  // it explicitly here so the V2 client doesn't have to plumb the
+  // raw Lead row. The `businessStatus` field powers the "operational
+  // / closed" status dot.
+  googleMapsUri: string | null;
+  businessStatus: string | null;
+  reviewCount: number | null;
 }
 
 // =====================================================================
@@ -206,6 +224,16 @@ interface DossierStubShape {
   hasDossier: boolean;
   lastGeneratedAt: string | null;
   summarySnippet: string | null;
+  /**
+   * Phase 1.7 (V2 Richness Absorption) — three discovery questions
+   * the SDR can read out loud in the first 3 minutes of a cold call.
+   * Derived locally in this route via `deriveCallQuestions` (no
+   * Gemini round-trip). Always exactly 3 items unless the lead has
+   * no enrichment at all — in which case we still ship the
+   * niche-aware generic fallback so the FourThingsCard never renders
+   * dead air. See `src/lib/lead-detail/derive-call-questions.ts`.
+   */
+  questions: string[];
 }
 
 interface PipelineStateShape {
@@ -331,6 +359,15 @@ export interface DecisionSurfaceResponse {
   intelligenceBrief: IntelligenceBriefShape | null;
   recommendedPackage: RecommendedPackage | null;
   personalizedFirstMessage: string | null;
+  /**
+   * Phase 1.3 (V2 Richness Absorption) — markdown body of the
+   * legacy "Sales Talking Points" card (formerly
+   * `WebsitePlanSection`). Powered by `WatchlistItem.websitePlan`
+   * which the user generates via `POST /api/website-plan/[id]`.
+   * Null when never generated; UI offers an inline "Build talking
+   * points" CTA in that case.
+   */
+  salesTalkingPointsMarkdown: string | null;
   reviewIntelSummary: ReviewIntelSummaryShape | null;
   websiteIntelSummary: WebsiteIntelSummaryShape | null;
   reviewVelocity: ReviewVelocity;
@@ -535,10 +572,16 @@ export async function GET(
         },
         watchlistItem: {
           // Only id + the two stage fields are consumed downstream.
+          // Phase 1.3 (V2 Richness Absorption) — `websitePlan` is
+          // the markdown body powering the SalesTalkingPoints card
+          // inside NextGestureBlock. It's a single TEXT column on
+          // the row we already join, so adding it costs zero
+          // round-trips.
           select: {
             id: true,
             dealStage: true,
             pipelineStage: true,
+            websitePlan: true,
           },
         },
         account: {
@@ -1027,6 +1070,14 @@ export async function GET(
       icpFitScore: lead.icpFitScore,
       sourceLat: lead.sourceLat,
       sourceLng: lead.sourceLng,
+      // Phase 1.4 (V2 Richness Absorption) — HUD + CompactIdentityCard
+      // inputs. Every value is already on the Lead row from the
+      // `include`-only query above; pure projection.
+      dnc: lead.dnc ?? false,
+      salesConfidence: lead.salesConfidence ?? null,
+      googleMapsUri: lead.googleMapsUri ?? null,
+      businessStatus: lead.businessStatus ?? null,
+      reviewCount: lead.reviewCount ?? null,
     };
 
     const reasoningGraph =
@@ -1199,9 +1250,23 @@ export async function GET(
         : [],
     };
 
-    // 9. Dossier stub — boolean + last-generated + 220-char snippet.
+    // 9. Dossier stub — boolean + last-generated + 220-char snippet,
+    //    plus the Phase 1.7 "3 SORU" array used by FourThingsCard.
+    //    All derivations are local (no Gemini call); the questions
+    //    pull from SPIN PROBLEM rows when a discovery session exists,
+    //    fall back to brief-confirmed pain points, then a
+    //    niche-aware generic so the card never renders dead air.
     //    Full markdown stays lazy under POST /api/leads/[id]/explain.
     const dossierStub = projectDossierStub(dossierRun);
+    dossierStub.questions = deriveCallQuestions({
+      spinProblems: latestDiscovery
+        ? latestDiscovery.items.PROBLEM.map((p) => ({ text: p.text }))
+        : [],
+      confirmedPainPoints: extractConfirmedPainPoints(intelligenceBriefRun),
+      painPoints: intelligenceBrief?.painPoints ?? [],
+      niche: session.workspace.niche,
+      subNicheLabel,
+    });
 
     // 10. Pipeline state — chip-row replacement for the legacy
     //     IdentityRail. DNC = lead has been discarded explicitly.
@@ -1237,6 +1302,11 @@ export async function GET(
       intelligenceBrief,
       recommendedPackage,
       personalizedFirstMessage,
+      // Phase 1.3 (V2 Richness Absorption) — Sales Talking Points
+      // markdown body. We surface the field as-is (no projection)
+      // so the markdown renderer in the V2 client renders the
+      // identical body the legacy WebsitePlanSection did.
+      salesTalkingPointsMarkdown: lead.watchlistItem?.websitePlan ?? null,
       reviewIntelSummary,
       websiteIntelSummary,
       reviewVelocity,
@@ -1509,7 +1579,15 @@ function projectDossierStub(
   run: DossierRunShape | null,
 ): DossierStubShape {
   if (!run) {
-    return { hasDossier: false, lastGeneratedAt: null, summarySnippet: null };
+    return {
+      hasDossier: false,
+      lastGeneratedAt: null,
+      summarySnippet: null,
+      // Filled in by the caller via `deriveCallQuestions` so the
+      // FourThingsCard always gets three real lines, even on a
+      // pre-enrichment COLD lead with no dossier yet.
+      questions: [],
+    };
   }
   const out = parseRecord(run.outputJson) ?? {};
   // The dossier writer stores the markdown on a `markdown` (or
@@ -1528,5 +1606,26 @@ function projectDossierStub(
     hasDossier: true,
     lastGeneratedAt: (run.finishedAt ?? new Date()).toISOString(),
     summarySnippet: snippet,
+    questions: [],
   };
+}
+
+/**
+ * Phase 1.7 — pull `confirmedPainPoints` off the cached
+ * LEAD_INTELLIGENCE_BRIEF run. `projectIntelligenceBrief` already
+ * trims the surface to UI-shape fields, but the FourThingsCard
+ * wants the higher-confidence (audit/review-verified) shortlist
+ * specifically. Defensive against older brief versions that didn't
+ * write the field.
+ */
+function extractConfirmedPainPoints(
+  run: IntelligenceBriefRunShape | null,
+): string[] {
+  if (!run) return [];
+  const out = parseRecord(run.outputJson);
+  if (!out) return [];
+  if (!Array.isArray(out.confirmedPainPoints)) return [];
+  return (out.confirmedPainPoints as unknown[])
+    .filter((p): p is string => typeof p === "string" && p.length > 0)
+    .slice(0, 6);
 }
