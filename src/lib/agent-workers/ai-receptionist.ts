@@ -17,6 +17,16 @@ import {
   buildReceptionistPrompt,
   type ReceptionistPromptInput,
 } from "@/lib/prompts/ai-receptionist-prompt";
+import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
+import {
+  buildLocaleInstruction,
+  countryIsoFromAddress,
+  legacyLanguageForLocale,
+  logLocaleResolution,
+  resolveOutreachLocale,
+  workspaceDefaultLocaleFromLanguage,
+} from "@/lib/locale/lead-locale";
+import type { LocaleResolution } from "@/lib/sdr-brain/contracts";
 import type {
   AgentExportFormat,
   AgentWorkerOutput,
@@ -102,6 +112,16 @@ export interface ReceptionistArtifact {
    * predate this field and should still deserialise cleanly.
    */
   knowledge_base?: ReceptionistKbChunk[];
+  /**
+   * Truth Layer T-B — locale that drove this artifact's greeting +
+   * FAQ language. The downstream voice-platform exporter mirrors
+   * this into the platform's `language` / TTS-voice selector so
+   * runtime TTS matches the planned greeting language. Optional
+   * for backward-compat with pre-Truth-Layer artifacts.
+   */
+  localeResolution?: LocaleResolution;
+  /** Mirrors `TRUTH_LAYER_LOCALE_GATE` state at run time. */
+  localeGateEnabled?: boolean;
 }
 
 // --- Worker run ------------------------------------------------------
@@ -117,6 +137,34 @@ export const run: AgentWorkerRun = async (ctx) => {
   const servicesDetected = toStringArray(audit?.servicesDetected);
   const painPhrases = toStringArray(review?.painPhrases);
   const strengthPhrases = toStringArray(review?.strengthPhrases);
+
+  // Truth Layer T-B — voice/chat artifacts MUST greet callers in
+  // the locale the lead actually speaks (sending a TR greeting to a
+  // GB caller burns trust on the first ring). Same resolution rule
+  // as the outreach workers; the receptionist artifact records the
+  // resolution so the platform exporter can echo it into the TTS
+  // language / voice-id picker downstream.
+  const leadCountry = countryIsoFromAddress(lead.formattedAddress ?? null);
+  const workspaceDefaultLocale = workspaceDefaultLocaleFromLanguage(
+    ctx.workspace.language ?? null,
+  );
+  const localeResolution = resolveOutreachLocale(
+    { country: leadCountry },
+    { defaultLocale: workspaceDefaultLocale },
+  );
+  const localeGateEnabled = isTruthLayerFlagEnabled("TRUTH_LAYER_LOCALE_GATE", {
+    workspaceId: ctx.workspaceId,
+  });
+  logLocaleResolution({
+    leadId: lead.id,
+    workspaceId: ctx.workspaceId,
+    resolution: localeResolution,
+    workspaceDefaultLocale,
+    leadCountry,
+  });
+  const promptLanguage = localeGateEnabled
+    ? legacyLanguageForLocale(localeResolution.resolved)
+    : ctx.workspace.language ?? "en";
 
   // AI Core: grab PROSPECT_KB_CHUNK hits from ctx.memory. When the
   // user ran `user_receptionist_with_kb` chain upstream, these are
@@ -139,10 +187,19 @@ export const run: AgentWorkerRun = async (ctx) => {
     painPhrases,
     strengthPhrases,
     workspaceTone: ctx.workspace.tone,
-    language: ctx.workspace.language ?? "en",
+    language: promptLanguage,
   };
 
   let prompt = buildReceptionistPrompt(promptInput);
+  if (localeGateEnabled) {
+    // Prepend the hard locale instruction so it sits above the
+    // builder's system context. The builder's existing "LANGUAGE FOR
+    // EVERY CUSTOMER-FACING STRING" line is preserved underneath —
+    // the explicit BCP-47 tag here is more precise than the legacy
+    // "Turkish (tr) / English (en)" projection and disambiguates the
+    // en-GB vs en-US cases the legacy line collapses.
+    prompt = `LANGUAGE: ${buildLocaleInstruction(localeResolution.resolved)}\n\n${prompt}`;
+  }
 
   if (kbChunks.length > 0) {
     // Append grounded knowledge base context. We keep it at the end
@@ -207,12 +264,15 @@ export const run: AgentWorkerRun = async (ctx) => {
       },
     }));
 
+  const artifactLanguage = localeGateEnabled
+    ? promptLanguage
+    : ctx.workspace.language ?? "en";
   const artifact: ReceptionistArtifact = {
     businessName: lead.businessName,
     businessPhone: lead.phone,
     leadId: lead.id,
     leadSlug: mockup?.slug,
-    language: ctx.workspace.language ?? "en",
+    language: artifactLanguage,
     agent: parsed.agent,
     greeting: parsed.greeting,
     business_summary: parsed.business_summary,
@@ -224,8 +284,10 @@ export const run: AgentWorkerRun = async (ctx) => {
     escalation_rules: parsed.escalation_rules,
     voicemail_fallback: parsed.voicemail_fallback,
     guardrails: parsed.guardrails,
-    setup_markdown: buildSetupMarkdown(parsed, lead, ctx.workspace.language ?? "en"),
+    setup_markdown: buildSetupMarkdown(parsed, lead, artifactLanguage),
     knowledge_base: knowledgeBase,
+    localeResolution,
+    localeGateEnabled,
   };
 
   const costTokens = Math.ceil((prompt.length + text.length) / 4);

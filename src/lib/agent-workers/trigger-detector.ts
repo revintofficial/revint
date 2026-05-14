@@ -26,12 +26,59 @@ import {
   classifyVelocityTrigger,
   computeReviewVelocity,
 } from "@/lib/lead-detail/review-velocity";
+import type { SwitchSignal } from "@/lib/sdr-brain/contracts";
 import type {
   AgentWorkerContext,
   AgentWorkerOutput,
   AgentWorkerRun,
   MemoryWrite,
 } from "./types";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Truth Layer v1 (T-C Evidence Calibration) — derive the absolute
+ * timestamp at which this trigger's urgency window closes.
+ *
+ * The window is `detectedAt + urgencyWindowDays * 1 day`. When the
+ * trigger has not fired (no `detectedAt`) or no urgency window was
+ * declared, the timer is undefined — return `null` so callers don't
+ * accidentally treat "no window" as "window is now". This is a pure
+ * helper exported for the worker's own persistence loop and the
+ * `trigger-detector-window.test.ts` regression suite.
+ */
+export function deriveWindowClosesAt(opts: {
+  detectedAt: Date | null | undefined;
+  urgencyWindowDays: number | null | undefined;
+}): Date | null {
+  if (!opts.detectedAt || !opts.urgencyWindowDays) return null;
+  if (!Number.isFinite(opts.urgencyWindowDays)) return null;
+  return new Date(opts.detectedAt.getTime() + opts.urgencyWindowDays * DAY_MS);
+}
+
+/**
+ * Read a `ReviewAnalysis.switchSignals` blob and yield only entries
+ * shaped per the `switch-signal@v1` contract. v1 stored a flat
+ * `string[]` here (legacy); Wave 1 T-C now persists
+ * `SwitchSignal[]` (master plan §3 T-C Option B). The reader
+ * tolerates both shapes — legacy strings simply fall out of the
+ * direction-aware paths because they have no `direction` field.
+ */
+export function readStructuredSwitchSignals(raw: unknown): SwitchSignal[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((s): s is SwitchSignal => {
+    if (s == null || typeof s !== "object") return false;
+    const obj = s as Record<string, unknown>;
+    return (
+      typeof obj.direction === "string" &&
+      (obj.direction === "inbound" ||
+        obj.direction === "outbound" ||
+        obj.direction === "comparison_neutral") &&
+      typeof obj.competitor === "string" &&
+      typeof obj.quote === "string"
+    );
+  });
+}
 
 interface DetectedTrigger {
   type: LeadTriggerType;
@@ -381,26 +428,51 @@ export const run: AgentWorkerRun = async (
     }
   }
 
-  // ---- Rule B: COMPETITOR_PRESSURE from SalesOpportunity.reasonCodes ----
-  if (lead.salesOpportunity) {
+  // ---- Rule B: COMPETITOR_PRESSURE — gated on outbound switch signal ----
+  //
+  // Truth Layer v1 (T-C, master plan §3) — the rule used to fire on
+  // any matching `SalesOpportunity.reasonCodes` row. That over-fired
+  // because reasonCodes catch the *theoretical* competitive landscape,
+  // not the *observed* customer-defection signal. Per the new gate
+  // (master plan §3 T-C bullet 3), COMPETITOR_PRESSURE only fires
+  // when at least one switch signal has `direction = outbound` — i.e.
+  // a real reviewer left the prospect's brand. Inbound signals
+  // ("way better than the place I used to go") are POSITIVE intent
+  // signals, not threats; firing on them mis-routed openers into
+  // defensive framing on leads that were actually winning.
+  //
+  // The reasonCodes match still acts as the strength gate (the
+  // SalesOpportunity scorer's ICP narrative justifies the 65/0.7
+  // severity/confidence pair); without an outbound switch signal we
+  // skip entirely — no quiet-degrade fallback.
+  const ssRaw = lead.reviewAnalysis?.switchSignals;
+  const structuredSwitchSignals = readStructuredSwitchSignals(ssRaw);
+  const outboundSignals = structuredSwitchSignals.filter(
+    (s) => s.direction === "outbound",
+  );
+  if (lead.salesOpportunity && outboundSignals.length > 0) {
     const codes = Array.isArray(lead.salesOpportunity.reasonCodes)
       ? (lead.salesOpportunity.reasonCodes as string[])
       : [];
     const competitorPatterns = /(HIGH_RATING_WEAK_SITE|COMPETITOR|MARKET_PRESSURE|LOW_DIFFERENTIATION)/i;
     const matched = codes.filter((c) => competitorPatterns.test(c));
     if (matched.length > 0) {
+      const topOutbound = outboundSignals[0];
       detected.push({
         type: "COMPETITOR_PRESSURE",
         severity: 65,
         confidence: 0.7,
         evidence: {
-          source: "SalesOpportunity.reasonCodes",
+          source: "SalesOpportunity.reasonCodes+SwitchSignal.outbound",
           refId: lead.salesOpportunity.id,
           quote: matched.join(", "),
           matchedCodes: matched,
+          outboundCompetitor: topOutbound.competitor,
+          outboundQuote: topOutbound.quote.slice(0, 200),
+          outboundCount: outboundSignals.length,
         },
         impactPrediction:
-          "Operator likely benchmarking against a stronger neighbour — lead with differentiation angle.",
+          "Reviewer(s) explicitly left the operator for a competitor — opener leads with the defection narrative, not generic differentiation.",
         urgencyWindowDays: URGENCY_WINDOW.COMPETITOR_PRESSURE,
       });
     }
@@ -781,6 +853,33 @@ Return JSON only.`,
         });
       }
 
+      // Truth Layer v1 (T-C) — derive the absolute `windowClosesAt`
+      // timestamp from the trigger's evidence anchor and stamp it
+      // onto the persisted `evidence` blob. The schema delta register
+      // (`prisma/deltas/truth-layer-v1.md` row W1-T-C-001) keeps this
+      // off the relational schema for now — Option B is "Json shape
+      // change, no DDL". When an SDR opens the lead detail surface
+      // post-Wave-1, the consumer reads `evidence.windowClosesAt`
+      // directly without recomputing from `detectedAt`.
+      const detectedAt = new Date();
+      const windowClosesAt = deriveWindowClosesAt({
+        detectedAt,
+        urgencyWindowDays: t.urgencyWindowDays,
+      });
+      const evidenceWithWindow: Record<string, unknown> = {
+        ...(t.evidence as Record<string, unknown>),
+        windowClosesAt: windowClosesAt ? windowClosesAt.toISOString() : null,
+      };
+      logger.info("truth.window_timer.derived", {
+        leadId: lead.id,
+        workspaceId,
+        triggerType: t.type,
+        source: "trigger_evidence",
+        detectedAt: detectedAt.toISOString(),
+        urgencyWindowDays: t.urgencyWindowDays,
+        windowClosesAt: windowClosesAt ? windowClosesAt.toISOString() : null,
+      });
+
       if (existing) {
         // Refresh `detectedAt` + confidence/severity/evidence so the
         // surface that orders by `detectedAt DESC` still treats this
@@ -789,10 +888,10 @@ Return JSON only.`,
         await prisma.leadTrigger.update({
           where: { id: existing.id },
           data: {
-            detectedAt: new Date(),
+            detectedAt,
             severity: t.severity,
             confidence: t.confidence,
-            evidence: t.evidence as unknown as Prisma.InputJsonValue,
+            evidence: evidenceWithWindow as unknown as Prisma.InputJsonValue,
             impactPrediction: t.impactPrediction ?? null,
             urgencyWindowDays: t.urgencyWindowDays,
           },
@@ -807,7 +906,8 @@ Return JSON only.`,
             type: t.type,
             severity: t.severity,
             confidence: t.confidence,
-            evidence: t.evidence as unknown as Prisma.InputJsonValue,
+            detectedAt,
+            evidence: evidenceWithWindow as unknown as Prisma.InputJsonValue,
             impactPrediction: t.impactPrediction ?? null,
             urgencyWindowDays: t.urgencyWindowDays,
           },

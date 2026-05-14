@@ -1,0 +1,130 @@
+# sentry/truth-layer-alerts.yaml
+#
+# Canonical, version-controlled Sentry alert rules for the Truth Layer
+# v1 master pipeline. T-H Observability owns this file. See README.md
+# for the schema choices, applicability, and how to sync.
+#
+# Each rule is independently routable (`notify` block). Aggregation
+# fingerprints come from `truthFingerprint()` in
+# `src/lib/sdr-brain/error-catalog.ts` so Sentry groups by typed code,
+# not by stack trace.
+
+schemaVersion: 1
+project: leadac-ai
+owner: T-H Observability
+environment: production
+
+# Metric/event data sources Sentry should pull from. The rules below
+# reference these by id. A future sync script wires them into the
+# Sentry "Source" abstraction (Performance metrics, Issues, custom
+# webhook from PostHog, etc.).
+sources:
+  - id: posthog-events
+    kind: posthog
+    description: >
+      PostHog events emitted via `track()` in
+      `src/lib/lead-detail/telemetry.ts`. Forwarded into Sentry via
+      the PostHog → Sentry integration (or a webhook bridge if the
+      integration is disabled for the workspace).
+  - id: sentry-issues
+    kind: sentry
+    description: >
+      Native Sentry issues, fingerprinted by `truthFingerprint()`.
+      The first fingerprint segment is always `truth-layer`; the
+      second is the typed `TruthErrorCode`.
+
+alerts:
+  # -----------------------------------------------------------------
+  # 1. Severity normalization regression
+  # -----------------------------------------------------------------
+  - id: truth-severity-normalization-drop
+    name: "Truth Layer · Severity normalization regression"
+    severity: critical
+    enabled: true
+    source: posthog-events
+    description: >
+      Catches the failure mode where the normalization pipeline starts
+      flattening severity (e.g. the calibration table got out of sync,
+      or the normalizer started returning zero). A >50% drop in the
+      MEDIAN of `normalizedSeverity` over the last 1h vs. the trailing
+      24h baseline triggers. Median is used instead of mean because
+      severity is bimodal — mean would mask the regression.
+    metric:
+      kind: median
+      event: truth.severity.normalized
+      property: normalizedSeverity
+    window: 1h
+    baselineWindow: 24h
+    condition:
+      type: relative_drop
+      threshold: 0.5
+      direction: below
+    notify:
+      channels:
+        - sentry-issue
+        - slack:#truth-layer-alerts
+      runbook: docs/runbooks/truth-severity-regression.md
+
+  # -----------------------------------------------------------------
+  # 2. New / spiking TruthLayerError code
+  # -----------------------------------------------------------------
+  - id: truth-error-code-spike
+    name: "Truth Layer · TruthLayerError code spike"
+    severity: high
+    enabled: true
+    source: sentry-issues
+    description: >
+      Any `TruthLayerError.code` (matched by fingerprint segment 1 ==
+      "truth-layer") appearing more than 10 times in a 1-hour window
+      fires this alert. Catches both (a) a brand-new code from a
+      freshly-deployed track and (b) a known code unexpectedly going
+      viral. The fingerprint is `truthFingerprint(code, scope?)`
+      from `src/lib/sdr-brain/error-catalog.ts`.
+    metric:
+      kind: count
+      filter:
+        fingerprint_prefix: ["truth-layer"]
+        group_by:
+          - "fingerprint[1]" # the TruthErrorCode
+    window: 1h
+    condition:
+      type: threshold
+      threshold: 10
+      direction: above
+    notify:
+      channels:
+        - sentry-issue
+        - slack:#truth-layer-alerts
+      runbook: docs/runbooks/truth-error-spike.md
+
+  # -----------------------------------------------------------------
+  # 3. Locale workspace/lead mismatch surge
+  # -----------------------------------------------------------------
+  - id: truth-locale-mismatch-rate
+    name: "Truth Layer · Locale mismatch rate"
+    severity: warning
+    enabled: true
+    source: posthog-events
+    description: >
+      Warns when `truth.locale.workspace_lead_mismatch` exceeds 5% of
+      total `truth.locale.resolved` over a 1h rolling window. This is
+      a rate alert, not a count alert, so a low-traffic period
+      doesn't suppress the signal. A spike here usually means a
+      country-detector regression or a workspace default locale was
+      changed by accident.
+    metric:
+      kind: rate
+      numerator:
+        event: truth.locale.workspace_lead_mismatch
+      denominator:
+        event: truth.locale.resolved
+    window: 1h
+    condition:
+      type: threshold
+      threshold: 0.05
+      direction: above
+    notify:
+      channels:
+        - sentry-issue
+        - slack:#truth-layer-alerts
+      runbook: docs/runbooks/truth-locale-mismatch.md

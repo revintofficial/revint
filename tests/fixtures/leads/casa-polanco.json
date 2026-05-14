@@ -1,0 +1,85 @@
+{
+  "$schema": "../fixture-lead.schema.json",
+  "fixtureId": "casa-polanco",
+  "name": "Casa Polanco",
+  "description": "Mexico City fine-dining — regression baseline. Has phone, has website, has owner replies, has switch signals. NBA must NOT change post-Truth-Layer.",
+  "_purpose": [
+    "T-A: NBA stays at current decision (no gate fires).",
+    "T-B: country=MX → es-ES locale.",
+    "T-C: '5 negs / 200 reviews' with 'cambiamos a Resy' switch signal → outbound direction, COMPETITOR_PRESSURE eligible.",
+    "T-D: 2 quoted painPoints + 1 hypothesis (model-inferred from rating drop).",
+    "T-F: avoidanceTopics MUST NOT include 'online_reservations' if recommendedPackage.features includes it."
+  ],
+  "lead": {
+    "id": "fixture_casa_polanco",
+    "workspaceId": "fixture_workspace_en",
+    "placeId": "ChIJfixture_casa",
+    "businessName": "Casa Polanco",
+    "formattedAddress": "Av. Presidente Masaryk 421, Polanco, 11550 Ciudad de México, México",
+    "borough": "Polanco",
+    "phone": "+52 55 1234 5678",
+    "websiteUrl": "https://casapolanco.example",
+    "hasWebsite": true,
+    "websiteVerificationStatus": "confirmed_present",
+    "googleMapsUri": "https://maps.google.com/?cid=fixture_casa",
+    "rating": 4.3,
+    "reviewCount": 200,
+    "businessStatus": "OPERATIONAL",
+    "primaryType": "restaurant",
+    "priceLevel": 4,
+    "country": "MX",
+    "nicheSlug": "fnb",
+    "subNicheSlug": "fnb-fine-dining",
+    "icpFitScore": 78,
+    "salesConfidence": 71
+  },
+  "workspace": {
+    "id": "fixture_workspace_en",
+    "name": "Test EN Agency",
+    "country": "US",
+    "defaultLocale": "en-US",
+    "niche": "RESTAURANT_TECH"
+  },
+  "reviewAnalysis": {
+    "reviewsAnalyzedCount": 50,
+    "weaknessKpis": [
+      { "label": "reservation friction", "count": 6, "percent": 60 }
+    ],
+    "strengthKpis": [
+      { "label": "tasting menu", "count": 22, "percent": 88 }
+    ],
+    "sentimentBreakdown": { "positive": 0.78, "neutral": 0.14, "negative": 0.08 },
+    "painPhrases": ["hard to book", "no online reservations"],
+    "switchSignals": [
+      "tuvimos que llamar 4 veces, ahora con Resy es instantáneo (en otros lugares)"
+    ],
+    "leadScore": 64,
+    "_negCount": 5,
+    "_totalCount": 200,
+    "_ownerReplyExample": "Gracias por su comentario. Estamos trabajando en mejorar nuestro sistema de reservas — pronto integraremos OpenTable."
+  },
+  "triggers": [
+    {
+      "type": "RATING_DROP",
+      "severity": 60,
+      "confidence": 0.8,
+      "detectedAt": "2026-04-20T00:00:00Z",
+      "urgencyWindowDays": 30
+    }
+  ],
+  "stakeholders": [
+    {
+      "isEconomicBuyer": true,
+      "championLikelihood": 70,
+      "influence": 80
+    }
+  ],
+  "websiteVerificationSources": [
+    {
+      "name": "google_business_field",
+      "result": "present",
+      "url": "https://casapolanco.example",
+      "checkedAt": "2026-05-14T09:00:00Z"
+    }
+  ]
+}

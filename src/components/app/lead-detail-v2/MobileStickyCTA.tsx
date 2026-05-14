@@ -53,6 +53,11 @@ interface CTAButtonProps {
   href?: string;
   disabled?: boolean;
   primary?: boolean;
+  /** Set to "dialog" for buttons that open a BottomSheet. */
+  hasPopup?: "dialog";
+  /** Mirrors the open state of the popup so screen readers can announce it. */
+  expanded?: boolean;
+  testId?: string;
 }
 
 function CTAButton({
@@ -62,16 +67,21 @@ function CTAButton({
   href,
   disabled,
   primary,
+  hasPopup,
+  expanded,
+  testId,
 }: CTAButtonProps): ReactNode {
   const sharedClass =
-    "flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium uppercase tracking-[0.06em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--leadac-500)/55 disabled:opacity-40";
+    "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 min-h-[44px] text-[10px] font-medium uppercase tracking-[0.06em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--leadac-500)/55 disabled:opacity-40";
 
   if (href) {
     return (
       <a
         href={href}
+        data-testid={testId}
         className={sharedClass}
         aria-label={label}
+        aria-disabled={disabled || undefined}
         style={{ color: primary ? "var(--leadac-500)" : "var(--leadac-text-2)" }}
       >
         {icon}
@@ -83,9 +93,12 @@ function CTAButton({
   return (
     <button
       type="button"
+      data-testid={testId}
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
+      aria-haspopup={hasPopup}
+      aria-expanded={hasPopup ? expanded : undefined}
       className={sharedClass}
       style={{ color: primary ? "var(--leadac-500)" : "var(--leadac-text-2)" }}
     >
@@ -114,6 +127,8 @@ export function MobileStickyCTA({
 
       <div
         data-testid="mobile-sticky-cta"
+        role="region"
+        aria-label="Lead quick actions"
         className="fixed inset-x-0 bottom-14 z-39 flex sm:hidden"
         style={{
           borderTop: "0.5px solid hsl(0 0% 100% / 0.08)",
@@ -124,6 +139,7 @@ export function MobileStickyCTA({
         }}
       >
         <CTAButton
+          testId="mobile-cta-dial"
           icon={<Phone className="h-5 w-5" strokeWidth={2} />}
           label={copy.dial}
           href={phone ? `tel:${phone}` : undefined}
@@ -142,6 +158,7 @@ export function MobileStickyCTA({
         />
 
         <CTAButton
+          testId="mobile-cta-voice-note"
           icon={<Mic className="h-5 w-5" strokeWidth={2} />}
           label={copy.voiceNote}
           onClick={onVoiceNote}
@@ -158,9 +175,12 @@ export function MobileStickyCTA({
         />
 
         <CTAButton
+          testId="mobile-cta-more"
           icon={<MoreHorizontal className="h-5 w-5" strokeWidth={2} />}
           label={copy.more}
           onClick={() => setMoreOpen(true)}
+          hasPopup="dialog"
+          expanded={moreOpen}
         />
       </div>
 

@@ -185,7 +185,14 @@ describe("TRIGGER_DETECTOR — RATING_DROP rolling-window rule", () => {
 });
 
 describe("TRIGGER_DETECTOR — COMPETITOR_PRESSURE", () => {
-  it("fires when SalesOpportunity.reasonCodes contains HIGH_RATING_WEAK_SITE", async () => {
+  it("fires when reasonCodes match AND an outbound switch signal is present", async () => {
+    // Truth Layer v1 (T-C, master plan §3) — the rule now requires
+    // BOTH a matching reasonCode AND at least one structured switch
+    // signal with `direction = outbound`. reasonCodes confirm the
+    // ICP narrative; the outbound signal confirms a real reviewer
+    // actually defected (rather than just theoretical pressure).
+    // Wave-1 update of the legacy positive test: seed the
+    // ReviewAnalysis with an outbound signal so the gate opens.
     await runTriggerDetector(
       makeCtx({
         lead: {
@@ -194,6 +201,21 @@ describe("TRIGGER_DETECTOR — COMPETITOR_PRESSURE", () => {
             id: "so-3",
             reasonCodes: ["HIGH_RATING_WEAK_SITE", "PRICE_LEVEL_FIT"],
           } as unknown as never,
+          reviewAnalysis: {
+            id: "ra-3",
+            painPhrases: [],
+            sentimentBreakdown: { negative: 0 },
+            weaknessKpis: [],
+            switchSignals: [
+              {
+                competitor: "Other Place",
+                direction: "outbound",
+                quote: "we used to go but moved",
+                reviewId: "lead-3:switch:0",
+                severity: 50,
+              },
+            ],
+          } as unknown as never,
         },
       }),
     );
@@ -201,7 +223,7 @@ describe("TRIGGER_DETECTOR — COMPETITOR_PRESSURE", () => {
     expect(cp.length).toBeGreaterThan(0);
   });
 
-  it("does not fire for unrelated reason codes", async () => {
+  it("does not fire for unrelated reason codes (regardless of switch signals)", async () => {
     await runTriggerDetector(
       makeCtx({
         lead: {

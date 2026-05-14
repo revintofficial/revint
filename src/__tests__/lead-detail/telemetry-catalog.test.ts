@@ -55,6 +55,42 @@ const PLAN_CATALOG: ReadonlyArray<LeadDetailEventName> = [
   "lead_detail.perf.preliminary_to_paint",
   "lead_detail.perf.final_to_paint",
   "lead_detail.perf.first_decision_surface",
+  // -----------------------------------------------------------------
+  // Truth Layer v1 (Wave 0 catalog — master plan §2).
+  //
+  // V-L (Wave 1) is the Telemetry Catalog Steward for the lead detail
+  // surface and extends this list to match the Wave 0 pre-declared
+  // `truth.*` events. Adding a new `truth.*` row here without first
+  // adding it to `LeadDetailEventCatalog` (or vice versa) fails the
+  // "no unknown events" + "same length" assertions below — the test
+  // is the runtime ↔ compile-time guard PLAN §1.5 requires.
+  // -----------------------------------------------------------------
+  // T-A Decision Gates
+  "truth.decision_gate.contact_first_fired",
+  "truth.decision_gate.authority_first_fired",
+  "truth.icp_rozet.capped",
+  "truth.nba.decision_resolved",
+  // T-B Locale Gate
+  "truth.locale.resolved",
+  "truth.locale.workspace_lead_mismatch",
+  // T-C Evidence Calibration
+  "truth.severity.normalized",
+  "truth.switch_signal.direction_assigned",
+  "truth.window_timer.derived",
+  // T-D Brief Truth-Grounding
+  "truth.brief.pain_quoted",
+  "truth.brief.hypothesis_count",
+  "truth.brief.website_claim_blocked",
+  // T-E Website Verification
+  "truth.website.verify_started",
+  "truth.website.verify_completed",
+  // T-F NBA Hygiene
+  "truth.nba.avoidance_overlap_dropped",
+  "truth.nba.objection_source",
+  // T-G Surface Fidelity
+  "truth.surface.review_kpi_rendered",
+  // T-H Observability
+  "truth.observability.kill_switch_armed",
 ];
 
 describe("telemetry catalog — runtime ↔ compile parity", () => {

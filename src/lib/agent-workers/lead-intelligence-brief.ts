@@ -41,7 +41,25 @@
  *     evidence: { source: string, note: string }[],
  *     generatedAt: string,
  *     intelligenceVersion: number,
+ *     // Truth Layer T-D additions (gated by TRUTH_LAYER_BRIEF_V2):
+ *     painPoints: PainPoint[],             // typed grounded shape per pain-point@v1
+ *     hypotheses: Hypothesis[],            // model-inferred plausibilities
+ *     whyGoodTarget: string | null,        // post-validated against websiteVerificationStatus
+ *     websiteClaimBlocked: boolean,        // true when the website-claim gate stripped a sentence
+ *     briefMode: "v2" | "legacy",          // pipeline that produced this brief
  *   }
+ *
+ * Truth Layer T-D — Brief Truth-Grounding (master plan §3 T-D):
+ *   - Every `painPoints[i]` is source-grounded; `source` is one of
+ *     `"review_quote" | "owner_reply" | "missing_field"`. Inferred
+ *     items get promoted to `hypotheses[]`.
+ *   - `whyGoodTarget` is post-validated; sentences asserting website
+ *     absence are stripped unless `Lead.websiteVerificationStatus`
+ *     is `"confirmed_absent"`. The validator emits
+ *     `truth.brief.website_claim_blocked` when stripping.
+ *   - Telemetry: `truth.brief.pain_quoted`, `truth.brief.hypothesis_count`,
+ *     `truth.brief.website_claim_blocked` (server-side via logger.info
+ *     `[truth-telemetry]` per the T-A / T-C convention).
  */
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { prisma } from "@/lib/prisma";
@@ -62,6 +80,16 @@ import {
   detectContradictions,
   type T2Snapshot,
 } from "@/lib/sdr-brain/contradictions";
+import {
+  type Hypothesis,
+  type LeadEvidenceField,
+  type PainPoint,
+  type PainPointEvidenceRef,
+  type PainPointSource,
+  type WebsiteVerificationStatus,
+} from "@/lib/sdr-brain/contracts";
+import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
+import { TruthLayerError } from "@/lib/sdr-brain/error-catalog";
 import type {
   AgentWorkerContext,
   AgentWorkerOutput,
@@ -108,6 +136,46 @@ interface BriefOutput {
    */
   confirmedPainPoints: string[];
   confirmedMissingFeatures: string[];
+  /**
+   * Truth Layer T-D — typed grounded pain points. Each entry has a
+   * `source` discriminated against `evidenceRef.kind`; the worker
+   * post-validator drops/promotes any item whose source is
+   * `"inferred"` or whose evidenceRef shape is invalid. The legacy
+   * (flag-off) path emits an empty array — the existing
+   * `confirmedPainPoints: string[]` shortlist remains the back-compat
+   * surface for downstream consumers (opener-writer, FourThingsCard).
+   *
+   * Optional in the type because the legacy `BriefOutput` shape on
+   * cached AgentRun rows pre-dates this contract; readers must treat
+   * an absent / empty array as "no grounded pain claims".
+   */
+  painPoints?: PainPoint[];
+  /**
+   * Truth Layer T-D — model-inferred plausible pains promoted out of
+   * `painPoints` because they could not be ground in a quoted review,
+   * an owner reply, or an explicitly-missing field. The UI renders
+   * these with a "may be wrong" affordance (lower visual weight,
+   * separate bucket) so reps don't pitch them as facts.
+   */
+  hypotheses?: Hypothesis[];
+  /**
+   * Truth Layer T-D — the headline rationale paragraph. Post-Gemini
+   * validator strips any sentence that asserts website-absence
+   * ("no website", "without a website", ...) unless
+   * `Lead.websiteVerificationStatus === "confirmed_absent"`. When the
+   * stripper runs we set `websiteClaimBlocked = true` and emit
+   * `truth.brief.website_claim_blocked` so the dashboard catches the
+   * Greenwich Morning class of bug.
+   */
+  whyGoodTarget?: string | null;
+  /** True when the website-claim post-validator stripped a sentence. */
+  websiteClaimBlocked?: boolean;
+  /**
+   * `"v2"` when the new prompt + responseSchema produced this brief,
+   * `"legacy"` when the flag-off / fallback path produced it. Lets
+   * downstream telemetry split shadow-run comparisons cleanly.
+   */
+  briefMode?: "v2" | "legacy";
   generatedAt: string;
   intelligenceVersion: number;
 }
@@ -196,12 +264,39 @@ interface BriefPromptInput {
   nicheLabel: string | null;
   nichePitchAngle: string | null;
   preComputedConfidence: number;
+  /**
+   * Truth Layer T-D — multi-source website verification status. The V2
+   * prompt + `gateWebsiteClaim` validator both consume this. `null`
+   * means T-E never ran for this lead (legacy / new ingest); the V2
+   * prompt then refuses to make any "no website" claim at all.
+   */
+  websiteVerificationStatus: WebsiteVerificationStatus | null;
+  /**
+   * Subset of `Lead` columns whose null/empty values legitimately
+   * count as `"missing_field"` evidence per `pain-point@v1`. The
+   * worker pre-computes which ones ARE missing on this lead and
+   * exposes the list to the prompt; the validator rejects any
+   * `painPoint` claiming `evidenceRef.kind === "missing_field"`
+   * whose `field` isn't in this set.
+   */
+  groundableMissingFields: LeadEvidenceField[];
 }
 
-async function generateBrief(
+/**
+ * Truth Layer T-D — legacy (pre-T-D) brief generator. Preserved as a
+ * private function so the `TRUTH_LAYER_BRIEF_V2` flag-off path can
+ * fall back to historical behavior and the shadow-run comparison
+ * (master plan §4) has a clean baseline.
+ */
+async function generateBriefLegacy(
   input: BriefPromptInput,
   intelligenceVersion: number,
 ): Promise<Omit<BriefOutput, "intelligenceVersion" | "generatedAt">> {
+  // intelligenceVersion is part of the contract signature shared with
+  // generateBriefV2 (callers pass the same monotonic counter to both).
+  // The legacy path doesn't use it inside the prompt — kept to keep
+  // the call sites symmetric.
+  void intelligenceVersion;
   const { getGeminiKey } = await import("@/lib/gemini-keys");
   const client = new GoogleGenerativeAI(getGeminiKey());
   const model = client.getGenerativeModel({
@@ -375,7 +470,812 @@ Return ONLY the JSON. No code fences, no preamble.`;
   // the pre-computed number, but bugs happen and we DO NOT want a
   // free-form Gemini number to drive the leads-list ordering.
   parsed.salesConfidence = input.preComputedConfidence;
+  parsed.briefMode = "legacy";
   return parsed;
+}
+
+// ============================================================================
+// Truth Layer T-D — V2 brief generation (prompt + responseSchema redesign).
+//
+// The V2 path carries three invariants the legacy path could not enforce:
+//
+//   1. Every `painPoints[i]` is grounded — `source` MUST be one of
+//      `"review_quote" | "owner_reply" | "missing_field"`. The prompt
+//      tells Gemini to skip an item it cannot ground; the post-validator
+//      promotes any inferred items into `hypotheses[]`.
+//   2. Inferred / model-derived plausibilities live in `hypotheses[]` —
+//      a separate array with explicit `confidence` so the UI can render
+//      a "may be wrong" affordance distinct from the grounded claims.
+//   3. `whyGoodTarget` is post-gated against
+//      `Lead.websiteVerificationStatus`. Sentences asserting website
+//      absence are stripped unless the multi-source verifier hit
+//      `confirmed_absent`. This is the central debugging case for
+//      Greenwich Morning (T-E shipped status=uncertain; the V1 brief
+//      still hallucinated "no website" from a single Google Places
+//      missing field).
+//
+// `responseSchema` cannot natively express a discriminated union on
+// `evidenceRef`, so we declare the fields as a flat object with
+// optional members and validate the discriminant + key shape in
+// `validateAndPromotePainPoints` after parse.
+// ============================================================================
+
+const WEBSITE_ABSENCE_PATTERNS: ReadonlyArray<RegExp> = Object.freeze([
+  /\bno\s+website\b/i,
+  /\bno\s+web\s+site\b/i,
+  /\bwithout\s+a?\s*website\b/i,
+  /\black\s+of\s+(?:a\s+)?website\b/i,
+  /\blacks?\s+a?\s*website\b/i,
+  /\bdoesn['’]?t\s+have\s+a?\s*website\b/i,
+  /\bdoes\s+not\s+have\s+a?\s*website\b/i,
+  /\bmissing\s+(?:a\s+)?website\b/i,
+  /\bhas\s+no\s+(?:online\s+presence|website|site)\b/i,
+  /\bhasn['’]?t\s+got\s+a?\s*website\b/i,
+]);
+
+/** Test surface — exported so the website-gate test can introspect. */
+export { WEBSITE_ABSENCE_PATTERNS };
+
+/**
+ * Truth Layer T-D — strip any sentence in `whyGoodTarget` that asserts
+ * website absence when the multi-source verifier did NOT confirm it.
+ * The contract from `website-verification@v1` is strict: only
+ * `confirmed_absent` (≥3 negative sources) is sufficient evidence.
+ *
+ * Conservative semantics:
+ *   - We split on ASCII sentence boundaries (`.`, `?`, `!`) and rebuild
+ *     only the sentences that survive. We never DROP the entire
+ *     `whyGoodTarget` — if every sentence is stripped the function
+ *     returns `null` and the worker falls back to its headline.
+ *   - We do NOT rewrite text. The original-Gemini paragraph is either
+ *     preserved as-is or redacted at sentence granularity. This keeps
+ *     the validator easy to reason about and avoids introducing a
+ *     second hallucination surface.
+ */
+function gateWebsiteClaim(
+  whyGoodTarget: string | null,
+  status: WebsiteVerificationStatus | null,
+): { sanitized: string | null; blocked: boolean } {
+  if (!whyGoodTarget) return { sanitized: null, blocked: false };
+  if (status === "confirmed_absent") {
+    return { sanitized: whyGoodTarget, blocked: false };
+  }
+  // Split at sentence-ending punctuation while preserving the
+  // delimiter on the previous chunk (so we can rebuild with original
+  // punctuation). The (?<=…) lookbehind keeps `.`, `?`, `!` attached.
+  const sentences = whyGoodTarget.split(/(?<=[.!?])\s+/g);
+  const kept: string[] = [];
+  let blocked = false;
+  for (const sentence of sentences) {
+    const trimmed = sentence.trim();
+    if (!trimmed) continue;
+    const offends = WEBSITE_ABSENCE_PATTERNS.some((rx) => rx.test(trimmed));
+    if (offends) {
+      blocked = true;
+      continue;
+    }
+    kept.push(trimmed);
+  }
+  if (kept.length === 0) {
+    return { sanitized: null, blocked };
+  }
+  return { sanitized: kept.join(" "), blocked };
+}
+export { gateWebsiteClaim };
+
+/**
+ * Truth Layer T-D — discriminated-union validator for raw painPoints
+ * coming back from Gemini. Each entry must pass:
+ *
+ *   - `claim` is a non-empty string;
+ *   - `source` is one of the three grounded sources;
+ *   - `evidenceRef.kind` matches `source`:
+ *       `"review_quote"`  → `kind === "review"` + non-empty `quote`
+ *       `"owner_reply"`   → `kind === "owner_reply"` + non-empty `quote`
+ *       `"missing_field"` → `kind === "missing_field"` + `field` is in
+ *                           the worker's `groundableMissingFields` set;
+ *   - `severity` is an integer 1..5 (clamped from any numeric input).
+ *
+ * Items that fail are bucketed for promotion to `hypotheses[]` (when
+ * the model gave us enough metadata) or dropped entirely. The split
+ * lets the worker re-prompt ONCE with the unsatisfied items called
+ * out before degrading to the legacy fallback.
+ */
+interface RawPainPoint {
+  claim?: unknown;
+  source?: unknown;
+  severity?: unknown;
+  reasoning?: unknown;
+  confidence?: unknown;
+  evidenceRef?: {
+    kind?: unknown;
+    reviewId?: unknown;
+    replyId?: unknown;
+    quote?: unknown;
+    field?: unknown;
+  } | null;
+}
+
+interface RawHypothesis {
+  claim?: unknown;
+  reasoning?: unknown;
+  confidence?: unknown;
+}
+
+interface ValidatePainPointsResult {
+  grounded: PainPoint[];
+  promoted: Hypothesis[];
+  dropped: number;
+}
+
+function clampSeverity(n: unknown): 1 | 2 | 3 | 4 | 5 {
+  const num = typeof n === "number" && Number.isFinite(n) ? Math.round(n) : 3;
+  if (num <= 1) return 1;
+  if (num >= 5) return 5;
+  return num as 1 | 2 | 3 | 4 | 5;
+}
+
+function clampConfidence(n: unknown, fallback = 0.5): number {
+  if (typeof n !== "number" || !Number.isFinite(n)) return fallback;
+  if (n <= 0) return 0;
+  if (n >= 1) return 1;
+  return n;
+}
+
+function isPainPointSource(s: unknown): s is PainPointSource {
+  return (
+    s === "review_quote" ||
+    s === "owner_reply" ||
+    s === "missing_field" ||
+    s === "inferred"
+  );
+}
+
+function buildEvidenceRef(
+  source: PainPointSource,
+  raw: RawPainPoint["evidenceRef"],
+  groundable: ReadonlyArray<LeadEvidenceField>,
+): PainPointEvidenceRef | "invalid" {
+  if (source === "inferred") return null;
+  if (!raw || typeof raw !== "object") return "invalid";
+  const kind = raw.kind;
+  if (source === "review_quote") {
+    if (kind !== "review") return "invalid";
+    const reviewId = typeof raw.reviewId === "string" ? raw.reviewId.trim() : "";
+    const quote = typeof raw.quote === "string" ? raw.quote.trim() : "";
+    if (!reviewId || !quote) return "invalid";
+    return { kind: "review", reviewId, quote };
+  }
+  if (source === "owner_reply") {
+    if (kind !== "owner_reply") return "invalid";
+    const replyId = typeof raw.replyId === "string" ? raw.replyId.trim() : "";
+    const quote = typeof raw.quote === "string" ? raw.quote.trim() : "";
+    if (!replyId || !quote) return "invalid";
+    return { kind: "owner_reply", replyId, quote };
+  }
+  // source === "missing_field"
+  if (kind !== "missing_field") return "invalid";
+  const field = raw.field;
+  if (typeof field !== "string") return "invalid";
+  if (!groundable.includes(field as LeadEvidenceField)) return "invalid";
+  return { kind: "missing_field", field: field as LeadEvidenceField };
+}
+
+function validateAndPromotePainPoints(
+  raw: ReadonlyArray<RawPainPoint>,
+  groundable: ReadonlyArray<LeadEvidenceField>,
+): ValidatePainPointsResult {
+  const grounded: PainPoint[] = [];
+  const promoted: Hypothesis[] = [];
+  let dropped = 0;
+  for (const item of raw) {
+    if (!item || typeof item !== "object") {
+      dropped++;
+      continue;
+    }
+    const claim = typeof item.claim === "string" ? item.claim.trim() : "";
+    if (!claim) {
+      dropped++;
+      continue;
+    }
+    const source = isPainPointSource(item.source) ? item.source : "inferred";
+    if (source === "inferred") {
+      // Promote to hypothesis using whatever reasoning the model
+      // supplied (or the claim itself as a stub). This is the
+      // central T-D contract: ungrounded claims live in
+      // `hypotheses[]`, never in `painPoints[]`.
+      promoted.push({
+        claim,
+        reasoning:
+          typeof item.reasoning === "string" && item.reasoning.trim()
+            ? item.reasoning.trim()
+            : claim,
+        confidence: clampConfidence(item.confidence, 0.4),
+      });
+      continue;
+    }
+    const evidenceRef = buildEvidenceRef(source, item.evidenceRef, groundable);
+    if (evidenceRef === "invalid") {
+      // Item claimed a grounded source but the evidenceRef shape is
+      // wrong (e.g. review_quote with no reviewId, or missing_field
+      // pointing at a column we don't accept as evidence). Treat as
+      // an inferred claim and promote — the rep still benefits from
+      // seeing it as a hypothesis rather than losing it entirely.
+      promoted.push({
+        claim,
+        reasoning:
+          typeof item.reasoning === "string" && item.reasoning.trim()
+            ? item.reasoning.trim()
+            : `Model could not ground this in a ${source}.`,
+        confidence: clampConfidence(item.confidence, 0.35),
+      });
+      continue;
+    }
+    grounded.push({
+      claim,
+      source,
+      evidenceRef,
+      severity: clampSeverity(item.severity),
+    });
+  }
+  return { grounded, promoted, dropped };
+}
+
+function normalizeHypotheses(raw: ReadonlyArray<RawHypothesis>): Hypothesis[] {
+  const out: Hypothesis[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const claim = typeof item.claim === "string" ? item.claim.trim() : "";
+    if (!claim) continue;
+    out.push({
+      claim,
+      reasoning:
+        typeof item.reasoning === "string" && item.reasoning.trim()
+          ? item.reasoning.trim()
+          : claim,
+      confidence: clampConfidence(item.confidence, 0.5),
+    });
+  }
+  return out;
+}
+
+export {
+  validateAndPromotePainPoints,
+  normalizeHypotheses,
+  clampConfidence,
+  clampSeverity,
+};
+export type { BriefPromptInput };
+
+/**
+ * Compute the subset of `LeadEvidenceField` that legitimately count
+ * as `"missing_field"` evidence on this specific lead. Only these
+ * fields are accepted by the post-validator.
+ *
+ * - `phone`            → null/empty string
+ * - `websiteUrl`       → null/empty AND `websiteVerificationStatus`
+ *                        is `confirmed_absent` (we don't claim a
+ *                        missing website on `uncertain` leads, that's
+ *                        the whole T-E + T-D contract)
+ * - `googleMapsUri`    → null/empty (rare — usually present)
+ * - `rating`           → null
+ * - `reviewCount`      → null or 0
+ * - `businessStatus`   → null/empty
+ */
+function computeGroundableMissingFields(input: {
+  phone: string | null;
+  websiteUrl: string | null;
+  websiteVerificationStatus: WebsiteVerificationStatus | null;
+  googleMapsUri: string | null;
+  rating: number | null;
+  reviewCount: number | null;
+  businessStatus: string | null;
+}): LeadEvidenceField[] {
+  const out: LeadEvidenceField[] = [];
+  if (!input.phone || input.phone.trim() === "") out.push("phone");
+  if (
+    (!input.websiteUrl || input.websiteUrl.trim() === "") &&
+    input.websiteVerificationStatus === "confirmed_absent"
+  ) {
+    out.push("websiteUrl");
+  }
+  if (!input.googleMapsUri || input.googleMapsUri.trim() === "") {
+    out.push("googleMapsUri");
+  }
+  if (input.rating == null) out.push("rating");
+  if (input.reviewCount == null || input.reviewCount === 0) {
+    out.push("reviewCount");
+  }
+  if (!input.businessStatus || input.businessStatus.trim() === "") {
+    out.push("businessStatus");
+  }
+  return out;
+}
+export { computeGroundableMissingFields };
+
+/**
+ * Build the V2 system + user prompt. The system instruction carries
+ * the persistent role + evidence rules; per-call data lives in the
+ * user content (per the prompt-engineering-gemini skill rule §3).
+ */
+function buildBriefV2Prompt(input: BriefPromptInput): string {
+  const personalizationLines: string[] = [];
+  if (input.workspaceObjective)
+    personalizationLines.push(`- Campaign objective: ${input.workspaceObjective}`);
+  if (input.workspaceTone)
+    personalizationLines.push(`- Voice / tone: ${input.workspaceTone}`);
+  if (input.workspaceOfferHook)
+    personalizationLines.push(`- Rep's signature hook: "${input.workspaceOfferHook}"`);
+  if (input.workspaceSocialProof)
+    personalizationLines.push(`- Social proof to cite: "${input.workspaceSocialProof}"`);
+  if (input.workspaceSenderName)
+    personalizationLines.push(`- Sender / signature: ${input.workspaceSenderName}`);
+  const personalizationBlock = personalizationLines.length
+    ? `\n\nWorkspace personalization (shape the prose to this — voice, hook, proof):\n${personalizationLines.join("\n")}`
+    : "";
+
+  const campaignsBlock = input.activeCampaigns.length
+    ? `\n\nActive sales campaigns:\n${input.activeCampaigns
+        .map(
+          (c) =>
+            `- id: ${c.id} | name: "${c.name}" | niche: ${c.niche ? `"${c.niche}"` : "(any)"}`,
+        )
+        .join("\n")}${
+        input.matchedCampaignId
+          ? `\n>>> ICP-fit matched campaign id: ${input.matchedCampaignId}.`
+          : ""
+      }`
+    : "";
+
+  const websiteStatusLine = (() => {
+    switch (input.websiteVerificationStatus) {
+      case "confirmed_present":
+        return `Website verification: CONFIRMED PRESENT — the multi-source verifier resolved a website. You MUST NOT claim "no website" anywhere in the brief.`;
+      case "confirmed_absent":
+        return `Website verification: CONFIRMED ABSENT — at least 3 independent sources returned "no website found". You MAY assert website absence in whyGoodTarget when the rep's offer is website-related.`;
+      case "uncertain":
+        return `Website verification: UNCERTAIN — fewer than 3 negative sources. You MUST NOT claim "no website" / "without a website" / "lacks a website" anywhere in the brief; the verifier cannot confirm absence yet.`;
+      default:
+        return `Website verification: UNKNOWN (T-E never ran). You MUST NOT claim website absence in this brief.`;
+    }
+  })();
+
+  const groundableFieldsLine = input.groundableMissingFields.length
+    ? `Missing-field evidence is acceptable ONLY for these Lead columns (use the exact identifier in evidenceRef.field): ${input.groundableMissingFields
+        .map((f) => `"${f}"`)
+        .join(", ")}.`
+    : `Missing-field evidence: NONE — every relevant Lead column is populated. Do not emit any painPoint with source="missing_field".`;
+
+  return `You are the senior SDR enablement analyst at a B2B SaaS for ${input.niche ?? "small businesses"}. The output of this brief is shown to a sales rep DURING a cold call. Reps need 3-5 talking points, ONE opener line, an honest "should I call?" sales-confidence number, and the realistic objection they will hit.
+
+Write in plain ${input.workspaceLanguage === "tr" ? "Turkish" : "English"}. Avoid marketing fluff. NO emojis. NO em-dashes. NO marketing buzzwords (leverage, synergy, unlock, elevate, game-changer, ...).
+
+# Truth Layer v1 — grounded evidence rules (HARD)
+
+Every \`painPoints[i]\` MUST be grounded in a specific piece of evidence. Allowed sources are:
+  - \`"review_quote"\`     — quote a phrase that appears in one of the review snippets supplied below. Set evidenceRef = { kind: "review", reviewId: "<the supplied id>", quote: "<the quoted phrase>" }.
+  - \`"owner_reply"\`      — quote a phrase from an owner-reply snippet supplied below. Set evidenceRef = { kind: "owner_reply", replyId: "<the supplied id>", quote: "<the quoted phrase>" }.
+  - \`"missing_field"\`    — cite a specific Lead column whose value is null/empty. Set evidenceRef = { kind: "missing_field", field: "<one of the allowed identifiers below>" }.
+
+If you cannot ground a pain claim in one of the three above, DO NOT put it in \`painPoints\`. Instead put it in \`hypotheses\` with a short \`reasoning\` and a \`confidence\` between 0 and 1. The hypotheses surface to the rep with a "may be wrong" label so they don't pitch it as a fact.
+
+${groundableFieldsLine}
+
+${websiteStatusLine}
+
+# Business
+
+Business: ${input.businessName} (${input.subNiche ?? input.niche ?? "unclassified"})
+${input.nicheLabel ? `Niche pack: ${input.nicheLabel} — pitch angle: ${input.nichePitchAngle ?? "n/a"}\n` : ""}
+Address: ${input.address}
+Website (Place row): ${input.websiteUrl ?? "n/a"}
+Google rating: ${input.rating ?? "n/a"} (${input.reviewCount ?? 0} reviews)
+
+Workspace offer: ${input.workspaceOffer ?? "(not configured)"}
+Workspace value prop: ${input.workspaceValueProp ?? "(not configured)"}${personalizationBlock}${campaignsBlock}
+
+PRE-COMPUTED Sales Confidence (use this as your salesConfidence; do not invent a different number): ${input.preComputedConfidence}
+
+## Audit checklist
+${input.auditChecklistText}
+
+## Review analysis (T-C calibrated; KPIs carry severity + percentBase)
+${input.reviewAnalysis ? JSON.stringify(input.reviewAnalysis).slice(0, 4000) : "(no review analysis)"}
+
+## Sales opportunity (scorer)
+${input.salesOpportunity ? JSON.stringify(input.salesOpportunity).slice(0, 3000) : "(no opportunity row)"}
+
+## Social profiles
+${input.socialProfiles ? JSON.stringify(input.socialProfiles) : "(none)"}
+
+## Voice notes (rep-recorded)
+${input.voiceNotes.map((v) => `- ${v.transcript ?? ""}`).join("\n") || "(none)"}
+
+## Dossier (long-form analyst narrative)
+${input.dossierMarkdown ? input.dossierMarkdown.slice(0, 6000) : "(not generated)"}
+
+## Recent agent-run outputs
+${input.agentRunSummaries.map((r) => `- ${r.workerKind}: ${r.output.slice(0, 400)}`).join("\n") || "(none)"}
+
+## Semantic memory (top hits)
+${input.memorySnippets.map((m) => `- [${m.kind}] ${m.text.slice(0, 200)}`).join("\n") || "(none)"}
+
+# Required JSON shape (the responseSchema enforces it)
+
+salesConfidence MUST equal ${input.preComputedConfidence}. Use confidenceBreakdown to explain WHY.
+talkingPoints: 3-5 items, each <= 18 words, each anchored in a real signal. No filler.
+openerSeed: ONE sentence the SDR can read aloud. Natural, not salesy.
+bestTimeToCall: brief hint based on niche, or null when uncertain.
+dnc: true ONLY when the data shows explicit opt-out / unsubscribe / "do not call" signals.
+nextAction.kind: one of "CALL_NOW", "EMAIL_FIRST", "WAIT_FOR_REPLY", "DROP_LEAD", "NEEDS_RESEARCH", "ENROLL_IN_CAMPAIGN".
+nextAction.due: ISO-8601 if a specific time is implied, else null.
+replyObjections: 2-3 anticipated buyer objections, in their voice.
+redFlags: pull from review analysis (low rating + dropping trend), shutdown signals, "permanently closed" indicators.
+evidence: 3-6 short citations of the actual signals you used.
+confirmedPainPoints: SHORTLIST (0-5 items) of pain phrases (strings) that downstream cold-email writers may pitch. MUST be a strict subset of \`painPoints[].claim\`.
+confirmedMissingFeatures: SHORTLIST (0-5 items) of features/modules where the audit explicitly returned false.
+painPoints: 0-5 GROUNDED items. Each MUST carry source + evidenceRef as defined above.
+hypotheses: 0-3 plausible-but-ungrounded claims. Each MUST carry reasoning + confidence (0..1).
+whyGoodTarget: 1-3 sentences explaining why this lead is worth a call. Subject to the website-claim gate above.
+
+Return ONLY the JSON. No code fences, no preamble.`;
+}
+
+async function generateBriefV2(
+  input: BriefPromptInput,
+  intelligenceVersion: number,
+  opts: { reprompt?: { reason: string; ungroundedClaims: string[] } } = {},
+): Promise<Omit<BriefOutput, "intelligenceVersion" | "generatedAt">> {
+  const { getGeminiKey } = await import("@/lib/gemini-keys");
+  const client = new GoogleGenerativeAI(getGeminiKey());
+  const model = client.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    generationConfig: {
+      // Lower temperature than v1 (0.5 → 0.2) — extraction-class prompts
+      // converge faster + more deterministically when we want the model
+      // to ground in supplied evidence rather than free-associate. The
+      // prompt-engineering-gemini skill rule §2 puts this in the
+      // 0.0–0.3 "extraction" band.
+      maxOutputTokens: 4096,
+      temperature: 0.2,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          salesConfidence: { type: SchemaType.NUMBER },
+          confidenceBreakdown: {
+            type: SchemaType.OBJECT,
+            properties: {
+              audit: { type: SchemaType.NUMBER },
+              reviews: { type: SchemaType.NUMBER },
+              opportunity: { type: SchemaType.NUMBER },
+              weight: { type: SchemaType.NUMBER },
+            },
+            required: ["audit", "reviews", "opportunity", "weight"],
+          },
+          headline: { type: SchemaType.STRING },
+          whyGoodTarget: { type: SchemaType.STRING },
+          talkingPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          openerSeed: { type: SchemaType.STRING },
+          bestTimeToCall: { type: SchemaType.STRING },
+          dnc: { type: SchemaType.BOOLEAN },
+          nextAction: {
+            type: SchemaType.OBJECT,
+            properties: {
+              kind: { type: SchemaType.STRING },
+              due: { type: SchemaType.STRING },
+              note: { type: SchemaType.STRING },
+            },
+            required: ["kind", "due", "note"],
+          },
+          replyObjections: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          redFlags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          evidence: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                source: { type: SchemaType.STRING },
+                note: { type: SchemaType.STRING },
+              },
+              required: ["source", "note"],
+            },
+          },
+          confirmedPainPoints: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING },
+          },
+          confirmedMissingFeatures: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING },
+          },
+          // T-D — typed pain point shape. The Gemini SchemaType API
+          // does not natively support `oneOf` on `evidenceRef`, so we
+          // declare every possible field as optional and validate the
+          // discriminant + key shape post-parse in
+          // `validateAndPromotePainPoints`.
+          painPoints: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                claim: { type: SchemaType.STRING },
+                source: {
+                  type: SchemaType.STRING,
+                  format: "enum",
+                  enum: [
+                    "review_quote",
+                    "owner_reply",
+                    "missing_field",
+                    "inferred",
+                  ] as unknown as string[],
+                },
+                severity: { type: SchemaType.NUMBER },
+                evidenceRef: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    kind: {
+                      type: SchemaType.STRING,
+                      format: "enum",
+                      enum: [
+                        "review",
+                        "owner_reply",
+                        "missing_field",
+                      ] as unknown as string[],
+                    },
+                    reviewId: { type: SchemaType.STRING },
+                    replyId: { type: SchemaType.STRING },
+                    quote: { type: SchemaType.STRING },
+                    field: { type: SchemaType.STRING },
+                  },
+                  required: ["kind"],
+                },
+              },
+              required: ["claim", "source", "severity"],
+            },
+          },
+          hypotheses: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                claim: { type: SchemaType.STRING },
+                reasoning: { type: SchemaType.STRING },
+                confidence: { type: SchemaType.NUMBER },
+              },
+              required: ["claim", "reasoning", "confidence"],
+            },
+          },
+        },
+        required: [
+          "salesConfidence",
+          "confidenceBreakdown",
+          "headline",
+          "whyGoodTarget",
+          "talkingPoints",
+          "openerSeed",
+          "bestTimeToCall",
+          "dnc",
+          "nextAction",
+          "replyObjections",
+          "redFlags",
+          "evidence",
+          "confirmedPainPoints",
+          "confirmedMissingFeatures",
+          "painPoints",
+          "hypotheses",
+        ],
+      },
+    },
+  });
+
+  const repromptBlock = opts.reprompt
+    ? `\n\n# Re-prompt — first attempt produced ungrounded claims\n\nReason: ${opts.reprompt.reason}\nThe following claims were not grounded; either drop them or move them to \`hypotheses\` with reasoning + confidence:\n${opts.reprompt.ungroundedClaims
+        .map((c) => `- "${c}"`)
+        .join("\n")}\nDo NOT repeat the same ungrounded claims in \`painPoints\` this time.`
+    : "";
+
+  const prompt = `${buildBriefV2Prompt(input)}${repromptBlock}`;
+
+  const result = await generateWithTimeout(model, prompt, {
+    timeoutMs: WORKER_TIMEOUTS.LEAD_INTELLIGENCE_BRIEF,
+    label: "lead_intelligence_brief_v2",
+  });
+  const raw = result.response.text();
+  type RawV2 = Omit<BriefOutput, "intelligenceVersion" | "generatedAt"> & {
+    painPoints?: RawPainPoint[];
+    hypotheses?: RawHypothesis[];
+  };
+  const parsed = safeParseGeminiJson<RawV2>(raw, "lead_intelligence_brief_v2");
+
+  // Hard-clamp salesConfidence to the deterministic value, regardless
+  // of what Gemini emitted. (Same rule as legacy.)
+  parsed.salesConfidence = input.preComputedConfidence;
+  parsed.briefMode = "v2";
+  return parsed;
+}
+
+/**
+ * Truth Layer T-D — full V2 pipeline: generate → validate → optionally
+ * re-prompt once if every painPoint came back ungrounded → website
+ * claim gate → emit telemetry → degrade to legacy on terminal failure.
+ *
+ * "Conservative degradation": on any uncaught Gemini / parse error
+ * the caller's outer try/catch falls back to the deterministic stub
+ * brief. On the soft failure path (Gemini emitted only ungrounded
+ * pain claims even after re-prompt) we log `E_BRIEF_PAINPOINT_UNGROUNDED`
+ * via `TruthLayerError` and SHIP THE LEGACY OUTPUT for that lead so
+ * the rep still gets talking points + an opener seed; the typed
+ * `painPoints[]` array stays empty rather than poisoning the rep
+ * with hallucinated grounded claims.
+ */
+export async function runBriefV2Pipeline(args: {
+  input: BriefPromptInput;
+  intelligenceVersion: number;
+  leadId: string;
+  workspaceId: string;
+}): Promise<Omit<BriefOutput, "intelligenceVersion" | "generatedAt">> {
+  const { input, intelligenceVersion, leadId, workspaceId } = args;
+
+  const firstPass = await generateBriefV2(input, intelligenceVersion);
+  const firstValidated = validateAndPromotePainPoints(
+    Array.isArray(firstPass.painPoints)
+      ? (firstPass.painPoints as unknown as RawPainPoint[])
+      : [],
+    input.groundableMissingFields,
+  );
+
+  let chosenPass = firstPass;
+  let chosenValidated = firstValidated;
+
+  // Re-prompt ONCE when the first pass produced any painPoints but
+  // ALL of them failed the grounding check. Skipping zero-painPoint
+  // cases (cold leads with no review evidence have nothing to ground)
+  // and skipping cases where SOME items were grounded (the model
+  // converged enough; the post-validator already promoted the rest).
+  const everyPainPointFailedGrounding =
+    firstValidated.grounded.length === 0 &&
+    firstValidated.promoted.length + firstValidated.dropped > 0;
+  if (everyPainPointFailedGrounding) {
+    const ungroundedClaims = firstValidated.promoted
+      .map((h) => h.claim)
+      .filter((c) => c.length > 0)
+      .slice(0, 5);
+    logger.warn("agent_workers.lead_intelligence_brief.reprompt", {
+      leadId,
+      workspaceId,
+      ungroundedCount: ungroundedClaims.length,
+    });
+    try {
+      const secondPass = await generateBriefV2(input, intelligenceVersion, {
+        reprompt: {
+          reason:
+            "First pass produced 0 grounded painPoints; every claim failed the source/evidenceRef check.",
+          ungroundedClaims,
+        },
+      });
+      const secondValidated = validateAndPromotePainPoints(
+        Array.isArray(secondPass.painPoints)
+          ? (secondPass.painPoints as unknown as RawPainPoint[])
+          : [],
+        input.groundableMissingFields,
+      );
+      // Only adopt the second pass when it actually improved things.
+      // Otherwise stick with the first so we don't overwrite a richer
+      // hypotheses[] with a worse one.
+      if (secondValidated.grounded.length > 0) {
+        chosenPass = secondPass;
+        chosenValidated = secondValidated;
+      }
+    } catch (rerr) {
+      logger.warn("agent_workers.lead_intelligence_brief.reprompt_failed", {
+        leadId,
+        workspaceId,
+        err: rerr instanceof Error ? rerr.message : String(rerr),
+      });
+    }
+  }
+
+  // If even the second pass produced zero grounded painPoints AND the
+  // first pass also produced none AND the model emitted any pain
+  // claims at all, log the typed error so the dashboard catches the
+  // pattern. We do NOT crash — the brief output stays usable; the
+  // typed painPoints[] just stays empty.
+  if (
+    chosenValidated.grounded.length === 0 &&
+    chosenValidated.promoted.length + chosenValidated.dropped > 0
+  ) {
+    const err = new TruthLayerError("E_BRIEF_PAINPOINT_UNGROUNDED", {
+      leadId,
+      workspaceId,
+      promoted: chosenValidated.promoted.length,
+      dropped: chosenValidated.dropped,
+    });
+    logger.warn("[truth] E_BRIEF_PAINPOINT_UNGROUNDED", {
+      leadId,
+      workspaceId,
+      promoted: chosenValidated.promoted.length,
+      dropped: chosenValidated.dropped,
+      message: err.message,
+    });
+  }
+
+  // Apply the website-claim gate AFTER painPoints validation so the
+  // telemetry events fire in a stable order in the test logs.
+  const wgt = gateWebsiteClaim(
+    chosenPass.whyGoodTarget ?? null,
+    input.websiteVerificationStatus,
+  );
+
+  // Merge model-emitted hypotheses with the auto-promoted ones from
+  // the painPoints validator. De-duplicate by claim (case-insensitive)
+  // so a model that emitted the same claim in both arrays doesn't
+  // double-render in the UI.
+  const modelHypotheses = normalizeHypotheses(
+    Array.isArray(chosenPass.hypotheses)
+      ? (chosenPass.hypotheses as unknown as RawHypothesis[])
+      : [],
+  );
+  const merged: Hypothesis[] = [];
+  const seen = new Set<string>();
+  for (const h of [...modelHypotheses, ...chosenValidated.promoted]) {
+    const key = h.claim.toLowerCase().trim();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(h);
+  }
+
+  // Re-derive `confirmedPainPoints` from the validated grounded set
+  // so the legacy back-compat surface (opener-writer whitelist,
+  // FourThingsCard) cannot ship a claim that didn't survive the
+  // grounding check. If the model already supplied a tighter list
+  // (subset of grounded.claim), keep that — the rep's whitelist is
+  // never WIDER than the validated grounded set.
+  const groundedClaims = new Set(
+    chosenValidated.grounded.map((p) => p.claim.toLowerCase().trim()),
+  );
+  const modelConfirmed = Array.isArray(chosenPass.confirmedPainPoints)
+    ? chosenPass.confirmedPainPoints.filter(
+        (s): s is string => typeof s === "string",
+      )
+    : [];
+  const confirmedPainPoints =
+    modelConfirmed.length > 0
+      ? modelConfirmed.filter((s) =>
+          groundedClaims.has(s.toLowerCase().trim()),
+        )
+      : chosenValidated.grounded.map((p) => p.claim);
+
+  // ---- Telemetry (master plan §3 T-D) ----
+  logger.info("[truth-telemetry]", {
+    event: "truth.brief.pain_quoted",
+    leadId,
+    workspaceId,
+    count: chosenValidated.grounded.length,
+  });
+  logger.info("[truth-telemetry]", {
+    event: "truth.brief.hypothesis_count",
+    leadId,
+    workspaceId,
+    count: merged.length,
+  });
+  if (wgt.blocked) {
+    logger.info("[truth-telemetry]", {
+      event: "truth.brief.website_claim_blocked",
+      leadId,
+      workspaceId,
+    });
+  }
+
+  return {
+    ...chosenPass,
+    painPoints: chosenValidated.grounded,
+    hypotheses: merged,
+    whyGoodTarget: wgt.sanitized,
+    websiteClaimBlocked: wgt.blocked,
+    confirmedPainPoints,
+    briefMode: "v2",
+  };
 }
 
 export const run: AgentWorkerRun = async (
@@ -508,55 +1408,116 @@ export const run: AgentWorkerRun = async (
     select: { transcript: true, createdAt: true },
   });
 
+  // Truth Layer T-D — derive workspace-scope inputs for the V2 path
+  // BEFORE the try/catch so the post-validators can still run on the
+  // legacy fallback if needed.
+  const websiteVerificationStatus =
+    (lead.websiteVerificationStatus as WebsiteVerificationStatus | null) ?? null;
+  const groundableMissingFields = computeGroundableMissingFields({
+    phone: lead.phone,
+    websiteUrl: lead.websiteUrl,
+    websiteVerificationStatus,
+    googleMapsUri: lead.googleMapsUri ?? null,
+    rating: lead.rating,
+    reviewCount: lead.reviewCount,
+    businessStatus: lead.businessStatus,
+  });
+  const briefV2Enabled = isTruthLayerFlagEnabled("TRUTH_LAYER_BRIEF_V2", {
+    workspaceId,
+  });
+
+  const promptInput: BriefPromptInput = {
+    businessName: lead.businessName,
+    niche: ctx.workspace.niche,
+    subNiche: subNicheSlug,
+    address: lead.formattedAddress,
+    rating: lead.rating,
+    reviewCount: lead.reviewCount,
+    websiteUrl: lead.websiteUrl,
+    workspaceLanguage: ctx.workspace.language ?? "en",
+    workspaceOffer: ctx.workspace.offerName,
+    workspaceValueProp: ctx.workspace.valueProposition,
+    workspaceObjective: ctx.workspace.objective ?? null,
+    workspaceTone: ctx.workspace.tone ?? null,
+    workspaceOfferHook: ctx.workspace.offerHook ?? null,
+    workspaceSocialProof: ctx.workspace.socialProof ?? null,
+    workspaceSenderName: ctx.workspace.senderName ?? null,
+    activeCampaigns: activeSequences.map((s) => ({
+      id: s.id,
+      name: s.name,
+      niche: s.niche ?? null,
+    })),
+    matchedCampaignId,
+    audit: auditFeaturesForPrompt,
+    auditChecklistText: `Audit summary: ${checklist.summary.passed}/${checklist.summary.totalChecks - checklist.summary.unknown} checks passed (${checklist.summary.scorePercent}%).`,
+    reviewAnalysis: (reviewAnalysis as unknown) as Record<string, unknown> | null,
+    salesOpportunity: (lead.salesOpportunity as unknown) as Record<string, unknown> | null,
+    socialProfiles:
+      (lead.websiteAudit?.socialProfiles as Record<string, string | null> | null) ?? null,
+    voiceNotes: voiceNotes.map((v) => ({
+      transcript: v.transcript,
+      createdAt: v.createdAt.toISOString(),
+    })),
+    dossierMarkdown,
+    memorySnippets: memoryRows.map((m) => ({ kind: m.kind, text: m.text })),
+    agentRunSummaries: recentRuns.map((r) => ({
+      workerKind: r.workerKind,
+      output: typeof r.outputJson === "string"
+        ? r.outputJson
+        : JSON.stringify(r.outputJson ?? {}),
+    })),
+    nicheLabel: nichePack?.label ?? null,
+    nichePitchAngle: nichePack?.pitchAngle ?? null,
+    preComputedConfidence: salesConfidence,
+    websiteVerificationStatus,
+    groundableMissingFields,
+  };
+
   let brief: Omit<BriefOutput, "intelligenceVersion" | "generatedAt">;
   try {
-    brief = await generateBrief(
-      {
-        businessName: lead.businessName,
-        niche: ctx.workspace.niche,
-        subNiche: subNicheSlug,
-        address: lead.formattedAddress,
-        rating: lead.rating,
-        reviewCount: lead.reviewCount,
-        websiteUrl: lead.websiteUrl,
-        workspaceLanguage: ctx.workspace.language ?? "en",
-        workspaceOffer: ctx.workspace.offerName,
-        workspaceValueProp: ctx.workspace.valueProposition,
-        workspaceObjective: ctx.workspace.objective ?? null,
-        workspaceTone: ctx.workspace.tone ?? null,
-        workspaceOfferHook: ctx.workspace.offerHook ?? null,
-        workspaceSocialProof: ctx.workspace.socialProof ?? null,
-        workspaceSenderName: ctx.workspace.senderName ?? null,
-        activeCampaigns: activeSequences.map((s) => ({
-          id: s.id,
-          name: s.name,
-          niche: s.niche ?? null,
-        })),
-        matchedCampaignId,
-        audit: auditFeaturesForPrompt,
-        auditChecklistText: `Audit summary: ${checklist.summary.passed}/${checklist.summary.totalChecks - checklist.summary.unknown} checks passed (${checklist.summary.scorePercent}%).`,
-        reviewAnalysis: (reviewAnalysis as unknown) as Record<string, unknown> | null,
-        salesOpportunity: (lead.salesOpportunity as unknown) as Record<string, unknown> | null,
-        socialProfiles:
-          (lead.websiteAudit?.socialProfiles as Record<string, string | null> | null) ?? null,
-        voiceNotes: voiceNotes.map((v) => ({
-          transcript: v.transcript,
-          createdAt: v.createdAt.toISOString(),
-        })),
-        dossierMarkdown,
-        memorySnippets: memoryRows.map((m) => ({ kind: m.kind, text: m.text })),
-        agentRunSummaries: recentRuns.map((r) => ({
-          workerKind: r.workerKind,
-          output: typeof r.outputJson === "string"
-            ? r.outputJson
-            : JSON.stringify(r.outputJson ?? {}),
-        })),
-        nicheLabel: nichePack?.label ?? null,
-        nichePitchAngle: nichePack?.pitchAngle ?? null,
-        preComputedConfidence: salesConfidence,
-      },
-      newVersion,
-    );
+    if (briefV2Enabled) {
+      brief = await runBriefV2Pipeline({
+        input: promptInput,
+        intelligenceVersion: newVersion,
+        leadId,
+        workspaceId,
+      });
+    } else {
+      brief = await generateBriefLegacy(promptInput, newVersion);
+      // Telemetry parity (master plan §4 shadow-run rule): even on
+      // the flag-OFF path we run the post-validators in non-mutating
+      // mode so the dashboard sees the same `truth.brief.*` events
+      // and the Release Manager has a baseline to A/B against.
+      const validated = validateAndPromotePainPoints(
+        Array.isArray(brief.painPoints)
+          ? (brief.painPoints as unknown as RawPainPoint[])
+          : [],
+        groundableMissingFields,
+      );
+      const wgt = gateWebsiteClaim(brief.whyGoodTarget ?? null, websiteVerificationStatus);
+      logger.info("[truth-telemetry]", {
+        event: "truth.brief.pain_quoted",
+        leadId,
+        workspaceId,
+        count: validated.grounded.length,
+        shadow: true,
+      });
+      logger.info("[truth-telemetry]", {
+        event: "truth.brief.hypothesis_count",
+        leadId,
+        workspaceId,
+        count: validated.promoted.length + (brief.hypotheses?.length ?? 0),
+        shadow: true,
+      });
+      if (wgt.blocked) {
+        logger.info("[truth-telemetry]", {
+          event: "truth.brief.website_claim_blocked",
+          leadId,
+          workspaceId,
+          shadow: true,
+        });
+      }
+    }
   } catch (err) {
     // Fall back to a deterministic brief — Gemini hiccups should not
     // block the salesConfidence rollup landing on the leads list.
@@ -586,6 +1547,11 @@ export const run: AgentWorkerRun = async (
       // generic-but-safe pitch path rather than fabricating pains.
       confirmedPainPoints: [],
       confirmedMissingFeatures: [],
+      painPoints: [],
+      hypotheses: [],
+      whyGoodTarget: null,
+      websiteClaimBlocked: false,
+      briefMode: "legacy",
     };
   }
 

@@ -1,0 +1,291 @@
+{
+  "$schema": "https://leadac.local/schemas/posthog-dashboard.v1.json",
+  "schemaVersion": 1,
+  "name": "Truth Layer v1",
+  "slug": "truth-layer-v1",
+  "description": "Canonical observability dashboard for the Truth Layer v1 master pipeline. One tile per `truth.*` event emitted by Wave 1 tracks T-A through T-G. The T-H Observability track owns this file; do not add tiles without first adding the event name to `LEAD_DETAIL_EVENT_NAMES` and `LeadDetailEventCatalog` in `src/lib/lead-detail/telemetry.ts`. See `dashboards/README.md` for the schema choices and how to sync this file into PostHog.",
+  "owner": "T-H Observability",
+  "defaultTimeRange": "7d",
+  "defaultInterval": "day",
+  "tags": ["truth-layer", "v1", "wave-1"],
+  "sections": [
+    {
+      "id": "t-a-decision-gates",
+      "track": "T-A",
+      "title": "Decision Gates & ICP",
+      "description": "Contact-first / authority-first gate fires, ICP roset capping, and the resolved NBA decision type. Watch the `blockingGate` breakdown on `truth.nba.decision_resolved` for shifts in which gate dominates.",
+      "tiles": [
+        {
+          "id": "ta-contact-first",
+          "display_title": "Contact-first gate fired (per day)",
+          "event_name": "truth.decision_gate.contact_first_fired",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": null
+        },
+        {
+          "id": "ta-authority-first",
+          "display_title": "Authority-first gate fired (per day)",
+          "event_name": "truth.decision_gate.authority_first_fired",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": null
+        },
+        {
+          "id": "ta-icp-rozet-capped",
+          "display_title": "ICP roset capping rate",
+          "event_name": "truth.icp_rozet.capped",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": null,
+          "math": "total"
+        },
+        {
+          "id": "ta-nba-decision-resolved",
+          "display_title": "NBA decision resolved (by type)",
+          "event_name": "truth.nba.decision_resolved",
+          "chart_type": "bar",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": "type"
+        },
+        {
+          "id": "ta-nba-blocking-gate",
+          "display_title": "NBA blocking gate distribution",
+          "event_name": "truth.nba.decision_resolved",
+          "chart_type": "bar",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": "blockingGate"
+        }
+      ]
+    },
+    {
+      "id": "t-b-locale-gate",
+      "track": "T-B",
+      "title": "Locale Gate",
+      "description": "Lead-vs-workspace locale resolution and mismatch surface. The mismatch tile feeds the Sentry locale-spike alert.",
+      "tiles": [
+        {
+          "id": "tb-locale-resolved",
+          "display_title": "Locale resolved (by locale)",
+          "event_name": "truth.locale.resolved",
+          "chart_type": "bar",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": "locale"
+        },
+        {
+          "id": "tb-locale-source",
+          "display_title": "Locale resolution source",
+          "event_name": "truth.locale.resolved",
+          "chart_type": "bar",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": "source"
+        },
+        {
+          "id": "tb-locale-mismatch",
+          "display_title": "Workspace ↔ lead locale mismatch (count)",
+          "event_name": "truth.locale.workspace_lead_mismatch",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": null
+        }
+      ]
+    },
+    {
+      "id": "t-c-evidence-calibration",
+      "track": "T-C",
+      "title": "Evidence Calibration",
+      "description": "Severity normalization stream, competitor-switch direction labeling, and trigger window timer derivation source.",
+      "tiles": [
+        {
+          "id": "tc-severity-normalized-median",
+          "display_title": "Severity normalized (median)",
+          "event_name": "truth.severity.normalized",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "math": "median",
+          "math_property": "normalizedSeverity"
+        },
+        {
+          "id": "tc-severity-raw-median",
+          "display_title": "Severity raw (median, for baseline drift)",
+          "event_name": "truth.severity.normalized",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "math": "median",
+          "math_property": "rawSeverity"
+        },
+        {
+          "id": "tc-neg-ratio-avg",
+          "display_title": "Negative-review ratio (avg)",
+          "event_name": "truth.severity.normalized",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "math": "avg",
+          "math_property": "negRatio"
+        },
+        {
+          "id": "tc-switch-direction",
+          "display_title": "Switch signal direction (by direction)",
+          "event_name": "truth.switch_signal.direction_assigned",
+          "chart_type": "bar",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": "direction"
+        },
+        {
+          "id": "tc-window-timer-source",
+          "display_title": "Window timer source",
+          "event_name": "truth.window_timer.derived",
+          "chart_type": "bar",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": "source"
+        }
+      ]
+    },
+    {
+      "id": "t-d-brief-truth-grounding",
+      "track": "T-D",
+      "title": "Brief Truth-Grounding",
+      "description": "Pain-point quote coverage, hypothesis count distribution, and blocked website claims in the brief generator.",
+      "tiles": [
+        {
+          "id": "td-pain-quoted-avg",
+          "display_title": "Pain points quoted per brief (avg)",
+          "event_name": "truth.brief.pain_quoted",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "math": "avg",
+          "math_property": "count"
+        },
+        {
+          "id": "td-hypothesis-count-avg",
+          "display_title": "Hypothesis count per brief (avg)",
+          "event_name": "truth.brief.hypothesis_count",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "math": "avg",
+          "math_property": "count"
+        },
+        {
+          "id": "td-website-claim-blocked",
+          "display_title": "Brief website claim blocked (count)",
+          "event_name": "truth.brief.website_claim_blocked",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": null
+        }
+      ]
+    },
+    {
+      "id": "t-e-website-verification",
+      "track": "T-E",
+      "title": "Website Verification",
+      "description": "Verifier throughput (started vs completed), status distribution, and source coverage.",
+      "tiles": [
+        {
+          "id": "te-verify-started",
+          "display_title": "Website verify started",
+          "event_name": "truth.website.verify_started",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": null
+        },
+        {
+          "id": "te-verify-completed-status",
+          "display_title": "Website verify completed (by status)",
+          "event_name": "truth.website.verify_completed",
+          "chart_type": "bar",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": "status"
+        },
+        {
+          "id": "te-sources-checked-avg",
+          "display_title": "Sources checked per verification (avg)",
+          "event_name": "truth.website.verify_completed",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "math": "avg",
+          "math_property": "sourcesChecked"
+        }
+      ]
+    },
+    {
+      "id": "t-f-nba-hygiene",
+      "track": "T-F",
+      "title": "NBA Hygiene",
+      "description": "Avoidance / overlap topic drops and objection-source provenance for the next-best-action engine.",
+      "tiles": [
+        {
+          "id": "tf-avoidance-overlap-dropped",
+          "display_title": "NBA avoidance overlap dropped (count)",
+          "event_name": "truth.nba.avoidance_overlap_dropped",
+          "chart_type": "line",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": null
+        },
+        {
+          "id": "tf-objection-source",
+          "display_title": "NBA objection source provenance",
+          "event_name": "truth.nba.objection_source",
+          "chart_type": "bar",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": "source"
+        }
+      ]
+    },
+    {
+      "id": "t-g-surface-fidelity",
+      "track": "T-G",
+      "title": "Surface Fidelity",
+      "description": "Review KPI percentage-base rendering — catches the `negative_reviews` ÷ `total_reviews` denominator drift bug that motivated the track.",
+      "tiles": [
+        {
+          "id": "tg-review-kpi-base",
+          "display_title": "Review KPI percent-base (by base)",
+          "event_name": "truth.surface.review_kpi_rendered",
+          "chart_type": "bar",
+          "time_range": "7d",
+          "interval": "day",
+          "breakdown": "percentBase"
+        }
+      ]
+    },
+    {
+      "id": "t-h-observability-meta",
+      "track": "T-H",
+      "title": "Observability Meta",
+      "description": "Kill-switch arming events — fires whenever an operator disables a Truth Layer feature flag mid-flight. Used by the on-call rotation.",
+      "tiles": [
+        {
+          "id": "th-kill-switch-armed",
+          "display_title": "Kill-switch armed (by flag)",
+          "event_name": "truth.observability.kill_switch_armed",
+          "chart_type": "number",
+          "time_range": "24h",
+          "interval": "hour",
+          "breakdown": "flag"
+        }
+      ]
+    }
+  ]
+}

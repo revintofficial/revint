@@ -59,6 +59,106 @@ interface PredictedObjection {
   evidence: { source: string; quote?: string };
 }
 
+// =====================================================================
+// Truth Layer v1 — T-F NBA Hygiene: predicted-objection source
+// attribution.
+//
+// Master plan §3 / T-F: when the operator has publicly replied to a
+// negative review (the canonical "voice of the operator" signal),
+// downstream predicted objections MUST be seeded from that reply
+// instead of from a generic segment template. The reply is the most
+// truthful proxy for what the operator will themselves say in the
+// first call ("we have started accepting reservations on weekends..."
+// telegraphs the objection "we are already fixing it, why pay you?").
+//
+// The detection helper is intentionally a pure function over a narrow
+// input shape: it does NOT touch Prisma, the Gemini SDK, or env vars.
+// This lets the unit test (`objection-predictor-source.test.ts`) call
+// it directly with fixture slices and avoid the BullMQ-worker
+// scaffolding. The worker `run()` below also calls it, so production
+// + test agree on the same source-attribution rule.
+// =====================================================================
+
+export type ObjectionSource =
+  | "owner_reply"
+  | "segment_fallback"
+  | "model_inferred";
+
+export interface ObjectionSourceInput {
+  /**
+   * Trimmed owner-reply text. `null` when no public operator reply is
+   * available. We accept the trimmed string (not an array) because the
+   * caller projects whichever shape T-D / fixtures expose down to a
+   * single representative reply.
+   */
+  ownerReplyText: string | null;
+  /**
+   * Whether the upstream `LEAD_INTELLIGENCE_BRIEF` produced any seed
+   * objections we could enrich. Mirrors `BriefSlice.replyObjections.length > 0`.
+   */
+  briefHasReplyObjections: boolean;
+}
+
+/**
+ * Resolve the canonical source attribution for a predicted-objection
+ * generation pass. Priority (first match wins):
+ *   1. `owner_reply`        — operator publicly addressed the issue;
+ *                             use the reply text verbatim as seed.
+ *   2. `model_inferred`     — `LEAD_INTELLIGENCE_BRIEF` already
+ *                             enriched a seed list; we re-ask Gemini
+ *                             to enrich + categorise.
+ *   3. `segment_fallback`   — no upstream signal, fall back to the
+ *                             niche/audit template (legacy path).
+ */
+export function detectObjectionSource(
+  input: ObjectionSourceInput,
+): ObjectionSource {
+  if (input.ownerReplyText && input.ownerReplyText.trim().length > 0) {
+    return "owner_reply";
+  }
+  if (input.briefHasReplyObjections) return "model_inferred";
+  return "segment_fallback";
+}
+
+/**
+ * Project the owner-reply signal off `lead.reviewAnalysis`. T-D may
+ * eventually add a structured `ownerReplies[]` array; until then the
+ * fixture-level `_ownerReplyExample` field is the explicit channel
+ * (see `tests/fixtures/leads/casa-polanco.json` etc.). Returns the
+ * trimmed reply or `null` when no signal exists.
+ */
+export function extractOwnerReplyText(
+  reviewAnalysis: { painPhrases?: unknown } | null | undefined,
+): string | null {
+  if (!reviewAnalysis || typeof reviewAnalysis !== "object") return null;
+  const record = reviewAnalysis as Record<string, unknown>;
+
+  // Future-compat: T-D may add an `ownerReplies` Json column whose
+  // element shape is `string` or `{ text: string }`. Handle both.
+  const replies = record.ownerReplies;
+  if (Array.isArray(replies)) {
+    for (const r of replies) {
+      if (typeof r === "string" && r.trim().length > 0) return r.trim();
+      if (
+        r &&
+        typeof r === "object" &&
+        typeof (r as Record<string, unknown>).text === "string"
+      ) {
+        const text = ((r as Record<string, unknown>).text as string).trim();
+        if (text.length > 0) return text;
+      }
+    }
+  }
+
+  // Today: the fixture-level marker the master plan §3 / T-F test
+  // surface explicitly references.
+  const example = record._ownerReplyExample;
+  if (typeof example === "string" && example.trim().length > 0) {
+    return example.trim();
+  }
+  return null;
+}
+
 /**
  * Subset of `LEAD_INTELLIGENCE_BRIEF` output we consume here. Kept
  * narrow so a schema drift in the brief doesn't ripple into this
@@ -159,9 +259,151 @@ export const run: AgentWorkerRun = async (
   });
   const brief = projectBriefSlice(latestBriefRun?.outputJson ?? null);
 
+  // Truth Layer T-F: resolve the canonical source attribution BEFORE
+  // we branch on the seed shape. The owner-reply path uses the reply
+  // text verbatim; the brief path keeps the existing enrichment;
+  // the segment fallback is the legacy from-scratch prompt. Telemetry
+  // fires unconditionally (additive — gated by neither the avoidance
+  // flag nor the brief presence) so the T-H dashboard can chart
+  // owner_reply / model_inferred / segment_fallback share over time.
+  const ownerReplyText = extractOwnerReplyText(review);
+  const objectionSource = detectObjectionSource({
+    ownerReplyText,
+    briefHasReplyObjections: !!(brief && brief.replyObjections.length > 0),
+  });
+  logger.info("[truth-telemetry]", {
+    event: "truth.nba.objection_source",
+    leadId: lead.id,
+    workspaceId: ctx.workspaceId,
+    source: objectionSource,
+  });
+
   let predicted: PredictedObjection[] = [];
 
-  if (brief && brief.replyObjections.length > 0) {
+  if (objectionSource === "owner_reply" && ownerReplyText) {
+    // Owner-reply path: the operator's public reply IS the canonical
+    // voice-of-buyer signal — they have already telegraphed what the
+    // first call objection will sound like ("we are already fixing
+    // it, why pay you?"). We seed Gemini with the verbatim reply
+    // plus any brief context we have, and ask for a fan-out into
+    // categorised objection rows. If Gemini fails we fall back to a
+    // single seed row built directly from the reply text so the rep
+    // never sees an empty list.
+    const briefContext: string[] = [];
+    if (brief?.headline) briefContext.push(`brief headline: ${brief.headline}`);
+    if (brief && brief.confirmedPainPoints.length > 0) {
+      briefContext.push(
+        `confirmed pains: ${brief.confirmedPainPoints.slice(0, 5).join(" | ")}`,
+      );
+    }
+    if (brief && brief.confirmedMissingFeatures.length > 0) {
+      briefContext.push(
+        `missing features: ${brief.confirmedMissingFeatures
+          .slice(0, 5)
+          .join(" | ")}`,
+      );
+    }
+    try {
+      const provider = getStructuredInferenceProvider();
+      const schema: SchemaDefinition = {
+        type: "OBJECT",
+        properties: {
+          objections: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                category: { type: "STRING" },
+                text: { type: "STRING" },
+                likelihood: { type: "NUMBER" },
+                preemptiveResponse: { type: "STRING" },
+                quote: { type: "STRING" },
+              },
+              required: [
+                "category",
+                "text",
+                "likelihood",
+                "preemptiveResponse",
+              ],
+            },
+          },
+        },
+        required: ["objections"],
+      };
+      const result = await provider.structuredInfer<{
+        objections: Array<{
+          category: string;
+          text: string;
+          likelihood: number;
+          preemptiveResponse: string;
+          quote?: string;
+        }>;
+      }>({
+        prompt: `You are inferring the TOP buyer objections for a cold outreach pitch, grounded in the operator's own public review reply.
+
+Lead: ${lead.businessName ?? "(no name)"} (niche: ${lead.subNicheSlug ?? lead.nicheSlug ?? "unknown"})
+Signals: ${features.join(" | ") || "(none)"}
+Brief context: ${briefContext.join(" | ") || "(none)"}
+
+Operator's public reply (verbatim — this IS the canonical voice of the operator):
+"""
+${ownerReplyText}
+"""
+
+Constraints:
+- Treat the reply as the ground truth. The first objection MUST be the implicit objection the reply itself reveals (e.g. "we are already fixing it ourselves", "we are working with another vendor", "this is already in progress").
+- category: short label (PRICE, TIMING, AUTHORITY, NEED, TRUST, COMPETITOR, INTEGRATION, EFFORT, GENERAL).
+- text: how the operator would actually phrase the objection on a cold call (1 sentence, voice of buyer).
+- likelihood: 0-1.
+- preemptiveResponse: 1-2 sentences the SDR can fold into the opener to defuse it. MUST cite the reply OR a signal listed above — do NOT invent new pains.
+- quote: copy the relevant fragment of the operator's reply that grounds this objection.
+- Order by likelihood DESC.
+
+Return JSON only. Max 5 entries total.`,
+        schema,
+        temperature: 0.25,
+        maxTokens: 1024,
+        timeoutMs: 30_000,
+        label: "objection_predictor_owner_reply",
+      });
+      predicted = result.data.objections.slice(0, 5).map((o) => ({
+        category: o.category.slice(0, 60),
+        text: o.text.slice(0, 600),
+        likelihood: Math.max(0, Math.min(1, o.likelihood)),
+        preemptiveResponse: o.preemptiveResponse.slice(0, 800),
+        evidence: {
+          source: "OWNER_REPLY:objection_predictor",
+          quote: (o.quote ?? ownerReplyText).slice(0, 200),
+        },
+      }));
+    } catch (err) {
+      logger.warn("agent_workers.objection_predictor.owner_reply_gemini_failed", {
+        leadId: lead.id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+      // Hard fallback: surface the reply itself as a single seed row
+      // so the rep at least sees "the operator publicly said X" as
+      // the implied objection. Categorisation goes through the
+      // local heuristic.
+      predicted = [
+        {
+          category: categorizeObjection(ownerReplyText),
+          text: ownerReplyText.slice(0, 600),
+          likelihood: 0.75,
+          preemptiveResponse:
+            "Reference the operator's public reply: acknowledge their in-progress fix, then position our service as accelerating the timeline.",
+          evidence: {
+            source: "OWNER_REPLY:seed",
+            quote: ownerReplyText.slice(0, 200),
+          },
+        },
+      ];
+    }
+  } else if (
+    objectionSource === "model_inferred" &&
+    brief &&
+    brief.replyObjections.length > 0
+  ) {
     // Brief-grounded path: every objection text starts as a verified
     // brief signal, then Gemini fills in the category + likelihood +
     // preemptive response. We still ask the LLM for up to 2 EXTRA
@@ -414,7 +656,14 @@ Return JSON only. Max 5 entries.`,
   });
 
   return {
-    output: { predicted, writtenCount },
+    output: {
+      predicted,
+      writtenCount,
+      // Truth Layer T-F: surface the source attribution on the worker
+      // output so downstream consumers (UI / dashboards / replay tests)
+      // can pivot on it without re-deriving from log lines.
+      objectionSource,
+    },
     costTokens: 1024,
   };
 };

@@ -11,6 +11,16 @@ import {
   buildLeadResponsePrompt,
   type LeadResponsePromptInput,
 } from "@/lib/prompts/lead-response-prompt";
+import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
+import {
+  buildLocaleInstruction,
+  countryIsoFromAddress,
+  legacyLanguageForLocale,
+  logLocaleResolution,
+  resolveOutreachLocale,
+  workspaceDefaultLocaleFromLanguage,
+} from "@/lib/locale/lead-locale";
+import type { LocaleResolution } from "@/lib/sdr-brain/contracts";
 import type {
   AgentExportFormat,
   AgentWorkerOutput,
@@ -36,6 +46,15 @@ export interface LeadResponseArtifact {
   handoff_rules: Array<{ trigger: string; action: string }>;
   tone_spec: { voice_descriptor: string; signature: string };
   setup_markdown: string;
+  /**
+   * Truth Layer T-B — locale that drove the Gemini prompt (and that
+   * downstream automation should keep using for templated replies).
+   * Optional for backward-compat with legacy AgentRun rows that
+   * predate the locale gate.
+   */
+  localeResolution?: LocaleResolution;
+  /** Mirrors `TRUTH_LAYER_LOCALE_GATE` state at run time. */
+  localeGateEnabled?: boolean;
 }
 
 // --- Worker run ------------------------------------------------------
@@ -48,6 +67,33 @@ export const run: AgentWorkerRun = async (ctx) => {
   const audit = lead.websiteAudit;
   const review = lead.reviewAnalysis;
 
+  // Truth Layer T-B — resolve locale up-front. Shadow-run when the
+  // flag is off: compute + log, but feed the legacy
+  // workspace.language into the prompt and skip the explicit
+  // locale instruction so the prompt byte-for-byte matches the
+  // pre-Truth-Layer baseline used by the regression fixtures.
+  const leadCountry = countryIsoFromAddress(lead.formattedAddress ?? null);
+  const workspaceDefaultLocale = workspaceDefaultLocaleFromLanguage(
+    ctx.workspace.language ?? null,
+  );
+  const localeResolution = resolveOutreachLocale(
+    { country: leadCountry },
+    { defaultLocale: workspaceDefaultLocale },
+  );
+  const localeGateEnabled = isTruthLayerFlagEnabled("TRUTH_LAYER_LOCALE_GATE", {
+    workspaceId: ctx.workspaceId,
+  });
+  logLocaleResolution({
+    leadId: lead.id,
+    workspaceId: ctx.workspaceId,
+    resolution: localeResolution,
+    workspaceDefaultLocale,
+    leadCountry,
+  });
+  const promptLanguage = localeGateEnabled
+    ? legacyLanguageForLocale(localeResolution.resolved)
+    : ctx.workspace.language ?? "en";
+
   const promptInput: LeadResponsePromptInput = {
     businessName: lead.businessName,
     primaryType: lead.primaryType,
@@ -58,10 +104,18 @@ export const run: AgentWorkerRun = async (ctx) => {
     workspaceOfferName: ctx.workspace.offerName ?? null,
     workspaceValueProposition: ctx.workspace.valueProposition ?? null,
     workspaceTone: ctx.workspace.tone,
-    language: ctx.workspace.language ?? "en",
+    language: promptLanguage,
   };
 
-  const prompt = buildLeadResponsePrompt(promptInput);
+  const basePrompt = buildLeadResponsePrompt(promptInput);
+  // T-B prompt injection: prepend an explicit locale instruction
+  // above the system-context block. Owned by this worker (not the
+  // prompt builder) because `prompts/lead-response-prompt.ts` is
+  // outside the T-B files-touched envelope. When the gate is OFF
+  // the prompt string stays identical to legacy.
+  const prompt = localeGateEnabled
+    ? `LANGUAGE: ${buildLocaleInstruction(localeResolution.resolved)}\n\n${basePrompt}`
+    : basePrompt;
   const { getGeminiKey } = await import("@/lib/gemini-keys");
   const client = new GoogleGenerativeAI(getGeminiKey());
   const model = client.getGenerativeModel({
@@ -80,12 +134,17 @@ export const run: AgentWorkerRun = async (ctx) => {
   const text = result.response.text();
   const parsed = parseLeadResponseJson(text);
 
+  const artifactLanguage = localeGateEnabled
+    ? promptLanguage
+    : ctx.workspace.language ?? "en";
   const artifact: LeadResponseArtifact = {
     businessName: lead.businessName,
     leadId: lead.id,
-    language: ctx.workspace.language ?? "en",
+    language: artifactLanguage,
     ...parsed,
-    setup_markdown: buildSetupMarkdown(parsed, lead.businessName, ctx.workspace.language ?? "en"),
+    setup_markdown: buildSetupMarkdown(parsed, lead.businessName, artifactLanguage),
+    localeResolution,
+    localeGateEnabled,
   };
 
   const costTokens = Math.ceil((prompt.length + text.length) / 4);

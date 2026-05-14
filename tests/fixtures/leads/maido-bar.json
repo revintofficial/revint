@@ -1,0 +1,90 @@
+{
+  "$schema": "../fixture-lead.schema.json",
+  "fixtureId": "maido-bar",
+  "name": "Maido Bar",
+  "description": "Tokyo cocktail bar — high-traffic operator, used as next-up queue example in v2 plan (research/sdr-brain-v2-lead-detail-PLAN.md L329). Tests visibility-factor severity bump and inbound switch direction.",
+  "_purpose": [
+    "T-A: NBA = CALL_FIRST (has phone, high authority via known buyer).",
+    "T-B: country=null + workspace=US default → en-US (workspace_default source).",
+    "T-C: visibility factor = 1.5 (>1k reviews) bumps relevant severity; 'way better than us' phrase = inbound direction → COMPETITOR_PRESSURE does NOT fire.",
+    "T-D: brief shows owner-reply-grounded painPoint (operator publicly acknowledged the issue)."
+  ],
+  "lead": {
+    "id": "fixture_maido_bar",
+    "workspaceId": "fixture_workspace_en",
+    "placeId": "ChIJfixture_maido",
+    "businessName": "Maido Bar",
+    "formattedAddress": "1-7-3 Ginza, Chuo City, Tokyo 104-0061, Japan",
+    "borough": "Ginza",
+    "phone": "+81 3 1234 5678",
+    "websiteUrl": "https://maidobar.example",
+    "hasWebsite": true,
+    "websiteVerificationStatus": "confirmed_present",
+    "googleMapsUri": "https://maps.google.com/?cid=fixture_maido",
+    "rating": 3.8,
+    "reviewCount": 1240,
+    "businessStatus": "OPERATIONAL",
+    "primaryType": "bar",
+    "priceLevel": 3,
+    "country": null,
+    "nicheSlug": "fnb",
+    "subNicheSlug": "fnb-bar-club",
+    "icpFitScore": 71,
+    "salesConfidence": 58
+  },
+  "workspace": {
+    "id": "fixture_workspace_en",
+    "name": "Test EN Agency",
+    "country": "US",
+    "defaultLocale": "en-US",
+    "niche": "RESTAURANT_TECH"
+  },
+  "reviewAnalysis": {
+    "reviewsAnalyzedCount": 50,
+    "weaknessKpis": [
+      { "label": "wait time", "count": 14, "percent": 70 }
+    ],
+    "strengthKpis": [
+      { "label": "cocktail craft", "count": 30, "percent": 95 }
+    ],
+    "sentimentBreakdown": { "positive": 0.66, "neutral": 0.18, "negative": 0.16 },
+    "painPhrases": ["30+ min wait without reservation"],
+    "switchSignals": [
+      "way better cocktails than the place I used to go (Sankaku)"
+    ],
+    "leadScore": 52,
+    "_negCount": 198,
+    "_totalCount": 1240,
+    "_ownerReplyExample": "Apologies for the wait — we have started accepting reservations via TableCheck on weekends only."
+  },
+  "triggers": [
+    {
+      "type": "RATING_DROP",
+      "severity": 65,
+      "confidence": 0.85,
+      "detectedAt": "2026-04-14T00:00:00Z",
+      "urgencyWindowDays": 60
+    }
+  ],
+  "stakeholders": [
+    {
+      "isEconomicBuyer": true,
+      "championLikelihood": 60,
+      "influence": 85
+    }
+  ],
+  "websiteVerificationSources": [
+    {
+      "name": "google_business_field",
+      "result": "present",
+      "url": "https://maidobar.example",
+      "checkedAt": "2026-05-14T09:00:00Z"
+    },
+    {
+      "name": "instagram_bio",
+      "result": "present",
+      "url": "https://maidobar.example",
+      "checkedAt": "2026-05-14T09:00:00Z"
+    }
+  ]
+}

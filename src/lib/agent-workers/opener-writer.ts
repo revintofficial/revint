@@ -27,6 +27,16 @@ import {
   type NichePack,
 } from "@/lib/niches";
 import { isHandcraftedMockupTemplate } from "@/lib/mockups/templates";
+import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
+import {
+  buildLocaleInstruction,
+  countryIsoFromAddress,
+  legacyLanguageForLocale,
+  logLocaleResolution,
+  resolveOutreachLocale,
+  workspaceDefaultLocaleFromLanguage,
+} from "@/lib/locale/lead-locale";
+import type { LocaleResolution } from "@/lib/sdr-brain/contracts";
 import type {
   AgentWorkerOutput,
   AgentWorkerRun,
@@ -260,6 +270,36 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       (c) => typeof c === "string" && c === "chain_detected",
     );
 
+  // Truth Layer T-B: resolve outreach locale BEFORE building the
+  // prompt so we can flip both the language-branch and the explicit
+  // locale instruction together when the gate is on. When OFF we
+  // still compute + log the resolution (shadow-run) but leave the
+  // prompt on the legacy `workspace.language` branch.
+  const leadCountry = countryIsoFromAddress(lead.formattedAddress ?? null);
+  const workspaceDefaultLocale = workspaceDefaultLocaleFromLanguage(
+    ctx.workspace.language ?? null,
+  );
+  const localeResolution = resolveOutreachLocale(
+    { country: leadCountry },
+    { defaultLocale: workspaceDefaultLocale },
+  );
+  const localeGateEnabled = isTruthLayerFlagEnabled("TRUTH_LAYER_LOCALE_GATE", {
+    workspaceId: ctx.workspaceId,
+  });
+  logLocaleResolution({
+    leadId: lead.id,
+    workspaceId: ctx.workspaceId,
+    resolution: localeResolution,
+    workspaceDefaultLocale,
+    leadCountry,
+  });
+  const promptLanguage = localeGateEnabled
+    ? legacyLanguageForLocale(localeResolution.resolved)
+    : ctx.workspace.language ?? "en";
+  const localeInstruction = localeGateEnabled
+    ? buildLocaleInstruction(localeResolution.resolved)
+    : null;
+
   const prompt = buildOpenerPrompt({
     businessName: lead.businessName,
     primaryType: lead.primaryType,
@@ -273,7 +313,8 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     offerHook: ctx.workspace.offerHook ?? null,
     senderName: ctx.workspace.senderName ?? null,
     conversionLink: ctx.workspace.conversionLink ?? null,
-    language: ctx.workspace.language ?? "en",
+    language: promptLanguage,
+    localeInstruction,
     mockupUrl: mockup?.slug ? `/m/${mockup.slug}` : null,
     isHandcraftedMockup,
     successExamples: successExamples.map((e) => e.text),
@@ -393,6 +434,12 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       fewShotCount: successExamples.length,
       mockupUrl: mockup?.slug ? `/m/${mockup.slug}` : null,
       preservedManualEdit,
+      // Truth Layer T-B: persist the resolution + flag state so the
+      // shadow-run dashboard can diff planned vs delivered locale.
+      // Recorded even when the gate is OFF so T-H Observability has
+      // a complete trail.
+      localeResolution: localeResolution satisfies LocaleResolution,
+      localeGateEnabled,
     },
     costTokens: Math.ceil((prompt.length + message.length) / 4),
   };
@@ -439,6 +486,14 @@ function buildOpenerPrompt(input: {
   senderName: string | null;
   conversionLink: string | null;
   language: string;
+  /**
+   * Truth Layer T-B: when non-null, prepended verbatim as a hard
+   * instruction line above the rules block. The opener-writer worker
+   * passes this in only when `TRUTH_LAYER_LOCALE_GATE` is ON so the
+   * legacy prompt shape stays bit-for-bit identical when the flag is
+   * off (shadow-run safety).
+   */
+  localeInstruction: string | null;
   mockupUrl: string | null;
   isHandcraftedMockup: boolean;
   successExamples: string[];
@@ -629,6 +684,14 @@ function buildOpenerPrompt(input: {
 
   const lines: string[] = [];
   lines.push(header);
+  if (input.localeInstruction) {
+    // Hard locale instruction lives directly under the role header so
+    // Gemini reads it before any of the conditional rule branches.
+    // Phrased as a top-level mandate (not a bullet) so the model
+    // weights it above the workspace-language fallback inside `rules`.
+    lines.push("");
+    lines.push(`LANGUAGE: ${input.localeInstruction}`);
+  }
   lines.push("");
   lines.push(rules);
   lines.push("");

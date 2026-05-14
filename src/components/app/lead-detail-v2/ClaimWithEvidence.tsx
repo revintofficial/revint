@@ -47,9 +47,25 @@ export interface ClaimWithEvidenceProps {
   testid?: string;
   /** Optional max chips to render — over the cap collapses to a "+N more" pill. */
   maxChips?: number;
+  /**
+   * Optional accessible label for the claim+evidence grouping.
+   * Falls back to a generic "claim and supporting evidence" string
+   * derived from the testid. Screen readers announce the claim and
+   * its chips as one logical unit, which mirrors the visual pattern
+   * (RETHINK §4.4: claim + inline evidence is one assertion).
+   */
+  ariaLabel?: string;
 }
 
 const DEFAULT_MAX_CHIPS = 3;
+
+/**
+ * Shared `data-claim-with-evidence` attribute every render path sets
+ * so the V-L Phase 7 coverage test can walk the tree and verify the
+ * "every claim is wrapped" contract without coupling to a specific
+ * `data-testid` (which different blocks customise).
+ */
+export const CLAIM_WITH_EVIDENCE_DATA_ATTR = "data-claim-with-evidence";
 
 export function ClaimWithEvidence({
   claim,
@@ -58,6 +74,7 @@ export function ClaimWithEvidence({
   density = "inline",
   testid,
   maxChips = DEFAULT_MAX_CHIPS,
+  ariaLabel,
 }: ClaimWithEvidenceProps) {
   const visible = evidence.slice(0, maxChips);
   const overflow = Math.max(0, evidence.length - visible.length);
@@ -66,6 +83,9 @@ export function ClaimWithEvidence({
     return (
       <div
         data-testid={testid}
+        {...{ [CLAIM_WITH_EVIDENCE_DATA_ATTR]: "" }}
+        role="group"
+        aria-label={ariaLabel}
         className="flex min-h-9 flex-col gap-1.5"
       >
         <div
@@ -97,6 +117,9 @@ export function ClaimWithEvidence({
   return (
     <div
       data-testid={testid}
+      {...{ [CLAIM_WITH_EVIDENCE_DATA_ATTR]: "" }}
+      role="group"
+      aria-label={ariaLabel}
       className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1"
     >
       <span

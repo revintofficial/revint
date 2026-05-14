@@ -14,15 +14,136 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { crawlWebsite } from "@/lib/crawler";
+import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
+import { countryIsoFromAddress } from "@/lib/locale/lead-locale";
+import type {
+  WebsiteVerificationResult,
+  WebsiteVerificationStatus,
+} from "@/lib/sdr-brain/contracts";
 import type {
   AgentWorkerOutput,
   AgentWorkerRun,
   MemoryWrite,
 } from "./types";
+import {
+  multiVerifyWebsite,
+  type WebsiteMultiVerifyInput,
+  type WebsiteMultiVerifyRunners,
+} from "./website-multi-verify";
+import { verifyWebsiteViaBing } from "./apify/bing-brand-search";
+import { verifyWebsiteViaCompaniesHouse } from "./apify/companies-house";
+import { verifyWebsiteViaInstagramBio } from "./apify/instagram-bio-scrape";
+
+/**
+ * Truth Layer v1 / T-E — default runner bag for the multi-source
+ * verification orchestrator. Wired up here so tests can substitute
+ * a stub set without monkey-patching the apify module.
+ */
+const DEFAULT_VERIFY_RUNNERS: WebsiteMultiVerifyRunners = {
+  bingBrandSearch: verifyWebsiteViaBing,
+  companiesHouse: verifyWebsiteViaCompaniesHouse,
+  instagramBio: verifyWebsiteViaInstagramBio,
+};
+
+/**
+ * Truth Layer v1 / T-E — runs the multi-source orchestrator,
+ * persists the verdict to `Lead.websiteVerificationStatus`, and
+ * emits the `truth.website.verify_*` telemetry pair. Returns the
+ * full {@link WebsiteVerificationResult} so the auditor can stash
+ * it on `AgentRun.output` for downstream consumers (T-D Brief
+ * Truth-Grounding, IntelligenceBrief renderer).
+ *
+ * Cost-control gate (master plan §8 R3): when `lead.websiteUrl` is
+ * non-null we record a synthetic `confirmed_present` result with
+ * just the `google_business_field` source and DO NOT spend any
+ * Apify cents — the orchestrator's own short-circuit covers that
+ * branch but we duplicate the gate here so a future code path
+ * change can't accidentally fan out 3 actor calls on a lead Google
+ * already gave us a homepage URL for.
+ *
+ * Multi-tenant scope: we use `lead.workspaceId` from the row (which
+ * the executor hydrated via `findUniqueOrThrow`) and never trust
+ * `ctx.workspaceId` — per `.cursor/rules/multi-tenant-scope.mdc` a
+ * worker re-derives the scope from the parent row.
+ */
+async function runWebsiteVerification(
+  lead: NonNullable<Parameters<AgentWorkerRun>[0]["lead"]>,
+  runners: WebsiteMultiVerifyRunners = DEFAULT_VERIFY_RUNNERS,
+): Promise<WebsiteVerificationResult> {
+  const workspaceId = lead.workspaceId;
+
+  logger.info("[truth-telemetry]", {
+    event: "truth.website.verify_started",
+    leadId: lead.id,
+    workspaceId,
+  });
+
+  const input: WebsiteMultiVerifyInput = {
+    businessName: lead.businessName,
+    formattedAddress: lead.formattedAddress,
+    country: countryIsoFromAddress(lead.formattedAddress ?? null),
+    websiteUrl: lead.websiteUrl,
+  };
+
+  const result = await multiVerifyWebsite(input, runners);
+  const status: WebsiteVerificationStatus = result.status;
+
+  // updateMany so we can scope by workspaceId. Per the multi-tenant
+  // rule, an `update` keyed solely on `id` would leak across tenants
+  // if a future bug ever fed us an attacker-controlled lead id; we
+  // already trust `lead.workspaceId` here but the redundant scope
+  // keeps the audit clean.
+  await prisma.lead.updateMany({
+    where: { id: lead.id, workspaceId },
+    data: { websiteVerificationStatus: status },
+  });
+
+  const sourcesPositive = result.sources.filter((s) => s.result === "present").length;
+  const sourcesNegative = result.sources.filter((s) => s.result === "absent").length;
+  logger.info("[truth-telemetry]", {
+    event: "truth.website.verify_completed",
+    leadId: lead.id,
+    workspaceId,
+    status,
+    sourcesChecked: result.sources.length,
+    sourcesPositive,
+    sourcesNegative,
+  });
+
+  return result;
+}
 
 export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   if (!ctx.lead) throw new Error("WEBSITE_AUDITOR requires a lead context");
   const lead = ctx.lead;
+
+  // Truth Layer v1 / T-E — multi-source verification BEFORE the
+  // legacy single-URL audit branch. Two cost-control gates:
+  //   - Flag OFF → skip orchestrator entirely; the auditor falls
+  //     back to its pre-Truth-Layer behavior (single source = the
+  //     `lead.websiteUrl` field) and never writes
+  //     `Lead.websiteVerificationStatus`.
+  //   - Flag ON + `lead.websiteUrl != null` → orchestrator's own
+  //     short-circuit returns `confirmed_present` after recording
+  //     just the google_business_field source, so we spend zero
+  //     Apify cents on leads Google already surfaced a homepage
+  //     for. Master plan §8 R3 cost guardrail.
+  let verification: WebsiteVerificationResult | null = null;
+  const flagEnabled = isTruthLayerFlagEnabled("TRUTH_LAYER_WEBSITE_VERIFY", {
+    workspaceId: lead.workspaceId,
+  });
+  if (flagEnabled) {
+    try {
+      verification = await runWebsiteVerification(lead);
+    } catch (err) {
+      // Verification must not break the auditor. On unexpected
+      // failure we log + proceed with the legacy code path.
+      logger.warn("agent_workers.website_auditor.verify_failed_skipping", {
+        leadId: lead.id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
 
   if (!lead.websiteUrl) {
     await prisma.lead.update({
@@ -30,7 +151,11 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       data: { crawlStatus: "NO_WEBSITE" },
     });
     return {
-      output: { skipped: true, reason: "no_website" },
+      output: {
+        skipped: true,
+        reason: "no_website",
+        ...(verification ? { websiteVerification: verification } : {}),
+      },
       costTokens: 0,
     };
   }
@@ -99,7 +224,12 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         url: lead.websiteUrl,
       });
       return {
-        output: { skipped: true, reason: "social_media_only", url: lead.websiteUrl },
+        output: {
+          skipped: true,
+          reason: "social_media_only",
+          url: lead.websiteUrl,
+          ...(verification ? { websiteVerification: verification } : {}),
+        },
         costTokens: 0,
       };
     }
@@ -171,6 +301,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         servicesDetected: features.servicesDetected,
         contactEmails,
         socialProfiles,
+        ...(verification ? { websiteVerification: verification } : {}),
       },
       costTokens: 0,
     };
@@ -202,10 +333,26 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       err: msg,
     });
     return {
-      output: { skipped: true, reason: "crawl_failed", errorMsg: msg },
+      output: {
+        skipped: true,
+        reason: "crawl_failed",
+        errorMsg: msg,
+        ...(verification ? { websiteVerification: verification } : {}),
+      },
       costTokens: 0,
     };
   }
+};
+
+/**
+ * Test-only entry to the multi-source verification side-effect
+ * (DB write + telemetry). Real worker invocations go through
+ * `run()` which gates on the feature flag; tests can call this
+ * directly with a stub runners bag to assert column writes and
+ * event emission.
+ */
+export const __test = {
+  runWebsiteVerification,
 };
 
 /**

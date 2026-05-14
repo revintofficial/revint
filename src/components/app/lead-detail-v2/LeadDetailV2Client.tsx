@@ -627,7 +627,21 @@ export function LeadDetailV2Client({
                 evidence: copy.evidence,
               },
               meddpiccLocked: copy.qualification.meddpiccLocked,
-              intelligenceBrief: copy.qualification.intelligenceBrief,
+              // Phase 7 (V-L) — pass the shared `EvidenceChipCopy` into
+              // the intelligence brief so its headline + pain point
+              // claims render through `<ClaimWithEvidence>` like the
+              // rest of the page. When `intelligenceBrief` copy isn't
+              // wired up (e.g. older dictionaries), this stays
+              // undefined and IntelligenceBriefCard renders the
+              // legacy un-wrapped fallback.
+              intelligenceBrief: copy.qualification.intelligenceBrief
+                ? {
+                    ...copy.qualification.intelligenceBrief,
+                    evidence:
+                      copy.qualification.intelligenceBrief.evidence ??
+                      copy.evidence,
+                  }
+                : undefined,
             }}
           />
         </Block>

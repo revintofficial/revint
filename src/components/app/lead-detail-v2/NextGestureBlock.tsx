@@ -12,11 +12,41 @@
  * `RecentDialContext` provider when the rep taps Dial so the
  * `<DispositionStrip>` overlay can appear within the 5-minute
  * window.
+ *
+ * Phase 7 (V-L) — ClaimWithEvidence audit.
+ *
+ * V-L wraps every claim rendered directly inside a v2 block with
+ * `<ClaimWithEvidence>` (PLAN §4.7 "Every claim in v2 (BANT cells,
+ * MEDDPICC rows, ICP-dimension bars, NextGesture pushback) shows
+ * always-visible inline evidence chips. No 'Why?' link anywhere on
+ * the page.").
+ *
+ * Audit of this file's render tree:
+ *   - `versionLabel` Badge ("Preliminary · v3") — metadata, not a
+ *     claim. The deep-link to the reasoning route already lives next
+ *     to it, satisfying the "no Why? link" pattern.
+ *   - `copy.empty` paragraph — empty state, not a claim.
+ *   - Action chips (Dial / Email / WhatsApp / Schedule / Snooze) —
+ *     CTAs, not claims.
+ *   - Composed sub-components (`NbaContent`, `FourThingsCard`,
+ *     `RecommendedApproach`, `SalesTalkingPoints`) — each owns its
+ *     own claim surface. `NbaContent` is shared with the legacy
+ *     `NbaCard` and is intentionally NOT touched here (single source
+ *     of DOM for both v1 and v2). T-F (Wave 2 — NBA Hygiene) reshapes
+ *     the data flow into `NbaContent` (avoidance overlap + objection
+ *     source) and is expected to land the ClaimWithEvidence wrap for
+ *     `predictedObjections` / `whatNotToPitch` inside the body of
+ *     NbaContent at that time. V-L's edits here stay surgical: no
+ *     wrapping is required because no direct claim text is rendered
+ *     in this file's body. The wraps live in `IntelligenceBriefCard`
+ *     (V-L Wave 1) and the BANT / MEDDPICC / ICP / SPIN / Stakeholder
+ *     blocks that already shipped through Phase 7's first half.
  */
 
-import { type ReactNode, useMemo, useRef } from "react";
+import { type ReactNode, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
+  AlertTriangle,
   Calendar,
   ExternalLink,
   Mail,
@@ -27,6 +57,7 @@ import {
 
 import {
   NbaContent,
+  type LeadNextActionDto,
   type NextActionResponse,
 } from "@/components/app/nba/NbaCard";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +75,15 @@ import {
   SalesTalkingPoints,
   type SalesTalkingPointsCopy,
 } from "./SalesTalkingPoints";
+import { ClaimWithEvidence } from "./ClaimWithEvidence";
+import type { BuiltEvidenceChip, EvidenceChipCopy } from "./EvidenceChip";
+import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
+import { track } from "@/lib/lead-detail/telemetry";
+import {
+  validateAvoidance,
+  type ValidateAvoidanceResult,
+} from "@/lib/sdr-brain/avoidance-validator";
+import type { AvoidanceTopic } from "@/lib/sdr-brain/contracts";
 import type {
   IntelligenceBriefDto,
   LeadTriggerDto,
@@ -73,6 +113,23 @@ export interface NextGestureBlockCopy {
   // card (re-skin of legacy WebsitePlanSection). Optional for the same
   // call-site-migration reason as `fourThings`.
   salesTalkingPoints?: SalesTalkingPointsCopy;
+  // ---------------------------------------------------------------
+  // Truth Layer T-F (Wave 2) — NBA Hygiene additive copy.
+  //
+  // Optional so existing call sites that haven't migrated their copy
+  // bundles continue to work (the legacy NbaContent body keeps
+  // rendering the original "Predicted objections" / "What NOT to
+  // pitch" headings in English). When supplied:
+  //   - `predictedObjectionsLabel` heads the per-objection
+  //     ClaimWithEvidence rows in the v2 surface.
+  //   - `avoidanceLabel` heads the validator-filtered avoidance row.
+  //   - `evidence` is the standard EvidenceChipCopy dictionary the
+  //     wrapper needs to render the chip type label in the active
+  //     locale. Mirrors `IntelligenceBriefCardCopy.evidence`.
+  // ---------------------------------------------------------------
+  predictedObjectionsLabel?: string;
+  avoidanceLabel?: string;
+  evidence?: EvidenceChipCopy;
 }
 
 export interface NextGestureBlockProps {
@@ -131,6 +188,51 @@ function buildWaHref(phone: string | null): string | null {
   return `https://wa.me/${cleaned}`;
 }
 
+/**
+ * Truth Layer T-F — evidence chip for a predicted objection. Routes
+ * to the reasoning graph for the active NBA so the rep can drill
+ * into the source attribution chain (`truth.nba.objection_source`
+ * dashboard tile lands a link into this same path).
+ */
+function buildObjectionChip(args: {
+  leadId: string;
+  actionId: string;
+  objectionText: string;
+  label: string;
+}): BuiltEvidenceChip {
+  return {
+    key: `obj:${args.actionId}:${args.objectionText.slice(0, 32)}`,
+    type: "prior-nba",
+    label: args.label,
+    sourceQuote: args.objectionText,
+    confidence: null,
+    href: `/app/leads/${args.leadId}/reasoning/${args.actionId}`,
+  };
+}
+
+/**
+ * Truth Layer T-F — evidence chip for a kept avoidance topic. Uses
+ * the `review` chip type because every avoidance topic the worker
+ * surfaces today derives from a review-extracted defensiveness
+ * pattern (`AvoidanceReason` enum is dominated by review-side
+ * signals: `owner_defensive_in_replies`, `negative_review_spike`).
+ */
+function buildAvoidanceChip(args: {
+  leadId: string;
+  actionId: string;
+  topic: AvoidanceTopic;
+  label: string;
+}): BuiltEvidenceChip {
+  return {
+    key: `av:${args.actionId}:${args.topic.topic.slice(0, 32)}`,
+    type: "review",
+    label: args.label,
+    sourceQuote: args.topic.evidenceRef.quote ?? args.topic.topic,
+    confidence: null,
+    href: args.topic.evidenceRef.sourceUrl ?? null,
+  };
+}
+
 export function NextGestureBlock({
   data,
   loading,
@@ -156,6 +258,92 @@ export function NextGestureBlock({
   const mail = email ? `mailto:${email}` : null;
   const dialButtonRef = useRef<HTMLAnchorElement | null>(null);
   const { markDialed } = useRecentDial();
+
+  // -----------------------------------------------------------------
+  // Truth Layer T-F (Wave 2) — NBA Hygiene plumbing.
+  //
+  // Hooks here run unconditionally so the validator + telemetry path
+  // is not gated on which early-return branch we hit. When `data` is
+  // null we collapse to an empty validation result and skip emit.
+  // -----------------------------------------------------------------
+  const activeNba: LeadNextActionDto | null = useMemo(() => {
+    if (!data) return null;
+    return data.final ?? data.preliminary ?? null;
+  }, [data]);
+
+  const packageFeatures: ReadonlyArray<string> = useMemo(
+    () => recommendedPackage?.features ?? [],
+    [recommendedPackage],
+  );
+
+  const validatorEnabled = useMemo(
+    () =>
+      isTruthLayerFlagEnabled("TRUTH_LAYER_AVOIDANCE_VALIDATOR", {
+        workspaceId: workspaceId ?? "",
+      }),
+    [workspaceId],
+  );
+
+  // Project the raw `whatNotToPitch` strings into typed `AvoidanceTopic`
+  // shapes so the validator gets the contract it expects. The reason
+  // tag defaults to `owner_defensive_in_replies` because the v2 surface
+  // does not carry a per-topic reason today; T-F's pure validator only
+  // looks at `topic`, so the reason is inert metadata for now (kept so
+  // `[...kept, ...dropped]` round-trips through the AvoidanceTopic
+  // shape without information loss).
+  const avoidanceValidation: ValidateAvoidanceResult = useMemo(() => {
+    if (!activeNba) return { kept: [], dropped: [] };
+    const topics: AvoidanceTopic[] = activeNba.whatNotToPitch.map((t) => ({
+      topic: t,
+      reason: "owner_defensive_in_replies",
+      evidenceRef: { quote: t },
+    }));
+    if (!validatorEnabled) return { kept: topics, dropped: [] };
+    return validateAvoidance(topics, packageFeatures);
+  }, [activeNba, packageFeatures, validatorEnabled]);
+
+  // Telemetry — `truth.nba.avoidance_overlap_dropped` fires once per
+  // distinct dropped-topic-set (the dep array changes whenever the
+  // dropped list changes by reference). Wrapped in an effect so SSR /
+  // first-paint stays free of side effects per PLAN §6 risk #3.
+  useEffect(() => {
+    if (!validatorEnabled) return;
+    if (avoidanceValidation.dropped.length === 0) return;
+    track("truth.nba.avoidance_overlap_dropped", {
+      leadId,
+      workspaceId: workspaceId ?? "",
+      droppedTopics: avoidanceValidation.dropped.map((t) => t.topic),
+    });
+  }, [avoidanceValidation.dropped, leadId, workspaceId, validatorEnabled]);
+
+  // Reshape the data passed to `NbaContent` so it does not double-
+  // render the avoidance / predicted-objections sections T-F now owns.
+  // When `copy.evidence` is set we render the v2 ClaimWithEvidence
+  // wrappers below; we strip both arrays from NbaContent's view. When
+  // `copy.evidence` is absent (legacy call sites) we still apply the
+  // validator filter to `whatNotToPitch` so the overlap-dropped
+  // contract holds, but keep `predictedObjections` so NbaContent's
+  // legacy bullet list keeps working.
+  const useV2ClaimWrap = !!copy.evidence;
+  const shapedData: NextActionResponse | null = useMemo(() => {
+    if (!data) return null;
+    const keptAvoidanceStrings = avoidanceValidation.kept.map((t) => t.topic);
+    function shape(
+      n: LeadNextActionDto | null,
+    ): LeadNextActionDto | null {
+      if (!n) return null;
+      return {
+        ...n,
+        whatNotToPitch: useV2ClaimWrap ? [] : keptAvoidanceStrings,
+        predictedObjections: useV2ClaimWrap ? [] : n.predictedObjections,
+      };
+    }
+    return {
+      ...data,
+      preliminary: shape(data.preliminary),
+      final: shape(data.final),
+    };
+  }, [data, avoidanceValidation.kept, useV2ClaimWrap]);
 
   // Phase 1.7 — the FourThingsCard is the highest-priority artifact
   // on COLD/CONTACTED leads (industry SDR 3-minute formula). On
@@ -295,7 +483,104 @@ export function NextGestureBlock({
         </Link>
       </div>
 
-      <NbaContent data={data} hideReasoningTrace autoExpandTraceOnFinal={false} />
+      <NbaContent
+        data={shapedData ?? data}
+        hideReasoningTrace
+        autoExpandTraceOnFinal={false}
+      />
+
+      {/*
+       * Truth Layer T-F (Wave 2) — predicted-objection ClaimWithEvidence
+       * row group. Only rendered when the caller supplied a v2 copy
+       * bundle with `copy.evidence` (the design-system contract that
+       * gates the new wrap; mirrors the IntelligenceBriefCard pattern).
+       * V-L's audit pin in the file-level docblock handed this exact
+       * wrap to T-F.
+       */}
+      {useV2ClaimWrap && active.predictedObjections.length > 0 ? (
+        <div data-testid="next-gesture-objections-section">
+          <div
+            className="mb-1 flex items-center gap-1 text-[10px] uppercase tracking-wide"
+            style={{ color: "var(--leadac-text-3)" }}
+          >
+            <AlertTriangle className="h-3 w-3" />
+            {copy.predictedObjectionsLabel ?? "Predicted objections"}
+          </div>
+          <ul className="space-y-1">
+            {active.predictedObjections.map((o, i) => (
+              <li key={`obj-${i}`}>
+                <ClaimWithEvidence
+                  testid="next-gesture-objection-claim"
+                  claim={
+                    <span
+                      className="text-[13px] leading-snug"
+                      style={{ color: "var(--leadac-text-2)" }}
+                    >
+                      {o}
+                    </span>
+                  }
+                  evidence={[buildObjectionChip({
+                    leadId,
+                    actionId: active.id,
+                    objectionText: o,
+                    label:
+                      copy.evidence?.types["prior-nba"] ?? "AI",
+                  })]}
+                  copy={copy.evidence!}
+                  density="inline"
+                  ariaLabel={o}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {/*
+       * Truth Layer T-F (Wave 2) — avoidance section. Only rendered
+       * when the validator returned at least one kept topic. An empty
+       * `kept` list means EITHER the worker emitted no avoidance OR
+       * every entry collided with `recommendedPackage.features` and
+       * the validator dropped them all — in both cases the rep should
+       * NOT see an empty card (PLAN §3 / T-F).
+       */}
+      {useV2ClaimWrap && avoidanceValidation.kept.length > 0 ? (
+        <div data-testid="next-gesture-avoidance-section">
+          <div
+            className="mb-1 text-[10px] uppercase tracking-wide"
+            style={{ color: "var(--leadac-text-3)" }}
+          >
+            {copy.avoidanceLabel ?? "What NOT to pitch"}
+          </div>
+          <ul className="space-y-1">
+            {avoidanceValidation.kept.map((t, i) => (
+              <li key={`av-${i}`}>
+                <ClaimWithEvidence
+                  testid="next-gesture-avoidance-claim"
+                  claim={
+                    <span
+                      className="text-[13px] leading-snug"
+                      style={{ color: "var(--leadac-text-2)" }}
+                    >
+                      {t.topic}
+                    </span>
+                  }
+                  evidence={[buildAvoidanceChip({
+                    leadId,
+                    actionId: active.id,
+                    topic: t,
+                    label:
+                      copy.evidence?.types["review"] ?? "review",
+                  })]}
+                  copy={copy.evidence!}
+                  density="inline"
+                  ariaLabel={t.topic}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-1.5 pt-1">
         {tel ? (

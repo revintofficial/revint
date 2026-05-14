@@ -1,0 +1,69 @@
+{
+  "$schema": "../fixture-lead.schema.json",
+  "fixtureId": "greenwich-morning",
+  "name": "Greenwich Morning",
+  "description": "UK breakfast cafe — central debugging case for Truth Layer v1. Triggers every decision gate: no contact, no website (false positive risk per T-E), TR workspace + GB lead (T-B locale gate).",
+  "_purpose": [
+    "T-A: NBA must resolve to CONTACT_DISCOVERY_FIRST (phone=null, email=null).",
+    "T-B: TR workspace + country=GB must resolve OutreachLocale = en-GB.",
+    "T-C: 11/397 negatives → severity ≤ 35 after base-rate normalization.",
+    "T-D: brief MUST NOT contain 'no website' claim (websiteVerificationStatus=uncertain).",
+    "T-E: 1 negative source only → status=uncertain, NOT confirmed_absent.",
+    "T-G: '9 mentions' KPI must render as '9 mentions (82% of negative reviews)' — never bare '%82'."
+  ],
+  "lead": {
+    "id": "fixture_greenwich_morning",
+    "workspaceId": "fixture_workspace_tr",
+    "placeId": "ChIJfixture_greenwich",
+    "businessName": "Greenwich Morning",
+    "formattedAddress": "12 Greenwich High Rd, London SE10 8JL, United Kingdom",
+    "borough": "Greenwich",
+    "phone": null,
+    "websiteUrl": null,
+    "hasWebsite": false,
+    "websiteVerificationStatus": "uncertain",
+    "googleMapsUri": "https://maps.google.com/?cid=fixture_greenwich",
+    "rating": 4.1,
+    "reviewCount": 397,
+    "businessStatus": "OPERATIONAL",
+    "primaryType": "cafe",
+    "priceLevel": 2,
+    "country": "GB",
+    "nicheSlug": "fnb",
+    "subNicheSlug": "fnb-cafe",
+    "icpFitScore": 64,
+    "salesConfidence": null
+  },
+  "workspace": {
+    "id": "fixture_workspace_tr",
+    "name": "Test TR Agency",
+    "country": "TR",
+    "defaultLocale": "tr-TR",
+    "niche": "RESTAURANT_TECH"
+  },
+  "reviewAnalysis": {
+    "reviewsAnalyzedCount": 50,
+    "weaknessKpis": [
+      { "label": "wait time", "count": 9, "percent": 82 }
+    ],
+    "strengthKpis": [
+      { "label": "coffee quality", "count": 18, "percent": 90 }
+    ],
+    "sentimentBreakdown": { "positive": 0.72, "neutral": 0.16, "negative": 0.12 },
+    "painPhrases": ["slow service at brunch", "long queue weekends"],
+    "switchSignals": [],
+    "leadScore": 38,
+    "_negCount": 11,
+    "_totalCount": 397
+  },
+  "triggers": [],
+  "stakeholders": [],
+  "websiteVerificationSources": [
+    {
+      "name": "google_business_field",
+      "result": "absent",
+      "url": null,
+      "checkedAt": "2026-05-14T09:00:00Z"
+    }
+  ]
+}

@@ -8,8 +8,11 @@
  *
  *   - Renders ONLY on mobile (< 640px). Desktop keeps the inline FAB
  *     anchor inside DiscoveryBlock.
- *   - Positioned bottom-right, above the QueueStrip (z-38 so it sits
- *     behind the DispositionStrip overlay at z-40).
+ *   - Positioned bottom-right, ABOVE the MobileStickyCTA bar (which
+ *     reserves 64px above the 56px QueueStrip) so the three layers
+ *     stack cleanly: QueueStrip (0–56px) → MobileStickyCTA (56–120px) →
+ *     VoiceNoteFAB (above 120px). z-38 sits behind the DispositionStrip
+ *     overlay (z-40) which renders on top during disposition capture.
  *   - Tap-and-hold: pointer-down starts MediaRecorder. Pointer-up /
  *     pointer-cancel uploads the blob to /api/leads/[id]/voice-notes.
  *   - Shows elapsed-seconds ring while recording.
@@ -17,10 +20,11 @@
  *     (desktop Safari, some Android WebViews).
  *
  * A11y: the button has aria-label that changes to "Recording — release
- * to save" while recording. A role="status" live region announces the
- * upload result. Long-press is intentionally not keyboard-triggerable
- * (voice-note capture requires a real microphone pointer gesture);
- * keyboard users can use the legacy panel via the DiscoveryBlock anchor.
+ * to save" while recording. The 56×56 surface clears the WCAG 2.5.5
+ * AAA 44px touch-target minimum with room to spare. Long-press is
+ * intentionally not keyboard-triggerable (voice-note capture requires
+ * a real microphone pointer gesture); keyboard users can use the
+ * legacy panel via the DiscoveryBlock anchor.
  */
 
 import {
@@ -65,7 +69,6 @@ export function VoiceNoteFAB({ leadId, copy }: VoiceNoteFABProps): ReactNode {
   const startedAtRef = useRef<number>(0);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const statusRef = useRef<HTMLDivElement | null>(null);
 
   const stopTick = useCallback(() => {
     if (tickRef.current) {
@@ -170,8 +173,14 @@ export function VoiceNoteFAB({ leadId, copy }: VoiceNoteFABProps): ReactNode {
       : copy.recordLabel;
 
   return (
-    <div className="fixed bottom-[calc(56px+env(safe-area-inset-bottom,0px)+12px)] right-4 z-38 sm:hidden">
-      <div role="status" className="sr-only" ref={statusRef} aria-live="polite" />
+    <div
+      data-testid="voice-note-fab-wrapper"
+      className="fixed right-4 z-38 sm:hidden"
+      style={{
+        bottom:
+          "calc(56px /* queue strip */ + 64px /* mobile sticky cta */ + env(safe-area-inset-bottom, 0px) + 12px)",
+      }}
+    >
       <button
         type="button"
         data-testid="voice-note-fab-mobile"

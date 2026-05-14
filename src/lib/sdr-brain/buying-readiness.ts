@@ -30,6 +30,9 @@ import type {
   LeadTriggerType,
   SuggestedOffer,
 } from "@/generated/prisma/client";
+import type { NbaOutput, BlockingGate } from "@/lib/sdr-brain/contracts";
+import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
+import { logger } from "@/lib/logger";
 
 /**
  * SDR-Brain v2 Phase 3 — `BuyingReadinessInput` carries the v1 intel
@@ -429,4 +432,173 @@ export function deriveBuyingReadiness(input: BuyingReadinessInput): BuyingReadin
       timing: timing.reasons,
     },
   };
+}
+
+// =====================================================================
+// Truth Layer v1 — T-A Decision Gates.
+//
+// `deriveNbaWithGates` wraps the legacy NBA decision with three hard
+// gates that short-circuit outreach when a precondition is missing.
+// The function is intentionally additive: existing `deriveBuyingReadiness`
+// callers are untouched, and the third gate (ICP-rozet cap) lives in the
+// ICP_SCORER worker because it adjusts the persisted `icpFitScore`, not
+// the in-memory NBA decision.
+//
+// Gate order (first match wins) — chosen so the most "you literally
+// cannot outreach this lead" signal beats the softer "you shouldn't
+// outreach yet" signal:
+//   1. no_contact  — Lead has no phone AND no stakeholder email.
+//                    NBA = CONTACT_DISCOVERY_FIRST.
+//   2. low_authority — BANT.authority < AUTHORITY_GATE_THRESHOLD.
+//                      NBA = WAIT.
+//
+// When the `TRUTH_LAYER_DECISION_GATES` flag is OFF the function returns
+// the caller-supplied `baseDecision` unchanged AND skips telemetry — so
+// the kill-switch fully reverts to pre-Truth-Layer behavior, including
+// for dashboards (no `truth.*` events fire in shadow-off mode).
+//
+// Telemetry is emitted via `logger.info("[truth-telemetry]", ...)`
+// rather than `track()` because the call sites (BANT_INFERRER worker,
+// SDR_BRAIN worker, React Server Component for the lead detail page)
+// all execute server-side, and there is no `src/lib/posthog-node.ts`
+// wired today. T-H Observability will route these log records into
+// PostHog via the log-ingest pipeline; until then `git grep
+// "[truth-telemetry]"` is the authoritative emit list.
+// =====================================================================
+
+/**
+ * Authority-gate threshold. Per master plan §10 Open Decision: ship at
+ * 35, callable lower (down to ~25) if SDR backlog explodes (R9).
+ */
+export const AUTHORITY_GATE_THRESHOLD = 35;
+
+export interface NbaGateInput {
+  /** For telemetry — the lead the decision is being made for. */
+  leadId: string;
+  /** Trusted workspaceId (caller already resolved via `requireUser()`). */
+  workspaceId: string;
+  /** Lead.phone (raw column value). Trimmed-empty counts as no phone. */
+  phone: string | null | undefined;
+  /**
+   * Every known stakeholder email for this lead. The caller pulls
+   * these from `Stakeholder.email` rows; we only ask for the strings
+   * (not the full row) so this function stays Prisma-free.
+   */
+  stakeholderEmails: ReadonlyArray<string | null | undefined>;
+  /** Derived BANT for this lead (call `deriveBuyingReadiness` first). */
+  buyingReadiness: BuyingReadiness;
+  /**
+   * The legacy NBA decision. Returned when no gate fires AND when the
+   * Truth Layer flag is off. Callers compute this from BANT.overall or
+   * from a richer T3 SDR_BRAIN run — `deriveNbaWithGates` does not
+   * second-guess it.
+   */
+  baseDecision: NbaOutput;
+}
+
+export interface NbaGateOptions {
+  /**
+   * Test hook — when set, bypasses `isTruthLayerFlagEnabled`. Production
+   * code should leave this unset so the env / allow-list resolver wins.
+   */
+  flagEnabledOverride?: boolean;
+}
+
+/**
+ * Apply Truth Layer v1 decision gates to an upstream NBA decision.
+ *
+ * Pure function (apart from `logger.info` telemetry side-effects). Safe
+ * to call from React Server Components, BullMQ workers, and unit tests.
+ */
+export function deriveNbaWithGates(
+  input: NbaGateInput,
+  opts: NbaGateOptions = {},
+): NbaOutput {
+  const flagEnabled =
+    opts.flagEnabledOverride ??
+    isTruthLayerFlagEnabled("TRUTH_LAYER_DECISION_GATES", {
+      workspaceId: input.workspaceId,
+    });
+
+  // Flag OFF → legacy path. No telemetry, no gate evaluation.
+  if (!flagEnabled) {
+    return input.baseDecision;
+  }
+
+  const hasPhone =
+    typeof input.phone === "string" && input.phone.trim().length > 0;
+  const hasEmail = input.stakeholderEmails.some(
+    (e) => typeof e === "string" && e.trim().length > 0,
+  );
+
+  // Gate 1 — no_contact. Lead lacks both phone and email; outreach is
+  // structurally impossible until CONTACT_DISCOVERY succeeds.
+  if (!hasPhone && !hasEmail) {
+    const decision = makeGateDecision(
+      "CONTACT_DISCOVERY_FIRST",
+      "no_contact",
+      "No phone and no stakeholder email — outreach is impossible until contact info is discovered.",
+      0.9,
+    );
+    logger.info("[truth-telemetry]", {
+      event: "truth.decision_gate.contact_first_fired",
+      leadId: input.leadId,
+      workspaceId: input.workspaceId,
+      hasPhone,
+      hasEmail,
+    });
+    emitDecisionResolved(input, decision);
+    return decision;
+  }
+
+  // Gate 2 — low_authority. Outreach a lead with no buying-committee
+  // authority maps and you waste the SDR's connect attempt. Wait until
+  // BUYING_COMMITTEE_MAPPER raises authority above the gate.
+  const authorityScore = input.buyingReadiness.authority;
+  if (authorityScore < AUTHORITY_GATE_THRESHOLD) {
+    const decision = makeGateDecision(
+      "WAIT",
+      "low_authority",
+      `BANT.authority ${authorityScore} below gate threshold ${AUTHORITY_GATE_THRESHOLD} — wait for stakeholder mapping before outreach.`,
+      0.8,
+    );
+    logger.info("[truth-telemetry]", {
+      event: "truth.decision_gate.authority_first_fired",
+      leadId: input.leadId,
+      workspaceId: input.workspaceId,
+      authorityScore,
+    });
+    emitDecisionResolved(input, decision);
+    return decision;
+  }
+
+  // No gate fires — return the legacy decision unchanged but still
+  // emit the resolution event so T-H dashboards can count gate-clear
+  // outcomes per workspace.
+  emitDecisionResolved(input, input.baseDecision);
+  return input.baseDecision;
+}
+
+function makeGateDecision(
+  type: NbaOutput["type"],
+  blockingGate: BlockingGate,
+  rationale: string,
+  confidence: number,
+): NbaOutput {
+  return { type, rationale, blockingGate, confidence };
+}
+
+function emitDecisionResolved(
+  input: NbaGateInput,
+  decision: NbaOutput,
+): void {
+  logger.info("[truth-telemetry]", {
+    event: "truth.nba.decision_resolved",
+    leadId: input.leadId,
+    workspaceId: input.workspaceId,
+    type: decision.type,
+    // PostHog catalog uses the literal "none" sentinel (not null) so the
+    // T-H dashboard can pivot on `blockingGate` as a discrete dimension.
+    blockingGate: decision.blockingGate ?? "none",
+  });
 }

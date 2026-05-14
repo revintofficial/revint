@@ -505,6 +505,14 @@ model Lead {
   phone                 String?
   websiteUrl            String?              @map("website_url")
   hasWebsite            Boolean              @default(false) @map("has_website")
+  // Truth Layer v1 (Wave 0 / T-E) — 4-source verification status.
+  // `null` for legacy rows + leads that have not been re-verified.
+  // Populated by `WEBSITE_AUDITOR` after T-E's `website-multi-verify`
+  // orchestrator runs. Consumers (T-D Brief Truth-Grounding, the
+  // IntelligenceBrief renderer, WebsiteSignalStrip) MUST treat
+  // `confirmed_present` and `uncertain` as "do not surface 'no website'
+  // claims" and only `confirmed_absent` as "no-website is provable".
+  websiteVerificationStatus WebsiteVerificationStatus? @map("website_verification_status")
   googleMapsUri         String?              @map("google_maps_uri")
   rating                Float?
   reviewCount           Int?                 @map("review_count")
@@ -1669,6 +1677,37 @@ enum NextActionKind {
   BOOK_DISCOVERY
   ENROLL_IN_CAMPAIGN
   ESCALATE_TO_AE
+  // Truth Layer v1 (Wave 0 / T-A Decision Gates) — fired when a lead
+  // hits the `no_contact` blocking gate (no phone AND no email). The
+  // SDR cannot proceed with EMAIL_FIRST or CALL_FIRST until contact
+  // discovery completes. Surfaces a different NextGestureBlock CTA
+  // (route to enrichment workflow vs the standard outreach CTA).
+  CONTACT_DISCOVERY_FIRST
+}
+
+// Truth Layer v1 (Wave 0) — direction of a `ReviewAnalysis.switchSignals`
+// entry. v1 stored a flat string array; v2 (T-C) splits on direction so
+// `inbound` ("X is way better than us" — reviewer praising the prospect's
+// category over a competitor) is not lumped with `outbound` (reviewer
+// having left the prospect's brand). Drives trigger-detector's
+// COMPETITOR_PRESSURE rule (only `outbound` qualifies) and the
+// IntelligenceBriefCard's switch-signal rendering.
+enum SwitchDirection {
+  inbound
+  outbound
+  comparison_neutral
+}
+
+// Truth Layer v1 (Wave 0 / T-E) — multi-source verification of whether
+// a lead actually has a website. `confirmed_present` requires >= 1
+// positive source. `confirmed_absent` requires >= 3 negative sources
+// (per T-E orchestrator policy in `website-multi-verify.ts`).
+// `uncertain` is the fallback. T-D MUST NOT ship "no website" claims
+// unless this column is `confirmed_absent`.
+enum WebsiteVerificationStatus {
+  confirmed_present
+  confirmed_absent
+  uncertain
 }
 
 enum Channel {
