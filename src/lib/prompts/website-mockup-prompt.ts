@@ -234,31 +234,6 @@ export interface WebsiteMockupSections {
   section_order: string[];
 }
 
-/**
- * Workspace ServicePackage shape consumed by the prompt. Mirrors
- * the columns Prisma returns in `website-mockup.ts` so the prompt
- * builder is decoupled from the generated client.
- */
-export interface WorkspaceServicePackage {
-  name: string;
-  priceLabel: string;
-  features: string[];
-  isPopular: boolean;
-}
-
-export interface RecommendedPackageInput {
-  name: string;
-  priceLabel: string;
-  features: string[];
-  /**
-   * Free-text reason from the analyst worker
-   * (`SalesOpportunity.recommendedPackageReason`). When present the
-   * prompt instructs Gemini to lean into this reason for the
-   * `is_popular: true` card so the rep can defend the pick verbally.
-   */
-  reason: string | null;
-}
-
 export interface WebsiteMockupPromptInput {
   businessName: string;
   formattedAddress: string;
@@ -272,8 +247,6 @@ export interface WebsiteMockupPromptInput {
   topReviews: { authorName: string; rating: number; text: string | null }[];
   painPhrases: string[];
   strengthPhrases: string[];
-  workspaceOfferName: string | null;
-  workspaceValueProposition: string | null;
   /**
    * Niche pack metadata for the lead. Lets the model lean into the
    * vertical's actual sales angle (e.g. "QR pay + tab split for bars",
@@ -286,36 +259,45 @@ export interface WebsiteMockupPromptInput {
   nichePitchAngle: string | null;
   nicheHighValueSignals: string[];
   /**
-   * v2 — Sales Opportunity inputs. These flow from the upstream
-   * SALES_OPPORTUNITY_SCORER worker (now a hard prerequisite of the
-   * mockup worker per the `user_one_click_pitch` chain rewire). When
-   * the scorer hasn't run yet (legacy callers / older chains) every
-   * field is null/empty and the prompt falls back to the v1
-   * niche-only grounding.
+   * v2 — Niche-typical customer-facing offerings. The mockup is the
+   * BUSINESS'S website addressed to ITS customers, so the `courses`
+   * cards advertise what THIS vertical normally sells (e.g. driving
+   * school: "B Sınıfı", "A2 Motor"; phone repair: "Ekran Değişimi",
+   * "Batarya Değişimi"). These come from the lead's niche pack —
+   * NEVER from the workspace's ServicePackage rows, which are the
+   * agency's pricing aimed at the lead (different audience). Empty →
+   * prompt instructs Gemini to infer 2-3 plausible offerings from
+   * the niche label.
+   */
+  nicheTypicalOfferings?: string[];
+  /**
+   * v2 — Sales Opportunity inputs from SALES_OPPORTUNITY_SCORER. These
+   * are AGENCY-INTERNAL signals (why this lead is a good target for
+   * the workspace selling the build) — they MUST NOT leak into the
+   * customer-facing copy on the demo site. The prompt only uses them
+   * to inform internal hidden notes; the lead's own site copy is
+   * driven exclusively by the niche pitch angle, services detected,
+   * and the lead's own review evidence.
    */
   salesPainPoints?: string[];
   salesBestAngle?: string | null;
   salesWhyGoodTarget?: string | null;
-  recommendedPackage?: RecommendedPackageInput | null;
-  /**
-   * v2 — All priced tiers the workspace sells, in display order.
-   * Drives the `courses` section so the rep's own /m/<slug> demo
-   * carries their actual price card (instead of Gemini inventing
-   * generic "STARTER / GROWTH / PRO" copy). Empty array → showcase
-   * renderer omits the courses section.
-   */
-  workspaceServicePackages?: WorkspaceServicePackage[];
   language: string; // "tr" | "en"
 }
 
-export const WEBSITE_MOCKUP_SYSTEM_CONTEXT = `You are a senior web designer and copywriter building a single-page landing website for a local service business. Your output must be:
+export const WEBSITE_MOCKUP_SYSTEM_CONTEXT = `You are a senior web designer and copywriter building a single-page landing website FOR a local service business that will be addressed TO that business's own customers. Audience-truth rules — read carefully:
 
-1. High-conversion: every section exists to push the visitor toward calling, booking, or requesting a quote.
-2. Grounded: use ONLY the facts provided about this business. Do not invent hours, prices, staff count, certifications, or years in business. If a detail is not supplied, keep the copy general.
-3. Audience-aware: the reader is a local homeowner or small business owner looking for this service NOW. Copy should feel local, trustworthy, and urgent without being pushy.
-4. Vertical-aware: when a niche pitch angle and high-value signals are provided, lean the headline + services + CTA into that angle. Example: a bar's hero should mention peak-hour throughput / tab split, not generic "great drinks"; a fine-dining hero should sell the experience, not online ordering.
-5. Sales-aware: when SALES OPPORTUNITY signals are provided (best_sales_angle, likely_pain_points), the hero headline IS a tight rewrite of best_sales_angle and the subline counters the top 2 pain points. The recommendedPackage (when provided) is the card the prompt marks is_popular:true and its name MUST match one of the workspaceServicePackages entries.
-6. Design-system-aligned: use Leadac's landing-page aesthetic - dark background, glass panels, single accent gradient, one clear primary CTA. The theme colors are picked deterministically by the system based on the business's vertical; you may still emit a "theme" object in the response (the renderer ignores it and substitutes the niche palette), but do not waste effort tuning it.
+  Audience = the business's CUSTOMERS (e.g. for a driving school: prospective students and their parents; for a phone-repair shop: people with a cracked screen). NOT the business owner.
+  Author voice = the BUSINESS speaking to its customers ("Ehliyetinizi bizden alın", "Hemen randevu alın"). NOT an agency speaking to the business owner.
+  Forbidden voice: "Daha çok öğrenci kazanın", "müşteri memnuniyetinizi online'a taşıyın", "operasyonel verimlilik", "leads", "conversions", "ROI". These are agency-to-business pitches — they belong in the cold email, NOT on the demo site. If you catch yourself writing them, REWRITE.
+
+Output requirements:
+
+1. High-conversion: every section pushes the visitor (the customer) toward calling, WhatsApp-ing, booking, or visiting.
+2. Grounded: use ONLY the facts provided. Do not invent hours, prices, staff count, certifications, years in business, or specific pass rates. When a detail isn't supplied, keep it general ("Yüksek başarı", "Deneyimli kadro"). NEVER quote a price unless an explicit number is supplied.
+3. Vertical-native: when a niche pitch angle and typical offerings are provided, lean the headline + courses + features into that vertical's customer journey. The courses section advertises what THE BUSINESS sells to its customers (e.g. driving school: "B Sınıfı Ehliyet", "A2 Motor"), NOT agency packages.
+4. Local + warm: copy should feel local, trustworthy, and urgent without being pushy. Avoid corporate jargon.
+5. Design: glass panels, single accent gradient, one clear primary CTA. The theme colors are picked deterministically server-side after you respond; you may emit any reasonable theme object — it will be substituted.
 
 Respond ONLY with valid JSON matching the schema exactly. No markdown, no preface, no trailing prose.`;
 
@@ -340,14 +322,14 @@ export const WEBSITE_MOCKUP_SCHEMA_DESCRIPTION = `Response schema (every field r
   "features": [                           // 4 process steps; for a driving school: Kayıt → Teorik → Direksiyon → Sınav
     { "title": string, "body": string, "icon_hint": string }
   ],
-  "courses": [                            // 1-3 priced cards; ONE has is_popular:true (the recommendedPackage)
+  "courses": [                            // 2-3 cards of what THE BUSINESS sells to ITS customers
     {
-      "title": string,                    // MUST match a workspaceServicePackages.name when packages are supplied
-      "body": string,
-      "price_label": string,              // ECHO the package's priceLabel verbatim — do NOT invent
-      "duration": string | null,          // e.g. "30 saat" / "4 hafta", optional
-      "feature_list": [string, ...],      // 3-6 bullets
-      "is_popular": boolean,
+      "title": string,                    // e.g. for driving school: "B Sınıfı Ehliyet Kursu"
+      "body": string,                     // 1-2 sentence pitch describing what the customer gets
+      "price_label": string,              // "Bizden teklif al" / "Detay için arayın" — NEVER invent a numeric price
+      "duration": string | null,          // e.g. "30 saat teorik + 14 saat direksiyon"
+      "feature_list": [string, ...],      // 3-6 bullets of what's included from the CUSTOMER's perspective
+      "is_popular": boolean,              // mark exactly ONE card true — the vertical's flagship offering
       "icon_hint": string
     }
   ],
@@ -418,47 +400,29 @@ export function buildWebsiteMockupPrompt(input: WebsiteMockupPromptInput): strin
 
   const servicesBlock = input.servicesDetected.length
     ? input.servicesDetected.join(", ")
-    : "(not detected - infer 3-5 plausible services for this business type)";
+    : "(not detected — infer 3-5 plausible services for this business type)";
 
   const nicheBlock = input.nicheLabel
     ? `- Vertical: ${input.nicheLabel}
-- Pitch angle: ${input.nichePitchAngle ?? "(none)"}
-- High-value signals to lean into: ${input.nicheHighValueSignals.length ? input.nicheHighValueSignals.join("; ") : "(none)"}`
-    : "(no niche metadata available - treat as generic local service business)";
+- Pitch angle (customer-facing): ${input.nichePitchAngle ?? "(none)"}
+- High-value signals: ${input.nicheHighValueSignals.length ? input.nicheHighValueSignals.join("; ") : "(none)"}`
+    : "(no niche metadata available — treat as generic local service business)";
 
-  // ---------- v2 sales opportunity ----------
+  const offerings = input.nicheTypicalOfferings ?? [];
+  const offeringsBlock = offerings.length
+    ? offerings.map((o, i) => `  ${i + 1}. ${o}`).join("\n")
+    : "(none supplied — infer 2-3 plausible customer-facing offerings for this vertical from the niche label and primaryType)";
+
+  // Sales opportunity — INTERNAL CONTEXT ONLY, must not leak into copy.
   const salesPains = input.salesPainPoints ?? [];
-  const salesBlock =
+  const salesContextBlock =
     input.salesBestAngle || input.salesWhyGoodTarget || salesPains.length
-      ? `- Best sales angle: ${input.salesBestAngle ?? "(none)"}
-- Why good target: ${input.salesWhyGoodTarget ?? "(none)"}
-- Likely pain points (counter these in hero subline + courses body):
-${salesPains.length ? salesPains.map((p) => `  · ${p}`).join("\n") : "  · (none surfaced)"}`
-      : "(no sales-opportunity signals available — fall back to niche + review evidence)";
-
-  // ---------- v2 service packages ----------
-  const packages = input.workspaceServicePackages ?? [];
-  const packagesBlock = packages.length
-    ? packages
-        .map((p, i) => {
-          const star = p.isPopular ? " [POPULAR]" : "";
-          const feats = p.features.length
-            ? p.features.map((f) => `      · ${f}`).join("\n")
-            : "      · (no features listed)";
-          return `  ${i + 1}. ${p.name} — ${p.priceLabel}${star}
-${feats}`;
-        })
-        .join("\n")
-    : "(no priced packages configured — emit an empty courses array)";
-
-  const recPkg = input.recommendedPackage;
-  const recBlock = recPkg
-    ? `Recommended package (must be the courses card with is_popular:true):
-  - Name: ${recPkg.name}
-  - Price: ${recPkg.priceLabel}
-  - Features: ${recPkg.features.join(" · ") || "(none)"}
-  - Why: ${recPkg.reason ?? "(no reason from scorer)"}`
-    : "(no recommended package — pick the workspaceServicePackages entry whose isPopular:true is_popular; otherwise the middle entry)";
+      ? `(Reference only — these describe why an agency might pitch THIS business. DO NOT echo them into the customer-facing copy. They exist to remind you what NOT to write on the demo site.)
+- Agency's pitch angle to the business owner: ${input.salesBestAngle ?? "(none)"}
+- Why this is a good agency target: ${input.salesWhyGoodTarget ?? "(none)"}
+- Operational gaps the agency sees:
+${salesPains.length ? salesPains.map((p) => `  · ${p}`).join("\n") : "  · (none)"}`
+      : "(no agency-side context — fine, the demo site never needed it anyway)";
 
   return `${WEBSITE_MOCKUP_SYSTEM_CONTEXT}
 
@@ -466,7 +430,7 @@ ${WEBSITE_MOCKUP_SCHEMA_DESCRIPTION}
 
 LANGUAGE FOR ALL COPY: ${langTag}. Every headline, body line, CTA, FAQ, and label must be in this language.
 
-BUSINESS CONTEXT:
+==== THE BUSINESS THIS SITE IS FOR (this is who is speaking on the page) ====
 - Name: ${input.businessName}
 - Type: ${input.primaryType ?? "(not specified)"}
 - Address: ${input.formattedAddress}
@@ -474,47 +438,58 @@ BUSINESS CONTEXT:
 - Phone: ${input.phone ?? "(not available)"}
 - Current website: ${input.websiteUrl ?? "(none)"}
 - Google rating: ${input.rating ?? "(no rating)"} (${input.reviewCount ?? 0} reviews)
-- Services detected: ${servicesBlock}
+- Services detected on their current site / Google profile: ${servicesBlock}
 
 NICHE CONTEXT:
 ${nicheBlock}
 
-SALES OPPORTUNITY:
-${salesBlock}
+TYPICAL CUSTOMER-FACING OFFERINGS for this vertical (use these to seed the courses section):
+${offeringsBlock}
 
-REVIEW SIGNAL:
+REVIEW SIGNAL (the business's actual customers in their own words):
 Top reviews:
 ${reviewsBlock}
 
-Top customer pains (address these in your copy or counter them):
+Pains visitors might worry about (counter these in the copy):
 ${painsBlock}
 
-Top customer strengths (lean into these):
+Strengths to lean into (these are the business's actual edge):
 ${strengthsBlock}
 
-AGENCY OFFER CONTEXT (the agency selling this site):
-- Offer name: ${input.workspaceOfferName ?? "(generic)"}
-- Value proposition: ${input.workspaceValueProposition ?? "(generic)"}
+==== AGENCY-INTERNAL CONTEXT — DO NOT WRITE THIS INTO THE SITE ====
+${salesContextBlock}
 
-WORKSPACE SERVICE PACKAGES (use as the source-of-truth for courses):
-${packagesBlock}
+==== INSTRUCTIONS ====
 
-${recBlock}
+1. Voice check before every block: am I writing as ${input.businessName} talking to its customers? If not, rewrite. Never address the business owner.
 
-INSTRUCTIONS:
-1. Hero: headline is a 5-9 word rewrite of best_sales_angle if available, otherwise the niche pitch angle. Subline counters the top 1-2 pain points OR echoes the strongest review evidence. stat_strip = 3 short proof numbers (e.g. "%92 sınav başarısı", "1.500+ mezun"); do not invent specifics — keep them generic ("Yüksek başarı", "Mezunlarımız") when no review/audit data backs them.
-2. Stats: 3-4 KPI cards, complement the stat_strip (different angle — e.g. years operating, fleet size).
-3. Features (process steps): 4 entries describing the customer journey for THIS vertical. For a driving school the canonical flow is Kayıt → Teorik → Direksiyon → Sınav. For other verticals: Discovery → Teklif → Uygulama → Teslim.
-4. Courses: 1-3 priced cards drawn from workspaceServicePackages. Each card's title MUST match a package name verbatim; price_label MUST be the package's priceLabel verbatim. The recommendedPackage card (or the workspace's isPopular:true package) gets is_popular:true and a slightly stronger body. Never invent a tier that isn't in the input.
-5. Trust points: 3 numbered cards drawn from the workspace valueProposition + the counters of the top pain points.
-6. Testimonials: 2-3 paraphrased Google reviews. Attribution = first name + initial. Skip the section (empty array + testimonial:null) when no reviews are provided.
-7. FAQs: 5-6 entries. The FIRST question MUST address price (e.g. "Kurs ücretleri ne kadar?" / "How much do courses cost?"). Subsequent questions: registration, class types, duration, required documents, lesson scheduling.
-8. About: 2-4 sentence paragraph, no invented dates / staff counts. instructors = 0-3 generic role cards (e.g. "Baş eğitmen", "Teorik dersleri") — names stay as initials only if you don't have evidence; OK to leave empty.
-9. Booking widget: time_slots = 5 vertical-appropriate hours (driving school 09:00–18:00 weekday window). Labels are localised today / tomorrow / day-after-tomorrow names.
-10. Contact form: class_label is vertical-specific (e.g. "B sınıfı / A2 / Direksiyon"); privacy_note explains that submissions open WhatsApp on the user's device.
-11. Map: iframe_query = "${input.businessName} ${input.formattedAddress}". Raw string, no encoding.
-12. cta_final: headline urges action; secondary_button_text is the WhatsApp label.
-13. Theme: emit any reasonable hex pair — the system will substitute the niche palette before rendering. mode "dark" is the sensible default.
+2. Hero: headline (5-9 words) is what a CUSTOMER scanning the page in 2 seconds needs to know — "${input.businessName}'da ehliyetinizi alın" / "Beylikdüzü'nün güvenilir sürücü kursu". DO NOT use phrases like "daha çok öğrenci" / "memnuniyeti online'a taşıyın" / "verimlilik" — those are agency pitches, not customer hooks. Subline (10-20 words) reassures the customer (location, experience, certification) — counter visitor anxieties, not agency-perceived gaps. stat_strip = 3 short proof numbers; keep generic ("Yüksek başarı", "Tecrübeli kadro", "MEB onaylı") when no concrete data is supplied — NEVER invent percentages.
+
+3. Stats: 3-4 KPI cards complementing the stat_strip — different angle (years operating, modern fleet, etc.). Same generic-when-unknown rule.
+
+4. Features (process steps): 4 entries describing the customer journey for THIS vertical FROM THE CUSTOMER'S POV. Driving school: Kayıt → Teorik → Direksiyon → Sınav. Each body explains what the CUSTOMER does / experiences at that step.
+
+5. Courses: 2-3 cards. Each card is ONE customer-facing offering from the typical-offerings list (e.g. "B Sınıfı Ehliyet Kursu", "A2 Motosiklet"). price_label is "Bizden teklif al" or "Detay için arayın" — NEVER quote a numeric price unless one is explicitly provided in the input (it never is). Body = what the customer gets. feature_list = what's included (e.g. "30 saat teorik", "14 saat direksiyon", "Online ders portalı"). Mark the most-bought tier is_popular:true (e.g. B Sınıfı for a driving school).
+
+6. Trust points: 3 numbered cards from the customer's perspective ("MEB onaylı", "Tecrübeli kadro", "Modern araç filosu"). NEVER mention agency-side concepts ("online conversion", "lead capture").
+
+7. Testimonials: 2-3 paraphrased Google reviews. Attribution = first name + initial. When no reviews are supplied, emit an empty array and testimonial:null.
+
+8. FAQs: 5-6 entries. FIRST question MUST be price-related from the customer's POV ("Kurs ücretleri ne kadar?" — answer points them to phone/WhatsApp, NEVER quotes a number). Subsequent: required documents, class duration, scheduling, online vs in-person.
+
+9. About: 2-4 sentence paragraph in the business's voice. instructors = 0-3 generic role cards ("Baş eğitmen", "Teorik dersleri uzmanı") — only emit when role types are universal to the vertical; names stay generic if the business hasn't shared real ones.
+
+10. Booking widget: time_slots = 5 vertical-appropriate hours (driving school: 09:00–18:00 weekdays). Localised day labels.
+
+11. Contact form: class_label is vertical-specific ("B sınıfı / A2 / Direksiyon" for driving school). privacy_note tells the visitor where their message goes ("Mesajınız WhatsApp'a iletilir.").
+
+12. Map: iframe_query = "${input.businessName} ${input.formattedAddress}" raw, no encoding.
+
+13. cta_final: headline urges the CUSTOMER to act ("Hayalinizdeki ehliyete bir adım kaldı"). secondary_button_text = WhatsApp label.
+
+14. Theme: emit any hex pair — the system substitutes the niche palette before rendering.
+
+FINAL VOICE AUDIT before emitting JSON: scan every headline / body / CTA. Strike anything that addresses a business owner, sells agency services, or mentions "leads / conversion / verimlilik / dijital dönüşüm". Replace with copy aimed at the END CUSTOMER (e.g. for a driving school: a parent in Beylikdüzü googling "Beylikdüzü ehliyet kursu" who wants their kid to pass first try). If unsure, ask: "Would I see this copy on a real working driving school's website?" — only emit when the answer is yes.
 
 Respond with ONLY the JSON object. No prose before or after.`;
 }

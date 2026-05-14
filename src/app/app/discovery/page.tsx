@@ -44,6 +44,19 @@ const CHILDREN_BY_PARENT = new Map<string, typeof NICHES>(
   PARENT_PACKS.map((p) => [p.slug, NICHES.filter((c) => c.parentSlug === p.slug)]),
 );
 
+// Per-run lead cap presets. Mirrors common rep scenarios: "quick
+// taste of a new niche" (20), "fill the day's prospecting" (50/100),
+// "weekly bulk" (200), "cycle ceiling" (500 — also the API's hard
+// max). Keep these in sync with `MAX_LEADS_ABSOLUTE` on the server.
+const LEAD_CAP_PRESETS = [
+  { value: 20, label: "20 — Hızlı önizleme" },
+  { value: 50, label: "50 — Günlük" },
+  { value: 100, label: "100 — Haftalık (varsayılan)" },
+  { value: 200, label: "200 — Toplu" },
+  { value: 500, label: "500 — Maksimum" },
+];
+const DEFAULT_LEAD_CAP = 100;
+
 export default function DiscoveryPage() {
   const [selectedCountry, setSelectedCountry] = useState("");
   // Picked locations from the autocomplete flow (preferred path —
@@ -58,11 +71,19 @@ export default function DiscoveryPage() {
   const [selectedPackSlug, setSelectedPackSlug] = useState("");
   const [selectedQuery, setSelectedQuery] = useState("");
   const [customQuery, setCustomQuery] = useState("");
+  // Per-run hard cap on how many leads will be inserted. Stored as a
+  // string in component state so the Select value matches the
+  // option `value` (Radix only takes strings); coerced to number
+  // when posted.
+  const [maxLeads, setMaxLeads] = useState<string>(String(DEFAULT_LEAD_CAP));
   const [running, setRunning] = useState(false);
   const [singleResult, setSingleResult] = useState<{
     created: number;
     skipped: number;
     total: number;
+    totalCandidates?: number;
+    truncatedBy?: number;
+    maxLeads?: number;
     fanOut?: boolean;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -127,10 +148,21 @@ export default function DiscoveryPage() {
           boroughName: usingFallback ? city.trim() : undefined,
           country: selectedCountry,
           nichePackSlug: selectedPackSlug || undefined,
+          maxLeads: Number(maxLeads) || DEFAULT_LEAD_CAP,
         }),
         signal: controller.signal,
       });
-      let data: { success?: boolean; error?: string; created?: number; skipped?: number; total?: number; fanOut?: boolean } = {};
+      let data: {
+        success?: boolean;
+        error?: string;
+        created?: number;
+        skipped?: number;
+        total?: number;
+        totalCandidates?: number;
+        truncatedBy?: number;
+        maxLeads?: number;
+        fanOut?: boolean;
+      } = {};
       try {
         data = await res.json();
       } catch {
@@ -148,6 +180,9 @@ export default function DiscoveryPage() {
         created: data.created ?? 0,
         skipped: data.skipped ?? 0,
         total: data.total ?? 0,
+        totalCandidates: data.totalCandidates,
+        truncatedBy: data.truncatedBy,
+        maxLeads: data.maxLeads,
         fanOut: data.fanOut,
       });
       const childCount = fanOutMode && selectedPack
@@ -386,6 +421,35 @@ export default function DiscoveryPage() {
               )}
             </div>
 
+            {/* Per-run lead cap. Lives between the niche picker and
+                the submit button because that's where the rep mentally
+                lands once they've decided WHAT to search and now needs
+                to set HOW MUCH. Quota is still the hard ceiling — the
+                cap just lets a FREE-tier rep say "give me 20" without
+                burning through their whole monthly allowance. */}
+            <div>
+              <label className="text-[13px] font-medium text-white/50 mb-1.5 block">
+                Lead sayısı (maks)
+              </label>
+              <Select value={maxLeads} onValueChange={setMaxLeads}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEAD_CAP_PRESETS.map((p) => (
+                    <SelectItem key={p.value} value={String(p.value)}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-white/35 mt-1.5">
+                Bu Discovery koşusunda eklenecek yeni lead'lerin üst
+                sınırı. Plan kotanız ayrıca tüm döngü için ayrı bir
+                tavan uygular.
+              </p>
+            </div>
+
             <Button
               className="w-full"
               onClick={runDiscovery}
@@ -431,6 +495,17 @@ export default function DiscoveryPage() {
                     <p className="text-[11px] text-white/30">Duplicate</p>
                   </div>
                 </div>
+                {/* Show the "you asked for 50 but Google returned 240" tail
+                    so the rep knows there's headroom by raising the cap. */}
+                {singleResult.truncatedBy && singleResult.truncatedBy > 0 ? (
+                  <p className="text-[11px] text-[hsl(38_70%_55%)] flex items-start gap-1.5 mt-2">
+                    <Info className="w-3 h-3 mt-0.5 shrink-0" />
+                    {singleResult.totalCandidates} sonuç bulundu, lead sayısı
+                    sınırınız ({singleResult.maxLeads}) nedeniyle{" "}
+                    {singleResult.truncatedBy} tanesi atlandı. Üst sınırı
+                    yükseltirseniz bir sonraki koşuda kalanları çekebilirsiniz.
+                  </p>
+                ) : null}
               </div>
             )}
           </CardContent>

@@ -33,14 +33,11 @@ import {
   buildWebsiteMockupPrompt,
   type WebsiteMockupSections,
   type WebsiteMockupPromptInput,
-  type WorkspaceServicePackage,
-  type RecommendedPackageInput,
 } from "@/lib/prompts/website-mockup-prompt";
 import { renderLeadacShowcase } from "@/lib/mockups/renderers/leadac-showcase";
 import { parseBranding } from "@/lib/branding";
 import { generateMockupSlug } from "@/lib/mockup";
 import { getVisualIdentityForLead, getNicheBySlug } from "@/lib/niches";
-import { resolveRecommendedPackage } from "@/lib/lead-detail/recommended-package";
 import type { AgentWorkerOutput, AgentWorkerRun } from "./types";
 
 export const SHOWCASE_TEMPLATE_ID = "leadac-showcase-v1";
@@ -54,11 +51,20 @@ export const run: AgentWorkerRun = async (ctx) => {
   const review = lead.reviewAnalysis;
 
   // Top 3 Google reviews by rating (we only need a short sample for
-  // Gemini grounding — the full set is analyzed elsewhere).
-  // Parallel-load the workspace's priced packages + the lead's
-  // SalesOpportunity so the prompt has everything it needs in one
-  // round-trip.
-  const [topReviews, salesOp, workspacePackages] = await Promise.all([
+  // Gemini grounding — the full set is analyzed elsewhere). Loaded in
+  // parallel with the lead's SalesOpportunity which carries the
+  // agency-side context the prompt uses ONLY for internal grounding.
+  //
+  // Workspace ServicePackages are intentionally NOT loaded here: they
+  // are the AGENCY's pricing aimed at the lead (e.g. Emirhan's
+  // "7.000 TL — Tek sayfa site"). Showing them on the lead's demo
+  // site mixed audiences — students searching for ehliyet kursları
+  // saw "Domain + 1 yıl hosting" as a course. The agency packages
+  // belong in the opener / pitch deck; the demo site advertises what
+  // the BUSINESS sells to its own customers (driving school: B
+  // Sınıfı / A2 Motor / etc.), seeded from
+  // `nichePack.typicalCustomerOfferings`.
+  const [topReviews, salesOp] = await Promise.all([
     prisma.googleReview.findMany({
       where: { leadId: lead.id },
       orderBy: [{ rating: "desc" }, { publishTime: "desc" }],
@@ -71,14 +77,7 @@ export const run: AgentWorkerRun = async (ctx) => {
         likelyPainPoints: true,
         bestSalesAngle: true,
         whyGoodTarget: true,
-        recommendedPackageId: true,
-        recommendedPackageReason: true,
       },
-    }),
-    prisma.servicePackage.findMany({
-      where: { workspaceId: ctx.workspaceId },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      select: { name: true, priceLabel: true, features: true, isPopular: true },
     }),
   ]);
 
@@ -96,36 +95,6 @@ export const run: AgentWorkerRun = async (ctx) => {
   const salesPainPoints = Array.isArray(salesOp?.likelyPainPoints)
     ? (salesOp.likelyPainPoints as unknown[]).filter(isString)
     : [];
-
-  // Resolve the recommended package row (or null when the analyst
-  // didn't write one, or the row was deleted since). The helper
-  // already enforces workspace scope.
-  const recommendedPackage: RecommendedPackageInput | null =
-    salesOp?.recommendedPackageId
-      ? await (async () => {
-          const resolved = await resolveRecommendedPackage({
-            workspaceId: ctx.workspaceId,
-            recommendedPackageId: salesOp.recommendedPackageId,
-            recommendedPackageReason: salesOp.recommendedPackageReason,
-          });
-          if (!resolved) return null;
-          return {
-            name: resolved.name,
-            priceLabel: resolved.priceLabel,
-            features: resolved.features,
-            reason: resolved.reason,
-          };
-        })()
-      : null;
-
-  const workspaceServicePackages: WorkspaceServicePackage[] = workspacePackages.map(
-    (p) => ({
-      name: p.name,
-      priceLabel: p.priceLabel,
-      features: p.features,
-      isPopular: p.isPopular,
-    }),
-  );
 
   // Look up the niche pack for richer prompt context. Prefer child
   // slug (more specific pitch) then parent. Falls back to no metadata
@@ -148,16 +117,13 @@ export const run: AgentWorkerRun = async (ctx) => {
     topReviews,
     painPhrases,
     strengthPhrases,
-    workspaceOfferName: ctx.workspace.offerName ?? null,
-    workspaceValueProposition: ctx.workspace.valueProposition ?? null,
     nicheLabel: nichePack?.label ?? null,
     nichePitchAngle: nichePack?.pitchAngle ?? null,
     nicheHighValueSignals: nichePack?.highValueSignals ?? [],
+    nicheTypicalOfferings: nichePack?.typicalCustomerOfferings ?? [],
     salesPainPoints,
     salesBestAngle: salesOp?.bestSalesAngle ?? null,
     salesWhyGoodTarget: salesOp?.whyGoodTarget ?? null,
-    recommendedPackage,
-    workspaceServicePackages,
     language: ctx.workspace.language ?? "en",
   };
 
@@ -183,7 +149,7 @@ export const run: AgentWorkerRun = async (ctx) => {
     label: "website_mockup",
   });
   const text = result.response.text();
-  const sections = parseSections(text, workspaceServicePackages);
+  const sections = parseSections(text);
 
   // Resolve niche-specific palette + photos. Niche pack is the source
   // of truth for visual identity; Gemini's `theme` block is advisory.
@@ -305,15 +271,17 @@ function isStringArray(v: unknown): v is string[] {
 /**
  * Parses + validates the Gemini JSON response. Falls back to safe
  * defaults for any v2 field that comes back missing or malformed so
- * the renderer always has a valid object to chew on; the price card
- * is rebuilt server-side from the workspace's ServicePackage rows
- * regardless of what Gemini emits so an invented price can never
- * land in the public /m/<slug> page.
+ * the renderer always has a valid object to chew on.
+ *
+ * Courses are no longer reconciled against the workspace's
+ * ServicePackages: the demo site advertises what the LEAD sells to
+ * its customers (seeded by `nichePack.typicalCustomerOfferings`),
+ * not the agency's pricing. Gemini is instructed to keep
+ * `price_label` non-numeric ("Bizden teklif al" / "Detay için arayın")
+ * so an invented price still can't ship — the guardrail moves from
+ * a server-side substitution to a prompt-level constraint.
  */
-function parseSections(
-  text: string,
-  workspacePackages: WorkspaceServicePackage[],
-): WebsiteMockupSections {
+function parseSections(text: string): WebsiteMockupSections {
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(text);
@@ -351,62 +319,32 @@ function parseSections(
     ? (hero.stat_strip as unknown[])
     : [];
 
-  // Reconcile courses against the workspace's actual price card. The
-  // prompt is asked to title-match + price-match verbatim; we enforce
-  // it here so an invented price (e.g. Gemini writing "10.000 TL"
-  // when the workspace's tier is "7.000 TL") cannot ship to the
-  // public page. When a Gemini course title doesn't match any
-  // workspace package, we keep the Gemini-supplied price_label
-  // verbatim (back-compat with workspaces that have ZERO
-  // ServicePackages configured — fine-dining-tier workspaces). If
-  // workspacePackages is non-empty and Gemini's title doesn't match,
-  // we substitute the closest workspace package by index.
-  const pkgByName = new Map(
-    workspacePackages.map((p) => [p.name.toLowerCase().trim(), p]),
-  );
+  // Trust Gemini's course cards as-is; the prompt forbids numeric
+  // prices (instructed to emit "Bizden teklif al" / "Detay için
+  // arayın") so we can't accidentally publish an invented price tag.
+  // Still enforce single-popular-card invariant — at most ONE card
+  // wins is_popular:true regardless of what Gemini emits.
   let popularSeen = false;
   const courses = coursesRaw
     .slice(0, 3)
     .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
-    .map((c, idx) => {
-      const title = String(c.title ?? "");
-      const matched = pkgByName.get(title.toLowerCase().trim()) ??
-        (workspacePackages.length > 0 ? workspacePackages[idx % workspacePackages.length] : null);
-      const priceLabel = matched ? matched.priceLabel : String(c.price_label ?? "");
-      const isPopularInput = matched ? matched.isPopular : c.is_popular === true;
+    .map((c) => {
+      const isPopularInput = c.is_popular === true;
       const isPopular = isPopularInput && !popularSeen;
       if (isPopular) popularSeen = true;
       return {
-        title: matched ? matched.name : title,
+        title: String(c.title ?? ""),
         body: String(c.body ?? ""),
-        price_label: priceLabel,
+        price_label: String(c.price_label ?? ""),
         duration: typeof c.duration === "string" ? c.duration : null,
-        feature_list: isStringArray(c.feature_list)
-          ? c.feature_list
-          : matched
-            ? matched.features
-            : [],
+        feature_list: isStringArray(c.feature_list) ? c.feature_list : [],
         is_popular: isPopular,
         icon_hint: String(c.icon_hint ?? "star"),
       };
-    });
+    })
+    .filter((c) => c.title.length > 0);
 
-  // When no Gemini courses survived but the workspace has packages
-  // configured, synthesise a courses card per package so the showcase
-  // never ships without the pricing block (workspaces that paid for
-  // the v2 mockup should always see their tiers on the page).
-  const finalCourses =
-    courses.length === 0 && workspacePackages.length > 0
-      ? workspacePackages.slice(0, 3).map((p, idx) => ({
-          title: p.name,
-          body: "",
-          price_label: p.priceLabel,
-          duration: null,
-          feature_list: p.features,
-          is_popular: p.isPopular || idx === 1,
-          icon_hint: "star",
-        }))
-      : courses;
+  const finalCourses = courses;
 
   const booking = parsed.booking_widget as Record<string, unknown> | null | undefined;
   const contact = parsed.contact_form as Record<string, unknown> | null | undefined;

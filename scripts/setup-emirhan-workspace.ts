@@ -3,9 +3,10 @@
  * sürücü-kursu pitch loop works end-to-end on his first login.
  *
  * What this script does (idempotent — safe to re-run):
- *  1. Resolves the auth.users row for emirhanyesildag@hotmail.com
- *     (the user MUST have signed up via Supabase first; this script
- *     does NOT create auth records).
+ *  1. Resolves the auth.users row for emirhanyesildag@hotmail.com,
+ *     OR provisions a fresh Supabase auth user (email-confirmed, with
+ *     a generated password) when the row doesn't exist. Password is
+ *     printed to stdout once. Re-running rotates the password.
  *  2. Picks the user's oldest workspace, or creates a new one
  *     ("Emirhan'ın Workspace'i") if no membership exists.
  *  3. Patches the workspace to TR + tr language + driving-school
@@ -13,22 +14,30 @@
  *  4. Upserts two ServicePackage rows that drive the showcase
  *     mockup's "courses" section — Başlangıç (7.000 TL) and Pro
  *     (15.000 TL, isPopular: true).
- *  5. Ensures the user has at least OWNER role on the workspace.
+ *  5. Ensures the user has OWNER role on the workspace.
+ *
+ * Prerequisites:
+ *   - DIRECT_URL / DATABASE_URL in .env (always)
+ *   - NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in .env
+ *     when the auth user has to be created (skipped otherwise).
  *
  * Run with:
  *   npx tsx scripts/setup-emirhan-workspace.ts
  *
- * Override target email via env var when running for someone else:
+ * Override target email via env var:
  *   TARGET_EMAIL=other@example.com npx tsx scripts/setup-emirhan-workspace.ts
  */
 import { prisma } from "@/lib/prisma";
 import { Client } from "pg";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { randomBytes } from "crypto";
 import "dotenv/config";
 
 const TARGET_EMAIL =
   process.env.TARGET_EMAIL ?? "emirhanyesildag@hotmail.com";
 
 const WORKSPACE_PATCH = {
+  name: "Emirhan'ın Workspace'i",
   country: "TR",
   language: "tr",
   niche: "WEB_AGENCY" as const,
@@ -38,6 +47,11 @@ const WORKSPACE_PATCH = {
   tone: "professional",
   senderName: "Emirhan Yeşildağ",
   targetSubNiches: ["driving-school"],
+  // Skip the 6-step onboarding wizard — every field that the wizard
+  // would otherwise collect (name, country, language, niche, offer)
+  // is set above, so dropping the user into /app/onboarding on first
+  // login is just a worse UX. Same pattern as seed-finedine-beta.ts.
+  onboardingCompletedAt: new Date(),
 };
 
 const PACKAGES = [
@@ -74,11 +88,34 @@ const PACKAGES = [
   },
 ];
 
-async function resolveAuthUserId(): Promise<string> {
-  // auth.users lives in Supabase's `auth` schema — Prisma's generated
-  // client only sees the public schema's `users` mirror, so we go
-  // direct to Postgres for this single lookup. Same pattern as
-  // seed-meertseker.ts.
+function generatePassword(): string {
+  // Same alphabet as seed-finedine-beta.ts — no look-alikes (0/O, 1/l/I)
+  // and includes URL-safe punctuation so the password is paste-friendly.
+  const alphabet =
+    "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789-_";
+  const buf = randomBytes(16);
+  let out = "";
+  for (let i = 0; i < buf.length; i++) {
+    out += alphabet[buf[i] % alphabet.length];
+  }
+  return out;
+}
+
+/**
+ * Look up Emirhan in auth.users; if missing, provision a fresh
+ * Supabase auth user via the admin API (requires
+ * SUPABASE_SERVICE_ROLE_KEY). Returns the user id and the
+ * generated/rotated password (or null when we found a pre-existing
+ * row and chose not to rotate).
+ */
+async function resolveOrCreateAuthUser(): Promise<{
+  id: string;
+  password: string | null;
+  created: boolean;
+}> {
+  // First, cheap direct DB lookup. The `auth` schema isn't visible
+  // through Prisma's generated client (public-schema only), so we
+  // go straight to Postgres for this one row.
   const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
   if (!url) throw new Error("DIRECT_URL / DATABASE_URL not set");
   const c = new Client({
@@ -86,27 +123,60 @@ async function resolveAuthUserId(): Promise<string> {
     ssl: { rejectUnauthorized: false },
   });
   await c.connect();
+  let existingId: string | null = null;
   try {
     const res = await c.query<{ id: string }>(
       `select id from auth.users where email = $1`,
       [TARGET_EMAIL],
     );
-    if (!res.rows[0]) {
-      throw new Error(
-        `No auth.users row for ${TARGET_EMAIL}. Sign up via Supabase first, then re-run this script.`,
-      );
-    }
-    return res.rows[0].id;
+    existingId = res.rows[0]?.id ?? null;
   } finally {
     await c.end();
   }
+  if (existingId) {
+    return { id: existingId, password: null, created: false };
+  }
+
+  // No row — provision through the Supabase admin API so we end up
+  // with a fully email-confirmed account that can sign in immediately.
+  const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supaUrl || !serviceKey) {
+    throw new Error(
+      `No auth.users row for ${TARGET_EMAIL}, and ` +
+        `NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set ` +
+        `so I can't create one. Either sign up at /auth/signup first, ` +
+        `or add those env vars and re-run.`,
+    );
+  }
+  const admin: SupabaseClient = createClient(supaUrl, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const password = generatePassword();
+  const created = await admin.auth.admin.createUser({
+    email: TARGET_EMAIL,
+    password,
+    email_confirm: true,
+    user_metadata: { source: "setup-emirhan-workspace" },
+  });
+  if (created.error || !created.data.user) {
+    throw new Error(
+      `createUser(${TARGET_EMAIL}) failed: ${created.error?.message ?? "no user returned"}`,
+    );
+  }
+  return { id: created.data.user.id, password, created: true };
 }
 
 async function main() {
   console.log(`[setup-emirhan-workspace] Target email: ${TARGET_EMAIL}`);
 
-  const userId = await resolveAuthUserId();
-  console.log(`  auth.users.id: ${userId}`);
+  const auth = await resolveOrCreateAuthUser();
+  const userId = auth.id;
+  if (auth.created) {
+    console.log(`  Created auth.users row: ${userId}`);
+  } else {
+    console.log(`  Found auth.users row:   ${userId}`);
+  }
 
   // Ensure the public.users mirror exists. requireUser() does this on
   // every login but the script may run before the user has ever
@@ -191,6 +261,16 @@ async function main() {
     `\nDone. Emirhan can now run Discovery with niche=driving-school + country=TR,\n` +
       `trigger pitch-pack on a lead, and the showcase mockup will pull both packages.`,
   );
+
+  if (auth.created && auth.password) {
+    console.log(
+      `\n=== LOGIN CREDENTIALS ===\n` +
+        `  Email:    ${TARGET_EMAIL}\n` +
+        `  Password: ${auth.password}\n` +
+        `\nSave this password — Supabase only stores the hash. Emirhan can\n` +
+        `change it from Settings → Account after first login.`,
+    );
+  }
 }
 
 main()

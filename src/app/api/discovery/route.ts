@@ -98,6 +98,15 @@ export async function POST(request: Request) {
       // present, we run the niche fan-out once per location and dedup
       // by Place ID across all locations.
       locations,
+      // Per-run hard cap on how many leads we'll INSERT from this
+      // Discovery call. After Place fan-out + dedup we slice the
+      // candidate list to this number before the create-loop, so the
+      // rep can do "give me 50 driving schools" without blowing
+      // through their monthly quota or paying for 200 Places writes
+      // when they only wanted a sample. Plan-level quota
+      // (`assertCanCreateLeads`) still wins when this cap exceeds
+      // remaining cycle headroom.
+      maxLeads: maxLeadsInput,
     }: {
       searchQuery?: string;
       boroughName?: string;
@@ -106,7 +115,19 @@ export async function POST(request: Request) {
       country?: string;
       nichePackSlug?: string;
       locations?: PickedLocation[];
+      maxLeads?: number;
     } = body;
+
+    // Hard validate the per-run cap. Default = 100 (matches the old
+    // effective single-query cap of ~60 places × small fan-out without
+    // surprising legacy callers). Floor 1, ceiling 500 — anything bigger
+    // is almost certainly a misuse of the foreground route (use the
+    // bulk path / discovery worker instead).
+    const MAX_LEADS_ABSOLUTE = 500;
+    const maxLeads =
+      typeof maxLeadsInput === "number" && Number.isFinite(maxLeadsInput)
+        ? Math.min(MAX_LEADS_ABSOLUTE, Math.max(1, Math.floor(maxLeadsInput)))
+        : 100;
 
     // Bulk path moved to the worker queue. Previously this ran 5 boroughs x
     // 3 queries sequentially inside the HTTP handler, with 1s sleeps and
@@ -399,18 +420,29 @@ export async function POST(request: Request) {
     // from — usually the smaller / more specific one — which is the
     // intuitive behaviour.
     const seen = new Set<string>();
-    const sourced: SourcedPlace[] = [];
+    const dedupedSourced: SourcedPlace[] = [];
     for (const item of allSourced) {
       if (!item.place.id || seen.has(item.place.id)) continue;
       seen.add(item.place.id);
-      sourced.push(item);
+      dedupedSourced.push(item);
     }
+
+    // Apply the per-run cap. The fan-out path easily surfaces 200-400
+    // candidate places across a parent niche × 5 locations; capping
+    // here (before the create loop) is the simplest place to honor
+    // the rep's "give me 50 leads max" request without wasting DB
+    // writes or burning quota on the tail of the result set.
+    const sourced = dedupedSourced.slice(0, maxLeads);
+    const truncatedBy = dedupedSourced.length - sourced.length;
 
     logger.info("api.discovery.dedup_done", {
       workspaceId,
       locationCount: resolved.length,
       totalRaw: allSourced.length,
-      deduped: sourced.length,
+      deduped: dedupedSourced.length,
+      cappedTo: sourced.length,
+      truncatedBy,
+      maxLeads,
       legFailures: totalLegFailures,
     });
 
@@ -539,6 +571,12 @@ export async function POST(request: Request) {
       created,
       skipped,
       total: sourced.length,
+      // Raw candidate count BEFORE the per-run cap was applied — so the
+      // UI can show "we found 240 matches; capped at your 100-lead
+      // setting" instead of silently throwing away the tail.
+      totalCandidates: dedupedSourced.length,
+      maxLeads,
+      truncatedBy,
       fanOut: !!fanOut,
       locationCount: resolved.length,
       ...(quotaHit ? { quota: quotaHit } : {}),

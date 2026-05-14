@@ -73,6 +73,21 @@ export interface NichePack {
   /** Mockup template id (matches `templates/{id}.html`). Falls back to "generic" if not implemented yet. */
   mockupTemplateId: string;
   /**
+   * Customer-facing offerings that THIS vertical typically sells to
+   * ITS customers. Used by the website-mockup prompt to populate the
+   * `courses` section on the lead's demo site so the page advertises
+   * what the BUSINESS sells (e.g. driving-school: "B Sınıfı Ehliyet
+   * Kursu", "A2 Motosiklet"), NOT what the agency selling the demo
+   * sells (i.e. NOT the workspace's ServicePackages — those belong
+   * in the opener / pitch deck only).
+   *
+   * Optional — when missing the prompt tells Gemini to infer
+   * plausible offerings from the niche label + Google `primaryType`.
+   * Free-form strings; the prompt repeats them verbatim into the
+   * LLM context.
+   */
+  typicalCustomerOfferings?: string[];
+  /**
    * Workspace product modules that are most relevant to this sub-vertical.
    * Used by the Gemini analysis prompt and opener writer to focus the
    * pitch on what the prospect actually needs (e.g. a ghost kitchen
@@ -283,6 +298,13 @@ export const NICHES: NichePack[] = [
     ],
     commonBookingProviders: ["WhatsApp", "Calendly"],
     mockupTemplateId: "driving-school",
+    typicalCustomerOfferings: [
+      "B Sınıfı Ehliyet Kursu",
+      "A2 Motosiklet Ehliyet Kursu",
+      "A1 Motosiklet Ehliyet Kursu",
+      "Direksiyon Yenileme Dersi",
+      "Trafik ve İlk Yardım Dersleri",
+    ],
   },
 
   // ============================================================

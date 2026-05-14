@@ -165,14 +165,15 @@ const NICHE_THEMES: Record<string, NicheTheme> = {
     secondaryHex: "#0a0a0a",
   },
   "driving-school": {
-    // Trafik mavisi + sarı: a TR driver instantly reads "yol levhası /
-    // güven" because every road sign in Türkiye uses this exact pair.
-    // CTA stays warm-yellow so "ÜCRETSİZ DENEME / RANDEVU AL"
-    // pops against the deep navy frame.
-    mode: "dark",
+    // Beyaz arka plan + trafik mavisi: TR sürücü kursu sektörü tarayan
+    // bir veliye "kurumsal / güvenilir / okul" hissi vermesi gerek.
+    // Siyah arka plan klüp/spor gibi okuyordu; light moda geçildi,
+    // aynı navy/cyan ikilisi accent olarak korundu (yol levhası
+    // çağrışımı için). MEB onaylı kurumlar nedeniyle WHITE > DARK.
+    mode: "light",
     primaryHex: "#1d4ed8",
-    accentHex: "#facc15",
-    secondaryHex: "#0f172a",
+    accentHex: "#0ea5e9",
+    secondaryHex: "#dbeafe",
   },
 
   // ============================================================
