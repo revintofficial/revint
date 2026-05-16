@@ -250,4 +250,103 @@ describe("leadac-showcase renderer with niche imagery", () => {
     // Format: rgba(171, 205, 239, <alpha>) — match the prefix.
     expect(html).toMatch(/rgba\(171,\s*205,\s*239/);
   });
+
+  it("kuyumcu nicheSlug swaps driving-school labels for jewelry-flavoured ones", () => {
+    // Regression: prior to the niche-aware label resolver, every TR
+    // mockup shipped with "Kayıttan ehliyete giden yol" (driving
+    // school process subtitle), "Sana en uygun kurs" (course pick),
+    // and "Ekibimiz ve eğitmenlerimiz" (instructors) regardless of
+    // vertical. A kuyumcu lead reading "kurs" / "ehliyet" /
+    // "eğitmen" wrecks credibility on first scroll.
+    const populatedSections: WebsiteMockupSections = {
+      ...baseSections,
+      features: [
+        { title: "Sor", body: "WhatsApp'tan yaz.", icon_hint: "phone" },
+        { title: "İncele", body: "Mağazaya gel.", icon_hint: "home" },
+        { title: "Onayla", body: "Gramaj + ayar onayı.", icon_hint: "check" },
+        { title: "Teslim al", body: "Kutulu, garantili.", icon_hint: "shield" },
+      ],
+      courses: [
+        {
+          title: "Alyans",
+          price_label: "Fiyat sor",
+          duration: null,
+          body: "Alyans koleksiyonu.",
+          feature_list: ["Sertifika"],
+          icon_hint: "heart",
+          is_popular: true,
+        },
+      ],
+      testimonials: [
+        { body: "Çok memnun kaldık.", attribution: "Ayşe K.", rating: 5 },
+      ],
+      about: {
+        paragraph: "Beylikdüzü'nde kuyumculuk hizmeti veriyoruz.",
+        instructors: [],
+      },
+    };
+    const html = renderLeadacShowcase({
+      ...baseRenderInput,
+      sections: populatedSections,
+      lang: "tr",
+      nicheSlug: "kuyumcu-traditional",
+      nicheParentSlug: "kuyumcu",
+      imagery: {
+        hero: ["https://images.unsplash.com/photo-1576723417715-6b408c988c23?w=1600"],
+        gallery: [
+          "https://images.unsplash.com/photo-1650455221359-3aebf920bcc5?w=1200",
+          "https://images.unsplash.com/photo-1667286266946-4bbb7969b32b?w=1200",
+          "https://images.unsplash.com/photo-1576723417715-6b408c988c23?w=1200",
+        ],
+      },
+    });
+
+    // Kuyumcu overrides ARE applied.
+    expect(html).toContain("Vitrinden teslime giden yol");
+    expect(html).toContain("Size en uygun ürün");
+    expect(html).toContain("Atölyemiz ve uzman ekibimiz");
+    expect(html).toContain("Müşterilerimiz anlatıyor");
+
+    // Driving-school defaults are NOT bleeding through.
+    expect(html).not.toContain("Kayıttan ehliyete");
+    expect(html).not.toContain("Sana en uygun kurs");
+    expect(html).not.toContain("Ekibimiz ve eğitmenlerimiz");
+    expect(html).not.toContain("Mezunlarımız anlatıyor");
+
+    // Gallery section renders all 3 photos with kuyumcu captions.
+    expect(html).toContain("gallery-grid");
+    expect(html).toContain("Vitrinden");
+    expect(html).toContain("Atölyemizden");
+    expect(html).toContain("Koleksiyondan");
+  });
+
+  it("falls back to base labels (driving-school) when no nicheSlug supplied", () => {
+    // Back-compat: Emirhan's workspace and any unclassified lead
+    // continue to see the historical TR base labels — we don't want
+    // a silent regression for already-shipped mockups.
+    const populated: WebsiteMockupSections = {
+      ...baseSections,
+      features: [
+        { title: "Kayıt", body: "Evrak.", icon_hint: "users" },
+      ],
+      courses: [
+        {
+          title: "B Sınıfı",
+          price_label: "15.000 TL",
+          duration: "8 hafta",
+          body: "Otomobil ehliyeti.",
+          feature_list: ["Direksiyon"],
+          icon_hint: "car",
+          is_popular: true,
+        },
+      ],
+    };
+    const html = renderLeadacShowcase({
+      ...baseRenderInput,
+      sections: populated,
+      lang: "tr",
+    });
+    expect(html).toContain("Kayıttan ehliyete giden yol");
+    expect(html).toContain("Sana en uygun kurs");
+  });
 });

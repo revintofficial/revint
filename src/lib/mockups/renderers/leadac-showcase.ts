@@ -93,12 +93,31 @@ export interface LeadacShowcaseRenderInput {
    * neutral phrasing.
    */
   nicheLabel?: string | null;
+  /**
+   * Most-specific niche slug (sub-niche if classified, else parent).
+   * Drives per-vertical section-label overrides — e.g. a kuyumcu
+   * lead reads "Vitrinden teslime giden yol" instead of the
+   * default driving-school-flavoured "Kayıttan ehliyete giden yol",
+   * and "Atölyemiz ve uzman ekibimiz" instead of "Ekibimiz ve
+   * eğitmenlerimiz". Missing slug → base LABELS are used (which
+   * are still TR/EN driving-school-leaning historically — kept
+   * for back-compat with the Emirhan workspace).
+   */
+  nicheSlug?: string | null;
+  /**
+   * Parent niche slug for hybrid packs. When `nicheSlug` doesn't
+   * have a per-niche override registered, the renderer falls back
+   * to this slug (mirrors `getNicheTheme`'s child→parent fallback).
+   * Example: `kuyumcu-luxury` lead with no luxury-specific override
+   * inherits the `kuyumcu` parent's section labels.
+   */
+  nicheParentSlug?: string | null;
 }
 
 export function renderLeadacShowcase(input: LeadacShowcaseRenderInput): string {
   const s = input.sections;
   const lang = input.lang === "tr" ? "tr" : "en";
-  const labels = LABELS[lang];
+  const labels = resolveLabels(lang, input.nicheSlug ?? null, input.nicheParentSlug ?? null);
 
   const theme = s.theme;
   const isLight = theme.mode === "light";
@@ -112,11 +131,19 @@ export function renderLeadacShowcase(input: LeadacShowcaseRenderInput): string {
   const primary = sanitizeHex(theme.primary_hex) ?? "#5e6ad2";
   const secondary = sanitizeHex(input.secondaryHex ?? null) ?? accent;
 
-  // Imagery: showcase uses the hero shot only — the v2 layout
-  // replaces the legacy 3-up gallery with the priced-courses grid
-  // + stats / process blocks, which carry more pitch signal than a
-  // generic photo strip. Gallery URLs intentionally ignored.
+  // Imagery: hero[0] anchors the fold; gallery photos populate a
+  // dedicated 3-up strip between trust and testimonials, plus an
+  // accent tile inside the about section. Without this the layout
+  // reads as text-walled "ruhsuz" — adding 3-4 curated photos lifts
+  // perceived production value without slowing first paint (all
+  // CDN-hosted Unsplash, lazy-loaded below the fold).
   const heroPhotoUrl = pickSafePhotoUrl(input.imagery?.hero?.[0] ?? null);
+  const galleryPhotoUrls = (input.imagery?.gallery ?? [])
+    .map((u) => pickSafePhotoUrl(u))
+    .filter((u): u is string => Boolean(u))
+    .slice(0, 3);
+  const aboutAccentPhotoUrl =
+    galleryPhotoUrls[0] ?? pickSafePhotoUrl(input.imagery?.hero?.[1] ?? null);
 
   // Branding overrides for AGENCY-tier reseller. Same precedence rule
   // as legacy renderer: workspace primary / accent win over the niche
@@ -379,10 +406,45 @@ export function renderLeadacShowcase(input: LeadacShowcaseRenderInput): string {
     .booking-cols { grid-template-columns: 1fr; }
   }
 
+  /* ----- gallery ----- */
+  .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .gallery-tile {
+    position: relative; aspect-ratio: 4 / 5; border-radius: 20px;
+    overflow: hidden; border: 0.5px solid var(--border);
+    background-color: var(--panel);
+    background-size: cover; background-position: center;
+    transition: transform 0.4s ease;
+  }
+  .gallery-tile:hover { transform: translateY(-2px); }
+  .gallery-tile::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,0.55) 100%);
+  }
+  .gallery-cap {
+    position: absolute; left: 16px; bottom: 14px; right: 16px;
+    color: #fff; font-size: 13.5px; font-weight: 600; letter-spacing: -0.005em;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+  @media (max-width: 760px) {
+    .gallery-grid { grid-template-columns: 1fr 1fr; }
+    .gallery-grid > :nth-child(3) { grid-column: span 2; aspect-ratio: 16 / 10; }
+  }
+
   /* ----- about ----- */
   .about-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 32px; align-items: start; }
   .about-panel { background: var(--glass); border: 0.5px solid var(--border); border-radius: 18px; padding: 28px; }
   .about-panel p { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.7; }
+  .about-photo {
+    position: relative; width: 100%; aspect-ratio: 4 / 5; border-radius: 18px;
+    overflow: hidden; border: 0.5px solid var(--border);
+    background-size: cover; background-position: center;
+    min-height: 280px;
+  }
+  .about-photo::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.4) 100%);
+  }
+  .about-right { display: flex; flex-direction: column; gap: 16px; }
   .instructors-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
   .instructor-card { background: var(--glass); border: 0.5px solid var(--border); border-radius: 14px; padding: 16px 18px; display: flex; gap: 12px; align-items: center; }
   .instructor-avatar { width: 40px; height: 40px; border-radius: 50%; background: ${hexWithAlpha(finalAccent, 0.22)}; color: var(--accent); font-weight: 700; display: flex; align-items: center; justify-content: center; }
@@ -463,13 +525,15 @@ ${renderCoursesBlock(courses, labels)}
 
 ${renderTrustBlock(trustPoints, labels)}
 
+${renderGalleryBlock(galleryPhotoUrls, labels, name)}
+
 ${renderTestimonialsBlock(testimonialList, labels)}
 
 ${renderFaqBlock(faqs, labels)}
 
 ${renderBookingBlock(booking, waBaseHref, bookingDayLabels, labels)}
 
-${renderAboutBlock(s.about.paragraph, aboutInstructors, labels)}
+${renderAboutBlock(s.about.paragraph, aboutInstructors, aboutAccentPhotoUrl, name, labels)}
 
 ${renderMapBlock(mapEmbedUrl, labels)}
 
@@ -685,6 +749,36 @@ function renderTrustBlock(
 </section>`;
 }
 
+function renderGalleryBlock(
+  photoUrls: string[],
+  labels: typeof LABELS["en"],
+  businessName: string,
+): string {
+  if (photoUrls.length === 0) return "";
+  // Caption rotation: niche-specific captions (e.g. kuyumcu → "Vitrinden",
+  // "Atölyeden", "Koleksiyondan") fall through to a generic 3-slot
+  // default. The captions ride on top of the photo with a subtle
+  // gradient mask so the strip reads like a styled lookbook, not a
+  // stock-photo dump.
+  const captions = labels.gallery_captions ?? [];
+  return `<section class="block">
+  <div class="wrap">
+    <div class="section-eyebrow">${escapeHtml(labels.gallery_eyebrow)}</div>
+    <h2 class="section-title">${escapeHtml(labels.gallery_title)}</h2>
+    <div class="gallery-grid">
+      ${photoUrls
+        .map((url, i) => {
+          const cap = captions[i] ?? captions[captions.length - 1] ?? "";
+          return `<div class="gallery-tile" role="img" aria-label="${businessName}" style="background-image:url('${url}')">
+        ${cap ? `<div class="gallery-cap">${escapeHtml(cap)}</div>` : ""}
+      </div>`;
+        })
+        .join("")}
+    </div>
+  </div>
+</section>`;
+}
+
 function renderTestimonialsBlock(
   ts: WebsiteMockupTestimonial[],
   labels: typeof LABELS["en"],
@@ -780,20 +874,14 @@ function renderBookingBlock(
 function renderAboutBlock(
   paragraph: string,
   instructors: { name: string; role: string }[],
+  accentPhotoUrl: string | null,
+  businessName: string,
   labels: typeof LABELS["en"],
 ): string {
   if (!paragraph && instructors.length === 0) return "";
-  return `<section class="block">
-  <div class="wrap">
-    <div class="section-eyebrow">${escapeHtml(labels.about_eyebrow)}</div>
-    <h2 class="section-title">${escapeHtml(labels.about_title)}</h2>
-    <div class="about-grid">
-      <div class="about-panel">
-        <p>${escapeHtml(paragraph)}</p>
-      </div>
-      ${
-        instructors.length
-          ? `<div class="instructors-grid">
+
+  const instructorsHtml = instructors.length
+    ? `<div class="instructors-grid">
         ${instructors
           .map((i) => {
             const initials = (i.name || "?")
@@ -813,6 +901,29 @@ function renderAboutBlock(
           })
           .join("")}
       </div>`
+    : "";
+
+  // Right column: photo + instructor grid stacked. If neither is
+  // available we collapse the grid to a single-column layout so the
+  // about paragraph spans full width instead of dangling beside an
+  // empty cell.
+  const hasRightContent = Boolean(accentPhotoUrl) || instructors.length > 0;
+  const photoHtml = accentPhotoUrl
+    ? `<div class="about-photo" role="img" aria-label="${businessName}" style="background-image:url('${accentPhotoUrl}')"></div>`
+    : "";
+  const gridStyle = hasRightContent ? "" : ' style="grid-template-columns:1fr"';
+
+  return `<section class="block">
+  <div class="wrap">
+    <div class="section-eyebrow">${escapeHtml(labels.about_eyebrow)}</div>
+    <h2 class="section-title">${escapeHtml(labels.about_title)}</h2>
+    <div class="about-grid"${gridStyle}>
+      <div class="about-panel">
+        <p>${escapeHtml(paragraph)}</p>
+      </div>
+      ${
+        hasRightContent
+          ? `<div class="about-right">${photoHtml}${instructorsHtml}</div>`
           : ""
       }
     </div>
@@ -942,41 +1053,43 @@ const ICONS: Record<string, string> = {
   pin: svgIcon("M12 21s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12zM12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"),
 };
 
-const LABELS: Record<
-  string,
-  {
-    call_now: string;
-    message_us: string;
-    get_directions: string;
-    open_for: string;
-    drafted_by: string;
-    numbers: string;
-    stats_title: string;
-    process_eyebrow: string;
-    process_title: string;
-    courses_eyebrow: string;
-    courses_title: string;
-    popular_badge: string;
-    trust_eyebrow: string;
-    trust_title: string;
-    reviews_eyebrow: string;
-    reviews_title: string;
-    faq_eyebrow: string;
-    faq_title: string;
-    booking_eyebrow: string;
-    booking_note: string;
-    booking_message_prefix: string;
-    booking_message_suffix: string;
-    about_eyebrow: string;
-    about_title: string;
-    map_eyebrow: string;
-    map_title: string;
-    contact_eyebrow: string;
-    contact_placeholder: string;
-    contact_cta: string;
-    phone: string;
-  }
-> = {
+type Labels = {
+  call_now: string;
+  message_us: string;
+  get_directions: string;
+  open_for: string;
+  drafted_by: string;
+  numbers: string;
+  stats_title: string;
+  process_eyebrow: string;
+  process_title: string;
+  courses_eyebrow: string;
+  courses_title: string;
+  popular_badge: string;
+  trust_eyebrow: string;
+  trust_title: string;
+  reviews_eyebrow: string;
+  reviews_title: string;
+  faq_eyebrow: string;
+  faq_title: string;
+  booking_eyebrow: string;
+  booking_note: string;
+  booking_message_prefix: string;
+  booking_message_suffix: string;
+  about_eyebrow: string;
+  about_title: string;
+  map_eyebrow: string;
+  map_title: string;
+  contact_eyebrow: string;
+  contact_placeholder: string;
+  contact_cta: string;
+  phone: string;
+  gallery_eyebrow: string;
+  gallery_title: string;
+  gallery_captions: string[];
+};
+
+const LABELS: Record<string, Labels> = {
   tr: {
     call_now: "Hemen Ara",
     message_us: "WhatsApp'tan Yaz",
@@ -1010,6 +1123,9 @@ const LABELS: Record<
       "Hangi paketle ilgileniyorsunuz, ne zaman başlamak istiyorsunuz?",
     contact_cta: "İletişime Geç",
     phone: "Telefon",
+    gallery_eyebrow: "Galeri",
+    gallery_title: "Bizden kareler",
+    gallery_captions: ["Mağazamızdan", "Hizmetimizden", "Galeri"],
   },
   en: {
     call_now: "Call now",
@@ -1043,8 +1159,86 @@ const LABELS: Record<
     contact_placeholder: "Which package are you interested in?",
     contact_cta: "Contact us",
     phone: "Phone",
+    gallery_eyebrow: "Gallery",
+    gallery_title: "Snapshots from us",
+    gallery_captions: ["From our space", "Our work", "Gallery"],
   },
 };
+
+// Per-niche overrides for section labels. The base TR/EN dicts above
+// are historically driving-school-flavoured ("Kayıttan ehliyete",
+// "Mezunlarımız anlatıyor", "eğitmenlerimiz") because that was the
+// first vertical shipped — we keep them as the fallback for the
+// Emirhan workspace and any unclassified lead, but every other
+// vertical needs to override the bits that read wrong. Resolution
+// order in `resolveLabels`: child slug → parent slug → base.
+const NICHE_LABEL_OVERRIDES: Record<
+  string,
+  { tr?: Partial<Labels>; en?: Partial<Labels> }
+> = {
+  kuyumcu: {
+    tr: {
+      stats_title: "Rakamlarla biz",
+      process_title: "Vitrinden teslime giden yol",
+      courses_eyebrow: "Koleksiyon",
+      courses_title: "Size en uygun ürün",
+      reviews_title: "Müşterilerimiz anlatıyor",
+      about_title: "Atölyemiz ve uzman ekibimiz",
+      contact_placeholder:
+        "Hangi ürün veya hizmetle ilgileniyorsunuz? (alyans, hurda altın, tamir, pırlanta…)",
+      gallery_eyebrow: "Galeri",
+      gallery_title: "Vitrinimizden ve atölyemizden",
+      gallery_captions: ["Vitrinden", "Atölyemizden", "Koleksiyondan"],
+    },
+    en: {
+      process_title: "From window to hand-over",
+      courses_eyebrow: "Collection",
+      courses_title: "Find the right piece",
+      about_title: "Our atelier and team",
+      gallery_eyebrow: "Gallery",
+      gallery_title: "From our store and atelier",
+      gallery_captions: ["At the window", "In the atelier", "From the collection"],
+    },
+  },
+  "kuyumcu-luxury": {
+    tr: {
+      courses_eyebrow: "Koleksiyon",
+      courses_title: "Bu sezonun seçkisi",
+      reviews_title: "Müşterilerimiz anlatıyor",
+      about_title: "Atölyemiz ve uzman ekibimiz",
+      gallery_eyebrow: "Editorial",
+      gallery_title: "Koleksiyondan kareler",
+      gallery_captions: ["Editorial", "Atölyeden", "Koleksiyondan"],
+    },
+    en: {
+      courses_eyebrow: "Collection",
+      courses_title: "This season's edit",
+      gallery_eyebrow: "Editorial",
+      gallery_title: "From the collection",
+      gallery_captions: ["Editorial", "In the atelier", "From the collection"],
+    },
+  },
+};
+
+function resolveLabels(
+  lang: "tr" | "en",
+  nicheSlug: string | null,
+  parentSlug: string | null,
+): Labels {
+  const base = LABELS[lang];
+  const childOverride =
+    nicheSlug && NICHE_LABEL_OVERRIDES[nicheSlug]?.[lang];
+  const parentOverride =
+    parentSlug && parentSlug !== nicheSlug
+      ? NICHE_LABEL_OVERRIDES[parentSlug]?.[lang]
+      : null;
+  // Child wins over parent; parent fills any gap; base catches the rest.
+  return {
+    ...base,
+    ...(parentOverride ?? {}),
+    ...(childOverride ?? {}),
+  };
+}
 
 function buildTrustLine(
   rating: number | null,

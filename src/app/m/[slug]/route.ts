@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getMockupRenderer } from "@/lib/mockups/templates";
 import { renderLeadacShowcase } from "@/lib/mockups/renderers/leadac-showcase";
+import { SHOWCASE_TEMPLATE_ID } from "@/lib/agent-workers/website-mockup";
 import { parseBranding } from "@/lib/branding";
 import type { WebsiteMockupSections } from "@/lib/prompts/website-mockup-prompt";
 import { getVisualIdentityForLead, getNicheBySlug } from "@/lib/niches";
@@ -56,12 +57,16 @@ export async function GET(
       .catch((err) => console.error("WebsiteMockup view counter failed:", err));
 
     // Prefer the cached HTML for instant response; re-render from
-    // sections if cache is missing (should be rare). Older
-    // `leadac-hero-v1` rows hit this path too — the showcase
-    // renderer reads only the v1-compatible fields from sectionsJson
-    // and falls back to safe defaults for any v2 field that's
-    // missing, so a stale v1 row still renders without crashing.
-    let html = wm.htmlCache;
+    // sections if cache is missing OR the cache was produced by an
+    // older renderer template (templateId mismatch). Older
+    // `leadac-hero-v1` and `leadac-showcase-v1` rows hit this path —
+    // the v1 row's sectionsJson is forward-compatible (renderer falls
+    // back to safe defaults for any newer field), so we just re-render
+    // with the current renderer and the user gets the up-to-date
+    // section labels (e.g. kuyumcu-aware copy) without waiting for a
+    // manual regen.
+    const cacheIsCurrent = wm.templateId === SHOWCASE_TEMPLATE_ID;
+    let html = cacheIsCurrent ? wm.htmlCache : null;
     if (!html) {
       const branding = wm.lead.workspace.plan === "AGENCY"
         ? parseBranding(wm.lead.workspace.branding)
@@ -92,7 +97,21 @@ export async function GET(
         branding,
         lang: wm.lead.workspace.language ?? "en",
         nicheLabel: nichePack?.label ?? null,
+        nicheSlug: nichePack?.slug ?? null,
+        nicheParentSlug: nichePack?.parentSlug ?? null,
       });
+
+      // Fire-and-forget: persist the freshly rendered HTML + bump
+      // the templateId so we hit the cached path on the next view
+      // instead of re-rendering on every request. Failure is
+      // non-fatal — worst case the next view re-renders again.
+      const freshHtml = html;
+      prisma.websiteMockup
+        .update({
+          where: { id: wm.id },
+          data: { htmlCache: freshHtml, templateId: SHOWCASE_TEMPLATE_ID },
+        })
+        .catch((err) => console.error("WebsiteMockup cache refresh failed:", err));
     }
 
     return new NextResponse(html, {

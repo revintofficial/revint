@@ -40,7 +40,13 @@ import { generateMockupSlug } from "@/lib/mockup";
 import { getVisualIdentityForLead, getNicheBySlug } from "@/lib/niches";
 import type { AgentWorkerOutput, AgentWorkerRun } from "./types";
 
-export const SHOWCASE_TEMPLATE_ID = "leadac-showcase-v1";
+// Bumped to v2 when the renderer learned niche-aware section labels
+// (kuyumcu → "Vitrinden teslime giden yol" instead of the historical
+// driving-school-flavoured "Kayıttan ehliyete giden yol") and the
+// dedicated gallery block. The `/m/[slug]` route uses this constant to
+// detect stale `htmlCache` from older renderer versions and force a
+// re-render from `sectionsJson` instead of serving the legacy HTML.
+export const SHOWCASE_TEMPLATE_ID = "leadac-showcase-v2";
 
 export const run: AgentWorkerRun = async (ctx) => {
   if (!ctx.lead) {
@@ -190,6 +196,8 @@ export const run: AgentWorkerRun = async (ctx) => {
     branding,
     lang: ctx.workspace.language ?? "en",
     nicheLabel: nichePack?.label ?? null,
+    nicheSlug: nichePack?.slug ?? null,
+    nicheParentSlug: nichePack?.parentSlug ?? null,
   });
 
   // Upsert a single WebsiteMockup per lead: re-generate overwrites
