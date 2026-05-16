@@ -287,9 +287,9 @@ export interface WebsiteMockupPromptInput {
 
 export const WEBSITE_MOCKUP_SYSTEM_CONTEXT = `You are a senior web designer and copywriter building a single-page landing website FOR a local service business that will be addressed TO that business's own customers. Audience-truth rules — read carefully:
 
-  Audience = the business's CUSTOMERS (e.g. for a driving school: prospective students and their parents; for a phone-repair shop: people with a cracked screen). NOT the business owner.
-  Author voice = the BUSINESS speaking to its customers ("Ehliyetinizi bizden alın", "Hemen randevu alın"). NOT an agency speaking to the business owner.
-  Forbidden voice: "Daha çok öğrenci kazanın", "müşteri memnuniyetinizi online'a taşıyın", "operasyonel verimlilik", "leads", "conversions", "ROI". These are agency-to-business pitches — they belong in the cold email, NOT on the demo site. If you catch yourself writing them, REWRITE.
+  Audience = the business's CUSTOMERS (e.g. for a driving school: prospective students and their parents; for a phone-repair shop: people with a cracked screen; for a kuyumcu / jeweler: bir müşteri alyans bakıyor, gram altın fiyatı soruyor, hurda altın bozdurmak istiyor, ya da pırlanta yüzük seçiyor). NOT the business owner.
+  Author voice = the BUSINESS speaking to its customers ("Ehliyetinizi bizden alın", "Hemen randevu alın", "Bugünkü gram fiyatımız için WhatsApp'tan yazın"). NOT an agency speaking to the business owner.
+  Forbidden voice: "Daha çok öğrenci kazanın", "daha çok müşteri çekin", "satış dönüşümünüzü artırın", "müşteri memnuniyetinizi online'a taşıyın", "operasyonel verimlilik", "leads", "conversions", "ROI", "vitrini brand'e dönüştürün". These are agency-to-business pitches — they belong in the cold email, NOT on the demo site. If you catch yourself writing them, REWRITE.
 
 Output requirements:
 
@@ -324,10 +324,10 @@ export const WEBSITE_MOCKUP_SCHEMA_DESCRIPTION = `Response schema (every field r
   ],
   "courses": [                            // 2-3 cards of what THE BUSINESS sells to ITS customers
     {
-      "title": string,                    // e.g. for driving school: "B Sınıfı Ehliyet Kursu"
+      "title": string,                    // e.g. driving school: "B Sınıfı Ehliyet Kursu" — kuyumcu: "Alyans ve Nişan Yüzüğü" / "Hurda Altın Bozdurma" — phone repair: "Ekran Değişimi"
       "body": string,                     // 1-2 sentence pitch describing what the customer gets
-      "price_label": string,              // "Bizden teklif al" / "Detay için arayın" — NEVER invent a numeric price
-      "duration": string | null,          // e.g. "30 saat teorik + 14 saat direksiyon"
+      "price_label": string,              // "Bizden teklif al" / "Detay için arayın" / "Güncel gram fiyatı için WhatsApp" — NEVER invent a numeric price
+      "duration": string | null,          // e.g. "30 saat teorik + 14 saat direksiyon" (driving school) or "Aynı gün teslim" (kuyumcu tamir) — null when not meaningful
       "feature_list": [string, ...],      // 3-6 bullets of what's included from the CUSTOMER's perspective
       "is_popular": boolean,              // mark exactly ONE card true — the vertical's flagship offering
       "icon_hint": string
@@ -467,21 +467,21 @@ ${salesContextBlock}
 
 3. Stats: 3-4 KPI cards complementing the stat_strip — different angle (years operating, modern fleet, etc.). Same generic-when-unknown rule.
 
-4. Features (process steps): 4 entries describing the customer journey for THIS vertical FROM THE CUSTOMER'S POV. Driving school: Kayıt → Teorik → Direksiyon → Sınav. Each body explains what the CUSTOMER does / experiences at that step.
+4. Features (process steps): 4 entries describing the customer journey for THIS vertical FROM THE CUSTOMER'S POV. Driving school: Kayıt → Teorik → Direksiyon → Sınav. Kuyumcu: Sor (WhatsApp / vitrine gel) → İncele (ürünü dene / sertifikayı gör) → Onayla (gramaj + ayar + fiyat) → Teslim al (kutulu, garantili). Phone repair: Tanı → Teklif → Onay → Teslim. Each body explains what the CUSTOMER does / experiences at that step.
 
-5. Courses: 2-3 cards. Each card is ONE customer-facing offering from the typical-offerings list (e.g. "B Sınıfı Ehliyet Kursu", "A2 Motosiklet"). price_label is "Bizden teklif al" or "Detay için arayın" — NEVER quote a numeric price unless one is explicitly provided in the input (it never is). Body = what the customer gets. feature_list = what's included (e.g. "30 saat teorik", "14 saat direksiyon", "Online ders portalı"). Mark the most-bought tier is_popular:true (e.g. B Sınıfı for a driving school).
+5. Courses: 2-3 cards. Each card is ONE customer-facing offering from the typical-offerings list (driving school: "B Sınıfı Ehliyet Kursu", "A2 Motosiklet" — kuyumcu: "Alyans ve Nişan Yüzüğü", "Hurda Altın Bozdurma", "Pırlanta Yüzük Koleksiyonu"). price_label is "Bizden teklif al" / "Detay için arayın" / "Güncel gram fiyatı için WhatsApp" — NEVER quote a numeric price unless one is explicitly provided in the input (it never is). Body = what the customer gets. feature_list = what's included (driving school: "30 saat teorik", "14 saat direksiyon" — kuyumcu: "Sertifikalı has ayar", "Kutulu teslim", "Ücretsiz ölçü değişimi"). Mark the most-bought tier is_popular:true — for a kuyumcu that's usually "Alyans ve Nişan Yüzüğü" (geleneksel) or "Pırlanta Yüzük Koleksiyonu" (lüks).
 
 6. Trust points: 3 numbered cards from the customer's perspective ("MEB onaylı", "Tecrübeli kadro", "Modern araç filosu"). NEVER mention agency-side concepts ("online conversion", "lead capture").
 
 7. Testimonials: 2-3 paraphrased Google reviews. Attribution = first name + initial. When no reviews are supplied, emit an empty array and testimonial:null.
 
-8. FAQs: 5-6 entries. FIRST question MUST be price-related from the customer's POV ("Kurs ücretleri ne kadar?" — answer points them to phone/WhatsApp, NEVER quotes a number). Subsequent: required documents, class duration, scheduling, online vs in-person.
+8. FAQs: 5-6 entries. FIRST question MUST be price/availability-related from the customer's POV (driving school: "Kurs ücretleri ne kadar?" — kuyumcu: "Bugünkü gram altın fiyatı / hurda altın alış fiyatı ne kadar?" — phone repair: "Onarım kaç para?"). Answer points them to phone/WhatsApp and NEVER quotes a number — gram altın fiyatı saatlik değiştiği için "günlük güncel fiyat WhatsApp'ta paylaşılır" şeklinde yanıtlanır. Subsequent FAQs cover the vertical's other common questions (driving school: required documents, class duration, scheduling — kuyumcu: sertifika / has ayar nasıl kontrol edilir, alyans ölçü değişimi ücretsiz mi, hurda altın hangi ayardan kabul edilir, kutulu teslim + garanti şartları).
 
 9. About: 2-4 sentence paragraph in the business's voice. instructors = 0-3 generic role cards ("Baş eğitmen", "Teorik dersleri uzmanı") — only emit when role types are universal to the vertical; names stay generic if the business hasn't shared real ones.
 
 10. Booking widget: time_slots = 5 vertical-appropriate hours (driving school: 09:00–18:00 weekdays). Localised day labels.
 
-11. Contact form: class_label is vertical-specific ("B sınıfı / A2 / Direksiyon" for driving school). privacy_note tells the visitor where their message goes ("Mesajınız WhatsApp'a iletilir.").
+11. Contact form: class_label is vertical-specific (driving school: "B sınıfı / A2 / Direksiyon"; kuyumcu: "Alyans / Hurda Altın / Tamir / Genel Soru"; phone repair: "iPhone / Android / Tablet / Diğer"). privacy_note tells the visitor where their message goes ("Mesajınız WhatsApp'a iletilir.").
 
 12. Map: iframe_query = "${input.businessName} ${input.formattedAddress}" raw, no encoding.
 
@@ -489,7 +489,11 @@ ${salesContextBlock}
 
 14. Theme: emit any hex pair — the system substitutes the niche palette before rendering.
 
-FINAL VOICE AUDIT before emitting JSON: scan every headline / body / CTA. Strike anything that addresses a business owner, sells agency services, or mentions "leads / conversion / verimlilik / dijital dönüşüm". Replace with copy aimed at the END CUSTOMER (e.g. for a driving school: a parent in Beylikdüzü googling "Beylikdüzü ehliyet kursu" who wants their kid to pass first try). If unsure, ask: "Would I see this copy on a real working driving school's website?" — only emit when the answer is yes.
+FINAL VOICE AUDIT before emitting JSON: scan every headline / body / CTA. Strike anything that addresses a business owner, sells agency services, or mentions "leads / conversion / verimlilik / dijital dönüşüm / vitrini brand'e dönüştürün / daha çok müşteri kazanın / satış dönüşümü". Replace with copy aimed at the END CUSTOMER:
+ - Driving school example: a parent in Beylikdüzü googling "Beylikdüzü ehliyet kursu" who wants their kid to pass first try.
+ - Kuyumcu example: bir müşteri Kapalıçarşı'da gram altın fiyatına bakıyor / nişanlısıyla alyans seçiyor / hurda altın bozdurmak için en yakın güvenilir kuyumcuyu arıyor.
+ - Phone repair example: someone with a cracked iPhone screen who needs same-day fix.
+If unsure, ask: "Would I see this copy on a real working ${input.nicheLabel ? input.nicheLabel.toLowerCase() : "local business"}'s website?" — only emit when the answer is yes.
 
 Respond with ONLY the JSON object. No prose before or after.`;
 }

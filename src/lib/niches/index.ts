@@ -836,6 +836,171 @@ export const NICHES: NichePack[] = [
       keywordsInName: ["group", "chain", "franchise", "& co", "restaurants"],
     },
   },
+
+  // ============================================================
+  // Hybrid niche: Kuyumcu (jewelers)
+  //
+  // Parent: `kuyumcu` — rollup for dashboards / discovery default /
+  // public landing page hero. Children: 2 specialised sub-verticals
+  // tuned to İstanbul's TR jeweler market:
+  //   - `kuyumcu-traditional` — Kapalıçarşı / mahalle kuyumcusu;
+  //     gram altın, alyans, tamir, hurda bozdurma. TAM en geniş;
+  //     claims the `jewelry_store` Google Places type so a fresh
+  //     lead without a sub-niche tag still resolves to this child's
+  //     theme + imagery + audit pitch angle.
+  //   - `kuyumcu-luxury` — butik / designer / pırlanta; daha küçük
+  //     TAM, daha yüksek bilet. Claims no Google Places type —
+  //     match'i name keywords (diamond / pırlanta / atelier) +
+  //     priceLevel (3-4) üzerinden alır, böylece "jewelry_store"
+  //     leadleri default'ta traditional'a düşer.
+  //
+  // Added for the Berkay Sırakaya web-agency tenant who targets
+  // İstanbul kuyumcuları with the same setup pattern as Emirhan
+  // (driving-school). Auto-classifier is intentionally NOT wired up
+  // here — WEB_AGENCY workspaces return null from
+  // `verticalRootForWorkspace`, so the rep manually picks the child
+  // slug during discovery for luxury overrides. v2 enhancement.
+  // ============================================================
+  {
+    slug: "kuyumcu",
+    label: "Kuyumcular (tümü)",
+    tagline: "Geleneksel, lüks, atölye — İstanbul'un altın ve takı işletmeleri.",
+    searchQueries: [
+      "kuyumcu",
+      "altıncı",
+      "sarraf",
+      "jewelry store",
+      "altın bilezik",
+    ],
+    discoveryPlaceTypes: ["jewelry_store"],
+    pitchAngle:
+      "Canlı gram altın paneli, ürün galerisi, WhatsApp ile fiyat sorgu ve atölye vitrini — telefon trafiğini yarıya indirir, mağaza ziyareti ikiye katlar.",
+    highValueSignals: [
+      "no live gram altın price widget",
+      "no product catalog (alyans, bilezik, kolye)",
+      "no WhatsApp price-query CTA",
+      "no workshop / atölye photography",
+      "no certificate / has ayar visibility",
+      "no Instagram embed",
+      "no online alyans appointment",
+      "Instagram-only contact",
+      "outdated mobile experience",
+    ],
+    commonBookingProviders: ["WhatsApp", "Calendly"],
+    mockupTemplateId: "kuyumcu",
+    typicalCustomerOfferings: [
+      "Alyans ve Nişan Yüzüğü",
+      "Altın Bilezik & Bileklik",
+      "Altın Kolye, Set ve Küpe",
+      "Has Ayar Altın Alım-Satım",
+      "Hurda Altın Bozdurma",
+      "Kuyum Tamiri ve Yenileme",
+      "Pırlanta ve Taşlı Ürünler",
+      "Gümüş Takı Koleksiyonu",
+    ],
+    featuredProductModules: [
+      "Canlı Gram Altın Widget",
+      "WhatsApp Fiyat Sorgu",
+      "Ürün Kataloğu",
+      "Alyans Randevu",
+      "Atölye Vitrini",
+      "Google Maps + İletişim",
+    ],
+  },
+  {
+    slug: "kuyumcu-traditional",
+    parentSlug: "kuyumcu",
+    label: "Geleneksel kuyumcu",
+    tagline:
+      "Mahalle ve Kapalıçarşı tipi kuyumcular: gram altın, alyans, tamir, hurda bozdurma.",
+    searchQueries: [
+      '"kuyumcu"',
+      '"altıncı"',
+      '"sarraf"',
+      '"kapalıçarşı kuyumcu"',
+    ],
+    discoveryPlaceTypes: ["jewelry_store"],
+    pitchAngle:
+      "Canlı gram fiyat banner'ı + WhatsApp ile anında sorgu + hurda altın bozdurma CTA'sı — ana cadde trafiğini siteye taşır, kapı önü beklemeyi yarıya indirir.",
+    highValueSignals: [
+      "no live gram altın price banner",
+      "no hurda altın bozdurma CTA",
+      "no WhatsApp price-query button",
+      "no MASAK / certificate trust badge",
+      "no atölye / usta photography",
+      "no Google Maps embed",
+      "Instagram-only contact",
+    ],
+    commonBookingProviders: ["WhatsApp"],
+    mockupTemplateId: "kuyumcu-traditional",
+    typicalCustomerOfferings: [
+      "Gram Altın Alış-Satış",
+      "Hurda Altın Bozdurma",
+      "Alyans ve Nişan Yüzüğü",
+      "Altın Bilezik (Gram / 22 Ayar)",
+      "Altın Kolye ve Set",
+      "Kuyum Tamiri ve Ölçü Değişimi",
+      "Gümüş Takı",
+    ],
+    classifierHints: {
+      googlePlacesTypes: ["jewelry_store"],
+      keywordsInName: ["kuyumcu", "altıncı", "sarraf", "gold", "altın"],
+      priceLevelRange: [1, 3],
+    },
+  },
+  {
+    slug: "kuyumcu-luxury",
+    parentSlug: "kuyumcu",
+    label: "Lüks / butik kuyumcu",
+    tagline:
+      "Pırlanta, designer parçalar, butik atölyeler ve markalı tasarım kuyumcular.",
+    searchQueries: [
+      '"diamond jewelry"',
+      '"pırlanta"',
+      '"luxury jewelry"',
+      '"design jeweler"',
+    ],
+    pitchAngle:
+      "Designer parça galerisi + sertifika gösterimi + alyans randevu sistemi + atölye hikayesi — vitrini brand'e dönüştürür, ortalama bilet %30 yukarı.",
+    highValueSignals: [
+      "no curated product gallery",
+      "no diamond / gem certificate display",
+      "no appointment booking for alyans selection",
+      "no designer / atölye story page",
+      "no high-quality product photography",
+      "no premium brand voice",
+    ],
+    commonBookingProviders: ["Calendly", "WhatsApp"],
+    mockupTemplateId: "kuyumcu-luxury",
+    typicalCustomerOfferings: [
+      "Pırlanta Yüzük Koleksiyonu",
+      "Tasarım Alyans ve Nişan Seti",
+      "Özel Sipariş ve Designer Parça",
+      "Sertifikalı Pırlanta",
+      "Yüksek Karat Altın Tasarım",
+      "Atölyede Üretim ve Tamir",
+      "Antika ve Vintage Onarım",
+    ],
+    notApplicableModules: [
+      "Hurda altın bozdurma",
+      "Gram altın live banner",
+      "Sarraf-style alış-satış",
+    ],
+    classifierHints: {
+      keywordsInName: [
+        "diamond",
+        "pırlanta",
+        "design",
+        "atelier",
+        "boutique",
+        "haute",
+        "fine jewelry",
+        "couture",
+        "joaillerie",
+      ],
+      priceLevelRange: [3, 4],
+    },
+  },
 ];
 
 export function getNicheBySlug(slug: string): NichePack | undefined {

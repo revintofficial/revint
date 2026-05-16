@@ -704,8 +704,8 @@ function buildSetupMarkdown(
       : `- Booking enabled: ${a.booking_flow.enabled ? "yes" : "no"}`,
     "",
     tr
-      ? "Her seye destek: support@leadac.ai"
-      : "Any help: support@leadac.ai",
+      ? "Her seye destek: support@leadacai.com"
+      : "Any help: support@leadacai.com",
   ].join("\n");
 }
 

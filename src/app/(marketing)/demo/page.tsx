@@ -35,7 +35,7 @@ const EXPECT = [
 
 export default function DemoPage() {
   return (
-    <main className="vx-dark-section vx-dotgrid relative overflow-hidden isolate">
+    <main className="relative overflow-hidden isolate">
       {/* Brand-tinted glow at top so the page reads as part of the
           marketing surface rather than a generic form page. */}
       <div
@@ -47,13 +47,7 @@ export default function DemoPage() {
         }}
       />
 
-      <div
-        className="relative z-10 mx-auto max-w-(--cine-max) pt-32 md:pt-40 pb-24 md:pb-32"
-        style={{
-          paddingLeft: "var(--cine-gutter)",
-          paddingRight: "var(--cine-gutter)",
-        }}
-      >
+      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-6 pt-32 md:pt-40 pb-24 md:pb-32">
         <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-10 lg:gap-16">
           {/* LEFT: copy + form */}
           <div className="flex flex-col">
@@ -68,9 +62,17 @@ export default function DemoPage() {
               Walkthrough
             </span>
 
-            <h1 className="vx-display text-[clamp(34px,5.4vw,68px)] leading-[1.02] tracking-[-0.03em] text-white max-w-[18ch]">
+            <h1 className="text-[clamp(34px,5.4vw,68px)] leading-[1.02] tracking-[-0.03em] font-semibold text-white max-w-[18ch]">
               Send a postcode.{" "}
-              <span className="vx-text-gradient">I&apos;ll audit it live.</span>
+              <span
+                className="text-transparent bg-clip-text"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(120deg, #FFFFFF 0%, hsl(var(--leadac-h) var(--leadac-s) 88%) 45%, hsl(var(--leadac-h) var(--leadac-s) 50%) 100%)",
+                }}
+              >
+                I&apos;ll audit it live.
+              </span>
             </h1>
 
             <p className="mt-6 max-w-xl text-[15px] md:text-[16.5px] text-white/65 leading-relaxed">
@@ -93,12 +95,13 @@ export default function DemoPage() {
                 . Same person, same inbox.
               </p>
               <p>
-                Already know which plan fits?{" "}
+                Pricing isn&apos;t public yet — plans are being shaped with
+                the first cohort of agencies.{" "}
                 <Link
-                  href="/pricing"
+                  href="/#waitlist"
                   className="text-white/70 underline-offset-4 hover:underline inline-flex items-center gap-1"
                 >
-                  Skip the demo and start the trial
+                  Join the waitlist
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </p>
@@ -144,7 +147,7 @@ export default function DemoPage() {
                         className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                         style={{
                           background:
-                            "linear-gradient(135deg, var(--vx-purple-400), var(--vx-purple-700))",
+                            "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60%), hsl(var(--leadac-h) var(--leadac-s) 36%))",
                           color: "white",
                         }}
                         aria-hidden

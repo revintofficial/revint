@@ -46,8 +46,7 @@ type Check = {
 
 const CHECKS: Check[] = [
   { label: "home", path: "/" },
-  { label: "pricing", path: "/pricing" },
-  { label: "marketing-vertical:agencies", path: "/for/agencies" },
+  { label: "marketing-vertical:restaurant-agencies", path: "/for/restaurant-agencies" },
   { label: "tools-index", path: "/tools" },
   { label: "tool:reply-rate", path: "/tools/cold-email-reply-rate-calculator" },
   { label: "tool:icp-scorer", path: "/tools/icp-match-scorer" },

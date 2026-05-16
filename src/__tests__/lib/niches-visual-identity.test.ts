@@ -16,6 +16,7 @@ import { describe, expect, it } from "vitest";
 import {
   getVisualIdentityForLead,
   getNicheBySlug,
+  findNichePackForPrimaryType,
 } from "@/lib/niches";
 import {
   getNicheTheme,
@@ -137,6 +138,57 @@ describe("niche visual identity registry", () => {
     const theme = getNicheTheme("driving-school");
     expect(theme).not.toBe(GENERIC_THEME);
     expect(theme.primaryHex).toBe("#1d4ed8");
+  });
+
+  it("kuyumcu hybrid pack: parent + 2 children registered with themes + imagery", () => {
+    // Parent — flat-like rollup; carries discoveryPlaceTypes for
+    // workspaces that don't yet pick a child.
+    const parent = getNicheBySlug("kuyumcu");
+    expect(parent).toBeDefined();
+    expect(parent!.parentSlug).toBeUndefined();
+    expect(parent!.discoveryPlaceTypes).toContain("jewelry_store");
+    expect(parent!.typicalCustomerOfferings ?? []).toContain(
+      "Alyans ve Nişan Yüzüğü",
+    );
+    // Traditional child — light/warm palette; claims jewelry_store
+    // so it becomes the default for un-classified leads.
+    const traditional = getNicheBySlug("kuyumcu-traditional");
+    expect(traditional).toBeDefined();
+    expect(traditional!.parentSlug).toBe("kuyumcu");
+    expect(traditional!.classifierHints?.googlePlacesTypes).toContain(
+      "jewelry_store",
+    );
+    const tradTheme = getNicheTheme("kuyumcu-traditional", "kuyumcu");
+    expect(tradTheme).not.toBe(GENERIC_THEME);
+    expect(tradTheme.mode).toBe("light");
+    expect(tradTheme.primaryHex).toBe("#b45309");
+    // Luxury child — dark mode, deliberately doesn't claim
+    // jewelry_store (would compete with traditional for the default
+    // fallback).
+    const luxury = getNicheBySlug("kuyumcu-luxury");
+    expect(luxury).toBeDefined();
+    expect(luxury!.parentSlug).toBe("kuyumcu");
+    expect(luxury!.classifierHints?.googlePlacesTypes).toBeUndefined();
+    const luxTheme = getNicheTheme("kuyumcu-luxury", "kuyumcu");
+    expect(luxTheme).not.toBe(GENERIC_THEME);
+    expect(luxTheme.mode).toBe("dark");
+    expect(luxTheme.primaryHex).toBe("#d4af37");
+    // Both children carry their own hero imagery (no silent
+    // inheritance from parent).
+    const tradImagery = getNicheImagery("kuyumcu-traditional", "kuyumcu");
+    const luxImagery = getNicheImagery("kuyumcu-luxury", "kuyumcu");
+    expect(tradImagery.hero.length).toBeGreaterThan(0);
+    expect(luxImagery.hero.length).toBeGreaterThan(0);
+    expect(tradImagery.hero[0]).not.toEqual(luxImagery.hero[0]);
+  });
+
+  it("findNichePackForPrimaryType('jewelry_store') resolves to traditional, not luxury", () => {
+    // jewelry_store leads default to kuyumcu-traditional. Luxury
+    // is reached via manual sub-niche override or name/price
+    // keyword classifier — never by Places type alone.
+    const pack = findNichePackForPrimaryType("jewelry_store");
+    expect(pack).not.toBeNull();
+    expect(pack!.slug).toBe("kuyumcu-traditional");
   });
 
   it("every NichePack slug appears in the theme map (no orphans)", () => {

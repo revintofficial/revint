@@ -160,22 +160,21 @@ export function PricingCards({
               key={plan.id}
               className="relative p-6 rounded-2xl flex flex-col"
               style={{
-                background: isHighlight
-                  ? "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16), hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.62))"
-                  : "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
-                border: isHighlight
-                  ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.50)"
-                  : "0.5px solid rgba(255,255,255,0.07)",
-                boxShadow: isHighlight ? "0 24px 60px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.28)" : "none",
+                background:
+                  "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.6), hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.4))",
+                border: "0.5px solid rgba(255,255,255,0.08)",
+                boxShadow: isHighlight
+                  ? "0 0 0 1px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.4), 0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.15)"
+                  : "none",
               }}
             >
               {isHighlight && (
                 <span
                   className="absolute -top-2.5 left-6 px-2 py-0.5 rounded-md text-[10.5px] font-semibold"
                   style={{
-                    background: "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
+                    background:
+                      "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 36%))",
                     color: "white",
-                    boxShadow: "0 4px 12px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.5)",
                   }}
                 >
                   Most popular
@@ -212,7 +211,8 @@ export function PricingCards({
                   style={
                     isHighlight
                       ? {
-                          background: "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 48%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
+                          background:
+                            "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 36%))",
                           color: "white",
                           border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 45% / 0.35)",
                           boxShadow: "none",
@@ -239,10 +239,11 @@ export function PricingCards({
                   style={
                     isHighlight
                       ? {
-                          background: "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
+                          background:
+                            "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 36%))",
                           color: "white",
                           boxShadow:
-                            "0 1px 0 rgba(255,255,255,0.25) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.7), 0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.55)",
+                            "0 1px 0 rgba(255,255,255,0.15) inset, 0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 36% / 0.3)",
                         }
                       : id === "FREE"
                       ? {

@@ -13,8 +13,8 @@ import { join, extname, relative } from "node:path";
 const ROOT = process.cwd();
 
 const REPLACEMENTS = [
-  ["hello@leadengine.app", "hello@leadac.ai"],
-  ["security@leadengine.app", "security@leadac.ai"],
+  ["hello@leadengine.app", "hello@leadacai.com"],
+  ["security@leadengine.app", "security@leadacai.com"],
   ["leadengine.app", "leadac.ai"],
   ["leadengine.com.tr", "leadac.com.tr"],
   ["leadengine.io", "leadac.ai"],

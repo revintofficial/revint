@@ -162,14 +162,14 @@ export function DemoRequestForm() {
           className="w-11 h-11 rounded-xl flex items-center justify-center"
           style={{
             background:
-              "linear-gradient(135deg, var(--vx-purple-400), var(--vx-purple-700))",
+              "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60%), hsl(var(--leadac-h) var(--leadac-s) 36%))",
             color: "white",
           }}
           aria-hidden
         >
           <CheckCircle2 className="w-5 h-5" />
         </div>
-        <h3 className="vx-display text-[22px] md:text-[26px] leading-tight tracking-[-0.02em] text-white">
+        <h3 className="text-[22px] md:text-[26px] leading-tight tracking-[-0.02em] font-semibold text-white">
           Got it. I&apos;ll be in touch shortly.
         </h3>
         <p className="text-[14.5px] text-white/70 leading-relaxed">
@@ -306,17 +306,20 @@ export function DemoRequestForm() {
         <button
           type="submit"
           disabled={isPending}
-          className="vx-magic-pill"
-          style={isPending ? { opacity: 0.7, cursor: "wait" } : undefined}
+          className="inline-flex items-center gap-1.5 px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white transition-transform hover:-translate-y-px disabled:opacity-70 disabled:cursor-wait"
+          style={{
+            background:
+              "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
+            boxShadow:
+              "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.35)",
+          }}
         >
           {isPending ? "Sending..." : "Book the walkthrough"}
-          <span className="vx-arrow-bubble" aria-hidden>
-            {isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <ArrowRight className="w-4 h-4" />
-            )}
-          </span>
+          {isPending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <ArrowRight className="w-4 h-4" />
+          )}
         </button>
 
         <p className="text-[12px] text-white/45 leading-snug max-w-xs flex items-center gap-2">

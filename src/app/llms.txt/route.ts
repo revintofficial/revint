@@ -59,7 +59,7 @@ export async function GET() {
   );
   lines.push(
     line(
-      `- The product targets agencies selling websites, SEO, and growth services to local businesses (phone repair, dental clinics, HVAC, opticians, driving instructors, mobile mechanics).`,
+      `- ${SITE.name} is an AI outbound operating system for agencies selling to local businesses, especially F&B (restaurants, cafes, bars, bakeries, ghost kitchens).`,
     ),
   );
   lines.push(
@@ -79,8 +79,10 @@ export async function GET() {
       "Top pages",
       [
         { url: "/", note: "Homepage — product overview and positioning." },
-        { url: "/pricing", note: "Pricing tiers: Free, Pro ($79/mo), Agency ($249/mo)." },
-        { url: "/for/agencies", note: "Agency vertical landing — most-cited persona page." },
+        {
+          url: "/for/restaurant-agencies",
+          note: "AI outbound operating system for agencies selling to local businesses, especially F&B (restaurants, cafes, bars, bakeries, ghost kitchens).",
+        },
         { url: "/tools", note: "Free tools — reply-rate calculator and ICP match scorer." },
         { url: "/blog", note: "Field notes on outbound, cold email, and local lead gen." },
         { url: "/glossary", note: `${GLOSSARY_TERMS.length} plain-English definitions for outbound terms.` },

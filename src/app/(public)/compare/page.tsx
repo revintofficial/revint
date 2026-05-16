@@ -155,7 +155,7 @@ export default function CompareIndexPage() {
           title="See also"
           links={[
             { label: "Alternatives", href: "/alternatives" },
-            { label: "Pricing", href: "/pricing" },
+            { label: "Waitlist", href: "/#waitlist" },
             { label: "All cities", href: "/cities" },
             { label: "All niches", href: "/niches" },
           ]}

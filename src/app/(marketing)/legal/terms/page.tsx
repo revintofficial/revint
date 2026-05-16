@@ -41,8 +41,8 @@ export default function TermsPage() {
         <h2 className="text-[18px] font-semibold text-white mt-6">Contact</h2>
         <p>
           Questions? Reach us at{" "}
-          <a href="mailto:hello@leadac.ai" className="text-(--leadac-300) hover:underline">
-            hello@leadac.ai
+          <a href="mailto:hello@leadacai.com" className="text-(--leadac-300) hover:underline">
+            hello@leadacai.com
           </a>
           .
         </p>

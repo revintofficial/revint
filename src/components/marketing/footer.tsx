@@ -22,58 +22,91 @@ export function MarketingFooter({
                 height={28}
                 className="w-7 h-7 object-contain"
               />
-              <span className="text-[14px] font-semibold tracking-tight">Leadac AI</span>
+              <span className="text-[14px] font-semibold tracking-tight">LeadAC</span>
             </Link>
             <p className="text-[12.5px] text-white/45 leading-relaxed max-w-xs">
-              Local businesses that need a new website, found and pitched in one tool.
+              LeadAC — AI outbound system for local business sales.
             </p>
           </div>
 
           <div>
-            <p className="text-[11px] uppercase tracking-wider font-semibold text-white/35 mb-3">Product</p>
+            <p className="text-[11px] uppercase tracking-wider font-semibold text-white/35 mb-3">
+              Product
+            </p>
             <ul className="space-y-2 text-[12.5px]">
-              <li><Link href="/#how" className="text-white/65 hover:text-white">How it works</Link></li>
-              <li><Link href="/#features" className="text-white/65 hover:text-white">Features</Link></li>
-              <li><Link href="/pricing" className="text-white/65 hover:text-white">Pricing</Link></li>
+              <li>
+                <Link href="/#how-it-thinks" className="text-white/65 hover:text-white">
+                  How it works
+                </Link>
+              </li>
+              <li>
+                <Link href="/for/restaurant-agencies" className="text-white/65 hover:text-white">
+                  For restaurants
+                </Link>
+              </li>
+              <li>
+                <Link href="/#waitlist" className="text-white/65 hover:text-white">
+                  Waitlist
+                </Link>
+              </li>
               {!hidePublicAuth && (
-                <li><Link href="/login" className="text-white/65 hover:text-white">Log in</Link></li>
+                <li>
+                  <Link href="/login" className="text-white/65 hover:text-white">
+                    Log in
+                  </Link>
+                </li>
               )}
             </ul>
           </div>
 
           <div>
-            <p className="text-[11px] uppercase tracking-wider font-semibold text-white/35 mb-3">For</p>
+            <p className="text-[11px] uppercase tracking-wider font-semibold text-white/35 mb-3">
+              Company
+            </p>
             <ul className="space-y-2 text-[12.5px]">
-              <li><Link href="/for/agencies" className="text-white/65 hover:text-white">Outbound agencies</Link></li>
-              <li><Link href="/for/specialists" className="text-white/65 hover:text-white">Vertical specialists</Link></li>
-              <li><Link href="/for/smma" className="text-white/65 hover:text-white">New SMMA owners</Link></li>
-              <li><Link href="/partners" className="text-white/65 hover:text-white">Partner program</Link></li>
+              <li>
+                <Link href="/#faq" className="text-white/65 hover:text-white">
+                  FAQ
+                </Link>
+              </li>
+              <li>
+                <a href="mailto:hello@leadacai.com" className="text-white/65 hover:text-white">
+                  Contact
+                </a>
+              </li>
+              <li>
+                <Link href="/partners" className="text-white/65 hover:text-white">
+                  Partners
+                </Link>
+              </li>
             </ul>
           </div>
 
           <div>
-            <p className="text-[11px] uppercase tracking-wider font-semibold text-white/35 mb-3">Company</p>
+            <p className="text-[11px] uppercase tracking-wider font-semibold text-white/35 mb-3">
+              Legal
+            </p>
             <ul className="space-y-2 text-[12.5px]">
-              <li><Link href="/#faq" className="text-white/65 hover:text-white">FAQ</Link></li>
-              <li><a href="mailto:hello@leadac.ai" className="text-white/65 hover:text-white">Contact</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <p className="text-[11px] uppercase tracking-wider font-semibold text-white/35 mb-3">Legal</p>
-            <ul className="space-y-2 text-[12.5px]">
-              <li><Link href="/legal/terms" className="text-white/65 hover:text-white">Terms</Link></li>
-              <li><Link href="/legal/privacy" className="text-white/65 hover:text-white">Privacy</Link></li>
+              <li>
+                <Link href="/legal/terms" className="text-white/65 hover:text-white">
+                  Terms
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/privacy" className="text-white/65 hover:text-white">
+                  Privacy
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
 
         <div
           className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-          style={{ borderTop: "0.5px solid rgba(255,255,255,0.05)" }}
+          style={{ borderTop: "0.5px solid rgba(255,255,255,0.06)" }}
         >
           <p className="text-[11.5px] text-white/35">
-            © {new Date().getFullYear()} Leadac AI. All rights reserved.
+            © {new Date().getFullYear()} LeadAC. All rights reserved.
           </p>
           <p className="text-[11.5px] text-white/35">
             Built with Next.js, Supabase, and Gemini.

@@ -266,6 +266,38 @@ const NICHE_THEMES: Record<string, NicheTheme> = {
     accentHex: "#f59e0b",
     secondaryHex: "#0f172a",
   },
+
+  // ============================================================
+  // Hybrid Kuyumcu (jewelers) parent + children.
+  // ============================================================
+  kuyumcu: {
+    // Parent fallback — light mode + warm gold. Used when a lead
+    // resolves to the parent (not yet sub-niched) or when the child
+    // is missing imagery/theme entries.
+    mode: "light",
+    primaryHex: "#a16207",
+    accentHex: "#d4af37",
+    secondaryHex: "#fef9c3",
+  },
+  "kuyumcu-traditional": {
+    // Geleneksel mahalle / Kapalıçarşı: warm amber-gold + sun gold +
+    // cream. Light mode reads "vitrin / sıcak / güvenilir esnaf"
+    // rather than "lüks butik". The deeper amber primary pulls the
+    // CTA toward Türk altıncı aesthetics (think gram fiyat tabelası).
+    mode: "light",
+    primaryHex: "#b45309",
+    accentHex: "#fbbf24",
+    secondaryHex: "#fef3c7",
+  },
+  "kuyumcu-luxury": {
+    // Lüks butik / pırlanta: champagne gold on deep onyx. Dark mode
+    // for the Tiffany / Cartier / Bulgari editorial feel — premium
+    // brand voice, sertifika + designer pieces ön planda.
+    mode: "dark",
+    primaryHex: "#d4af37",
+    accentHex: "#fbbf24",
+    secondaryHex: "#1c1917",
+  },
 };
 
 /**
@@ -520,6 +552,56 @@ const NICHE_IMAGERY: Record<string, NicheImagery> = {
     gallery: [
       unsplash("1517248135467-4c7edcad34c4", { w: 800 }),
       unsplash("1555396273-367ea4eb4db5", { w: 800 }),
+    ],
+  },
+
+  // ----- Kuyumcu (jewelers) -----
+  // All Unsplash ids HEAD-verified live (HTTP 200 with the
+  // `?w=1600&q=80&auto=format&fit=crop` query). When a future 404
+  // happens `pickSafePhotoUrl` silently falls back to the gradient
+  // hero — page still ships the niche palette intact.
+  kuyumcu: {
+    // Parent fallback — neutral jewelry imagery for un-classified
+    // jewelry_store leads (children inherit this when their own
+    // arrays are absent / partial).
+    hero: [
+      unsplash("1685489807405-fdffb06aef2c"), // jewelry on a table
+      unsplash("1626136978522-b67ac41126e9"), // display case filled with jewelry
+      unsplash("1611955167811-4711904bb9f8"), // gold diamond studded ring on white
+    ],
+    gallery: [
+      unsplash("1576723417715-6b408c988c23", { w: 800 }), // necklaces + pendants + boxes
+      unsplash("1611107683227-e9060eccd846", { w: 800 }), // gold chain on white surface
+      unsplash("1660860547079-fd4845880af9", { w: 800 }), // group of jewelry on table
+    ],
+  },
+  "kuyumcu-traditional": {
+    // Mahalle / Kapalıçarşı kuyumcusu — warm, in-store, "vitrin"
+    // hissi. Wooden shelves, full display cases, silver trays of
+    // gold jewelry. Türk altıncı aesthetic.
+    hero: [
+      unsplash("1604306354577-68136efdf03b"), // brown wooden shelf, assorted items
+      unsplash("1626136978522-b67ac41126e9"), // display case filled with jewelry
+      unsplash("1646624867902-b970108e9137"), // store with items on display
+    ],
+    gallery: [
+      unsplash("1650455221359-3aebf920bcc5", { w: 800 }), // silver tray with lots of gold jewelry
+      unsplash("1667286266946-4bbb7969b32b", { w: 800 }), // antique furniture display room
+      unsplash("1576723417715-6b408c988c23", { w: 800 }), // assorted-color necklaces with boxes
+    ],
+  },
+  "kuyumcu-luxury": {
+    // Lüks / butik — minimal, editorial, white-textile + chain-on-
+    // marble. Tiffany / Cartier / Bulgari-leaning compositions.
+    hero: [
+      unsplash("1611955167811-4711904bb9f8"), // gold diamond studded ring on white textile
+      unsplash("1631982690223-8aa4be0a2497"), // three gold rings in a white box
+      unsplash("1599643477877-530eb83abc8e"), // silver + blue gemstone pendant necklace
+    ],
+    gallery: [
+      unsplash("1602173574767-37ac01994b2a", { w: 800 }), // gold chain bracelet on a magazine (editorial)
+      unsplash("1611107683227-e9060eccd846", { w: 800 }), // gold chain on white surface (minimal premium)
+      unsplash("1629212093109-354efe3fc541", { w: 800 }), // gold and silver pendant necklace lot
     ],
   },
 };

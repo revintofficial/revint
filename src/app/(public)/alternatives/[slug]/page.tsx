@@ -66,7 +66,7 @@ function alternativeFaqs(competitorName: string) {
     },
     {
       question: `Is Leadac AI cheaper than ${competitorName}?`,
-      answer: `For agencies running 1-5k leads per month, yes. Leadac AI's Pro plan is $79/mo and Agency is $249/mo with 5 seats. See /pricing for the full breakdown.`,
+      answer: `For agencies running 1-5k leads per month, yes — and we collapse the per-prospect homework cost line that ${competitorName} doesn't address. Plans are being shaped with the first cohort right now; join the waitlist at /#waitlist for the full breakdown when we open.`,
     },
     {
       question: `Can I import ${competitorName} data into Leadac AI?`,

@@ -55,6 +55,10 @@ export const LIMITS = {
   // limit blocks form-spam attacks without ever rate-limiting an actual
   // prospect filling out the form even slowly.
   demoRequest: { bucket: "demo", windowSec: 600, limit: 5 },
+  // Marketing waitlist form on the homepage. Same shape and reasoning
+  // as demoRequest — a real prospect submits once, anything more is a
+  // bot loop or a fat-fingered double-submit.
+  waitlist: { bucket: "wlst", windowSec: 600, limit: 5 },
   // Marketing analytics ingest. Public, anonymous, IP-bucketed. The
   // client tracker batches events every 5 seconds (12 batches/min in
   // a continuously-active tab) so 120/min gives 10x headroom for

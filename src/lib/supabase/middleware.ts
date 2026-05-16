@@ -3,7 +3,6 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_ROUTES = new Set([
   "/",
-  "/pricing",
   "/login",
   "/signup",
   "/legal/terms",

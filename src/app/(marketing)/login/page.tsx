@@ -44,24 +44,32 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
     // (AuthForm is a "use client" component that pulls
     // searchParams via useSearchParams; without a fallback the
     // first paint flickers from blank -> form on every nav.)
-    <Suspense fallback={<AuthSkeleton />}>
-      <AuthForm mode="login" />
-    </Suspense>
+    <div className="pt-32 md:pt-40 pb-24 md:pb-32">
+      <div className="max-w-md mx-auto px-5 sm:px-6">
+        <Suspense fallback={<AuthSkeleton />}>
+          <AuthForm mode="login" />
+        </Suspense>
+      </div>
+    </div>
   );
 }
 
 function AuthSkeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-white/8 bg-card-dark p-8">
-        <div className="h-7 w-1/2 mx-auto rounded bg-white/5 animate-pulse" />
-        <div className="h-4 w-3/4 mx-auto rounded bg-white/5 animate-pulse" />
-        <div className="space-y-3 pt-2">
-          <div className="h-10 rounded bg-white/5 animate-pulse" />
-          <div className="h-10 rounded bg-white/5 animate-pulse" />
-        </div>
-        <div className="h-10 rounded bg-white/10 animate-pulse" />
+    <div
+      className="w-full space-y-6 rounded-2xl p-8"
+      style={{
+        background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
+        border: "0.5px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <div className="h-7 w-1/2 mx-auto rounded bg-white/5 animate-pulse" />
+      <div className="h-4 w-3/4 mx-auto rounded bg-white/5 animate-pulse" />
+      <div className="space-y-3 pt-2">
+        <div className="h-10 rounded bg-white/5 animate-pulse" />
+        <div className="h-10 rounded bg-white/5 animate-pulse" />
       </div>
+      <div className="h-10 rounded bg-white/10 animate-pulse" />
     </div>
   );
 }

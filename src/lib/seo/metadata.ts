@@ -32,7 +32,7 @@ export const SITE = {
   defaultLanguage: "en-US" as const,
   supportedLanguages: ["en-US"] as const,
   twitter: "@leadac_ai",
-  email: "hello@leadac.ai",
+  email: "hello@leadacai.com",
   sameAs: [
     "https://twitter.com/leadac_ai",
     "https://www.linkedin.com/company/leadac-ai",

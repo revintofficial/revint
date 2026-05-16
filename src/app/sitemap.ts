@@ -96,28 +96,8 @@ function coreSitemap(): MetadataRoute.Sitemap {
   return [
     { url: `${BASE}/`, changeFrequency: "weekly", priority: 1.0 },
     {
-      url: `${BASE}/pricing`,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
-    {
-      url: `${BASE}/for/agencies`,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${BASE}/for/smma`,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${BASE}/for/walk-in-web-agencies`,
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${BASE}/for/specialists`,
-      changeFrequency: "monthly",
+      url: `${BASE}/for/restaurant-agencies`,
+      changeFrequency: "weekly",
       priority: 0.8,
     },
     { url: `${BASE}/partners`, changeFrequency: "monthly", priority: 0.5 },

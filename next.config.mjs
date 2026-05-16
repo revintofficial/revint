@@ -44,6 +44,39 @@ const nextConfig = {
         destination: "/app/deals",
         permanent: true,
       },
+      // Marketing rebuild (May 2026): the per-vertical landings collapsed
+      // into one F&B-first vertical + a sharper homepage. We send 308
+      // permanents so any inbound link earned by the old slugs survives.
+      {
+        source: "/for/agencies",
+        destination: "/for/restaurant-agencies",
+        permanent: true,
+      },
+      {
+        source: "/for/smma",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/for/specialists",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/for/walk-in-web-agencies",
+        destination: "/",
+        permanent: true,
+      },
+      // Pricing is gated during pre-launch — plans are being shaped with
+      // the first cohort of agencies. Inbound links to /pricing land on
+      // the homepage waitlist anchor instead. 308 preserves SEO equity
+      // and bookmarks; flipping this back to a real page is a one-line
+      // edit when production opens.
+      {
+        source: "/pricing",
+        destination: "/#waitlist",
+        permanent: false,
+      },
     ];
   },
 };
