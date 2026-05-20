@@ -112,6 +112,20 @@ export interface LeadacShowcaseRenderInput {
    * inherits the `kuyumcu` parent's section labels.
    */
   nicheParentSlug?: string | null;
+  /**
+   * Real business / storefront / product photos from `Lead.photoUrls`
+   * (populated by APIFY_GMAPS_DEEP — Phase 3 of the kuyumcu-pro plan).
+   * When present, the renderer prefers these over the niche imagery
+   * pack for hero + gallery + about-accent slots. Empty / missing →
+   * silent fallback to the Unsplash stock pool, so non-kuyumcu
+   * verticals and legacy leads keep working unchanged.
+   *
+   * URLs are double-validated: persisted ones already cleared the
+   * Apify worker's host filter, but the renderer re-runs them through
+   * `pickSafePhotoUrl` so a hand-edited or migrated row can't bypass
+   * the CSS-context allowlist.
+   */
+  leadPhotoUrls?: string[] | null;
 }
 
 export function renderLeadacShowcase(input: LeadacShowcaseRenderInput): string {
@@ -133,17 +147,39 @@ export function renderLeadacShowcase(input: LeadacShowcaseRenderInput): string {
 
   // Imagery: hero[0] anchors the fold; gallery photos populate a
   // dedicated 3-up strip between trust and testimonials, plus an
-  // accent tile inside the about section. Without this the layout
-  // reads as text-walled "ruhsuz" — adding 3-4 curated photos lifts
-  // perceived production value without slowing first paint (all
-  // CDN-hosted Unsplash, lazy-loaded below the fold).
-  const heroPhotoUrl = pickSafePhotoUrl(input.imagery?.hero?.[0] ?? null);
-  const galleryPhotoUrls = (input.imagery?.gallery ?? [])
+  // accent tile inside the about section.
+  //
+  // Phase 3 (kuyumcu-pro plan) — when Apify has surfaced real
+  // photos from Google Places into `Lead.photoUrls`, we prefer
+  // them over Unsplash stock for hero + gallery. The first lead
+  // photo anchors the hero; subsequent ones fill the 3-up gallery;
+  // niche imagery fills any remaining slots so the page is never
+  // photo-empty even when the lead has only 1-2 Google Places
+  // photos.
+  const safeLeadPhotos = (input.leadPhotoUrls ?? [])
     .map((u) => pickSafePhotoUrl(u))
-    .filter((u): u is string => Boolean(u))
-    .slice(0, 3);
+    .filter((u): u is string => Boolean(u));
+  const stockHero = pickSafePhotoUrl(input.imagery?.hero?.[0] ?? null);
+  const stockGallery = (input.imagery?.gallery ?? [])
+    .map((u) => pickSafePhotoUrl(u))
+    .filter((u): u is string => Boolean(u));
+
+  const heroPhotoUrl = safeLeadPhotos[0] ?? stockHero;
+  // Build the gallery pool: real photos first, dedup, then fill with
+  // stock to reach the target of 3. Dedup avoids "lead has 1 photo
+  // → it shows up in both hero AND gallery[0]".
+  const gallerySeen = new Set<string>();
+  if (heroPhotoUrl) gallerySeen.add(heroPhotoUrl);
+  const galleryPool: string[] = [];
+  for (const p of [...safeLeadPhotos.slice(1), ...stockGallery]) {
+    if (gallerySeen.has(p)) continue;
+    gallerySeen.add(p);
+    galleryPool.push(p);
+    if (galleryPool.length >= 3) break;
+  }
+  const galleryPhotoUrls = galleryPool;
   const aboutAccentPhotoUrl =
-    galleryPhotoUrls[0] ?? pickSafePhotoUrl(input.imagery?.hero?.[1] ?? null);
+    safeLeadPhotos[1] ?? galleryPhotoUrls[0] ?? pickSafePhotoUrl(input.imagery?.hero?.[1] ?? null);
 
   // Branding overrides for AGENCY-tier reseller. Same precedence rule
   // as legacy renderer: workspace primary / accent win over the niche
@@ -504,42 +540,37 @@ ${renderNav({ name, safeLogoUrl, phoneHref, waBaseHref, labels })}
 
 <main id="top">
 
-${renderHero({
-  borough,
-  labels,
-  hero,
-  trust,
-  heroStatChips,
-  heroPhotoUrl,
-  name,
-  phoneHref,
-  waBaseHref,
-  mapsHref,
+${renderShowcaseBody({
+  sectionOrder: s.section_order,
+  builders: {
+    hero: () =>
+      renderHero({
+        borough,
+        labels,
+        hero,
+        trust,
+        heroStatChips,
+        heroPhotoUrl,
+        name,
+        phoneHref,
+        waBaseHref,
+        mapsHref,
+      }),
+    stats: () => renderStatsBlock(stats, labels),
+    process: () => renderProcessBlock(features, labels),
+    courses: () => renderCoursesBlock(courses, labels),
+    trust: () => renderTrustBlock(trustPoints, labels),
+    gallery: () => renderGalleryBlock(galleryPhotoUrls, labels, name),
+    testimonials: () => renderTestimonialsBlock(testimonialList, labels),
+    faq: () => renderFaqBlock(faqs, labels),
+    booking: () => renderBookingBlock(booking, waBaseHref, bookingDayLabels, labels),
+    about: () => renderAboutBlock(s.about.paragraph, aboutInstructors, aboutAccentPhotoUrl, name, labels),
+    map: () => renderMapBlock(mapEmbedUrl, labels),
+    contact: () => renderContactBlock(contact, waBaseHref, name, phoneDisplay, addr, labels),
+    cta: () => renderCtaFinal(s.cta_final, phoneHref, waBaseHref, labels),
+    cta_final: () => renderCtaFinal(s.cta_final, phoneHref, waBaseHref, labels),
+  },
 })}
-
-${renderStatsBlock(stats, labels)}
-
-${renderProcessBlock(features, labels)}
-
-${renderCoursesBlock(courses, labels)}
-
-${renderTrustBlock(trustPoints, labels)}
-
-${renderGalleryBlock(galleryPhotoUrls, labels, name)}
-
-${renderTestimonialsBlock(testimonialList, labels)}
-
-${renderFaqBlock(faqs, labels)}
-
-${renderBookingBlock(booking, waBaseHref, bookingDayLabels, labels)}
-
-${renderAboutBlock(s.about.paragraph, aboutInstructors, aboutAccentPhotoUrl, name, labels)}
-
-${renderMapBlock(mapEmbedUrl, labels)}
-
-${renderContactBlock(contact, waBaseHref, name, phoneDisplay, addr, labels)}
-
-${renderCtaFinal(s.cta_final, phoneHref, waBaseHref, labels)}
 
 </main>
 
@@ -549,6 +580,64 @@ ${renderCtaFinal(s.cta_final, phoneHref, waBaseHref, labels)}
 
 </body>
 </html>`;
+}
+
+// ============================================================
+// Body composer — section_order driven
+// ============================================================
+
+/**
+ * Default section order for the generic showcase. Mirrors the v2
+ * historical hard-coded order so legacy WebsiteMockup rows that
+ * don't carry `section_order` keep rendering identically. When
+ * Gemini emits a usable order array we honor it; otherwise we
+ * fall back to this floor.
+ */
+const SHOWCASE_DEFAULT_SECTION_ORDER = [
+  "hero",
+  "stats",
+  "process",
+  "courses",
+  "trust",
+  "gallery",
+  "testimonials",
+  "faq",
+  "booking",
+  "about",
+  "map",
+  "contact",
+  "cta_final",
+];
+
+function renderShowcaseBody(args: {
+  sectionOrder: string[] | undefined;
+  builders: Record<string, () => string>;
+}): string {
+  const { sectionOrder, builders } = args;
+  // Use Gemini's order when it has ≥3 entries — fewer than that
+  // smells like a degraded response and the default order is safer.
+  const order =
+    Array.isArray(sectionOrder) && sectionOrder.length >= 3
+      ? sectionOrder
+      : SHOWCASE_DEFAULT_SECTION_ORDER;
+
+  // nav / footer / kuyumcu-only tokens are filtered. nav/footer are
+  // rendered outside the body composer; kuyumcu-only tokens (gold_price,
+  // collection_grid, certifications, atelier) silently no-op here so
+  // Gemini's kuyumcu-flavored emit doesn't crash if it accidentally
+  // routes to the generic renderer.
+  const SKIP_TOKENS = new Set(["nav", "footer"]);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const key of order) {
+    if (SKIP_TOKENS.has(key)) continue;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const build = builders[key];
+    if (!build) continue;
+    out.push(build());
+  }
+  return out.join("\n");
 }
 
 // ============================================================

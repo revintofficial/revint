@@ -179,6 +179,138 @@ export interface WebsiteMockupTheme {
   primary_hex: string;
 }
 
+// ============================================================
+// v3 — Kuyumcu-specific section types
+// ============================================================
+//
+// Berkay's two-track kuyumcu generator (kuyumcu-traditional + kuyumcu-
+// luxury) needs richer kuyumcu-correct vocabulary than the generic
+// `courses` / `trust_points` / `about` triad. The four interfaces
+// below are emitted by Gemini ONLY when the lead's niche is kuyumcu*
+// (the prompt instructs it) — every other vertical leaves these as
+// null. Renderer drops the section when null, so adding the fields
+// here is back-compat-safe for non-kuyumcu mockup rows persisted
+// before this change.
+//
+// `parseSections` in `src/lib/agent-workers/website-mockup.ts`
+// coerces/clamps the model's output and falls back to null when the
+// schema is malformed, so the renderer can always trust the type.
+
+/**
+ * Collection grid — kuyumcu vitrini ürün kategorileri. Replaces the
+ * generic `courses` grid for kuyumcu mockups so the page reads as
+ * "vitrinden seçmeler / koleksiyon" rather than a price-card display.
+ * Each category routes to a WhatsApp pre-filled message instead of
+ * carrying a numeric price.
+ */
+export interface WebsiteMockupCollectionCategory {
+  /** Category name, e.g. "Alyans", "Pırlanta", "Bilezik", "Hurda Altın Bozdurma". */
+  label: string;
+  /** 1 sentence describing what's in this category. */
+  blurb: string;
+  /** Icon hint matching the kuyumcu icon set (gem, ring, diamond, …). */
+  icon_hint: string;
+  /** Renderer-displayed CTA label; standard value is "WhatsApp'tan sor". */
+  cta_label: string;
+  /**
+   * Optional pre-filled WhatsApp message tail. The renderer prefixes
+   * a localised greeting. When null, the renderer uses the category
+   * label as the message subject ("Selam, Alyans hakkında bilgi almak istiyorum.").
+   */
+  wa_prefix?: string | null;
+}
+
+export interface WebsiteMockupCollectionGrid {
+  /** Section eyebrow, e.g. "Koleksiyon". */
+  eyebrow: string;
+  /** Section title, e.g. "Vitrinden seçmeler". */
+  title: string;
+  /**
+   * 4-6 categories. The renderer caps to 6 and arranges them in an
+   * auto-fit grid with `minmax(260px, 1fr)`.
+   */
+  categories: WebsiteMockupCollectionCategory[];
+}
+
+/**
+ * Certifications / trust badges. For kuyumcu-luxury this is the
+ * sertifika (GIA / IGI / has ayar damgası) showcase that pırlanta
+ * customers expect; for kuyumcu-traditional it leans toward esnaf
+ * odası kaydı / has ayar damgası / yılların tecrübesi.
+ *
+ * The prompt explicitly forbids inventing accreditation names —
+ * Gemini may only emit specific bodies (GIA, IGI, HRD) when they
+ * appear in the lead's audit/review data. Otherwise it emits generic
+ * trust badges ("Has Ayar Damgalı", "Esnaf Odası Kayıtlı").
+ */
+export interface WebsiteMockupCertificationItem {
+  /** Badge name, e.g. "Has Ayar Damgalı". */
+  name: string;
+  /** 1-2 sentence explanation of what the badge means for the customer. */
+  body: string;
+  /** Optional icon hint (`certificate`, `shield`, `award`, `scale`). */
+  icon_hint?: string | null;
+}
+
+export interface WebsiteMockupCertifications {
+  /** Section eyebrow, e.g. "Güvence". */
+  eyebrow: string;
+  /** Section title, e.g. "Sertifikalı güvence ile". */
+  title: string;
+  /** 2-4 trust badges. Renderer arranges them in a 2-4 column grid. */
+  items: WebsiteMockupCertificationItem[];
+}
+
+/**
+ * Atelier / usta story — replaces / augments the generic `about`
+ * block for kuyumcu mockups. "Ruhsuz site" sektör derdinin direkt
+ * çözümü: usta'nın yıllarını, atölyeyi, ısmarlama işçiliği vitrine
+ * çıkaran section. The renderer pairs the paragraph with a wide-
+ * aspect atelier photo from the niche imagery pack.
+ */
+export interface WebsiteMockupAtelier {
+  /** Section eyebrow, e.g. "Atölyemiz". */
+  eyebrow: string;
+  /** Section title, e.g. "20 yıllık usta elinden". */
+  title: string;
+  /** 2-4 sentence paragraph in the business's voice. */
+  paragraph: string;
+  /** Optional usta / master name. null → omits the inline credit. */
+  master_name?: string | null;
+  /** Optional usta role / title, e.g. "Baş usta". */
+  master_role?: string | null;
+  /**
+   * Optional rounded-up years number for the big-serif callout
+   * ("20 yıl"). The prompt forbids inventing the number unless the
+   * audit or review block grounds it; otherwise null.
+   */
+  years_experience?: number | null;
+  /**
+   * Renderer hint for photo aspect. "wide" → 16/9, "portrait" → 4/5.
+   * Defaults to "portrait" when null. The renderer cross-references
+   * this with the imagery pack to pick the better-fitting gallery
+   * tile.
+   */
+  photo_hint?: "wide" | "portrait" | null;
+}
+
+/**
+ * Live gram-altın strip. Only emitted for kuyumcu mockups. The
+ * renderer ships a `<!-- GOLD_PRICE_VALUE -->` marker inside the
+ * value `<span>`; `/m/[slug]` route handler swaps that marker for
+ * the current TRY/gram reading on every serve (Phase 4). When the
+ * lead has no phone we omit the strip entirely — without a WhatsApp
+ * CTA the live price becomes a static factoid which underperforms.
+ */
+export interface WebsiteMockupGoldPrice {
+  /** Renderer toggle. Gemini emits true for every kuyumcu mockup. */
+  show: boolean;
+  /** Label, e.g. "Anlık gram altın referansı". */
+  caption: string;
+  /** CTA pill label, e.g. "Güncel fiyat için WhatsApp". */
+  whatsapp_cta: string;
+}
+
 export interface WebsiteMockupSections {
   hero: WebsiteMockupHero;
   /** Legacy v1 services section — still emitted for `leadac-hero` rows. */
@@ -232,6 +364,26 @@ export interface WebsiteMockupSections {
   };
   theme: WebsiteMockupTheme;
   section_order: string[];
+
+  // ------- v3 kuyumcu-specific sections -------
+  // All four are null for non-kuyumcu mockups. parseSections coerces
+  // malformed input to null so the renderer can always trust the
+  // type. Legacy WebsiteMockup rows (persisted before this change)
+  // simply don't have these keys; parseSections treats `undefined`
+  // exactly like `null`.
+
+  /**
+   * Kuyumcu vitrini ürün kategorileri. Replaces the generic `courses`
+   * grid in the kuyumcu renderer. null → renderer falls back to
+   * `courses` (back-compat with v2 rows).
+   */
+  collection_grid?: WebsiteMockupCollectionGrid | null;
+  /** Sertifika / güvence rozetleri. null → section omitted. */
+  certifications?: WebsiteMockupCertifications | null;
+  /** Atölye / usta story. null → renderer falls back to the `about` block. */
+  atelier?: WebsiteMockupAtelier | null;
+  /** Canlı gram altın strip. null → strip omitted. */
+  gold_price?: WebsiteMockupGoldPrice | null;
 }
 
 export interface WebsiteMockupPromptInput {
@@ -256,6 +408,16 @@ export interface WebsiteMockupPromptInput {
    * into `sections.theme` after the model returns.
    */
   nicheLabel: string | null;
+  /**
+   * Most-specific niche slug. Used in the prompt to switch on
+   * kuyumcu-specific section emission (collection_grid, certifications,
+   * atelier, gold_price) — Gemini only fills those keys when the slug
+   * is `kuyumcu` / `kuyumcu-traditional` / `kuyumcu-luxury`. null →
+   * no niche-specific branching, fall through to v2 schema.
+   */
+  nicheSlug?: string | null;
+  /** Parent niche slug for hybrid packs. Used alongside `nicheSlug`. */
+  nicheParentSlug?: string | null;
   nichePitchAngle: string | null;
   nicheHighValueSignals: string[];
   /**
@@ -376,7 +538,47 @@ export const WEBSITE_MOCKUP_SCHEMA_DESCRIPTION = `Response schema (every field r
     "accent_hex": "#RRGGBB",
     "primary_hex": "#RRGGBB"
   },
-  "section_order": ["nav", "hero", "stats", "process", "courses", "trust", "testimonials", "faq", "booking", "about", "map", "contact", "cta", "footer"]
+  "section_order": ["nav", "hero", "stats", "process", "courses", "trust", "testimonials", "faq", "booking", "about", "map", "contact", "cta", "footer"],
+
+  // ---- v3 kuyumcu-specific section keys ----
+  // ONLY emit these when the niche is kuyumcu* (kuyumcu /
+  // kuyumcu-traditional / kuyumcu-luxury). For every other vertical
+  // emit null for all four. The renderer drops null sections.
+
+  "collection_grid": {
+    "eyebrow": string,                  // "Koleksiyon" / "Vitrinden"
+    "title": string,                    // "Vitrinden seçmeler" / "Bu sezonun seçkisi"
+    "categories": [                     // 4-6 entries drawn from typical customer offerings
+      {
+        "label": string,                // "Alyans", "Pırlanta", "Bilezik", "Kolye", "Hurda Altın Bozdurma", "Tamir"
+        "blurb": string,                // 1 sentence about what's in this category
+        "icon_hint": string,            // "ring" | "diamond" | "necklace" | "chain" | "earring" | "scale" | "shield"
+        "cta_label": string,            // standard: "WhatsApp'tan sor"
+        "wa_prefix": string | null      // optional pre-filled message tail
+      }
+    ]
+  } | null,
+  "certifications": {                   // null for non-kuyumcu OR when nothing to claim
+    "eyebrow": string,                  // "Güvence"
+    "title": string,                    // "Sertifikalı güvence ile" / "Güven sembollerimiz"
+    "items": [                          // 2-4 trust badges
+      { "name": string, "body": string, "icon_hint": string | null }
+    ]
+  } | null,
+  "atelier": {                          // null for non-kuyumcu (or for tiny mahalle dükkanı without atölye)
+    "eyebrow": string,                  // "Atölyemiz"
+    "title": string,                    // "Ustanın elinden", "20 yıllık usta elinden"
+    "paragraph": string,                // 2-4 sentences in the business's voice — usta'nın tecrübesi, atölye, ısmarlama iş
+    "master_name": string | null,       // usta'nın adı varsa
+    "master_role": string | null,       // "Baş usta" / "Master jeweller"
+    "years_experience": number | null,  // only when grounded in input — never invent
+    "photo_hint": "wide" | "portrait" | null
+  } | null,
+  "gold_price": {                       // null for non-kuyumcu; for every kuyumcu mockup emit { show: true, ... }
+    "show": boolean,
+    "caption": string,                  // "Anlık gram altın referansı"
+    "whatsapp_cta": string              // "Güncel fiyat için WhatsApp"
+  } | null
 }`;
 
 export function buildWebsiteMockupPrompt(input: WebsiteMockupPromptInput): string {
@@ -424,6 +626,62 @@ export function buildWebsiteMockupPrompt(input: WebsiteMockupPromptInput): strin
 ${salesPains.length ? salesPains.map((p) => `  · ${p}`).join("\n") : "  · (none)"}`
       : "(no agency-side context — fine, the demo site never needed it anyway)";
 
+  // Kuyumcu (jewelry) niche switch. When the lead is a kuyumcu we
+  // demand the v3 kuyumcu-specific sections (collection_grid,
+  // certifications, atelier, gold_price); for every other vertical
+  // we instruct the model to emit those keys as null so the renderer
+  // can stay schema-clean.
+  const slug = input.nicheSlug ?? "";
+  const parent = input.nicheParentSlug ?? "";
+  const isKuyumcu = slug.startsWith("kuyumcu") || parent === "kuyumcu";
+  const isLuxuryKuyumcu = slug === "kuyumcu-luxury";
+
+  const kuyumcuBlock = isKuyumcu
+    ? `==== KUYUMCU-SPECIFIC SECTIONS (emit these — they REPLACE the generic courses/trust/about for jewelers) ====
+
+Track: ${isLuxuryKuyumcu ? "kuyumcu-luxury (butik / pırlanta / alyans — editorial dark voice)" : "kuyumcu-traditional (mahalle / esnaf — warm vitrin voice)"}
+
+1. collection_grid — REQUIRED. Emit 4-6 categories from the typical-offerings list above. For a${isLuxuryKuyumcu ? " luxury butik this looks like: Pırlanta Yüzük, Alyans ve Nişan, Pırlanta Set, Tasarım Koleksiyon, Sertifikalı Taş" : " mahalle kuyumcu this looks like: Alyans ve Nişan, Bilezik, Kolye, Hurda Altın Bozdurma, Tamir, Pırlanta"}. Each:
+   - label: short product/service name (1-3 words)
+   - blurb: 1 sentence what's in the category
+   - icon_hint: pick from "ring", "diamond", "necklace", "chain", "earring", "scale" (for hurda altın), "shield" (for tamir/garanti)
+   - cta_label: "WhatsApp'tan sor" (TR) / "Ask on WhatsApp" (EN) — every category
+   - wa_prefix: optional, e.g. "Bu modelin gramı ve fiyatı için" / null
+
+   IMPORTANT: When collection_grid is emitted, set "courses" to an empty array []. Don't emit both.
+
+2. certifications — REQUIRED for kuyumcu-luxury, OPTIONAL for kuyumcu-traditional. 2-4 items grounded in audit/review input. Allowed claims when no specific evidence:
+   - "Has Ayar Damgalı" (always safe, statutory in TR)
+   - "Esnaf Odası Kayıtlı" / "Kuyumcular Odası" (safe)
+   - "Garantili Teslim" (safe)
+   - "Ustadan Atölyeye Üretim" (safe for ateliers)
+   ${isLuxuryKuyumcu ? "Add when grounded in input: \"GIA Sertifikalı Pırlanta\", \"IGI Onaylı\", \"HRD Antwerp Sertifikalı\" — only when audit/review mentions them. NEVER invent a specific lab name without input grounding." : "Avoid GIA/IGI/HRD claims unless the audit explicitly mentions them — mahalle kuyumcu rarely carries them."}
+   Each item: name + 1-2 sentence body explaining what the badge gives the customer. icon_hint from "certificate", "shield", "award", "scale".
+
+3. atelier — REQUIRED for kuyumcu-luxury, OPTIONAL for kuyumcu-traditional (omit when the lead reads as tek-vitrin without atölye). 2-4 sentences in the BUSINESS's voice. Topics: usta'nın deneyimi (kaç yıl, sadece grounded — review/strength block mentions tecrübe), ısmarlama / kişiye özel iş, atölye nerede, üretim süreci. NEVER invent a specific master name unless input provides one. years_experience: only emit a number when "X yıllık" / "X yıldır" appears in pain/strength/review block, else null. photo_hint: ${isLuxuryKuyumcu ? "\"wide\" — editorial atelier wide shot" : "\"portrait\" — vitrin / usta side"}.
+
+4. gold_price — REQUIRED for EVERY kuyumcu mockup. Always emit:
+   {
+     "show": true,
+     "caption": "${input.language === "tr" ? "Anlık gram altın referansı" : "Live gold (gram) reference"}",
+     "whatsapp_cta": "${input.language === "tr" ? "Güncel fiyat için WhatsApp" : "Get today's price on WhatsApp"}"
+   }
+
+==== KUYUMCU VOICE GUARDS ====
+- The first FAQ MUST ask about gold/jewelry pricing ("Bugünkü gram altın fiyatı ne kadar?" / "Hurda altın alış fiyatınız nedir?"). Answer: NEVER quote a number. Point to WhatsApp because gram fiyatı saatlik değişir. Use phrasing like "Gram altın fiyatımız anlık değişir; güncel fiyat için WhatsApp'tan yazın, dakikalar içinde yanıtlıyoruz."
+- Voice for kuyumcu-luxury: minimal, editorial, "atölyemiz" yerine bazen "evimiz" / "house" sözcüğü; "koleksiyon" / "edit" / "seçki" kullan; CTA'lar "Randevu alın" / "Atölyeyi ziyaret edin" tonunda.
+- Voice for kuyumcu-traditional: warm, esnaf, "yıllardır vitrin", "mahallenin güvenilir kuyumcusu", "ailenizin yüzüğünü ailemiz seçer" tonu. CTA'lar "Gelin görün" / "WhatsApp'tan fiyat sor".
+- NEVER invent specific carat / ayar / gram numbers. NEVER invent diamond weights. Generic claims only ("sertifikalı pırlantalar", "has ayar damgalı altın") unless grounded.
+
+==== SECTION ORDER (kuyumcu defaults) ====
+- For kuyumcu-luxury, the renderer's default section_order is:
+  ["hero", "gold_price", "collection_grid", "atelier", "certifications", "testimonials", "gallery", "process", "faq", "booking", "about", "map", "contact", "cta_final"]
+- For kuyumcu-traditional / generic kuyumcu, the default is:
+  ["hero", "gold_price", "collection_grid", "trust", "testimonials", "gallery", "process", "atelier", "stats", "faq", "booking", "map", "contact", "cta_final"]
+- You MAY override section_order in your response when the lead's evidence justifies it (e.g. very-strong reviews early, or no atölye → drop "atelier"). When you do, ALWAYS keep "hero" first and "cta_final" last. Skip a section by leaving its key out of the array.
+`
+    : `(non-kuyumcu vertical — emit collection_grid:null, certifications:null, atelier:null, gold_price:null. Use the v2 courses/trust/about flow normally.)`;
+
   return `${WEBSITE_MOCKUP_SYSTEM_CONTEXT}
 
 ${WEBSITE_MOCKUP_SCHEMA_DESCRIPTION}
@@ -458,6 +716,8 @@ ${strengthsBlock}
 
 ==== AGENCY-INTERNAL CONTEXT — DO NOT WRITE THIS INTO THE SITE ====
 ${salesContextBlock}
+
+${kuyumcuBlock}
 
 ==== INSTRUCTIONS ====
 

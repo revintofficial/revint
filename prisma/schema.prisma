@@ -543,6 +543,23 @@ model Lead {
   // even when the site hasn't changed.
   lastAuditedWebsiteUrl String?              @map("last_audited_website_url")
 
+  // Apify Google Maps Deep scraper persists real product / storefront
+  // photos here so the website-mockup renderer can prefer the lead's
+  // actual photos over generic Unsplash stock. Renderer falls back to
+  // the niche imagery pack when this array is empty (existing rows
+  // remain unaffected). Capped to ~8 URLs server-side to keep the
+  // column compact; the renderer only uses 1 hero + 4-5 gallery.
+  //
+  // Photo URLs come from Google's CDN (lh3.googleusercontent.com etc.).
+  // `pickSafePhotoUrl` in src/lib/mockups/renderers/_shared.ts must
+  // whitelist these hosts before they're embedded in
+  // `style="background-image:url('...')"` — see that file's allowlist.
+  //
+  // `photoUrlsUpdatedAt` lets us decide when to refresh (Apify gmaps
+  // deep is expensive — only re-run when the photo set is stale).
+  photoUrls          String[]   @default([]) @map("photo_urls")
+  photoUrlsUpdatedAt DateTime?  @map("photo_urls_updated_at")
+
   // Niche pack tagging. `nicheSlug` is the parent NichePack slug (e.g.
   // "fnb", "phone-repair"). `subNicheSlug` is the child slug for hybrid
   // packs (e.g. "fnb-fine-dining"); null for flat niches. `subNicheSource`

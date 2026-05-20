@@ -105,8 +105,17 @@ export function withWhatsappMessage(waHref: string, message: string): string {
 /**
  * Validates a photo URL before it lands in a
  * `style="background-image:url('...')"` attribute. We accept ONLY
- * https URLs from a fixed allowlist of CDN hosts (Unsplash, Pexels;
- * extend per workspace branding when we ship custom CDN support).
+ * https URLs from a fixed allowlist of CDN hosts (Unsplash + Pexels
+ * for niche stock imagery; Google's photo CDN for the real business
+ * photos Apify Gmaps Deep pulls into `Lead.photoUrls`).
+ *
+ * Google CDN host allowance details (kuyumcu-pro Phase 3):
+ *   - `lh3.googleusercontent.com` (most common — public Places photos)
+ *   - `lh4 / lh5 / lh6.googleusercontent.com` (rotated edges)
+ *   - any other `*.googleusercontent.com` sub-host (Google reshuffles
+ *     these regularly; an exact list goes stale within months)
+ *   - `*.gstatic.com` (Google's secondary static CDN; sometimes
+ *     serves the same photo bytes when the primary is geo-throttled)
  *
  * This guard exists in addition to `escapeHtml` because the URL is
  * embedded inside a CSS `url('...')` token: a quote-balanced
@@ -114,6 +123,18 @@ export function withWhatsappMessage(waHref: string, message: string): string {
  * Returning null for anything outside the allowlist makes the
  * renderer fall back to the gradient hero / skip the gallery, which
  * is always safe.
+ *
+ * Why suffix-match the Google hosts but exact-match the others:
+ *   - Unsplash + Pexels only serve from a single canonical host each
+ *     (`images.unsplash.com` / `images.pexels.com`); exact match is
+ *     enough and tighter is better.
+ *   - Google's photo CDN is split across many sub-hosts and they
+ *     rotate over time; suffix match keeps us on the right edge as
+ *     `lh3.*` → `lh5.*` shifts happen.
+ *
+ * URL stripping: we strip any quote / whitespace characters from the
+ * final string so even a quirky URL that passed parsing can't escape
+ * the `url('...')` context.
  */
 export function pickSafePhotoUrl(input: string | null | undefined): string | null {
   if (!input) return null;
@@ -126,9 +147,24 @@ export function pickSafePhotoUrl(input: string | null | undefined): string | nul
   }
   if (parsed.protocol !== "https:") return null;
   const host = parsed.hostname.toLowerCase();
+
+  // Exact-match stock photo hosts.
   const ALLOWED_HOSTS = ["images.unsplash.com", "images.pexels.com"];
-  if (!ALLOWED_HOSTS.includes(host)) return null;
-  return parsed.toString().replace(/['"\s]/g, "");
+  if (ALLOWED_HOSTS.includes(host)) {
+    return parsed.toString().replace(/['"\s]/g, "");
+  }
+
+  // Suffix-match Google CDN hosts (Places photo gallery).
+  if (
+    host === "googleusercontent.com" ||
+    host.endsWith(".googleusercontent.com") ||
+    host === "gstatic.com" ||
+    host.endsWith(".gstatic.com")
+  ) {
+    return parsed.toString().replace(/['"\s]/g, "");
+  }
+
+  return null;
 }
 
 /**

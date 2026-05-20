@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getMockupRenderer } from "@/lib/mockups/templates";
-import { renderLeadacShowcase } from "@/lib/mockups/renderers/leadac-showcase";
-import { SHOWCASE_TEMPLATE_ID } from "@/lib/agent-workers/website-mockup";
+import {
+  CURRENT_TEMPLATE_IDS,
+  KUYUMCU_LUXURY_TEMPLATE_ID,
+  KUYUMCU_TRADITIONAL_TEMPLATE_ID,
+  resolveMockupRenderer,
+} from "@/lib/agent-workers/website-mockup";
 import { parseBranding } from "@/lib/branding";
 import type { WebsiteMockupSections } from "@/lib/prompts/website-mockup-prompt";
 import { getVisualIdentityForLead, getNicheBySlug } from "@/lib/niches";
+import {
+  readGramGoldTRYCached,
+  formatGramGoldTRY,
+} from "@/lib/external/gold-price";
 
 /**
  * Public mockup view route. Served as raw HTML (not React) because the page
@@ -59,14 +67,24 @@ export async function GET(
     // Prefer the cached HTML for instant response; re-render from
     // sections if cache is missing OR the cache was produced by an
     // older renderer template (templateId mismatch). Older
-    // `leadac-hero-v1` and `leadac-showcase-v1` rows hit this path —
-    // the v1 row's sectionsJson is forward-compatible (renderer falls
-    // back to safe defaults for any newer field), so we just re-render
-    // with the current renderer and the user gets the up-to-date
-    // section labels (e.g. kuyumcu-aware copy) without waiting for a
+    // `leadac-hero-v1`, `leadac-showcase-v1`, and now also any
+    // pre-kuyumcu-track rows that should be on `kuyumcu-traditional-v1`
+    // hit this path — the row's sectionsJson is forward-compatible
+    // (renderers fall back to safe defaults for any newer field), so
+    // we just re-render with the niche-correct current renderer and
+    // the user gets the up-to-date design without waiting for a
     // manual regen.
-    const cacheIsCurrent = wm.templateId === SHOWCASE_TEMPLATE_ID;
-    let html = cacheIsCurrent ? wm.htmlCache : null;
+    const cacheIsCurrent = CURRENT_TEMPLATE_IDS.has(wm.templateId);
+    // Resolve which renderer the lead SHOULD be on right now. If the
+    // cached templateId doesn't match the resolved one (e.g. lead was
+    // re-classified from generic to kuyumcu-luxury after the cache was
+    // built) we also need to re-render.
+    const resolved = resolveMockupRenderer({
+      subNicheSlug: wm.lead.subNicheSlug ?? null,
+      nicheSlug: wm.lead.nicheSlug ?? null,
+    });
+    const templateMatchesNiche = wm.templateId === resolved.templateId;
+    let html = cacheIsCurrent && templateMatchesNiche ? wm.htmlCache : null;
     if (!html) {
       const branding = wm.lead.workspace.plan === "AGENCY"
         ? parseBranding(wm.lead.workspace.branding)
@@ -81,7 +99,7 @@ export async function GET(
         (wm.lead.subNicheSlug ? getNicheBySlug(wm.lead.subNicheSlug) : null) ??
         (wm.lead.nicheSlug ? getNicheBySlug(wm.lead.nicheSlug) : null) ??
         null;
-      html = renderLeadacShowcase({
+      html = resolved.render({
         businessName: wm.lead.businessName,
         formattedAddress: wm.lead.formattedAddress,
         borough: wm.lead.borough,
@@ -99,6 +117,7 @@ export async function GET(
         nicheLabel: nichePack?.label ?? null,
         nicheSlug: nichePack?.slug ?? null,
         nicheParentSlug: nichePack?.parentSlug ?? null,
+        leadPhotoUrls: wm.lead.photoUrls ?? [],
       });
 
       // Fire-and-forget: persist the freshly rendered HTML + bump
@@ -109,9 +128,36 @@ export async function GET(
       prisma.websiteMockup
         .update({
           where: { id: wm.id },
-          data: { htmlCache: freshHtml, templateId: SHOWCASE_TEMPLATE_ID },
+          data: { htmlCache: freshHtml, templateId: resolved.templateId },
         })
         .catch((err) => console.error("WebsiteMockup cache refresh failed:", err));
+    }
+
+    // Phase 4 (kuyumcu-pro plan) — inject the live gram altın price
+    // into the cached/rendered HTML. The renderer plants a
+    // `<!-- GOLD_PRICE_VALUE -->—` marker inside the gold-strip
+    // `<span>`. We replace the marker on every serve so cache stays
+    // fresh without invalidating `htmlCache` whenever the price
+    // ticks. Redis read fails open: marker stays as "—".
+    //
+    // Only kuyumcu templates carry the marker (generic showcase
+    // doesn't render the strip), so we cheaply skip the Redis round
+    // trip for non-kuyumcu serves.
+    const isKuyumcuTemplate =
+      resolved.templateId === KUYUMCU_LUXURY_TEMPLATE_ID ||
+      resolved.templateId === KUYUMCU_TRADITIONAL_TEMPLATE_ID;
+    if (isKuyumcuTemplate && html.includes("<!-- GOLD_PRICE_VALUE -->")) {
+      const quote = await readGramGoldTRYCached();
+      if (quote) {
+        const lang = wm.lead.workspace.language === "tr" ? "tr" : "en";
+        const formatted = formatGramGoldTRY(quote.buy, lang as "tr" | "en");
+        // Replace marker + the placeholder "—" character that
+        // immediately follows it. The renderer hard-codes the
+        // marker + dash pair so we never accidentally double-replace.
+        html = html.replace("<!-- GOLD_PRICE_VALUE -->—", formatted);
+      }
+      // No quote → leave marker + dash in place. The renderer's
+      // CSS treats "—" as the rest-state placeholder.
     }
 
     return new NextResponse(html, {
@@ -119,7 +165,12 @@ export async function GET(
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "X-Robots-Tag": "noindex, nofollow",
-        "Cache-Control": "private, max-age=300",
+        // Shorter cache — gram altın 5 dk'da değişebilir. Browser
+        // 60s tutar, edge'de no-store; tarayıcı yeniden açtığında
+        // güncel fiyatı görür.
+        "Cache-Control": isKuyumcuTemplate
+          ? "private, max-age=60"
+          : "private, max-age=300",
       },
     });
   }

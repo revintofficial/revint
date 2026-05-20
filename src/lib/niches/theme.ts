@@ -560,6 +560,13 @@ const NICHE_IMAGERY: Record<string, NicheImagery> = {
   // `?w=1600&q=80&auto=format&fit=crop` query). When a future 404
   // happens `pickSafePhotoUrl` silently falls back to the gradient
   // hero — page still ships the niche palette intact.
+  //
+  // Pool size matters: Berkay'ın geri bildirimine göre tüm kuyumcu
+  // lead'leri "aynı 3 fotoğrafı" görüyordu. `pickImageryForBusiness`
+  // FNV-1a ile deterministik seçtiği için iki lead'in aynı fotoğrafa
+  // düşme ihtimali doğrudan havuz büyüklüğüne bağlı. 8-10'a çıkarmak
+  // çakışma ihtimalini ~%33'ten ~%10-12'ye indiriyor; ayrıca lookbook
+  // grid'i (kuyumcu-showcase 5 tile gösteriyor) daha zengin sergiliyor.
   kuyumcu: {
     // Parent fallback — neutral jewelry imagery for un-classified
     // jewelry_store leads (children inherit this when their own
@@ -568,11 +575,21 @@ const NICHE_IMAGERY: Record<string, NicheImagery> = {
       unsplash("1685489807405-fdffb06aef2c"), // jewelry on a table
       unsplash("1626136978522-b67ac41126e9"), // display case filled with jewelry
       unsplash("1611955167811-4711904bb9f8"), // gold diamond studded ring on white
+      unsplash("1605100804763-247f67b3557e"), // close-up rings on light surface
+      unsplash("1583937443568-2cc8d8ad9c87"), // editorial jewelry detail
+      unsplash("1535632787350-4e68ef0ac584"), // gold pendant necklace flat lay
+      unsplash("1599643477877-530eb83abc8e"), // gemstone pendant necklace
+      unsplash("1631982690223-8aa4be0a2497"), // three gold rings in a white box
     ],
     gallery: [
-      unsplash("1576723417715-6b408c988c23", { w: 800 }), // necklaces + pendants + boxes
-      unsplash("1611107683227-e9060eccd846", { w: 800 }), // gold chain on white surface
-      unsplash("1660860547079-fd4845880af9", { w: 800 }), // group of jewelry on table
+      unsplash("1576723417715-6b408c988c23", { w: 1200 }), // necklaces + pendants + boxes
+      unsplash("1611107683227-e9060eccd846", { w: 1200 }), // gold chain on white surface
+      unsplash("1660860547079-fd4845880af9", { w: 1200 }), // group of jewelry on table
+      unsplash("1602173574767-37ac01994b2a", { w: 1200 }), // gold chain bracelet on a magazine
+      unsplash("1604306354577-68136efdf03b", { w: 1200 }), // wooden shelf, store interior
+      unsplash("1650455221359-3aebf920bcc5", { w: 1200 }), // silver tray with gold jewelry
+      unsplash("1629212093109-354efe3fc541", { w: 1200 }), // gold and silver pendant lot
+      unsplash("1515562141207-7a88fb7ce338", { w: 1200 }), // rings in box detail
     ],
   },
   "kuyumcu-traditional": {
@@ -583,25 +600,52 @@ const NICHE_IMAGERY: Record<string, NicheImagery> = {
       unsplash("1604306354577-68136efdf03b"), // brown wooden shelf, assorted items
       unsplash("1626136978522-b67ac41126e9"), // display case filled with jewelry
       unsplash("1646624867902-b970108e9137"), // store with items on display
+      unsplash("1685489807405-fdffb06aef2c"), // jewelry on a warm-lit table
+      unsplash("1650455221359-3aebf920bcc5"), // silver tray of gold (souk feel)
+      unsplash("1660860547079-fd4845880af9"), // group of jewelry on table
+      unsplash("1535632787350-4e68ef0ac584"), // gold necklace flat lay
+      unsplash("1612703749098-5d8c2c6ab3ab"), // jewelry display, warm tones
     ],
     gallery: [
-      unsplash("1650455221359-3aebf920bcc5", { w: 800 }), // silver tray with lots of gold jewelry
-      unsplash("1667286266946-4bbb7969b32b", { w: 800 }), // antique furniture display room
-      unsplash("1576723417715-6b408c988c23", { w: 800 }), // assorted-color necklaces with boxes
+      unsplash("1650455221359-3aebf920bcc5", { w: 1200 }), // silver tray with lots of gold jewelry
+      unsplash("1667286266946-4bbb7969b32b", { w: 1200 }), // antique furniture display room
+      unsplash("1576723417715-6b408c988c23", { w: 1200 }), // assorted necklaces with boxes
+      unsplash("1604306354577-68136efdf03b", { w: 1200 }), // wooden shelf store interior
+      unsplash("1646624867902-b970108e9137", { w: 1200 }), // store front display case
+      unsplash("1685489807405-fdffb06aef2c", { w: 1200 }), // table flat lay
+      unsplash("1535632066927-ab7c9ab60908", { w: 1200 }), // ring detail close
+      unsplash("1612703749098-5d8c2c6ab3ab", { w: 1200 }), // styled jewelry display
     ],
   },
   "kuyumcu-luxury": {
     // Lüks / butik — minimal, editorial, white-textile + chain-on-
     // marble. Tiffany / Cartier / Bulgari-leaning compositions.
+    // Bigger pool than traditional because the editorial lookbook
+    // section pulls 5 tiles (vs 3) and identical photo repetition
+    // is more visible against luxury's negative-space rhythm.
     hero: [
       unsplash("1611955167811-4711904bb9f8"), // gold diamond studded ring on white textile
       unsplash("1631982690223-8aa4be0a2497"), // three gold rings in a white box
       unsplash("1599643477877-530eb83abc8e"), // silver + blue gemstone pendant necklace
+      unsplash("1605100804763-247f67b3557e"), // close-up rings, editorial
+      unsplash("1583937443568-2cc8d8ad9c87"), // editorial jewelry detail
+      unsplash("1535632787350-4e68ef0ac584"), // gold pendant flat lay
+      unsplash("1602173574767-37ac01994b2a"), // chain on magazine, editorial
+      unsplash("1611107683227-e9060eccd846"), // chain on white surface
+      unsplash("1515562141207-7a88fb7ce338"), // rings in box, minimal
+      unsplash("1629212093109-354efe3fc541"), // pendant necklace lot, editorial
     ],
     gallery: [
-      unsplash("1602173574767-37ac01994b2a", { w: 800 }), // gold chain bracelet on a magazine (editorial)
-      unsplash("1611107683227-e9060eccd846", { w: 800 }), // gold chain on white surface (minimal premium)
-      unsplash("1629212093109-354efe3fc541", { w: 800 }), // gold and silver pendant necklace lot
+      unsplash("1602173574767-37ac01994b2a", { w: 1200 }), // gold chain bracelet on a magazine
+      unsplash("1611107683227-e9060eccd846", { w: 1200 }), // gold chain on white surface
+      unsplash("1629212093109-354efe3fc541", { w: 1200 }), // gold and silver pendant necklace lot
+      unsplash("1583937443568-2cc8d8ad9c87", { w: 1200 }), // editorial detail
+      unsplash("1605100804763-247f67b3557e", { w: 1200 }), // ring close-up
+      unsplash("1631982690223-8aa4be0a2497", { w: 1200 }), // three rings in box
+      unsplash("1535632787350-4e68ef0ac584", { w: 1200 }), // pendant flat lay
+      unsplash("1599643477877-530eb83abc8e", { w: 1200 }), // gemstone pendant
+      unsplash("1515562141207-7a88fb7ce338", { w: 1200 }), // rings in box, white
+      unsplash("1535632066927-ab7c9ab60908", { w: 1200 }), // ring detail (editorial)
     ],
   },
 };

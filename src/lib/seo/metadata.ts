@@ -25,9 +25,9 @@ export const SITE = {
   },
   name: "Leadac AI",
   legalName: "Leadac AI",
-  tagline: "Postcode and a niche. Fresh local leads, audited and pitched.",
+  tagline: "A fresh dossier on every local business you're about to dial or email.",
   description:
-    "Local-business lead intelligence for outbound agencies. Postcode plus niche pulls 47 fresh leads from our continuously-refreshed local-business index, runs a 20-signal Playwright audit on every site, scores fit 0-100, and drafts a personalised opener that references what the audit actually found.",
+    "Local-business lead intelligence for outbound BD pods and agencies. Postcode plus niche pulls 47 audited briefs from our continuously-refreshed index, scored 0-100, with the talk track ready in your rep's tab before the dial.",
   locale: "en_US",
   defaultLanguage: "en-US" as const,
   supportedLanguages: ["en-US"] as const,

@@ -18,7 +18,7 @@ interface QA {
   a: string;
 }
 
-const FAQ: QA[] = [
+export const HOMEPAGE_FAQ: QA[] = [
   {
     q: "We have HubSpot already. What does LeadAC do that HubSpot does not?",
     a: "HubSpot is the activity ledger. LeadAC is the brief that gets written before the activity. We do not replace your CRM. We feed your reps the dossier for each restaurant they will dial this morning, plus the first 30 seconds they should open with. Activity then writes back into HubSpot in the normal way.",
@@ -60,7 +60,7 @@ export function FaqBlock() {
   return (
     <Section id="faq" eyebrow="Questions" headline={headline} sub={sub}>
       <div className="mx-auto max-w-3xl divide-y divide-white/[0.06] rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_8%)]">
-        {FAQ.map((item) => (
+        {HOMEPAGE_FAQ.map((item) => (
           <details
             key={item.q}
             className="group [&_summary::-webkit-details-marker]:hidden [&[open]_svg]:rotate-180"

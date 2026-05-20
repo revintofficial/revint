@@ -1,4 +1,5 @@
 import { SITE } from "@/lib/seo/metadata";
+import { MARKETING_COMING_SOON } from "@/lib/marketing-coming-soon";
 
 /**
  * Server-rendered JSON-LD emitter. Use with any schema.org graph.
@@ -79,30 +80,34 @@ export function softwareApplicationSchema(): Record<string, unknown> {
     url: SITE.url,
     image: `${SITE.url}/opengraph-image`,
     publisher: { "@id": `${SITE.url}/#organization` },
-    offers: [
-      {
-        "@type": "Offer",
-        name: "Free trial",
-        price: "0",
-        priceCurrency: "USD",
-        description: "50 leads, 1 vertical, 1 postcode, 3 website plans",
-      },
-      {
-        "@type": "Offer",
-        name: "Pro",
-        price: "79",
-        priceCurrency: "USD",
-        description: "1,000 leads/mo, all verticals, 50 website plans/mo",
-      },
-      {
-        "@type": "Offer",
-        name: "Agency",
-        price: "249",
-        priceCurrency: "USD",
-        description:
-          "5,000 leads/mo, 5 seats, multi-tenant workspaces, 300 plans/mo",
-      },
-    ],
+    ...(MARKETING_COMING_SOON
+      ? {}
+      : {
+          offers: [
+            {
+              "@type": "Offer",
+              name: "Free trial",
+              price: "0",
+              priceCurrency: "USD",
+              description: "50 leads, 1 vertical, 1 postcode, 3 website plans",
+            },
+            {
+              "@type": "Offer",
+              name: "Pro",
+              price: "79",
+              priceCurrency: "USD",
+              description: "1,000 leads/mo, all verticals, 50 website plans/mo",
+            },
+            {
+              "@type": "Offer",
+              name: "Agency",
+              price: "249",
+              priceCurrency: "USD",
+              description:
+                "5,000 leads/mo, 5 seats, multi-tenant workspaces, 300 plans/mo",
+            },
+          ],
+        }),
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "4.8",

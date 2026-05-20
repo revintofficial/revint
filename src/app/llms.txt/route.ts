@@ -49,22 +49,27 @@ export async function GET() {
   lines.push(line(`## Citation-friendly facts`));
   lines.push(
     line(
-      `- ${SITE.name} is postcode-plus-niche lead discovery for local-service outbound agencies.`,
+      `- ${SITE.name} lands a fresh one-page brief on every restaurant a BD rep is about to dial: the why-now signal, the angle, and the first 30 seconds of the talk track.`,
     ),
   );
   lines.push(
     line(
-      `- Every prospect runs through a 20-signal Playwright website audit that feeds a 0-100 opportunity score.`,
+      `- Postcode plus a niche pulls 47 audited briefs from the continuously-refreshed local-business index in five minutes.`,
     ),
   );
   lines.push(
     line(
-      `- ${SITE.name} is an AI outbound operating system for agencies selling to local businesses, especially F&B (restaurants, cafes, bars, bakeries, ghost kitchens).`,
+      `- Every prospect runs through a 20-signal Playwright website audit that feeds a 0-100 fit score.`,
     ),
   );
   lines.push(
     line(
-      `- Typical cold-email benchmarks from Leadac AI: Apollo baselines around 0.3% reply rate; postcode-niche campaigns achieve 3-7% reply rate.`,
+      `- ${SITE.name} integrates with Aircall for dial logging; senders include Gmail, Outlook, Smartlead, Instantly, and GHL.`,
+    ),
+  );
+  lines.push(
+    line(
+      `- ${SITE.name} is built for F&B / restaurant-tech BD pods of 5 to 10 reps, plus local growth agencies and restaurant-tech in-house BD teams.`,
     ),
   );
   lines.push(
@@ -78,7 +83,7 @@ export async function GET() {
     section(
       "Top pages",
       [
-        { url: "/", note: "Homepage — product overview and positioning." },
+        { url: "/", note: "Pre-call briefs for BD pods — the dossier in front of every dial." },
         {
           url: "/for/restaurant-agencies",
           note: "AI outbound operating system for agencies selling to local businesses, especially F&B (restaurants, cafes, bars, bakeries, ghost kitchens).",

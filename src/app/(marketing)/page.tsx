@@ -26,6 +26,8 @@ import {
   FaqBlock,
   FinalCta,
 } from "@/components/marketing/v2";
+import { HOMEPAGE_FAQ } from "@/components/marketing/v2/faq-block";
+import { JsonLd, faqSchema } from "@/components/seo/json-ld";
 
 export const metadata = buildMetadata({
   path: "/",
@@ -49,6 +51,13 @@ export const metadata = buildMetadata({
 export default function LandingPage() {
   return (
     <>
+      <JsonLd
+        data={faqSchema(
+          HOMEPAGE_FAQ.map((qa) => ({ question: qa.q, answer: qa.a })),
+        )}
+        id="ld-homepage-faq"
+      />
+
       <Hero />
 
       <ProblemGrid />

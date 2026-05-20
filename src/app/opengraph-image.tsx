@@ -1,16 +1,16 @@
 import { OG_CONTENT_TYPE, OG_SIZE, renderOgImage } from "@/lib/seo/og-image";
 
 export const runtime = "edge";
-export const alt = "Leadac AI — Postcode and a niche. Fresh local leads, audited and pitched.";
+export const alt = "Leadac AI — pre-call briefs for BD pods.";
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 
 export default function HomeOpengraphImage() {
   return renderOgImage({
     eyebrow: "Leadac AI",
-    title: "Postcode and a niche. Fresh local leads, audited and pitched.",
+    title: "The pre-call brief in front of every dial.",
     subtitle:
-      "Live Google Maps discovery. 20-signal audit on every site. A personalised opener that references what the crawl actually found.",
-    badge: "For outbound",
+      "Fresh dossier on every restaurant your BD pod will phone this morning, with the first 30 seconds ready to read.",
+    badge: "For BD pods",
   });
 }

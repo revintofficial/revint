@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { LEADAC_HUE, LEADAC_SATURATION } from "@/lib/colors";
+import { SITE } from "@/lib/seo/metadata";
 
 /**
  * Shared OG image template. Branded, 1200x630, readable at thumbnail size.
@@ -170,7 +171,7 @@ export function renderOgImage(props: OgTemplateProps) {
           }}
         >
           <span>leadac.ai</span>
-          <span>Postcode and a niche. Fresh local leads.</span>
+          <span>{SITE.tagline}</span>
         </div>
       </div>
     ),

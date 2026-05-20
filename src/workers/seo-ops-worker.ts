@@ -22,11 +22,13 @@ import { logger } from "../lib/logger";
 import { fetchSearchAnalytics, isGscConfigured } from "../lib/seo/gsc";
 import { pingIndexNow } from "../lib/seo/indexnow";
 import { SITE } from "../lib/seo/metadata";
+import { refreshGramGoldTRY } from "../lib/external/gold-price";
 
 type SeoOpsJobData =
   | { kind: "gsc-ingest" }
   | { kind: "broken-links" }
-  | { kind: "indexnow-ping"; urls: string[] };
+  | { kind: "indexnow-ping"; urls: string[] }
+  | { kind: "gold-price-refresh" };
 
 const GSC_CACHE_QUERIES = "seo:gsc:queries:latest";
 const GSC_CACHE_PAGES = "seo:gsc:pages:latest";
@@ -40,8 +42,30 @@ async function processJob(job: Job<SeoOpsJobData>) {
   if (kind === "gsc-ingest") return runGscIngest();
   if (kind === "broken-links") return runBrokenLinks();
   if (kind === "indexnow-ping") return runIndexNowPing(job.data.urls);
+  if (kind === "gold-price-refresh") return runGoldPriceRefresh();
 
   return null;
+}
+
+/**
+ * Kuyumcu mockup'larındaki canlı gram altın widget'ı için Redis
+ * cache'ini günceller. Her 5 dk'da bir tetiklenir; TTL 10 dk olduğu
+ * için tek bir cron miss bile veri kaybına yol açmaz. Renderer
+ * tarafı Redis-erişim hatalarında "—" gösterip sessizce geçer, bu
+ * yüzden job'un kendisi de sessizce başarısız olabilir.
+ */
+async function runGoldPriceRefresh() {
+  const quote = await refreshGramGoldTRY();
+  if (!quote) {
+    logger.warn("worker.seo_ops.gold_price_refresh_failed");
+    return { ok: false, reason: "no_source_available" };
+  }
+  logger.info("worker.seo_ops.gold_price_refreshed", {
+    buy: quote.buy,
+    sell: quote.sell,
+    source: quote.source,
+  });
+  return { ok: true, buy: quote.buy, sell: quote.sell, source: quote.source };
 }
 
 function yyyymmdd(offsetDays: number): string {
@@ -240,6 +264,21 @@ async function registerSchedules() {
       {
         jobId: "cron-broken-links",
         repeat: { pattern: "0 6 * * 1" },
+        removeOnComplete: { count: 20 },
+        removeOnFail: { count: 20 },
+      },
+    );
+
+    // Kuyumcu mockup'larında her sayfa serve'inde inject edilen canlı
+    // gram altın widget'ı için Redis cache refresh. 5 dakikada bir
+    // — gram altın saatlik değişimlerini kolaylıkla yakalar, TTL 10 dk
+    // olduğundan tek bir miss bile veri boşluğu yaratmaz.
+    await q.add(
+      "gold-price-refresh",
+      { kind: "gold-price-refresh" },
+      {
+        jobId: "cron-gold-price-refresh",
+        repeat: { pattern: "*/5 * * * *" },
         removeOnComplete: { count: 20 },
         removeOnFail: { count: 20 },
       },

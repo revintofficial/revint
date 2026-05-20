@@ -206,6 +206,15 @@ interface PlaceItem {
     reviewerPhotoUrl?: string;
   }>;
   url?: string;
+  // Business / storefront / product photos from the Google Places
+  // photo gallery. The compass actor surfaces them in three shapes
+  // depending on `scrapeImages` and version: `imageUrls` (string[]),
+  // `imageUrl` (single primary), and `images` ({imageUrl, ...}[]).
+  // We accept all three and dedupe — Apify has historically changed
+  // this surface several times.
+  imageUrls?: string[];
+  imageUrl?: string;
+  images?: Array<{ imageUrl?: string; imageId?: string }>;
   socials?: string[];
   facebooks?: string[];
   instagrams?: string[];
@@ -213,6 +222,57 @@ interface PlaceItem {
   youtubes?: string[];
   tiktoks?: string[];
   twitters?: string[];
+}
+
+/**
+ * Pull whatever photo URLs Apify surfaced for the place, dedupe, and
+ * filter to googleusercontent.com hosts (the renderer's
+ * `pickSafePhotoUrl` allowlist). Returns at most 8 URLs because the
+ * showcase renderer only displays 1 hero + up to 5 gallery tiles +
+ * 1 atelier accent; persisting more burns storage for no benefit and
+ * makes the `photoUrls` jsonb column unwieldy.
+ */
+function extractPhotoUrls(place: PlaceItem): string[] {
+  const candidates: string[] = [];
+  if (Array.isArray(place.imageUrls)) {
+    for (const u of place.imageUrls) {
+      if (typeof u === "string") candidates.push(u);
+    }
+  }
+  if (typeof place.imageUrl === "string") candidates.push(place.imageUrl);
+  if (Array.isArray(place.images)) {
+    for (const img of place.images) {
+      if (img && typeof img.imageUrl === "string") candidates.push(img.imageUrl);
+    }
+  }
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of candidates) {
+    const trimmed = raw.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    let url: URL;
+    try {
+      url = new URL(trimmed);
+    } catch {
+      continue;
+    }
+    if (url.protocol !== "https:") continue;
+    const host = url.hostname.toLowerCase();
+    // Match the renderer's allowlist. We accept anything under the
+    // googleusercontent.com umbrella (lh3.*, lh5.*, profile cache
+    // domains) and the geo-mirror static hosts because Google rotates
+    // CDN edges per region.
+    const isGoogle =
+      host.endsWith(".googleusercontent.com") ||
+      host === "googleusercontent.com" ||
+      host.endsWith(".gstatic.com") ||
+      host === "gstatic.com";
+    if (!isGoogle) continue;
+    seen.add(trimmed);
+    out.push(trimmed);
+    if (out.length >= 8) break;
+  }
+  return out;
 }
 
 export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
@@ -244,7 +304,13 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     scrapeReviewerUrl: false,
     scrapeResponseFromOwnerText: false,
     includeWebResults: true,
-    scrapeImages: false,
+    // Was false historically; Berkay'ın kuyumcu mockup'ları için
+    // gerçek vitrin fotoğraflarını çekmek lazım. Phase 3 wires these
+    // into `Lead.photoUrls` so the website-mockup renderer can prefer
+    // them over Unsplash stock. Cost impact on the actor side is
+    // negligible — the photos are already in the place payload, we
+    // just stop discarding them.
+    scrapeImages: true,
     scrapeContacts: true,
   };
 
@@ -323,6 +389,36 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     }
   }
 
+  // Phase 3 (kuyumcu-pro plan) — persist place photos onto the lead
+  // so the website-mockup renderer can prefer real storefront /
+  // product shots over Unsplash stock. Workspace-scoped update is
+  // implicit via lead.id ↔ workspaceId integrity (the Lead row
+  // already belongs to this workspace).
+  const photoUrls = extractPhotoUrls(place);
+  if (photoUrls.length > 0) {
+    try {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: {
+          photoUrls,
+          photoUrlsUpdatedAt: new Date(),
+        },
+      });
+      logger.info("apify.gmaps_deep.photos_persisted", {
+        leadId: lead.id,
+        count: photoUrls.length,
+      });
+    } catch (err) {
+      // Non-fatal — photos are a nice-to-have, the rest of the run
+      // already wrote reviews / contacts. Log loudly so we notice
+      // shape drift in the actor's output.
+      logger.warn("apify.gmaps_deep.photos_persist_failed", {
+        leadId: lead.id,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   // Phase 2.6 — Apify often surfaces a website URL the discovery
   // worker missed (e.g. lead was imported as NO_WEBSITE because
   // Google Places had no `websiteUri`, but Apify's deeper scrape
@@ -340,6 +436,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   logger.info("apify.gmaps_deep.done", {
     leadId: lead.id,
     reviews: reviews.length,
+    photos: photoUrls.length,
     costCents: result.costUsdCents,
     reAuditEnqueued: reAuditResult.enqueued,
     reAuditReason: reAuditResult.reason,
@@ -360,6 +457,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       reviewsCount: reviews.length,
       emailsFound: place.emails?.length ?? 0,
       socialsFound: Object.keys(socials).length,
+      photosFound: photoUrls.length,
       costUsdCents: result.costUsdCents,
       websiteReAuditEnqueued: reAuditResult.enqueued,
       websiteReAuditReason: reAuditResult.reason,

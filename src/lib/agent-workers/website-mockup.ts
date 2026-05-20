@@ -35,9 +35,15 @@ import {
   type WebsiteMockupPromptInput,
 } from "@/lib/prompts/website-mockup-prompt";
 import { renderLeadacShowcase } from "@/lib/mockups/renderers/leadac-showcase";
+import {
+  renderKuyumcuShowcase,
+  type KuyumcuVariant,
+} from "@/lib/mockups/renderers/kuyumcu-showcase";
+import type { WorkspaceBranding } from "@/lib/branding";
 import { parseBranding } from "@/lib/branding";
 import { generateMockupSlug } from "@/lib/mockup";
 import { getVisualIdentityForLead, getNicheBySlug } from "@/lib/niches";
+import type { NicheImagery } from "@/lib/niches/theme";
 import type { AgentWorkerOutput, AgentWorkerRun } from "./types";
 
 // Bumped to v2 when the renderer learned niche-aware section labels
@@ -47,6 +53,109 @@ import type { AgentWorkerOutput, AgentWorkerRun } from "./types";
 // detect stale `htmlCache` from older renderer versions and force a
 // re-render from `sectionsJson` instead of serving the legacy HTML.
 export const SHOWCASE_TEMPLATE_ID = "leadac-showcase-v2";
+
+// Kuyumcu nişine özel renderer ailesi (luxury + traditional). Generic
+// `leadac-showcase` ile aynı `sectionsJson` shape'ini tüketir ama
+// editorial / butik kuyumcu visual diline çevirir. Slug `kuyumcu*`
+// olan lead'ler bu template'lara yönlendirilir; her iki track ayrı
+// templateId taşır çünkü ileride traditional'ı warm-premium kalıbında
+// güncelleyip luxury'yi olduğu gibi bırakabilmemiz gerek (cache
+// invalidation track bazında çalışsın).
+export const KUYUMCU_TRADITIONAL_TEMPLATE_ID = "kuyumcu-traditional-v1";
+export const KUYUMCU_LUXURY_TEMPLATE_ID = "kuyumcu-luxury-v1";
+
+/**
+ * `/m/[slug]` route uses this set to detect stale `htmlCache`. Any
+ * row whose `templateId` is NOT in this set gets re-rendered from
+ * `sectionsJson` on serve, then the new HTML + templateId are
+ * persisted. Add new template IDs here as renderers ship; remove
+ * deprecated ones only when no row can still carry them (or accept
+ * a one-time mass re-render on first view post-ship).
+ */
+export const CURRENT_TEMPLATE_IDS: ReadonlySet<string> = new Set([
+  SHOWCASE_TEMPLATE_ID,
+  KUYUMCU_TRADITIONAL_TEMPLATE_ID,
+  KUYUMCU_LUXURY_TEMPLATE_ID,
+]);
+
+/**
+ * Resolves which renderer + templateId a lead should be served. The
+ * worker writes the result's `templateId` to the DB and the route
+ * handler uses the same function to re-render on cache miss, so
+ * both code paths cannot drift out of sync.
+ *
+ * Resolution rule:
+ *   - subNicheSlug === "kuyumcu-luxury"        → luxury renderer
+ *   - subNicheSlug === "kuyumcu-traditional"   → traditional renderer
+ *   - nicheSlug === "kuyumcu" (no sub-niche)   → traditional renderer
+ *     (warmer / broader appeal — the dark luxury idiom only fits when
+ *     the lead has been explicitly tagged as luxury)
+ *   - anything else                            → generic showcase
+ *
+ * Returns a callable `render(input)` adapter so the worker and route
+ * pass exactly the same input shape and don't have to know whether
+ * the underlying renderer wants a `variant` field. The
+ * `KuyumcuShowcaseRenderInput` is a strict superset of
+ * `LeadacShowcaseRenderInput`, so the unified input is safe.
+ */
+export type MockupRenderInput = {
+  businessName: string;
+  formattedAddress: string;
+  borough: string | null;
+  phone: string | null;
+  websiteUrl: string | null;
+  rating: number | null;
+  reviewCount: number | null;
+  googleMapsUri: string | null;
+  sections: WebsiteMockupSections;
+  imagery?: NicheImagery | null;
+  secondaryHex?: string | null;
+  workspaceName?: string;
+  branding?: WorkspaceBranding | null;
+  showLeadacCredit?: boolean;
+  lang: string;
+  nicheLabel?: string | null;
+  nicheSlug?: string | null;
+  nicheParentSlug?: string | null;
+  /**
+   * Real business / storefront photos from `Lead.photoUrls`. Empty /
+   * missing → renderer falls back to the niche imagery pack.
+   */
+  leadPhotoUrls?: string[] | null;
+};
+
+export function resolveMockupRenderer(args: {
+  subNicheSlug: string | null;
+  nicheSlug: string | null;
+}): {
+  templateId: string;
+  render: (input: MockupRenderInput) => string;
+} {
+  const slug = args.subNicheSlug ?? args.nicheSlug ?? null;
+
+  if (slug === "kuyumcu-luxury") {
+    return {
+      templateId: KUYUMCU_LUXURY_TEMPLATE_ID,
+      render: (input) => renderKuyumcuShowcase({ ...input, variant: "luxury" }),
+    };
+  }
+  if (slug === "kuyumcu-traditional" || slug === "kuyumcu" || args.nicheSlug === "kuyumcu") {
+    return {
+      templateId: KUYUMCU_TRADITIONAL_TEMPLATE_ID,
+      render: (input) => renderKuyumcuShowcase({ ...input, variant: "traditional" }),
+    };
+  }
+
+  return {
+    templateId: SHOWCASE_TEMPLATE_ID,
+    render: (input) => renderLeadacShowcase(input),
+  };
+}
+
+// Local re-export to keep TS happy without importing the type from the
+// renderer file (callers shouldn't care which variant won, only that
+// the renderer can be invoked).
+export type { KuyumcuVariant };
 
 export const run: AgentWorkerRun = async (ctx) => {
   if (!ctx.lead) {
@@ -124,6 +233,8 @@ export const run: AgentWorkerRun = async (ctx) => {
     painPhrases,
     strengthPhrases,
     nicheLabel: nichePack?.label ?? null,
+    nicheSlug: nichePack?.slug ?? null,
+    nicheParentSlug: nichePack?.parentSlug ?? null,
     nichePitchAngle: nichePack?.pitchAngle ?? null,
     nicheHighValueSignals: nichePack?.highValueSignals ?? [],
     nicheTypicalOfferings: nichePack?.typicalCustomerOfferings ?? [],
@@ -180,7 +291,16 @@ export const run: AgentWorkerRun = async (ctx) => {
   const branding =
     ctx.workspace.plan === "AGENCY" ? parseBranding(ctx.workspace.branding) : null;
 
-  const html = renderLeadacShowcase({
+  // Route to the niche-appropriate renderer. Kuyumcu lead'leri editorial
+  // kuyumcu-showcase'e gider; geri kalan her şey generic showcase'de
+  // kalır. `templateId` döndürdüğü değer, `/m/[slug]` route'unun cache
+  // freshness kontrolünde kullanılır.
+  const { templateId, render } = resolveMockupRenderer({
+    subNicheSlug: lead.subNicheSlug ?? null,
+    nicheSlug: lead.nicheSlug ?? null,
+  });
+
+  const html = render({
     businessName: lead.businessName,
     formattedAddress: lead.formattedAddress,
     borough: lead.borough,
@@ -198,6 +318,7 @@ export const run: AgentWorkerRun = async (ctx) => {
     nicheLabel: nichePack?.label ?? null,
     nicheSlug: nichePack?.slug ?? null,
     nicheParentSlug: nichePack?.parentSlug ?? null,
+    leadPhotoUrls: lead.photoUrls ?? [],
   });
 
   // Upsert a single WebsiteMockup per lead: re-generate overwrites
@@ -217,7 +338,7 @@ export const run: AgentWorkerRun = async (ctx) => {
         sectionsJson: sections as never,
         themeJson: sections.theme as never,
         htmlCache: html,
-        templateId: SHOWCASE_TEMPLATE_ID,
+        templateId,
       },
     });
   } else {
@@ -230,7 +351,7 @@ export const run: AgentWorkerRun = async (ctx) => {
         sectionsJson: sections as never,
         themeJson: sections.theme as never,
         htmlCache: html,
-        templateId: SHOWCASE_TEMPLATE_ID,
+        templateId,
         isPublic: true,
       },
     });
@@ -357,6 +478,14 @@ function parseSections(text: string): WebsiteMockupSections {
   const booking = parsed.booking_widget as Record<string, unknown> | null | undefined;
   const contact = parsed.contact_form as Record<string, unknown> | null | undefined;
   const map = parsed.map as Record<string, unknown> | null | undefined;
+
+  // v3 kuyumcu-specific sections. Each helper returns null on missing
+  // / malformed input so the renderer always trusts the type, and
+  // legacy v2 rows (no keys at all) Just Work.
+  const collectionGrid = parseCollectionGrid(parsed.collection_grid);
+  const certifications = parseCertifications(parsed.certifications);
+  const atelier = parseAtelier(parsed.atelier);
+  const goldPrice = parseGoldPrice(parsed.gold_price);
 
   return {
     hero: {
@@ -512,6 +641,113 @@ function parseSections(text: string): WebsiteMockupSections {
             "cta",
             "footer",
           ],
+    collection_grid: collectionGrid,
+    certifications,
+    atelier,
+    gold_price: goldPrice,
+  };
+}
+
+// ============================================================
+// v3 — kuyumcu-specific section parsers
+// ============================================================
+// Each helper accepts `unknown` (the raw Gemini blob), returns the
+// strict interface OR null when the blob is missing / malformed. We
+// favor null over throwing so a single misshaped section never
+// blocks the rest of the mockup from rendering.
+
+function parseCollectionGrid(
+  raw: unknown,
+): import("@/lib/prompts/website-mockup-prompt").WebsiteMockupCollectionGrid | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.title !== "string" || r.title.length === 0) return null;
+  if (!Array.isArray(r.categories)) return null;
+  const categories = (r.categories as unknown[])
+    .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
+    .map((c) => ({
+      label: String(c.label ?? ""),
+      blurb: String(c.blurb ?? ""),
+      icon_hint: String(c.icon_hint ?? "gem"),
+      cta_label: String(c.cta_label ?? "WhatsApp"),
+      wa_prefix: typeof c.wa_prefix === "string" ? c.wa_prefix : null,
+    }))
+    .filter((c) => c.label.length > 0)
+    .slice(0, 6);
+  if (categories.length === 0) return null;
+  return {
+    eyebrow: String(r.eyebrow ?? ""),
+    title: String(r.title),
+    categories,
+  };
+}
+
+function parseCertifications(
+  raw: unknown,
+): import("@/lib/prompts/website-mockup-prompt").WebsiteMockupCertifications | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.title !== "string" || r.title.length === 0) return null;
+  if (!Array.isArray(r.items)) return null;
+  const items = (r.items as unknown[])
+    .filter((i): i is Record<string, unknown> => !!i && typeof i === "object")
+    .map((i) => ({
+      name: String(i.name ?? ""),
+      body: String(i.body ?? ""),
+      icon_hint: typeof i.icon_hint === "string" ? i.icon_hint : null,
+    }))
+    .filter((i) => i.name.length > 0)
+    .slice(0, 4);
+  if (items.length === 0) return null;
+  return {
+    eyebrow: String(r.eyebrow ?? ""),
+    title: String(r.title),
+    items,
+  };
+}
+
+function parseAtelier(
+  raw: unknown,
+): import("@/lib/prompts/website-mockup-prompt").WebsiteMockupAtelier | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const paragraph = typeof r.paragraph === "string" ? r.paragraph : "";
+  if (!paragraph) return null;
+  const title = typeof r.title === "string" && r.title.length > 0 ? r.title : "Atölyemiz";
+  const yearsRaw = typeof r.years_experience === "number" ? r.years_experience : null;
+  // Clamp years to a sane jewelry-shop range. Anything outside [1, 80]
+  // is almost certainly a hallucination (Gemini occasionally emits
+  // "150 yıllık tecrübe" for marketing copy) so drop it.
+  const years = yearsRaw !== null && yearsRaw >= 1 && yearsRaw <= 80
+    ? Math.round(yearsRaw)
+    : null;
+  const photoHintRaw = typeof r.photo_hint === "string" ? r.photo_hint : null;
+  const photoHint: "wide" | "portrait" | null =
+    photoHintRaw === "wide" || photoHintRaw === "portrait" ? photoHintRaw : null;
+  return {
+    eyebrow: String(r.eyebrow ?? ""),
+    title,
+    paragraph,
+    master_name: typeof r.master_name === "string" ? r.master_name : null,
+    master_role: typeof r.master_role === "string" ? r.master_role : null,
+    years_experience: years,
+    photo_hint: photoHint,
+  };
+}
+
+function parseGoldPrice(
+  raw: unknown,
+): import("@/lib/prompts/website-mockup-prompt").WebsiteMockupGoldPrice | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  // `show` defaults to true when Gemini omits it — emitting the
+  // object at all implies the strip should render. Caller (renderer)
+  // still gets a final say (no phone wired → strip suppressed).
+  const show = r.show === false ? false : true;
+  return {
+    show,
+    caption: String(r.caption ?? "Anlık gram altın referansı"),
+    whatsapp_cta: String(r.whatsapp_cta ?? "Güncel fiyat için WhatsApp"),
   };
 }
 
