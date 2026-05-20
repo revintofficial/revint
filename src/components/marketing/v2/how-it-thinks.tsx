@@ -45,12 +45,12 @@ const BLOCKS: Block[] = [
   {
     number: "03",
     title: "Execute",
-    copy: "Generate personalized outreach angles and SDR-ready intelligence instantly.",
+    copy: "Hand the rep a fresh dossier and a talk track before they pick up the phone. Email is the booking layer for the next call.",
     rows: [
-      { label: "Opener draft", chip: "Ready" },
-      { label: "Opportunity summary", chip: "1 paragraph" },
-      { label: "Next action", chip: "Email + call" },
-      { label: "Sequence recommendation", chip: "3-touch" },
+      { label: "Talk track", chip: "First 30 seconds ready" },
+      { label: "Dossier", chip: "1 page" },
+      { label: "Next action", chip: "Call" },
+      { label: "Disposition", chip: "4 chips" },
     ],
   },
 ];

@@ -19,12 +19,11 @@
 import * as React from "react";
 import {
   ArrowLeft,
-  Calendar,
+  CheckCircle2,
   Clock,
-  Mail,
-  Mic,
-  Phone,
-  Sparkles,
+  PhoneOff,
+  Voicemail,
+  X,
 } from "lucide-react";
 
 interface Trigger {
@@ -81,11 +80,17 @@ const REVIEW_KPIS: ReviewKpi[] = [
   { label: "Small portions", count: 7 },
 ];
 
-const ACTIONS = [
-  { icon: Phone, label: "Dial" },
-  { icon: Mail, label: "Email" },
-  { icon: Mic, label: "Voice" },
-  { icon: Calendar, label: "Schedule" },
+interface DispositionChip {
+  icon: typeof CheckCircle2;
+  label: string;
+  count: number;
+}
+
+const DISPOSITIONS: DispositionChip[] = [
+  { icon: CheckCircle2, label: "Connected", count: 7 },
+  { icon: Voicemail, label: "Voicemail", count: 11 },
+  { icon: PhoneOff, label: "No-answer", count: 9 },
+  { icon: X, label: "Wrong-#", count: 1 },
 ];
 
 function severityTone(s: number): string {
@@ -298,7 +303,7 @@ export function LeadDetailBento() {
           </ul>
         </div>
 
-        {/* RECOMMENDED ANGLE — mirrors NextGestureBlock + opportunity */}
+        {/* FIRST 30 SECONDS — talk track the rep opens the call with */}
         <div
           className="p-5 flex flex-col"
           style={{
@@ -308,7 +313,7 @@ export function LeadDetailBento() {
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-white/50">
-              Recommended
+              First 30 seconds
             </span>
             <span
               className="text-[10px] font-medium px-1.5 py-0.5 rounded"
@@ -317,32 +322,21 @@ export function LeadDetailBento() {
                 color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
               }}
             >
-              v6
+              Talk track
             </span>
           </div>
 
-          <div className="flex items-start gap-2 mb-3">
-            <span
-              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-              style={{
-                background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16)",
-                color: "hsl(var(--leadac-h) var(--leadac-s) 80%)",
-                border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.3)",
-              }}
-              aria-hidden
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-            </span>
-            <p className="text-[14px] font-semibold text-white leading-tight">
-              QR menu + loyalty
-            </p>
-          </div>
-
-          <p className="text-[11.5px] text-white/55 leading-relaxed flex-1">
-            Diners flagging greasy and worn physical menu cards over the
-            last 30 days. Anchor on QR menu replacement and a points
-            loyalty program. Skip the food compliment.
-          </p>
+          <blockquote
+            className="flex-1 pl-3 text-[12px] italic text-white/75 leading-relaxed"
+            style={{
+              borderLeft:
+                "2px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45)",
+            }}
+          >
+            Sarah, this is [REP]. Saw the menu complaints stacking up over
+            the last 30 days. We help London restaurants get a QR menu live
+            in a week with a loyalty hook. Do you have 90 seconds?
+          </blockquote>
 
           <div className="mt-3 flex items-center gap-2 flex-wrap">
             <span
@@ -352,7 +346,7 @@ export function LeadDetailBento() {
                 color: "rgba(255,255,255,0.6)",
               }}
             >
-              AIDA
+              CALL
             </span>
             <span
               className="rounded px-1.5 py-0.5 text-[9.5px] font-mono uppercase tracking-wider"
@@ -361,10 +355,10 @@ export function LeadDetailBento() {
                 color: "rgba(255,255,255,0.6)",
               }}
             >
-              EMAIL
+              90s ask
             </span>
             <span className="ml-auto text-[10.5px] font-mono tabular-nums text-white/55">
-              60% conf
+              Hook ready
             </span>
           </div>
         </div>
@@ -397,25 +391,33 @@ export function LeadDetailBento() {
         </div>
       </section>
 
-      {/* ACTION CHIPS — mirrors HeaderBar quick actions */}
+      {/* DISPOSITION STRIP — mirrors product DispositionStrip.tsx */}
       <footer
         className="flex items-center justify-between gap-2 px-5 py-4"
         style={{ borderTop: "0.5px solid rgba(255,255,255,0.06)" }}
       >
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {ACTIONS.map((a) => {
-            const Icon = a.icon;
+        <div
+          className="flex items-center gap-1.5 flex-wrap"
+          role="group"
+          aria-label="Yesterday's disposition mix"
+        >
+          {DISPOSITIONS.map((d) => {
+            const Icon = d.icon;
             return (
               <span
-                key={a.label}
+                key={d.label}
                 className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium text-white/85"
                 style={{
                   background: "rgba(255,255,255,0.04)",
                   border: "0.5px solid rgba(255,255,255,0.1)",
                 }}
+                aria-label={`${d.count} ${d.label.toLowerCase()}`}
               >
                 <Icon className="h-3 w-3 text-white/65" aria-hidden />
-                {a.label}
+                {d.label}
+                <span className="font-mono tabular-nums text-white/55">
+                  {d.count}
+                </span>
               </span>
             );
           })}
@@ -432,7 +434,7 @@ export function LeadDetailBento() {
             className="inline-block h-1 w-1 rounded-full animate-pulse motion-reduce:animate-none"
             style={{ background: "hsl(var(--leadac-h) var(--leadac-s) 70%)" }}
           />
-          Updated 2h ago
+          Pod-wide
         </span>
       </footer>
     </div>

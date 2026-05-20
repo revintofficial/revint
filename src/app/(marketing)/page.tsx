@@ -15,12 +15,13 @@ import { buildMetadata } from "@/lib/seo/metadata";
 import {
   Hero,
   ProblemGrid,
+  PreCallBrief,
   HowItThinks,
   UnderstandsGrid,
+  PodControlRoom,
   IntelligenceLoop,
-  DossierProof,
-  BuiltFor,
   IntegrationsStrip,
+  BuiltFor,
   WaitlistBlock,
   FaqBlock,
   FinalCta,
@@ -28,20 +29,20 @@ import {
 
 export const metadata = buildMetadata({
   path: "/",
-  title: "LeadAC — AI outbound system for local business sales.",
+  title: "Pre-call briefs for BD pods.",
   description:
-    "LeadAC finds local businesses showing buying signals, analyzes their online presence, and generates outreach angles your agency can act on immediately. Built for agencies selling to restaurants, cafes, bars, bakeries, and ghost kitchens.",
+    "The pre-call brief in front of every dial. Fresh dossier on every restaurant your BD pod will phone this morning, with the first 30 seconds ready to read.",
   keywords: [
-    "ai outbound for agencies",
-    "local business lead generation",
-    "restaurant lead intelligence",
-    "f&b outbound system",
-    "ai sdr operating system",
-    "google maps lead generation",
-    "agency lead intelligence",
-    "restaurant marketing outbound",
-    "audit-driven cold email",
-    "local business prospecting",
+    "pre-call brief for sdr",
+    "bd pod tool",
+    "restaurant outbound brief",
+    "f&b bd intelligence",
+    "call opener generator for sdr",
+    "restaurant prospect dossier",
+    "local business calling intelligence",
+    "dialer brief layer",
+    "bd morning queue",
+    "restaurant tech bd tool",
   ],
 });
 
@@ -52,17 +53,19 @@ export default function LandingPage() {
 
       <ProblemGrid />
 
+      <PreCallBrief />
+
       <HowItThinks />
 
       <UnderstandsGrid />
 
+      <PodControlRoom />
+
       <IntelligenceLoop />
 
-      <DossierProof />
+      <IntegrationsStrip />
 
       <BuiltFor />
-
-      <IntegrationsStrip />
 
       <WaitlistBlock />
 

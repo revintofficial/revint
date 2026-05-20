@@ -42,20 +42,21 @@ export function Hero() {
                 className="inline-block h-1.5 w-1.5 rounded-full"
                 style={{ background: "hsl(var(--leadac-h) var(--leadac-s) 60%)" }}
               />
-              AI outbound operating system
+              For F&amp;B BD teams
             </span>
 
             <h1
               className="mt-6 text-white font-semibold tracking-[-0.03em] leading-[1.02] max-w-[18ch]"
               style={{ fontSize: "clamp(36px, 6.4vw, 72px)" }}
             >
-              Your AI outbound system for local business sales.
+              The pre-call brief in front of every dial.
             </h1>
 
-            <p className="mt-6 text-[16px] md:text-[17.5px] leading-relaxed text-white/65 max-w-[30ch]">
-              LeadAC finds local businesses showing buying signals, analyzes
-              their online presence, and generates outreach angles your agency
-              can act on immediately.
+            <p className="mt-6 text-[16px] md:text-[17.5px] leading-relaxed text-white/65 max-w-[34ch]">
+              LeadAC writes a one-page brief on every restaurant your pod is
+              about to call: the why-now signal, the angle, and the first 30
+              seconds of the talk track. Reps stop researching. They start
+              dialing.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
@@ -99,7 +100,7 @@ export function Hero() {
                 href="/demo"
                 className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-medium text-white/85 hover:text-white border border-white/15 hover:border-white/30 transition-colors"
               >
-                Book a 15-min walkthrough
+                Watch a 90-second pod walkthrough
               </Link>
             </div>
           </div>

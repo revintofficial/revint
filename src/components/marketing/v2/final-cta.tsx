@@ -21,12 +21,11 @@ export function FinalCta() {
           className="text-white font-semibold tracking-[-0.03em] leading-[1.05]"
           style={{ fontSize: "clamp(36px, 5.4vw, 60px)" }}
         >
-          Stop guessing which businesses to pitch.
+          Wire LeadAC into your BD pod&apos;s morning queue.
         </h2>
         <p className="mt-6 text-[16px] md:text-[17px] text-white/65 leading-relaxed max-w-xl mx-auto">
-          LeadAC helps agencies focus on businesses already showing intent
-          signals. Pick a postcode, pick a niche, and the first dossier lands
-          in your tab in five minutes.
+          Pick a postcode, pick a niche, and the first 47 audited briefs land
+          in your pod&apos;s tab in five minutes. Each one ready for the dial.
         </p>
 
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">

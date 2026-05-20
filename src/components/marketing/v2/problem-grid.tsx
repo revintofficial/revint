@@ -9,11 +9,11 @@
  */
 import * as React from "react";
 import {
-  Activity,
-  ListOrdered,
+  Clock,
+  Layers,
   MessagesSquare,
+  Phone,
   RefreshCw,
-  Target,
   type LucideIcon,
 } from "lucide-react";
 import { Section } from "./section";
@@ -26,29 +26,29 @@ interface Item {
 
 const ITEMS: Item[] = [
   {
-    icon: Target,
-    title: "Bad targeting",
-    body: "Lists scraped from generic databases, recycled across hundreds of agencies. The same restaurants are pitched ten times a month.",
+    icon: Clock,
+    title: "Eighty percent of the morning goes to research.",
+    body: "Each rep manually scans new restaurants for hours, then dials with five minutes of context. The math caps the pod at 30 to 40 prospects a rep a day.",
   },
   {
     icon: MessagesSquare,
-    title: "Generic outreach",
-    body: '"I noticed your website..." templates that every inbox already knows. Reply rates collapsed when AI personalization stopped sounding personal.',
+    title: "Generic call openers.",
+    body: "Without a fresh signal from the restaurant's own site or reviews, the first 30 seconds sound like every other vendor that called this week. The GM hangs up.",
   },
   {
-    icon: Activity,
-    title: "No buying-signal intelligence",
-    body: "Most lists tell you a business exists. They do not tell you whether it is hiring, growing, struggling with reservations, or losing reviews.",
-  },
-  {
-    icon: ListOrdered,
-    title: "No prioritization",
-    body: "100 leads in a spreadsheet, all the same shade of grey. The high-intent ones get the same generic email as the cold ones.",
+    icon: Layers,
+    title: "No shared call dispositions across the pod.",
+    body: "Voicemail, no-answer, wrong-number, interested. Without one shared chip-set, the pod's activity does not aggregate into a single weekly view.",
   },
   {
     icon: RefreshCw,
-    title: "No learning loop",
-    body: "Last month's failed outreach teaches nothing. The next campaign repeats the same angle, the same opener, the same silence.",
+    title: "Repeat-call risk.",
+    body: "Two reps dial the same restaurant a week apart because the activity feed lives in HubSpot and no one opens it before the morning queue.",
+  },
+  {
+    icon: Phone,
+    title: "A dialer that knows the number, not the restaurant.",
+    body: "Aircall dials fine. It does not know that the restaurant in front of the rep has 1.4k reviews and no online booking. The rep does, but only if they did the research.",
   },
 ];
 
@@ -56,8 +56,8 @@ export function ProblemGrid() {
   return (
     <Section
       eyebrow="The problem"
-      headline="Most local outbound fails before the first email."
-      sub="Local agencies waste time pitching businesses that were never likely to buy."
+      headline="Most BD pod mornings die in research."
+      sub="The dial works. The dialer does not know who it is calling."
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {ITEMS.map((item) => {

@@ -42,16 +42,16 @@ const EDGES: Array<[string, string]> = [
 
 const PROOF_CARDS: Array<{ title: string; body: string }> = [
   {
-    title: "Outcome graph",
-    body: "Every reply, meeting, and silent loss feeds the next campaign's reasoning, scoped to your workspace.",
+    title: "Disposition graph",
+    body: "Every connected, voicemail, no-answer, and wrong-number disposition feeds tomorrow's call list, scoped to your workspace.",
   },
   {
-    title: "Behavioral memory",
-    body: "Tone, opener structure, and angle that work for sushi restaurants in London do not get recycled blindly into bakeries in Manchester.",
+    title: "Talk-track memory",
+    body: "The openers that get the GM to keep listening on Friday afternoons in Camden do not get recycled blindly into Tuesday mornings in Shoreditch.",
   },
   {
     title: "Playbook formation",
-    body: 'Over time the system surfaces rules. "No booking provider plus high review count" tends to convert with reservation-optimization angles.',
+    body: 'Over time the system surfaces rules. "No booking provider plus three recent slow-service reviews" tends to keep the GM on the line past 60 seconds.',
   },
 ];
 
@@ -164,7 +164,7 @@ export function IntelligenceLoop() {
                   "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.30)",
               }}
             >
-              reply rate +14%
+              connect rate +14%
             </span>
             <span
               className="absolute right-[6%] top-[44%] rounded-full px-2.5 py-1 text-[10.5px] font-semibold"
@@ -175,7 +175,7 @@ export function IntelligenceLoop() {
                   "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.30)",
               }}
             >
-              meeting +3
+              demo +3
             </span>
             <span
               className="absolute left-1/2 bottom-[6%] -translate-x-1/2 rounded-full px-2.5 py-1 text-[10.5px] font-semibold"

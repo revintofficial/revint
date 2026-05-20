@@ -1,41 +1,55 @@
 /**
- * Single-dossier product proof card.
+ * PreCallBrief — single artifact end-to-end, ending in the first 30 seconds of the call.
  *
- * Design intent: show, do not describe. One static dossier — Kazu Sushi
- * in Camden — with score badge, signals list, recommended angle chip,
- * rationale, and the actual suggested opener as a blockquote with a
- * tinted left rule. The dossier sits centered at max-w-2xl so the page
- * focuses on the single artifact, the same way a real reviewer would
- * focus on one tab. No animation, no scroll-stage. Pure server.
+ * Renamed from `DossierProof` per the F&B BD cold-call pod RFC at
+ * `.agents/homepage-strategist/proposals/2026-05-20-homepage-rfc-fnb-bd-cold-call-pod-v0.1.md`.
+ * Same single-artifact-card grammar (centered max-w-2xl, score badge, signals
+ * list) but the closer block is now a talk track the rep can read off the
+ * screen when the GM picks up, not an email opener.
  */
 import * as React from "react";
 import { Section } from "./section";
 
-const SIGNALS: Array<{ label: string; detail: string }> = [
+interface Signal {
+  label: string;
+  detail: string;
+  tag: "talk-track ready" | "objection cover" | "rapport opener" | "why now";
+}
+
+const SIGNALS: Signal[] = [
+  {
+    label: "Why now",
+    detail: "3 of last 30 reviews cite slow Friday service",
+    tag: "why now",
+  },
   {
     label: "High review volume",
     detail: "1.4k reviews, 4.6 avg",
+    tag: "talk-track ready",
   },
   {
     label: "Weak reservation funnel",
     detail: "no online booking widget, phone-only",
+    tag: "talk-track ready",
   },
   {
     label: "No response strategy",
-    detail: "zero owner replies on negative reviews in last 90 days",
+    detail: "zero owner replies on negative reviews in 90 days",
+    tag: "objection cover",
   },
   {
     label: "High Instagram activity",
     detail: "3.2k followers, 4 posts per week",
+    tag: "rapport opener",
   },
 ];
 
-export function DossierProof() {
+export function PreCallBrief() {
   return (
     <Section
-      eyebrow="Product proof"
-      headline="One restaurant, one dossier, one angle."
-      sub="This is what lands in your tab when LeadAC finishes thinking. The work is done before you write the first email."
+      eyebrow="The brief"
+      headline="One restaurant, one brief, the first 30 seconds."
+      sub="This is what lands in your rep's tab before the dial. The talk track at the bottom is what they open the call with."
     >
       <div
         className="relative mx-auto max-w-2xl rounded-3xl border border-white/[0.07] p-7 md:p-9"
@@ -97,9 +111,19 @@ export function DossierProof() {
                     background: "hsl(var(--leadac-h) var(--leadac-s) 60%)",
                   }}
                 />
-                <span>
+                <span className="flex-1">
                   <span className="text-white">{s.label}</span>
-                  <span className="text-white/55">{" — "}{s.detail}</span>
+                  <span className="text-white/55">{" "}·{" "}{s.detail}</span>
+                </span>
+                <span
+                  className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider whitespace-nowrap"
+                  style={{
+                    background:
+                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)",
+                    color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+                  }}
+                >
+                  {s.tag}
                 </span>
               </li>
             ))}
@@ -126,7 +150,8 @@ export function DossierProof() {
           </span>
           <p className="mt-3 text-[13.5px] text-white/60 leading-relaxed">
             Strong demand signals. Low operational maturity around bookings.
-            The opener leads with the gap, not the compliment.
+            The talk track leads with the Friday-night gap, not the food
+            compliment.
           </p>
         </section>
 
@@ -135,7 +160,7 @@ export function DossierProof() {
             className="text-[10.5px] font-semibold uppercase tracking-[0.16em]"
             style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 65%)" }}
           >
-            Suggested opener
+            First 30 seconds
           </p>
           <blockquote
             className="mt-3 pl-4 italic text-[14px] text-white/80 leading-relaxed"
@@ -144,10 +169,10 @@ export function DossierProof() {
                 "2px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45)",
             }}
           >
-            Saw 1.4k reviews on Kazu and a 4.6 average. The food is not the
-            issue. Curious how you are handling the Friday-night reservation
-            rush without an online widget. We help London sushi restaurants
-            close that gap in a week.
+            Sarah, this is [REP]. Saw 1.4k reviews on Kazu and three Friday
+            reviews this month flagging the wait at the door. We help London
+            sushi restaurants pull that Friday wait down to ten minutes
+            without hiring a host. Do you have ninety seconds?
           </blockquote>
         </section>
       </div>

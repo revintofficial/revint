@@ -20,8 +20,16 @@ interface QA {
 
 const FAQ: QA[] = [
   {
-    q: "Does LeadAC send emails for me?",
-    a: "No. The system generates the opener and the reasoning. You review and ship from your own inbox. Auto-send is off by default and stays that way unless you flip a toggle. AI cold email without a human in the loop burns deliverability.",
+    q: "We have HubSpot already. What does LeadAC do that HubSpot does not?",
+    a: "HubSpot is the activity ledger. LeadAC is the brief that gets written before the activity. We do not replace your CRM. We feed your reps the dossier for each restaurant they will dial this morning, plus the first 30 seconds they should open with. Activity then writes back into HubSpot in the normal way.",
+  },
+  {
+    q: "Most local restaurants do not reply to cold email. Is this still useful for us?",
+    a: "That is exactly why this is built around the dial, not the inbox. Your BD pod calls. We hand the rep the brief before they call. The email is only the booking layer for the next call, and the page above covers when that helps and when it does not.",
+  },
+  {
+    q: "Our BD team needs in-person, not more email. Is this for us?",
+    a: "Yes. The morning queue, the talk track for the first 30 seconds, the shared disposition chips, and the repeat-call guard all serve a pod whose closer is the in-person demo. The dial is the booking layer for the demo. LeadAC sits in front of the dial, not in front of the inbox.",
   },
   {
     q: "How does the AI scoring actually work?",
@@ -36,16 +44,8 @@ const FAQ: QA[] = [
     a: "Yes. Replies, meetings, and silent losses feed the next campaign's reasoning. Tone, opener structure, and angles that work in your niche get reinforced. The memory is scoped to your workspace.",
   },
   {
-    q: "Does LeadAC work outside restaurants?",
-    a: "It works for any local business with a public footprint, including dental, real estate, and home services. F&B is the most developed because that is where our beta cohorts live, but the system is not hard-coded to restaurants.",
-  },
-  {
     q: "Can multiple SDRs use it?",
     a: "Yes. Agency+ is workspace-based, not per-seat. Five seats included. Replies route back to the lead automatically so you do not lose attribution when teammates send.",
-  },
-  {
-    q: "Where does the lead data come from?",
-    a: "From our own continuously refreshed local-business index. Enrichment runs on top: reviews, social, competitor ads, hiring signals. All inside your monthly cap, no separate credit math.",
   },
 ];
 

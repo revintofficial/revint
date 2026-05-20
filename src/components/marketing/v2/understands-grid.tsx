@@ -33,9 +33,9 @@ const NICHES: Niche[] = [
     name: "Fine dining",
     summary: "Prestige and reservation flow drive the unit economics.",
     bullets: [
-      "Reservation systems",
-      "Prestige and review sensitivity",
-      "Average ticket size",
+      "Does the booking widget handle Friday peak",
+      "How recent are the 1-star reviews",
+      "Where is the £75-plus tasting menu hidden on the site",
     ],
   },
   {
@@ -43,9 +43,9 @@ const NICHES: Niche[] = [
     name: "Cafes",
     summary: "Local discovery and repeat foot traffic carry the business.",
     bullets: [
-      "Local SEO and Google Maps",
-      "Repeat customer behavior",
-      "Mobile conversion paths",
+      "Does the Google Maps listing have hours and photos",
+      "How many of the last 30 reviews mention the queue",
+      "Is the menu readable on a phone in under 5 seconds",
     ],
   },
   {
@@ -53,9 +53,9 @@ const NICHES: Niche[] = [
     name: "Bars",
     summary: "Late-night traffic and event nights swing the week.",
     bullets: [
-      "Late-night foot traffic",
-      "Event programming",
-      "Social proof and Instagram",
+      "What did Friday and Saturday night look like in the reviews",
+      "Is the events page current or 6 months stale",
+      "Last Instagram post within the last 14 days",
     ],
   },
   {
@@ -63,9 +63,9 @@ const NICHES: Niche[] = [
     name: "Bakeries",
     summary: "Walk-ins and morning windows define the day.",
     bullets: [
-      "Local SEO and listings",
-      "Walk-in conversion",
-      "Morning peak optimization",
+      "Does the listing show 'open now' correctly at 7am",
+      "How many reviews mention selling out before noon",
+      "Does the site say what time the morning rush hits",
     ],
   },
   {
@@ -73,9 +73,9 @@ const NICHES: Niche[] = [
     name: "Ghost kitchens",
     summary: "Delivery platforms own the conversion funnel.",
     bullets: [
-      "Delivery platform mix",
-      "Conversion funnel design",
-      "Average order value",
+      "Which delivery platforms list this brand today",
+      "How many duplicate brands share this kitchen address",
+      "Is the cheapest item under £8 for app-only acquisition",
     ],
   },
 ];
