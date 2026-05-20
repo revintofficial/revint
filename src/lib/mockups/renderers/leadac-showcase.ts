@@ -614,10 +614,14 @@ function renderShowcaseBody(args: {
   builders: Record<string, () => string>;
 }): string {
   const { sectionOrder, builders } = args;
-  // Use Gemini's order when it has ≥3 entries — fewer than that
-  // smells like a degraded response and the default order is safer.
+  // Honor Gemini's order only when it's substantially complete
+  // (≥10 entries vs the 13-item default). Legacy v2 rows and test
+  // fixtures with stub section_order arrays (e.g. just
+  // ["hero","stats","process","courses"]) fall back to the default
+  // floor so the renderer doesn't silently drop FAQ / booking /
+  // contact / cta on rows authored before this refactor.
   const order =
-    Array.isArray(sectionOrder) && sectionOrder.length >= 3
+    Array.isArray(sectionOrder) && sectionOrder.length >= 10
       ? sectionOrder
       : SHOWCASE_DEFAULT_SECTION_ORDER;
 

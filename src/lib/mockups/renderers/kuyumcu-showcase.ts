@@ -1023,11 +1023,14 @@ function renderBody(args: {
   builders: Record<string, () => string>;
 }): string {
   const { variant, sectionOrder, builders } = args;
-  // Use Gemini's order when it has ≥3 entries — fewer than that
-  // smells like a degraded response and the variant default is the
-  // safer fallback.
+  // Honor Gemini's order only when it's substantially complete
+  // (≥10 entries vs the 14-item default). Legacy v2 rows that
+  // carry a 4-entry stub from the original "we never used this"
+  // field fall back to the variant default — they render every
+  // kuyumcu section in the curated order instead of silently
+  // dropping FAQ / booking / atelier.
   const order =
-    Array.isArray(sectionOrder) && sectionOrder.length >= 3
+    Array.isArray(sectionOrder) && sectionOrder.length >= 10
       ? sectionOrder
       : variant === "luxury"
         ? DEFAULT_SECTION_ORDER_LUXURY
