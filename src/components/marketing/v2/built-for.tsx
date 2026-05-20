@@ -81,7 +81,7 @@ export function BuiltFor() {
   return (
     <Section
       eyebrow="Built for"
-      headline="One pod. One screen. One morning at a time."
+      headline="For BD managers running a calling pod."
       sub="LeadAC was built for the BD manager who runs a 5 to 10 person calling pod selling to restaurants and local businesses."
     >
       <div

@@ -25,7 +25,7 @@ export function FinalCta() {
         </h2>
         <p className="mt-6 text-[16px] md:text-[17px] text-white/65 leading-relaxed max-w-xl mx-auto">
           Pick a postcode, pick a niche, and the first 47 audited briefs land
-          in your pod&apos;s tab in five minutes. Each one ready for the dial.
+          in your pod&apos;s tab in five minutes, ready for the dial.
         </p>
 
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
