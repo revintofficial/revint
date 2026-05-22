@@ -50,7 +50,7 @@ export function OneWeek() {
       id="one-week"
       eyebrow="One week to evidence"
       headline="Connect the stack. Run revenue on the model."
-      sub="Connect what you already use. Inside a week, LeadAC reads your CRM and turns your deals into revenue intelligence your team can operate on. Generic agents draft. LeadAC knows how the account buys, what stack it runs, and what changed since the last touch."
+      sub="Connect what you already use. Inside a week, LeadAC reads your CRM and turns your deals into revenue intelligence your team can operate on. Generic agents can draft a sequence. LeadAC actually knows how the account buys, what stack it runs, and what's changed since the last touch."
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {STEPS.map((step) => {

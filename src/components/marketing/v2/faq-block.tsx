@@ -25,7 +25,7 @@ export const HOMEPAGE_FAQ: QA[] = [
   },
   {
     q: "How is this different from Apollo, Clay, or Gong?",
-    a: "Apollo gives you a firmographic list. Clay gives you infrastructure to build enrichment workflows yourself. Gong analyses calls. LeadAC is the operational memory for selling into local-business verticals — vertical-aware account discovery, deep local enrichment per account, CRM-native writes, and closed-loop learning from every won and lost deal. We're complementary to Gong, not competing.",
+    a: "Apollo gives you a firmographic list. Clay gives you infrastructure to build enrichment workflows yourself, but you have to build them. Gong analyses calls after they happen. LeadAC is the layer that does vertical-aware account discovery, deep local enrichment per account, CRM-native writes, and closed-loop learning from every won and lost deal. We're complementary to Gong, not competing with it.",
   },
   {
     q: "Which verticals does LeadAC cover today?",
@@ -33,7 +33,7 @@ export const HOMEPAGE_FAQ: QA[] = [
   },
   {
     q: "How does account scoring actually work?",
-    a: "LeadAC reads vertical-specific operational signals — for restaurants, that's the detected POS / ordering / reservation provider, cuisine, single-vs-multi-location status, review velocity, weekend-wait language patterns, digital-channel maturity, and site-tech footprint — and produces a calibrated 0-100 fit score with the reasons listed. Recommended angles are generated from the same graph, so the rep's opener tracks what actually closes in that vertical sub-segment.",
+    a: "LeadAC reads vertical-specific operational signals and produces a calibrated 0-100 fit score with the reasons listed. For restaurants, those signals include the detected POS, ordering and reservation provider, cuisine, whether the operator runs one location or several, review velocity, weekend-wait language patterns, digital-channel maturity, and site-tech footprint. Recommended angles come out of the same graph, so the rep's opener tracks what actually closes in that vertical sub-segment.",
   },
   {
     q: "Does the system learn from our closed deals?",

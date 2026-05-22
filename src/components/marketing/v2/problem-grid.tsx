@@ -29,7 +29,7 @@ const ITEMS: Item[] = [
     index: "01",
     icon: History,
     title: "Apollo doesn't speak vertical.",
-    body: "Firmographic filters don't know if an independent restaurant runs two locations, which POS it uses, whether it has QR ordering live, or how its review velocity is trending. SDRs rebuild that context account by account — 20 to 40 minutes per prospect.",
+    body: "Firmographic filters don't know if an independent restaurant runs two locations, which POS it uses, whether it has QR ordering live, or how its review velocity is trending. So SDRs rebuild that context account by account, and it costs them 20 to 40 minutes per prospect.",
   },
   {
     index: "02",
@@ -50,7 +50,7 @@ export function ProblemGrid() {
     <Section
       eyebrow="Why local-vertical deals slip"
       headline="Activity is captured. Execution gaps are not."
-      sub="Apollo gives you a list. Gong gives you transcripts. CRMs log activity. The signals that decide whether a local-business account closes — vertical context, account-level evidence, what changed since the last touch — stay trapped in SDR research and top-rep intuition."
+      sub="Apollo gives you a list. Gong gives you transcripts. CRMs log activity. The signals that actually decide whether a local-business account closes are vertical context, account-level evidence, and what changed since the last touch, and they stay trapped in SDR research and top-rep intuition."
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {ITEMS.map((item) => {

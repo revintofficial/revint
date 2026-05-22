@@ -26,8 +26,8 @@ export function FinalCta() {
         <p className="mt-6 text-[16px] md:text-[17px] text-white/65 leading-relaxed max-w-xl mx-auto">
           Connect your CRM. Inside a week, LeadAC reads your deals and turns
           them into per-vertical account intelligence your team can operate
-          on. Find the right local accounts. Operate from one model. Learn
-          from every won and lost deal.
+          on. You find the right local accounts, your team operates from one
+          model, and every won and lost deal makes the next list sharper.
         </p>
 
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">

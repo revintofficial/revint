@@ -86,7 +86,7 @@ export function UnderstandsGrid() {
     <Section
       eyebrow="Verticals we speak"
       headline="Calibrated for the local-business segments you sell into."
-      sub="LeadAC's account intelligence is tuned per vertical — so a two-location independent restaurant and a regional HVAC chain are reasoned about with the right operational context, not generic firmographic noise."
+      sub="LeadAC's account intelligence is tuned per vertical. A two-location independent restaurant and a regional HVAC chain get reasoned about with the right operational context, instead of the same generic firmographic noise."
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {VERTICALS.map((vertical) => {

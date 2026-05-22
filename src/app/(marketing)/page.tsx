@@ -44,7 +44,7 @@ export const metadata = buildMetadata({
   path: "/",
   title: "Revenue intelligence for local business sales.",
   description:
-    "LeadAC is the revenue intelligence layer for vertical SaaS GTM teams selling into local-business verticals. Vertical-aware account discovery, deep local enrichment, CRM-native sync, and closed-loop learning from every won and lost deal.",
+    "LeadAC is the revenue intelligence layer for vertical SaaS GTM teams selling into local-business verticals. It does vertical-aware account discovery, deep local enrichment, and CRM-native sync, and it learns from every won and lost deal you log.",
   keywords: [
     "revenue intelligence for local business sales",
     "vertical saas gtm platform",

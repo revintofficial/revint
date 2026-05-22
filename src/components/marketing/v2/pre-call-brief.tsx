@@ -52,7 +52,7 @@ export function PreCallBrief() {
     <Section
       eyebrow="Execution"
       headline="Evidence where SDRs and AEs work."
-      sub="One account, one brief, the first 30 seconds. The same graph your VP of Sales operates on hands the rep the why-now signal, the detected stack, the recommended angle, and the opener — before the dial. Writes back into HubSpot or Salesforce when the call ends."
+      sub="One account. One brief. The first 30 seconds of the call. The same graph your VP of Sales operates on hands the rep the why-now signal, the detected stack, the recommended angle, and the opener, all before the dial. Then it writes back into HubSpot or Salesforce when the call ends."
     >
       <div
         className="relative mx-auto max-w-2xl rounded-3xl border border-white/[0.07] p-7 md:p-9"

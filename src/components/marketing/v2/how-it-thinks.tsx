@@ -45,7 +45,7 @@ const BLOCKS: Block[] = [
   {
     number: "03",
     title: "Execution",
-    copy: "Evidence where SDRs and AEs work. CRM-native account briefs, recommended outreach angles, account scoring, and next-step recommendations generated from the same model leadership operates on.",
+    copy: "Evidence where SDRs and AEs work. CRM-native account briefs, recommended outreach angles, account scoring, and next-step recommendations all come out of the same model leadership operates on.",
     rows: [
       { label: "Fit score 0–100", chip: "84" },
       { label: "Recommended angle", chip: "Dispatch upgrade" },
@@ -56,7 +56,7 @@ const BLOCKS: Block[] = [
   {
     number: "04",
     title: "Closed-loop learning",
-    copy: "Outcome intelligence that compounds per workspace. The system learns which vertical sub-segments convert, which proof points close, and which accounts to prioritise next. Reinforced. Pruned. Re-targeted.",
+    copy: "Outcome intelligence that compounds per workspace. The system learns which vertical sub-segments convert, which proof points close, and which accounts to prioritise next. What works gets reinforced. What doesn't gets pruned. The next list gets re-targeted.",
     rows: [
       { label: "Reply rate, vertical", chip: "+14%" },
       { label: "Pipeline created, 30d", chip: "+9" },

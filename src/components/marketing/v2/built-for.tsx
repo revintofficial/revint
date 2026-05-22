@@ -35,7 +35,7 @@ const SECONDARY: Chip[] = [
   {
     icon: Building2,
     label: "Founders running vertical-SaaS GTM",
-    body: "For the founder who wants one model behind discovery, account research, and CRM enrichment — instead of an Apollo seat, a Clay workflow, and a manual SDR playbook stapled together.",
+    body: "For the founder who wants one model behind discovery, account research, and CRM enrichment, instead of an Apollo seat plus a Clay workflow plus a manual SDR playbook stapled together.",
   },
 ];
 

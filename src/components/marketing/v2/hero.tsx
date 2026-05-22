@@ -59,10 +59,10 @@ export function Hero() {
 
             <p className="mt-6 text-[16px] md:text-[17.5px] leading-relaxed text-white/65 max-w-[40ch]">
               LeadAC is the revenue intelligence layer for vertical SaaS GTM
-              teams selling into local-business verticals. Vertical-aware
-              account discovery, deep local enrichment, CRM-native sync, and
-              closed-loop learning from every won and lost deal — so the next
-              list is sharper than the last.
+              teams selling into local-business verticals. It does
+              vertical-aware account discovery, deep local enrichment, and
+              CRM-native sync, and it learns from every won and lost deal
+              you log. The next list is sharper than the last.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">

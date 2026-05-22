@@ -66,7 +66,7 @@ export function IntelligenceLoop() {
     <Section
       eyebrow="Closed-loop learning"
       headline="Every won and lost deal sharpens the next list."
-      sub="LeadAC learns which vertical sub-segments convert, which proof points close, and which accounts to prioritise next. The model gets sharper per workspace with every closed deal — closed-won, closed-lost, and stalled-pipeline all feed the next reasoning step."
+      sub="LeadAC learns which vertical sub-segments convert, which proof points close, and which accounts to prioritise next. The model gets sharper per workspace with every closed deal. Closed-won, closed-lost, and stalled pipeline all feed back into the next reasoning step."
     >
       <div
         className="relative mx-auto max-w-3xl rounded-2xl border border-white/[0.06] overflow-hidden"
