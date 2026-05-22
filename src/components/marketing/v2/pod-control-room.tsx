@@ -1,15 +1,12 @@
 /**
- * PodControlRoom — the manager view of a BD pod morning.
+ * Operator surface — the manager view of an outbound team's morning.
  *
- * Net-new section for the F&B BD cold-call pod RFC at
- * `.agents/homepage-strategist/proposals/2026-05-20-homepage-rfc-fnb-bd-cold-call-pod-v0.1.md`,
- * per-section spec at
- * `.agents/homepage-strategist/proposals/specs/2026-05-20-fnb-bd-pod-pod-control-room.md`.
- *
- * Three-column presentational mock: morning queue, yesterday's disposition
- * mix, repeat-call guard. No client JS, no animation. Mirrors the chip and
- * card grammar of the product's DispositionStrip and the marketing surface's
- * HowItThinks card. Numbers are illustrative-but-plausible per spec § 14.
+ * Three-column presentational mock: today's outreach queue, yesterday's
+ * reply mix, repeat-touch guard. No client JS, no animation. Mirrors
+ * the chip and card grammar of the product's reply strip and the
+ * marketing surface's HowItThinks card. Numbers are illustrative-but
+ * plausible. Framed as "Operate on intelligence" — the same graph
+ * leadership operates on, surfaced where the team works.
  */
 import * as React from "react";
 import { Section } from "./section";
@@ -48,10 +45,10 @@ interface DispChip {
 }
 
 const DISPOSITIONS: DispChip[] = [
-  { label: "Connected", count: 7 },
-  { label: "Voicemail", count: 11 },
-  { label: "No-answer", count: 9 },
-  { label: "Wrong-#", count: 1 },
+  { label: "Replied", count: 7 },
+  { label: "Opened", count: 11 },
+  { label: "No-touch", count: 9 },
+  { label: "Bounced", count: 1 },
 ];
 
 function cardSurface() {
@@ -65,26 +62,26 @@ function columnCaption(): string {
 export function PodControlRoom() {
   return (
     <Section
-      id="pod-control-room"
-      eyebrow="For the pod manager"
-      headline="The manager view, before the morning stand-up."
-      sub="Queue waiting on your pod, disposition mix from yesterday, repeat-call guard. The numbers your stand-up runs on, prepared while your reps are still on the train in."
+      id="operator-surface"
+      eyebrow="Operate on intelligence"
+      headline="The operator view, before the morning stand-up."
+      sub="Today's outreach queue, yesterday's reply mix, repeat-touch guard. The numbers leadership runs on at the portfolio level, scoped to your workspace and refreshed after every interaction."
     >
       <div
         className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-6"
-        data-section="pod-control-room"
+        data-section="operator-surface"
       >
-        {/* COLUMN 1 — MORNING QUEUE */}
+        {/* COLUMN 1 — TODAY'S OUTREACH QUEUE */}
         <article
           role="group"
-          aria-label="Morning queue"
+          aria-label="Today's outreach queue"
           className={cardSurface()}
         >
           <p
             className="text-[10.5px] font-semibold uppercase tracking-[0.16em]"
             style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 65%)" }}
           >
-            Morning queue
+            Today&apos;s outreach queue
           </p>
 
           <ul className="mt-4 divide-y divide-white/[0.04]">
@@ -117,21 +114,21 @@ export function PodControlRoom() {
           </ul>
 
           <p className={columnCaption()}>
-            3 of 28 in your pod&apos;s queue today
+            3 of 28 in your team&apos;s queue today
           </p>
         </article>
 
-        {/* COLUMN 2 — DISPOSITIONS */}
+        {/* COLUMN 2 — REPLY MIX */}
         <article
           role="group"
-          aria-label="Yesterday's disposition mix"
+          aria-label="Yesterday's reply mix"
           className={cardSurface()}
         >
           <p
             className="text-[10.5px] font-semibold uppercase tracking-[0.16em]"
             style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 65%)" }}
           >
-            Dispositions, yesterday
+            Yesterday&apos;s reply mix
           </p>
 
           <ul className="mt-4 grid grid-cols-2 gap-2.5">
@@ -150,7 +147,7 @@ export function PodControlRoom() {
                       "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)",
                     color: "hsl(var(--leadac-h) var(--leadac-s) 80%)",
                   }}
-                  aria-label={`${chip.count} ${chip.label.toLowerCase()} ${chip.count === 1 ? "call" : "calls"}`}
+                  aria-label={`${chip.count} ${chip.label.toLowerCase()}`}
                 >
                   {chip.count}
                 </span>
@@ -159,21 +156,21 @@ export function PodControlRoom() {
           </ul>
 
           <p className={columnCaption()}>
-            28 dialed yesterday by 4 reps
+            28 touched yesterday by 4 reps
           </p>
         </article>
 
-        {/* COLUMN 3 — REPEAT-CALL GUARD */}
+        {/* COLUMN 3 — REPEAT-TOUCH GUARD */}
         <article
           role="group"
-          aria-label="Repeat-call guard"
+          aria-label="Repeat-touch guard"
           className={cardSurface()}
         >
           <p
             className="text-[10.5px] font-semibold uppercase tracking-[0.16em]"
             style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 65%)" }}
           >
-            Repeat-call guard
+            Repeat-touch guard
           </p>
 
           <div className="mt-4 rounded-xl border border-white/[0.06] bg-black/30 p-4">
@@ -181,15 +178,15 @@ export function PodControlRoom() {
               Kazu Sushi
             </p>
             <p className="mt-1.5 text-[12.5px] text-white/65 leading-relaxed">
-              Last dialed by Sam, 9 days ago. Voicemail.
+              Last touched by Sam, 9 days ago. No reply.
             </p>
             <p className="mt-3 text-[12.5px] text-white/80 leading-relaxed">
-              The brief is fresh; the dial is yours.
+              The brief is fresh; the next touch is yours.
             </p>
           </div>
 
           <p className={columnCaption()}>
-            Pod-wide, scoped to your workspace
+            Portfolio-wide, scoped to your workspace
           </p>
         </article>
       </div>

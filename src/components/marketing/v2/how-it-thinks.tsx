@@ -1,10 +1,11 @@
 /**
- * Three-layer architecture explainer for the v2 marketing surface.
+ * Platform layer explainer for the v2 marketing surface.
  *
- * Design intent: position the product as a loop, not a list of features.
- * Three large blocks (Detect / Reason / Execute) each with a numbered
- * chip, a sentence-case heading, a short paragraph, and a small static
- * "internal labels" card that hints at the actual signals the system
+ * Design intent: position LeadAC as one model with four layers, not a
+ * list of features. Four blocks (Graph / Patterns / Execution /
+ * Learning) on a 2x2 grid at lg+, each with a numbered chip, a
+ * sentence-case heading, a short paragraph, and a small static
+ * "internal labels" card that hints at the actual signals each layer
  * works with. The card uses tinted chips so the visual reads as data
  * without leaning on a real screenshot. Pure server, no animation.
  */
@@ -21,36 +22,46 @@ interface Block {
 const BLOCKS: Block[] = [
   {
     number: "01",
-    title: "Detect",
-    copy: "LeadAC scans restaurants, cafes, bars, and local businesses for real buying signals.",
+    title: "Graph",
+    copy: "Live niche context. Businesses, outreach history, and conversion patterns refreshed after every interaction. Nothing to migrate.",
     rows: [
-      { label: "Maps coverage", chip: "412 places" },
-      { label: "Review velocity", chip: "+38 / 30d" },
-      { label: "Weak SEO", chip: "Detected" },
-      { label: "Booking gaps", chip: "Phone only" },
-      { label: "Social inactivity", chip: "14 days dark" },
+      { label: "Businesses in graph", chip: "1,420" },
+      { label: "Outreach threads", chip: "Live sync" },
+      { label: "Reviews ingested", chip: "26k / niche" },
+      { label: "Refresh cadence", chip: "Per interaction" },
     ],
   },
   {
     number: "02",
-    title: "Reason",
-    copy: "The system evaluates which businesses are most likely to respond based on operational and market signals.",
+    title: "Patterns",
+    copy: "Reply and conversion patterns that aggregate. Every outbound interaction feeds the model. Recurring objections, winning messaging, and timing behavior surface at the portfolio level.",
     rows: [
-      { label: "Score 0-100", chip: "84" },
-      { label: "Reasoning trace", chip: "6 steps" },
-      { label: "Sub-niche fit", chip: "Sushi · LDN" },
-      { label: "Opportunity surface", chip: "Reservations" },
+      { label: "Recurring objections", chip: "12 clustered" },
+      { label: "Winning angles", chip: "4 reinforced" },
+      { label: "Best-send window", chip: "Tue 10:40" },
+      { label: "Segment-level stall", chip: "Detected" },
     ],
   },
   {
     number: "03",
-    title: "Execute",
-    copy: "Hand the rep a fresh dossier and a talk track before they pick up the phone. Email is the booking layer for the next call.",
+    title: "Execution",
+    copy: "Evidence where SDRs work. Messaging recommendations, outreach angles, scoring, and follow-up timing generated from the same model campaigns operate on.",
     rows: [
-      { label: "Talk track", chip: "First 30 seconds ready" },
-      { label: "Dossier", chip: "1 page" },
-      { label: "Next action", chip: "Call" },
-      { label: "Disposition", chip: "4 chips" },
+      { label: "Fit score 0–100", chip: "84" },
+      { label: "Recommended angle", chip: "Friday gap" },
+      { label: "Next action", chip: "Call · 30s opener" },
+      { label: "Follow-up timing", chip: "+3 days" },
+    ],
+  },
+  {
+    number: "04",
+    title: "Learning",
+    copy: "Outcome intelligence that compounds. The system learns which niches convert, which offers perform, and which outreach patterns create meetings. Reinforced. Pruned.",
+    rows: [
+      { label: "Reply rate, niche", chip: "+14%" },
+      { label: "Meetings, 30d", chip: "+9" },
+      { label: "Pruned patterns", chip: "6" },
+      { label: "Ramp delta", chip: "−38%" },
     ],
   },
 ];
@@ -58,12 +69,12 @@ const BLOCKS: Block[] = [
 export function HowItThinks() {
   return (
     <Section
-      id="how-it-thinks"
-      eyebrow="How LeadAC thinks"
-      headline="Three layers between a postcode and a reply."
-      sub="The system runs detection, reasoning, and execution as a continuous loop, not three disconnected steps."
+      id="platform"
+      eyebrow="Platform"
+      headline="Outreach, enrichment, and revenue intelligence in one model."
+      sub="LeadAC reads reviews, websites, social activity, outreach outcomes, and operational behavior. The system assembles a graph of niches, messaging patterns, buying behavior, and conversion outcomes agencies operate from."
     >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {BLOCKS.map((block) => (
           <article
             key={block.number}

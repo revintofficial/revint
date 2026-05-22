@@ -1,31 +1,99 @@
 /**
  * Stack-compatibility strip for the v2 marketing surface.
  *
- * Design intent: knock down two stack-compat objections in one row each:
- * "do you fit my sender" and "do you fit my dialer". Stylized text
- * wordmarks only (no logo SVGs, those require licensing). Lives outside
- * Section so the strip can sit tighter against neighboring blocks.
+ * Design intent: position LeadAC as the model that sits on top of the
+ * outbound stack agencies already run. Brand logos rendered from
+ * `public/integrations/` (SimpleIcons-style monoglyphs in brand color),
+ * arranged in two rows by role:
+ *   1. Sources    — CRM + enrichment systems we read from
+ *   2. Execution  — outreach, inbox, dialer, calendar we write to
+ * A small footer row hints at the long tail (Zapier / Make / n8n /
+ * webhooks). The strip lives outside <Section> so it can sit tighter
+ * against neighboring blocks. Pure server, no JS.
  *
- * Per the F&B BD cold-call pod RFC at
- * `.agents/homepage-strategist/proposals/2026-05-20-homepage-rfc-fnb-bd-cold-call-pod-v0.1.md`
- * and per-section spec at
- * `.agents/homepage-strategist/proposals/specs/2026-05-20-fnb-bd-pod-integrations-strip.md`.
+ * Brand marks are reproduced here under nominative fair use to show
+ * compatibility. Each SVG ships in `public/integrations/` and is
+ * referenced by its filename. Adding a new integration = drop the SVG
+ * there + push to the SOURCES / EXECUTION arrays below. Rendered with
+ * plain <img> (not next/image) because Next.js's image optimizer
+ * refuses local SVGs unless `dangerouslyAllowSVG` is enabled in
+ * `next.config.mjs`, and these are tiny static assets that don't need
+ * optimization in the first place.
  */
 import * as React from "react";
 
-const SENDERS: string[] = ["Gmail", "Outlook", "Smartlead", "Instantly", "GHL"];
-const DIALERS: string[] = ["Aircall", "Bring your own"];
+interface Brand {
+  name: string;
+  file: string;
+}
 
-function Pill({ label }: { label: string }) {
+const SOURCES: Brand[] = [
+  { name: "HubSpot", file: "hubspot.svg" },
+  { name: "Salesforce", file: "salesforce.svg" },
+  { name: "GoHighLevel", file: "gohighlevel.svg" },
+  { name: "Apollo", file: "apollo-io.svg" },
+  { name: "Google Maps", file: "googlemaps.svg" },
+  { name: "LinkedIn", file: "linkedin.svg" },
+];
+
+const EXECUTION: Brand[] = [
+  { name: "Smartlead", file: "smartlead.svg" },
+  { name: "Instantly", file: "instantly.svg" },
+  { name: "Gmail", file: "gmail.svg" },
+  { name: "Outlook", file: "outlook.svg" },
+  { name: "Twilio", file: "twilio.svg" },
+  { name: "Calendly", file: "calendly.svg" },
+];
+
+const LONG_TAIL: Brand[] = [
+  { name: "Zapier", file: "zapier.svg" },
+  { name: "Make", file: "make.svg" },
+  { name: "n8n", file: "n8n.svg" },
+  { name: "Webhooks", file: "webhook.svg" },
+];
+
+function BrandPill({ brand }: { brand: Brand }) {
   return (
     <span
-      className="rounded-full px-4 py-2 text-[13px] text-white/75"
+      className="inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[13px] font-medium text-white/85 transition-colors hover:text-white"
       style={{
         border: "0.5px solid rgba(255,255,255,0.12)",
-        background: "rgba(255,255,255,0.02)",
+        background: "rgba(255,255,255,0.025)",
       }}
     >
-      {label}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/integrations/${brand.file}`}
+        alt=""
+        width={18}
+        height={18}
+        className="h-[18px] w-[18px] shrink-0"
+        aria-hidden
+      />
+      <span>{brand.name}</span>
+    </span>
+  );
+}
+
+function SmallBrandPill({ brand }: { brand: Brand }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium text-white/65"
+      style={{
+        border: "0.5px solid rgba(255,255,255,0.08)",
+        background: "rgba(255,255,255,0.015)",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/integrations/${brand.file}`}
+        alt=""
+        width={14}
+        height={14}
+        className="h-[14px] w-[14px] shrink-0"
+        aria-hidden
+      />
+      <span>{brand.name}</span>
     </span>
   );
 }
@@ -43,34 +111,68 @@ function RowLabel({ children }: { children: React.ReactNode }) {
 
 export function IntegrationsStrip() {
   return (
-    <section className="py-16" data-section="integrations-strip">
+    <section className="py-20" data-section="integrations-strip">
       <div className="max-w-6xl mx-auto px-5 sm:px-6">
-        <p className="text-center text-[12px] uppercase tracking-wider text-white/45">
-          Works with your stack.
-        </p>
+        <header className="text-center max-w-2xl mx-auto">
+          <p
+            className="text-[11.5px] font-semibold uppercase tracking-[0.16em]"
+            style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 62%)" }}
+          >
+            Integrations
+          </p>
+          <h2
+            className="mt-4 text-white font-semibold tracking-[-0.025em] leading-[1.12]"
+            style={{ fontSize: "clamp(26px, 3.8vw, 38px)" }}
+          >
+            Sits on top of the outbound stack you already run.
+          </h2>
+          <p className="mt-4 text-[14.5px] md:text-[15.5px] leading-relaxed text-white/55">
+            CRMs, enrichment systems, sequencing tools, inbox infrastructure,
+            and campaign workflows. Read in place. Operated as one model.
+          </p>
+        </header>
 
-        <div className="mt-8 space-y-6">
-          <div role="group" aria-label="Sender integrations" className="space-y-3">
-            <RowLabel>Senders</RowLabel>
-            <div className="flex flex-wrap justify-center md:justify-start gap-3">
-              {SENDERS.map((pill) => (
-                <Pill key={pill} label={pill} />
+        <div className="mt-12 space-y-8">
+          <div role="group" aria-label="CRM and enrichment" className="space-y-3">
+            <RowLabel>CRM &amp; enrichment</RowLabel>
+            <div className="flex flex-wrap justify-center md:justify-start gap-2.5">
+              {SOURCES.map((b) => (
+                <BrandPill key={b.name} brand={b} />
               ))}
             </div>
           </div>
 
-          <div role="group" aria-label="Dialer integrations" className="space-y-3">
-            <RowLabel>Dialers</RowLabel>
-            <div className="flex flex-wrap justify-center md:justify-start gap-3">
-              {DIALERS.map((pill) => (
-                <Pill key={pill} label={pill} />
+          <div
+            role="group"
+            aria-label="Outreach, inbox, dialer, calendar"
+            className="space-y-3"
+          >
+            <RowLabel>Outreach, inbox, dialer &amp; calendar</RowLabel>
+            <div className="flex flex-wrap justify-center md:justify-start gap-2.5">
+              {EXECUTION.map((b) => (
+                <BrandPill key={b.name} brand={b} />
+              ))}
+            </div>
+          </div>
+
+          <div
+            role="group"
+            aria-label="Automation and webhooks"
+            className="space-y-3 pt-2"
+          >
+            <RowLabel>Everything else, via</RowLabel>
+            <div className="flex flex-wrap justify-center md:justify-start gap-2">
+              {LONG_TAIL.map((b) => (
+                <SmallBrandPill key={b.name} brand={b} />
               ))}
             </div>
           </div>
         </div>
 
-        <p className="mt-8 text-center text-[12.5px] text-white/50">
-          Wire your own dialer or sender. We do not replace either.
+        <p className="mt-10 text-center text-[12.5px] text-white/45 max-w-2xl mx-auto leading-relaxed">
+          Brand names and logos are property of their respective owners and
+          shown to indicate stack compatibility. Nothing to migrate — LeadAC
+          reads what you already use and operates it as one model.
         </p>
       </div>
     </section>

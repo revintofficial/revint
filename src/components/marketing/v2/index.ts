@@ -14,6 +14,7 @@ export { IntelligenceLoop } from "./intelligence-loop";
 export { PreCallBrief } from "./pre-call-brief";
 export { PodControlRoom } from "./pod-control-room";
 export { BuiltFor } from "./built-for";
+export { OneWeek } from "./one-week";
 export { IntegrationsStrip } from "./integrations-strip";
 export { FaqBlock } from "./faq-block";
 export { WaitlistBlock } from "./waitlist-block";

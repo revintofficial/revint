@@ -1,24 +1,23 @@
 /**
  * Problem grid for the v2 marketing surface.
  *
- * Design intent: name the five recurring failures of local agency outbound
- * up front, before the product gets introduced. Five subtle bordered
- * cards on a responsive grid (1 / 2 / 5 cols). Each card is icon, title,
- * one short paragraph. No animation, no decoration beyond a small icon
- * chip. Sets up the resolution that the rest of the page provides.
+ * Design intent: name the three structural failures of agency outbound
+ * up front, before the platform is introduced. Three bordered cards on
+ * a responsive grid (1 / 3 cols). Each card is icon, title, one short
+ * paragraph. Sets up the platform layers that the rest of the page
+ * resolves. No animation, no decoration beyond a small icon chip.
  */
 import * as React from "react";
 import {
-  Clock,
+  History,
   Layers,
-  MessagesSquare,
-  Phone,
-  RefreshCw,
+  Unplug,
   type LucideIcon,
 } from "lucide-react";
 import { Section } from "./section";
 
 interface Item {
+  index: string;
   icon: LucideIcon;
   title: string;
   body: string;
@@ -26,60 +25,62 @@ interface Item {
 
 const ITEMS: Item[] = [
   {
-    icon: Clock,
-    title: "Eighty percent of the morning goes to research.",
-    body: "Each rep manually scans new restaurants for hours, then dials with five minutes of context. The math caps the pod at 30 to 40 prospects a rep a day.",
+    index: "01",
+    icon: History,
+    title: "Ramp time resets every hire.",
+    body: "The playbook lives in outreach threads, CRM notes, and top SDR intuition. New reps rebuild the motion campaign by campaign. Time to first booked meeting stretches.",
   },
   {
-    icon: MessagesSquare,
-    title: "Generic call openers.",
-    body: "Without a fresh signal from the restaurant's own site or reviews, the first 30 seconds sound like every other vendor that called this week. The GM hangs up.",
-  },
-  {
+    index: "02",
     icon: Layers,
-    title: "No shared call dispositions across the pod.",
-    body: "Voicemail, no-answer, wrong-number, interested. Without one shared chip-set, the pod's activity does not aggregate into a single weekly view.",
+    title: "Win patterns never aggregate.",
+    body: "Replies, objections, timing patterns, and conversion behavior stay trapped in individual sequences. Teams cannot see which outreach patterns actually move revenue.",
   },
   {
-    icon: RefreshCw,
-    title: "Repeat-call risk.",
-    body: "Two reps dial the same restaurant a week apart because the activity feed lives in HubSpot and no one opens it before the morning queue.",
-  },
-  {
-    icon: Phone,
-    title: "A dialer that knows the number, not the restaurant.",
-    body: "Aircall dials fine. It does not know that the restaurant in front of the rep has 1.4k reviews and no online booking. The rep does, but only if they did the research.",
+    index: "03",
+    icon: Unplug,
+    title: "Outreach execution breaks across systems.",
+    body: "Enrichment, scoring, messaging, and sequencing operate separately. The system never learns which workflows create pipeline. By the time a team sees the gap, the niche already stopped converting.",
   },
 ];
 
 export function ProblemGrid() {
   return (
     <Section
-      eyebrow="The problem"
-      headline="Most BD pod mornings die in research."
-      sub="The dial works. The dialer does not know who it is calling."
+      eyebrow="Why outbound stalls"
+      headline="Activity is captured. Learning is not."
+      sub="Outbound tools send sequences. CRMs log activity. Enrichment tools collect data. The patterns that determine conversion stay trapped in SDR habits, disconnected campaigns, and lost outreach threads."
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {ITEMS.map((item) => {
           const Icon = item.icon;
           return (
             <article
               key={item.title}
-              className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_9%)] p-5 transition-colors hover:border-white/[0.12]"
+              className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]"
             >
-              <span
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06] mb-4"
-                style={{
-                  background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.08)",
-                  color: "hsl(var(--leadac-h) var(--leadac-s) 72%)",
-                }}
-              >
-                <Icon className="h-4 w-4" />
-              </span>
-              <h3 className="text-[15px] font-semibold text-white leading-snug">
+              <div className="flex items-center gap-3 mb-5">
+                <span
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06]"
+                  style={{
+                    background:
+                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.08)",
+                    color: "hsl(var(--leadac-h) var(--leadac-s) 72%)",
+                  }}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+                <span
+                  className="text-[11px] font-mono font-semibold tracking-wider"
+                  style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 70%)" }}
+                >
+                  {item.index}
+                </span>
+              </div>
+              <h3 className="text-[16px] font-semibold text-white leading-snug">
                 {item.title}
               </h3>
-              <p className="mt-2 text-[13px] text-white/55 leading-relaxed">
+              <p className="mt-2.5 text-[13.5px] text-white/60 leading-relaxed">
                 {item.body}
               </p>
             </article>

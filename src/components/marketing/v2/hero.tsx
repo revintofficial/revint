@@ -7,6 +7,8 @@
  * MARKETING_COMING_SOON: when the flag is on, it renders as an inert span
  * with disabled styling so the page still feels balanced before signup
  * opens. No client JS, no Framer.
+ *
+ * Positioning: revenue intelligence for local business acquisition.
  */
 import * as React from "react";
 import Link from "next/link";
@@ -42,21 +44,22 @@ export function Hero() {
                 className="inline-block h-1.5 w-1.5 rounded-full"
                 style={{ background: "hsl(var(--leadac-h) var(--leadac-s) 60%)" }}
               />
-              For F&amp;B BD teams
+              Revenue intelligence for local business acquisition
             </span>
 
             <h1
               className="mt-6 text-white font-semibold tracking-[-0.03em] leading-[1.02] max-w-[18ch]"
               style={{ fontSize: "clamp(36px, 6.4vw, 72px)" }}
             >
-              The pre-call brief in front of every dial.
+              See what converts. See what stalls. Act before outreach slips.
             </h1>
 
-            <p className="mt-6 text-[16px] md:text-[17.5px] leading-relaxed text-white/65 max-w-[34ch]">
-              LeadAC writes a one-page brief on every restaurant your pod is
-              about to call: the why-now signal, the angle, and the first 30
-              seconds of the talk track. Reps stop researching. They start
-              dialing.
+            <p className="mt-6 text-[16px] md:text-[17.5px] leading-relaxed text-white/65 max-w-[38ch]">
+              LeadAC turns outreach, enrichment, and campaign outcomes into
+              niche-specific revenue intelligence agencies can operate on. We
+              automate scoring, messaging, execution, and the learning loops
+              that drive reply rates, compress ramp time, and improve
+              acquisition performance.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
@@ -100,7 +103,7 @@ export function Hero() {
                 href="/demo"
                 className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-medium text-white/85 hover:text-white border border-white/15 hover:border-white/30 transition-colors"
               >
-                Watch a 90-second pod walkthrough
+                Watch a 90-second platform walkthrough
               </Link>
             </div>
           </div>

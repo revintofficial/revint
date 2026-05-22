@@ -47,9 +47,9 @@ const SIGNALS: Signal[] = [
 export function PreCallBrief() {
   return (
     <Section
-      eyebrow="The brief"
-      headline="One restaurant, one brief, the first 30 seconds."
-      sub="This is what lands in your rep's tab before the dial. The talk track at the bottom is what they open the call with."
+      eyebrow="Execution"
+      headline="Evidence where SDRs work."
+      sub="One business, one brief, the first 30 seconds. The same graph leadership operates on hands the rep the why-now signal, the recommended angle, and the opener — before the dial."
     >
       <div
         className="relative mx-auto max-w-2xl rounded-3xl border border-white/[0.07] p-7 md:p-9"
