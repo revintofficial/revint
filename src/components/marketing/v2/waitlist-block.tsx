@@ -20,7 +20,7 @@ export function WaitlistBlock() {
       variant="soft"
       eyebrow="Waitlist"
       headline="Get in early."
-      sub="We're shaping plans with the first cohort of agencies before opening pricing publicly. Drop your email and you'll get the first slot when we open the gates."
+      sub="We're shaping plans with the first cohort of agencies running local business acquisition before opening pricing publicly. Drop your email and you'll get the first slot when we open the gates."
     >
       <div className="grid gap-10 lg:gap-14 lg:grid-cols-[1.1fr_1fr] lg:items-start max-w-5xl">
         <div
@@ -40,15 +40,15 @@ export function WaitlistBlock() {
           {[
             {
               title: "Audit before you commit.",
-              body: "Reply to the confirmation with a postcode + niche. We run the audit before a 15-min call so you walk away with a real shortlist either way.",
+              body: "Reply to the confirmation with a niche + outreach goal. We run the audit before a 15-min call so you walk away with real revenue intelligence either way.",
             },
             {
               title: "First cohort sets the price.",
               body: "Plans, packaging, and limits are being co-designed with the first agencies on the list. Early access locks the cohort rate.",
             },
             {
-              title: "Built for restaurants and the F&B vertical.",
-              body: "We're tuned for fine dining, cafes, bars, bakeries, and ghost kitchens. If you sell to a different local vertical, the system still works — but the playbook depth is real here.",
+              title: "F&B is live. Medspa, home services, and fitness ship next.",
+              body: "We're tuned for restaurants, cafes, bakeries, bars, brunch spots, and ghost kitchens today. Medspa, home services, and fitness are next on the roadmap — join the list to lock the slot for your niche.",
             },
           ].map((item) => (
             <li key={item.title} className="flex gap-3">

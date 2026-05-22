@@ -1,21 +1,20 @@
 /**
- * Niche economics grid for the v2 marketing surface.
+ * Who runs on LeadAC — niches grid.
  *
- * Design intent: prove the product understands F&B as a real category,
- * not as a generic "local business" abstraction. Five cards, one per
- * sub-niche, each with a small icon, niche name, one-line economic
- * frame, a thin separator, and three bullet markers for the specific
- * signals LeadAC reasons about. Five cards on a 3-col grid means the
- * fifth sits naturally on the bottom row.
+ * Design intent: tell the reader who LeadAC was built for in concrete
+ * verticals where niche understanding, outreach execution, and
+ * conversion performance determine growth. F&B is the live cohort.
+ * Medspa, Home Services, and Fitness ship next — they render with
+ * a small "Coming soon" pill so the positioning is honest without
+ * hiding the roadmap. Four cards on a 2 / 4 col grid.
  */
 import * as React from "react";
 import {
-  Bike,
   ChevronRight,
-  Coffee,
-  Croissant,
+  Dumbbell,
+  Sparkles,
   UtensilsCrossed,
-  Wine,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { Section } from "./section";
@@ -25,85 +24,116 @@ interface Niche {
   name: string;
   summary: string;
   bullets: [string, string, string];
+  status: "live" | "soon";
 }
 
 const NICHES: Niche[] = [
   {
     icon: UtensilsCrossed,
-    name: "Fine dining",
-    summary: "Prestige and reservation flow drive the unit economics.",
+    name: "F&B",
+    summary:
+      "Restaurants, cafes, bakeries, bars, brunch spots, ghost kitchens. The live cohort.",
     bullets: [
-      "Does the booking widget handle Friday peak",
-      "How recent are the 1-star reviews",
-      "Where is the £75-plus tasting menu hidden on the site",
+      "Reservation and ordering maturity per location",
+      "Review velocity and Friday-night service patterns",
+      "Sub-niche fit, from fine dining to ghost kitchens",
     ],
+    status: "live",
   },
   {
-    icon: Coffee,
-    name: "Cafes",
-    summary: "Local discovery and repeat foot traffic carry the business.",
+    icon: Sparkles,
+    name: "Medspa",
+    summary:
+      "High-frequency outbound, visible operational gaps, localized acquisition.",
     bullets: [
-      "Does the Google Maps listing have hours and photos",
-      "How many of the last 30 reviews mention the queue",
-      "Is the menu readable on a phone in under 5 seconds",
+      "Treatment menu coverage and pricing surfacing",
+      "Booking and consult funnel maturity",
+      "Local intent and seasonality patterns",
     ],
+    status: "soon",
   },
   {
-    icon: Wine,
-    name: "Bars",
-    summary: "Late-night traffic and event nights swing the week.",
+    icon: Wrench,
+    name: "Home services",
+    summary:
+      "Repeatable outreach patterns, service-area targeting, conversion optimization.",
     bullets: [
-      "What did Friday and Saturday night look like in the reviews",
-      "Is the events page current or 6 months stale",
-      "Last Instagram post within the last 14 days",
+      "Service-area and territory coverage",
+      "Estimate-to-job conversion behavior",
+      "Reputation and response-time patterns",
     ],
+    status: "soon",
   },
   {
-    icon: Croissant,
-    name: "Bakeries",
-    summary: "Walk-ins and morning windows define the day.",
+    icon: Dumbbell,
+    name: "Fitness",
+    summary:
+      "Membership-driven acquisition, local intent behavior, operational timing patterns.",
     bullets: [
-      "Does the listing show 'open now' correctly at 7am",
-      "How many reviews mention selling out before noon",
-      "Does the site say what time the morning rush hits",
+      "Class schedule and trial-funnel quality",
+      "Membership pricing visibility and cohorts",
+      "Local intent and peak-hour patterns",
     ],
-  },
-  {
-    icon: Bike,
-    name: "Ghost kitchens",
-    summary: "Delivery platforms own the conversion funnel.",
-    bullets: [
-      "Which delivery platforms list this brand today",
-      "How many duplicate brands share this kitchen address",
-      "Is the cheapest item under £8 for app-only acquisition",
-    ],
+    status: "soon",
   },
 ];
 
 export function UnderstandsGrid() {
   return (
     <Section
-      eyebrow="What the AI understands"
-      headline="Built for real local business economics."
-      sub="Fine dining and a ghost kitchen do not earn money the same way. LeadAC reasons about each one with the right operational frame."
+      eyebrow="Who runs on LeadAC"
+      headline="Agencies running local business acquisition."
+      sub="Built for outbound teams where niche understanding, outreach execution, and conversion performance determine growth."
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {NICHES.map((niche) => {
           const Icon = niche.icon;
+          const isLive = niche.status === "live";
           return (
             <article
               key={niche.name}
               className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]"
             >
-              <span
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06]"
-                style={{
-                  background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.08)",
-                  color: "hsl(var(--leadac-h) var(--leadac-s) 72%)",
-                }}
-              >
-                <Icon className="h-4 w-4" />
-              </span>
+              <div className="flex items-center justify-between gap-2">
+                <span
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06]"
+                  style={{
+                    background:
+                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.08)",
+                    color: "hsl(var(--leadac-h) var(--leadac-s) 72%)",
+                  }}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+
+                {isLive ? (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider"
+                    style={{
+                      background:
+                        "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)",
+                      color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+                      border:
+                        "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.30)",
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      className="inline-block h-1.5 w-1.5 rounded-full animate-pulse motion-reduce:animate-none"
+                      style={{
+                        background: "hsl(var(--leadac-h) var(--leadac-s) 70%)",
+                      }}
+                    />
+                    Live
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex items-center rounded-full px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider text-white/55 border border-white/15 bg-white/[0.03]"
+                  >
+                    Coming soon
+                  </span>
+                )}
+              </div>
 
               <h3 className="mt-4 text-[17px] font-semibold text-white">
                 {niche.name}

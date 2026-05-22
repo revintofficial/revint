@@ -21,11 +21,13 @@ export function FinalCta() {
           className="text-white font-semibold tracking-[-0.03em] leading-[1.05]"
           style={{ fontSize: "clamp(36px, 5.4vw, 60px)" }}
         >
-          Wire LeadAC into your BD pod&apos;s morning queue.
+          Adaptive revenue intelligence for local business acquisition.
         </h2>
         <p className="mt-6 text-[16px] md:text-[17px] text-white/65 leading-relaxed max-w-xl mx-auto">
-          Pick a postcode, pick a niche, and the first 47 audited briefs land
-          in your pod&apos;s tab in five minutes, ready for the dial.
+          Connect the stack you already use. Inside a week, LeadAC reads your
+          outreach and turns it into niche-specific revenue intelligence your
+          team can operate on. See what converts. See what stalls. Act before
+          outreach slips.
         </p>
 
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
@@ -77,7 +79,7 @@ export function FinalCta() {
               href="/demo"
               className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-medium text-white/85 hover:text-white border border-white/15 hover:border-white/30 transition-colors"
             >
-              Book a 15-min walkthrough
+              Book a 15-min platform walkthrough
             </Link>
           )}
         </div>

@@ -21,27 +21,27 @@ interface QA {
 export const HOMEPAGE_FAQ: QA[] = [
   {
     q: "We have HubSpot already. What does LeadAC do that HubSpot does not?",
-    a: "HubSpot is the activity ledger. LeadAC is the brief that gets written before the activity. We do not replace your CRM. We feed your reps the dossier for each restaurant they will dial this morning, plus the first 30 seconds they should open with. Activity then writes back into HubSpot in the normal way.",
+    a: "HubSpot is the activity ledger. LeadAC is the revenue intelligence layer that sits on top of it. We do not replace your CRM — we read it, alongside your enrichment and outreach, and turn campaign outcomes into niche-specific patterns your team can operate on. Activity continues to write back into HubSpot in the normal way.",
   },
   {
-    q: "Most local restaurants do not reply to cold email. Is this still useful for us?",
-    a: "That is exactly why this is built around the dial, not the inbox. Your BD pod calls. We hand the rep the brief before they call. The email is only the booking layer for the next call, and the page above covers when that helps and when it does not.",
+    q: "What does \"revenue intelligence for local business acquisition\" actually mean?",
+    a: "It means one model behind outreach, enrichment, and campaign outcomes. LeadAC reads reviews, websites, social activity, outreach replies, and operational behavior, then assembles a graph of niches, messaging patterns, buying behavior, and conversion outcomes. Reps get evidence where they work. Leaders operate on portfolio-level conversion.",
   },
   {
-    q: "Our BD team needs in-person, not more email. Is this for us?",
-    a: "Yes. The morning queue, the talk track for the first 30 seconds, the shared disposition chips, and the repeat-call guard all serve a pod whose closer is the in-person demo. The dial is the booking layer for the demo. LeadAC sits in front of the dial, not in front of the inbox.",
+    q: "Which niches does LeadAC cover today?",
+    a: "F&B is the live cohort — restaurants, cafes, bakeries, bars, brunch spots, and ghost kitchens. Medspa, home services, and fitness ship next. Each niche carries its own operational frame, so the system reasons about a fine-dining restaurant and a fitness studio with the right economic context.",
   },
   {
-    q: "How does the AI scoring actually work?",
-    a: "LeadAC reads operational signals: review velocity, reservation maturity, social activity, site quality, and sub-niche fit. The score is a calibrated 0-100 with the reasons listed, so you can sanity-check before pitching.",
-  },
-  {
-    q: "What signals does LeadAC analyze?",
-    a: "Maps coverage, up to 500 reviews per business, reservation and ordering tooling, SEO and site signals, social activity, competitor ad presence, and sub-niche classification.",
+    q: "How does the scoring and messaging actually work?",
+    a: "LeadAC reads operational signals — review velocity, reservation or booking maturity, social activity, site quality, and sub-niche fit — and produces a calibrated 0-100 fit score with the reasons listed. Messaging recommendations and outreach angles are generated from the same graph, so the rep's opener tracks with what is actually moving conversion in that niche.",
   },
   {
     q: "Does the system learn from outreach outcomes?",
-    a: "Yes. Replies, meetings, and silent losses feed the next campaign's reasoning. Tone, opener structure, and angles that work in your niche get reinforced. The memory is scoped to your workspace.",
+    a: "Yes. Replies, meetings, objections, and silent losses feed the next campaign's reasoning. Win patterns reinforce. Losing patterns get pruned. The learning loop is scoped to your workspace, so the model gets sharper for your niche over time without leaking across tenants.",
+  },
+  {
+    q: "What does \"read in place\" mean for the integrations?",
+    a: "LeadAC sits on top of the outbound stack you already run — CRMs, enrichment systems, sequencing tools, inbox infrastructure, and campaign workflows. We read what is already there. Nothing to migrate. The full integration list is in the strip above; long tail is via Zapier, Make, n8n, and webhooks.",
   },
   {
     q: "Can multiple SDRs use it?",

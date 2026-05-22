@@ -64,9 +64,9 @@ function nodeById(id: string): Node {
 export function IntelligenceLoop() {
   return (
     <Section
-      eyebrow="The intelligence engine"
-      headline="Lead intelligence that improves over time."
-      sub="LeadAC learns which outreach angles perform best across niches, cities, and business types. Patterns that work get reinforced. Patterns that fail get pruned."
+      eyebrow="Learning"
+      headline="Outcome intelligence that compounds."
+      sub="LeadAC learns which niches convert, which offers perform, and which outreach patterns create meetings. The model gets sharper per workspace with every campaign — replies, meetings, and silent losses all feed the next reasoning step."
     >
       <div
         className="relative mx-auto max-w-3xl rounded-2xl border border-white/[0.06] overflow-hidden"

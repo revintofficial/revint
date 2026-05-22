@@ -1,12 +1,16 @@
 /**
- * Three-audience chip cards for the v2 marketing surface.
+ * Operator chip cards for the v2 marketing surface.
  *
- * Design intent: tell the reader who LeadAC was built for in three
- * concrete operator types. Small icon, label, one-line description.
- * No bullets, no decoration. Pure server.
+ * Design intent: tell the reader who operates LeadAC every day, in
+ * three concrete operator types. Small icon, label, one-line
+ * description. No bullets, no decoration. Pure server.
+ *
+ * Frames the audience as agencies running local business acquisition,
+ * with the primary card aimed at the outbound team. Reps and managers
+ * operate on the same model.
  */
 import * as React from "react";
-import { Building2, ChefHat, Headset, type LucideIcon } from "lucide-react";
+import { Building2, Headset, LineChart, type LucideIcon } from "lucide-react";
 import { Section } from "./section";
 
 interface Chip {
@@ -17,20 +21,20 @@ interface Chip {
 
 const PRIMARY: Chip = {
   icon: Headset,
-  label: "F&B restaurant-tech BD pods",
-  body: "The morning queue, the call brief, the disposition mix. The whole shape of a 5 to 10 person BD team that lives on the phone with restaurants, cafes, bars, and hotels.",
+  label: "Outbound teams running local business acquisition",
+  body: "The morning queue, the campaign brief, the reply mix, the messaging recommendations. The whole shape of a 5 to 15 person team where niche understanding, outreach execution, and conversion performance determine growth.",
 };
 
 const SECONDARY: Chip[] = [
   {
     icon: Building2,
-    label: "Local agencies calling restaurants",
-    body: "For the agency owner who calls local cafes about web work and wants the brief on the screen before the call connects.",
+    label: "Agency owners running outbound",
+    body: "For the agency principal who wants one model behind every campaign, instead of disconnected scoring, messaging, and sequencing.",
   },
   {
-    icon: ChefHat,
-    label: "Restaurant-tech in-house BD",
-    body: "For the VP Sales hiring their 6th BD rep at a regional POS or QR-menu vendor.",
+    icon: LineChart,
+    label: "Revenue leaders compounding the playbook",
+    body: "For the leader operating on portfolio-level conversion: which niches convert, which offers perform, what changed since the last campaign.",
   },
 ];
 
@@ -81,8 +85,8 @@ export function BuiltFor() {
   return (
     <Section
       eyebrow="Built for"
-      headline="For BD managers running a calling pod."
-      sub="LeadAC was built for the BD manager who runs a 5 to 10 person calling pod selling to restaurants and local businesses."
+      headline="Agencies running local business acquisition."
+      sub="Built for outbound teams where niche understanding, outreach execution, and conversion performance determine the number. Reps, managers, and revenue leaders operate on the same model."
     >
       <div
         className="grid grid-cols-1 md:grid-cols-3 gap-4"
