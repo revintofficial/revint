@@ -1,12 +1,59 @@
 @import "tailwindcss";
 
 /* -----------------------------------------------------------------------
+ * Site (login-prelogin) tokens — "Operator Instrument Panel".
+ *
+ * The `(site)/*` route group renders against these tokens. Legacy
+ * `--leadac-*` and `--cine-*` blocks below stay in place because the
+ * auth-gated product surfaces at `/app/*` still consume them.
+ *
+ * Re-skin rule for the marketing site:
+ *   - ink-0..4   = page → muted (darkest → divider)
+ *   - paper-0..3 = text ramp 96% → 48%
+ *   - signal     = the single accent (amber lamp)
+ * --------------------------------------------------------------------- */
+
+:root {
+  /* Ink / paper / signal — single source of truth for (site)/* */
+  --ink-0: 12 6% 4%;       /* page background — near-black with warm tint */
+  --ink-1: 12 6% 7%;       /* card / surface */
+  --ink-2: 12 6% 11%;      /* elevated surface */
+  --ink-3: 12 6% 18%;      /* divider / border */
+  --ink-4: 12 6% 28%;      /* muted text on dark */
+
+  --paper-0: 36 12% 96%;   /* primary text (≈ alpha 0.96) */
+  --paper-1: 36 12% 88%;   /* secondary text */
+  --paper-2: 36 12% 70%;   /* tertiary text */
+  --paper-3: 36 12% 48%;   /* muted text */
+
+  --signal: 38 92% 56%;        /* amber lamp — single accent */
+  --signal-soft: 38 60% 70%;   /* soft variant for body text */
+  --signal-glow: 38 92% 56% / 0.28;
+
+  --site-success: 152 48% 50%;
+  --site-warning: 38 70% 52%;
+  --site-error: 4 62% 54%;
+  --site-info: 210 70% 60%;
+
+  --site-max: 1240px;
+  --site-gutter: clamp(20px, 4vw, 56px);
+  --site-rhythm: 96px;       /* vertical section rhythm */
+
+  /* Type scale — tight ratio for instrument-panel typography */
+  --site-text-12: 12px;
+  --site-text-13: 13px;
+  --site-text-15: 15px;
+  --site-text-18: 18px;
+  --site-text-22: 22px;
+  --site-text-30: 30px;
+  --site-text-44: 44px;
+  --site-text-64: 64px;
+
+  /* -----------------------------------------------------------------------
  * Cinematic landing tokens — used by src/components/marketing/cine/*.
  * Warm editorial palette sits next to the existing iOS-dark system.
  * Do not remove without grepping `cine-` + `liquid-glass` + `font-display`.
  * --------------------------------------------------------------------- */
-
-:root {
   /* Warm editorial palette (HSL triplets so alpha works in hsl()/hsla()) */
   --cine-ink: 240 6% 7%;
   --cine-cream: 36 32% 92%;
@@ -194,11 +241,27 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
-  --font-mono: var(--font-inter-mono);
-  --font-display: var(--font-oswald);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-display: var(--font-inter-tight);
+
+  /* Site (operator instrument panel) color tokens — usable as bg-ink-0,
+   * text-paper-0, border-ink-3, text-signal, etc. inside (site)/* pages. */
+  --color-ink-0: hsl(var(--ink-0));
+  --color-ink-1: hsl(var(--ink-1));
+  --color-ink-2: hsl(var(--ink-2));
+  --color-ink-3: hsl(var(--ink-3));
+  --color-ink-4: hsl(var(--ink-4));
+  --color-paper-0: hsl(var(--paper-0));
+  --color-paper-1: hsl(var(--paper-1));
+  --color-paper-2: hsl(var(--paper-2));
+  --color-paper-3: hsl(var(--paper-3));
+  --color-signal: hsl(var(--signal));
+  --color-signal-soft: hsl(var(--signal-soft));
 
   --animate-marquee: marquee 38s linear infinite;
   --animate-marquee-rev: marquee-rev 44s linear infinite;
+  --animate-blur-up: blur-up 480ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-signal-pulse: signal-pulse 2.4s ease-in-out infinite;
 }
 
 @keyframes marquee {
@@ -1049,4 +1112,265 @@ button, a, .cursor-pointer {
 .vx-marquee-mask-light {
   -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
           mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+
+/* -----------------------------------------------------------------------
+ * (site)/* — operator instrument panel utilities + keyframes.
+ *
+ * Used only by the marketing site under src/app/(site)/*. Product surfaces
+ * at /app/* still use the --leadac-* + --cine-* utilities above.
+ * --------------------------------------------------------------------- */
+
+.site-root {
+  background: hsl(var(--ink-0));
+  color: hsl(var(--paper-0));
+  font-family: var(--font-inter-tight), "Inter", system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  /* Force straight quotes — no curly autoreplacement */
+  quotes: "\"" "\"" "'" "'";
+}
+
+.site-mono {
+  font-family: var(--font-jetbrains-mono), "JetBrains Mono", "SF Mono",
+    ui-monospace, monospace;
+  font-feature-settings: "calt", "ss02";
+  letter-spacing: -0.005em;
+}
+
+/* Shared container that holds every section to the same 1240 px grid */
+.site-container {
+  width: 100%;
+  max-width: var(--site-max);
+  margin-inline: auto;
+  padding-inline: var(--site-gutter);
+}
+
+/* Section primitive — every section gets the same vertical rhythm unless
+ * explicitly overridden by the page (hero is the only exception). */
+.site-section {
+  padding-block: var(--site-rhythm);
+  position: relative;
+}
+@media (max-width: 768px) {
+  .site-section { padding-block: 64px; }
+}
+
+/* Hairline divider used between sections that need visible separation */
+.site-rule {
+  border-color: hsl(var(--ink-3));
+}
+
+/* Signal data card — instrument panel data cell */
+.site-data-cell {
+  display: grid;
+  grid-template-columns: 6px 1fr;
+  gap: 12px;
+  padding: 16px 18px;
+  background: hsl(var(--ink-1));
+  border: 1px solid hsl(var(--ink-3));
+  border-radius: 10px;
+}
+.site-data-cell__color {
+  background: hsl(var(--signal));
+  border-radius: 2px;
+}
+.site-data-cell__label {
+  font-size: var(--site-text-12);
+  color: hsl(var(--paper-2));
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.site-data-cell__value {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--site-text-22);
+  color: hsl(var(--paper-0));
+  font-feature-settings: "calt", "ss02";
+}
+
+/* Pulse used on the signal lamp icon — slow, optical */
+@keyframes signal-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--signal-glow)); }
+  50%      { box-shadow: 0 0 0 8px hsl(38 92% 56% / 0); }
+}
+.site-signal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: hsl(var(--signal));
+  display: inline-block;
+  animation: signal-pulse 2.4s ease-in-out infinite;
+}
+
+/* Intersection-trigger blur-up — only entrance motion the site uses */
+@keyframes blur-up {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); filter: blur(8px); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0);  filter: blur(0); }
+}
+.site-blur-up {
+  animation: blur-up 480ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-signal-dot { animation: none; }
+  .site-blur-up { animation: none; }
+}
+
+/* Primary CTA — amber signal lamp button */
+.site-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: hsl(var(--signal));
+  color: hsl(12 6% 6%);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: var(--site-text-15);
+  letter-spacing: -0.01em;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+  border: 1px solid hsl(38 92% 46%);
+}
+.site-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px hsl(var(--signal-glow));
+}
+
+/* Secondary CTA — ghost on dark */
+.site-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: transparent;
+  color: hsl(var(--paper-0));
+  border: 1px solid hsl(var(--ink-3));
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: var(--site-text-15);
+  letter-spacing: -0.01em;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.site-btn-secondary:hover {
+  background: hsl(var(--ink-1));
+  border-color: hsl(var(--ink-4));
+}
+
+/* Eyebrow / kicker — uppercase mono tag above a headline */
+.site-eyebrow {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--site-text-12);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(var(--paper-2));
+}
+
+/* Inline source-link style used for citation footnotes */
+.site-source {
+  color: hsl(var(--paper-2));
+  font-size: var(--site-text-13);
+  text-decoration: underline;
+  text-decoration-color: hsl(var(--ink-4));
+  text-underline-offset: 3px;
+}
+.site-source:hover { color: hsl(var(--paper-0)); }
+
+/* Long-form article body — used by /blog/[slug] and /resources/[slug]. */
+.site-prose {
+  color: hsl(var(--paper-1));
+  font-size: 17px;
+  line-height: 1.75;
+}
+.site-prose > * + * { margin-top: 1.1em; }
+.site-prose h2 {
+  font-size: 26px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: hsl(var(--paper-0));
+  margin-top: 2.4em;
+  margin-bottom: 0.6em;
+  font-weight: 600;
+}
+.site-prose h3 {
+  font-size: 20px;
+  line-height: 1.3;
+  color: hsl(var(--paper-0));
+  margin-top: 1.8em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+.site-prose p { color: hsl(var(--paper-1)); }
+.site-prose strong { color: hsl(var(--paper-0)); font-weight: 600; }
+.site-prose a {
+  color: hsl(var(--signal));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: hsl(var(--signal) / 0.4);
+}
+.site-prose a:hover { text-decoration-color: hsl(var(--signal)); }
+.site-prose ul, .site-prose ol {
+  padding-left: 1.3em;
+  color: hsl(var(--paper-1));
+}
+.site-prose ul { list-style: disc; }
+.site-prose ol { list-style: decimal; }
+.site-prose li { margin: 0.4em 0; }
+.site-prose blockquote {
+  margin: 1.6em 0;
+  padding: 1em 1.3em;
+  background: hsl(var(--ink-1));
+  border-left: 3px solid hsl(var(--signal));
+  border-radius: 0 8px 8px 0;
+  color: hsl(var(--paper-1));
+  font-size: 15px;
+}
+.site-prose blockquote p { color: hsl(var(--paper-1)); }
+.site-prose table {
+  width: 100%;
+  margin: 1.6em 0;
+  border-collapse: collapse;
+  background: hsl(var(--ink-1));
+  border: 1px solid hsl(var(--ink-3));
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 14px;
+}
+.site-prose thead tr {
+  background: hsl(var(--ink-2));
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: hsl(var(--paper-2));
+}
+.site-prose th { padding: 12px 16px; font-weight: 600; }
+.site-prose td {
+  padding: 12px 16px;
+  color: hsl(var(--paper-1));
+  border-top: 1px solid hsl(var(--ink-3));
+}
+.site-prose code {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.92em;
+  background: hsl(var(--ink-1));
+  border: 1px solid hsl(var(--ink-3));
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  color: hsl(var(--paper-0));
+}
+.site-prose pre {
+  background: hsl(var(--ink-1));
+  border: 1px solid hsl(var(--ink-3));
+  border-radius: 10px;
+  padding: 1em 1.2em;
+  overflow-x: auto;
+  font-size: 13px;
+}
+.site-prose pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.site-prose hr {
+  border: 0;
+  border-top: 1px solid hsl(var(--ink-3));
+  margin: 2.4em 0;
 }

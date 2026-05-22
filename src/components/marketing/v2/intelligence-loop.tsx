@@ -42,16 +42,16 @@ const EDGES: Array<[string, string]> = [
 
 const PROOF_CARDS: Array<{ title: string; body: string }> = [
   {
-    title: "Closed-deal graph",
-    body: "Every closed-won and closed-lost reason from your CRM feeds tomorrow's account list, scoped to your workspace. The next list is sharper than the last.",
+    title: "New reps start at month six, not zero.",
+    body: "When a new SDR opens an account, the talk track that closed the last five deals in that segment is already on the screen. The opener your senior rep figured out in October works for the new hire on day one.",
   },
   {
-    title: "Segment memory",
-    body: "The proof points that close a two-location independent Italian on Square POS do not get recycled blindly into a single-site coffee shop. Each segment has its own talk-track memory.",
+    title: "Every deal sharpens the next list.",
+    body: "Won and lost reasons from HubSpot or Salesforce feed back into discovery. Segments that close fast get more weight. Segments that go quiet get pruned. The list you pull next Monday is not the same one you pulled this Monday.",
   },
   {
-    title: "ICP refinement",
-    body: 'Over time the system surfaces rules. "Multi-location independent restaurant, on Square or Toast, no QR ordering live" reliably converts past discovery — the next list overweights that pattern.',
+    title: "New verticals transfer memory, not reset it.",
+    body: "When you add boutique hotels or dental practices, the parts of the model that still apply travel with you. The parts that do not are dropped. The 3-month vertical ramp shrinks to about two weeks.",
   },
 ];
 
@@ -64,9 +64,9 @@ function nodeById(id: string): Node {
 export function IntelligenceLoop() {
   return (
     <Section
-      eyebrow="Closed-loop learning"
-      headline="Every won and lost deal sharpens the next list."
-      sub="LeadAC learns which vertical sub-segments convert, which proof points close, and which accounts to prioritise next. The model gets sharper per workspace with every closed deal. Closed-won, closed-lost, and stalled pipeline all feed back into the next reasoning step."
+      eyebrow="What changes when the system remembers"
+      headline="Six months of pattern, on every new SDR's first day."
+      sub="Today, the rep who has been on the team for six months is your only memory of what works in each segment. When they take an offer somewhere else, the company starts over. LeadAC writes that memory into a place anyone on the team can read, including the new hire on her first Monday."
     >
       <div
         className="relative mx-auto max-w-3xl rounded-2xl border border-white/[0.06] overflow-hidden"

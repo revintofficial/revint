@@ -8,10 +8,12 @@
  * with disabled styling so the page still feels balanced before signup
  * opens. No client JS, no Framer.
  *
- * Positioning: revenue intelligence for local business sales — for
- * vertical SaaS GTM teams selling into restaurant tech (live cohort),
- * field service / HVAC, dental, and adjacent local-business
- * verticals.
+ * Positioning (canonical, per docs/positioning.md §1.2 + §9):
+ *   H-101 (headline): "Revenue intelligence for the teams selling to local business."
+ *   H-102 (subhead):  "Your CRM knows the deal. We know the business behind it."
+ *   S-101 (body):     "LeadAC finds your next 200 local accounts, syncs them into
+ *                      HubSpot, and learns from every won and lost deal..."
+ *   C-101 / C-102 CTAs.
  */
 import * as React from "react";
 import Link from "next/link";
@@ -47,22 +49,25 @@ export function Hero() {
                 className="inline-block h-1.5 w-1.5 rounded-full"
                 style={{ background: "hsl(var(--leadac-h) var(--leadac-s) 60%)" }}
               />
-              Revenue intelligence for local business sales
+              For vertical SaaS teams selling to local business
             </span>
 
             <h1
               className="mt-6 text-white font-semibold tracking-[-0.03em] leading-[1.02] max-w-[18ch]"
               style={{ fontSize: "clamp(36px, 6.4vw, 72px)" }}
             >
-              Your CRM knows the deal. We know the business behind it.
+              Revenue intelligence for the teams selling to local business.
             </h1>
 
-            <p className="mt-6 text-[16px] md:text-[17.5px] leading-relaxed text-white/65 max-w-[40ch]">
-              LeadAC is the revenue intelligence layer for vertical SaaS GTM
-              teams selling into local-business verticals. It does
-              vertical-aware account discovery, deep local enrichment, and
-              CRM-native sync, and it learns from every won and lost deal
-              you log. The next list is sharper than the last.
+            <p className="mt-6 text-[17px] md:text-[19px] leading-relaxed text-white/80 max-w-[46ch] font-medium">
+              Your CRM knows the deal. We know the business behind it.
+            </p>
+
+            <p className="mt-4 text-[15px] md:text-[16px] leading-relaxed text-white/65 max-w-[48ch]">
+              LeadAC finds your next 200 local accounts, syncs them into
+              HubSpot, and learns from every won and lost deal you log. Built
+              for vertical SaaS GTM teams selling into restaurant, HVAC,
+              dental, legal, and field-service businesses.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
@@ -97,7 +102,7 @@ export function Hero() {
                       "0 1px 0 rgba(255,255,255,0.4) inset, 0 12px 36px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35)",
                   }}
                 >
-                  Book a 20-min walkthrough
+                  Book a 20-min demo
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               )}
@@ -106,9 +111,20 @@ export function Hero() {
                 href="/demo"
                 className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-medium text-white/85 hover:text-white border border-white/15 hover:border-white/30 transition-colors"
               >
-                See it on a sample vertical
+                See it on a sample account
               </Link>
             </div>
+
+            <p className="mt-6 text-[13px] text-white/45">
+              Already on Apollo + Clay + Gong?{" "}
+              <Link
+                href="/vs/apollo-clay-gong"
+                className="text-white/70 hover:text-white underline-offset-4 hover:underline"
+              >
+                Read why we built something different
+              </Link>
+              .
+            </p>
           </div>
 
           <div className="relative">

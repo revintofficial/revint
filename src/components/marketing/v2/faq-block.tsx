@@ -20,32 +20,24 @@ interface QA {
 
 export const HOMEPAGE_FAQ: QA[] = [
   {
-    q: "We already use HubSpot or Salesforce. What does LeadAC do that the CRM does not?",
-    a: "The CRM is the system of record. LeadAC is the revenue intelligence layer that sits on top of it. We do not replace your CRM — we read it, build a per-vertical account graph around it, and write account briefs, detected stacks, and recommended angles back into the same lead and account records your team already opens.",
+    q: "We already use HubSpot or Salesforce. What does LeadAC actually add?",
+    a: "Your CRM is the system of record. It knows the deal, the stage, and the owner. It does not know that this account has 8 locations, runs on Square POS, and has rising wait-time complaints in its last 30 reviews. LeadAC writes that context into the same lead and account records your team already opens. Nothing to migrate.",
   },
   {
     q: "How is this different from Apollo, Clay, or Gong?",
-    a: "Apollo gives you a firmographic list. Clay gives you infrastructure to build enrichment workflows yourself, but you have to build them. Gong analyses calls after they happen. LeadAC is the layer that does vertical-aware account discovery, deep local enrichment per account, CRM-native writes, and closed-loop learning from every won and lost deal. We're complementary to Gong, not competing with it.",
+    a: "Apollo gives you a list. Clay gives you workflows you have to build yourself. Gong records the calls. None of the three remember what your team figured out on the last call when they sit down to make the next one. We laid out the full comparison, including the cost of building the same thing yourself, at /vs/apollo-clay-gong.",
   },
   {
-    q: "Which verticals does LeadAC cover today?",
-    a: "Restaurant tech is the live beachhead — SaaS vendors selling POS, QR ordering, reservations, loyalty, and back-of-house systems into independent and small-chain restaurants. We're validating the model in production alongside a design-partner SaaS vendor in that segment. Field service / HVAC, dental practice software, and legal practice management ship next. Each vertical carries its own operational frame, so the system reasons about a two-location independent restaurant and a single-truck HVAC operator with the right context.",
+    q: "Which verticals work today?",
+    a: "Restaurant tech is live. We are running it in production alongside a design-partner SaaS vendor in that segment. Field service and HVAC, dental practice software, and legal practice management ship next. If you sell into a local-business vertical we have not announced yet, email the founder and we will tell you honestly how far we can go.",
   },
   {
-    q: "How does account scoring actually work?",
-    a: "LeadAC reads vertical-specific operational signals and produces a calibrated 0-100 fit score with the reasons listed. For restaurants, those signals include the detected POS, ordering and reservation provider, cuisine, whether the operator runs one location or several, review velocity, weekend-wait language patterns, digital-channel maturity, and site-tech footprint. Recommended angles come out of the same graph, so the rep's opener tracks what actually closes in that vertical sub-segment.",
+    q: "Does the system actually learn from our closed deals?",
+    a: "Yes. Closed-won and closed-lost reasons from your CRM feed the next discovery run. Segments that close fast get more weight. Segments that go quiet get pruned. The learning loop stays scoped to your workspace, so the model sharpens for your vertical without ever leaking across tenants.",
   },
   {
-    q: "Does the system learn from our closed deals?",
-    a: "Yes — this is the core of the product. Closed-won and closed-lost reasons from your CRM feed the next reasoning step. Winning proof points reinforce. Losing patterns get pruned. The learning loop is scoped to your workspace, so the model gets sharper for your vertical over time without leaking across tenants.",
-  },
-  {
-    q: "What does \"read in place\" mean for the integrations?",
-    a: "LeadAC sits on top of the GTM stack you already run — CRMs, enrichment, sequencing, inbox, and dialer. We read what is already there and write our enrichment back into native CRM fields. Nothing to migrate. The full integration list is in the strip above; long tail is via Zapier, Make, n8n, and webhooks.",
-  },
-  {
-    q: "Can multiple SDRs and AEs use it?",
-    a: "Yes. Workspaces are seat-based with team tiers — typical first cohort is 5 to 15 seats. Account assignment and reply attribution route through your CRM's existing ownership model so you don't lose attribution when teammates send.",
+    q: "How fast do we see the first list?",
+    a: "Connect the CRM, write your ICP in plain English, and the first 200 enriched accounts land in your CRM inside an hour. Closed-loop kicks in after the first ten deals you log.",
   },
 ];
 

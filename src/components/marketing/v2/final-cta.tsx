@@ -5,7 +5,16 @@
  * two CTAs, and a small reassurance line below. Respects
  * MARKETING_COMING_SOON: primary becomes inert "Launching soon",
  * secondary swaps to an email link to the founder, and the
- * "14-day trial" microcopy is hidden so the section stays honest.
+ * "30-day pilot" microcopy is hidden so the section stays honest.
+ *
+ * Positioning (canonical, per docs/positioning.md §9):
+ *   H-103 (headline): "SDR teams learn. Systems don't. We fix that."
+ *   S-104 (sub):      "Connect your CRM. You have your first 200 local
+ *                      accounts, enriched and synced, in under an hour..."
+ *   C-101 / C-102 CTAs.
+ *
+ * Bookends the page: ProblemGrid states the pain ("SDR teams learn.
+ * Systems don't."), FinalCta resolves it ("We fix that.").
  */
 import * as React from "react";
 import Link from "next/link";
@@ -21,13 +30,11 @@ export function FinalCta() {
           className="text-white font-semibold tracking-[-0.03em] leading-[1.05]"
           style={{ fontSize: "clamp(36px, 5.4vw, 60px)" }}
         >
-          Revenue intelligence for local business sales.
+          SDR teams learn. Systems don&apos;t. We fix that.
         </h2>
         <p className="mt-6 text-[16px] md:text-[17px] text-white/65 leading-relaxed max-w-xl mx-auto">
-          Connect your CRM. Inside a week, LeadAC reads your deals and turns
-          them into per-vertical account intelligence your team can operate
-          on. You find the right local accounts, your team operates from one
-          model, and every won and lost deal makes the next list sharper.
+          Connect your CRM. You have your first 200 local accounts, enriched
+          and synced, in under an hour. No RevOps engineer required.
         </p>
 
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
@@ -62,7 +69,7 @@ export function FinalCta() {
                   "0 1px 0 rgba(255,255,255,0.4) inset, 0 12px 36px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35)",
               }}
             >
-              Book a 20-min walkthrough
+              Book a 20-min demo
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           )}
@@ -79,14 +86,14 @@ export function FinalCta() {
               href="/demo"
               className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-medium text-white/85 hover:text-white border border-white/15 hover:border-white/30 transition-colors"
             >
-              See it on a sample vertical
+              See it on a sample account
             </Link>
           )}
         </div>
 
         {!MARKETING_COMING_SOON && (
           <p className="mt-5 text-[12px] text-white/45">
-            30-day pilot · cancel any time · founder takes the first call.
+            30-day pilot. Founder takes the first call. Cancel any time.
           </p>
         )}
       </div>

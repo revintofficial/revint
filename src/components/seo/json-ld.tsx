@@ -1,5 +1,4 @@
 import { SITE } from "@/lib/seo/metadata";
-import { MARKETING_COMING_SOON } from "@/lib/marketing-coming-soon";
 
 /**
  * Server-rendered JSON-LD emitter. Use with any schema.org graph.
@@ -43,6 +42,14 @@ export function organizationSchema(): Record<string, unknown> {
     description: SITE.description,
     email: SITE.email,
     sameAs: [...SITE.sameAs],
+    // brand-assets §7.1 Task 2 — entity descriptors so LLMs index us
+    // against the right category vocabulary.
+    knowsAbout: [...SITE.knowsAbout],
+    offers: {
+      "@type": "Offer",
+      priceRange: "$500-$5000",
+      priceCurrency: "USD",
+    },
   };
 }
 
@@ -74,47 +81,48 @@ export function softwareApplicationSchema(): Record<string, unknown> {
     "@id": `${SITE.url}/#software`,
     name: SITE.name,
     applicationCategory: "BusinessApplication",
-    applicationSubCategory: "Lead Generation",
+    applicationSubCategory: "Sales Intelligence",
     operatingSystem: "Web",
     description: SITE.description,
     url: SITE.url,
     image: `${SITE.url}/opengraph-image`,
     publisher: { "@id": `${SITE.url}/#organization` },
-    ...(MARKETING_COMING_SOON
-      ? {}
-      : {
-          offers: [
-            {
-              "@type": "Offer",
-              name: "Free trial",
-              price: "0",
-              priceCurrency: "USD",
-              description: "50 leads, 1 vertical, 1 postcode, 3 website plans",
-            },
-            {
-              "@type": "Offer",
-              name: "Pro",
-              price: "79",
-              priceCurrency: "USD",
-              description: "1,000 leads/mo, all verticals, 50 website plans/mo",
-            },
-            {
-              "@type": "Offer",
-              name: "Agency",
-              price: "249",
-              priceCurrency: "USD",
-              description:
-                "5,000 leads/mo, 5 seats, multi-tenant workspaces, 300 plans/mo",
-            },
-          ],
-        }),
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      ratingCount: "1",
-      bestRating: "5",
-      worstRating: "1",
-    },
+    // Plans table — single source: src/content/site/pricing.ts. Keep this
+    // mirror narrow so AEO citations get the four-tier shape right.
+    offers: [
+      {
+        "@type": "Offer",
+        name: "Pilot",
+        price: "500",
+        priceCurrency: "USD",
+        description:
+          "30-day evaluation. 500 accounts, 1 CRM, 1 vertical pack. No annual contract.",
+      },
+      {
+        "@type": "Offer",
+        name: "Team",
+        price: "1500",
+        priceCurrency: "USD",
+        description:
+          "5 seats. 5,000 accounts per month. HubSpot + Smartlead native. Closed-loop ICP refinement on.",
+      },
+      {
+        "@type": "Offer",
+        name: "Growth",
+        price: "3000",
+        priceCurrency: "USD",
+        description:
+          "15 seats. 20,000 accounts per month. Multi-vertical packs. Custom signal libraries.",
+      },
+      {
+        "@type": "Offer",
+        name: "Enterprise",
+        price: "5000",
+        priceCurrency: "USD",
+        description:
+          "Unlimited seats. Custom verticals. SSO. Dedicated success manager.",
+      },
+    ],
   };
 }
 
@@ -233,5 +241,108 @@ export function collectionPageSchema(opts: {
     isPartOf: { "@id": `${SITE.url}/#website` },
     publisher: { "@id": `${SITE.url}/#organization` },
     inLanguage: SITE.defaultLanguage,
+  };
+}
+
+// Dataset schema — used by /resources/2026-vertical-saas-gtm-benchmark
+// (brand-assets §7.2 cornerstone #8). Required for the annual report to
+// register as a linkable, cite-friendly asset.
+export function datasetSchema(opts: {
+  name: string;
+  description: string;
+  url: string;
+  datePublished: string;
+  dateModified?: string;
+  creator?: string;
+  keywords?: string[];
+  /** e.g. "https://creativecommons.org/licenses/by-nc-sa/4.0/" */
+  license?: string;
+  /** Path to the downloadable PDF or CSV. */
+  contentUrl?: string;
+}): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    name: opts.name,
+    description: opts.description,
+    url: opts.url,
+    datePublished: opts.datePublished,
+    dateModified: opts.dateModified || opts.datePublished,
+    creator: {
+      "@type": "Organization",
+      name: opts.creator || SITE.name,
+      url: SITE.url,
+    },
+    publisher: { "@id": `${SITE.url}/#organization` },
+    inLanguage: SITE.defaultLanguage,
+    ...(opts.keywords ? { keywords: opts.keywords.join(", ") } : {}),
+    ...(opts.license ? { license: opts.license } : {}),
+    ...(opts.contentUrl
+      ? {
+          distribution: {
+            "@type": "DataDownload",
+            encodingFormat: opts.contentUrl.endsWith(".pdf")
+              ? "application/pdf"
+              : "text/csv",
+            contentUrl: opts.contentUrl,
+          },
+        }
+      : {}),
+  };
+}
+
+// Service schema — used on /pricing and /for/<vertical> pages. brand-assets
+// §9.3 marks Service schema on /pricing as a Day-7 must-ship.
+export function serviceSchema(opts: {
+  name: string;
+  description: string;
+  url: string;
+  /** e.g. "Sales Intelligence" */
+  serviceType: string;
+  /** e.g. ["Restaurant tech", "Field service software", "Dental"] */
+  audience?: string[];
+}): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: opts.name,
+    description: opts.description,
+    url: opts.url,
+    serviceType: opts.serviceType,
+    provider: { "@id": `${SITE.url}/#organization` },
+    areaServed: ["United States", "Canada", "United Kingdom", "Australia"],
+    ...(opts.audience
+      ? {
+          audience: opts.audience.map((name) => ({
+            "@type": "Audience",
+            name,
+          })),
+        }
+      : {}),
+  };
+}
+
+// SoftwareApplication helper for /tools/* free tools (brand-assets §3.4
+// marketing-ideas #15 — engineering as marketing).
+export function toolApplicationSchema(opts: {
+  name: string;
+  description: string;
+  url: string;
+  /** e.g. "Sales Calculator" */
+  applicationSubCategory?: string;
+}): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: opts.name,
+    applicationCategory: "BusinessApplication",
+    applicationSubCategory:
+      opts.applicationSubCategory || "Sales Productivity",
+    operatingSystem: "Web",
+    description: opts.description,
+    url: opts.url,
+    publisher: { "@id": `${SITE.url}/#organization` },
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    isAccessibleForFree: true,
   };
 }

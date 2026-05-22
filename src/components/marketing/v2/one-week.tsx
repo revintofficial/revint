@@ -28,19 +28,19 @@ const STEPS: Step[] = [
     number: "01",
     icon: Cable,
     title: "Connect your CRM.",
-    body: "HubSpot, Salesforce, Pipedrive, Close. We read closed-won, closed-lost, and open pipeline in place. Nothing to migrate.",
+    body: "OAuth into HubSpot, Salesforce, Pipedrive, or Close. Read-only first if your security team needs it. About 90 seconds.",
   },
   {
     number: "02",
     icon: Network,
-    title: "Build the account graph.",
-    body: "Per-vertical local-business accounts, detected stacks, review signals, hiring signals, and your sales history. One model, refreshed after every CRM sync.",
+    title: "Write your ICP in plain English.",
+    body: 'Vertical, geography, size, signals you care about. "8-location Italian restaurants on Square, no online ordering, growing footprint." Five minutes.',
   },
   {
     number: "03",
     icon: Sparkles,
-    title: "Operate on intelligence.",
-    body: "Vertical-aware account lists, CRM-native account briefs, and a closed loop where every won and lost deal sharpens the next target list.",
+    title: "Get the first 200 accounts.",
+    body: "Inside an hour they land in your CRM, enriched with local context your reps usually research by hand. Closed-loop kicks in after the first ten deals you log.",
   },
 ];
 
@@ -48,9 +48,9 @@ export function OneWeek() {
   return (
     <Section
       id="one-week"
-      eyebrow="One week to evidence"
-      headline="Connect the stack. Run revenue on the model."
-      sub="Connect what you already use. Inside a week, LeadAC reads your CRM and turns your deals into revenue intelligence your team can operate on. Generic agents can draft a sequence. LeadAC actually knows how the account buys, what stack it runs, and what's changed since the last touch."
+      eyebrow="From signature to first list"
+      headline="Connect your CRM. Get a usable list inside an hour."
+      sub="We are not asking your team to migrate, learn a new app, or change their cadence. LeadAC reads what is already in your CRM and writes the enriched accounts back into the same records your team opens every morning."
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {STEPS.map((step) => {

@@ -10,9 +10,9 @@
  */
 import * as React from "react";
 import {
-  History,
-  Layers,
-  Unplug,
+  AppWindow,
+  Brain,
+  RotateCcw,
   type LucideIcon,
 } from "lucide-react";
 import { Section } from "./section";
@@ -27,30 +27,36 @@ interface Item {
 const ITEMS: Item[] = [
   {
     index: "01",
-    icon: History,
-    title: "Apollo doesn't speak vertical.",
-    body: "Firmographic filters don't know if an independent restaurant runs two locations, which POS it uses, whether it has QR ordering live, or how its review velocity is trending. So SDRs rebuild that context account by account, and it costs them 20 to 40 minutes per prospect.",
+    icon: AppWindow,
+    title: "Every account starts from zero.",
+    body: "Apollo hands over a name and a phone number. The rest, the rep stitches together by hand. POS detection, review pattern, location count, owner LinkedIn, last menu update. Twenty to forty minutes per account, every account, every morning. None of that work compounds anywhere a teammate can read it tomorrow.",
   },
   {
     index: "02",
-    icon: Layers,
-    title: "Win and loss reasons never aggregate.",
-    body: "Closed-won and closed-lost reasons stay locked inside individual deals. Recurring objections, segment-level stalls, and proof points that close show up nowhere outside top reps' heads. Leadership cannot see which patterns to fix.",
+    icon: Brain,
+    title: "Your best rep is your only memory.",
+    body: "After six months, a senior SDR can feel which two-location Italian on Square POS will say yes, and which one will go quiet on the second call. That intuition lives in one person. It does not exist as a field, a tag, or a report. When they take the offer at another company, the company starts over.",
   },
   {
     index: "03",
-    icon: Unplug,
-    title: "Account intelligence sits outside the CRM.",
-    body: "Enrichment, signal, and outbound research live in scattered tabs and spreadsheets. The CRM has the deal, the team has the context, and the two never meet. By the time a VP sees the gap, the quarter has already compressed on price.",
+    icon: RotateCcw,
+    title: "Every new niche resets the company.",
+    body: "What the team learned about independent restaurants does not transfer to dental practices, or to boutique hotels, or to HVAC. The next batch of SDRs researches the same way the first one did. Three months in, the team starts to feel it again. The infrastructure underneath has not changed.",
   },
 ];
 
 export function ProblemGrid() {
   return (
     <Section
-      eyebrow="Why local-vertical deals slip"
-      headline="Activity is captured. Execution gaps are not."
-      sub="Apollo gives you a list. Gong gives you transcripts. CRMs log activity. The signals that actually decide whether a local-business account closes are vertical context, account-level evidence, and what changed since the last touch, and they stay trapped in SDR research and top-rep intuition."
+      eyebrow="Why the stack stalls"
+      headline={
+        <>
+          SDR teams learn.
+          <br />
+          Systems don&apos;t.
+        </>
+      }
+      sub="A new SDR opens Apollo, Clay, the CRM, LinkedIn, Maps, and ChatGPT before they make the first dial. Six tabs that move data. None of them remember what the last rep figured out the hard way. The learning lives in one human head, and when that head walks out the door it walks out with them."
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {ITEMS.map((item) => {

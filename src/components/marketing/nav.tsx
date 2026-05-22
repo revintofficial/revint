@@ -7,6 +7,7 @@ import { Menu, X, ArrowRight } from "lucide-react";
 
 const NAV_LINKS: { href: string; label: string }[] = [
   { href: "/#platform", label: "Platform" },
+  { href: "/vs/apollo-clay-gong", label: "Compare" },
   { href: "/#waitlist", label: "Waitlist" },
   { href: "/#faq", label: "FAQ" },
 ];

@@ -22,20 +22,20 @@ interface Chip {
 
 const PRIMARY: Chip = {
   icon: Headset,
-  label: "SDR & AE teams selling into local-business verticals",
-  body: "The morning account queue, the CRM-native brief, the recommended angle, the reply mix. The whole shape of a 5 to 30 person GTM team where vertical context, account intelligence, and pipeline quality determine the number.",
+  label: "Your SDRs and AEs",
+  body: "The morning queue, the account brief, the recommended angle, the reply mix. Built for outbound teams of 5 to 30 reps where each seller still researches their own pipeline and the company does not have a full-time RevOps function yet.",
 };
 
 const SECONDARY: Chip[] = [
   {
     icon: LineChart,
     label: "VPs of Sales and RevOps leads",
-    body: "For the leader operating on portfolio-level conversion: which vertical sub-segments win, which proof points close, what changed since the last quarter.",
+    body: "For the leader who wants to see, in one place, which segments win, which proof points close, and what changed since last quarter.",
   },
   {
     icon: Building2,
-    label: "Founders running vertical-SaaS GTM",
-    body: "For the founder who wants one model behind discovery, account research, and CRM enrichment, instead of an Apollo seat plus a Clay workflow plus a manual SDR playbook stapled together.",
+    label: "Founders running their own GTM",
+    body: "For the founder who is the SDR, the AE, and the marketer all at once. LeadAC gives the RevOps function that does not exist yet somewhere to leave its memory.",
   },
 ];
 
@@ -85,9 +85,9 @@ function ChipCard({
 export function BuiltFor() {
   return (
     <Section
-      eyebrow="Built for"
-      headline="Vertical SaaS GTM teams selling to local business."
-      sub="Built for vertical and SMB SaaS revenue teams where account context, buying signals, and pipeline quality determine the number. Reps, managers, and revenue leaders operate on the same model."
+      eyebrow="Who this is for"
+      headline="If you sell to local business and your reps still research by hand, we built this for you."
+      sub="LeadAC fits the GTM teams stuck between Apollo's list and Gong's price tag. Five to thirty sellers. $2M to $50M ARR. No full-time RevOps engineer yet. The verticals we ship for are listed at the bottom of the page."
     >
       <div
         className="grid grid-cols-1 md:grid-cols-3 gap-4"

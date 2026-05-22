@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Oswald } from "next/font/google";
+import { Inter, Inter_Tight, JetBrains_Mono, Oswald } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { PWARegister } from "@/components/app/pwa-register";
@@ -19,6 +19,28 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+// Inter Tight is the display + body face for the (site)/* marketing surface.
+// We keep --font-inter (regular Inter) loaded for the auth-gated product
+// surfaces under /app/* which were tuned for it.
+const interTight = Inter_Tight({
+  variable: "--font-inter-tight",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+// JetBrains Mono powers every numeric value, signal name, and code block
+// inside the (site)/* surface. Replaces the legacy `--font-inter-mono`.
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+// Oswald stays loaded only because the legacy cinematic marketing surfaces
+// reference it. The new site uses Inter Tight. Keep here until those routes
+// are deleted in Wave 4.
 const oswald = Oswald({
   variable: "--font-oswald",
   subsets: ["latin"],
@@ -40,7 +62,10 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${oswald.variable} h-full`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${interTight.variable} ${jetbrainsMono.variable} ${oswald.variable} h-full`}
+    >
       <body className="min-h-full text-white antialiased font-sans">
         <JsonLd data={organizationSchema()} id="ld-organization" />
         <JsonLd data={websiteSchema()} id="ld-website" />
