@@ -1,18 +1,19 @@
 /**
- * Lead-detail bento for the v2 marketing hero.
+ * Account-detail bento for the v2 marketing hero.
  *
  * Design intent: a static no-JS bento that mirrors what the actual
- * lead detail page (LeadDetailV2Client) shows when LeadAC has fully
- * analyzed a prospect. Same vocabulary the product writes back into
- * Postgres: real `LeadTrigger.type` enum values, real
- * `SalesOpportunity.reasonCodes`, real `ReviewAnalysis.weaknessKpis`,
- * and the same severity / urgency-window framing the trigger ranker
- * surfaces. A first-time visitor reads "this is the screen I will be
- * working in", not "this is a marketing diagram".
+ * account-detail page shows when LeadAC has fully analysed a target
+ * account. Same vocabulary the product writes back into Postgres
+ * (real `LeadTrigger.type` enum values, real `SalesOpportunity.reasonCodes`,
+ * real `ReviewAnalysis.weaknessKpis`) and the same severity /
+ * urgency-window framing the trigger ranker surfaces. A first-time
+ * visitor reads "this is the screen I will be working in", not "this
+ * is a marketing diagram".
  *
- * No real customer data. The fictional "Cucina 47 / Greenwich" lead is
- * shaped to match the real signal distribution we see on a fully-cooked
- * casual-dining restaurant in our beta workspace.
+ * No real customer data. The fictional "Cucina 47 / Austin" account
+ * is shaped to match the kind of signal distribution we see on a
+ * growing independent restaurant that is a prime target account for
+ * a restaurant-tech SaaS vendor (the beachhead vertical).
  *
  * Pure server component, CSS-only decoration, motion-reduce safe.
  */
@@ -36,35 +37,35 @@ interface Trigger {
 const TRIGGERS: Trigger[] = [
   {
     type: "BAD_SERVICE_REVIEWS",
-    label: "Bad service reviews",
+    label: "Wait-time complaints rising",
     severity: 78,
     windowDays: 30,
   },
   {
-    type: "COMPETITOR_PRESSURE",
-    label: "Competitor pressure",
+    type: "MULTI_LOCATION_EXPANSION",
+    label: "3rd location announced",
     severity: 65,
     windowDays: 60,
   },
   {
-    type: "REBRANDING",
-    label: "Rebranding in flight",
+    type: "DIGITAL_CHANNEL_GAP",
+    label: "No QR menu, no online ordering",
     severity: 60,
-    windowDays: 90,
+    windowDays: 30,
   },
   {
-    type: "MENU_REDESIGN_SIGNAL",
-    label: "Menu redesign signal",
+    type: "POS_INCUMBENT_DETECTED",
+    label: "On Square POS · upgrade fit",
     severity: 50,
-    windowDays: 60,
+    windowDays: 90,
   },
 ];
 
 const REASON_CODES = [
-  "high_rating_weak_site",
+  "multi_location",
+  "pos_square",
   "no_qr_menu",
-  "no_booking",
-  "no_https",
+  "no_online_ordering",
   "high_review_volume",
 ];
 
@@ -75,9 +76,9 @@ interface ReviewKpi {
 }
 
 const REVIEW_KPIS: ReviewKpi[] = [
-  { label: "Greasy / worn menu cards", count: 11, trend: "+38%" },
-  { label: "Service charge disputes", count: 4, trend: "+20%" },
-  { label: "Small portions", count: 7 },
+  { label: "Weekend wait complaints", count: 11, trend: "+38%" },
+  { label: "Phone-order frustration", count: 4, trend: "+20%" },
+  { label: "Menu-card legibility flags", count: 7 },
 ];
 
 interface DispositionChip {
@@ -140,11 +141,11 @@ export function LeadDetailBento() {
                 border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.28)",
               }}
             >
-              Italian · casual dining
+              Italian · 2 locations
             </span>
           </div>
           <p className="mt-0.5 text-[11.5px] text-white/45">
-            Greenwich, London · 4.5★ · 1.5k reviews
+            Austin, TX · 4.5★ · 1.5k reviews · on Square POS
           </p>
         </div>
 
@@ -195,8 +196,9 @@ export function LeadDetailBento() {
         </div>
 
         <p className="text-[14.5px] font-medium text-white leading-snug">
-          Greasy and worn physical menu complaints up 38% in the last
-          30 days. QR menu + loyalty angle is the strongest hook.
+          Weekend wait-time complaints up 38% in the last 30 days, third
+          location announced, no QR menu live. QR ordering + direct-channel
+          margin is the strongest hook.
         </p>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -333,9 +335,10 @@ export function LeadDetailBento() {
                 "2px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45)",
             }}
           >
-            Sarah, this is [REP]. Saw the menu complaints stacking up over
-            the last 30 days. We help London restaurants get a QR menu live
-            in a week with a loyalty hook. Do you have 90 seconds?
+            Sarah, this is [REP]. Saw Cucina&apos;s third location announced
+            and weekend wait complaints stacking the same month. We help
+            independent restaurants on Square pull wait down with QR
+            ordering — and keep the margin on direct. Got 90 seconds?
           </blockquote>
 
           <div className="mt-3 flex items-center gap-2 flex-wrap">
@@ -368,7 +371,7 @@ export function LeadDetailBento() {
       <section className="px-5 py-4">
         <div className="flex items-center justify-between mb-2.5">
           <span className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-white/50">
-            Website signals
+            Account signals
           </span>
           <span className="text-[10.5px] text-white/40 font-mono">
             12 reason codes
@@ -434,7 +437,7 @@ export function LeadDetailBento() {
             className="inline-block h-1 w-1 rounded-full animate-pulse motion-reduce:animate-none"
             style={{ background: "hsl(var(--leadac-h) var(--leadac-s) 70%)" }}
           />
-          Pod-wide
+          CRM-synced
         </span>
       </footer>
     </div>

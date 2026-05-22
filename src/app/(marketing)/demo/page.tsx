@@ -5,31 +5,31 @@ import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata = buildMetadata({
   path: "/demo",
-  title: "Book a 15-min walkthrough — LeadAC",
+  title: "Book a 20-min walkthrough — LeadAC",
   description:
-    "Send me a postcode and a niche; I'll run the audit live on the call. Walk away with a list of audited prospects either way — no signup required, no demo deck, no sales script.",
+    "Send me your vertical and an ICP brief; I'll build a sample account graph live on the call. Walk away with a real account list either way — no signup required, no demo deck, no sales script.",
 });
 
 const EXPECT = [
   {
     icon: Clock,
-    title: "15 minutes, no slide deck",
-    body: "We run on your postcode and niche, not a recorded demo. If you can't see the value in 15 minutes, the rest of the call won't change that.",
+    title: "20 minutes, no slide deck",
+    body: "We run on your vertical and ICP brief, not a recorded demo. If you can't see the value in twenty minutes, the rest of the call won't change that.",
   },
   {
     icon: FileSearch,
-    title: "A real audit, on the call",
-    body: "I open the app, type the postcode and niche you sent, and walk through the audited shortlist live. You see the same screens you'd see day one.",
+    title: "A real sample account graph, on the call",
+    body: "I open the app, type the ICP brief you sent, and walk through the enriched account list live. You see the same screens your SDRs and AEs would see day one.",
   },
   {
     icon: Users,
     title: "No sales script",
-    body: "Mert (founder) takes the call, not an SDR. Honest answers about what works, what doesn't, and whether LeadAC is even the right fit for your stack.",
+    body: "Mert (founder) takes the call, not an SDR. Honest answers about what works, what doesn't, and whether LeadAC is even the right fit for your GTM motion.",
   },
   {
     icon: CheckCircle2,
     title: "You leave with the list",
-    body: "Whether or not you sign up, you keep the audited shortlist we generated on the call. The whole point is that the work is done — your time isn't a sunk cost.",
+    body: "Whether or not you move forward, you keep the sample account list we built on the call. The point is that the work is done — your time isn't a sunk cost.",
   },
 ];
 
@@ -63,7 +63,7 @@ export default function DemoPage() {
             </span>
 
             <h1 className="text-[clamp(34px,5.4vw,68px)] leading-[1.02] tracking-[-0.03em] font-semibold text-white max-w-[18ch]">
-              Send a postcode.{" "}
+              Send an ICP brief.{" "}
               <span
                 className="text-transparent bg-clip-text"
                 style={{
@@ -71,12 +71,15 @@ export default function DemoPage() {
                     "linear-gradient(120deg, #FFFFFF 0%, hsl(var(--leadac-h) var(--leadac-s) 88%) 45%, hsl(var(--leadac-h) var(--leadac-s) 50%) 100%)",
                 }}
               >
-                I&apos;ll audit it live.
+                I&apos;ll build the account graph live.
               </span>
             </h1>
 
             <p className="mt-6 max-w-xl text-[15px] md:text-[16.5px] text-white/65 leading-relaxed">
-              The walkthrough is a live tour of the product on a postcode and niche of your choosing. I run the audit on the call, you see the audited shortlist on screen, and you walk away with the list whether or not we end up working together.
+              The walkthrough is a live tour of the product on the vertical
+              and ICP brief you send. I build a sample account graph on the
+              call, you see the enriched list on screen, and you keep the
+              list whether or not we end up working together.
             </p>
 
             <div className="mt-10">
@@ -96,7 +99,7 @@ export default function DemoPage() {
               </p>
               <p>
                 Pricing isn&apos;t public yet — plans are being shaped with
-                the first cohort of agencies.{" "}
+                the first cohort of vertical SaaS GTM teams.{" "}
                 <Link
                   href="/#waitlist"
                   className="text-white/70 underline-offset-4 hover:underline inline-flex items-center gap-1"
@@ -123,13 +126,13 @@ export default function DemoPage() {
                 The promise
               </span>
               <p className="text-[16px] text-white leading-relaxed">
-                You leave the call with a real audited shortlist for your own postcode and niche. Even if you never sign up, the list is yours.
+                You leave the call with a real sample account graph for your own vertical and ICP. Even if you never move forward, the list is yours.
               </p>
             </div>
 
             <div className="flex flex-col gap-4">
               <span className="text-[10.5px] uppercase tracking-[0.14em] font-semibold text-white/55">
-                What the 15 minutes look like
+                What the 20 minutes look like
               </span>
               <ul className="flex flex-col gap-3.5">
                 {EXPECT.map((item) => {
@@ -179,7 +182,7 @@ export default function DemoPage() {
                 Who this isn&apos;t for
               </span>
               <p className="text-[13px] text-white/60 leading-relaxed">
-                If you sell to enterprise buyers off Apollo or ZoomInfo lists, LeadAC isn&apos;t your tool — Apollo is strong there. We cover the local-business segment Apollo doesn&apos;t cover: independent restaurants, dental practices, plumbers, agencies, contractors, walk-in services. If that&apos;s your buyer, this call will be useful.
+                If your ICP is enterprise buyers, generic horizontal SaaS, or you don&apos;t sell into a defined local-business vertical, LeadAC isn&apos;t your tool — Apollo, Clay, or Gong are stronger there. We&apos;re built specifically for vertical and SMB SaaS GTM teams whose customers are local businesses: restaurants, dental, HVAC, plumbing, electrical, legal, fitness, beauty. If that&apos;s who your team sells to, this call will be useful.
               </p>
             </div>
           </aside>

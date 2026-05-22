@@ -83,10 +83,10 @@ export async function GET() {
     section(
       "Top pages",
       [
-        { url: "/", note: "Pre-call briefs for BD pods — the dossier in front of every dial." },
+        { url: "/", note: "Revenue intelligence for local business sales — for vertical SaaS GTM teams. Restaurant tech is the live beachhead cohort." },
         {
-          url: "/for/restaurant-agencies",
-          note: "AI outbound operating system for agencies selling to local businesses, especially F&B (restaurants, cafes, bars, bakeries, ghost kitchens).",
+          url: "/demo",
+          note: "Send a vertical + ICP brief; founder builds a sample account graph live on a 20-min call.",
         },
         { url: "/tools", note: "Free tools — reply-rate calculator and ICP match scorer." },
         { url: "/blog", note: "Field notes on outbound, cold email, and local lead gen." },

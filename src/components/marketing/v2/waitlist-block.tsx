@@ -2,9 +2,10 @@
  * Waitlist section for the v2 marketing surface.
  *
  * Pricing is intentionally not public during the pre-launch window —
- * we shape plans alongside the first cohort of agencies. This block
- * replaces the homepage pricing section with a calm, single-purpose
- * email capture, framed in the same tone as the rest of the page.
+ * we shape plans alongside the first cohort of vertical SaaS GTM
+ * teams. This block replaces the homepage pricing section with a
+ * calm, single-purpose email capture, framed in the same tone as the
+ * rest of the page.
  *
  * Server section + client form. The form lives in its own client
  * component (`waitlist-form.tsx`) so this block stays a server tree.
@@ -20,7 +21,7 @@ export function WaitlistBlock() {
       variant="soft"
       eyebrow="Waitlist"
       headline="Get in early."
-      sub="We're shaping plans with the first cohort of agencies running local business acquisition before opening pricing publicly. Drop your email and you'll get the first slot when we open the gates."
+      sub="We're shaping plans with the first cohort of vertical SaaS GTM teams selling into local-business verticals before opening pricing publicly. Drop your email and you'll get the first slot when we open the gates."
     >
       <div className="grid gap-10 lg:gap-14 lg:grid-cols-[1.1fr_1fr] lg:items-start max-w-5xl">
         <div
@@ -39,16 +40,16 @@ export function WaitlistBlock() {
         <ul className="flex flex-col gap-5 pt-2">
           {[
             {
-              title: "Audit before you commit.",
-              body: "Reply to the confirmation with a niche + outreach goal. We run the audit before a 15-min call so you walk away with real revenue intelligence either way.",
+              title: "Sample vertical before you commit.",
+              body: "Reply to the confirmation with the vertical you sell into and your ICP brief. We build a sample account graph for that vertical before a 20-min call so you walk away with real account intelligence either way.",
             },
             {
               title: "First cohort sets the price.",
-              body: "Plans, packaging, and limits are being co-designed with the first agencies on the list. Early access locks the cohort rate.",
+              body: "Plans, packaging, and limits are being co-designed with the first vertical SaaS teams on the list. Early access locks the cohort rate.",
             },
             {
-              title: "F&B is live. Medspa, home services, and fitness ship next.",
-              body: "We're tuned for restaurants, cafes, bakeries, bars, brunch spots, and ghost kitchens today. Medspa, home services, and fitness are next on the roadmap — join the list to lock the slot for your niche.",
+              title: "Restaurant tech is live. Field service, dental, legal next.",
+              body: "Built first for restaurant tech — we're validating the model in production alongside a design-partner SaaS vendor in that segment. Field service / HVAC, dental practice software, and legal practice management ship next. Join the list to lock the slot for your vertical.",
             },
           ].map((item) => (
             <li key={item.title} className="flex gap-3">

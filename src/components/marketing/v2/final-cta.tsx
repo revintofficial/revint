@@ -21,13 +21,13 @@ export function FinalCta() {
           className="text-white font-semibold tracking-[-0.03em] leading-[1.05]"
           style={{ fontSize: "clamp(36px, 5.4vw, 60px)" }}
         >
-          Adaptive revenue intelligence for local business acquisition.
+          Revenue intelligence for local business sales.
         </h2>
         <p className="mt-6 text-[16px] md:text-[17px] text-white/65 leading-relaxed max-w-xl mx-auto">
-          Connect the stack you already use. Inside a week, LeadAC reads your
-          outreach and turns it into niche-specific revenue intelligence your
-          team can operate on. See what converts. See what stalls. Act before
-          outreach slips.
+          Connect your CRM. Inside a week, LeadAC reads your deals and turns
+          them into per-vertical account intelligence your team can operate
+          on. Find the right local accounts. Operate from one model. Learn
+          from every won and lost deal.
         </p>
 
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
@@ -62,7 +62,7 @@ export function FinalCta() {
                   "0 1px 0 rgba(255,255,255,0.4) inset, 0 12px 36px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35)",
               }}
             >
-              Start free trial
+              Book a 20-min walkthrough
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
           )}
@@ -79,14 +79,14 @@ export function FinalCta() {
               href="/demo"
               className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-medium text-white/85 hover:text-white border border-white/15 hover:border-white/30 transition-colors"
             >
-              Book a 15-min platform walkthrough
+              See it on a sample vertical
             </Link>
           )}
         </div>
 
         {!MARKETING_COMING_SOON && (
           <p className="mt-5 text-[12px] text-white/45">
-            14-day trial · cancel any time · no setup call required.
+            30-day pilot · cancel any time · founder takes the first call.
           </p>
         )}
       </div>

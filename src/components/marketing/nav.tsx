@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Menu, X, ArrowRight } from "lucide-react";
 
 const NAV_LINKS: { href: string; label: string }[] = [
-  { href: "/for/restaurant-agencies", label: "For restaurants" },
+  { href: "/#platform", label: "Platform" },
   { href: "/#waitlist", label: "Waitlist" },
   { href: "/#faq", label: "FAQ" },
 ];
@@ -103,7 +103,7 @@ export function MarketingNav({
                 Log in
               </Link>
               <Link
-                href="/signup"
+                href="/demo"
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold text-[#0F0A1F]"
                 style={{
                   background: "rgba(255,255,255,0.94)",
@@ -112,7 +112,7 @@ export function MarketingNav({
                     "0 1px 0 rgba(255,255,255,0.9) inset, 0 8px 22px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.28)",
                 }}
               >
-                Start free
+                Book a walkthrough
                 <ArrowRight className="w-3.5 h-3.5" aria-hidden />
               </Link>
             </>

@@ -95,11 +95,7 @@ export default async function sitemap({
 function coreSitemap(): MetadataRoute.Sitemap {
   return [
     { url: `${BASE}/`, changeFrequency: "weekly", priority: 1.0 },
-    {
-      url: `${BASE}/for/restaurant-agencies`,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
+    { url: `${BASE}/demo`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/partners`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE}/tools`, changeFrequency: "monthly", priority: 0.7 },
     {

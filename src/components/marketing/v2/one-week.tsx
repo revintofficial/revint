@@ -27,20 +27,20 @@ const STEPS: Step[] = [
   {
     number: "01",
     icon: Cable,
-    title: "Connect the stack.",
-    body: "CRM, enrichment, outreach, inbox, and campaign systems. Read in place. Nothing to migrate.",
+    title: "Connect your CRM.",
+    body: "HubSpot, Salesforce, Pipedrive, Close. We read closed-won, closed-lost, and open pipeline in place. Nothing to migrate.",
   },
   {
     number: "02",
     icon: Network,
-    title: "Build the graph.",
-    body: "Businesses, outreach, replies, objections, and outcomes. One model, refreshed after every interaction.",
+    title: "Build the account graph.",
+    body: "Per-vertical local-business accounts, detected stacks, review signals, hiring signals, and your sales history. One model, refreshed after every CRM sync.",
   },
   {
     number: "03",
     icon: Sparkles,
     title: "Operate on intelligence.",
-    body: "Conversion patterns at the portfolio level. Messaging gaps on every campaign. Outreach recommendations where they improve acquisition.",
+    body: "Vertical-aware account lists, CRM-native account briefs, and a closed loop where every won and lost deal sharpens the next target list.",
   },
 ];
 
@@ -48,9 +48,9 @@ export function OneWeek() {
   return (
     <Section
       id="one-week"
-      eyebrow="One week to execution"
-      headline="Connect outreach. Run acquisition on the model."
-      sub="Connect the stack you already use. Inside a week, LeadAC reads your outreach and turns execution into revenue intelligence your team can operate on. Generic agents draft. LeadAC knows which niches convert, which messaging performs, and what changed since the last campaign."
+      eyebrow="One week to evidence"
+      headline="Connect the stack. Run revenue on the model."
+      sub="Connect what you already use. Inside a week, LeadAC reads your CRM and turns your deals into revenue intelligence your team can operate on. Generic agents draft. LeadAC knows how the account buys, what stack it runs, and what changed since the last touch."
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {STEPS.map((step) => {

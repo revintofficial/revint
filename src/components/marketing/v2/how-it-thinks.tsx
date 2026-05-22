@@ -22,46 +22,46 @@ interface Block {
 const BLOCKS: Block[] = [
   {
     number: "01",
-    title: "Graph",
-    copy: "Live niche context. Businesses, outreach history, and conversion patterns refreshed after every interaction. Nothing to migrate.",
+    title: "Account graph",
+    copy: "Live account context per vertical. Local businesses, their operational profile, the stack they run, and your sales history with them — refreshed after every interaction. Nothing to migrate.",
     rows: [
-      { label: "Businesses in graph", chip: "1,420" },
-      { label: "Outreach threads", chip: "Live sync" },
-      { label: "Reviews ingested", chip: "26k / niche" },
+      { label: "Accounts in graph", chip: "1,420" },
+      { label: "Detected stacks / account", chip: "Square POS +6" },
+      { label: "Reviews ingested", chip: "26k / vertical" },
       { label: "Refresh cadence", chip: "Per interaction" },
     ],
   },
   {
     number: "02",
     title: "Patterns",
-    copy: "Reply and conversion patterns that aggregate. Every outbound interaction feeds the model. Recurring objections, winning messaging, and timing behavior surface at the portfolio level.",
+    copy: "Win and loss reasons that aggregate. Every closed deal feeds the model. Recurring objections, segment-level stalls, and proof points that close surface at the portfolio level — not trapped in one rep's head.",
     rows: [
       { label: "Recurring objections", chip: "12 clustered" },
-      { label: "Winning angles", chip: "4 reinforced" },
-      { label: "Best-send window", chip: "Tue 10:40" },
+      { label: "Winning proof points", chip: "4 reinforced" },
       { label: "Segment-level stall", chip: "Detected" },
+      { label: "ICP refinement", chip: "Auto" },
     ],
   },
   {
     number: "03",
     title: "Execution",
-    copy: "Evidence where SDRs work. Messaging recommendations, outreach angles, scoring, and follow-up timing generated from the same model campaigns operate on.",
+    copy: "Evidence where SDRs and AEs work. CRM-native account briefs, recommended outreach angles, account scoring, and next-step recommendations generated from the same model leadership operates on.",
     rows: [
       { label: "Fit score 0–100", chip: "84" },
-      { label: "Recommended angle", chip: "Friday gap" },
+      { label: "Recommended angle", chip: "Dispatch upgrade" },
       { label: "Next action", chip: "Call · 30s opener" },
-      { label: "Follow-up timing", chip: "+3 days" },
+      { label: "Writes to", chip: "HubSpot / SF" },
     ],
   },
   {
     number: "04",
-    title: "Learning",
-    copy: "Outcome intelligence that compounds. The system learns which niches convert, which offers perform, and which outreach patterns create meetings. Reinforced. Pruned.",
+    title: "Closed-loop learning",
+    copy: "Outcome intelligence that compounds per workspace. The system learns which vertical sub-segments convert, which proof points close, and which accounts to prioritise next. Reinforced. Pruned. Re-targeted.",
     rows: [
-      { label: "Reply rate, niche", chip: "+14%" },
-      { label: "Meetings, 30d", chip: "+9" },
-      { label: "Pruned patterns", chip: "6" },
-      { label: "Ramp delta", chip: "−38%" },
+      { label: "Reply rate, vertical", chip: "+14%" },
+      { label: "Pipeline created, 30d", chip: "+9" },
+      { label: "Pruned segments", chip: "6" },
+      { label: "SDR ramp delta", chip: "−38%" },
     ],
   },
 ];
@@ -71,8 +71,8 @@ export function HowItThinks() {
     <Section
       id="platform"
       eyebrow="Platform"
-      headline="Outreach, enrichment, and revenue intelligence in one model."
-      sub="LeadAC reads reviews, websites, social activity, outreach outcomes, and operational behavior. The system assembles a graph of niches, messaging patterns, buying behavior, and conversion outcomes agencies operate from."
+      headline="Account, vertical, and deal history in one model."
+      sub="LeadAC reads CRM, enrichment, reviews, websites, and detected vertical stacks. The system assembles a graph of accounts, buying signals, and outcomes your SDRs run on and your VP of Sales operates from."
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {BLOCKS.map((block) => (

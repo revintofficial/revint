@@ -5,9 +5,10 @@
  * three concrete operator types. Small icon, label, one-line
  * description. No bullets, no decoration. Pure server.
  *
- * Frames the audience as agencies running local business acquisition,
- * with the primary card aimed at the outbound team. Reps and managers
- * operate on the same model.
+ * Frames the audience as vertical SaaS GTM teams selling into
+ * local-business verticals. Primary card aimed at the SDR / AE team;
+ * secondary cards at VP Sales / RevOps. Everyone operates on the same
+ * model.
  */
 import * as React from "react";
 import { Building2, Headset, LineChart, type LucideIcon } from "lucide-react";
@@ -21,20 +22,20 @@ interface Chip {
 
 const PRIMARY: Chip = {
   icon: Headset,
-  label: "Outbound teams running local business acquisition",
-  body: "The morning queue, the campaign brief, the reply mix, the messaging recommendations. The whole shape of a 5 to 15 person team where niche understanding, outreach execution, and conversion performance determine growth.",
+  label: "SDR & AE teams selling into local-business verticals",
+  body: "The morning account queue, the CRM-native brief, the recommended angle, the reply mix. The whole shape of a 5 to 30 person GTM team where vertical context, account intelligence, and pipeline quality determine the number.",
 };
 
 const SECONDARY: Chip[] = [
   {
-    icon: Building2,
-    label: "Agency owners running outbound",
-    body: "For the agency principal who wants one model behind every campaign, instead of disconnected scoring, messaging, and sequencing.",
+    icon: LineChart,
+    label: "VPs of Sales and RevOps leads",
+    body: "For the leader operating on portfolio-level conversion: which vertical sub-segments win, which proof points close, what changed since the last quarter.",
   },
   {
-    icon: LineChart,
-    label: "Revenue leaders compounding the playbook",
-    body: "For the leader operating on portfolio-level conversion: which niches convert, which offers perform, what changed since the last campaign.",
+    icon: Building2,
+    label: "Founders running vertical-SaaS GTM",
+    body: "For the founder who wants one model behind discovery, account research, and CRM enrichment — instead of an Apollo seat, a Clay workflow, and a manual SDR playbook stapled together.",
   },
 ];
 
@@ -85,8 +86,8 @@ export function BuiltFor() {
   return (
     <Section
       eyebrow="Built for"
-      headline="Agencies running local business acquisition."
-      sub="Built for outbound teams where niche understanding, outreach execution, and conversion performance determine the number. Reps, managers, and revenue leaders operate on the same model."
+      headline="Vertical SaaS GTM teams selling to local business."
+      sub="Built for vertical and SMB SaaS revenue teams where account context, buying signals, and pipeline quality determine the number. Reps, managers, and revenue leaders operate on the same model."
     >
       <div
         className="grid grid-cols-1 md:grid-cols-3 gap-4"
