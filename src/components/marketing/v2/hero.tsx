@@ -8,7 +8,10 @@
  * with disabled styling so the page still feels balanced before signup
  * opens. No client JS, no Framer.
  *
- * Positioning: revenue intelligence for local business acquisition.
+ * Positioning: revenue intelligence for local business sales — for
+ * vertical SaaS GTM teams selling into restaurant tech (live cohort),
+ * field service / HVAC, dental, and adjacent local-business
+ * verticals.
  */
 import * as React from "react";
 import Link from "next/link";
@@ -44,22 +47,22 @@ export function Hero() {
                 className="inline-block h-1.5 w-1.5 rounded-full"
                 style={{ background: "hsl(var(--leadac-h) var(--leadac-s) 60%)" }}
               />
-              Revenue intelligence for local business acquisition
+              Revenue intelligence for local business sales
             </span>
 
             <h1
               className="mt-6 text-white font-semibold tracking-[-0.03em] leading-[1.02] max-w-[18ch]"
               style={{ fontSize: "clamp(36px, 6.4vw, 72px)" }}
             >
-              See what converts. See what stalls. Act before outreach slips.
+              Your CRM knows the deal. We know the business behind it.
             </h1>
 
-            <p className="mt-6 text-[16px] md:text-[17.5px] leading-relaxed text-white/65 max-w-[38ch]">
-              LeadAC turns outreach, enrichment, and campaign outcomes into
-              niche-specific revenue intelligence agencies can operate on. We
-              automate scoring, messaging, execution, and the learning loops
-              that drive reply rates, compress ramp time, and improve
-              acquisition performance.
+            <p className="mt-6 text-[16px] md:text-[17.5px] leading-relaxed text-white/65 max-w-[40ch]">
+              LeadAC is the revenue intelligence layer for vertical SaaS GTM
+              teams selling into local-business verticals. Vertical-aware
+              account discovery, deep local enrichment, CRM-native sync, and
+              closed-loop learning from every won and lost deal — so the next
+              list is sharper than the last.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
@@ -94,7 +97,7 @@ export function Hero() {
                       "0 1px 0 rgba(255,255,255,0.4) inset, 0 12px 36px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35)",
                   }}
                 >
-                  Start free trial
+                  Book a 20-min walkthrough
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               )}
@@ -103,7 +106,7 @@ export function Hero() {
                 href="/demo"
                 className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-medium text-white/85 hover:text-white border border-white/15 hover:border-white/30 transition-colors"
               >
-                Watch a 90-second platform walkthrough
+                See it on a sample vertical
               </Link>
             </div>
           </div>

@@ -25,7 +25,7 @@ export function MarketingFooter({
               <span className="text-[14px] font-semibold tracking-tight">LeadAC</span>
             </Link>
             <p className="text-[12.5px] text-white/45 leading-relaxed max-w-xs">
-              LeadAC — AI outbound system for local business sales.
+              LeadAC — revenue intelligence for local business sales.
             </p>
           </div>
 
@@ -35,13 +35,13 @@ export function MarketingFooter({
             </p>
             <ul className="space-y-2 text-[12.5px]">
               <li>
-                <Link href="/#how-it-thinks" className="text-white/65 hover:text-white">
-                  How it works
+                <Link href="/#platform" className="text-white/65 hover:text-white">
+                  Platform
                 </Link>
               </li>
               <li>
-                <Link href="/for/restaurant-agencies" className="text-white/65 hover:text-white">
-                  For restaurants
+                <Link href="/demo" className="text-white/65 hover:text-white">
+                  Book a walkthrough
                 </Link>
               </li>
               <li>

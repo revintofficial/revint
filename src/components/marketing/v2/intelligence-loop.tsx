@@ -20,12 +20,12 @@ interface Node {
 }
 
 const NODES: Node[] = [
-  { id: "a", label: "London sushi", x: 18, y: 24 },
-  { id: "b", label: "Camden cafes", x: 50, y: 14 },
-  { id: "c", label: "Fine dining", x: 82, y: 26 },
-  { id: "d", label: "Ghost kitchens", x: 22, y: 70 },
-  { id: "e", label: "Independent bars", x: 54, y: 78 },
-  { id: "f", label: "Multi-location bakeries", x: 84, y: 66 },
+  { id: "a", label: "Independent Italian, 2 locations", x: 18, y: 24 },
+  { id: "b", label: "Casual dining, growing chain", x: 50, y: 14 },
+  { id: "c", label: "Coffee + bakery, single site", x: 82, y: 26 },
+  { id: "d", label: "On Square POS", x: 22, y: 70 },
+  { id: "e", label: "On Toast", x: 54, y: 78 },
+  { id: "f", label: "No POS detected", x: 84, y: 66 },
 ];
 
 const EDGES: Array<[string, string]> = [
@@ -42,16 +42,16 @@ const EDGES: Array<[string, string]> = [
 
 const PROOF_CARDS: Array<{ title: string; body: string }> = [
   {
-    title: "Disposition graph",
-    body: "Every connected, voicemail, no-answer, and wrong-number disposition feeds tomorrow's call list, scoped to your workspace.",
+    title: "Closed-deal graph",
+    body: "Every closed-won and closed-lost reason from your CRM feeds tomorrow's account list, scoped to your workspace. The next list is sharper than the last.",
   },
   {
-    title: "Talk-track memory",
-    body: "The openers that get the GM to keep listening on Friday afternoons in Camden do not get recycled blindly into Tuesday mornings in Shoreditch.",
+    title: "Segment memory",
+    body: "The proof points that close a two-location independent Italian on Square POS do not get recycled blindly into a single-site coffee shop. Each segment has its own talk-track memory.",
   },
   {
-    title: "Playbook formation",
-    body: 'Over time the system surfaces rules. "No booking provider plus three recent slow-service reviews" tends to keep the GM on the line past 60 seconds.',
+    title: "ICP refinement",
+    body: 'Over time the system surfaces rules. "Multi-location independent restaurant, on Square or Toast, no QR ordering live" reliably converts past discovery — the next list overweights that pattern.',
   },
 ];
 
@@ -64,9 +64,9 @@ function nodeById(id: string): Node {
 export function IntelligenceLoop() {
   return (
     <Section
-      eyebrow="Learning"
-      headline="Outcome intelligence that compounds."
-      sub="LeadAC learns which niches convert, which offers perform, and which outreach patterns create meetings. The model gets sharper per workspace with every campaign — replies, meetings, and silent losses all feed the next reasoning step."
+      eyebrow="Closed-loop learning"
+      headline="Every won and lost deal sharpens the next list."
+      sub="LeadAC learns which vertical sub-segments convert, which proof points close, and which accounts to prioritise next. The model gets sharper per workspace with every closed deal — closed-won, closed-lost, and stalled-pipeline all feed the next reasoning step."
     >
       <div
         className="relative mx-auto max-w-3xl rounded-2xl border border-white/[0.06] overflow-hidden"
@@ -164,7 +164,7 @@ export function IntelligenceLoop() {
                   "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.30)",
               }}
             >
-              connect rate +14%
+              reply rate +14%
             </span>
             <span
               className="absolute right-[6%] top-[44%] rounded-full px-2.5 py-1 text-[10.5px] font-semibold"
@@ -175,7 +175,7 @@ export function IntelligenceLoop() {
                   "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.30)",
               }}
             >
-              demo +3
+              pipeline +3
             </span>
             <span
               className="absolute left-1/2 bottom-[6%] -translate-x-1/2 rounded-full px-2.5 py-1 text-[10.5px] font-semibold"
@@ -186,7 +186,7 @@ export function IntelligenceLoop() {
                   "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.30)",
               }}
             >
-              tone match
+              ICP sharper
             </span>
           </div>
         </div>

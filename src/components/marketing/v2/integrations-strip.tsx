@@ -1,12 +1,12 @@
 /**
  * Stack-compatibility strip for the v2 marketing surface.
  *
- * Design intent: position LeadAC as the model that sits on top of the
- * outbound stack agencies already run. Brand logos rendered from
- * `public/integrations/` (SimpleIcons-style monoglyphs in brand color),
- * arranged in two rows by role:
- *   1. Sources    — CRM + enrichment systems we read from
- *   2. Execution  — outreach, inbox, dialer, calendar we write to
+ * Design intent: position LeadAC as the revenue intelligence layer
+ * that sits on top of the GTM stack vertical SaaS teams already run.
+ * Brand logos rendered from `public/integrations/` (SimpleIcons-style
+ * monoglyphs in brand color), arranged in two rows by role:
+ *   1. CRM       — the systems-of-record we read closed-won/lost from
+ *   2. Execution — outreach, inbox, dialer, calendar we write into
  * A small footer row hints at the long tail (Zapier / Make / n8n /
  * webhooks). The strip lives outside <Section> so it can sit tighter
  * against neighboring blocks. Pure server, no JS.
@@ -32,7 +32,7 @@ const SOURCES: Brand[] = [
   { name: "Salesforce", file: "salesforce.svg" },
   { name: "GoHighLevel", file: "gohighlevel.svg" },
   { name: "Apollo", file: "apollo-io.svg" },
-  { name: "Google Maps", file: "googlemaps.svg" },
+  { name: "Slack", file: "slack.svg" },
   { name: "LinkedIn", file: "linkedin.svg" },
 ];
 
@@ -124,17 +124,17 @@ export function IntegrationsStrip() {
             className="mt-4 text-white font-semibold tracking-[-0.025em] leading-[1.12]"
             style={{ fontSize: "clamp(26px, 3.8vw, 38px)" }}
           >
-            Sits on top of the outbound stack you already run.
+            Sits on top of the GTM stack you already run.
           </h2>
           <p className="mt-4 text-[14.5px] md:text-[15.5px] leading-relaxed text-white/55">
-            CRMs, enrichment systems, sequencing tools, inbox infrastructure,
-            and campaign workflows. Read in place. Operated as one model.
+            CRMs, enrichment, sequencing, inbox, and dialer. Read in place,
+            written back natively. Operated as one model.
           </p>
         </header>
 
         <div className="mt-12 space-y-8">
-          <div role="group" aria-label="CRM and enrichment" className="space-y-3">
-            <RowLabel>CRM &amp; enrichment</RowLabel>
+          <div role="group" aria-label="CRM and signal" className="space-y-3">
+            <RowLabel>CRM &amp; signal</RowLabel>
             <div className="flex flex-wrap justify-center md:justify-start gap-2.5">
               {SOURCES.map((b) => (
                 <BrandPill key={b.name} brand={b} />

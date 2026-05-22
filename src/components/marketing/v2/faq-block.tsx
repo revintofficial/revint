@@ -20,32 +20,32 @@ interface QA {
 
 export const HOMEPAGE_FAQ: QA[] = [
   {
-    q: "We have HubSpot already. What does LeadAC do that HubSpot does not?",
-    a: "HubSpot is the activity ledger. LeadAC is the revenue intelligence layer that sits on top of it. We do not replace your CRM — we read it, alongside your enrichment and outreach, and turn campaign outcomes into niche-specific patterns your team can operate on. Activity continues to write back into HubSpot in the normal way.",
+    q: "We already use HubSpot or Salesforce. What does LeadAC do that the CRM does not?",
+    a: "The CRM is the system of record. LeadAC is the revenue intelligence layer that sits on top of it. We do not replace your CRM — we read it, build a per-vertical account graph around it, and write account briefs, detected stacks, and recommended angles back into the same lead and account records your team already opens.",
   },
   {
-    q: "What does \"revenue intelligence for local business acquisition\" actually mean?",
-    a: "It means one model behind outreach, enrichment, and campaign outcomes. LeadAC reads reviews, websites, social activity, outreach replies, and operational behavior, then assembles a graph of niches, messaging patterns, buying behavior, and conversion outcomes. Reps get evidence where they work. Leaders operate on portfolio-level conversion.",
+    q: "How is this different from Apollo, Clay, or Gong?",
+    a: "Apollo gives you a firmographic list. Clay gives you infrastructure to build enrichment workflows yourself. Gong analyses calls. LeadAC is the operational memory for selling into local-business verticals — vertical-aware account discovery, deep local enrichment per account, CRM-native writes, and closed-loop learning from every won and lost deal. We're complementary to Gong, not competing.",
   },
   {
-    q: "Which niches does LeadAC cover today?",
-    a: "F&B is the live cohort — restaurants, cafes, bakeries, bars, brunch spots, and ghost kitchens. Medspa, home services, and fitness ship next. Each niche carries its own operational frame, so the system reasons about a fine-dining restaurant and a fitness studio with the right economic context.",
+    q: "Which verticals does LeadAC cover today?",
+    a: "Restaurant tech is the live beachhead — SaaS vendors selling POS, QR ordering, reservations, loyalty, and back-of-house systems into independent and small-chain restaurants. We're validating the model in production alongside a design-partner SaaS vendor in that segment. Field service / HVAC, dental practice software, and legal practice management ship next. Each vertical carries its own operational frame, so the system reasons about a two-location independent restaurant and a single-truck HVAC operator with the right context.",
   },
   {
-    q: "How does the scoring and messaging actually work?",
-    a: "LeadAC reads operational signals — review velocity, reservation or booking maturity, social activity, site quality, and sub-niche fit — and produces a calibrated 0-100 fit score with the reasons listed. Messaging recommendations and outreach angles are generated from the same graph, so the rep's opener tracks with what is actually moving conversion in that niche.",
+    q: "How does account scoring actually work?",
+    a: "LeadAC reads vertical-specific operational signals — for restaurants, that's the detected POS / ordering / reservation provider, cuisine, single-vs-multi-location status, review velocity, weekend-wait language patterns, digital-channel maturity, and site-tech footprint — and produces a calibrated 0-100 fit score with the reasons listed. Recommended angles are generated from the same graph, so the rep's opener tracks what actually closes in that vertical sub-segment.",
   },
   {
-    q: "Does the system learn from outreach outcomes?",
-    a: "Yes. Replies, meetings, objections, and silent losses feed the next campaign's reasoning. Win patterns reinforce. Losing patterns get pruned. The learning loop is scoped to your workspace, so the model gets sharper for your niche over time without leaking across tenants.",
+    q: "Does the system learn from our closed deals?",
+    a: "Yes — this is the core of the product. Closed-won and closed-lost reasons from your CRM feed the next reasoning step. Winning proof points reinforce. Losing patterns get pruned. The learning loop is scoped to your workspace, so the model gets sharper for your vertical over time without leaking across tenants.",
   },
   {
     q: "What does \"read in place\" mean for the integrations?",
-    a: "LeadAC sits on top of the outbound stack you already run — CRMs, enrichment systems, sequencing tools, inbox infrastructure, and campaign workflows. We read what is already there. Nothing to migrate. The full integration list is in the strip above; long tail is via Zapier, Make, n8n, and webhooks.",
+    a: "LeadAC sits on top of the GTM stack you already run — CRMs, enrichment, sequencing, inbox, and dialer. We read what is already there and write our enrichment back into native CRM fields. Nothing to migrate. The full integration list is in the strip above; long tail is via Zapier, Make, n8n, and webhooks.",
   },
   {
-    q: "Can multiple SDRs use it?",
-    a: "Yes. Agency+ is workspace-based, not per-seat. Five seats included. Replies route back to the lead automatically so you do not lose attribution when teammates send.",
+    q: "Can multiple SDRs and AEs use it?",
+    a: "Yes. Workspaces are seat-based with team tiers — typical first cohort is 5 to 15 seats. Account assignment and reply attribution route through your CRM's existing ownership model so you don't lose attribution when teammates send.",
   },
 ];
 

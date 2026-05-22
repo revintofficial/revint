@@ -1,25 +1,28 @@
 /**
- * Who runs on LeadAC — niches grid.
+ * Verticals LeadAC speaks — the local-business segments our customers
+ * sell into.
  *
- * Design intent: tell the reader who LeadAC was built for in concrete
- * verticals where niche understanding, outreach execution, and
- * conversion performance determine growth. F&B is the live cohort.
- * Medspa, Home Services, and Fitness ship next — they render with
- * a small "Coming soon" pill so the positioning is honest without
- * hiding the roadmap. Four cards on a 2 / 4 col grid.
+ * Design intent: tell the reader which local-business verticals
+ * LeadAC's account intelligence is calibrated for. Restaurant tech is
+ * the live beachhead cohort — we are validating the model alongside a
+ * first design-partner SaaS vendor in that segment. Field service /
+ * HVAC, dental practice software, and legal practice management ship
+ * next, each rendered with a small "Coming soon" pill so the
+ * positioning stays honest without hiding the roadmap. Four cards on a
+ * 2 / 4 col grid.
  */
 import * as React from "react";
 import {
   ChevronRight,
-  Dumbbell,
-  Sparkles,
+  Scale,
+  Stethoscope,
   UtensilsCrossed,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { Section } from "./section";
 
-interface Niche {
+interface Vertical {
   icon: LucideIcon;
   name: string;
   summary: string;
@@ -27,52 +30,52 @@ interface Niche {
   status: "live" | "soon";
 }
 
-const NICHES: Niche[] = [
+const VERTICALS: Vertical[] = [
   {
     icon: UtensilsCrossed,
-    name: "F&B",
+    name: "Restaurant tech",
     summary:
-      "Restaurants, cafes, bakeries, bars, brunch spots, ghost kitchens. The live cohort.",
+      "For SaaS vendors selling POS, QR ordering, reservations, loyalty, and back-of-house systems to independent and small-chain restaurants. The live beachhead.",
     bullets: [
-      "Reservation and ordering maturity per location",
-      "Review velocity and Friday-night service patterns",
-      "Sub-niche fit, from fine dining to ghost kitchens",
+      "Cuisine, service model, single vs multi-location fit",
+      "Detected POS / ordering / reservation / payments provider",
+      "Review velocity, ordering-maturity, and digital-channel signals",
     ],
     status: "live",
   },
   {
-    icon: Sparkles,
-    name: "Medspa",
-    summary:
-      "High-frequency outbound, visible operational gaps, localized acquisition.",
-    bullets: [
-      "Treatment menu coverage and pricing surfacing",
-      "Booking and consult funnel maturity",
-      "Local intent and seasonality patterns",
-    ],
-    status: "soon",
-  },
-  {
     icon: Wrench,
-    name: "Home services",
+    name: "Field service & HVAC",
     summary:
-      "Repeatable outreach patterns, service-area targeting, conversion optimization.",
+      "For SaaS vendors selling dispatch, CRM, billing, and ops to HVAC, plumbing, electrical, and field-service operators.",
     bullets: [
-      "Service-area and territory coverage",
-      "Estimate-to-job conversion behavior",
-      "Reputation and response-time patterns",
+      "Technician headcount, service-area coverage, multi-location flags",
+      "Detected dispatch / FSM stack (ServiceTitan, Housecall Pro, Jobber)",
+      "Review velocity, response-time patterns, hiring signals",
     ],
     status: "soon",
   },
   {
-    icon: Dumbbell,
-    name: "Fitness",
+    icon: Stethoscope,
+    name: "Dental & healthcare",
     summary:
-      "Membership-driven acquisition, local intent behavior, operational timing patterns.",
+      "For SaaS vendors selling practice management, scheduling, billing, and patient acquisition into dental, vet, and allied health practices.",
     bullets: [
-      "Class schedule and trial-funnel quality",
-      "Membership pricing visibility and cohorts",
-      "Local intent and peak-hour patterns",
+      "Practice size, multi-location and DSO signals",
+      "Detected PMS / scheduling stack",
+      "Patient-acquisition funnel and review patterns",
+    ],
+    status: "soon",
+  },
+  {
+    icon: Scale,
+    name: "Legal & professional services",
+    summary:
+      "For SaaS vendors selling case management, billing, and intake software into small-firm legal, accounting, and adjacent professional services.",
+    bullets: [
+      "Firm size, practice areas, geography fit",
+      "Detected case-management or PM stack",
+      "Intake funnel and online-presence patterns",
     ],
     status: "soon",
   },
@@ -81,17 +84,17 @@ const NICHES: Niche[] = [
 export function UnderstandsGrid() {
   return (
     <Section
-      eyebrow="Who runs on LeadAC"
-      headline="Agencies running local business acquisition."
-      sub="Built for outbound teams where niche understanding, outreach execution, and conversion performance determine growth."
+      eyebrow="Verticals we speak"
+      headline="Calibrated for the local-business segments you sell into."
+      sub="LeadAC's account intelligence is tuned per vertical — so a two-location independent restaurant and a regional HVAC chain are reasoned about with the right operational context, not generic firmographic noise."
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {NICHES.map((niche) => {
-          const Icon = niche.icon;
-          const isLive = niche.status === "live";
+        {VERTICALS.map((vertical) => {
+          const Icon = vertical.icon;
+          const isLive = vertical.status === "live";
           return (
             <article
-              key={niche.name}
+              key={vertical.name}
               className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]"
             >
               <div className="flex items-center justify-between gap-2">
@@ -136,16 +139,16 @@ export function UnderstandsGrid() {
               </div>
 
               <h3 className="mt-4 text-[17px] font-semibold text-white">
-                {niche.name}
+                {vertical.name}
               </h3>
               <p className="mt-1.5 text-[13.5px] text-white/65 leading-relaxed">
-                {niche.summary}
+                {vertical.summary}
               </p>
 
               <div className="my-5 h-px bg-white/[0.06]" />
 
               <ul className="space-y-2">
-                {niche.bullets.map((b) => (
+                {vertical.bullets.map((b) => (
                   <li
                     key={b}
                     className="flex items-start gap-2 text-[13px] text-white/70 leading-snug"

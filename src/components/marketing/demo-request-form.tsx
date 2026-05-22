@@ -54,10 +54,10 @@ const VOLUME_OPTIONS = [
 /**
  * Demo request form — homepage CTA destination.
  *
- * Shape: short, qualifying, audit-first. The killer field is
- * "Postcode + niche to audit live on the call" — it filters tire-
- * kickers (a real prospect knows their ICP geography) and lets the
- * founder show up to the call with a fresh audit already loaded
+ * Shape: short, qualifying, ICP-first. The killer field is
+ * "Vertical + ICP brief to load on the call" — it filters tire-
+ * kickers (a real prospect knows their ICP) and lets the founder show
+ * up to the call with a fresh sample account graph already loaded
  * instead of a slide deck.
  *
  * Submission goes to /api/demo/request which IP-rate-limits via
@@ -101,11 +101,11 @@ export function DemoRequestForm() {
       return;
     }
     if (!trimmed.company) {
-      toast.error("Add your agency / company name.");
+      toast.error("Add your company name.");
       return;
     }
     if (!trimmed.postcodeNiche) {
-      toast.error("Tell me what postcode + niche to audit on the call.");
+      toast.error("Tell me what vertical and ICP brief to load on the call.");
       return;
     }
 
@@ -173,7 +173,7 @@ export function DemoRequestForm() {
           Got it. I&apos;ll be in touch shortly.
         </h3>
         <p className="text-[14.5px] text-white/70 leading-relaxed">
-          A confirmation just landed in your inbox. Before the call I&apos;ll run the audit on the postcode + niche you flagged so we can open the audited shortlist on screen instead of a deck. You&apos;ll walk away with prospects either way — no signup required.
+          A confirmation just landed in your inbox. Before the call I&apos;ll build a sample account graph on the vertical + ICP brief you flagged so we can open the enriched list on screen instead of a deck. You&apos;ll walk away with accounts either way — no signup required.
         </p>
         <p className="text-[13px] text-white/50 leading-relaxed">
           Don&apos;t see the email in 5 minutes? Check the spam folder, or reply directly to mert@leadacai.com.
@@ -237,13 +237,13 @@ export function DemoRequestForm() {
             onChange={(e) => update("email", e.target.value)}
             className={FIELD_BASE_CLASS}
             style={FIELD_STYLE}
-            placeholder="you@agency.com"
+            placeholder="you@company.com"
           />
         </label>
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className={LABEL_CLASS}>Agency / company</span>
+        <span className={LABEL_CLASS}>Company</span>
         <input
           required
           type="text"
@@ -252,13 +252,13 @@ export function DemoRequestForm() {
           onChange={(e) => update("company", e.target.value)}
           className={FIELD_BASE_CLASS}
           style={FIELD_STYLE}
-          placeholder="Acme Outbound"
+          placeholder="Acme Restaurant Tech"
         />
       </label>
 
       <label className="flex flex-col gap-1.5">
         <span className={LABEL_CLASS}>
-          Postcode + niche to audit live on the call
+          Vertical + ICP brief to load on the call
         </span>
         <input
           required
@@ -267,10 +267,10 @@ export function DemoRequestForm() {
           onChange={(e) => update("postcodeNiche", e.target.value)}
           className={FIELD_BASE_CLASS}
           style={FIELD_STYLE}
-          placeholder='e.g. "NW1 dentists" or "Camden cafes"'
+          placeholder='e.g. "restaurant tech, 2+ location independents in TX on Square"'
         />
         <span className="text-[12px] text-white/45 leading-snug pl-1">
-          The killer detail. I&apos;ll run the audit on this list before the call so we open a real audited shortlist on screen, not a slide deck.
+          The killer detail. I&apos;ll build a sample account graph on this brief before the call so we open a real enriched list on screen, not a slide deck.
         </span>
       </label>
 
@@ -298,7 +298,7 @@ export function DemoRequestForm() {
           onChange={(e) => update("notes", e.target.value)}
           className={`${FIELD_BASE_CLASS} resize-none`}
           style={FIELD_STYLE}
-          placeholder="Stack you're already running, what's broken, who you sell to, anything to skip on the call."
+          placeholder="CRM + GTM stack you're already running, your current account-research workflow, anything to skip on the call."
         />
       </label>
 
