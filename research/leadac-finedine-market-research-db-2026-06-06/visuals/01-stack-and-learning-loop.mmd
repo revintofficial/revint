@@ -1,0 +1,9 @@
+flowchart LR
+  A["Local market signals<br/>Google Places, reviews, website, menu, social, POS, ordering"] --> B["Data and enrichment rails<br/>Openmart, Orbital, Resquared, Clay, Apify, Apollo"]
+  B --> C["LeadAC decision layer<br/>Fit, signal meaning, FineDine module angle, next-best-action"]
+  C --> D["Activation rails<br/>HubSpot task, Smartlead/Instantly, email, phone, field visit, referral, social"]
+  D --> E["Outcomes<br/>Reply, meeting, no-show, demo, objection, closed-won, closed-lost"]
+  E --> F["Learning loop<br/>Which signal + pitch + channel worked?"]
+  F --> C
+  G["CRM<br/>System of record"] <--> C
+  G <--> E

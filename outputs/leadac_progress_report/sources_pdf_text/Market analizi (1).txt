@@ -1,0 +1,388 @@
+
+
+--- PAGE 1 ---
+1. Market Overview 
+1.1 Sales Intelligence / Sales Tech Market 
+Sales Intelligence / Sales Tech market’i, satış ekiplerinin kime satış yapacağını, nasıl 
+ulaşacağını ve hangi şirketlerin satın alma ihtimalinin yüksek olduğunu anlamasını 
+sağlayan yazılım sistemlerinden oluşur. 
+Bu marketin temel amacı: 
+• doğru müşteriyi bulmak, 
+• satış sürecini otomatikleştirmek, 
+• satış performansını analiz etmek, 
+• gelecekteki satış ihtimallerini tahmin etmektir. 
+Market büyüklüğü yaklaşık 3.8 milyar dolar seviyesindedir ve yıllık ortalama büyüme oranı 
+yaklaşık %12.3 CAGR’dır. 
+ 
+Market Yapısı 
+Sales Tech market’i genelde 4 ana katmana ayrılır: 
+Katman Görev 
+CRM Satış süreçlerinin kayıt altına 
+alınması 
+Data / Sales 
+Intelligence Potansiyel müşterilerin bulunması 
+Sales Engagement Outreach ve follow-up süreçleri 
+Revenue Intelligence Satış performansının analiz edilmesi 
+Market payı dağılımı yaklaşık olarak şu şekildedir: 
+• CRM → %45–55 
+• Data / Sales Intelligence → %15–25 
+
+--- PAGE 2 ---
+• Sales Engagement → %15–20 
+• Revenue Intelligence → %10–15 
+CRM katmanı marketin en büyük bölümünü oluşturur çünkü tüm satış operasyonunun 
+temel veri merkezi gibi çalışır. 
+ 
+1. CRM Katmanı 
+CRM (Customer Relationship Management) sistemleri, satış süreçlerinde gerçekleşen tüm 
+aktivitelerin kayıt edildiği altyapıdır. 
+Bu sistemlerde: 
+• müşteriler, 
+• satış geçmişi, 
+• görüşmeler, 
+• teklifler, 
+• pipeline süreçleri tutulur. 
+Kısaca CRM: 
+“Geçmişte kime ne sattık ve şu an hangi satış süreci hangi aşamada?” 
+sorusunun cevabını verir. 
+CRM sistemleri genellikle şirketlerin satış database’i olarak çalışır. 
+Market Liderleri 
+• Salesforce → yaklaşık %20–25 
+• Microsoft Dynamics 365 → yaklaşık %10–15 
+• HubSpot → yaklaşık %6–10 
+• Zoho CRM → yaklaşık %2–4 
+Diğer oyuncular: 
+• SAP 
+
+--- PAGE 3 ---
+• Oracle 
+• Pipedrive 
+• Freshworks 
+Toplamda CRM market’inin yaklaşık %36–50’si Salesforce, Microsoft ve HubSpot 
+tarafından domine edilir. 
+ 
+2. Data / Sales Intelligence Katmanı 
+Bu katman, satış yapılabilecek şirketleri ve decision maker’ları bulmaya yarayan veri 
+altyapısını sağlar. 
+Buradaki temel mantık: 
+“Kime satış yapmalıyım?” 
+Sales Intelligence sistemleri: 
+• şirket datası, 
+• çalışan bilgileri, 
+• sektör bilgileri, 
+• hiring sinyalleri, 
+• büyüme sinyalleri, 
+• contact data 
+gibi verileri toplar. 
+Amaç: 
+• yüksek potansiyelli müşterileri tespit etmek, 
+• satış ekiplerinin prospecting süresini azaltmaktır. 
+Market Liderleri 
+• ZoomInfo → yaklaşık %30–40 
+• LinkedIn Sales Navigator → yaklaşık %20–30 
+• Apollo.io → yaklaşık %5–10 
+
+--- PAGE 4 ---
+• Clearbit → yaklaşık %3–6 
+Bu araçlar: 
+• restoran adı, 
+• şirket bilgisi, 
+• çalışan sayısı, 
+• email, 
+• telefon, 
+• sektör 
+gibi bilgileri sağlayabilir. 
+Ancak kritik problem şudur: 
+Bu sistemler çoğunlukla: 
+“Bu şirket var mı?” 
+sorusunu cevaplar. 
+Ama şu soruyu cevaplayamaz: 
+“Bu şirket şu anda satın almaya hazır mı?” 
+Yani data vardır, fakat intent (satın alma niyeti) yoktur. 
+ 
+3. Sales Engagement Katmanı 
+Bu katman, bulunan potansiyel müşterilere ulaşmak ve outreach süreçlerini yönetmek için 
+kullanılır. 
+Görevleri: 
+• email sequence, 
+• follow-up, 
+• cold outreach, 
+• otomatik mesaj akışları, 
+
+--- PAGE 5 ---
+• multi-touch communication süreçlerini yönetmektir. 
+Bu katman execution layer olarak düşünülebilir. 
+Market Liderleri 
+• Outreach.io → yaklaşık %18–25 
+• Salesloft → yaklaşık %15–25 
+• Apollo.io → yaklaşık %8–12 
+• HubSpot Sales Hub → yaklaşık %5–10 
+SMB tarafındaki fragmented tool’lar: 
+• Reply 
+• Lemlist 
+• Mailshake 
+• Instantly 
+• Woodpecker 
+Bu araçların ortak amacı: 
+“Doğru kişiye doğru zamanda ulaşmak.” 
+ 
+4. Revenue Intelligence Katmanı 
+Bu katman satış süreçlerini sadece kayıt altına almaz; analiz eder, yorumlar ve geleceği 
+tahmin etmeye çalışır. 
+Temel soru: 
+“Neden kazandık?” 
+“Neden kaybettik?” 
+“Bir sonraki satış ihtimali nedir?” 
+Bu katman: 
+
+--- PAGE 6 ---
+• meeting analizleri, 
+• call transcript’leri, 
+• pipeline davranışları, 
+• satış pattern’leri 
+üzerinden öğrenme yapar. 
+Yani sistem zamanla: 
+“Bu satış stratejisi daha iyi çalışıyor.” 
+diyebilen bir yapıya dönüşür. 
+Market Liderleri 
+• Gong → yaklaşık %25–35 
+• Clari → yaklaşık %20–30 
+• 6sense → yaklaşık %15–25 
+Diğer oyuncular: 
+• Avoma 
+• Chorus 
+• Fireflies 
+• Otter 
+Bu katman genellikle market’in “brain layer”ı olarak görülür. 
+ 
+Market Evrimi 
+2015 — CRM Dönemi 
+Satış süreçleri büyük ölçüde manueldi. 
+Standart stack: 
+• Excel 
+
+--- PAGE 7 ---
+• email 
+• cold call 
+CRM sistemleri sadece kayıt tutma amacıyla kullanılıyordu. 
+Ana oyuncu: 
+• Salesforce 
+ 
+2016–2018 — Outreach Dönemi 
+Cold outreach otomasyonu büyümeye başladı. 
+Öne çıkan araçlar: 
+• Mailshake 
+• Woodpecker 
+• Lemlist 
+• Salesloft 
+Bu dönemde: 
+• SDR rolü büyüdü, 
+• otomatik email sequence mantığı yaygınlaştı, 
+• toplu outreach standard hale geldi. 
+ 
+2018–2020 — Data Dönemi 
+Odak artık: 
+“Kime satış yapacağım?” 
+sorusuna kaydı. 
+Öne çıkan platformlar: 
+• LinkedIn Sales Navigator 
+
+--- PAGE 8 ---
+• ZoomInfo 
+• Clearbit 
+• Apollo 
+Lead quality ve data enrichment önem kazandı. 
+ 
+2020–2021 — Outreach Automation 
+Sales pipeline otomasyonu hızlandı. 
+• multi-touch outreach, 
+• automated follow-up, 
+• outreach workflow’ları 
+standard hale geldi. 
+CRM hala merkez sistemdi fakat outreach layer ciddi şekilde büyüdü. 
+ 
+2021–2023 — Revenue Intelligence 
+Bu dönemde market: 
+• data, 
+• CRM, 
+• outreach 
+katmanlarını birleştirmeye başladı. 
+Yeni soru: 
+“Satış neden kazanıldı veya kaybedildi?” 
+Öne çıkan şirketler: 
+• Gong 
+• Clari 
+
+--- PAGE 9 ---
+• ZoomInfo 
+ 
+2023–2024 — AI + Enrichment 
+AI destekli: 
+• email generation, 
+• personalization, 
+• enrichment 
+araçları büyüdü. 
+Öne çıkan trend: 
+“Satış yarı otomatik hale geliyor.” 
+Araçlar: 
+• Apollo AI 
+• HubSpot AI 
+• AI copywriting tools 
+ 
+2024+ — AI SDR / AI Agent Dönemi 
+Market artık tek akışa dönüşmeye başladı: 
+• Data 
+• CRM 
+• Outreach 
+• AI automation 
+tek sistem altında birleşiyor. 
+Yeni satış modeli: 
+“AI müşteri buluyor, AI outreach yazıyor, insan deal kapatıyor.” 
+
+--- PAGE 10 ---
+ 
+2026’da En Yaygın Sales Stack 
+CRM 
+• Salesforce 
+• HubSpot 
+Data / Prospecting 
+• LinkedIn Sales Navigator 
+• ZoomInfo 
+• Apollo 
+Outreach 
+• Outreach.io 
+• Salesloft 
+• Lemlist 
+• Instantly 
+Revenue Intelligence 
+• Gong 
+• Clari 
+ 
+
+--- PAGE 11 ---
+Local SMB Outreach Problemi 
+Mevcut Problem 
+Local SMB market’inde (restoran, gym, klinik vb.) data bulunabiliyor fakat intent 
+bulunamıyor. 
+Bugünkü tool’lar: 
+• Apollo 
+• ZoomInfo 
+• LinkedIn 
+şunu söyleyebilir: 
+• restoran adı, 
+• adres, 
+• telefon, 
+• çalışan sayısı, 
+• sektör. 
+Ama şunu söyleyemez: 
+• şu an revenue problemi var mı? 
+• delivery sorunu yaşıyor mu? 
+• POS değiştirmeyi düşünüyor mu? 
+• owner aktif büyüme modunda mı? 
+Yani: 
+identity data var, buying intent yok. 
+ 
+Finedine Örneği 
+Örneğin FineDine  restoran operasyon sistemi icin düşünelim. 
+
+--- PAGE 12 ---
+Bu sistem: 
+• ordering, 
+• reservation, 
+• loyalty, 
+• CRM 
+çözümleri satıyor. 
+Bugünkü outreach modeli genelde şöyle çalışıyor: 
+• Apollo → “restaurants in UK” 
+• LinkedIn → owner / manager bul 
+• mass outreach yap 
+Sonuç: 
+• düşük reply rate, 
+• düşük conversion, 
+• spam hissi. 
+ 
+Asıl Problem: Intent Eksikliği 
+Local SMB market’inde çoğu işletme: 
+“active buyer” değildir. 
+Satın alma kararı genelde trigger event sonrası oluşur. 
+Örnek trigger’lar: 
+• yeni restoran açılması, 
+• kötü review spike, 
+• staff turnover, 
+• delivery expansion, 
+• POS değişimi, 
+• revenue düşüşü. 
+
+--- PAGE 13 ---
+Bu sinyaller yoksa outreach çoğunlukla başarısız olur. 
+ 
+SaaS Outreach Neden Daha İyi Çalışıyor? 
+Çünkü SaaS şirketlerinde: 
+• dijital footprint güçlüdür, 
+• hiring data görünürdür, 
+• funding bilgisi vardır, 
+• tech stack izlenebilir, 
+• decision maker LinkedIn’dedir, 
+• satın alma süreci planlıdır. 
+Yani intent yüzeye daha yakındır. 
+Bu yüzden: 
+• Apollo, 
+• ZoomInfo, 
+• LinkedIn Sales Navigator 
+gibi tool’lar daha verimli çalışır. 
+ 
+Local SMB Neden Daha Zor? 
+1. Dijital İz Zayıf 
+Çoğu local business: 
+• CRM kullanmaz, 
+• blog yazmaz, 
+• hiring platformlarında aktif değildir. 
+Bazı işletmelerde tüm operasyon Instagram DM üzerinden döner. 
+
+--- PAGE 14 ---
+ 
+2. Satın Alma Trigger-Based 
+Kararlar planlı budget cycle ile verilmez. 
+Karar genelde şu anlık problemlerle oluşur: 
+• müşteri düşüşü, 
+• kötü review, 
+• kira artışı, 
+• operasyon problemi. 
+ 
+3. Decision Maker Görünmez 
+SaaS: 
+• CEO, 
+• VP Sales, 
+• RevOps 
+LinkedIn’de aktiftir. 
+Local SMB’de ise owner çoğu zaman: 
+• LinkedIn kullanmaz, 
+• operasyonun içindedir, 
+• aynı anda birden fazla rol yönetir. 
+ 
+4. Data Var, Intent Yok 
+Bugünkü sistemler: 
+“Bu restoran var.” 
+
+--- PAGE 15 ---
+diyebilir. 
+Ama: 
+“Bu restoran şu an çözüm arıyor.” 
+diyemez. 
+Asıl eksik katman burada oluşur. 
+ 
+Market’teki Gerçek Fırsat 
+Şu anda eksik olan şey: 
+“Local SMB Intent Engine” 
+Yani şu soruları cevaplayabilen sistem: 
+• Bu işletme büyüyor mu? 
+• Şu an problem yaşıyor mu? 
+• Satın alma ihtimali arttı mı? 
+• Hangi çözüm ona uygun? 
+• Şu an outreach yapılmalı mı? 
+Bugünkü market çoğunlukla: 
+“data product” 
+üzerine kurulu. 
+Ama local SMB tarafında ihtiyaç olan şey: 
+“decision product”tır. 
+ 

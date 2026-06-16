@@ -1,0 +1,207 @@
+
+
+--- PAGE 1 ---
+Kaan Bey Gong.io raporu  
+ 
+ 
+Gong.io nedir ?  
+Gong.io konumlandırması itibariyle bir Revenue Intelligence, Revenue AI OS platformudur. 
+Temel amaç,  satış ekiplerinin müşteri interactionunun takip edip, yakalamak, bu verileri 
+yapay zeka ile  işleyip ;geliri artıracak stratejik  görülere dönüştürmektir. Gong.io beyin 
+temel amacı outbound satış süreçleri, lead kalifikasyonu ve müşteri zekası süreçlerinde 
+otomasyonu sağlamaktır. 
+ 
+ 
+Sistemin Temel Çalışma Mekanizması 
+Gong  mimarisi üç ana sütun üzerine inşa edilmiş, 
+Otomatik Veri Yakalama (Capture): Sistem; Zoom, Microsoft Teams, Google Meet gibi 
+video konferans araçlarına otonom botlar (Call Capture Agent) göndererek toplantıları 
+kaydeder. Aynı zamanda e-postaları, telefon görüşmelerini ve CRM hareketlerini arka 
+planda sessizce izler. 
+ Bağlamsal Yapay Zeka Analizi (Understand): Sesi salt metne dökmekle (Speech-to-Text) 
+kalmaz, bünyesinde eğitilmiş özel NLP (Doğal Dil İşleme) modelleri ile 300'den fazla satın 
+alma sinyalini analiz eder. Rakip adının geçmesi, fiyat itirazları, karar vericilerin toplantıdaki 
+reaksiyonları veya satıcının konuşma/dinleme oranı (talk-to-listen ratio) gibi metrikleri 
+saniyeler içinde çıkarır. 
+İş Akışı Otomasyonu ve Aksiyon (Deliver): Toplantı bitiminden dakikalar sonra MEDDIC, 
+BANT gibi satış metodolojilerine uygun özetleri çıkarır ve Salesforce, HubSpot gibi CRM 
+sistemlerine doğrudan API üzerinden yazar. 
+ 
+Gong Aleyhiselam genel özellikleri: 
+ 
+
+--- PAGE 2 ---
+Conversation Intelligence (Görüşme Zekası): Çağrı kayıtlarını analiz edip talk 
+Track başarısını ölçer. Hangi kelime öbeklerinin fırsatları kapatmaya yardımcı 
+olduğunu tespit eder. Başarılı aramalar bir Call Library içinde toplanır. 
+Gong Engage (Satış Etkileşimi): Özellikle outbound ve lead süreçleri için 
+geliştirilmiştir. Önceki görüşmelere ve müşteri bağlamına dayalı, yüksek 
+kişiselleştirmeye sahip follow-up (takip) e-postalarını Generative AI ile otomatik 
+yazar. 
+Deal & Pipeline Management (Fırsat Yönetimi): "Deal Board" üzerinden boru 
+hattındaki (pipeline) tüm fırsatları tek ekranda haritalandırır. Hangi anlaşmaların risk 
+altında olduğunu, bir lead ile kaç gündür iletişim kurulmadığını görselleştirir. 
+Gong Forecast (Satış Öngörüsü): Geçmiş verilere ve güncel müşteri etkileşimlerine 
+dayanarak %95'lere varan doğrulukla dönem sonu ciro tahminleri çıkartıyor 
+ 
+Kimler Gong aleyhiselamı kullanıyor ? 
+ 
+Kimler Kullanır ve Nasıl Kullanır? 
+Gong, bir şirketin tüm gelir getiren (Go-to-Market) ekipleri tarafından ortak bir zeka 
+katmanı olarak kullanılır: 
+Kullanıcı Rolü Temel Odak ve 
+Amacı Örnek Kullanım Senaryosu 
+SDR / BDR (İş 
+Geliştirme) 
+Lead 
+kalifikasyonu ve 
+Outbound 
+Yapay zeka ile itiraz karşılama 
+(objection handling) becerilerini 
+geliştirmek ve sistemin otomatik ürettiği 
+kişiselleştirilmiş e-postalar ile toplantı 
+kurgulamak. 
+Account Exec. 
+(Müşteri 
+Yöneticisi) 
+Anlaşma 
+kapatmak ve 
+toplantı yönetimi 
+Toplantı sonrası CRM'e manuel not 
+girmek yerine Gong'un çıkardığı 
+otomatik toplantı özetlerini ve aksiyon 
+adımlarını CRM'de hazır bulmak. 
+Satış Yöneticileri 
+(Sales Leaders) 
+Ekip koçluğu ve 
+risk yönetimi 
+Ekibin tüm aramalarını baştan sona 
+dinlemek yerine, 
+
+--- PAGE 3 ---
+Kullanıcı Rolü Temel Odak ve 
+Amacı Örnek Kullanım Senaryosu 
+Gong'uişaretlediği"riskli anlara" tıklayıp 
+sadece kritik 2 dakikayı dinleyerek 
+nokta atışı geri bildirim vermek. 
+RevOps (Gelir 
+Operasyonları) 
+Sistem tahmini 
+ve süreç 
+optimizasyonu 
+Tüm teknoloji yığınındaki (tech stack) 
+veriyi tekilleştirerek pipeline hızını 
+(velocity) ölçmek ve doğru 
+"Forecasting" (ciro öngörüsü) raporları 
+hazırlamak. 
+ 
+ 
+Gong Aleyhiselam Pros&Cons  
+ 
+            Avantajları: 
+• Görünmez Yönetim: Satış temsilcilerini idari işlerden (admin work) kurtarır. CRM 
+güncellemesi, not alma, veri girişi gibi zaman emici işler AI ajanlarına devredilir. 
+• Onboarding Hızı: Yeni işe başlayan satışçıların adaptasyon süresini %50'ye kadar 
+kısaltır, "Call Library" sayesinde en iyi pratikleri kopyalamalarını sağlar. 
+• Tahminleme Gücü (Predictability): Yalnızca CRM'deki statik verilere değil, 
+görüşmelerdeki gerçek duygu durumu ve kelimelere odaklandığı için tahminleme 
+yeteneği benzersizdir. 
+Dezavantajlar: 
+ Anahtar Kelime Bağımlılığı (Smart Trackers): Yapay zekası ne kadar gelişmiş olsa da bazı 
+kurgular statik anahtar kelime takibine (keyword-based) dayanır. Örneğin, "yazılım bütçesi" 
+konuşulması gerekirken müşteri laf arasında "tatil bütçesi" dediğinde, sistem bunu hatalı 
+bir pozitif sinyal olarak işaretleyebilir. 
+ Maliyet ve Kompleksite: Kurumsal seviyede bir araçtır (Kullanıcı başına aylık $200-$250 
+bandında). Özellik setinin çok geniş olması, platformun tam verimle kullanılabilmesi için 
+uzun bir teknik kurulum ve ekip eğitimi gerektirir. 
+
+--- PAGE 4 ---
+Darboğazlar: Birden fazla iletişim kanalını birleştirse de, bazı çok özel şirket içi süreçler 
+için raporlama tarafı dış araçlara (Zapier ile başka veritabanlarına) bağımlı kalabilir. 
+ 
+ 
+Gong’un büyüme odaklı datası  
+ 
+Pandemi Zirvesi ve Dev Değerleme 
+2021 
+ARR: $120 Milyon. Şirket, Series E turunda $250 milyon yatırım alarak tam 7.25 milyar dolar 
+değerlemeye ulaştı. Satış araçlarına ve uzaktan çalışmaya olan devasa talep rüzgarını 
+arkasına aldı. 
+Pazar Daralması ve Yavaşlama 
+2022 - 2023 
+Teknoloji sektöründeki küresel işten çıkarmalar, kişi başı (seat-based) lisans satan Gong'u 
+doğrudan etkiledi. Müşteri logolarını korusalar da lisans iptalleri yüzünden Net Geliri Tutma 
+(NRR) oranları baskı yedi ve büyüme hızı yavaşladı. 
+Yapay Zeka Odaklı Geri Dönüş 
+Ocak 2025 
+ARR: $300 Milyon barajını aştı. Şirket kendini sadece "görüşme kaydedici" olmaktan 
+çıkarıp, "Gong Engage" (satış sekansları) ve "Forecast" (tahminleme) gibi ürünlerle tam bir 
+işletim sistemine dönüştürerek büyüme ivmesini tekrar yakaladı. 
+Yarım Milyar Dolar Barajı 
+Mayıs 2026 
+ARR: $500 Milyon. Güncel olarak yıldan yıla (YoY) %55 büyüme açıkladılar. Üst üste 10 
+çeyrektir büyüme hızını artırmayı başaran nadir SaaS şirketlerinden biri oldular. 
+ 
+ 
+Gong Nelerin Üzerinde Büyüdü? (Stratejik Sütunlar) 
+
+--- PAGE 5 ---
+Gong'un 120 milyon dolardan yarım milyar dolara giden yolu sadece piyasa rüzgarıyla değil, 
+3 çok radikal ürün ve pazar stratejisiyle inşa edildi: 
+1. "Ürün" (Product) Yerine "İşletim Sistemi" (OS) Olmak Gong işe sadece Zoom 
+görüşmelerini analiz eden bir "Görüşme Zekası" (Conversation Intelligence) olarak başladı. 
+Ancak büyümenin tıkandığı noktada stratejiyi değiştirdiler: 
+• Gong Engage: Temsilcilerin outbound süreçlerini, e-posta sekanslarını ve 
+takiplerini yönetmek için eklendi. 
+• Gong Forecast: Satış yöneticilerinin ciro tahminleri yapabilmesi için analitik 
+modülü eklendi. Sadece "gözlemleyen" bir araç olmaktan çıkıp, tüm satış 
+ekiplerinin günlük işlerini başından sonuna yürüttüğü "Gelir Yapay Zekası İşletim 
+Sistemi" (Revenue AI OS) haline geldiler. 
+2. Teknoloji Yığınında Konsolidasyon (Tech Stack Consolidation) Şirketler yakın zamana 
+kadar satış tahminleri için Clari, çağrı analizi için Chorus, e-posta sekansları için Outreach 
+gibi 4-5 farklı araç kullanıp bunlara ayrı ayrı para ödüyordu. Gong, tüm bu parçalı 
+operasyonları tek bir platformda birleştirerek kurumlara "eski araçlarınızı iptal edin, hepsini 
+biz tek merkezden yapıyoruz" vaadiyle gitti. Bu hamle, mevcut müşterilerden kazandıkları 
+parayı (Upsell) devasa ölçüde artırdı. 
+3. Enterprise (Büyük Kurumsal) Müşteri Akını 2025-2026 dönemindeki %55'lik son 
+büyüme patlamasının ana nedeni, dev şirketlerin yapay zekayı deneysel olmaktan çıkarıp 
+tüm süreçlere entegre etmesidir. 
+• Yalnızca son iki çeyrekte, önceki 1.5 yılda kazandıklarından daha fazla 1 milyon 
+dolar+ değerinde yıllık kontrat imzaladılar. 
+• Fortune 10 şirketlerinin yarısı şu an ana gelir operasyonları için Gong kullanıyor 
+(Anthropic, Google, Uber for Business gibi devler). 
+ 
+Gong Demo fotoğrafları (kaan bey için üretim mert ve 
+çınar aleyhiselam için inceleme) 
+ 
+
+--- PAGE 6 ---
+
+--- PAGE 7 ---
+
+--- PAGE 8 ---
+
+--- PAGE 9 ---
+
+--- PAGE 10 ---
+
+--- PAGE 11 ---
+
+--- PAGE 12 ---
+
+--- PAGE 13 ---
+
+--- PAGE 14 ---
+
+--- PAGE 15 ---
+
+--- PAGE 16 ---
+ 
+ 
+
+--- PAGE 17 ---
+ 
+ 
+ 
+ 
+ 

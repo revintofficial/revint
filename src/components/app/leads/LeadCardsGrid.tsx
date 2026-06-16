@@ -231,7 +231,7 @@ function LeadGridCard({
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-8 px-2 gap-1 text-[11px] text-[hsl(38_70%_52%)] hover:text-[hsl(38_70%_52%)]"
+                className="h-8 px-2 gap-1 text-[11px] text-[hsl(218_85%_58%)] hover:text-[hsl(218_85%_58%)]"
               >
                 <BookmarkCheck className="w-3 h-3" /> Open Deal
               </Button>

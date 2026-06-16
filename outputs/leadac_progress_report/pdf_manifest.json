@@ -1,0 +1,234 @@
+[
+  {
+    "file": "leadac files\\AI-Native-Leadac (2).pdf",
+    "pages": 2,
+    "chars": 4553,
+    "words": 566,
+    "error": null,
+    "sample": "--- PAGE 1 --- AI-Native-Leadac LeadAC’i gerçek anlamda AI-native yapmak, ürüne daha fazla AI feature eklemek değil; sistemin çalışma mantığını tamamen “intelligence-first” hale çevirmektir. Şu an LeadAC çok gelişmiş bir AI- assisted outbound platformu: kullanıcı aksiyon alıyor, belirli worker’lar çalışıyor, sonuç üretiliyor. Yani AI şu an araç gibi davranıyor. AI-native evrimde ise sistem araç olmaktan çıkıp operasyonu yöneten bir varlık gibi davranmaya başlıyor. Kullanıcı “Londra’daki premium sushi restoranlarından bu ay 15 demo çıkar” gibi bir hedef veriyor; sistem kendi ICP’sini genişletiyor, hangi subniche’in daha sıcak olduğunu analiz ediyor, geçmişte hangi outreach angle’larının işe yaradığını semantic memory’den hatırlıyor, hangi enrichment worker’larının çalışması gerektiğine karar veriyor, outreach’i optimize ediyor ve başarısız pattern’leri bırakıp başarılı pattern’leri çoğaltıyor. Böylece LeadAC bir dashboard olmaktan çıkıp yarı otonom bir outbound operating syste"
+  },
+  {
+    "file": "leadac files\\AI-Native-Leadac (3).pdf",
+    "pages": 2,
+    "chars": 4553,
+    "words": 566,
+    "error": null,
+    "sample": "--- PAGE 1 --- AI-Native-Leadac LeadAC’i gerçek anlamda AI-native yapmak, ürüne daha fazla AI feature eklemek değil; sistemin çalışma mantığını tamamen “intelligence-first” hale çevirmektir. Şu an LeadAC çok gelişmiş bir AI- assisted outbound platformu: kullanıcı aksiyon alıyor, belirli worker’lar çalışıyor, sonuç üretiliyor. Yani AI şu an araç gibi davranıyor. AI-native evrimde ise sistem araç olmaktan çıkıp operasyonu yöneten bir varlık gibi davranmaya başlıyor. Kullanıcı “Londra’daki premium sushi restoranlarından bu ay 15 demo çıkar” gibi bir hedef veriyor; sistem kendi ICP’sini genişletiyor, hangi subniche’in daha sıcak olduğunu analiz ediyor, geçmişte hangi outreach angle’larının işe yaradığını semantic memory’den hatırlıyor, hangi enrichment worker’larının çalışması gerektiğine karar veriyor, outreach’i optimize ediyor ve başarısız pattern’leri bırakıp başarılı pattern’leri çoğaltıyor. Böylece LeadAC bir dashboard olmaktan çıkıp yarı otonom bir outbound operating syste"
+  },
+  {
+    "file": "leadac files\\Arastirilicak toollar (1).pdf",
+    "pages": 15,
+    "chars": 24713,
+    "words": 3410,
+    "error": null,
+    "sample": "--- PAGE 1 --- Gerçek bir pozisyon, üç ayrı halkanın haritalanmasını gerektiriyor: 1. Doğrudan rakipler — onları konumlandırmak için yetmedi hâlâ; haftalık takibe alacaklarımız var. 2. Adjacent / dolaylı rakipler — bizim alanımıza yakınlaşan ama henüz haritada olmayan oyuncular. 3. Buyer'ımızın müşterisinin yazılım katmanı — yani ServiceTitan / Toast / Curve Dental gibi vertical CRM'ler. Bunlar rakip değil ama biz onların izini sürdüğümüz için mutlaka tanımak zorundayız. 4. Buyer companies haritası — gerçek TAM. Bu olmadan SDR demo listesi yapamayız. 5. Channel + integration partner'ları — partner olarak veya CRM olarak entegre olacağımız platformlar. Aşağıda her birini sırayla açıyorum: hangi şirket, ne yaşanıyor, ne öğreneceğiz, niye önemli. TIER 1 — Doğrudan rakipler (haftalık takip, derin araştırma) Bunları docs/positioning.md §4'te ele aldık ama her birinin haftalık takip etmemiz gereken canlı bir hikayesi var. \"Takip\" derken: hero copy, fiyat, son ürün lansmanı, son"
+  },
+  {
+    "file": "leadac files\\Brand asseets (1).pdf",
+    "pages": 51,
+    "chars": 62655,
+    "words": 9125,
+    "error": null,
+    "sample": "--- PAGE 1 --- LeadAC — Brand & Marketing Assets v1 Built on docs/positioning.md. Where the positioning workbook is the strategy, this doc is the execution surface — what to say, in which exact words, where to show up, what to spend on, and how to defend the position against the Gong threat in 2026. Last update: 2026-05-22 Owner: Founder + first marketing hire Live partner: src/components/marketing/v2/*, src/app/(marketing)/page.tsx, future /for/* and /vs/* routes 0. Index 1. The Gong Reframe — neutralizing the May 2026 Revenue Graph announcement 2. Brand sentence ladder 3. Voice and tone rules 4. Keyword asset inventory 5. Channel placement matrix 6. Paid vs organic spend strategy 7. AEO and GEO — getting cited by ChatGPT, Perplexity, Claude, Gemini, AI Overviews 8. 30/60/90 day marketing plan 9. Asset shipping checklist 10. Crisis playbook — what to do if Gong / Apollo / Clay copy us 1. The Gong Reframe Threat assessment first. Gong’s May 12, 2026 PRNewswir"
+  },
+  {
+    "file": "leadac files\\Cinar - features notion rehber (1).pdf",
+    "pages": 7,
+    "chars": 6588,
+    "words": 977,
+    "error": null,
+    "sample": "--- PAGE 1 --- Outcomes DB — Hedefler Field Ne yaz Örnek Tuzak Title Hedefin 5-7 kelimelik adı, fiil + tarih veya sayı içersin Ship paid v1 by 2026-07-01 \"LeadAC'i büyütmek\" gibi belirsiz olmasın North Statement Bu hedefe ulaştığını nasıl anlarsın — gözlenebilir tek cümle First $1 from a real agency (not founder card) \"Başarılı olmak\" gibi soyut olmasın Category Şu anki aşaman PRE_LAUNCH LeadAC çıkmadıysa hepsi PRE_LAUNCH Status Hâlâ peşinde misin ACTIVE Bıraktığını ACHIEVED veya ABANDONED yap, silme Linked Briefs Otomatik dolar — Manuel ekleme — Brief tarafından bağlanır Briefs DB — Feature Fikirleri (En Çok Yazılan) Field Ne yaz Örnek Tuzak Number Otomatik (FB-0001...) — Elden değişme Name Feature'ın tek satır adı, jargon yok Call queue UI for F&B (replaces deals) \"Sistem iyileştirme\" gibi vague Outcome Bu feature hangi outcome'a hizmet ediyor (1 tane) Land 3 design partners Birden çok seçme — odak dağılır --- PAGE 2 --- Job To Be"
+  },
+  {
+    "file": "leadac files\\Current tools max stack (finedine) (1).pdf",
+    "pages": 4,
+    "chars": 7179,
+    "words": 1015,
+    "error": null,
+    "sample": "--- PAGE 1 --- FineDine \"elindeki en iyi tool stack\" ile ne kadar ileri gidebilir? Senaryo: FineDine pre-Series A'yı aldı, $200K/yıl GTM tooling bütçesi ayırdı, bir RevOps engineer işe aldı, \"Gong/Clari'siz ama maksimum modern\" bir outbound sistem kurdu. Bu varsayımla bakıyorum — Apollo + Clay + HubSpot kombinasyonunu gerçekten ciddiye alan bir versiyonu. \"Best-case\" stack — LeadAC olmadan Katman Tool Aylık maliyet Hesap evren'i + iletişim Apollo + ZoomInfo $1.5K Enrichment + workflow orkestrasyonu Clay $3K Dialer + cadence Aircall / Outreach $1.5K (4 seat) Call recording + AI insight Gong $6K (4 seat — minimum kontrat) Web scraping (custom) Apify + Phantombuster $1K LLM pattern analysis OpenAI API + ChatGPT Team $500 CRM HubSpot Sales Hub Pro $2K (4 seat) BI / pattern dashboard Hex veya Metabase $500 RevOps engineer (full-time) — $10K Toplam ~$26K/ay = $310K/yıl Bu stack'i kim kuruyor: RevOps engineer + Head of Sales birlikte, 3-4 ay implementasyon. Bu stack"
+  },
+  {
+    "file": "leadac files\\Ilk-Versiyon-MVP-ve-Pazara-Cikis.pdf",
+    "pages": 10,
+    "chars": 3385,
+    "words": 519,
+    "error": null,
+    "sample": "--- PAGE 1 --- 1lk Versiyon (MVP ) ve Pazara Ç1k1_ Gong'un kurulu_ hikâyesi; mükemmeli beklemeden hareket etmenin, do ru soruyu sorman1n ve h1zl1 ö renmenin bir örne i. Bodrum kattaki küçük bir odadan 7.2 milyar dolarl1k bir _irkete. --- PAGE 2 --- Mükemmel Ürünü Beklemeyin MVP Felsefesi Gong kurucular1 ilk günden itibaren mükemmel ürünü bekleme lüksüne sahip olmad1klar1n1 biliyordu. Tüm enerjilerini temel altyap1y1 h1zl1ca in_a etmeye ve do rudan mü_teriye de er katan uygulama katman1na odaklamaya verdiler. H1z ve odak, mükemmeliyetçili in önünde geldi. --- PAGE 3 --- 1lk Ofis Norwest'in Bodrum Kat1 1lk ofisleri; cams1z, sadece mü_teri aramalar1 yapabilecekleri kadar küçük bir odayd1 4 ilk yat1r1mc1lar1 Norwest'in binas1n1n bodrum kat1nda. Sadelik, motivasyonlar1n1 azaltmad1; aksine netle_tirdi. --- PAGE 4 --- Büyüme Zaman Çizelgesi 1Kurulu_ 4 2015 Amit Bendov ve Eilon Reshef, CRM'in yetersiz kald1 1 \"neden\" sorusunu çözmek için Gong'un temellerini att1. 2 Lansman"
+  },
+  {
+    "file": "leadac files\\Kaan Bey Gong.pdf",
+    "pages": 17,
+    "chars": 8145,
+    "words": 1051,
+    "error": null,
+    "sample": "--- PAGE 1 --- Kaan Bey Gong.io raporu Gong.io nedir ? Gong.io konumlandırması itibariyle bir Revenue Intelligence, Revenue AI OS platformudur. Temel amaç, satış ekiplerinin müşteri interactionunun takip edip, yakalamak, bu verileri yapay zeka ile işleyip ;geliri artıracak stratejik görülere dönüştürmektir. Gong.io beyin temel amacı outbound satış süreçleri, lead kalifikasyonu ve müşteri zekası süreçlerinde otomasyonu sağlamaktır. Sistemin Temel Çalışma Mekanizması Gong mimarisi üç ana sütun üzerine inşa edilmiş, Otomatik Veri Yakalama (Capture): Sistem; Zoom, Microsoft Teams, Google Meet gibi video konferans araçlarına otonom botlar (Call Capture Agent) göndererek toplantıları kaydeder. Aynı zamanda e-postaları, telefon görüşmelerini ve CRM hareketlerini arka planda sessizce izler. Bağlamsal Yapay Zeka Analizi (Understand): Sesi salt metne dökmekle (Speech-to-Text) kalmaz, bünyesinde eğitilmiş özel NLP (Doğal Dil İşleme) modelleri ile 300'den fazla satın"
+  },
+  {
+    "file": "leadac files\\KAAN BEYIN DIKKATINE SEO (1).pdf",
+    "pages": 8,
+    "chars": 3554,
+    "words": 475,
+    "error": null,
+    "sample": "--- PAGE 1 --- Şu Anda Lazım Olan Şey Bir marketer / growth operator’ın: • competitor positioning’i analiz edip • whitespace çıkarıp • landing’i yeniden yazabilmesi. Bu kadar. Şu Anki Doğru Setup Amaç Şunu bulmak: “LeadAC hangi category’ye giriyor ve hangi category’yi yeniden tanımlıyor?” Basit Founder Workflow Tool Stack (Manual) Amaç Tool Competitor SEO Ahrefs trial / SEMrush Homepage archive Firecrawl Reddit mining Reddit search SERP discovery DataForSEO veya SerpAPI Copy storage Notion/Airtable Clustering ChatGPT/Gemini Landing writing Figma/Webflow/Next Bu yeterli. --- PAGE 2 --- Gerçekten. Sana En Optimize Süreci Vereyim STEP 1 — Competitor Map Marketer’ın ilk işi: Şu şirketleri analiz etmek: Type Companies Sales intelligence Apollo, ZoomInfo AI outbound Instantly, Smartlead GTM infra Clay Revenue intelligence Gong SMB/local adjacent Birkaç restaurant SaaS Çıkarılacak Şeyler Spreadsheet: Company Main Headline Core Positioning Rep"
+  },
+  {
+    "file": "leadac files\\LEADAC AI BETA TEST ANALIZLERI-12.pdf",
+    "pages": 3,
+    "chars": 3596,
+    "words": 483,
+    "error": null,
+    "sample": "--- PAGE 1 --- LEADAC AI BETA TEST ANALIZLERI İşletme 12: 15 Grams Coffee House ID : https://www.leadacai.com/app/leads/cmon6tpwt0007jv04stdr6lon Konum : London UK İşletme türü : Cafe Detaylı Rapor : Önbilgi : Londra Greenwich ve Blackheath olmak üzere iki şubeyle hizmet vermekte olan 15 Grams Coffee House , çok yüksek yorum sayısı ve puanlarıyla birlikte çevredeki kahveciler arasında çok öne çıkan bir mekan. Merkezi konumları hem yeni müşterileri kendine çekiyor hem de eski müşterilerinin devamlı müşteri olmaya devam etmesini sağlıyor. Gelişmiş bir websitesi üzerinden kahve aboneliği, satışı , dükkanlar için masa rezervasyonu yapıyorlar. Aynı zamanda işletmeler ve işyerleri için toplu kahve çekirdeği satışı da yapıyorlar bu da kurumsallık ve tedarik zincirlerinin olduğunu öne çıkaran bir özellik . Loyalty sistemi gibi müşterileri bu dükkanda ve onların kahvelerinde tutacak çok güzel sistemler düşünülmüş. Aktif olarak kullanılan sosyal medya hesapları"
+  },
+  {
+    "file": "leadac files\\LEADAC AI BETA TEST ANALIZLERI-13.pdf",
+    "pages": 3,
+    "chars": 2680,
+    "words": 346,
+    "error": null,
+    "sample": "--- PAGE 1 --- LEADAC AI BETA TEST ANALIZLERI İşletme 13 : Black Sheep Coffee – Camden Town ID : https://www.leadacai.com/app/leads/cmoozvrcx000nkz042jba1czr Konum : London UK İşletme türü : Cafe Detaylı Rapor : Önbilgi : Londra Camden Town’da bulunan Black Sheep Coffee- Camden Town , İngiltere genelinde bulunan en büyük kahve zincirlerinden birinin Camden Town’da bulunan yoğun bir şubesi. Şirket Starbucks , Costa Coffee gibi büyük zincirlerle rekabet durumunda ve bu konuda kendilerini geliştirmek için Websiteleri , aplikasyonları bulunmakta. Loyalty sistemleri , order ahead , dine in , takeaway için ön sipariş sistemleri bulunmakta. Yapay Zeka Analiz değerlendirmesi : Yapay zeka maalesef yeni güncelleme olmasına rağmen yine eksik bilgiler sunmuş. Likely pain points bölümünde QR entegrasyonu , order ahead gibi özelliklerin olmadığı belirtilmiş ancak bu sistemlerin hepsi uygulama ve websitesi ile entegre çalışmakta. Ayrıca bu tarz"
+  },
+  {
+    "file": "leadac files\\LEADAC AI BETA TEST ANALIZLERI-14.pdf",
+    "pages": 3,
+    "chars": 2371,
+    "words": 304,
+    "error": null,
+    "sample": "--- PAGE 1 --- LEADAC AI BETA TEST ANALIZLERI İşletme 14: LUMI Camden ID : https://www.leadacai.com/app/leads/cmoozvr4t000jkz043baocw6m Konum : London UK İşletme türü : Cafe Detaylı Rapor : Önbilgi : Londra Camden High Street’te bulunan LUMI Camden , çok yüksek yorumları , merkezi konumuyla öne çıkıyor. Google’da 2505 yorumdan 4.8 gibi çok yüksek yorumlara sahip olması, ne kadar başarılı olduklarını ve gelişmeye ve kendilerine ne kadar önem verdiklerini öne çıkarıyor. Siteleri incelendiğinde , Menü görüntülenebiliyor , aktif olarak kullanıyor oldukları sosyal medya hesaplarına erişebiliyor , aynı zamanda da iletişim formlarını görüntüleyebiliyoruz. Ayrıca sitenin içinde bir kadın var erik gibi kütür kütür bakmanız önerilir. Booking sistemlerinin özellikle olmadığını belirtiyorlar ve walk in misafirleri özellikle welcomeladıklarını belirtiyorlar. Yapay Zeka Analiz değerlendirmesi : Yapay zeka kötü bir analiz yapmamış. Conversion Feature"
+  },
+  {
+    "file": "leadac files\\LEADAC AI BETA TEST ANALIZLERI-15.pdf",
+    "pages": 3,
+    "chars": 2227,
+    "words": 299,
+    "error": null,
+    "sample": "--- PAGE 1 --- LEADAC AI BETA TEST ANALIZLERI İşletme 15: Camden Coffee Roastery ID : https://www.leadacai.com/app/leads/cmoozvr4t000jkz043baocw6m Konum : London UK İşletme türü : Cafe Detaylı Rapor : Önbilgi : Londra Camden’da bulunan Camden Coffee Roastery, merkezi konumu ve 750 yorum üzerinden 4.6 gibi yüksek bir puanıyla öne çıkan bir işletme. Kendi siteleri ve dükkanları üzerinden çekirdek kahve , kahve ekipmanları gibi ürünler için E-Commerce sistemleri ve başarılı duran bir siteleri bulunmakta. Sitelerinde https bulunmamakta. Ayrıca pick up hizmetleri de var. Trustpilot gibi platformlarda da bulunmaları kahvelerine güvendikleri ve müşteri güvenilirliğine değer verdiklerini göstermekte olan bir işaret. Yapay Zeka Analiz değerlendirmesi : Yapay zeka analizi genel olarak oldukça doğru temel pain pointlere çok çok doğru odaklanmış , gelişmiş işletme , gelişmiş yönetim ve bunun babında yapılması gereken teknolojik otomasyon adamlar"
+  },
+  {
+    "file": "leadac files\\LEADAC AI BETA TEST ANALIZLERI-17.pdf",
+    "pages": 3,
+    "chars": 2074,
+    "words": 282,
+    "error": null,
+    "sample": "--- PAGE 1 --- LEADAC AI BETA TEST ANALIZLERI İşletme 16: The Drip ID : https://www.leadacai.com/app/leads/cmon6trzv0017jv04j17d9dj1 Konum : London UK İşletme türü : Cafe Detaylı Rapor : Önbilgi : Deptford’da bulunan The Drip Café Deptford Bridge’deki stratejik konumuyla yoğun cadde trafiğini kendine çekiyor ve 150 yorumla 4.8 gibi yüksek bir puan skalası elde ediyor. Bu kadar sevilen bir yer olmasına rağmen herhangi bir , websitesi , otomasyon gibi bir sistemi bulunmamakta. Bu da bu işletmenin neden mükemmel bir fırsat olduğunu göz önüne seriyor Yapay Zeka Analiz değerlendirmesi : Yapay zeka büyük ölçüde doğru bir analiz yapmış. ‘’Why They’re a fit’’ bölümü adeta mükemmel , at a Glance bölümünde No website , doğru olmasına rağmen aynı zamanda ‘’Weak website adında başka bir glance var’’ bu hem duplication hem hata. Tier olarak starter görünmesine rağmen paket Premium olarak önerilmiş , böyle küçük, düşük potansiyelli bir yere Premium"
+  },
+  {
+    "file": "leadac files\\Leadac Design Partner Program (1).pdf",
+    "pages": 20,
+    "chars": 15044,
+    "words": 1999,
+    "error": null,
+    "sample": "--- PAGE 1 --- LEADAC DESIGN PARTNER PROGRAM operational intelligence validation framework v1 workbook 0. bu sistem neden var bu programin amaci: • feature feedback toplamak degil • demo yapmak degil • pilot satmak degil amac: vertical SaaS GTM icin operational memory modelini kurmak yani: hangi operational signal hangi ICP patterni hangi outbound workflow hangi context layer gercekten revenue impact yaratiyor bunu anlamak --- PAGE 2 --- 1. core framework sistemin merkezinde su olmali: research ↓ validation ↓ pattern extraction ↓ product decision ↓ workflow deployment ↓ outcome learning ↓ memory accumulation leadac’in asil asset’i: feature set degil memory graph olmali 2. program yapisi partner sayisi ideal: 3–5 partner --- PAGE 3 --- neden? • 1 partner anecdotal olur • 2 partner directional olur • 3+ partner pattern validation baslar partner tipi partnerler farkli operational realities temsil etmeli ornek: partner ro"
+  },
+  {
+    "file": "leadac files\\Leadac Positioning FINAL (1).pdf",
+    "pages": 21,
+    "chars": 36667,
+    "words": 5157,
+    "error": null,
+    "sample": "--- PAGE 1 --- Operational Revenue Intelligence for SMB Markets Status: first research memo Date: 2026-05-26 Branch: codex/operational-revenue-intelligence-research Question: LeadAC should we keep positioning as local lead generation/enrichment, or move up-stack into the intelligence layer that works with existing lead/enrichment tools? Executive take The research supports a positioning move, but not a vague move into \"revenue intelligence.\" The local SMB lead generation and enrichment layer is now visibly crowded. Orbital, Resquared, Openmart, Clay workflows, and many smaller AI lead-gen tools already claim the jobs we previously leaned on: local business discovery, owner/contact enrichment, Google Maps extraction, review scraping, AI-written outreach, and basic lead scoring. This does not mean LeadAC is dead. It means \"we find and enrich local leads\" is no longer a sharp enough wedge. The stronger position is: LeadAC is the operational intelligence layer for teams sel"
+  },
+  {
+    "file": "leadac files\\Leadac Product department (1).pdf",
+    "pages": 16,
+    "chars": 12144,
+    "words": 1666,
+    "error": null,
+    "sample": "--- PAGE 1 --- LeadAC — Product Department Framework 1. Department Charter Amaç Bu departmanin varolus nedeni: urunu bu kadar toolun oldugu crowded bir pazar icinde bir konuma yerlestirebilmek, obur toollarla birlikte calismasini saglamak ve urunun gercekten pazardaki bir problemi cozdugunu kanitlamak. Eger bu departman olmasaydi, urun ozellik olarak gelisirdi fakat bu ozellikler piyasadaki hicbir workflowa calisma bicimine tam olarak uymazdi ve b2b piyasasinda insanlar kendine ozel tasarlanmis gibi duran workflow dostu, bos is workflow icermeyen, ham sonuc veren araclarla sadece para verirler, cunku herhangi bir businessin asil amaci para kazanmaktir, o sebeple sadece dolayli yoldanda olsa revenue etkisi yapan isi hizlandiran urunlere para verirler. Bu departman sirketin gidisat yonu ve vizyonu hakkinda buyuk olcude soz sahibidir, fakat son karar verici akil degildir, son akil olan foundelarin onune anketleri, degisimi, gerekceyi, roadmapi ve beklenen sonuclari sunar"
+  },
+  {
+    "file": "leadac files\\LeadAC x FineDine Integration Strategy Paper (1).pdf",
+    "pages": 37,
+    "chars": 53447,
+    "words": 6810,
+    "error": null,
+    "sample": "--- PAGE 1 --- LeadAC x FineDine Integration Strategy Paper Status: native-first integration strategy draft Date: 2026-05-29 Audience: LeadAC founders, product, engineering, FineDine activation stakeholders Language: Turkish Project: LeadAC Restaurant-Tech Operational Intelligence Pilot for FineDine 1. Ana karar LeadAC'in entegrasyon stratejisi \"her tool'u replace etmek\" olmamalı. LeadAC'in kazanacağı yer, Openmart, Orbital, Clay, HubSpot, Smartlead, Instantly, Google Places ve Apify gibi araçlardan gelen dağınık kanıtları tek bir account intelligence graph'a bağlamak, bu kanıtların hangisine güvenileceğini belirlemek ve outcome'lardan öğrenen FineDine-specific playbook üretmektir. Bu yüzden doğru kategori cümlesi: LeadAC, restaurant-tech ekipleri için post-enrichment operational intelligence layer'dır: veri kaynaklarını bağlar, account context'i çözer, pitch angle seçer, aksiyon önerir ve outcome'lardan öğrenir. Entegrasyonların amacı \"daha fazla row\" üretmek değil, ş"
+  },
+  {
+    "file": "leadac files\\LeadAC — AI Lead Analysis Engine Update.pdf",
+    "pages": 5,
+    "chars": 4203,
+    "words": 674,
+    "error": null,
+    "sample": "--- PAGE 1 --- ● ● ● ● ● ● ● ● ● ● ● ● ● ● LeadAC — AI Lead Analysis Engine Update 1. Amaç Suanki sabit worker calismasini engellemek icin; Tekir bir arastırma üst catisi (ai native) LeadAC içinde “Analyze with AI” butonu olacak (otomatikte calisabilir), kulannıcının hubshot baglantisindan vesaire gelen her lead’i otomatik olarak analiz edecek tek bir agent, altındada toolları olucak bir graph olarak; mevcut leadacin AI workerlarını tool graphe cevirecegiz, Bu tekil agent, lead ile ilgili: veri toplayan sinyal çıkaran skorlayan satış açısı üreten ve SDR’a hazır brief oluşturan bir operational intelligence yapısıdır Bu sistemin çıktısı: Lead Intelligence Brief (tüm leadac analizininde son kararı verir) 2. Ana Değişim (Eski vs Yeni) Eski yaklaşım Worker’lar bağımsız çalışır Sonuçlar ekranda tablarda dağınık gelir SDR kendi yorumlar Yeni yaklaşım Tek bir “Analysis Run” başlatılır Agent analize baslar, lead hakkında var olan bilgileri inceler, Duruma göre ilk calıstırılacak toolu çalı"
+  },
+  {
+    "file": "leadac files\\LeadAC-Gelir-Zekasi-Katmani.pdf",
+    "pages": 10,
+    "chars": 4720,
+    "words": 694,
+    "error": null,
+    "sample": "--- PAGE 1 --- LeadAC: Gelir Zekas1 Katman1 Yerel i_letmelere sat1_ yapan SaaS _irketleri için Apollo, Gong ve Clay'in güçlerini tek bir modelde birle_tiren, eri_ilebilir ve derin bir platform. KAAN BEY PIYASA & TOOL ANALIZI --- PAGE 2 --- LeadAC Nedir? Kategori: Gelir Zekas1 Katman1 LeadAC, s1radan bir lead-gen arac1 de ildir. Yerel i_letme sat1c1lar1 için tasarlanm1_, Apollo + Gong + Clay yeteneklerini tek bir entegre modelde sunan bir Gelir Zekas1 platformudur. Daha eri_ilebilir, daha derin 4 ve rakiplerinden temelden farkl1 bir mimari. --- PAGE 3 --- 1deal Mü_teri Profili (ICP ) Firma Tipi Yerel i_letmelere sat1_ yapan Dikey/KOB1 SaaS _irketleri Ölçek $2M3$50M ARR 303300 çal1_an Hedef Persona VP of Sales, GTM Lideri veya RevOps Lideri $1K3$10K ayl1k bütçe yetkisi Mü_teri Taban1 HVAC, di_ klinikleri, restoranlar, güzellik merkezleri, emlak, oto tamiri --- PAGE 4 --- T emel Ac1 Noktas1 30dk Manuel Ara_t1rma SDR ba_1na, hesap ba_1na harcanan ortalama süre %50 Y anl1_ V"
+  },
+  {
+    "file": "leadac files\\Market analizi (1).pdf",
+    "pages": 15,
+    "chars": 9126,
+    "words": 1321,
+    "error": null,
+    "sample": "--- PAGE 1 --- 1. Market Overview 1.1 Sales Intelligence / Sales Tech Market Sales Intelligence / Sales Tech market’i, satış ekiplerinin kime satış yapacağını, nasıl ulaşacağını ve hangi şirketlerin satın alma ihtimalinin yüksek olduğunu anlamasını sağlayan yazılım sistemlerinden oluşur. Bu marketin temel amacı: • doğru müşteriyi bulmak, • satış sürecini otomatikleştirmek, • satış performansını analiz etmek, • gelecekteki satış ihtimallerini tahmin etmektir. Market büyüklüğü yaklaşık 3.8 milyar dolar seviyesindedir ve yıllık ortalama büyüme oranı yaklaşık %12.3 CAGR’dır. Market Yapısı Sales Tech market’i genelde 4 ana katmana ayrılır: Katman Görev CRM Satış süreçlerinin kayıt altına alınması Data / Sales Intelligence Potansiyel müşterilerin bulunması Sales Engagement Outreach ve follow-up süreçleri Revenue Intelligence Satış performansının analiz edilmesi Market payı dağılımı yaklaşık olarak şu şekildedir: • CRM → %45–55 • Data / Sales Intelligence → %15–25"
+  },
+  {
+    "file": "leadac files\\New marketing document (B2B) (1) (1).pdf",
+    "pages": 8,
+    "chars": 10654,
+    "words": 1671,
+    "error": null,
+    "sample": "--- PAGE 1 --- LeadAC — product marketing context This file is the entry point every marketing-related agent reads first. It exists because the architecture rule references it and other context files (MARKETING.md, POSITIONING.md, BUYER-PERSONA.md) build on top of it. If you are about to write copy, an ad, an email, a landing page, a blog post, or a social caption for LeadAC, read this end to end before anything else. What LeadAC is LeadAC is the local lead-intelligence layer for agencies that sell to local businesses. It pulls fresh Google Maps leads no other agency has, runs a 20-plus signal audit on every site, scores fit 0-100, and drafts the opener grounded in what the audit found. The output is a lead dossier ready for your pipeline review, plus a draft email that does the homework instead of pretending to. Sends through Smartlead, Instantly, GHL, Gmail, or Outlook. We do not replace the sender. We feed it. What we are NOT replacing This is the most common misf"
+  },
+  {
+    "file": "leadac files\\Operational Revenue Intelligence for SMB Markets OZET (1) (1).pdf",
+    "pages": 16,
+    "chars": 9528,
+    "words": 1301,
+    "error": null,
+    "sample": "--- PAGE 1 --- SMB Marketleri için Operational Revenue Intelligence Status: İlk research memo Ana Soru LeadAC, local lead generation/enrichment positioning’inde mi kalmalı, yoksa mevcut lead/enrichment tool’larının üstünde çalışan intelligence layer’a mı çıkmalı? Executive Take Research’e göre positioning shift mantıklı görünüyor ama bu “revenue intelligence” gibi generic bir alana kaymak anlamına gelmemeli. Local SMB lead generation + enrichment tarafı artık ciddi şekilde crowded hale geliyor. Orbital, Resquared, Openmart, Clay workflow’ları ve onlarca AI lead-gen tool’u şu işleri zaten sahiplenmeye başladı: • local business discovery • owner/contact enrichment • Google Maps extraction • review scraping • AI outreach generation • basic lead scoring “biz local lead buluyoruz ve enrich ediyoruz” artık yeterince sharp bir wedge değil. Daha güçlü positioning şu: LeadAC, local business market’lerine satış yapan ekipler için operational intelligence layer’dır. --- P"
+  },
+  {
+    "file": "leadac files\\Positioning (1).pdf",
+    "pages": 9,
+    "chars": 12304,
+    "words": 1887,
+    "error": null,
+    "sample": "--- PAGE 1 --- LeadAC — positioning This is the strategic positioning doc. Three pages. Read this before changing any marketing copy or pitching the product. The shorter operational doc is .agents/product-marketing-context.md. The page-by-page copy book is MARKETING.md. The audience profiles are in BUYER- PERSONA.md. 1. Market context (what changed) Three things shifted between mid-2024 and early 2026 that broke the previous outbound playbook for small agencies: Apollo is everyone’s exhaust. The same 50 million B2B contacts that powered the 2022-2023 SMMA wave are now sold to thousands of agencies running near-identical sequences. Receiving inboxes have seen the same prospect ten times this month. Reply rates on recycled-list outbound dropped from a normal 3-4% range into the 1-2% range across the industry through 2025. The fix is not a better cadence. The fix is data nobody else has. AI personalization stopped working. First-line generators powered by GPT-3.5/4 all"
+  },
+  {
+    "file": "leadac files\\Positioning (AI) (1).pdf",
+    "pages": 109,
+    "chars": 133699,
+    "words": 20161,
+    "error": null,
+    "sample": "--- PAGE 1 --- LeadAC — Positioning Workbook v2 Status: Living doc. This is the post-pivot canonical positioning source. Every marketing surface, sales deck, comparison page, onboarding wizard, and pricing decision references this file. If a piece of copy contradicts this doc, the doc wins until explicitly overridden in §14 (Decision Log). Last major rewrite: 2026-05-22 (pivot from “intent intelligence for local business outbound” → “revenue intelligence for vertical SaaS teams selling to local business”) Owner: Founder Companion: src/components/marketing/v2/* (homepage sections), src/app/(marketing)/vs/apollo-clay-gong/page.tsx 0. Index 1. Positioning Thesis 2. ICP and Personas 3. Pain Library 4. Competitor Map 5. Saturation Map 6. Whitespace Map 7. Intent Taxonomy 8. Signal Taxonomy 9. Messaging House 10. Vertical Packs 11. Comparison Angles 12. Evidence Log 13. Cycle Review 14. Decision Log 15. Glossary 16. Appendix A — Connection to the Intel System 1"
+  },
+  {
+    "file": "leadac files\\Product Documentation (1).pdf",
+    "pages": 41,
+    "chars": 50719,
+    "words": 5924,
+    "error": null,
+    "sample": "--- PAGE 1 --- LeadAC — Tam Ürün Dokümantasyonu Kaynak doğrudan koddan çıkarılmıştır: prisma/schema.prisma, src/lib/agent- workers/registry.ts, src/lib/ai-core/chains.ts, src/lib/plans.ts, src/app/**, src/workers/**. Pazarlama söyleminden değil, gerçekten kurulu olan işlevsellikten yazılmıştır. 1. Tek Cümlede Ürün LeadAC, lokal işletmelere outbound satış yapan ajansların kullandığı lokal lead- intelligence (potansiyel müşteri istihbaratı) katmanıdır. Bir posta kodu ve niş yazarsınız; sistem Google Maps’ten taze leadleri çeker, her sitede 20+ sinyalli denetim çalıştırır, fit skoru üretir (0–100), ve denetim bulgularına dayanan bir cold-email taslağı yazar. Gönderme işini Smartlead, Instantly, GHL, Gmail veya Outlook yapmaya devam eder; LeadAC onlara yakıt verir. İçinde 30’dan fazla AI worker, planner DAG’i, vector-tabanlı semantic memory, kanban deal pipeline, çoklu kullanıcı workspace + rol yönetimi, native Gmail/Outlook entegrasyonu, Stripe billing, multi-tenant izola"
+  },
+  {
+    "file": "leadac files\\Project roadmap (1).pdf",
+    "pages": 29,
+    "chars": 43013,
+    "words": 5416,
+    "error": null,
+    "sample": "--- PAGE 1 --- LeadAC x FineDine pivot project paper Status: Master project paper Date: 2026-05-29 Language: Turkish Audience: LeadAC founder team, product, engineering, marketing, sales, FineDine activation stakeholders Project name: LeadAC Restaurant-Tech Intelligence Pilot for FineDine 1. Yonetici ozeti LeadAC'in yeni yonu netlesmistir: urun artik sadece local lead generation veya enrichment araci olarak konumlanmamalidir. Bu katman piyasada hizla kalabaliklasmistir. Orbital, Resquared, Openmart, Clay workflow'lari ve benzeri araclar local business discovery, owner/contact enrichment, Google Maps extraction, review scraping, basic scoring ve outreach workflow alanlarini sahiplenmeye baslamistir. LeadAC'in kazanabilecegi alan bu veriyi uretmekten cok, verinin ustunde karar veren katmandir: LeadAC, restaurant-tech ve local-business marketlerine satis yapan ekipler icin post-enrichment operational intelligence layer'dir. Bu su anlama gelir: • Openmart, Orbital, Res"
+  },
+  {
+    "file": "leadac files\\Roller (basit) (1).pdf",
+    "pages": 4,
+    "chars": 1292,
+    "words": 175,
+    "error": null,
+    "sample": "--- PAGE 1 --- Çınar Ne Yapacak? Çınar’ın işi: “neyi build etmeliyiz ve neye satmalıyız?” kısmı. Şunları yapacak: • market research • agency ve SDR workflow araştırması • müşterilerin pain pointlerini bulma • rakip analizi • messaging angle bulma • hangi niche’e girileceğini analiz etme --- PAGE 2 --- Yani: marketin beynini yönetecek. Sonra bu bilgileri: • Kaan’a verecek → daha iyi outreach için • merte verecek → daha iyi product için Kaan Ne Yapacak? Kaan’ın işi: “müşteri getirme sistemi.” Şunları yapacak: • outbound • cold email • campaign yönetimi • SDR operasyonları • partnerships • distribution • content • meeting pipeline --- PAGE 3 --- Çınar’dan gelen insightlarla: campaign kuracak, müşteri bulacak, market feedback toplayacak. Sonra: • reply data • objectionlar • conversion dataları tekrar sisteme geri verecek. Mert Ne Yapacak? Senin iş: “bütün sistemi inşa etmek.” Şunlar"
+  },
+  {
+    "file": "leadac files\\Sprint 1 (Mert) (1).pdf",
+    "pages": 8,
+    "chars": 18262,
+    "words": 2478,
+    "error": null,
+    "sample": "--- PAGE 1 --- Sprint Raporu — Truth & Trust v1 / Foundation Day Sprint Bu sprintte iki şey üzerine çalıştım: lead analizinin doğruluğu ve sistemin parçalarının birbirleriyle düzgün konuşması. Sprint'in Çıkış Noktası Aslında en baştaki amacım yeni bir SDR ekranı (lead detail v2) yapmaktı, tamamen gerçek SDR akışına uygun olacak şekilde. Bu kararın arkasındaki sebep şu: Çınar bey'le birlikte SDR framework'lerini araştırırken fark ettim ki buy trigger, zamanlama, niyet sinyalleri gibi lokal SMB ölçeğinde satışa götüren tüm sinyalleri platformumuz zaten üretiyor — ama dağınık şekilde, 5 ayrı tab'a dağılmış halde veriyor. Bunun üzerine SDR v2 ekranı için AI-native bir yaklaşım planladım. Amaç şuydu: sistemin bir lead hakkında sahip olabileceği tüm veriyi SDR araştırma framework'lerine sokup, kullanıcıya sadece sonucu göstermek. Yani SDR'ın tab'lar arasında dolaşıp kendi kafasında bağlantı kurmasını engellemek — tüm açıları hazır önüne koymak. Yorum okumak, website analizine ba"
+  }
+]

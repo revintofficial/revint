@@ -165,6 +165,50 @@ enum Role {
   MEMBER
 }
 
+// FineDine v1 update — external CRM provider for two-way sync. Only
+// HUBSPOT for the beta; the enum exists so a second provider (e.g.
+// Pipedrive / GHL) can be added without a destructive migration.
+enum CrmProvider {
+  HUBSPOT
+}
+
+// Lifecycle of a `CrmConnection`. ACTIVE = tokens valid + sync runs.
+// EXPIRED = refresh token rejected (re-auth needed). REVOKED = user
+// disconnected in HubSpot. ERROR = repeated API failures; the
+// settings page surfaces `lastError` so the admin can re-connect.
+enum CrmConnectionStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  ERROR
+}
+
+// Direction of a `CrmSyncLog` row. INBOUND = HubSpot → LeadAC
+// (webhook / on-open read). OUTBOUND = LeadAC → HubSpot (writeback
+// of disposition / qualification / `leadac_*` properties).
+enum CrmSyncDirection {
+  INBOUND
+  OUTBOUND
+}
+
+// Idempotency / retry state for a `CrmSyncLog` row.
+enum CrmSyncStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  SKIPPED
+}
+
+// Denormalized lead temperature written back to HubSpot
+// (`leadac_temperature`) and surfaced as the Action Sheet badge.
+// Derived from the workspace playbook `temperatureRules` against
+// recency / disposition / qualification signals.
+enum LeadTemperature {
+  HOT
+  WARM
+  COLD
+}
+
 // AI Workers catalog. Every lead-activated AI deliverable produced by the
 // platform is one of these kinds. Keep this enum exhaustive: if a new worker
 // ships, add it here first, then wire a registry entry in
@@ -453,6 +497,10 @@ model Workspace {
   idealCustomerProfile IdealCustomerProfile?
   commercialInsights   CommercialInsight[]
   insightPerformance   InsightPerformance[]
+  // FineDine v1 update — CRM two-way sync + configurable playbook.
+  crmConnections       CrmConnection[]
+  playbook             WorkspacePlaybook?
+  crmSyncLogs          CrmSyncLog[]
 
   @@map("workspaces")
 }
@@ -498,7 +546,15 @@ model WorkspaceMember {
 model Lead {
   id                    String               @id @default(cuid())
   workspaceId           String               @map("workspace_id")
-  placeId               String               @map("place_id")
+  // FineDine v1 update — `placeId` is now NULLABLE so a HubSpot
+  // contact/company that hasn't been matched to a Google Place yet
+  // can live as a "CRM-only" lead (no analysis until matched). The
+  // `@@unique([workspaceId, placeId])` still holds: Postgres treats
+  // NULLs as distinct, so any number of CRM-only leads coexist while
+  // a non-null placeId stays unique per workspace. Place-first
+  // ingestion (Phase 2) sets this on a confident match and then
+  // fires the `lead_created` chain.
+  placeId               String?              @map("place_id")
   businessName          String               @map("business_name")
   formattedAddress      String               @map("formatted_address")
   borough               String?
@@ -699,6 +755,34 @@ model Lead {
   // which remains the default.
   accountId String? @map("account_id")
 
+  // FineDine v1 update — HubSpot two-way sync linkage. These ids tie
+  // the lead to its mirror objects in the external CRM so reads
+  // (Phase 1), inbound webhooks (Phase 2) and writeback (Phase 4) can
+  // resolve the right HubSpot object without a per-call search. All
+  // nullable: a lead discovered inside LeadAC has none until it is
+  // pushed to HubSpot, and a CRM-only lead has a contact/company id
+  // but no `placeId` until matched. `leadSource` records provenance
+  // ("HUBSPOT_INBOUND", "LEADAC_DISCOVERY", "MANUAL"). `leadTemperature`
+  // is denormalized here (computed from the playbook) so the leads
+  // list and writeback don't recompute it. `inboundReceivedAt` is the
+  // HubSpot create timestamp used for the "X hours ago · untouched"
+  // SLA line; `crmLastSyncedAt` is the last successful two-way sync.
+  crmContactId      String?          @map("crm_contact_id")
+  crmCompanyId      String?          @map("crm_company_id")
+  crmDealId         String?          @map("crm_deal_id")
+  crmStageId        String?          @map("crm_stage_id")
+  crmOwnerId        String?          @map("crm_owner_id")
+  leadSource        String?          @map("lead_source")
+  leadTemperature   LeadTemperature? @map("lead_temperature")
+  inboundReceivedAt DateTime?        @map("inbound_received_at")
+  crmLastSyncedAt   DateTime?        @map("crm_last_synced_at")
+  // Playbook stage key (e.g. "attempting", "qualified") — the
+  // workspace-configurable stage the lead currently sits in. Distinct
+  // from `crmStageId` (HubSpot's pipeline stage id) which `field-map.ts`
+  // maps onto this. Null = not yet placed in the playbook (defaults to
+  // the first stage in the UI).
+  playbookStageKey  String?          @map("playbook_stage_key")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -724,9 +808,20 @@ model Lead {
   objections          Objection[]
   discoverySessions   DiscoverySession[]
   insightApplications InsightApplication[]
+  // FineDine v1 update — CRM two-way sync back-relations.
+  qualification       LeadQualification?
+  crmSyncLogs         CrmSyncLog[]
 
   // placeId scoped per workspace so two workspaces can independently track the same business
   @@unique([workspaceId, placeId])
+  // FineDine v1 update — dedup CRM-only leads on the HubSpot contact /
+  // company id (Postgres NULLs distinct, so LeadAC-discovered leads
+  // with null crm ids never collide). Phase 2 ingestion upserts on
+  // these.
+  @@unique([workspaceId, crmContactId])
+  @@unique([workspaceId, crmCompanyId])
+  @@index([workspaceId, crmDealId])
+  @@index([workspaceId, leadTemperature])
   @@index([workspaceId, createdAt])
   @@index([workspaceId, hasWebsite])
   @@index([workspaceId, borough])
@@ -803,6 +898,132 @@ model Account {
   @@index([workspaceId, name])
   @@index([workspaceId, tier])
   @@map("accounts")
+}
+
+// FineDine v1 update — external CRM connection (HubSpot OAuth).
+// Workspace-scoped; one row per (workspace, provider). HubSpot stays
+// the system of record; LeadAC layers intelligence + workflow on top
+// and writes back via `leadac_*` custom properties + engagements.
+//
+// Token storage: `accessToken` / `refreshToken` are encrypted at rest
+// via `src/lib/integrations/crypto.ts` (AES-256-GCM when
+// CRM_TOKEN_ENCRYPTION_KEY is set; plaintext fallback in dev with a
+// `enc:`/raw discriminator so existing rows decrypt cleanly). This is
+// the security improvement called out in the plan vs `EmailAccount`
+// which stores plaintext.
+model CrmConnection {
+  id                String              @id @default(cuid())
+  workspaceId       String              @map("workspace_id")
+  provider          CrmProvider         @default(HUBSPOT)
+  // HubSpot portal (hub) id — resolves the workspace from an inbound
+  // webhook without trusting a query param. Indexed for that lookup.
+  portalId          String?             @map("portal_id")
+  accessToken       String              @map("access_token") @db.Text
+  refreshToken      String?             @map("refresh_token") @db.Text
+  expiresAt         DateTime?           @map("expires_at")
+  scopes            String[]            @default([])
+  status            CrmConnectionStatus @default(ACTIVE)
+  // HubSpot property name ↔ LeadAC concept mapping overrides. Defaults
+  // live in `src/lib/integrations/hubspot/field-map.ts`; this stores
+  // any per-workspace overrides the admin sets.
+  fieldMappingJson  Json                @default("{}") @map("field_mapping_json")
+  defaultPipelineId String?             @map("default_pipeline_id")
+  lastError         String?             @map("last_error") @db.Text
+  // Whether the `leadac_*` custom properties have been provisioned in
+  // this portal yet (one-time on connect). Avoids re-provisioning on
+  // every token refresh.
+  propertiesProvisionedAt DateTime?      @map("properties_provisioned_at")
+  connectedByUserId String?             @map("connected_by_user_id") @db.Uuid
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, provider])
+  @@index([portalId])
+  @@map("crm_connections")
+}
+
+// FineDine v1 update — configurable per-workspace sales playbook.
+// Drives the Action Sheet: which stages exist, which pitch angles are
+// available, the qualification checklist, and the rules that compute
+// temperature + no-show risk. FineDine is the first seed
+// (`scripts/seed-finedine-playbook.ts`). JSON shapes are documented in
+// `src/lib/playbook/types.ts`.
+model WorkspacePlaybook {
+  id                     String   @id @default(cuid())
+  workspaceId            String   @unique @map("workspace_id")
+  // [{ key, label, meaning, nextAction, order, hubspotPipelineId?, hubspotStageId? }]
+  stages                 Json     @default("[]")
+  // [{ key, label, whenToPitch, whenNotToPitch, triggers: string[] }]
+  angles                 Json     @default("[]")
+  // [{ key, label, requiredForQualified: boolean }]
+  qualificationChecklist Json     @default("[]") @map("qualification_checklist")
+  // { hot: {...}, warm: {...}, cold: {...} } recency / disposition rules
+  temperatureRules       Json     @default("{}") @map("temperature_rules")
+  // { highRiskWhen: [...], factors: [...] } no-show heuristics
+  noShowRiskRules        Json     @default("{}") @map("no_show_risk_rules")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_playbooks")
+}
+
+// FineDine v1 update — qualification state per lead. One row per lead
+// (`leadId` unique). `answers` maps checklist key → boolean/value;
+// `qualified` is the computed roll-up against the playbook's
+// `requiredForQualified` items. `qualificationRisk` / `noShowRisk` are
+// "low" | "medium" | "high" strings produced from the playbook rules.
+model LeadQualification {
+  id                String   @id @default(cuid())
+  workspaceId       String   @map("workspace_id")
+  leadId            String   @unique @map("lead_id")
+  answers           Json     @default("{}")
+  qualified         Boolean  @default(false)
+  status            String?
+  qualificationRisk String?  @map("qualification_risk")
+  noShowRisk        String?  @map("no_show_risk")
+  updatedByUserId   String?  @map("updated_by_user_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("lead_qualifications")
+}
+
+// FineDine v1 update — CRM sync outbox + inbound idempotency log.
+// Every two-way sync attempt writes one row. `payloadHash` makes
+// writeback idempotent (same payload → SKIPPED instead of a dup
+// HubSpot write); the unique constraint enforces it. Failed OUTBOUND
+// rows are retried by a reconcile tick (no new BullMQ queue — runs on
+// the existing supervisor). INBOUND rows dedup webhook deliveries.
+model CrmSyncLog {
+  id          String           @id @default(cuid())
+  workspaceId String           @map("workspace_id")
+  leadId      String?          @map("lead_id")
+  direction   CrmSyncDirection
+  // "contact" | "company" | "deal" | "engagement" | "property" | ...
+  objectType  String           @map("object_type")
+  payloadHash String           @map("payload_hash")
+  status      CrmSyncStatus    @default(PENDING)
+  attempts    Int              @default(0)
+  lastError   String?          @map("last_error") @db.Text
+  // The HubSpot object / engagement id this sync created or touched.
+  externalId  String?          @map("external_id")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead      Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, direction, payloadHash])
+  @@index([workspaceId, status])
+  @@index([workspaceId, leadId])
+  @@map("crm_sync_logs")
 }
 
 // SDR-first activity timeline. Every outbound or status-change touch

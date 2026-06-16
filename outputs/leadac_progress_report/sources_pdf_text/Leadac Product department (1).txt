@@ -1,0 +1,402 @@
+
+
+--- PAGE 1 ---
+LeadAC — Product Department 
+Framework 
+1. Department Charter 
+Amaç 
+Bu departmanin varolus nedeni: urunu bu kadar toolun oldugu crowded bir pazar icinde bir 
+konuma yerlestirebilmek, obur toollarla birlikte calismasini saglamak ve urunun gercekten 
+pazardaki bir problemi cozdugunu kanitlamak. 
+Eger bu departman olmasaydi, urun ozellik olarak gelisirdi fakat bu ozellikler piyasadaki 
+hicbir workflowa calisma bicimine tam olarak uymazdi ve b2b piyasasinda insanlar 
+kendine ozel tasarlanmis gibi duran workflow dostu, bos is workflow icermeyen, ham 
+sonuc veren araclarla sadece para verirler, cunku herhangi bir businessin asil amaci para 
+kazanmaktir, o sebeple sadece dolayli yoldanda olsa revenue etkisi yapan isi hizlandiran 
+urunlere para verirler.  
+Bu departman sirketin gidisat yonu ve vizyonu hakkinda buyuk olcude soz sahibidir, fakat 
+son karar verici akil degildir, son akil olan foundelarin onune anketleri, degisimi, gerekceyi, 
+roadmapi ve beklenen sonuclari sunar ve sirketin founder akli son karari verir, evidence-
+based calisir (hakim gibi). 
+Bu departman: 
+• Leadacin positioningini korur 
+• Vertical SaaS GTM marketindeki gelismeleri takip eder 
+• Leadacin enrichment sonrasi intelligence’ini gercek sirketlerle  beraber dogrular ve 
+ilk etapta manuel gelistirir. Ilk faz Revenue intelligenc i kurar, satis kapatan ilk  
+gercek dunya fb yaklasimlarini kesfeder sisteme engtegrasyonunu planlar 
+• Rakip takibi real time olmali tum bilgiler bu departmandan ogrenilmeli, sirketin 
+kutuphanesi gibidir piyasa konusunda. 
+ 
+
+--- PAGE 2 ---
+2. Strategic Mission 
+Amacımız, vertical SaaS şirketlerinin local business’e satış yaparken neyin gerçekten 
+çalıştığını öğrenen ve bu bilgiyi şirket hafızasına dönüştüren intelligence infrastructure’ı 
+kurmak. 
+Bugün Local outbound: 
+• Apollo lead veriyor. 
+• BDR Manager satis arttiran arastirma yolu ve pattern veriyor. 
+• BDR patterna gore arastiriyor ve onceliklendiriyor. 
+• BDR ariyor yada mail atiyor. 
+• BDR Hubspota sonuc giriyor. 
+• Gong BDR hatasi soyluyor optimize ediyor. 
+• RevOp tum sureci birbirine baglar, CRM yapısını, reporting’i, compensation logic’ini, 
+pipeline operasyonunu ve genel GTM sistemini yönetir. Ayni zamanda outreach 
+davranışlarının ve sales pattern’lerinin revenue ürettiğini analiz edip managera iletir 
+ 
+LeadAC olarak ise: outcome + signal + behavior ilişkisini sürekli öğrenen closed-loop 
+revenue intelligence layer olmaya calisiyoruz. 
+Stretajik hedef 
+LeadAC ilk başta bir outbound workflow tool’u gibi başlıyor. 
+Ama zamanla sadece lead bulan veya sequence gönderen bir sistem olmaktan çıkıyor. 
+İlk aşamada FineDine ile gerçek outbound süreçlerini görüyoruz: 
+• hangi restoran reply veriyor, 
+• hangi angle çalışıyor, 
+• hangi pain conversion getiriyor öğreniyoruz. 
+ 
+ 
+ 
+Sonra sistem structured signal toplamaya başlıyor: 
+• review pattern’leri. 
+
+--- PAGE 3 ---
+• website quality. 
+• reservation stack. 
+• Instagram activity. 
+• SEO gap’leri gibi. 
+Ardından outreach outcome’ları sisteme akıyor: 
+• Open 
+• reply 
+• booked meeting 
+• closed deal 
+ 
+Bu noktadan sonra LeadAC pattern görmeye başlıyor. 
+Örneğin: 
+• reservation flow’u olmayan brunch café’ler daha iyi dönüşüyor,  
+• weak mobile UX reply rate artırıyor,  
+• overly corporate messaging fine dining’de kötü performans veriyor.  
+Zamanla farklı agency’ler sisteme girdikçe LeadAC bir outbound behavior dataset’i haline 
+geliyor. 
+Sonraki aşamada sistem: 
+• CTA,  
+• timing,  
+• sequence order,  
+• personalization depth,  
+• outreach tone  
+gibi davranışları optimize etmeye başlıyor uzun vadede hedef AI in guzel mesaj yazmasi 
+degil hangi davranışın revenue ürettiğini öğrenmesini sağlamak. 
+ 
+LeadAC’in gerçek moat’i burada oluşuyor: 
+• Her outreach yeni outcome üretir. 
+• Her outcome sistemi biraz daha akıllandırır 
+
+--- PAGE 4 ---
+• Her agency sisteme yeni behavioral data getirir. 
+Bu yüzden uzun vadede LeadAC bir automation tool değil, Revenue Intelligence haline 
+geliyor. 
+3. Department Scope 
+Departmanın neyi yaptığı / yapmadığı. 
+In Scope 
+• Competitor intelligence 
+• Market mapping 
+• Vertical taxonomy research 
+• Signal architecture 
+• Buyer ecosystem tracking 
+• Positioning maintenance 
+• TAM expansion research 
+• Integration ecosystem tracking 
+• Strategic trend analysis 
+Out of Scope 
+• Daily SDR ops. 
+• Customer support. 
+• Generic marketing execution. 
+• Paid ads management. 
+• CRM administration 
+4. Operating Model 
+Amaç 
+ilk etapta bu 3 kişi tüm yapıyı taşıyabilir. Ama bunu klasik “research team” gibi değil, hafif 
+operasyon + yüksek sinyal yoğunluğu olan bir intelligence loop gibi kurmak gerekir. 
+
+--- PAGE 5 ---
+Bu ekip şu şekilde çalışır: 
+Başlangıçta tüm departman tek bir hedefe odaklanır, sistemin gerçekten para üreten 
+sinyali bulması. Bu yüzden decision impact yaratacak sinyali yakalamak önceliktir. 
+Günlük iş yükü dağılımı doğal olarak bölünür. Bir kişi rakip ve market hareketlerini takip 
+ederken, diğer kişi vertical ve buyer davranışını çözer, üçüncü kişi tüm bu veriyi product ve 
+positioning kararına çevirir. Ama bu roller sabit bir “iş tanımı” gibi değil, akışa göre 
+esneyerek çalışır. 
+ 
+Ekip 
+1. Competitor & Market Intelligence Owner 
+Rakiplerin ürün, fiyatlama ve GTM hamlelerini sürekli analiz ederim. 
+Ne yaptıklarını değil, hangi problemi nasıl çözdüklerini ve bunun pazarı nasıl 
+değiştirdiğini çözerim. 
+ 
+2. Vertical & Buyer Intelligence Owner 
+F&B ve diğer vertical’larda segmentleri ve alıcı davranışlarını analiz eder. 
+Hangi alt segmentin gerçekten satın aldığını, kimlerin karar verdiğini ve hangi pain’in satisa 
+goturdugunu netleştirir. 
+ 
+3. Signal & Positioning Owner 
+Tüm operasyonel sinyalleri (review, website, tech stack, CRM davranışları) revenue ile 
+ilişkilendirir. 
+Bunları product’ın öğrenebileceği yapıya çevirip LeadAC’in pazardaki konumunu ve 
+mesajını sürekli günceller. 
+ 
+
+--- PAGE 6 ---
+5. Intelligence Domains 
+• Competitor Intelligence 
+o Rakiplerin ürün, fiyatlama ve GTM hareketlerini sürekli takip eder. Bu sayede 
+pazarda kim nereye gidiyor ve hangi strateji çalışıyor net görür. 
+• Market Mapping 
+o Pazardaki tüm oyuncuları ve segmentleri çıkarır. Hangi şirket hangi boşluğu 
+dolduruyor ve nerede yoğunlaşma var bunu net bir haritaya döker. 
+• Vertical Taxonomy Research 
+o Her vertical içindeki alt segmentleri ve iş modellerini sınıflandırır. Böylece 
+F&B gibi alanlarda hangi alt kırılımların gerçekten para ürettiğini anlayabilir. 
+• Signal Architecture 
+o Hangi sinyallerin (review, website, tech stack vb.) revenue ile ilişkili olduğunu 
+tanımlar. Bu sinyalleri sistemin öğrenebileceği bir yapıya çevirir. 
+• Buyer Ecosystem Tracking 
+o Satın alma kararını kim veriyor ve süreç nasıl ilerliyor bunu analiz eder. 
+Böylece outbound’un doğru kişiye ve doğru noktaya gitmesini sağlar. 
+• Positioning Maintenance 
+o LeadAC’in pazarda nasıl konumlandığını sürekli günceller. Rakipler ve pazar 
+değiştikçe mesaj ve değer önerisini net tutar. 
+• TAM Expansion Research 
+o Hangi yeni dikeylere ne zaman girilebileceğini analiz eder. F&B sonrası hangi 
+pazarların doğal genişleme olduğunu belirler. 
+• Integration Ecosystem Tracking 
+o LeadAC’in hangi tool’larla birlikte çalışması gerektiğini takip eder. SDR ve 
+RevOps stack içinde nerede konumlanacağını netleştirir. 
+• Strategic Trend Analysis 
+o Pazardaki büyük yön değişimlerini ve AI/RevOps trendlerini takip ede. Bu 
+trendlerin LeadAC’e etkisini erken görüp stratejiye çevirir. 
+5.1 Competitor Intelligence 
+Takip edilenler 
+• Pricing 
+• Product launches 
+
+--- PAGE 7 ---
+• Funding 
+• Messaging changes 
+• GTM motion 
+• Customer migration 
+• Partnerships 
+• Hiring patterns 
+Output 
+• Weekly competitor brief 
+• Threat assessment 
+• Strategic implication memo 
+ 
+5.2 Vertical Intelligence 
+Takip edilenler 
+• Vertical SaaS ecosystems 
+• Local business software stacks 
+• Switching patterns 
+• Buyer maturity 
+• Expansion opportunities 
+Output 
+• Vertical pack research docs 
+• Signal opportunities 
+• Expansion readiness scoring 
+ 
+
+--- PAGE 8 ---
+5.3 Signal Intelligence 
+Takip edilenler 
+• Operational signals 
+• Tech-stack fingerprints 
+• Behavioral patterns 
+• Adoption indicators 
+• Revenue proxies 
+Output 
+• Signal taxonomy updates 
+• Detection logic specs 
+• Discovery scoring rules 
+ 
+5.4 Positioning Intelligence 
+Takip edilenler 
+• Category evolution 
+• Messaging shifts 
+• Competitor narratives 
+• Market language trends 
+• Analyst terminology 
+Output 
+• Messaging revisions 
+• Homepage narrative updates 
+• Comparison page strategy 
+5.4 Operating model 
+Departman sürekli dönen bir intelligence loop gibi çalışır. 
+
+--- PAGE 9 ---
+• Akış: 
+o Market signals → tagging → insight → validation → product decision → 
+execution → geri beslem 
+  
+• Günlük: 
+o signal capture + tagging 
+ 
+• Haftalık: 
+o insight synthesis + validation 
+ 
+• Aylık: 
+o product opportunity shaping 
+ 
+• Çeyreklik: 
+o stratejik yeniden konumlandırma 
+ 
+6. Research Methadology 
+ 
+ 
+7. Intelligence Output System  
+Amaç 
+Departmanın ne ürettiğini standardize eder. 
+Weekly Outputs 
+• Competitor movement digest 
+• GTM market changes 
+• Product risk alerts 
+
+--- PAGE 10 ---
+Monthly Outputs 
+• Vertical opportunity review 
+• Signal taxonomy updates 
+• TAM evolution 
+Quarterly Outputs 
+• Strategic positioning review 
+• Expansion recommendation 
+• Threat landscape assessment 
+ 
+8. Knowledge Management Structure 
+Bu bölüm LeadAC için çok kritik çünkü sizin core thesis’iniz zaten “memory.” 
+ 
+Canonical repositories 
+• Positioning docs 
+• Competitor database 
+• Signal taxonomy 
+• Vertical maps 
+• Buyer ecosystem maps 
+Documentation standards 
+• Timestamped updates 
+• Source references 
+• Confidence level 
+• Decision linkage 
+
+--- PAGE 11 ---
+Knowledge retention rules 
+• No intelligence lives in Slack only 
+• All strategic insights documented 
+• Research linked to actionable implication 
+ 
+9. Department KPIs 
+Research department KPI’sız olursa “nice-to-have team” olur. 
+ 
+Strategic KPIs 
+• New signal discoveries 
+• Vertical readiness completion 
+• Competitor response speed 
+• Positioning update velocity 
+• Product insight contribution rate 
+Operational KPIs 
+• Weekly intelligence coverage % 
+• Documentation freshness 
+• Research turnaround time 
+• Signal validation accuracy 
+ 
+
+--- PAGE 12 ---
+10. Cross-Functional Interfaces 
+Amaç 
+Departmanın diğer ekiplerle ilişkisini tanımlar. 
+ 
+Product 
+• Signal logic 
+• Feature prioritization 
+• Vertical pack requirements 
+GTM 
+• ICP refinement 
+• Messaging 
+• Competitive handling 
+Engineering 
+• Detection feasibility 
+• Data architecture implications 
+Founder Office 
+• Strategic escalation 
+• Market shifts 
+• Expansion timing 
+ 
+
+--- PAGE 13 ---
+11. Governance & Review Cadence 
+PRINCE2 benzeri formalite burada gelir. 
+ 
+Weekly Review 
+• Competitor movement 
+• Active risks 
+• Market anomalies 
+Monthly Review 
+• Intelligence synthesis 
+• Strategic implications 
+• Resource allocation 
+Quarterly Review 
+• Category evolution 
+• Expansion opportunities 
+• Department effectiveness 
+ 
+12. Risk Register 
+Çok profesyonel görünür ve gerçekten işe yarar. 
+ 
+Risk örnekleri 
+• Competitor category convergence 
+
+--- PAGE 14 ---
+• Signal commoditization 
+• Data provider dependency 
+• Vertical saturation 
+• AI SDR market collapse 
+• Compliance/regulation shifts 
+Her risk için: 
+• Probability 
+• Impact 
+• Mitigation owner 
+• Monitoring signal 
+ 
+13. Decision Log 
+LeadAC için özellikle önemli. 
+Yazılması gerekenler 
+• Ne karar alındı 
+• Neden alındı 
+• Hangi veriye dayanıyordu 
+• Kim approve etti 
+• Ne zaman review edilecek 
+Bu bölüm şirketin institutional memory’si olur. 
+ 
+
+--- PAGE 15 ---
+14. Appendix Structure 
+A. Competitor Profiles 
+B. Vertical Maps 
+C. Signal Library 
+D. Pricing Intelligence 
+E. Conference Calendar 
+F. Ecosystem Relationship Maps 
+G. TAM Database 
+H. Integration Watchlist 
+ 
+En Doğru Departman İsmi 
+Bence en güçlü seçenekler: 
+1. Strategic Intelligence 
+2. Market Intelligence 
+3. Revenue Intelligence Research 
+4. GTM Intelligence 
+5. Strategic Research & Signals 
+6. Intelligence Systems 
+LeadAC narrative’iyle en uyumlu olan: 
+Strategic Intelligence & Signal Systems 
+
+--- PAGE 16 ---
+veya daha kısa: 
+GTM Intelligence 
+olur. 
+ 

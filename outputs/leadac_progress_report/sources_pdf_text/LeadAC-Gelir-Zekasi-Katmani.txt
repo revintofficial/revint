@@ -1,0 +1,176 @@
+
+
+--- PAGE 1 ---
+LeadAC: Gelir Zekas1 
+Katman1
+Yerel i_letmelere sat1_ yapan SaaS _irketleri için Apollo, Gong ve 
+Clay'in güçlerini tek bir modelde birle_tiren, eri_ilebilir ve derin bir 
+platform.
+KAAN BEY PIYASA & TOOL ANALIZI
+
+--- PAGE 2 ---
+LeadAC Nedir?
+Kategori: Gelir Zekas1 Katman1
+LeadAC, s1radan bir lead-gen arac1 
+deildir. Yerel i_letme sat1c1lar1 için 
+tasarlanm1_, Apollo + Gong + Clay 
+yeteneklerini tek bir entegre modelde 
+sunan bir Gelir Zekas1 platformudur.
+Daha eri_ilebilir, daha derin 
+4 ve rakiplerinden temelden 
+farkl1 bir mimari.
+
+--- PAGE 3 ---
+1deal Mü_teri Profili (ICP )
+Firma Tipi
+Yerel i_letmelere sat1_ yapan Dikey/KOB1 SaaS _irketleri
+Ölçek
+$2M3$50M ARR
+303300 çal1_an
+Hedef Persona
+VP of Sales, GTM Lideri veya RevOps Lideri
+$1K3$10K ayl1k bütçe yetkisi
+Mü_teri Taban1
+HVAC, di_ klinikleri, restoranlar, güzellik merkezleri, emlak, oto 
+tamiri
+
+--- PAGE 4 ---
+T emel Ac1 Noktas1
+30dk
+Manuel Ara_t1rma
+SDR ba_1na, hesap ba_1na harcanan 
+ortalama süre
+%50
+Y anl1_ Veri
+Bu ara_t1rman1n yar1s1 hatal1 veya eksik 
+ç1k1yor
+%1.5
+Reply Rate
+Outbound kampanyalar1n1n dönü_ 
+oran1 bu seviyede t1kan1yor
+Neden Bu Kadar Kritik?
+SDR ekipleri zamanlar1n1n büyük bölümünü ara_t1rmaya harc1yor 4 üstelik yar1s1 yanl1_ sonuçlarla. Outbound motorlar1 
+verimsiz çal1_1rken büyüme hedefleri kaç1yor.
+Bu bir verimlilik sorunu deil; yap1sal bir gelir kayb1d1r.
+
+--- PAGE 5 ---
+Frankenstein Stack: Maliyetin Anatomisi
+LeadAC olmadan kurulan "en iyi senaryo" yaz1l1m y11n1 4 Pre-Series A _irketler için:
+Katman Araç Ayl1k Maliyet Sorun
+Hesap & 1leti_im Apollo + ZoomInfo $1,500 Yerel dikey 
+detay yok
+Zenginle_tirme Clay $3,000 Manuel kural 
+yaz1m1
+Arama & Sekans Aircall / Outreach $1,500 CRM 
+entegrasyon
+u kopuk
+Çar1 Zekas1 Gong (4 koltuk) $6,000 Sadece 
+etiket olarak 
+gidiyor
+Web Kaz1ma + LLM Apify + OpenAI $1,500 Özel kod 
+gerektirir
+CRM + BI HubSpot Pro + Hex $2,500 Semantik 
+kopukluk
+1_letme Gücü Tam Zamanl1 RevOps $10,000 Insan 
+ba1ml1l11
+Ayl1k T oplam
+~$26,000
+Y1ll1k T oplam
+~$310,000
+Kurulum Süresi
+334 Ay
+
+--- PAGE 6 ---
+Stack'in 5 Y ap1sal Zafiyeti
+Manuel Köprüler
+Gong içgörüleri HubSpot'a 
+yaln1zca etiket olarak geçer; 
+sistemi otomatik beslemez.
+Özel Kodlama 1htiyac1
+Her dikey pazar için kural yaz1m1 
+234 haftal1k RevOps döngüleri 
+gerektirir.
+Semantik Kopukluk
+Çar1daki "rezervasyon" ile 
+CRM'deki "kazan1ld1" hiçbir yerde 
+anlamsal olarak birle_mez.
+Haf1za Kayb1
+Bir SDR ayr1ld11nda kurumsal 
+bilgi de gider; verinin tek bir 
+kanonik konumu yoktur.
+Kötü Ekonomi
+$310K/y1l ve 334 ayl1k kurulum, 
+hedeflenen mid-market SaaS 
+firmalar1 için pratik deildir.
+LeadAC: HubSpot balant1s1yla  devreye girer. RevOps mühendisi gerekmez.
+
+--- PAGE 7 ---
+Rekabet Haritas1: 5 Halkal1 Ekosistem
+Neden 5 Halka?
+Piyasa statik deildir. LeadAC'in etraf1ndaki ekosistem, 
+dorudan rakiplerden mü_terilerin satt11 yerel CRM'lere 
+kadar birbirine bal1 be_ katmandan olu_ur.
+Tier 1: Dorudan rakipler 4 Apollo, Clay, Gong
+Tier 2: Dolayl1 sinyal kaynaklar1
+Tier 3: Avlanan dikey CRM'ler
+Tier 4: Gerçek TAM hedefleri
+Tier 5: Kanal & entegrasyon ortaklar1
+
+--- PAGE 8 ---
+Tier 1 Rakip Analizi: 1zlenecek Sinyaller
+Apollo.io
+Veri ve sekans lideri. Yerel 
+dikey detaylardan yoksun. AI 
+3.0 lansmanlar1 takip 
+edilmeli.
+Outreach.ai
+Enterprise'a kay1yor. Q3 
+2026'da mid-market ç1k1_lar1 
+LeadAC için dorudan 
+f1rsat.
+Clay
+Mimari rakip. "Sculptor" 
+özellii pazara giri_ 
+bariyerini dü_ürebilir. Ekim 
+2026 izlenmeli.
+Gong
+Analitik lideri. Mid-market'e 
+inme sinyali verirse 
+varolu_sal tehdit. Q3 2026 
+raporlar1 kritik.
+
+--- PAGE 9 ---
+Tier 334: Avlanan CRM'ler & Gerçek T AM
+Tier 3 4 Dijital 1mza Hedefleri
+LeadAC web taramas1nda bu sistemlerin varl11n1 sinyal 
+olarak okur:
+HVAC & Saha
+ServiceTitan, Jobber, Housecall Pro, Workiz
+Restoran
+Toast, Square, OpenTable Lite, Resy
+Di_ & Güzellik
+Dentrix, Open Dental, Boulevard, Mindbody
+Tier 4 4 Gerçek T AM: $2M3$50M ARR
+1. Dalga: Workiz, FieldEdge, Service Fusion, Owner.com, 
+BentoBox, Sevenrooms
+2. Dalga: Curve Dental, Boulevard, Mews ($185M yat1r1m), 
+Clio, Lawmatics
+Sistemler aras1 migrasyon sinyalleri LeadAC 
+için en deerli tetikleyicilerden biridir.
+
+--- PAGE 10 ---
+Kopyalanamaz Savunma 
+Hendei & Fiyatland1rma
+Semantik Haf1za
+CRM'deki kazanma/kaybetme verileri, bir sonraki ke_if sorgusunu 
+otomatik keskinle_tirir. Kurumsal haf1za kal1c1 hale gelir.
+Dikey Fark1ndal1k
+Lokasyon say1s1, web altyap1s1 ve sosyal kan1tlar detayl1 biçimde 
+i_lenir. Her sektör için özgün zeka.
+Kolay Kurulum
+"CRM'inizi balay1n. 1lk 200 hesab1n1z zenginle_tirilmi_ ve 
+senkronize olarak 1 saatte elinizde."
+Kapal1 Döngü Örenme
+Her anla_ma sonucu sistemi besler. 
+LeadAC, araçlar1n toplam1 deil; onlar1 anlayan ve birbirine 
+balayan zekan1n kendisidir.

@@ -120,7 +120,7 @@ export function StackCostWidget() {
                   onClick={() => setThirdTool(t)}
                   className={`rounded-md border px-3 py-2 text-[14px] capitalize transition-colors ${
                     thirdTool === t
-                      ? "border-signal bg-[hsl(38_60%_15%_/_0.4)] text-signal"
+                      ? "border-signal bg-[hsl(218_50%_16%_/_0.4)] text-signal"
                       : "border-ink-3 bg-ink-0 text-paper-1 hover:text-paper-0"
                   }`}
                 >
@@ -192,7 +192,7 @@ export function StackCostWidget() {
             ))}
           </ul>
 
-          <div className="mt-6 rounded-lg border border-signal/40 bg-[hsl(38_60%_15%_/_0.3)] p-4">
+          <div className="mt-6 rounded-lg border border-signal/40 bg-[hsl(218_50%_16%_/_0.3)] p-4">
             <div className="text-[13px] text-paper-1">
               LeadAC Team (5 seats, all integrations)
             </div>

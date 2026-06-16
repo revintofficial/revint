@@ -118,7 +118,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     <div className="rounded-2xl border border-ink-3 bg-ink-1 p-6 md:p-7">
       {magicSent ? (
         <div className="py-4 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-signal/40 bg-[hsl(38_60%_15%_/_0.4)]">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-signal/40 bg-[hsl(218_50%_16%_/_0.4)]">
             <Mail className="h-5 w-5 text-signal" />
           </div>
           <h2 className="mt-4 text-[18px] font-medium text-paper-0">

@@ -15,20 +15,20 @@
 
 :root {
   /* Ink / paper / signal — single source of truth for (site)/* */
-  --ink-0: 12 6% 4%;       /* page background — near-black with warm tint */
-  --ink-1: 12 6% 7%;       /* card / surface */
-  --ink-2: 12 6% 11%;      /* elevated surface */
-  --ink-3: 12 6% 18%;      /* divider / border */
-  --ink-4: 12 6% 28%;      /* muted text on dark */
+  --ink-0: 220 10% 4%;     /* page background — near-black with cool tint */
+  --ink-1: 220 10% 7%;     /* card / surface */
+  --ink-2: 220 10% 11%;    /* elevated surface */
+  --ink-3: 220 10% 18%;    /* divider / border */
+  --ink-4: 220 10% 28%;    /* muted text on dark */
 
-  --paper-0: 36 12% 96%;   /* primary text (≈ alpha 0.96) */
-  --paper-1: 36 12% 88%;   /* secondary text */
-  --paper-2: 36 12% 70%;   /* tertiary text */
-  --paper-3: 36 12% 48%;   /* muted text */
+  --paper-0: 216 14% 96%;  /* primary text (≈ alpha 0.96) */
+  --paper-1: 216 14% 88%;  /* secondary text */
+  --paper-2: 216 14% 70%;  /* tertiary text */
+  --paper-3: 216 14% 48%;  /* muted text */
 
-  --signal: 38 92% 56%;        /* amber lamp — single accent */
-  --signal-soft: 38 60% 70%;   /* soft variant for body text */
-  --signal-glow: 38 92% 56% / 0.28;
+  --signal: 218 85% 58%;        /* royal azure — single accent */
+  --signal-soft: 216 60% 74%;   /* soft variant for body text */
+  --signal-glow: 218 85% 58% / 0.28;
 
   --site-success: 152 48% 50%;
   --site-warning: 38 70% 52%;
@@ -51,16 +51,18 @@
 
   /* -----------------------------------------------------------------------
  * Cinematic landing tokens — used by src/components/marketing/cine/*.
- * Warm editorial palette sits next to the existing iOS-dark system.
+ * Cool editorial palette sits next to the existing iOS-dark system.
  * Do not remove without grepping `cine-` + `liquid-glass` + `font-display`.
  * --------------------------------------------------------------------- */
-  /* Warm editorial palette (HSL triplets so alpha works in hsl()/hsla()) */
-  --cine-ink: 240 6% 7%;
-  --cine-cream: 36 32% 92%;
-  --cine-ochre: 32 62% 64%;
-  --cine-terra: 14 58% 32%;
-  --cine-indigo: 231 55% 60%;
-  --cine-border: 36 20% 88% / 0.16;
+  /* Cool editorial palette (HSL triplets so alpha works in hsl()/hsla()).
+   * Variable names (ochre/terra) kept for backward compat; values are now
+   * blue-aligned to match the royal-azure brand hue. */
+  --cine-ink: 222 12% 7%;
+  --cine-cream: 216 24% 92%;
+  --cine-ochre: 218 72% 62%;
+  --cine-terra: 222 55% 30%;
+  --cine-indigo: 226 60% 60%;
+  --cine-border: 216 22% 88% / 0.16;
   --cine-gutter: clamp(20px, 4.2vw, 56px);
   --cine-max: 1440px;
 
@@ -68,7 +70,7 @@
    * Leadac theme system — single mathematical HSL scale.
    *
    * To re-skin the entire application, change ONLY these knobs:
-   *   --leadac-h    → primary hue  (0-360, current 38 = warm ochre)
+   *   --leadac-h    → primary hue  (0-360, current 218 = royal azure)
    *   --leadac-s    → primary sat  (0-100%, default 62%)
    *   --leadac-ns   → neutral surface sat (default 7%)
    *   --leadac-nts  → neutral text sat    (default 10%)
@@ -78,8 +80,8 @@
    * existing consumers shift automatically without code changes.
    * Keep src/lib/colors.ts (LEADAC_HUE / LEADAC_SATURATION) in sync.
    * ----------------------------------------------------------------- */
-  --leadac-h: 38;
-  --leadac-s: 78%;
+  --leadac-h: 218;
+  --leadac-s: 85%;
   --leadac-ns: 7%;
   --leadac-nts: 10%;
 
@@ -1190,7 +1192,7 @@ button, a, .cursor-pointer {
 /* Pulse used on the signal lamp icon — slow, optical */
 @keyframes signal-pulse {
   0%, 100% { box-shadow: 0 0 0 0 hsl(var(--signal-glow)); }
-  50%      { box-shadow: 0 0 0 8px hsl(38 92% 56% / 0); }
+  50%      { box-shadow: 0 0 0 8px hsl(218 85% 58% / 0); }
 }
 .site-signal-dot {
   width: 8px;
@@ -1221,13 +1223,13 @@ button, a, .cursor-pointer {
   gap: 10px;
   padding: 12px 20px;
   background: hsl(var(--signal));
-  color: hsl(12 6% 6%);
+  color: hsl(220 10% 5%);
   border-radius: 8px;
   font-weight: 600;
   font-size: var(--site-text-15);
   letter-spacing: -0.01em;
   transition: transform 160ms ease, box-shadow 160ms ease;
-  border: 1px solid hsl(38 92% 46%);
+  border: 1px solid hsl(218 70% 48%);
 }
 .site-btn-primary:hover {
   transform: translateY(-1px);

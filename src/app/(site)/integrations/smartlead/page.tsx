@@ -159,7 +159,7 @@ export default function SmartleadIntegrationPage() {
             {STEPS.map((s) => (
               <div key={s.title} className="bg-ink-1 p-6 md:p-7">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-signal/30 bg-[hsl(38_60%_15%_/_0.4)]">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-signal/30 bg-[hsl(218_50%_16%_/_0.4)]">
                     <s.icon className="h-4 w-4 text-signal" />
                   </div>
                   <div className="text-[16px] font-medium text-paper-0">

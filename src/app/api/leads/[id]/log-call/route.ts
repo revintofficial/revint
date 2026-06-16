@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { enqueueCrmWriteback } from "@/lib/integrations/hubspot/writeback";
 import type { CallDisposition } from "@/generated/prisma/client";
 
 const VALID_DISPOSITIONS: CallDisposition[] = [
@@ -131,6 +132,15 @@ export async function POST(
       disposition,
       isOptOut,
     });
+
+    // FineDine v1 update — push the disposition + a call engagement to
+    // HubSpot (best-effort, idempotent outbox). Never blocks the response.
+    void enqueueCrmWriteback(prisma, {
+      workspaceId,
+      leadId: id,
+      reason: "disposition",
+      engagementNote: `Call logged: ${disposition}${notes ? ` — ${notes}` : ""}`,
+    }).catch(() => {});
 
     return NextResponse.json({ ok: true, disposition, nextActionDueAt });
   } catch (error) {

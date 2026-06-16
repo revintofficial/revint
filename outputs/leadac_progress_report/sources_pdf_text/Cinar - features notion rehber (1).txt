@@ -1,0 +1,386 @@
+
+
+--- PAGE 1 ---
+Outcomes DB — Hedefler 
+Field Ne yaz Örnek Tuzak 
+Title Hedefin 5-7 kelimelik 
+adı, fiil + tarih veya 
+sayı içersin 
+Ship paid v1 by 
+2026-07-01 
+"LeadAC'i büyütmek" 
+gibi belirsiz olmasın 
+North 
+Statement 
+Bu hedefe ulaştığını 
+nasıl anlarsın — 
+gözlenebilir tek 
+cümle 
+First $1 from a 
+real agency (not 
+founder card) 
+"Başarılı olmak" gibi 
+soyut olmasın 
+Category Şu anki aşaman PRE_LAUNCH LeadAC çıkmadıysa 
+hepsi PRE_LAUNCH 
+Status Hâlâ peşinde misin ACTIVE Bıraktığını ACHIEVED 
+veya ABANDONED 
+yap, silme 
+Linked Briefs Otomatik dolar — Manuel ekleme — 
+Brief tarafından 
+bağlanır 
+ 
+Briefs DB — Feature Fikirleri (En Çok Yazılan) 
+Field Ne yaz Örnek Tuzak 
+Number Otomatik 
+(FB-0001...) 
+— Elden değişme 
+Name Feature'ın tek 
+satır adı, 
+jargon yok 
+Call queue UI for F&B 
+(replaces deals) 
+"Sistem iyileştirme" 
+gibi vague 
+Outcome Bu feature 
+hangi 
+outcome'a 
+hizmet ediyor 
+(1 tane) 
+Land 3 design partners Birden çok seçme 
+— odak dağılır 
+
+--- PAGE 2 ---
+Job To Be 
+Done 
+Müşteri (veya 
+sen) cümlesi: 
+"Ben X 
+yapmak 
+istiyorum 
+çünkü Y" 
+I want to call my F&B leads 
+in priority order so I stop 
+missing the hot ones 
+"Daha iyi olsun" 
+yazma — kim için 
+ne 
+Problem Ne 
+gözlemledin, 
+3-5 cümle, 
+mecazsız 
+Deals tab'ı F&B SDR'larında 
+açılmıyor. Telefonla 
+satıyorlar ama UI 
+email/task tracking'e 
+itiyor. FineDine "bu tab'ı 
+kullanmıyoruz" dedi. 
+PRD prose yazma — 
+gözlem, çıkarım 
+değil 
+Hypothes
+is 
+"Eğer X 
+yaparsam Y 
+olur, %Z" — 
+tek cümle 
+Switching F&B workspaces 
+from deals to call-queue 
+lifts calls/SDR/day by 30%+ 
+"Daha iyi olacak" 
+değil, ölçülebilir 
+tahmin 
+Signal 
+Source 
+Bu fikir 
+nereden geldi 
+DESIGN_PARTNER_FEEDBACK İçinden geldiyse 
+dürüstçe 
+INTERNAL_HYPOTH
+ESIS seç 
+Signal 
+Detail 
+Spesifik 
+kim/ne/nered
+en, 1 satır 
+FineDine onboarding call, 
+2026-05-14 
+Boş bırakma — 2 ay 
+sonra hatırlamazsın 
+Scope IN Bu feature ne 
+YAPACAK, 
+max 5 
+madde, 
+eylem 
+cümleleri 
+Add /leads/queue route, 
+Show 
+today/scheduled/followup 
+columns, Gate by 
+Workspace.niche, Log calls 
+via existing 
+CallDisposition enum 
+8 madde yazma — 
+bahaneler 
+Scope 
+OUT 
+Bu feature ne 
+yapmayacak
+, min 3 
+madde — 
+No power dialer, No new 
+CallDisposition enum 
+values, No sequence engine 
+redesign, No non-F&B 
+vertical changes 
+Boş bırakma — 
+disiplin burada 
+kuruluyor 
+
+--- PAGE 3 ---
+yapmadıkları
+n listesi 
+ICE 
+Impact 
+1-10: bu 
+çalışırsa 
+Outcome'a 
+ne kadar iter 
+8 (büyük yön değişimi) / 3 
+(cosmetic) 
+Her şeye 9 verme 
+ICE 
+Confiden
+ce 
+1-5 (pre-
+launch için): 
+bu hipoteze 
+ne kadar 
+emin 
+4 (somut feedback var) / 2 (sadece 
+gut) 
+Müşteri yoksa 5 
+koymaman gerek 
+ICE Ease 1-10: yapmak 
+ne kadar 
+kolay 
+(10=hafta 
+sonu, 1=ay) 
+7 (UI swap, schema değişmez) Optimist olma — 
+gerçekçi tahmin 
+ICE Score Otomatik 
+formula 
+— Karışma 
+Bet Type Ne kadar 
+büyük bahis 
+SMALL (hafta sonu) / BIG (1-2 hafta) 
+/ SPIKE (max 2 gün, öğren) 
+SMALL diyip BIG 
+yapma — kendinle 
+dürüst ol 
+Status Şu an nerede DRAFT ilk yazarken, DECIDED karar 
+verince, SHIPPED koyunca 
+KILLED'i unutma — 
+yapılmadıysa kapat 
+Touched 
+Files 
+Cursor'a 
+@codebase 
+bu feature 
+hangi 
+dosyalara 
+dokunur sor, 
+yapıştır 
+src/app/app/leads/page.tsx, 
+src/app/app/leads/queue/pag
+e.tsx, src/lib/auth.ts 
+Boş bırakabilirsin 
+küçük feature için 
+Risk 
+Flags 
+LeadAC 
+architecture 
+rule'larına 
+karşı risk 
+MULTI_TENANT_SCOPE 
+(workspaceId scope dikkat 
+gerekecek) 
+Yoksa boş bırak 
+
+--- PAGE 4 ---
+Supersed
+es 
+Eski bir FB'yi 
+mi 
+değiştiriyor 
+FB-0089 (3 ay önce reddedilen 
+"phone-first view") 
+Yeni fikirse boş 
+Decision Otomatik 
+dolar 
+Decisions'tan 
+— — 
+ 
+Decisions DB — Karar Logu (Immutable) 
+Field Ne yaz Örnek Tuzak 
+Title Otomatik: FB-XXXX · 
+Feature adı 
+FB-0142 · Call 
+queue UI 
+— 
+Brief Hangi Brief'in kararı (relation seç) — 
+Decision Dört seçenek SHIP (yapıyoruz) / 
+DELAY (sonra) / 
+REJECT (yapmıyoruz) 
+/ SPIKE_FIRST (2 gün 
+dene, sonra karar) 
+"Belki" yok — DELAY 
+de 
+Reasoning Niye bu kararı verdin, 
+1-3 cümle 
+Low complexity, 
+high impact on 
+F&B SDR workflow. 
+UI swap, schema 
+değişmiyor. 
+Revert kolay. 
+PRD prose yazma — 
+özsöz 
+Tradeoff Bu kararla neyi 
+açıkça 
+kaybediyoruz, 1 
+cümle 
+Non-F&B users 
+visual symmetry 
+kaybediyor. Sales 
+pipeline 
+reporting niche 
+filter 
+gerektirecek. 
+"Hiçbir şey 
+kaybetmiyoruz" 
+yazma — her kararın 
+bedeli var 
+Kill Criteria SHIP için zorunlu: 
+hangi şartta geri 
+alacaksın 
+Revert if 
+calls/SDR/day < 
++10% by day 14, 
+"Göreceğiz" yazma — 
+objektif kriter şart 
+
+--- PAGE 5 ---
+OR if any F&B 
+workspace cancels 
+citing UI 
+confusion 
+Revisit 
+Trigger 
+Hangi olay olursa bu 
+kararı yeniden 
+açacaksın 
+When 10+ Dental 
+workspaces 
+onboard veya When 
+non-F&B users 
+complain 
+Boş bırakma 
+DELAY/REJECT için 
+Validation 
+Plan 
+Pre-launch'ta gerçek 
+müşteri yok — hangi 4 
+kanaldan kanıt 
+toplayacaksın 
+Demo reaction (5 
+prospects), 
+Founder daily use 
+(7 days), 
+Competitor scan 
+(3+ have it?), 
+Design partner 
+ask 
+Sadece "trafik 
+bakacağım" yazma — 
+müşterin yok 
+Decided At Karar verdiğin tarih 2026-05-16 — 
+NOT: Bu DB'de hiçbir kayıt edit edilmez. Karar değişirse: Yeni Brief yaz → Supersedes ile eskisine bağla → 
+Yeni Decision yaz. 
+ 
+Validations DB — Ship Sonrası Kanıt Günlüğü 
+Field Ne yaz Örnek Tuzak 
+Title Otomatik: FB-XXXX 
+validation 
+FB-0142 
+validation 
+— 
+Brief Hangi shipped feature 
+için 
+(relation seç) — 
+Shipped At Live'a aldığın gün 2026-05-18 — 
+Evaluate At Verdict günü — 
+Shipped At + 14 
+gün 
+2026-06-01 Kendine deadline koy 
+
+--- PAGE 6 ---
+Evidence 
+Log 
+Bullet list, her satır: 
+tarih · kanal · 
+gözlem 
+2026-05-20 · 
+DEMO_REACTION · 
+Restaurant Tech 
+Summit'te 3/4 
+"useful" dedi 
+2026-05-23 · 
+FOUNDER_USE · 5 
+gün Deals tab'a 
+dönmedim 
+2026-05-25 · 
+COMPETITOR_CHECK 
+· Apollo'da yok, 
+anti-signal 
+differentiator 
+olabilir 
+Boş bırakma — 
+checkpoint günü 
+hatırlamazsın 
+Verdict 4 seçenek 
+(checkpoint'te ver) 
+KEEP (tut) / KILL (geri 
+al) / ITERATE (devam 
+et ama değiştir) / 
+INCONCLUSIVE (daha 
+fazla zaman) 
+"Bilmiyorum" yok — 
+INCONCLUSIVE seç, 
+yeni Evaluate At koy 
+Verdict At Verdict verdiğin tarih 2026-06-01 — 
+Verdict 
+Note 
+Niye bu verdict, 1-2 
+cümle 
+Founder kullanım 
+güçlü ama 
+prospect demo'da 
+split sonuç. 
+ITERATE: 
+kolonları daha 
+net 
+etiketleyeceğim, 
+14 gün daha 
+bakacağım. 
+"İyi gidiyor" yazma — 
+gözlem ver 
+ 
+Çınar'ın Aklında Tutması Gereken 4 Disiplin Kuralı 
+1. Outcome anchor zorunlu → Brief'in Outcome'u yoksa o brief yok 
+2. Confidence pre-launch'ta max 5 → Müşteri yokken 9 yazmak yalan 
+3. Scope OUT min 3 madde → "Hayır" diyemiyorsan henüz brief hazır değil 
+
+--- PAGE 7 ---
+4. Decision immutable → Edit yok, yeni Brief + supersede 
+ 

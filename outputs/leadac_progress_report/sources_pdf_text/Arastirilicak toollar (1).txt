@@ -1,0 +1,526 @@
+
+
+--- PAGE 1 ---
+Gerçek bir pozisyon, üç ayrı halkanın haritalanmasını gerektiriyor: 
+1. Doğrudan rakipler — onları konumlandırmak için yetmedi hâlâ; haftalık takibe alacaklarımız var. 
+2. Adjacent / dolaylı rakipler — bizim alanımıza yakınlaşan ama henüz haritada olmayan oyuncular. 
+3. Buyer'ımızın müşterisinin yazılım katmanı — yani ServiceTitan / Toast / Curve Dental gibi vertical 
+CRM'ler. Bunlar rakip değil ama biz onların izini sürdüğümüz için mutlaka tanımak zorundayız. 
+4. Buyer companies haritası — gerçek TAM. Bu olmadan SDR demo listesi yapamayız. 
+5. Channel + integration partner'ları — partner olarak veya CRM olarak entegre olacağımız platformlar. 
+Aşağıda her birini sırayla açıyorum: hangi şirket, ne yaşanıyor, ne öğreneceğiz, niye önemli. 
+ 
+TIER 1 — Doğrudan rakipler (haftalık takip, derin araştırma) 
+Bunları docs/positioning.md §4'te ele aldık ama her birinin haftalık takip etmemiz gereken canlı bir hikayesi 
+var. "Takip" derken: hero copy, fiyat, son ürün lansmanı, son müşteri kaybı, son yatırım turu, conference takvimi. 
+1.1 Apollo.io 
+• Neyi araştır: 
+o Apollo AI 3.0 sonrası roadmap (Mart 2026 lansmanı sonrası ne var) 
+o Apollo Conference 2026 — tarih, anonsları, customer logos 
+o Apollo Sequencer'ın deliverability iddiaları vs gerçek müşteri raporları 
+o Apollo'nun vertical SaaS müşteri logoları (Toast, ServiceTitan, FineDine'i kullanan var mı?) 
+o Apollo'nun fiyat tablosunun gerçek hâli (Starter $59/user → Professional $99 → Organization 
+$149 → Enterprise custom — kaç user'da kaç bounce, hidden cost) 
+• Neden: Apollo bizim "ortak buyer"ımızın hâlâ stack'inde olan tool. Karşı koymak değil, üstüne 
+oturmak istiyoruz (P-002). Bunun için son ürün hareketlerini kaçırmamalıyız. 
+• Olası tehlike: Apollo'nun "Apollo Data + AI" bundle'ı bir gün local-business signal'larını da içerirse 
+bizim moat'umuz daralır. Buna karşı erken uyarı sinyali lazım. 
+1.2 ZoomInfo 
+• Neyi araştır: 
+o ZoomInfo Copilot fiyat tablosunun mid-market'a sızıp sızmadığı (şu an enterprise demo-
+only ama "Copilot Lite" söylentisi var) 
+o GTM Studio kullanım örnekleri (mid-market'a mı çıkıyor yoksa enterprise'da mı sıkışıyor) 
+o ZoomInfo + HubSpot integration derinliği — Salesforce-first oldukları için HubSpot tarafı zayıf, 
+bu bizim için fırsat 
+o ZoomInfo'nun 35K müşteri tabanından vertical SaaS payı ne (LinkedIn-employee data'sından 
+çıkartılabilir) 
+• Neden: Doğrudan deal'lerimize girmiyor ama buyer'larımız "ZoomInfo vs Apollo" sorusunu hep 
+soruyor; bizim cevabımız her ikisinden de farklı bir hikaye sunmalı. 
+
+--- PAGE 2 ---
+1.3 Outreach.ai (rebranded outreach.io) 
+• Neyi araştır: 
+o Spring 2026 release sonrası Q3 müşteri kaybı (mid-market mass exodus var mı? — fiyat 
+artmış olabilir) 
+o Outreach Omni kullanım metrikleri — gerçekten "conversation is the new front door" oldu 
+mu yoksa marketing pivot mu 
+o Agent Studio'da müşterilerin gerçekten kullandığı 5 workflow 
+o Outreach + Salesforce'tan ayrılan mid-market hesap hikayeleri (Reddit r/sales aramaları) 
+• Neden: Outreach.ai'nin enterprise'a kayışı bizim için doğrudan satış fırsatı. 2 yıldır $1200+/ay ödeyen 
+mid-market hesaplar şu an yer arıyor (§3.1 P-009, Story 2 bunun kanıtı). 
+1.4 Clay 
+• Neyi araştır: 
+o Sculpt 2026 konferansı (Oct 8, San Francisco) — keynote anonsları, partner programları, 
+customer case studies 
+o Sculptor (NL workflow builder) gerçek kullanıcı deneyimi — GTM Engineer'ı by-pass edebiliyor 
+mu? 
+o Clay'in Avenue acquisition sonrası fiyat / kapasitesinin nasıl evrildiği 
+o Clay'in vertical SaaS müşteri segment'i (kaç tanesi local-business satıyor? Şu an çoğu B2B 
+SaaS-to-SaaS) 
+o Kareem Amin'in founder-led content takvimi — neyi anlattığını izlemek (kategori savunması) 
+• Neden: Clay bizim gerçek rakibimiz. Aynı buyer'ın stack'inde olabiliriz veya yerimize geçer. 
+Sculptor'un teknik buyer'a olan barrier'ı düşürmesi bizim "out-of-the-box" angle'ımızı zayıflatabilir. 
+1.5 Gong 
+• Neyi araştır: 
+o Gong Revenue Graph teknik mimari (hangi data type'ları yiyor, embedding modeli ne, 
+retention süresi) 
+o Gong'un mid-market'a iniş ihtimali — şu an 5K müşteri / hepsi enterprise; Q3 earnings'de 
+"down-market push" var mı bak 
+o Gong Collective ekosistemi — partner kim, App Store stratejisi 
+o Gong'un vertical SaaS müşteri logo'ları (Toast, ServiceTitan müşterileri mi?) 
+o 2026 Gartner Magic Quadrant for Revenue Intelligence'da hangi rakipleri var 
+• Neden: Tek varoluşsal tehdit Gong'un mid-market'a inmesi. $30K/yıl yerine $5K/yıl ürün 
+çıkarırlarsa, bizim "memory layer" tezimiz yer arar. Erken uyarı şart. 
+1.6 Clari + Salesloft (Aralık 2025 birleşmesi) 
+• Neyi araştır: 
+o Integration roadmap — Clari forecast → Salesloft execution bridge'i gerçekten çalışıyor mu 
+(Q2 2026 lansman vakti) 
+
+--- PAGE 3 ---
+o Salesloft MCP Server (Nisan 2026) adoption — 
+ChatGPT/Claude/Copilot/Gemini/Agentforce'tan kaç kullanıcı bağlanmış 
+o Birleşme sonrası mid-market churn — Salesloft'un eski mid-market hesaplarına ne olacak 
+o "Predictive Revenue System" pazarlama bütçesi hangi yöne akıyor (PR, conference, paid) 
+• Neden: Salesloft mid-market'tan çıkışta — bu mid-market vertical SaaS hesapların yer aradığı an 
+demek. Outreach.ai gibi. 
+1.7 11x 
+• Neyi araştır: 
+o Funding turu — son söylenti $50M+ Series B (a16z + Benchmark backed). Doğrulamak için 
+Crunchbase, The Information tarama. 
+o Alice + Julian customer churn hikayesi (GV'nin 11x'i bırakması 2024 sonu — sonra ne oldu, 
+yeni hikayeler var mı) 
+o Julian (inbound voice) gerçek müşteri performansı — speed-to-lead iddiaları 
+o 11x'in vertical SaaS müşterisi yok mu? — Xerox, Checkr, Sage, Rho hepsi horizontal/enterprise 
+• Neden: 11x bizim en sık görülen evaluating alternatife. Buyer'ın aklında "AI does it all" vaadi var; biz 
+tam tersi pozisyondayız — bunu net articulate edebilmek için onların hikayesini iyi bilmemiz lazım. 
+1.8 Lemlist 
+• Neyi araştır: 
+o AI Agentic Enrichment (Nisan 2026) — vertical SaaS müşterilerinde gerçek performansı 
+(LeadAC'in en yakın komşusu) 
+o Claap acquisition entegrasyon planı — post-call intelligence'a giriyorlar, biz de oradan bir 
+gün geçebiliriz 
+o Lemlist'in 70% spray-and-pray iç istatistiği nasıl evrilecek (CMO'nun açık itirafı, §3.1 P-014) 
+o EU SaaS pozisyonu — Türkiye/EU pazarında bizim için partner mi rakip mi 
+• Neden: En benzer narrative'i kullanan ama horizontal kalan oyuncu. Vertical'a giderlerse bizim 
+alanımıza girerler. 
+1.9 Smartlead + Instantly + Reply.io (partner takibi) 
+• Neyi araştır: 
+o Üçünün de CRM integration derinliği (HubSpot, Pipedrive, Close) 
+o Pricing değişiklikleri — özellikle Instantly'nin 450M contact DB iddiasının fiyata etkisi 
+o LeadAC entegrasyon prototype'ı için API surface (Smartlead API güçlü; Instantly'de zayıf) 
+• Neden: Partner stratejimizin temeli. /with/smartlead, /with/instantly, /with/reply integration 
+sayfaları bunlardan birinin SDK / Zapier / native integration paketine bağlı olarak yapılacak. 
+ 
+TIER 2 — Adjacent oyuncular (yeni rakip riski + içgörü kaynağı) 
+Bunları positioning doc'unda işlemedik. Çünkü bizim alanımıza şu an dokunmuyorlar. Ama bazıları bir gün ya 
+rakip olur ya da bizim hikayeyi anlatma şeklimize ilham verir. 
+
+--- PAGE 4 ---
+2.1 Cognism (UK/EU) 
+• Ne yapıyor: B2B data, ZoomInfo'nun EU rakibi. Cep telefonu numarası verisinde lider. 
+• Neyi araştır: EU GDPR-uyumlu data layer hikayesi; vertical-aware nasıl olduğu (genellikle horizontal); 
+fiyat band'ı. 
+• Bizim için neden önemli: Türkiye + EU pazarına ilerlersek Apollo değil Cognism rakibi olacak. Wave 
+3 expansion için bilgi. 
+2.2 Common Room 
+• Ne yapıyor: Community-led GTM signal platform. Slack, Discord, GitHub, Reddit'ten signal çıkartıyor. 
+• Neyi araştır: Funding, vertical SaaS müşterileri, "signal" tanımının bizimkiyle nerede kesiştiği. 
+• Bizim için neden önemli: "Signal-based GTM" alanını birlikte tanımlıyoruz; onlar community 
+signal'larında, biz local-business operational signal'larında oturduk. Comparison page'i olabilir: 
+/vs/common-room (low priority ama whitespace mapping için iyi). 
+2.3 RB2B 
+• Ne yapıyor: Anonymous website visitor identification (US-only). Ücretsiz / freemium model. 
+• Neyi araştır: Vertical SaaS müşteri kullanımı; LinkedIn-identity tarafından gelen signal'ları. 
+• Bizim için neden önemli: Buyer'ımızın website'sine gelen ziyaretçileri identify ediyor → biz 
+outbound'da kullanırız. Potansiyel partner integration. 
+2.4 Warmly 
+• Ne yapıyor: Website visitor + LinkedIn + intent data → AI SDR. "Signal-led outbound" diyor. 
+• Neyi araştır: Bizim narrative'imize ne kadar yakın — signal-based outbound tarafında. Fiyat band'ı. 
+• Bizim için neden önemli: En yakın "signal" framing kullanan oyuncu. Outreach approach'una yakın 
+değiller ama narrative çakışması olabilir. 
+2.5 6sense / Demandbase / Bombora (enterprise intent triumvirate) 
+• Ne yapıyor: 
+o 6sense: AI-led ABM + intent data, $40K+/yıl enterprise floor 
+o Demandbase: ABM + intent, B2B enterprise 
+o Bombora: Pure third-party intent data, sells to other tools 
+• Neyi araştır: Vertical SaaS mid-market'ta var mı? Genel olarak yoklar — enterprise B2B SaaS-to-SaaS 
+odaklılar. Yine de buyer'ımız "6sense'i biliyor musun?" diye sorduğunda hazır olmalıyız. 
+• Bizim için neden önemli: Enterprise ABM dünyasındaki "intent data" anlamının ne olduğunu bilmek + 
+bizim "operational signal"ımızla farkı net articulate etmek. 
+2.6 Qualified 
+• Ne yapıyor: Inbound website conversion için AI SDR ("Piper AI"). 11x ile sık karşılaştırılıyor. 
+• Neyi araştır: Enterprise pricing, mid-market'a iniş ihtimali, vertical SaaS müşteri. 
+
+--- PAGE 5 ---
+• Bizim için neden önemli: Outbound değiller — inbound conversion. Çakışmayız ama buyer 
+"Qualified vs LeadAC" diye sorduğunda fark net olmalı (inbound vs outbound + post-pivot data). 
+2.7 Lavender 
+• Ne yapıyor: Email writing assistant — insanın yazısını real-time iyileştiriyor. Per-rep model. 
+• Neyi araştır: Vertical SaaS müşteri tabanı, AI SDR sonrası nasıl ayakta kaldığı. 
+• Bizim için neden önemli: "Augment the human, don't replace" felsefesini iyi pazarlamış oyuncu. 
+Pozisyon dilimizi onlardan öğrenebiliriz. Doğrudan rakip değil. 
+2.8 Salesgraph (önemli — ilham kaynağımız) 
+• Ne yapıyor: "Account intelligence for B2B" pozisyonunda. Bizim pivot'un mimar referans noktası. 
+• Neyi araştır: Müşterileri kim, fiyatlandırma, son ürün lansmanları, vertical odakları var mı, founder 
+mesajları. 
+• Bizim için neden önemli: Bizim play'imizi B2B SaaS pazarında deniyorlar; biz aynısını vertical SaaS-
+to-local-business'a uyguluyoruz. Direkt rakip olmasalar da hikayeleri bizimkiyle yakın. High priority 
+araştırma. 
+2.9 Salesmotion (zaten kaynak gösterdik) 
+• Ne yapıyor: Account intelligence + signal-driven prioritization. Enterprise pre-call brief. 
+• Neyi araştır: Müşteri portfolio'su (Frontify, Guild Education, Analytic Partners, Cytel, Incredible Health 
+vakaları kaynaklarımızdaydı), fiyatlandırma, mid-market var mı. 
+• Bizim için neden önemli: "6 hours of research to 6 minutes" hikayesi bizim narrative'imizin enterprise 
+versiyonu. Onların mid-market'a inip inmediğini bilmek lazım. 
+2.10 G2 Buyer Intent 
+• Ne yapıyor: G2 ziyaretçi davranışından intent signal sat. SaaS sektörünün en yaygın intent kaynağı. 
+• Neyi araştır: Pricing tier (mid-market accessible mi), API'sinin var olup olmadığı. 
+• Bizim için neden önemli: Vertical SaaS buyer'ımızın kendi rakipleri için kullandığı intent kaynağı — 
+ama lokalcı değil. Partnership / data lisansı için aday. 
+2.11 Chili Piper / Default 
+• Ne yapıyor: Inbound scheduling + lead routing. 
+• Neyi araştır: Mid-market vertical SaaS kullanımı, fiyat. 
+• Bizim için neden önemli: Sırf nasıl partner olabileceğimiz açısından. Outbound'dan booking'e 
+geçişte ihtiyaç var. 
+2.12 Crossbeam / Reveal 
+• Ne yapıyor: Partner ecosystem data. "Hangi müşteri kimle ortak?" sorusunu çözüyorlar. 
+• Neyi araştır: Vertical SaaS müşteri kullanımı. 
+
+--- PAGE 6 ---
+• Bizim için neden önemli: Toast'ın US Foods ile partner data sharing'i bizim için signal kaynağı olabilir. 
+Distant ama düşünülmeye değer. 
+ 
+TIER 3 — Vertical CRM'ler (buyer'ımızın MÜŞTERİSİNİN yazılım katmanı) 
+Bu en kritik kısım. Bunlar rakip değil — ama biz bunların izini sürüyoruz (signal taxonomy §8'deki "vertical 
+tech stack signature"). Yanlış tanımak = yanlış signal = yanlış outbound timing. 
+Her vertical için: hangi yazılımlar var, ne büyüklükteler, fiyat tier'ları, Toast/ServiceTitan/Clio gibi liderler kim, alt-
+tier kim. 
+3.1 HVAC / Field Service / Trades 
+Yazılım Tier Customer band Notable 
+ServiceTitan Enterprise lider $245-
+$500+/tech/ay, 20+ 
+tech 
+Halka açık Aralık 
+2024 IPO; 
+FieldRoutes (pest), 
+Pricebook acquired 
+Jobber SMB lider $39-$249/ay 200K+ müşteri; 
+SMB sweet spot 
+Housecall Pro SMB $59-$229/ay Vista Equity owned 
+Workiz SMB / mid Custom Field service, lokal 
+sahnenin yıldızı 
+FieldEdge Mid Custom ESC veteranı 
+Service Fusion SMB $99-$299/ay EverField Solutions 
+ekosisteminde 
+Tradify SMB $35-$70/ay AU/NZ kökenli 
+JobNimbus Roofing özelinde $25-$110/user/ay Tek vertical 
+FieldRoutes Pest control + field 
+service 
+ServiceTitan satın 
+aldı 2022 
+ 
+BlueFolder, 
+ServiceMonster, 
+RazorSync 
+Niş — Watch list 
+• Neyi araştır: 
+o Her birinin website footer signature'ı (hangi CSS class, hangi script src bizi tanıtır) 
+
+--- PAGE 7 ---
+o Booking flow URL pattern'ı — /book-now, /schedule, vertical-specific path'ler 
+o API'lerinin halka açık olup olmadığı — bizim direkt entegre etme imkanı var mı (uzun 
+vadeli) 
+o Müşteri sayıları — toplam TAM ne kadar (örn. ServiceTitan 12K+ müşteri 2026 başı) 
+o Adjacent tools — ServiceTitan ekosistemindeki üçüncü taraf entegrasyonlar (CallRail, 
+ResponsiBid vs) 
+• Bizim için neden önemli: Bizim HVAC SaaS buyer'ımız (Workiz, FieldEdge, Service Fusion gibi) 
+ServiceTitan'ın downmarket müşterilerini avlıyor. ServiceTitan-current → "biz daha ucuzuz, geç 
+bize" pitch'i için bizim onların müşteri footprint'ini tanımamız şart. 
+3.2 Restaurant / F&B 
+Yazılım Tier Customer band 
+Toast Lider, halka açık Multi-location ağırlıklı; $799+ 
+kurulum, $69+/mo POS 
+Square for 
+Restaurants 
+SMB lider Free tier var; mass SMB 
+Lightspeed Multi-vertical retail+restaurant Kanada kökenli; halka açık 
+TouchBistro Multi-vertical mid-market Toronto kökenli 
+Resy Reservations, Amex owned Premium restaurant focus 
+OpenTable Reservations, Booking.com 
+owned 
+En yaygın reservation; "Lite" 
+tier düşük-tier signal 
+SevenRooms Guest management + 
+reservations 
+Premium mid-market 
+Olo, Slice, 
+ChowNow 
+Online ordering middleware Çok yaygın 3rd-party stack 
+BentoBox Restaurant website CMS Mid-market 
+Owner.com Marketing platform + website Aggressive sales motion, 
+Series B+ 
+Restaurant365 Back-office (accounting + 
+payroll + scheduling) 
+Mid-market lider 
+FineDine Menu + POS Design partner — bizim canlı 
+pilot müşterimiz 
+Bbot QR ordering DoorDash satın aldı 
+
+--- PAGE 8 ---
+• Neyi araştır: 
+o Vertical stack permutations — örneğin "Toast + OpenTable Lite + paper menu" vs "Toast + 
+Resy + Owner.com website" — bu kombinasyonlar bizim için signal demek 
+o Müşteri pricing tier'ları — Toast Starter (free) vs Toast Essential vs Toast Custom; OpenTable 
+Lite vs Connect vs Pro — tier signaling outbound timing belirler 
+o Footer/JS signature pattern'ları 
+o Cuisine type cross-mapping — pizzeria, sushi, Italian, BBQ — her cuisine farklı pain point'e 
+sahip; signal taxonomy'ye eklenebilir 
+• Bizim için neden önemli: Beachhead vertical'in canlı haritası. FineDine pilot'undan çıkan 
+insight'larla bu tabloyu zenginleştireceğiz; pilot bittiğinde her satırı doğrulamış olacağız. 
+3.3 Dental 
+Yazılım Tier Customer band 
+Dentrix (Henry Schein 
+One) 
+Legacy enterprise lider Multi-location DSO 
+ağırlıklı 
+Eaglesoft (Patterson 
+Dental) 
+Legacy enterprise Single + multi 
+Open Dental Open-source bulut, SMB Maliyet-hassas pratikler 
+Curve Dental Modern cloud, mid-market Hızlı büyüyen rakip 
+Modento Patient comms + reactivation Adjacent platform 
+Adit Dental marketing + patient 
+comms 
+Patient acquisition 
+Yapi Practice management Niche modern 
+RevenueWell Marketing + patient comms Heritage marketing tool 
+Lighthouse 360 Patient comms (DSO favored) Legacy 
+Dental Intelligence Analytics + KPI tracking Adjacent layer 
+• Neyi araştır: 
+o Dentrix vs Eaglesoft vs Curve vs Open Dental migration pattern'ı — kim kimden geçiyor 
+(bizim "switching signal" için kritik) 
+o DSO (Dental Service Organization) listesi — top 50 US DSO'su; bunlar bizim vertical SaaS 
+buyer'ının "wallet"larına denk geliyor 
+o Henry Schein One'un fiyat / churn hikayesi (legacy + procurement) 
+
+--- PAGE 9 ---
+3.4 Beauty / Wellness / Fitness 
+Yazılım Tier Customer band 
+Boulevard Modern, well-
+funded 
+Salon + spa, $200-$400/ay 
+Mindbody Legacy lider Fitness + wellness; halka 
+açıktı, private oldu 
+Vagaro SMB Mass SMB 
+Squire Erkek berber 
+özelinde 
+NYC-based modern 
+Acuity Scheduling 
+(Squarespace) 
+Self-serve 
+scheduling 
+Solo + SMB 
+Glofox / Mariana Tek Boutique fitness Studio-class fitness 
+GymMaster, ClubReady Gym management Mid-market gym chains 
+PerfectGym EU gym 
+management 
+EU expansion için bilinmesi 
+gerek 
+• Neyi araştır: Pricing tier matrisleri + müşteri churn pattern'ları + lokasyon-bazlı segmentasyon. 
+3.5 Legal Practice Management 
+Yazılım Tier 
+Clio Mid-market lider, Canada 
+MyCase SMB 
+PracticePanther SMB 
+Smokeball AU origin, mid-market 
+Lawmatics CRM + intake (specialized) 
+Filevine Mid + enterprise litigation 
+CARET Legal (formerly ZolaSuite) Mid-market 
+• Neyi araştır: Pratisyen avukat (solo) vs firm (10+) segment ayrımı; compliance procurement 
+requirement'ları; outbound responsiveness (genelde düşük). 
+
+--- PAGE 10 ---
+3.6 Auto Repair / Shop Management 
+Yazılım Tier 
+Tekmetric Modern cloud lider 
+Shop-Ware Modern 
+AutoLeap Recent, well-funded 
+Mitchell 1 Legacy enterprise 
+NAPA TRACS, R.O. Writer Heritage 
+• Status: Wave 4+ (watch list). Önemli ama beachhead sonrası. 
+3.7 Real Estate Brokerage Tech (yeni eklenecek) 
+Yazılım Tier 
+kvCORE (Inside Real Estate) Enterprise broker software 
+BoomTown Mid-market broker 
+Chime CRM for agents 
+Follow Up Boss Mid-market lead management 
+LionDesk SMB CRM 
+• Status: Watch — yüksek SDR yoğunluğu (vertical SaaS satan), ama compliance + döngü uzun. 
+3.8 Boutique Hotel / Hospitality Tech 
+Yazılım Tier 
+Mews Modern PMS lider, EU origin 
+Cloudbeds Mid-market PMS 
+Hotelogix SMB 
+Little Hotelier Boutique focus, SiteMinder ekosistemi 
+Stayntouch Modern PMS 
+WebRezPro Mid-market 
+• Status: Restaurant tech ile birlikte hospitality wave 2 olarak değerlendir. 
+ 
+
+--- PAGE 11 ---
+TIER 4 — Buyer companies (gerçek TAM map — kimi satacağız?) 
+Bu tablonun her satırı potansiyel müşteri. Funding stage + employee count + vertical kombinasyonu bizim 
+ICP scoring'i için yapı taşı. 
+4.1 HVAC / Field Service SaaS buyer'ları (Wave 1 beachhead — primary) 
+Bizim ICP'mize en yakın olan vertical SaaS vendor'ları (NOT ServiceTitan'ın kendisi — ServiceTitan zaten 
+enterprise, Gong kullanıyor): 
+Şirket Stage Notes 
+Workiz Series C raised 2025 SMB field service, growing SDR 
+team 
+FieldEdge dESCO ownership Recent revival cycle 
+Service Fusion EverField Solutions ailesi Multiple GTM teams adjacent 
+Tradify Bootstrapped scaleup, NZ/AU EU/Türkiye expansion 
+potansiyel 
+JobNimbus Roofing-specialized, growing 
+fast 
+Vertical specialty model 
+AccuLynx Roofing Specialty roofing 
+RoofSnap Roofing Adjacent 
+Briostack Pest control Niche but ARR'lı 
+Fieldwork Pest control Niche 
+PestPac Pest control legacy WorkWave acquired 
+Aspire Landscape software Adjacent vertical 
+LMN, 
+LandscapeERP 
+Landscape Watch 
+• Neyi araştır: 
+o Her bir vendor'un SDR team büyüklüğü (LinkedIn search'le çıkartılabilir; "SDR at [Workiz]" 
+filtresi) 
+o Her vendor'un funding turu + ARR tahminleri (Crunchbase + The Information + 
+ChiefMartec) 
+o CRM stack'leri — HubSpot vs Pipedrive vs Salesforce (genelde HubSpot ama doğrulamak 
+lazım) 
+o Hiring sinyalleri — "VP Sales" job listing varsa we have a buying trigger 
+
+--- PAGE 12 ---
+4.2 Restaurant Tech SaaS buyer'ları (Wave 1 secondary — design partner pilot) 
+Şirket Stage Notes 
+FineDine Design partner İlk pilot — Türkiye + US territory 
+Owner.com Series B+, aggressive Marketing platform, SDR-heavy 
+BentoBox Mid-stage Restaurant websites 
+Bbot DoorDash acquired Bizim ICP değil artık 
+Sevenrooms Mid-stage Premium guest mgmt 
+Resy Tech Amex-owned, dağılım Watch 
+Restaurant365 Mid-market lider, Series E+ Possibly too big now 
+SpotOn Multi-product restaurant Potential ICP 
+Margin Edge Restaurant accounting Adjacent 
+Toast NOT ICP — halka açık, $1B+ ARR, 
+enterprise 
+Listede sadece referans için 
+4.3 Dental SaaS buyer'ları (Wave 2) 
+Şirket Stage Notes 
+Curve Dental Growth stage Modern cloud rival 
+Modento Series A Patient comms 
+Adit Bootstrapped scaleup Marketing + comms 
+Yapi Series A Practice mgmt 
+RevenueWell Acquired by Patterson? Watch Heritage 
+Dental Intelligence Mid-stage Analytics 
+4.4 Beauty / Wellness SaaS buyer'ları (Wave 2/3) 
+Şirket Stage 
+Boulevard Series C, well-funded 
+Vagaro Bootstrapped scale, big 
+
+--- PAGE 13 ---
+Mariana Tek (formerly Glofox owner) Acquired 
+Squire Series B, NYC 
+4.5 Hospitality / Boutique Hotel SaaS (Wave 2/3) 
+Şirket Stage 
+Mews Series C, $185M raised 2022, EU origin, fast growth 
+Cloudbeds Mid-stage 
+Stayntouch Mid-stage 
+• Neyi araştır: Mews'un SDR teamı + recent CRO hire haberleri. 
+4.6 Legal SaaS (Wave 3) 
+Şirket Stage 
+Clio Late-stage, profitable 
+MyCase AppFolio-owned 
+PracticePanther Mid-stage 
+Lawmatics Series A 
+Filevine Series E+ 
+ 
+TIER 5 — Channel / Integration partners 
+Bunlar rakip değil — bizim platformumuz onların üzerinde çalışıyor veya onları besliyor. 
+Partner Rol Araştırılacak 
+HubSpot Primary CRM target App Marketplace gereksinimleri, 
+OAuth scopes, custom object 
+support, pricing for Sales Hub 
+Pro at scale, HubSpot AI son 
+ürünleri (Copilot, Breeze) 
+Pipedrive Secondary CRM API capability, marketplace 
+listing requirements 
+Close SMB outbound CRM API + native integration 
+
+--- PAGE 14 ---
+Salesforce Enterprise CRM (later) AppExchange certification, 
+Agentforce surface area 
+Smartlead Sending partner API + webhook, white-label 
+option 
+Instantly Sending partner API + automation 
+Apollo Sequencer Buyer'ın elindeki sender API + bounce-back integration 
+Reply.io Mature SEP API + multichannel 
+Slack Alerting Bot + workspace install model 
+Apify Scraping infra Pricing tier, actor library, runtime 
+cost projection 
+Playwright Scraping fallback Self-hosted infra cost 
+Google Cloud / Vertex AI Gemini host Quota + pricing 
+Resend Transactional email Already integrated 
+Stripe Billing Already integrated 
+Supabase Auth Already integrated 
+• Neyi araştır: Her birinin 2026 fiyat değişiklikleri, partner programları, API limit'leri, MCP server gibi yeni 
+surface'lar (özellikle Salesloft MCP gibi platform-level şeyler bizim için partnership fırsatı olabilir). 
+ 
+2026 takvimi — kaçırmamamız gereken olaylar 
+Tarih Olay Neden önemli 
+Q2 2026 Clari + Salesloft integration 
+milestone 
+Mid-market churn'ün ne kadar 
+olacağını gösterecek 
+Yaz 2026 Outreach.ai Summer release Spring 2026 Omni/Agent 
+Studio'dan sonraki adım 
+Q3 2026 Gong Q3 earnings (estimated Sep) Revenue Graph adoption rate + 
+downmarket push işareti 
+Eylül 2026 Apollo Conference 2026 Apollo AI 4.0 olası lansman vakti 
+
+--- PAGE 15 ---
+Eki 8, 2026 Clay Sculpt Conference (SF) Kareem Amin'in 2026 anonsları; 
+Sculptor maturity; GTM Engineer 
+kategorisinin geleceği 
+Q4 2026 ServiceTitan Q4 earnings HVAC vertical sağlığı 
+Q4 2026 Toast Q4 earnings Restaurant tech vertical sağlığı 
+Q1 2027 Gartner Magic Quadrant for 
+Revenue Action Orchestration 
+2027 
+Kim leader, kim challenger, kim 
+visionary 
+Sürekli a16z + Sequoia + Bessemer vertical 
+SaaS portfolio updates 
+Yeni TAM müşterileri tanımak 
+Sürekli The Information / TechCrunch B2B 
+SaaS yatırım haberleri 
+Funding-triggered buying signal (P-
+005 alt-segment) 
+ 
+Önerim — sıralama (1 hafta içinde ne yapılmalı) 
+1. Salesgraph deep-dive (1 saat) — bizim play'imizin B2B genel versiyonu, hikaye benzerliği yüksek; rakip 
+değil ama mimar referans. 
+2. Gong Revenue Graph teknik mimari araştırması (2 saat) — onlardan farkımızı somut articulate 
+edebilmek için 
+3. HVAC SaaS vendor mapping (3 saat) — Tier 4.1'deki listeyi LinkedIn + Crunchbase + careers page 
+kombinasyonuyla doğrula. Her vendor için SDR team büyüklüğü, mevcut CRM, son funding turu. 
+4. Restaurant SaaS vendor mapping (2 saat) — Aynısını restaurant için. FineDine zaten bizde; diğerleri 
+aday. 
+5. Vertical CRM signature library v1 (4 saat) — ServiceTitan, Jobber, Housecall Pro, Toast, Square, 
+OpenTable, Dentrix için CSS class + script src + URL pattern + footer string'lerini topla. Bu direkt 
+agent-worker olarak kodlanacak. 
+6. 2026 calendar setup — Yukarıdaki olayları Google Calendar / Linear cycle takvimine ekle, takip 
+otomatik tetiklensin. 
+ 

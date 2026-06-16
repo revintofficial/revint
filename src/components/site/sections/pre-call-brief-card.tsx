@@ -75,7 +75,7 @@ export function PreCallBriefCard({
           ))}
         </div>
 
-        <div className="mt-5 rounded-md border border-signal/30 bg-[hsl(38_60%_15%_/_0.3)] p-4">
+        <div className="mt-5 rounded-md border border-signal/30 bg-[hsl(218_50%_16%_/_0.3)] p-4">
           <div className="site-mono text-[12px] uppercase tracking-wider text-signal">
             Suggested opener
           </div>

@@ -70,7 +70,7 @@ export default function ToolsIndexPage() {
                   href={`/tools/${t.slug}`}
                   className="group flex flex-col rounded-2xl border border-ink-3 bg-ink-1 p-7 transition-colors hover:border-signal/50 hover:bg-ink-2"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-signal/30 bg-[hsl(38_60%_15%_/_0.4)]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-signal/30 bg-[hsl(218_50%_16%_/_0.4)]">
                     <Icon className="h-5 w-5 text-signal" />
                   </div>
                   <h2 className="mt-5 text-[20px] leading-tight text-paper-0">

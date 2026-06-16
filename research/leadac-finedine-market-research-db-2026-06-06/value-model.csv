@@ -1,0 +1,13 @@
+metric,source_backed_min,source_backed_max,unit,confidence,primary_sources,leadac_mechanism,pilot_measurement
+Prospect/account research time reduction,15,34,percent,High,"Salesforce State of Sales 2026; McKinsey sales automation","Restaurant signal brief, fit scoring, module-angle selection, no repeated manual research","Minutes/account before vs after LeadAC"
+Email/opener/follow-up drafting time reduction,15,36,percent,High,"Salesforce State of Sales 2026","Signal-based opener and follow-up skeleton tied to restaurant context","Minutes/message, manager approval rate, edit distance"
+Selling/customer-facing time increase,15,20,percent relative,High,"Salesforce State of Sales 2026; McKinsey sales automation","Reduce research/admin time so reps spend more time in calls, demos, field, follow-up","Calendar/CRM time split; hours/rep/week"
+Selling/customer-facing time increase,6,8,percentage points absolute,High,"Salesforce 40% selling baseline; McKinsey +15-20% relative uplift","Same as above","40h week: 16h baseline -> 18.4-19.2h"
+Sales process efficiency,10,15,percent,High,"McKinsey sales automation","Standardized account brief, prioritization, workflow, outcome capture","Actionable accounts/rep/week, rejected accounts, cycle time"
+Pipeline/sales uplift from data-driven decisions,2,5,percent,Medium-high,"McKinsey sales-growth outperformance","Better account selection and prioritization","Pipeline generated per rep, meeting rate, win/loss by signal"
+Sales uplift from sales automation,0,10,percent,Medium-high,"McKinsey sales automation","Automation of lead management and rep workflow","Pipeline/revenue vs matched control"
+AI-enabled revenue uplift,3,15,percent,Medium,"McKinsey AI-powered marketing and sales","Broader AI + personalization + sales excellence; LeadAC is one component","Revenue/pipeline lift after full integration"
+Sales ROI uplift,10,20,percent,Medium,"McKinsey AI-powered marketing and sales","Higher output per sales spend if adoption succeeds","Pipeline/revenue per SDR cost"
+Sales-stage velocity improvement,5,40,percent,Medium,"Gartner AI-driven enablement","In-workflow account guidance, next-best-action, objection memory","First touch -> demo; demo -> next step; stage aging"
+Cold email reply rate relative uplift,25,50,percent relative pilot target,Medium-low,"Mailshake 2025; Gartner irrelevant outreach","Signal-based relevance and better fit selection","A/B reply rate, positive reply rate, unsub/negative rate"
+New SDR ramp speed improvement,10,30,percent,Medium-low,"Salesforce coaching/enablement gaps; Gartner enablement","Reusable playbook and account-decision examples","Time to first 50 approved accounts; time to first meeting"

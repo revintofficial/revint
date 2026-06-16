@@ -73,6 +73,18 @@ export async function GET(
       return NextResponse.json({ error: "Lead not found" }, { status: 404 });
     }
 
+    // FineDine v1 update — CRM-only leads (no Google Place match yet)
+    // have a null placeId, so there is no Places id to fetch reviews
+    // against. Serve any stored reviews and short-circuit the remote
+    // fetch instead of throwing.
+    if (!lead.placeId) {
+      const existing = await prisma.googleReview.findMany({
+        where: { leadId },
+        orderBy: { publishTime: "desc" },
+      });
+      return NextResponse.json({ reviews: existing });
+    }
+
     if (refresh) {
       const reviews = await fetchAndStoreReviews(lead.id, workspaceId, lead.placeId);
       return NextResponse.json({ reviews });

@@ -1,0 +1,237 @@
+
+
+--- PAGE 1 ---
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+LeadAC — AI Lead Analysis Engine Update
+1. Amaç
+Suanki sabit worker calismasini engellemek icin; Tekir bir arastırma üst catisi (ai native)
+LeadAC içinde “Analyze with AI” butonu olacak (otomatikte calisabilir), kulannıcının hubshot 
+baglantisindan vesaire gelen her lead’i otomatik olarak analiz edecek tek bir agent, altındada toolları 
+olucak bir graph olarak; mevcut leadacin AI workerlarını tool graphe cevirecegiz, Bu tekil agent, lead 
+ile ilgili:
+veri toplayan
+sinyal çıkaran
+skorlayan
+satış açısı üreten
+ve SDR’a hazır brief oluşturan
+bir operational intelligence yapısıdır
+Bu sistemin çıktısı:
+Lead Intelligence Brief (tüm leadac analizininde son kararı verir)
+2. Ana Değişim (Eski vs Yeni)
+Eski yaklaşım
+Worker’lar bağımsız çalışır
+Sonuçlar ekranda tablarda dağınık gelir
+SDR kendi yorumlar
+Yeni yaklaşım
+Tek bir “Analysis Run” başlatılır
+Agent analize baslar, lead hakkında var olan bilgileri inceler,
+Duruma göre ilk calıstırılacak toolu çalıştırır, 
+Tool sonuçlarına bakar, karar verir sonra farklı tool çalıştırır.
+Her tool çıktısından evidence biriktirir ve sonraki adımlarını planlar.
+Sonuç tek bir brief olarak döner.
+Mesela agent leadi aldı, baktı website var, yorum puanı 4.8 ama yorumlar yok, Önce website auditi 
+yapar, gerekli tüm bilgileri alır kanıtları toplar ve desteklemek icin gerekirse farklı web aramaları 
+calıştırır, Sonra istedigi kadar yorumu sisteme ceker ve ardından yorum analiz toolunu calıştırır, 
+
+--- PAGE 2 ---
+3.
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+sonuclara bakar, teyit etmek icin gerekirse daha cok tool kullanır, kanıtları toplar, öbür toollardada 
+aynı sekilde devam eder not alarak kanıt toplayarak, en son tüm topladıgı genel resme bakar, ve son 
+kararı verir.
+Ana Output
+Her lead için tek çıktı:
+Account Intelligence Brief
+İçerik:
+Lead fit score (0–100)
+Lead Sale probablility score (0-100) (after learning)
+Sektör / sub-niche
+Operasyonel problemler
+Web / review / booking analizleri
+Contact insights
+Satış açısı
+Outreach mesaj önerisi
+Riskler
+Kanıtlar
+4. Sistem Akışı
+1. Lead Analysis Başlatma
+Kullanıcı:
+“Analyze with AI” tıklar
+Yada otomatik olarak tetikler
+Sistem şunu toplar:
+website var mı
+review sayısı
+Openmart data
+contact bilgisi
+önceki analysis sonuçları
+workspace context
+
+--- PAGE 3 ---
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+3. Sub-niche Tespiti
+Lead şu sınıflara ayrılır:
+fine dining
+cafe
+bar
+bakery
+ghost kitchen
+chain
+4. Tool Seçimi
+Sistem sadece gerekli tool’ları seçer, sonuclara göre yeni toollar calıştırabilir, her toolun girdisini 
+kendi verir ve cıktısını kendi yorumlar ve yeni tool soyler.
+5. Veri Toplama (Tier A)
+Openmart enrichment (contact + company data)
+6. Sinyal Analizi (Tier B)
+Website audit
+Review analysis
+Booking friction score
+Chain detection
+7. Source Reconciliation
+Farklı kaynaklar birleştirilir:
+Google Places
+Website
+Openmart
+Çıktı:
+tek “canonical truth”
+conflict listesi
+
+--- PAGE 4 ---
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+●
+8. Scoring (Tier D)
+ICP fit score
+Opportunity score
+9. Sales Angle Üretimi
+Sistem üretir:
+2–3 outreach angle
+opening line önerileri
+“ne söyleme” listesi
+10. Final Brief Assembly
+Tüm sistem birleşir:
+skor
+sinyaller
+problemler
+satış açısı
+evidence chain
+tek JSON → UI brief
+6. Evidence Sistemi (EN KRİTİK DEĞİŞİM)
+Her bilgi 4 seviyeden biri olur:
+T1 → gerçek veri (website, review)
+T2 → kural tabanlı çıkarım
+T3 → model çıkarımı
+T4 → varsayım
+Kural:
+T4 tek başına kullanılamaz
+T3 mutlaka T1/T2 destekli olmalı
+
+--- PAGE 5 ---
+●
+●
+●
+●
+●
+●
+●
+●
+●
+○
+○
+○
+○
+○
+●
+●
+●
+●
+●
+●
+●
+●
+7. Öğrenme Sistemi (sonradan aktif)
+Deal sonucu gelince:
+hangi pitch işe yaradı
+hangi segment kapandı
+hangi rule başarılı
+→ playbook kendini update eder
+8. MVP’de İnşa Edilecekler
+Backend
+LeadAnalysisRun sistemi
+Snapshot builder
+Tool selector
+Evidence layer
+Planner (DAG üretimi)
+5 core worker: Bastan tamamen planlanı yapılması gerekiyo, her workerin detaylı kagidi olması 
+lazım. suan aklıma gelen en düşük liste;
+Openmart enrichment
+Website audit
+Review analysis
+Booking friction
+Source reconciliation
+ICP scoring
+Opportunity scoring
+Account brief writer
+Frontend
+“Analyze with AI” button
+Live timeline (step-by-step görünüm)
+Final brief view
+Evidence drawer
+Conflict warning UI

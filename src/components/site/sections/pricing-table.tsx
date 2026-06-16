@@ -51,7 +51,7 @@ export function PricingTable({
               )}
             >
               {tier.recommended ? (
-                <div className="site-mono mb-3 inline-flex w-fit items-center gap-2 rounded-full border border-signal/40 bg-[hsl(38_60%_15%_/_0.4)] px-3 py-1 text-[11px] uppercase tracking-wider text-signal">
+                <div className="site-mono mb-3 inline-flex w-fit items-center gap-2 rounded-full border border-signal/40 bg-[hsl(218_50%_16%_/_0.4)] px-3 py-1 text-[11px] uppercase tracking-wider text-signal">
                   <span className="site-signal-dot" />
                   Most teams pick this
                 </div>

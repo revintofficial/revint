@@ -1,0 +1,194 @@
+
+
+--- PAGE 1 ---
+Şu Anda Lazım Olan Şey 
+Bir marketer / growth operator’ın: 
+• competitor positioning’i analiz edip  
+• whitespace çıkarıp  
+• landing’i yeniden yazabilmesi.  
+Bu kadar. 
+Şu Anki Doğru Setup 
+Amaç 
+Şunu bulmak: 
+“LeadAC hangi category’ye giriyor ve hangi category’yi yeniden tanımlıyor?” 
+ 
+Basit Founder Workflow 
+Tool Stack (Manual) 
+Amaç Tool 
+Competitor SEO Ahrefs trial / SEMrush 
+Homepage 
+archive Firecrawl 
+Reddit mining Reddit search 
+SERP discovery DataForSEO veya SerpAPI 
+Copy storage Notion/Airtable 
+Clustering ChatGPT/Gemini 
+Landing writing Figma/Webflow/Next 
+Bu yeterli. 
+
+--- PAGE 2 ---
+Gerçekten. 
+ 
+Sana En Optimize Süreci Vereyim 
+STEP 1 — Competitor Map 
+Marketer’ın ilk işi: 
+Şu şirketleri analiz etmek: 
+Type Companies 
+Sales intelligence Apollo, ZoomInfo 
+AI outbound Instantly, Smartlead 
+GTM infra Clay 
+Revenue 
+intelligence Gong 
+SMB/local adjacent Birkaç restaurant 
+SaaS 
+ 
+Çıkarılacak Şeyler 
+Spreadsheet: 
+Company Main Headline Core 
+Positioning 
+Repeated 
+Keywords ICP 
+ 
+Örnek 
+Apollo: 
+Headline: 
+ “Find leads, close deals.” 
+
+--- PAGE 3 ---
+Repeated keywords: 
+• leads  
+• database  
+• outreach  
+• engagement  
+NO: 
+• local SMB  
+• intent timing  
+• operational signals  
+BOŞLUK burada. 
+ 
+STEP 2 — Keyword Discovery 
+Tool 
+DataForSEO 
+veya 
+Ahrefs 
+ 
+Aratılacak Seedler 
+restaurant sales 
+restaurant outreach 
+local business leads 
+AI SDR 
+cold email 
+restaurant marketing 
+
+--- PAGE 4 ---
+sales intelligence 
+Apollo alternative 
+ 
+Çıkarılacaklar 
+Keyword Intent Pain Opportunity 
+ 
+Örnek 
+Keyword Insight 
+AI SDR overcrowded 
+restaurant 
+prospecting underserved 
+local business 
+outreach good 
+operational signals whitespace 
+ 
+STEP 3 — Reddit Pain Mining 
+BU EN ÖNEMLİ STEP 
+Tool bile gerekmiyor. 
+Google’da ara: 
+site:reddit.com Apollo bad data 
+site:reddit.com restaurant owner outreach 
+site:reddit.com cold email low reply rate 
+ 
+Çıkarılacaklar 
+EXACT language. 
+
+--- PAGE 5 ---
+Örnek: 
+• “Apollo gives data, not buyers.”  
+• “Restaurant owners never reply.”  
+• “Cold outreach feels random.”  
+• “Most local businesses ignore LinkedIn.”  
+Bunlar: 
+ landing headline olur. 
+ 
+STEP 4 — Messaging Clusters 
+Şimdi marketer: 
+ tüm cümleleri cluster’lar. 
+Cluster örneği 
+Cluster 1 — Generic AI SDR 
+• automate outreach  
+• AI SDR  
+• sales automation  
+→ overcrowded 
+ 
+Cluster 2 — Intent Timing 
+• ready to buy  
+• operational signals  
+• review spikes  
+• timing matters  
+→ whitespace 
+
+--- PAGE 6 ---
+ 
+STEP 5 — Positioning Decision 
+Burada founder-level karar verilir. 
+LeadAC: 
+ NE DEĞİL? 
+  CRM 
+   generic AI SDR 
+   outreach sender 
+   sales automation suite 
+ 
+LeadAC: 
+ NE? 
+   Intent intelligence for local business outbound 
+    Signal-based prospecting 
+    Local SMB buying signals 
+    Operational intent engine 
+ 
+STEP 6 — Landing Rewrite 
+Şimdi landing: 
+ feature-driven değil, 
+ narrative-driven yazılır. 
+ 
+
+--- PAGE 7 ---
+Hero Structure 
+HEADLINE 
+Problem reframing. 
+Örnek: 
+Most prospecting tools know the business exists. 
+ LeadAC knows when the business is ready to buy. 
+ 
+SUBHEAD 
+Operational signal explanation. 
+Detect buying intent from reviews, growth signals, delivery changes, and operational 
+activity across local businesses. 
+ 
+CTA 
+Find High-Intent Restaurants 
+ 
+STEP 7 — Vertical Pages 
+BENCE EN ÖNEMLİ MOVE. 
+Generic homepage yerine: 
+/for/restaurants 
+/for/cafes 
+
+--- PAGE 8 ---
+/for/bars 
+/for/dental 
+Bu: 
+ “another AI SDR” 
+ algısını öldürür. 
+Çünkü artık: 
+• specific pain  
+• specific triggers  
+• specific signals  
+• specific outreach  
+var. 
+ 
+ 

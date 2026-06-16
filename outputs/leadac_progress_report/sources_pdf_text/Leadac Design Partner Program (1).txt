@@ -1,0 +1,531 @@
+
+
+--- PAGE 1 ---
+LEADAC DESIGN PARTNER PROGRAM 
+operational intelligence validation 
+framework 
+v1 workbook 
+ 
+0. bu sistem neden var 
+bu programin amaci: 
+• feature feedback toplamak degil  
+• demo yapmak degil  
+• pilot satmak degil  
+amac: 
+vertical SaaS GTM icin operational memory 
+modelini kurmak 
+yani: 
+hangi operational signal 
+hangi ICP patterni 
+hangi outbound workflow 
+hangi context layer 
+gercekten revenue impact yaratiyor 
+bunu anlamak 
+
+--- PAGE 2 ---
+ 
+1. core framework 
+sistemin merkezinde su olmali: 
+research 
+↓ 
+validation 
+↓ 
+pattern extraction 
+↓ 
+product decision 
+↓ 
+workflow deployment 
+↓ 
+outcome learning 
+↓ 
+memory accumulation 
+leadac’in asil asset’i: 
+ feature set degil 
+memory graph 
+olmali 
+ 
+2. program yapisi 
+partner sayisi 
+ideal: 
+ 3–5 partner 
+
+--- PAGE 3 ---
+neden? 
+• 1 partner anecdotal olur  
+• 2 partner directional olur  
+• 3+ partner pattern validation baslar  
+ 
+partner tipi 
+partnerler farkli operational realities temsil etmeli 
+ornek: 
+partner role 
+FineDine restaurant outbound reality 
+Vinter AI AI workflow + GTM ops thinking 
+third 
+partner pattern validation 
+ 
+partner secim kriteri 
+partner: 
+• aktif outbound yapmali  
+• CRM kullaniyor olmali  
+• SDR workflow’u olmali  
+• local business satiyor olmali  
+• signal-based selling yapiyor olmali  
+• feedback verecek operational maturity’ye sahip olmali  
+istemeyecegin partner: 
+• sadece “cool AI” isteyen  
+• random founder  
+• outbound yapmayan  
+• CRM discipline olmayan  
+
+--- PAGE 4 ---
+• sadece feature isteyen  
+ 
+3. internal operating model 
+4 core layer olmali 
+ 
+A. insight capture layer 
+her gorusme sadece “feedback call” gibi gecmemeli, her toplantidan sistematik sekilde 4 
+tip bilgi cikmali: structured data (sirketin outbound yapisi, SDR sayisi, kullandigi stack, 
+CRM akisi gibi duzenli kaydedilebilir bilgiler), repeatable observation (birden fazla 
+partnerde tekrar eden patternler, mesela “multi-location restaurantlar daha hizli close 
+oluyor” gibi tekrar eden gercekler), workflow pain (SDR’lerin gercek operasyonel sorunlari, 
+ornegin research’e fazla zaman harcamalari veya personalization’in daginik olmasi), ve 
+signal mention (partnerlerin conversion ile iliskili oldugunu dusundugu operational 
+sinyaller; hiring activity, review velocity, owner activity, booking provider gibi). Amaç 
+sadece not almak degil, tum gorusmeleri ortak bir intelligence sistemine donusturup hangi 
+patternlerin gercekten repeatable ve revenue-impacting oldugunu anlayabilmek. 
+B. validation layer 
+her insight tek bir partnerin yorumu olarak kalmamali, cross-partner validation’dan 
+gecmeli yani ayni observation birden fazla partner tarafindan tekrar ediyorsa o zaman 
+gercek operational pattern olarak kabul edilmeli. mesela “multi-location restaurants close 
+faster” insight’i sadece FineDine’da gorulurse anecdotal olabilir, ama ayni sey Vinter AI ve 
+ucuncu partner tarafindan da dogrulanirsa bu artik high-confidence operational signal 
+olur. bu sistem sayesinde roadmap tek bir musterinin istegine gore degil, segment 
+genelinde tekrar eden gercek davranislara gore sekillenir ve LeadAC’in memory layer’i 
+zamanla gercek revenue patterns uzerinden olusur. 
+ 
+ 
+
+--- PAGE 5 ---
+C. prioritization layer 
+her insight direkt roadmap’e gitmemeli cunku partnerler farkli farkli feature’lar isteyecek ve 
+bu urunu dagitir. bunun yerine her insight bir scoring sisteminden gecmeli ve sadece 
+stratejik olarak guclu, tekrar eden ve revenue impact’i yuksek patternler product decision’a 
+donusmeli. yani amac “kim ne istedi” degil, “hangi operational truth segment genelinde en 
+degerli” sorusunu cevaplamak olmali. mesela bir insight birden fazla partnerde tekrar 
+ediyorsa, SDR workflow’unda sik geciyorsa, revenue impact’i yuksekse ve LeadAC’in 
+operational memory tezine uyuyorsa yuksek priority alir. ama sadece tek partnerin istedigi, 
+stratejik olmayan veya workflow’a etkisi dusuk seyler ignore edilir. 
+factor meaning 
+repeated? birden fazla partnerde tekrar ediyor 
+mu 
+revenue impact? close rate / meeting rate etkiliyor mu 
+workflow frequency? SDR workflow’unda surekli geciyor 
+mu 
+implementation 
+ease? teknik olarak uygulanabilir mi 
+strategic alignment? LeadAC tezine uyuyor mu 
+ornek scoring: 
+insight repeated revenue 
+impact strategic fit result 
+multi-location scoring yes high high P1 
+AI auto replies no low low ignore 
+operational account briefs yes high high P1 
+linkedin emoji 
+personalization no low low ignore 
+ 
+D. memory layer 
+tum learning: 
+ future enrichment logic’e donmeli 
+
+--- PAGE 6 ---
+bu kisim cok kritik 
+leadac: 
+ “tool” 
+ degil 
+learning system 
+olmali 
+ 
+4. meeting operating system 
+her call ayni framework ile gitmeli 
+CALL TYPE 1 
+workflow discovery 
+amac: 
+ current GTM operation anlamak 
+sorular: 
+• lead sourcing nasil?  
+• SDR workflow nasil?  
+• enrichment nasil?  
+• CRM usage nasil?  
+• outbound personalization nasil?  
+• hangi accounts close oluyor?  
+• neden oluyor?  
+• research ne kadar suruyor?  
+• SDR neye bakiyor?  
+• hangi data useful?  
+
+--- PAGE 7 ---
+• hangi signal useless?  
+burda: 
+ feature konusma 
+workflow ogren 
+ 
+CALL TYPE 2 
+signal validation 
+amac: 
+ operational signals’i test etmek 
+ornek signal’ler: 
+• review velocity  
+• owner activity  
+• hiring  
+• expansion  
+• menu complexity  
+• booking provider  
+• tech stack  
+• location count  
+• social engagement  
+• reputation decline  
+• staffing pain  
+her signal icin sor: 
+is this actually predictive? 
+ 
+
+--- PAGE 8 ---
+CALL TYPE 3 
+workflow simulation 
+ornek: 
+lead discovered 
+↓ 
+operational enrichment 
+↓ 
+AI scoring 
+↓ 
+account brief 
+↓ 
+HubSpot sync 
+↓ 
+SDR opens account 
+sonra sunu sor: 
+“would your SDR actually trust and use 
+this?” 
+cok kritik soru 
+ 
+CALL TYPE 4 
+prioritization review’un amaci partnerlerden daha fazla feature toplamak degil, noise’u 
+azaltip gercek operational urgency’yi ortaya cikarmaktir. bu yuzden toplantinin sonunda 
+tek bir kritik soru sorulmali: “if we shipped only one thing in 30 days what should it be?” 
+cunku insanlar uzun feature listeleri verir ama gercek pain genelde sadece 1–2 core 
+workflow etrafinda doner. bu soru partnerin hangi problemi gercekten acil gordugunu, SDR 
+
+--- PAGE 9 ---
+workflow’unda en buyuk friction’in nerede oldugunu ve LeadAC’in hangi capability’sinin 
+immediate value yaratacagini ortaya cikarir. roadmap’i koruyan sey de budur; herkesin 
+istedigini yapmak degil, segment genelinde en yuksek urgency’ye sahip operational 
+problem’i bulmak. 
+ 
+5. meeting structure 
+ideal meeting: 
+section duration 
+operational context 10m 
+pain exploration 10m 
+signal validation 15m 
+workflow 
+simulation 15m 
+prioritization 10m 
+ 
+6. data architecture 
+Bizde minimum sunlar olmali 
+A. signal database 
+signal database’in amaci partner gorusmelerinden gelen operational signal’leri structured 
+sekilde toplamak ve hangilerinin gercekten predictive oldugunu anlamaktir. LeadAC’in asil 
+intelligence layer’i burada olusur. cunku sistem zamanla sunu ogrenmeye baslar: 
+hangi operational behavior 
+hangi account type 
+hangi context pattern’i 
+close probability’sini arttiriyor 
+
+--- PAGE 10 ---
+ornek olarak “multi-location” bir restaurant zinciri olmasi, outbound conversion icin 
+anlamli bir predictor olabilir. ama bu insight’in degerli olabilmesi icin: 
+• kac partnerde tekrar ettigi  
+• SDR workflow’unda ne kadar relevant oldugu  
+• GTM impact’i  
+• scoring sistemine etkisi  
+kaydedilmeli. 
+field example explanation 
+signal multi-
+location gozlemlenen operational pattern 
+source FineDine insight hangi partnerden geldi 
+repeated 
+count 3 kac partner ayni seyi dogruladi 
+confidence high pattern’in guven seviyesi 
+GTM impact high revenue / meeting impact’i 
+SDR relevance high SDR workflow’unda ne kadar 
+kullaniliyor 
+scoring effect +15 lead scoring’e etkisi 
+validated? yes cross-partner validation gecti mi 
+ 
+B. pain database 
+pain database’in amaci feature toplamak degil, segment genelinde tekrar eden operational 
+friction’lari bulmaktir. cunku gercek product direction bireysel feature request’lerden degil, 
+tekrar eden workflow pain’lerinden cikmali. bu sistem sayesinde LeadAC hangi 
+problemlerin “core market pain” oldugunu anlamaya baslar. 
+mesela: 
+• SDR research waste  
+• shallow personalization  
+• CRM memory loss  
+
+--- PAGE 11 ---
+bunlar sadece tek sirketin problemi degilse ve tekrar tekrar duyuluyorsa artik category-
+level problem haline gelir. 
+pain repeated? meaning 
+SDR research waste yes SDR’ler fazla manuel research 
+yapiyor 
+shallow 
+personalization yes personalization generic kaliyor 
+CRM memory loss yes won/lost learning sistemde 
+birikmiyor 
+ 
+C. workflow library 
+workflow library’in amaci farkli partnerlerdeki GTM motion’lari belgelemek ve hangi 
+workflow’larin repeatable oldugunu anlamaktir. cunku LeadAC sadece data platformu 
+degil, operational workflow intelligence sistemi olmaya calisiyor. bu library sayesinde farkli 
+vertical motion’lar karsilastirilabilir hale gelir. 
+ornek: 
+• restaurant outbound motion  
+• AI-assisted research workflow  
+• expansion-led selling  
+bunlarin hepsi farkli GTM davranislari temsil eder. 
+workflow partner explanation 
+restaurant 
+outbound FineDine restaurant sales workflow’u 
+AI-assisted 
+research Vinter AI destekli SDR research flow’u 
+expansion selling partner 3 growth/expansion driven selling 
+motion 
+ 
+
+--- PAGE 12 ---
+D. feature validation matrix 
+feature validation matrix’in amaci roadmap’i korumaktir. partnerlerin her dedigi sey urune 
+gitmez. her feature: 
+• repeat ediyor mu  
+• strategic mi  
+• LeadAC tezine uyuyor mu  
+• workflow impact’i var mi  
+bunlara gore filtrelenmeli. 
+aksi halde urun: 
+• feature factory’ye doner  
+• positioning kaybolur  
+• operational memory tezinden uzaklasir  
+feature repeated? strategic? priority 
+operational brief yes yes P1 
+AI auto 
+outbound no no ignore 
+buradaki mantik: 
+ “cool feature” yapmak degil, 
+ LeadAC’in memory layer tezini guclendiren capability’leri secmek. 
+ 
+7. followup system 
+followup’lar casual olmamali. “thanks for meeting” tarzinda generic mesajlar yerine her 
+followup operational synthesis icermeli. amac: 
+• partnerin kendini “co-builder” hissetmesi  
+• learning loop’un devam etmesi  
+• conversation’in operational seviyede ilerlemesi  
+olmali. 
+
+--- PAGE 13 ---
+ 
+1. what we learned 
+ilk bolumde partnerden ogrendiginiz seyler net sekilde summarize edilir. bu kisim: 
+• aktif dinlediginizi gosterir  
+• workflow’u dogru anladiginizi kanitlar  
+• insight’leri sistematik hale getirir  
+ornek: 
+you mentioned: 
+- SDR research takes ~2h/day 
+- owner activity improves reply rates 
+- multi-location groups convert better 
+ 
+2. what we’re validating 
+burada sadece not almadiginizi, bu insight’leri operational hypothesis’e cevirdiginizi 
+gosterirsiniz. 
+ornek: 
+we are currently validating: 
+- operational scoring 
+- location clustering 
+- owner activity enrichment 
+partner sunu hissetmeli: 
+“LeadAC feedback toplamiyor, intelligence system kuruyor.” 
+ 
+
+--- PAGE 14 ---
+3. what we’ll show next 
+bu kisim next-step certainty yaratir. partner bir sonraki gorusmede ne gorecegini bilir. 
+ornek: 
+next review: 
+- scoring logic 
+- account brief 
+- CRM memory sync 
+ 
+4. one strategic question 
+her followup tek bir strategic soruyla bitmeli. amac: 
+• conversation’i alive tutmak  
+• yeni insight cikarmak  
+• SDR reality’yi daha derin anlamak  
+ornek: 
+would your SDR trust a score if the reasoning was transparent? 
+tek soru mantigi onemli cunku: 
+ cok soru spam gibi hissettirir, 
+ tek soru ise dusundurur. 
+ 
+8. anti-patterns 
+bu sistemin dagilmamasi icin kacinmaniz gereken seyler var. 
+ 
+
+--- PAGE 15 ---
+anti-pattern 1 — feature factory 
+partner ne isterse roadmap’e koymak en buyuk hata olur. bu durumda product direction 
+kaybolur ve herkesin istedigi farkli seyler urunu parcalar. siz feature degil pattern 
+topluyorsunuz. 
+ 
+anti-pattern 2 — AI gimmick positioning 
+“fully autonomous SDR” 
+ “AI employee” 
+ “replace your sales team” 
+gibi positioning’ler kısa vadeli attention getirir ama LeadAC’in strategic pozisyonunu 
+zayiflatir. sizin teziniz automation degil operational memory. 
+ 
+anti-pattern 3 — horizontalization 
+restaurant, dental, HVAC, beauty gibi tum vertical’lari ayni anda acmaya calismak yanlistir. 
+once F&B wedge tamamen netlesmeli. repeatable pattern bulunmadan expansion yapmak 
+intelligence quality’yi dusurur. 
+ 
+anti-pattern 4 — generic CRM thinking 
+LeadAC CRM replacement degil. pipeline management tool da degil. sistemin merkezi: 
+• operational context  
+• memory accumulation  
+• GTM learning loop  
+olmali. 
+
+--- PAGE 16 ---
+ 
+anti-pattern 5 — shallow metrics 
+sadece: 
+• open rate  
+• reply rate  
+bakmak yetersizdir. cunku bunlar operational learning’i olcmez. 
+siz sunlari olcmelisiniz: 
+• pattern quality  
+• SDR trust  
+• workflow adoption  
+• enrichment utility  
+• signal accuracy  
+ 
+9. north star metrics 
+north star metric’ler sistemin gercekten intelligence uretiyor mu onu anlamak icin var. 
+ 
+research efficiency 
+amaç: 
+ SDR’lerin manuel research’e harcadigi zamani azaltmak. 
+metric: 
+time saved per SDR 
+ 
+
+--- PAGE 17 ---
+signal quality 
+amaç: 
+ gercek predictive operational signal’leri bulmak. 
+metric: 
+validated predictive signals 
+ 
+workflow adoption 
+amaç: 
+ SDR’ler sistemin uretdigi context’i gercekten kullaniyor mu? 
+metric: 
+% of SDRs using operational briefs 
+ 
+memory quality 
+amaç: 
+ closed-won learning gelecekte reuse ediliyor mu? 
+metric: 
+closed-won learning reused in future targeting 
+ 
+ICP certainty 
+amaç: 
+ winning customer pattern’i ne kadar netlesmis? 
+metric: 
+
+--- PAGE 18 ---
+confidence level of winning account patterns 
+ 
+10. end state 
+60–90 gun sonunda bu programin amaci sadece “beta feedback” toplamak olmamali. 
+elinizde gercek bir operational intelligence foundation olmali. 
+ 
+A. operational signal graph 
+hangi operational behavior: 
+• meeting  
+• reply  
+• close  
+getiriyor netlesmis olmali. 
+mesela: 
+• multi-location  
+• hiring activity  
+• owner engagement  
+• review decline  
+hangi stage’de etkili anlasilmali. 
+ 
+B. vertical ICP memory 
+ideal customer’in: 
+• operational shape’i  
+
+--- PAGE 19 ---
+• buying pattern’i  
+• workflow yapisi  
+• GTM behavior’i  
+netlesmeli. 
+LeadAC zamanla: 
+ “kim close olur?” 
+ sorusuna operational seviyede cevap verebilmeli. 
+ 
+C. repeatable outbound system 
+hangi outbound motion: 
+• hangi vertical’da  
+• hangi context’te  
+• neden ise yariyor  
+anlasilmali. 
+yani sistem: 
+ “best practice” 
+ degil, 
+ repeatable operational playbook cikarmali. 
+ 
+D. positioning certainty 
+60–90 gun sonunda LeadAC’in: 
+• ne oldugu  
+• neden farkli oldugu  
+• neden gerekli oldugu  
+• hangi stack’in arasinda durdugu  
+
+--- PAGE 20 ---
+tam netlesmis olmali. 
+cunku positioning: 
+ copywriting’den degil, 
+ repeated operational truth’lerden dogar. 
+ 
+final thesis 
+leadac’in asset’i: 
+ AI degil 
+outbound engine degil 
+enrichment degil 
+operational memory graph 
+eger bu design partner systemi dogru kurulursa: 
+her partner call 
+ her signal 
+ her workflow 
+ her lost deal 
+ her won deal 
+leadac’in memory substrate’ine donusur 
+ve asil moat orada olusur 
+ 

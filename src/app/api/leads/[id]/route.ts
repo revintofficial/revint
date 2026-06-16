@@ -8,6 +8,7 @@ import {
 } from "@/lib/discovered-links";
 import { runAuditChecklist } from "@/lib/audit-checklist";
 import type { WebsiteFeatures } from "@/types";
+import { buildActionSheet } from "@/lib/playbook/action-sheet";
 
 export async function GET(
   _request: Request,
@@ -26,6 +27,8 @@ export async function GET(
         reviewAnalysis: true,
         voiceNotes: { orderBy: { createdAt: "desc" }, take: 50 },
         workspace: { select: { niche: true } },
+        // FineDine v1 update — call-first Action Sheet inputs.
+        qualification: true,
       },
     });
 
@@ -117,10 +120,15 @@ export async function GET(
       auditSummary = checklist.summary;
     }
 
+    // FineDine v1 update — call-first Action Sheet block. HubSpot context
+    // is a separate lazy endpoint so this payload stays fast.
+    const actionSheet = await buildActionSheet(prisma, workspaceId, id);
+
     return NextResponse.json({
       ...lead,
       discoveredLinks,
       auditSummary,
+      actionSheet,
       salesOpportunity: lead.salesOpportunity
         ? { ...lead.salesOpportunity, recommendedPackage }
         : null,

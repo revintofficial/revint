@@ -1,0 +1,2299 @@
+
+
+--- PAGE 1 ---
+LeadAC — Brand & Marketing Assets 
+v1 
+Built on docs/positioning.md. Where the positioning workbook is the strategy, this 
+doc is the execution surface — what to say, in which exact words, where to show up, 
+what to spend on, and how to defend the position against the Gong threat in 2026. 
+Last update: 2026-05-22 
+Owner: Founder + first marketing hire 
+Live partner: src/components/marketing/v2/*, 
+src/app/(marketing)/page.tsx, future /for/* and /vs/* routes 
+ 
+0. Index 
+1. The Gong Reframe — neutralizing the May 2026 Revenue Graph announcement 
+2. Brand sentence ladder 
+3. Voice and tone rules 
+4. Keyword asset inventory 
+5. Channel placement matrix 
+6. Paid vs organic spend strategy 
+7. AEO and GEO — getting cited by ChatGPT, Perplexity, Claude, Gemini, AI Overviews 
+8. 30/60/90 day marketing plan 
+9. Asset shipping checklist 
+10. Crisis playbook — what to do if Gong / Apollo / Clay copy us 
+ 
+1. The Gong Reframe 
+Threat assessment first. Gong’s May 12, 2026 PRNewswire announcement ($500M 
+ARR, +55% YoY, Revenue Graph as "living memory layer") was the single 
+
+--- PAGE 2 ---
+biggest competitive event for our positioning. Some people inside LeadAC will panic 
+when they read it. They shouldn’t. Here is why. 
+1.1 The threat, named plainly 
+Gong launched Revenue Graph with explicit memory-layer language. Quote, verbatim: 
+“The Gong Revenue Graph turns customer interactions across emails, calls, meetings, and 
+deals into a living memory layer.” — Amit Bendov, CEO, PRNewswire 2026-05-12. 
+This collides with our positioning if read naively, because we also use “memory layer” 
+framing. So a buyer Googling “memory layer for sales team” in June 2026 will find Gong 
+before they find us. 
+1.2 Why the threat is misdirected (and why we hold our ground) 
+Gong’s Revenue Graph is built on a completely different data substrate than ours, 
+serves a completely different ICP, sits behind a price wall our ICP literally cannot 
+afford, and lives in a product surface that competes with HubSpot/Salesforce, not 
+with the SDR’s pre-call brief. 
+Each one of these is asymmetric. Stack them: 
+Asymmetry 1 — Data substrate (the moat-decider) 
+MDCSV↔ Expand⛶ Full 
+   
+What gets indexed 
+Calls, emails, 
+meetings, deals — 
+what your team said 
+and did 
+Reviews, location count, vertical-
+stack signature, owner activity — 
+what the account is actually doing in 
+the world 
+Source 
+Internal (rep 
+behavior + 
+customer-facing 
+comms) 
+External (operational signals about 
+the local business) 
+
+--- PAGE 3 ---
+Useful for 
+Coaching the rep, 
+forecasting the 
+deal, finding stuck 
+deals 
+Finding the right local account, 
+knowing when to call, what angle 
+wins this vertical 
+Privacy/compliance 
+surface 
+Heavy (call 
+recording, 
+GDPR/CCPA, 
+employee 
+monitoring) 
+Light (public signals + customer-
+permitted CRM data) 
+This is the line. Gong is conversation intelligence. We are operational intelligence. 
+They know what your team said. We know what the account is doing. Same word 
+(“memory”) describes two different primitives. We do not fight on their substrate. 
+Asymmetry 2 — Price wall (Gong’s own marketing closes our ICP for them) 
+From three independent 2026 pricing references (TechnologyInSales, Oliv.ai, Maxiq): 
+MDCSV↔ Expand⛶ Full 
+   
+25 users (small 
+mid-market) ~$100,000 ~$4,000/user/yr 
+50 users (mid-
+market) 85K–85K–174K ~$2,900/user/yr 
+75 users ~$266,000 ~$3,547/user/yr 
+<25 users 80% premium per user due to platform 
+fee distribution >$4,800/user/yr 
+Plus: 2–3 year prepaid contract minimum, 5–15% annual renewal uplift, 7.5K–7.5K–
+65K mandatory onboarding, no monthly billing option. 
+
+--- PAGE 4 ---
+Gong’s own product page literally says they are “not the right fit for startups and 
+SMBs under 25 reps, teams wanting real-time in-call coaching, or organizations without a 
+RevOps function.” 
+Our ICP (vertical SaaS, 2M–2M–50M ARR, 5–30 sellers, no RevOps engineer) hits every 
+disqualifier. 
+MDCSV↔ Expand⛶ Full 
+   
+Pilot (1 
+mo, ≤5 
+seats) 
+$500/month Not available — minimum 25 seats, 2-yr 
+contract 
+Team 
+(5 
+seats) 
+1,500/month=1,500/m
+onth=18K/yr 
+Foundation-only ≈ 
+7.5Kplatform+7.5Kplatform+7K licenses + 
+7.5Konboarding=7.5Konboarding=22K Yıl 1, 
+then $18K/yr — and that’s conversation intel 
+only, no Revenue Graph 
+Growt
+h (15 
+seats) 
+3,000/month=3,000/m
+onth=36K/yr 
+~45Kplatform+licenses+onboarding=45Kplatf
+orm+licenses+onboarding=80K Yıl 1 minimum 
+Punchline: at the same price band as Gong’s minimum Foundation tier, we ship the 
+entire memory layer, vertical signal libraries, CRM-native sync, and closed-loop ICP 
+refinement — without the platform fee, without the onboarding services SOW, 
+without the 2-year prepay, without the RevOps engineer. 
+Asymmetry 3 — Surface (where the memory lives) 
+Gong’s memory lives in Gong — a separate cockpit that revenue teams open. SDR alt-
+tabs in. 
+LeadAC’s memory lives inside the HubSpot card (M-10 in MoSCoW). SDR doesn’t 
+leave the CRM. Pre-call brief is on the same screen as the contact record. 
+
+--- PAGE 5 ---
+This UX difference is small in product but huge in pitch: “our memory layer doesn’t 
+need a new app, it shows up where your SDRs already are.” 
+Asymmetry 4 — ICP definition (Gong serves the buyers who already lost to us) 
+Gong has 5,000 enterprise customers. By their own marketing, their TAM is 
+approximately 5,000 companies globally that have 25+ sellers, RevOps engineers, 
+and $100K+ tooling budgets. They are defending and expanding an enterprise base. 
+Our TAM is approximately 50,000+ vertical SaaS companies in the 2M–2M–50M ARR 
+band globally — most of whom have zero memory layer today because Gong is 
+unaffordable and Apollo+Clay+Smartlead doesn’t learn. 
+We are not competing with Gong for a customer. We are serving the 10x-larger TAM 
+that Gong’s economics excludes by design. 
+1.3 The sentence we use when buyers bring up Gong 
+When a buyer says “isn’t this just Gong?”: 
+“Gong is conversation intelligence — it remembers what your team said. We are 
+operational intelligence — we remember what the account is doing. Gong starts 
+at 
+100K/yrfor25repsand8weeksofonboarding.Westartat100K/yrfor25repsand8weeksofonbo
+arding.Westartat1,500/month for 5 reps and 1 hour of onboarding. Apollo finds, 
+Clay enriches, Gong records. We remember what closes.” 
+This sentence does four things in 60 seconds: separates substrate (operational vs 
+conversation), names price wall, names time wall, ends with a memorable refrain. 
+Memorize it. Every founder demo opens with a variant. 
+1.4 The defensive watch list 
+Three Gong-side events would force a positioning refresh (D-005 reversal — see 
+positioning.md §14): 
+
+--- PAGE 6 ---
+1. Gong launches a sub-$30K/yr tier targeting <25 rep teams. Probability: low in 
+next 12 months (would cannibalize their enterprise pricing). Trigger: Q3 2026 
+earnings or product release. 
+2. Gong launches “Revenue Graph Local” / vertical-specific signal library — 
+unlikely without a Toast-class acquisition. Watch for ServiceTitan / Toast / 
+Boulevard partnerships. 
+3. Gong drops platform fee for teams under 50 users — would unlock our top of 
+TAM band. Watch G2 listings and pricing pages monthly. 
+Until one of these three fires: we are safe, we are differentiated, we are ten times 
+bigger TAM than they are. Gong is the proof point that the category is real — we just 
+sell the affordable, vertical, CRM-native version. 
+ 
+2. Brand sentence ladder 
+Every sentence on this ladder must be memorized by the founder, the first AE, the first 
+marketer, the first SDR. The right rung gets used for the right context. Wrong rung = 
+wrong impression. The ladder ascends from 3 seconds to 3 minutes. 
+2.1 Brand name + 1-word descriptor (AI search entity) 
+• Name: LeadAC 
+• Pronunciation: Lead-A-C (three syllables, like “Lead-A-C,” not “leadak”) 
+• Always followed by: “the revenue intelligence layer for vertical SaaS GTM” OR 
+“the operational memory for vertical SaaS sales teams” — never standalone in 
+first mention because the name is not yet recognized 
+• Entity descriptor for Organization schema (knowsAbout field): revenue 
+intelligence, account intelligence, vertical SaaS sales, closed-
+loop ICP refinement, operational intelligence, vertical-aware 
+account discovery, local business outbound, CRM-native 
+enrichment, pre-call brief, SDR ramp acceleration 
+2.2 The 3-second pitch (handshake / billboard / Slack one-liner) 
+“LeadAC remembers what closes for vertical SaaS sales teams.” 
+
+--- PAGE 7 ---
+7 words. Has subject (LeadAC), verb (remembers), object (what closes), qualifier (for 
+vertical SaaS sales teams). Memorable because it pairs “remember” with a commercial 
+outcome (“what closes”). 
+TR version: 
+“LeadAC, vertical SaaS satış ekiplerinin neyin kapandığını hatırlar.” 
+2.3 The 10-second pitch (Slack DM, conference badge scan, LinkedIn bio) 
+“LeadAC is the memory layer for vertical SaaS teams selling to local business — 
+we find the right accounts, sync the context your CRM never had, and learn from 
+every won and lost deal.” 
+35 words. Adds the three pillars (find, sync, learn). Ships on LinkedIn company 
+description, Twitter/X bio, founder bio. 
+TR: 
+“LeadAC, local business’a satan vertical SaaS ekiplerinin operasyonel hafıza 
+katmanı. Doğru hesapları bulur, CRM’in görmediği bağlamı senkronize eder, her 
+kapalı ve kaybedilmiş anlaşmadan öğrenir.” 
+2.4 The 30-second pitch (first cold call opener / 1st email body / podcast 
+intro) 
+“Vertical SaaS GTM teams — companies selling Toast, ServiceTitan, Curve Dental-
+class software to local business — burn 5+ hours per SDR per week on manual 
+account research because Apollo doesn’t index location count, vertical-stack 
+signatures, or owner activity. LeadAC is the operational intelligence layer that 
+fills that gap. We find your next 200 local accounts, sync 12 fields per account into 
+HubSpot, and every won and lost deal automatically sharpens the next list. Apollo 
+finds, Clay enriches, Gong records — we remember what closes. Connect HubSpot, 
+define your ICP, get live in under an hour.” 
+
+--- PAGE 8 ---
+90 words. Has the pain (5 hours/SDR/week from Salesforce 2026 State of Sales), the 
+outcome (200 enriched accounts), the differentiator (closed-loop learning), the 
+positioning (vs Apollo/Clay/Gong), and the onboarding promise (under 1 hour). 
+2.5 The 90-second pitch (demo opener / pitch deck slide 2 / podcast 1st 
+answer) 
+Three industries don't have a problem. 
+ 
+Enterprise B2B SaaS has Gong — at $30K to $300K a year, they have 
+conversation intelligence, Revenue Graph, the works. 
+ 
+Pure SMB outbound agencies have Apollo and Clay — cheap, fast, 
+fine for B2B-to-B2B. 
+ 
+But there's a third group — vertical SaaS GTM teams selling to local 
+business. Toast, ServiceTitan, Curve Dental, Boulevard, Jobber-class 
+companies, $2M to $50M ARR, 5 to 30 sellers. They have: 
+ 
+  → No Gong — can't afford the $100K floor, can't justify 8 weeks of 
+    onboarding, no RevOps engineer to operate it. 
+ 
+  → No good Apollo result — Apollo's firmographic data was built for 
+    desk workers; it doesn't know what OpenTable Lite, ServiceTitan, 
+    or Dentrix mean as signals. 
+ 
+  → No memory — when their best SDR quits, the playbook leaves. 
+ 
+That's the gap LeadAC fills. We're the operational intelligence layer 
+for vertical SaaS GTM. We find the right local accounts, sync vertical 
+context into HubSpot, and learn from every won and lost deal. 
+ 
+Apollo finds. Clay enriches. Gong records. LeadAC remembers what closes. 
+ 
+5 minutes to onboard. Less than $2K per month for a 5-person team. 
+First 200 enriched accounts in your HubSpot in under an hour. 
+Copy 
+
+--- PAGE 9 ---
+2.6 The 3-minute pitch (sales deck full version) 
+Maps to existing positioning.md §1.4 “External manifesto” — that 250-word block is the 
+3-minute pitch as prose. Read it aloud, it times to 2:45–3:00. 
+2.7 Tagline + sub-tagline variants (homepage hero per surface) 
+Homepage hero (primary surface) 
+Headline: Revenue intelligence for the teams selling to local business. 
+Subhead: Your CRM knows the deal. We know the business behind it. 
+CTA: Book a 20-min demo · See it on a sample account 
+Homepage hero (alt — Gong-defensive variant for A/B test) 
+Headline: Conversation intelligence knows what was said. We know what’s happening. 
+Subhead: The operational memory layer for vertical SaaS GTM teams selling to local 
+business. 
+CTA: Book a 20-min demo 
+Homepage hero (alt — stack-vs-platform variant) 
+Headline: Apollo finds. Clay enriches. Gong records. LeadAC remembers what closes. 
+Subhead: The intelligence layer your vertical SaaS stack never had. 200 local accounts 
+in HubSpot in under an hour. 
+CTA: See the workflow · Book a demo 
+/vs/apollo-clay-gong hero 
+Headline: Same money. One platform. Plus the memory your stack never had. 
+Subhead: Apollo gives lists. Clay gives workflows. Gong records calls. LeadAC 
+remembers what closes for vertical SaaS teams selling to local business. 
+CTA: See the cost math · See the demo 
+/for/field-service-saas (HVAC beachhead vertical) 
+Headline: Field service software outbound, with the memory layer your SDRs are 
+already building in their heads. 
+
+--- PAGE 10 ---
+Subhead: See which HVAC companies use ServiceTitan, Jobber, or Housecall Pro — 
+plus location count, review pattern, owner activity. Synced to HubSpot. 1-hour setup. 
+CTA: See a sample HVAC account brief 
+/for/restaurant-tech-saas 
+Headline: Sell restaurant tech faster. We see the footer, the menu, the booking flow, 
+and the reviews — your CRM only sees the address. 
+Subhead: Operational intelligence for F&B SaaS GTM. Built with FineDine and the next 
+generation of restaurant tech vendors. 
+CTA: See a sample restaurant brief 
+2.8 The one-paragraph “About LeadAC” (press release boilerplate, podcast 
+bio, LinkedIn company page) 
+LeadAC is the operational intelligence layer for vertical SaaS GTM teams selling to 
+local business. Where horizontal tools like Apollo and Clay give you lists and 
+workflows, and where enterprise platforms like Gong give you conversation 
+intelligence at a $100K floor, LeadAC gives mid-market vertical SaaS sales teams 
+— restaurant tech, field service software, dental practice management, beauty 
+and wellness platforms — the memory layer their CRM never had. We find the 
+right local accounts, sync vertical context into HubSpot, and every won and lost 
+deal automatically sharpens the next list. Built for the 50,000+ vertical SaaS 
+companies that the enterprise revenue intelligence category leaves out. 
+96 words. Use verbatim in press releases, podcast bios, LinkedIn company description, 
+and Organization.description JSON-LD. 
+2.9 The 12 short brand assets (verbatim, ready to ship) 
+MDCSV↔ Expand⛶ Full 
+  
+LinkedIn 
+company tagline The operational memory for vertical SaaS sales 
+
+--- PAGE 11 ---
+LinkedIn 
+company 
+description 
+(paste 2.8 verbatim, 96 words) 
+Twitter / X bio Operational intelligence for vertical SaaS GTM. We remember 
+what closes. 
+Founder 
+LinkedIn 
+headline 
+Founder @ LeadAC · operational memory for vertical SaaS 
+sales teams selling to local business 
+Email signature 
+(founder) 
+LeadAC — we remember what closes. ⏤ Book a demo: 
+leadac.ai/demo 
+Out-of-office line Building the operational memory layer for vertical SaaS sales. 
+Back soon. 
+Slack bot tagline LeadAC · the memory layer your stack never had 
+HubSpot card 
+subtitle 
+LeadAC operational brief · vertical SaaS context for this 
+account 
+Pricing page 
+subtitle 
+Connect HubSpot. 200 local accounts in under an hour. 
+Cancel anytime. 
+Free-trial-not-
+available copy 
+We’re sales-led. Pilot starts at $500/month for 30 days. No free 
+tier — we attract operators, not browsers. 
+404 page This page got lost. The 200 local accounts in your HubSpot 
+didn’t. → home 
+Conference 
+badge / sticker 
+apollo finds. clay enriches. gong records. we remember. — 
+leadac.ai 
+ 
+
+--- PAGE 12 ---
+3. Voice and tone rules 
+Voice is what we sound like. Tone is how we adapt. The rules below are non-
+negotiable for owned media; community engagement gets one degree of looseness, 
+sales-call talk tracks get two. 
+3.1 Voice principles (the 5 do’s) 
+1. Specific over abstract. “Apollo’s 12-14% bounce rate” beats “data quality 
+issues.” “OpenTable Lite footer signal” beats “intent signals.” Buyer trusts 
+numbers and verbs, not adjectives. 
+2. Verbs of memory. remembers, learns, sharpens, compounds, surfaces, traces, 
+retraces. Never automates, optimizes, scales, transforms, revolutionizes. 
+3. Quietly confident. State, don’t shout. “LeadAC is the operational memory.” Not 
+“LeadAC is the world’s most advanced AI-powered revolutionary operational 
+memory platform.” 
+4. Operator empathy. Speak like an SDR Manager talking to another SDR Manager. 
+“You know that 5 hours per rep per week your team is losing to research.” Not 
+“Industry-leading research efficiency.” 
+5. Anti-Gong elegance. When mentioning Gong, never sneer. State the price, state 
+the time, state the surface, move on. Buyers respect competition; they don’t trust 
+trash talk. 
+3.2 Voice anti-principles (the 5 don’ts) 
+1. Don’t say “AI” as a noun. It’s a feature, not a product. We say “semantic 
+memory,” “vertical signal libraries,” “closed-loop refinement.” We never say 
+“powered by AI” on a hero. 
+2. Don’t say “agentic.” Saturation 0.93 (positioning.md §5). Every competitor uses 
+it. Saying it makes us indistinguishable. 
+3. Don’t say “platform” without a qualifier. We are an “intelligence layer,” 
+“memory layer,” “context layer.” Layers add to a stack. Platforms try to replace it. 
+Our customer’s stack is HubSpot+Apollo+Smartlead+Slack — we don’t replace it, 
+we sit between it. 
+4. Don’t promise “10x.” Don’t say “transform,” “revolutionize,” “disrupt.” We say 
+“the playbook your best SDR built in their head, finally inside the system.” Concrete 
+> vague hyperbole. 
+
+--- PAGE 13 ---
+5. Don’t write copy that Apollo could also write tomorrow. If a sentence is true 
+for any AI-anything-platform, drop it. Test: replace “LeadAC” with “Apollo” in the 
+sentence. If it still reads correctly, the sentence is wrong. 
+3.3 The 12-word test 
+Every hero, every section header, every ad headline, every cold email subject line must 
+answer all four of these in ≤12 words across the cluster: 
+1. Who is this for? (vertical SaaS sales team) 
+2. What does it do? (memory of what closes / operational intelligence) 
+3. What does it not do? (it’s not an AI SDR; it’s not Gong) 
+4. Why us, why now? (Gong-tier intelligence at mid-market price + 1-hour 
+onboarding) 
+If the headline doesn’t carry 1+2, the subhead must. If the subhead doesn’t carry 3+4, 
+the CTA must. 
+3.4 Word list — use aggressively / use carefully / never use 
+MDCSV↔ Expand⛶ Full 
+   
+operational intelligence memory layer (always with 
+vertical qualifier) AI SDR 
+operational memory revenue intelligence (always 
+with “for local business sales”) agentic AI 
+closed-loop platform (only with “layer 
+alternative”) autonomous 
+vertical-aware smart (only as adjective for 
+code primitives) revolutionary 
+signal library scale (only with concrete 
+number) 10x 
+
+--- PAGE 14 ---
+pre-call brief AI (only as feature, never as 
+product) transformative 
+vertical SaaS GTM personalization (only when 
+contrasted with “context”) 
+next-
+generation 
+local business enrichment (only when 
+contrasted with “learning”) best-in-class 
+account intelligence outbound (always with 
+“vertical” or “local”) 
+unified end-
+to-end 
+HubSpot-native predictive (only with concrete 
+model output) seamless 
+vertical pack engagement (only when 
+contrasted with “intelligence”) empower 
+Apollo finds, Clay enriches, 
+Gong records, we remember 
+memory (always paired with 
+substrate qualifier) 
+leverage (as a 
+verb) 
+200 accounts in 1 hour revenue (only with concrete 
+metric) synergy 
+3.5 Editing pass — the four-question test 
+Before any piece of marketing copy ships: 
+1. Could Apollo say this tomorrow? If yes → drop. 
+2. Does this require local-business operational signals to be true? If no → drop. 
+3. Does this require closed-loop CRM outcome data to be true? If no → drop. 
+4. Would a 30-something VP Sales at FineDine, Workiz, or Curve Dental 
+actually say “yes, that’s me”? If no → drop. 
+Three of four required to ship. 
+ 
+
+--- PAGE 15 ---
+4. Keyword asset inventory 
+The operational asset. Every keyword has a tier (paid / organic / owned / branded / 
+attack / avoid), a page target (where the lander lives), a persona (who searches it), 
+and an intent class (10-class taxonomy from positioning.md §7). 
+4.1 Tier 1 — Branded keywords (we must dominate these on Day 1) 
+These must rank #1 organically + appear in every AI search citation. SEO + Brand are 
+merged. 
+MDCSV↔ Expand⛶ Full 
+   
+leadac / Day 1 
+leadac.ai / Day 1 
+leadac pricing /pricing Day 1 
+leadac demo /demo Day 1 
+leadac vs apollo /vs/apollo Day 1 
+leadac vs clay /vs/clay Day 1 
+leadac vs gong /vs/gong Day 1 
+leadac review /reviews (G2/Capterra 
+inbound link) 
+Day 30 (after first G2 
+listing) 
+leadac alternative /manifesto (defensive) Day 60 
+is leadac legit /about Day 30 
+leadac founder /about Day 30 
+
+--- PAGE 16 ---
+leadac integration 
+hubspot /integrations/hubspot Day 1 
+leadac integration 
+smartlead /integrations/smartlead Day 30 
+4.2 Tier 2 — Owned whitespace keywords (we created or first to claim — see 
+positioning.md §6) 
+These match our whitespace map. Volume is low today; we are creating the search 
+demand alongside the content. 
+MDCSV↔ Expand⛶ Full 
+     
+operationa
+l 
+intelligen
+ce for 
+outbound 
+/manifesto + 
+/resources/operational
+-intelligence 
+Awarenes
+s 0.05 Daniel 
+operationa
+l memory 
+layer 
+/manifesto Awarenes
+s 0.05 Daniel 
+memory 
+layer for 
+vertical 
+saas 
+/for/vertical-saas Solution 
+Seeking 0.10 Daniel 
+closed-
+loop icp 
+refinement 
+/resources/closed-
+loop-icp-refinement 
+Solution 
+Seeking 0.05 Daniel 
++ Mike 
+
+--- PAGE 17 ---
+vertical-
+aware 
+account 
+discovery 
+/resources/vertical-
+aware-account-
+discovery 
+Solution 
+Seeking 0.10 Mike 
+pre-call 
+brief in 
+hubspot 
+/integrations/hubspot/
+pre-call-brief Buying 0.20 Mike + 
+SDR 
+1-hour gtm 
+onboarding /pricing (as proof bullet) Buying 0.15 Daniel 
+audit-
+grade 
+outbound 
+/security Buying 0.25 RevOp
+s 
+account 
+intelligen
+ce for 
+vertical 
+saas 
+/for/vertical-saas Solution 
+Seeking 0.35 Daniel 
+vertical 
+saas sdr 
+ramp 
+/resources/vertical-
+saas-sdr-ramp 
+Awarenes
+s 0.20 Mike 
+vertical 
+saas gtm 
+benchmark 
+/resources/2026-
+vertical-saas-gtm-
+benchmark (annual report) 
+Awarenes
+s 0.15 Daniel 
+the apollo 
++ clay + 
+smartlead 
+stack cost 
+/resources/apollo-
+clay-stack-cost-2026 
+Solution 
+Seeking 0.30 Mike + 
+Daniel 
+crm-native 
+account 
+enrichment 
+/manifesto Awarenes
+s 0.25 Daniel 
+
+--- PAGE 18 ---
+4.3 Tier 3 — Attack keywords (paid + organic comparison hits) 
+High commercial intent, comparison shoppers. Both paid (Google Ads) and organic 
+comparison pages. 
+MDCSV↔ Expand⛶ Full 
+     
+apollo 
+alternativ
+e 
+/alternatives/apollo Switching Yes (low-
+mid bid) Yes 
+apollo 
+alternativ
+e for 
+vertical 
+saas 
+/alternatives/apollo Switching Yes (high 
+bid) Yes 
+apollo 
+bounce 
+rate fix 
+/resources/apollo-
+bounce-rate-fix Pain Yes Yes 
+apollo for 
+restaurant 
+tech 
+/for/restaurant-
+tech-saas 
+Solution 
+Seeking Yes Yes 
+apollo for 
+hvac 
+software 
+vendors 
+/for/field-service-
+saas 
+Solution 
+Seeking Yes Yes 
+clay 
+alternativ
+e no 
+engineer 
+/alternatives/clay Switching Yes (high 
+bid) Yes 
+clay 
+alternativ /alternatives/clay Switching Yes Yes 
+
+--- PAGE 19 ---
+e for non-
+technical 
+teams 
+clay vs 
+leadac /vs/clay Compariso
+n 
+Yes 
+(defensiv
+e) 
+Yes 
+gong 
+alternativ
+e for mid-
+market 
+/alternatives/gong Switching Yes (high 
+bid) Yes 
+gong 
+alternativ
+e for 
+small 
+teams 
+/alternatives/gong Switching Yes Yes 
+gong for 
+smb sales /alternatives/gong Solution 
+Seeking Yes Yes 
+outreach.a
+i 
+alternativ
+e for mid-
+market 
+/alternatives/outrea
+ch Switching Yes Yes 
+11x 
+alternativ
+e human in 
+the loop 
+/alternatives/11x Switching Maybe Yes 
+salesloft 
+alternativ
+e for 
+vertical 
+saas 
+/alternatives/salesl
+oft Switching No (low 
+volume) Yes 
+
+--- PAGE 20 ---
+apollo + 
+clay + 
+smartlead 
+bundle 
+alternativ
+e 
+/vs/apollo-clay-gong Switching Yes (high 
+bid) Yes 
+ai sdr 
+alternativ
+e (defensive 
+— to 
+capture 
+buyers 
+explicitly 
+looking for 
+AI SDR who 
+could be 
+redirected) 
+/manifesto 
+(educational redirect) 
+Solution 
+Seeking No Yes 
+4.4 Tier 4 — Long-tail vertical keywords (programmatic SEO — built per 
+vertical pack) 
+Volume is low per query but high in aggregate, and intent is extremely high. These are 
+the SEO pages we build at scale (per positioning.md §10 vertical packs). 
+MDCSV↔ Expand⛶ Full 
+   
+Field service 
+/ HVAC 
+/for/field-service-saas, 
+/resources/[vertical-
+vendor]-competitor-
+outbound 
+hvac software outbound, 
+servicetitan competitor 
+sales, jobber competitor 
+outbound, housecall pro 
+competitor, field service 
+saas sdr tools, multi-
+location hvac targeting, 
+
+--- PAGE 21 ---
+field service vertical 
+signal library 
+Restaurant 
+tech 
+/for/restaurant-tech-
+saas, 
+/resources/restaurant-
+tech-[vendor]-vs-
+[vendor] 
+restaurant tech sdr 
+playbook, opentable lite 
+signal, toast competitor 
+outbound, square for 
+restaurants competitor, 
+multi-location 
+restaurant outbound, 
+restaurant tech account 
+intelligence, restaurant 
+pos software outbound 
+playbook 
+Dental 
+practice 
+management 
+/for/dental-practice-
+software, 
+/resources/dental-
+practice-[vendor]-vs-
+[vendor] 
+dental practice 
+management outbound, 
+dentrix vs eaglesoft 
+migration signal, multi-
+location dental dso list, 
+dental saas sdr playbook 
+Beauty / 
+wellness 
+/for/beauty-wellness-
+saas, 
+/resources/boulevard-vs-
+mindbody-migration-
+signal 
+boulevard competitor 
+outbound, mindbody 
+competitor sales tools, 
+beauty wellness saas sdr 
+playbook 
+Hospitality / 
+boutique 
+hotel 
+/for/hospitality-saas 
+mews competitor sales, 
+cloudbeds competitor 
+outbound, boutique hotel 
+software sales tools 
+Legal 
+practice 
+management 
+/for/legal-practice-
+software 
+clio competitor sales 
+tools, legal saas sdr 
+playbook 
+Programmatic rule: every vertical pack ships with 5 cluster pages that follow the 
+same structure — /for/<vertical>, /alternatives/<incumbent> (per vertical 
+
+--- PAGE 22 ---
+leader), /resources/<vertical>-sdr-playbook, /resources/<vertical>-
+signal-library, /resources/<vertical>-gtm-benchmark. Programmatic SEO at 
+the vertical-pack layer, not at the city/keyword-spam layer. 
+4.5 Tier 5 — AVOID keywords (saturated — see positioning.md §5) 
+We do not bid on these. We do not write hero copy with these. We do not SEO-target 
+them. 
+MDCSV↔ Expand⛶ Full 
+   
+ai sdr Saturated 0.95; collides with 
+11x/Artisan/AiSDR/Regie 0.95 
+ai bdr Same 0.92 
+agentic ai Saturated 0.93; every competitor 0.93 
+revenue intelligence 
+(unqualified) Gong owns; collides 0.65 at 
+enterprise 
+revenue ai Gong owns 0.70 
+revenue 
+orchestration 
+Clari + Salesloft own (Gartner 
+category) 0.85 
+sales engagement 
+platform Outreach + Salesloft + Lemlist 0.90 
+gtm platform 
+(unqualified) Apollo + ZoomInfo + Clay + Salesloft 0.92 
+lead generation on 
+autopilot Saturated 0.95; AI SDR territory 0.95 
+
+--- PAGE 23 ---
+multichannel 
+sequences Lemlist + Reply + Outreach 0.85 
+personalization at 
+scale All competitors 0.88 
+pipeline coverage Clari + Salesloft + Outreach 0.90 
+intent data (as 
+headline noun) 6sense + Bombora + Demandbase 0.92 
+end-to-end gtm Apollo + ZoomInfo + Outreach 0.88 
+all-in-one platform Apollo + ZoomInfo + Salesloft 0.88 
+4.6 The keyword scoring formula (use when evaluating any new keyword) 
+Keyword Score = (Search Volume × Intent Class Weight × Saturation Inverse × 
+Vertical Match) 
+ 
+Where: 
+  Intent Class Weight  = 1.0 (Buying), 0.8 (Switching), 0.7 (Solution Seeking), 
+                         0.4 (Awareness), 0.3 (Comparison without intent) 
+  Saturation Inverse   = (1 - saturation_score) 
+  Vertical Match       = 1.0 (vertical-specific), 0.7 (vertical-adjacent), 0.4 
+(horizontal) 
+ 
+Decision rule: 
+  Score > 0.6  → Tier 1-3 (own and bid) 
+  Score 0.3-0.6 → Tier 4 (programmatic only, no manual bid) 
+  Score < 0.3  → Tier 5 (avoid) 
+Copy 
+A keyword like apollo alternative for restaurant tech saas is roughly: 
+• Volume: low (~50/mo) but high commercial intent — count as 1.0 
+• Intent: Switching → 0.8 
+• Saturation: 0.10 → inverse 0.9 
+• Vertical Match: 1.0 
+• Score = 1.0 × 0.8 × 0.9 × 1.0 = 0.72 → Tier 2/3, build the page. 
+
+--- PAGE 24 ---
+A keyword like ai sdr is: 
+• Volume: high (~5K/mo) 
+• Intent: Solution Seeking → 0.7 
+• Saturation: 0.95 → inverse 0.05 
+• Vertical Match: 0.4 
+• Score = 1.0 × 0.7 × 0.05 × 0.4 = 0.014 → Tier 5, avoid. 
+ 
+5. Channel placement matrix 
+Where to show up, by persona × stage × intent. Every cell answers “what does the 
+persona see, and what action do we want them to take?” 
+5.1 The persona × stage matrix 
+MDCSV↔ Expand⛶ Full 
+     
+Awarenes
+s 
+LinkedIn 
+founder 
+posts; 
+SaaStr 
+CRO 
+Confidenti
+al 
+listenershi
+p; Pavilion 
+Slack; 
+ICONIQ 
+benchmar
+k reports 
+r/sales; 
+r/SalesOperations
+; RevGenius 
+Slack; SDR 
+Conference; 
+SalesEnablement.
+com 
+LinkedIn 
+marketing 
+influencer 
+posts; MO 
+Pros Slack; 
+Lenny’s 
+Newsletter; 
+Demand 
+Curve 
+community 
+RevOps Co-
+op Slack; 
+RevOps Live; 
+Modern 
+Sales Pros 
+Solution 
+Seeking 
+Google: 
+gong 
+Google: apollo 
+bounce rate 
+Google: 
+target 
+Google: crm 
+enrichment 
+
+--- PAGE 25 ---
+alternat
+ive for 
+mid-
+market; AI 
+search: 
+best 
+Apollo 
+alternat
+ive for 
+vertical 
+SaaS; G2 
+category 
+browse 
+fix; clay 
+alternative no 
+engineer; AI 
+search: best 
+account 
+intelligence 
+for restaurant 
+tech 
+account 
+list 
+builder for 
+[vertical]; 
+AI search: 
+[vertical] 
+ABM 
+platform 
+vendor 
+evaluation
+; analyst 
+reports 
+(Forrester 
+Wave, 
+Gartner 
+Magic 
+Quadrant) 
+Buying / 
+Comparis
+on 
+/vs/gong, 
+/vs/clay, 
+/vs/apol
+lo-clay-
+gong, 
+/pricing 
+/vs/clay, 
+/alternatives/
+apollo, sample 
+HVAC/restaurant 
+account brief 
+/for/<verti
+cal> vertical 
+pack page 
+/security, 
+/integrati
+ons, 
+/about, 
+/changelog 
+Activatio
+n (post-
+signup) 
+Pilot ROI 
+dashboard 
+email; 
+Slack 
+alerts on 
+pilot 
+signals 
+In-product 
+onboarding 
+wizard; first 200 
+accounts in 
+HubSpot; weekly 
+digest 
+Slack alerts 
+on account-
+list quality; 
+marketing-to-
+sales 
+alignment 
+dashboard 
+AgentRun 
+audit 
+dashboard; 
+HubSpot 
+field map 
+export 
+Expansio
+n 
+Quarterly 
+business 
+review; 
+vertical-
+pack 
+upsell 
+Per-vertical 
+playbook library; 
+signal taxonomy 
+expansion 
+Vertical ABM 
+playbook 
+Multi-CRM 
+connector 
+
+--- PAGE 26 ---
+5.2 The channel priority list (rank order — invest top to bottom) 
+MDCSV↔ Expand⛶ Full 
+      
+1 
+Founder-
+led 
+LinkedIn 
+(organic) 
+— 3 
+posts/we
+ek, 
+M/W/F, 
+the 3-2-1 
+formula 
+(3 
+posts/we
+ek, 2 
+substanti
+ve 
+commen
+ts/day, 1 
+weekly 
+DM to an 
+engager) 
+High (1 
+hr/day 
+from 
+founder) 
+30-60 
+days to 
+first 
+inbound 
+Founde
+r 
+0(SalesNavigator0(S
+alesNavigator99/mo 
+optional) 
+2 
+SEO for 
+owned + 
+attack 
+keyword
+s 
+(organic) 
+— Tier 2 
+whitespa
+ce + Tier 
+3 
+High 
+(15-20 
+cluster 
+pages in 
+90 days) 
+90-180 
+days to 
+first 
+organic 
+Founde
+r + part-
+time 
+writer 
+0(orcontentagency0
+(orcontentagency3K-
+$8K/mo at Day 60+) 
+
+--- PAGE 27 ---
+comparis
+on pages 
+3 
+Vertical 
+commun
+ity 
+presenc
+e — 
+Pavilion 
++ 
+RevGeni
+us + 
+RevOps 
+Co-op + 
+r/sales 
+Medium 
+(value-
+first 
+posts; 
+never 
+spam) 
+30-90 
+days for 
+credibili
+ty 
+Founde
+r + first 
+AE 
+0+Pavilionmembers
+hip(0+Pavilionmemb
+ership(1.5K-$2.5K/yr 
+per seat) 
+4 
+AEO / 
+GEO 
+optimiza
+tion — 
+get cited 
+by 
+ChatGPT, 
+Perplexit
+y, 
+Gemini, 
+AI 
+Overview
+s 
+Medium 
+(schema 
++ 
+content) 
+30-90 
+days for 
+first AI 
+citation 
+Founde
+r + dev 
+(schem
+a work) 
+$0 (technical work) 
+5 
+G2 + 
+TrustRad
+ius + 
+Capterra 
+reviews 
+— listed 
+Day 30; 
+Low 
+(request 
+from 
+pilot 
+custom
+ers) 
+60-90 
+days for 
+review 
+pages 
+to rank 
+Founde
+r 
+G2 Basic free; G2 
+Marketing $5K+/mo 
+deferred 
+
+--- PAGE 28 ---
+10 
+reviews 
+by Day 90 
+6 
+Founder 
+podcast 
+appeara
+nces — 
+SaaStr 
+CRO 
+Confiden
+tial, 
+Topline, 
+RevOps 
+Co-op, 
+Pavilion’s 
+The 
+Executive
+, Modern 
+Sales 
+Pros, 
+20VC (if 
+accessibl
+e) 
+Medium 
+(founder 
+time; PR 
+contact 
+list) 
+30-60 
+days per 
+appeara
+nce 
+Founde
+r 
+0(orPRagency0(orP
+Ragency5K-$15K/mo 
+deferred to Day 90) 
+7 
+Vertical-
+specific 
+conferen
+ces — 
+ServiceTi
+tan 
+Pantheon
+, Toast 
+Big 
+Restaura
+nt Show, 
+Pavilion 
+High 
+(travel + 
+booth + 
+sponsor
+ship) 
+60-120 
+days for 
+follow-
+up 
+close 
+Founde
+r + first 
+AE 
+Defer to Day 90+; 
+budget 5K−5K−30K 
+per event 
+
+--- PAGE 29 ---
+CRO 
+Summit, 
+SaaStr 
+Annual 
+(selective
+) 
+8 
+Paid 
+Google 
+Ads — 
+compari
+son + 
+attack 
+keyword
+s only 
+Low 
+setup, 
+ongoing 
+optimiza
+tion 
+14-30 
+days to 
+first 
+lead 
+Founde
+r + paid 
+agency 
+Start 
+1K/mo,scaleto1K/mo
+,scaleto5K-$10K/mo 
+if CAC works 
+9 
+Paid 
+LinkedIn 
+Ads — 
+retargeti
+ng + 
+lookalik
+e 
+Medium 30-60 
+days 
+Founde
+r + paid 
+agency 
+Defer to Day 60+; 
+start $2K/mo 
+10 
+Paid 
+Reddit 
+(r/sales 
+sponsor
+ships) 
+Low 30 days 
+First 
+marketi
+ng hire 
+Defer to Day 90+; 
+start $1K/mo if 
+community traction 
+validated 
+5.3 The channel NOT-DO list (explicit no’s — protects focus) 
+• Twitter / X (paid or organic): Declining B2B engagement; our buyer is on 
+LinkedIn; founder bandwidth better spent there. 
+• Facebook Groups: Zero VP Sales presence at our ICP segment. 
+• Instagram / TikTok / YouTube Shorts: Wrong format, wrong audience. 
+
+--- PAGE 30 ---
+• Hacker News: Distant adjacent; founder will get distracted on demand-gen 
+rabbit holes there. 
+• Generic B2B SaaS conferences without vertical fit: SaaStr Annual is 
+borderline OK (founder networking only); SaaStock, B2B SaaS Conferences, etc. 
+— skip. 
+• Outbound cold email to ourselves: “Hey, we’re an outbound platform” feels 
+self-defeating. Use partner channels (Pavilion intros, vertical SaaS founder Slack 
+rooms) instead. 
+• Influencer “shoutouts” / paid newsletter sponsorships before Day 90: ROI 
+unclear at zero brand recognition. 
+• Display ads / banner ads: Banner blindness; intent stage mismatch. 
+• Programmatic SEO for city/keyword spam pages (e.g., hvac software in 
+[city]): Looks spammy, hurts AEO trust signals, distracts from vertical-pack 
+SEO that actually works. 
+ 
+6. Paid vs organic spend strategy 
+Budget allocation rule: 10% paid, 90% organic + founder-led for first 6 months. Why 
+this ratio: at zero brand recognition, paid ads convert badly because the click goes to a 
+brand the searcher doesn’t trust. Organic builds the trust. Once we have 10+ G2 reviews 
+and 3+ podcast appearances, the ratio shifts to 30/70 in months 7-12. 
+6.1 Paid — what to buy (Day 30 onward, NOT Day 0) 
+Total Day 30-90 paid budget: 3K−3K−8K/month. Day 0-30: $0 paid. Pre-launch paid 
+burns money on a brand nobody recognizes. 
+MDCSV↔ Expand⛶ Full 
+     
+Google Search 
+Ads (RSA) 
+70% of 
+paid 
+Attack 
+keywords 
+(Tier 3): 
+apollo 
+/vs/apollo, 
+/vs/clay, 
+/alternatives/g
+ong, 
+High 
+commerci
+al intent, 
+low CPC 
+
+--- PAGE 31 ---
+alternati
+ve for 
+vertical 
+saas, clay 
+alternati
+ve no 
+engineer, 
+gong 
+alternati
+ve for 
+mid-
+market, 
+apollo 
+bounce 
+rate fix 
+/resources/apol
+lo-bounce-rate-
+fix 
+because 
+long-tail, 
+compariso
+n 
+shoppers 
+in buying 
+mode 
+LinkedIn 
+Sponsored 
+Content 
+20% of 
+paid 
+(Day 
+60+) 
+Title-based: 
+VP Sales / 
+Head of 
+GTM / SDR 
+Manager at 
+vertical 
+SaaS 
+companies; 
+retarget 
+homepage + 
+comparison 
+page 
+visitors 
+/for/<vertical>, 
+manifesto, founder 
+thought leadership 
+posts 
+Persona-
+precise 
+targeting; 
+LinkedIn’s 
+the only 
+platform 
+where we 
+can filter 
+exactly to 
+“VP Sales 
+at Workiz, 
+FieldEdge, 
+Service 
+Fusion, 
+Boulevard, 
+etc.” 
+Reddit Ads 
+(r/sales, 
+r/SalesOperatio
+ns, r/SaaS) 
+10% of 
+paid 
+(Day 
+90+) 
+Subreddit + 
+topic 
+targeting 
+/manifesto, 
+/resources/<top
+ic> 
+Practition
+er 
+audience; 
+LLMs cite 
+
+--- PAGE 32 ---
+Reddit 
+heavily 
+(helps 
+AEO) 
+What we do NOT buy: 
+• Display / banner ads — banner blindness, wrong intent 
+• Google Generic Search (e.g., revenue intelligence, crm enrichment) — 
+$10+ CPC, wrong tier, attracts enterprise tire-kickers 
+• Twitter / X ads — declining B2B 
+• Facebook ads — zero B2B vertical SaaS fit 
+• YouTube pre-roll — distant from buying intent 
+6.2 Organic — where the founder spends time (Day 0 onward, mandatory) 
+Founder time, hour by hour, weekly: 
+MDCSV↔ Expand⛶ Full 
+   
+LinkedIn — 3 posts 
+(insight + story + 
+engagement) 
+4 hrs 
+(write + 
+edit + 
+publish) 
+Pipeline driver per Kareem Amin / 
+Guillaume Moubeche playbook; Clay went 
+1M→1M→100M ARR partly on founder 
+LinkedIn 
+LinkedIn — 10-15 
+substantive 
+comments/day on ICP 
+posts 
+5 hrs (1 hr 
+× 5 
+weekdays) 
+Algorithm rewards engagement; comments 
+outpace cold posts for visibility 
+LinkedIn — 1 weekly 
+DM to top engager 0.5 hr Most efficient conversion of comment 
+engagement to qualified conversation 
+
+--- PAGE 33 ---
+Founder podcast 
+appearances (target 
+1/month) 
+2 
+hrs/month 
+(prep + 
+recording) 
+Brand authority + AEO citation source 
+SEO content — 1 
+cornerstone 
+piece/week 
+6 hrs 
+(research 
++ draft + 
+edit) 
+Tier 2 owned + Tier 3 attack content 
+Pavilion / RevGenius / 
+RevOps Co-op — 3 
+substantive 
+posts/week 
+1.5 hrs Community credibility + referral pipeline 
+Customer interviews 
+(5/week minimum 
+during launch) 
+5 hrs 
+(calls + 
+notes) 
+Content fuel + product feedback + future 
+case studies 
+Total founder time 
+on marketing 
+~22 
+hrs/week 
+This is real. Marketing in 2026 is a founder-
+CEO job until $1M ARR. 
+6.3 The Clay LinkedIn ROI benchmark (the proof point) 
+Clay’s CEO Kareem Amin publicly stated (LinkedIn post, 2026): “Our growth team 
+dropped LinkedIn CPL from 250to250to25 in two months.” They achieved this by 
+using Clay’s own enrichment to build hyper-targeted lookalike audiences (work email 
+matching personal LinkedIn profiles via Clay’s enrichment pipeline). 
+We have the same primitive. Once M-01 (HubSpot connector) and M-03/M-04 (vertical 
+packs) ship, we can do the same trick: enrich our prospect list and feed it back to 
+LinkedIn Audiences as a custom-match list, dropping our own CPL well below the 
+LinkedIn average of 80−80−250. 
+This is the Day 90 paid LinkedIn strategy. Until then, organic founder-led only. 
+
+--- PAGE 34 ---
+6.4 The 70/20/10 rule (Day 90+) 
+Once we have proof points (10 G2 reviews, 5+ paying customers, 3+ podcast 
+appearances), allocate marketing budget as: 
+• 70% — keep doing what works (founder-led LinkedIn, vertical pack SEO, 
+comparison pages) 
+• 20% — scale what works (paid amplification of best-performing organic 
+content; LinkedIn lookalike audiences from customer data) 
+• 10% — experiments (new vertical pack launch, Reddit ads, vertical conference 
+sponsorships, podcast sponsorships) 
+ 
+7. AEO and GEO tactics 
+The single most under-leveraged 2026 marketing surface: getting cited inside ChatGPT, 
+Perplexity, Claude, Gemini, and Google AI Overviews. AEO traffic converts 3-10× better 
+than Google organic because the searcher arrives mid-decision, having read the answer 
+already. 
+Citation share (not ranking) is the metric. 
+7.1 The five must-do AEO setup tasks (Week 1 of launch) 
+Task 1 — Unblock AI crawlers in robots.txt 
+Ensure none of these are blocked: 
+User-agent: GPTBot 
+Allow: / 
+ 
+User-agent: ChatGPT-User 
+Allow: / 
+ 
+User-agent: ClaudeBot 
+Allow: / 
+ 
+User-agent: PerplexityBot 
+
+--- PAGE 35 ---
+Allow: / 
+ 
+User-agent: Google-Extended 
+Allow: / 
+ 
+User-agent: Applebot-Extended 
+Allow: / 
+ 
+User-agent: Bingbot 
+Allow: / 
+Copy 
+Implementation note: live robots.txt route in src/app/robots.ts (Next.js 16 
+convention). Today’s state needs verification — check Glob for robots.ts / 
+robots.txt. 
+Task 2 — Ship Organization schema with sameAs, knowsAbout, founder 
+{ 
+  "@context": "https://schema.org", 
+  "@type": "Organization", 
+  "name": "LeadAC", 
+  "url": "https://leadac.ai", 
+  "logo": "https://leadac.ai/logo.png", 
+  "description": "Operational intelligence layer for vertical SaaS GTM teams 
+selling to local business. Built for restaurant tech, field service, dental, 
+beauty, legal, and hospitality software vendors who need account intelligence, 
+vertical-aware account discovery, and closed-loop ICP refinement at mid-market 
+pricing.", 
+  "founder": { 
+    "@type": "Person", 
+    "name": "<Founder name>", 
+    "url": "https://www.linkedin.com/in/<founder>", 
+    "sameAs": [ 
+      "https://twitter.com/<founder>", 
+      "https://github.com/<founder>" 
+    ] 
+  }, 
+  "sameAs": [ 
+    "https://www.linkedin.com/company/leadac", 
+    "https://twitter.com/leadac", 
+    "https://www.crunchbase.com/organization/leadac", 
+
+--- PAGE 36 ---
+    "https://www.g2.com/products/leadac", 
+    "https://en.wikipedia.org/wiki/LeadAC" 
+  ], 
+  "knowsAbout": [ 
+    "revenue intelligence", 
+    "account intelligence", 
+    "operational intelligence", 
+    "closed-loop ICP refinement", 
+    "vertical-aware account discovery", 
+    "vertical SaaS GTM", 
+    "local business outbound", 
+    "CRM-native enrichment", 
+    "pre-call brief", 
+    "SDR ramp acceleration", 
+    "field service software sales", 
+    "restaurant tech sales intelligence", 
+    "dental practice management outbound", 
+    "memory layer for vertical SaaS" 
+  ], 
+  "offers": { 
+    "@type": "Offer", 
+    "priceRange": "$500-$5000", 
+    "priceCurrency": "USD" 
+  } 
+} 
+Copy 
+Ship this on / (homepage) and /about. 
+Task 3 — Ship FAQPage schema on every cornerstone page 
+Direct-answer paragraphs of 40-60 words per question. LLMs lift these verbatim. 
+Example for /manifesto (the “what is LeadAC” page):{  "@context": 
+"https://schema.org", 
+  "@type": "FAQPage", 
+  "mainEntity": [ 
+    { 
+      "@type": "Question", 
+      "name": "What is LeadAC?", 
+      "acceptedAnswer": { 
+        "@type": "Answer", 
+        "text": "LeadAC is the operational intelligence layer for vertical SaaS 
+GTM teams selling to local business. We find the right local accounts, sync 
+
+--- PAGE 37 ---
+vertical context into HubSpot, and learn from every won and lost deal. Built for 
+restaurant tech, field service software, dental, beauty, legal, and hospitality 
+SaaS vendors at $2M to $50M ARR." 
+      } 
+    }, 
+    { 
+      "@type": "Question", 
+      "name": "How is LeadAC different from Apollo?", 
+      "acceptedAnswer": { 
+        "@type": "Answer", 
+        "text": "Apollo gives you a list of contacts based on firmographic data. 
+LeadAC gives you operational context — location count, vertical software stack 
+signature, review tone, owner activity — that Apollo's database does not index. 
+Apollo finds, LeadAC times. You keep Apollo; we sit on top and write 12 enriched 
+fields per account into HubSpot." 
+      } 
+    }, 
+    { 
+      "@type": "Question", 
+      "name": "How is LeadAC different from Gong?", 
+      "acceptedAnswer": { 
+        "@type": "Answer", 
+        "text": "Gong is conversation intelligence: it remembers what your team 
+said on calls and emails. LeadAC is operational intelligence: we remember what 
+the account is doing in the world. Gong starts at $100K per year for 25 reps and 
+requires 8 weeks of RevOps engineering. LeadAC starts at $1,500 per month for 5 
+reps and onboards in under an hour." 
+      } 
+    }, 
+    { 
+      "@type": "Question", 
+      "name": "How is LeadAC different from Clay?", 
+      "acceptedAnswer": { 
+        "@type": "Answer", 
+        "text": "Clay is a programmable GTM workflow runtime — extremely 
+flexible, but requires a GTM engineer to operate and burns credits unpredictably. 
+LeadAC is the finished product for vertical SaaS teams: pre-built vertical signal 
+libraries (HVAC, restaurant, dental, beauty, legal, hospitality), CRM-native 
+sync, closed-loop ICP refinement out of the box. Connect HubSpot in one hour, no 
+engineer required." 
+      } 
+    }, 
+    { 
+      "@type": "Question", 
+      "name": "What does LeadAC cost?", 
+
+--- PAGE 38 ---
+      "acceptedAnswer": { 
+        "@type": "Answer", 
+        "text": "Pilot tier starts at $500 per month for a 30-day evaluation with 
+500 accounts and one CRM. Team tier is $1,500 per month for 5 seats and 5,000 
+accounts per month. Growth tier is $3,000 per month for 15 seats and 20,000 
+accounts per month. Enterprise tier starts at $5,000 per month. All plans cancel 
+anytime — no annual contract." 
+      } 
+    }, 
+    { 
+      "@type": "Question", 
+      "name": "Which CRMs does LeadAC integrate with?", 
+      "acceptedAnswer": { 
+        "@type": "Answer", 
+        "text": "LeadAC ships with native HubSpot integration via OAuth on day 
+one. Pipedrive and Close integrations follow within 60 days. Salesforce 
+integration is on the roadmap for enterprise customers. The integration writes 12 
+enriched fields per account directly into the CRM contact and company records, 
+with closed-loop outcome ingestion from CRM webhooks." 
+      } 
+    } 
+  ] 
+} 
+Copy 
+Ship this on every cornerstone page with the relevant Q&A set for that page. AI 
+Overviews extract these verbatim. 
+Task 4 — Get listed on G2 / Capterra / TrustRadius (within Day 30) 
+Why: ChatGPT, Perplexity, and Gemini cite G2 listicles heavily for “best [category] tool” 
+queries. First Page Sage research (cited by Simon Ward 2026 AEO guide): “appearing in 
+highly-ranked list articles makes the single biggest difference in earning an AI chatbot’s 
+recommendation.” 
+Action items: 
+• Day 7: Submit LeadAC for listing in G2 categories: “Revenue Operations and 
+Intelligence”, “Sales Intelligence”, “Lead Intelligence”, “Account-Based Analytics”, 
+“Sales Enablement” 
+• Day 14: Same on Capterra + TrustRadius + SoftwareAdvice + GetApp 
+
+--- PAGE 39 ---
+• Day 21: First 3 customer reviews submitted (founder asks pilot customers 
+personally; offers $50 Amazon card per verified review) 
+• Day 60: 10 verified reviews target 
+Task 5 — Seed Reddit content (LLMs love Reddit for “human advice” citation) 
+Why: Gemini, ChatGPT, and Perplexity weight Reddit content highly. Lemlist’s CMO 
+publicly described their 2026 AEO playbook: “a Reddit agency posting threads on 
+specific subreddits because LLMs love Reddit.” 
+Action items: 
+• Identify 8-10 evergreen subreddits: r/sales, r/SalesOperations, r/SaaS, 
+r/coldemail, r/agency, r/HVAC (for vertical context, not selling), 
+r/dentistry, r/restaurateur, r/marketing 
+• Founder establishes account 90 days before any commercial mention (no 
+instant-post-and-sell) 
+• Post genuine practitioner content (e.g., “We benchmarked Apollo bounce rates 
+across 12 verticals — here’s the data”) with light or no brand mention 
+• Comment substantively on existing threads; never lead with a product pitch 
+• After 90 days of authentic posting, mention LeadAC in context (e.g., responding 
+to “anyone know a Gong alternative for mid-market” with a value-first answer 
+that ends in product mention) 
+7.2 The cornerstone content map (build over Day 0-90) 
+Per the LoudFace 2026 AEO research, cornerstone pages get extracted by LLMs ~10× 
+more than non-cornerstone. Build these in order: 
+MDCSV↔ Expand⛶ Full 
+      
+1 /manifest
+o 
+Article + 
+Organiza 2,500 
+operati
+onal 
+intelli
+gence 
+Original 
+argument: 
+“Conversation 
+
+--- PAGE 40 ---
+tion + 
+FAQPage 
+for 
+outboun
+d 
+intelligence vs 
+operational 
+intelligence — 
+the line that 
+defines 2026 
+outbound” 
+2 
+/vs/apoll
+o-clay-
+gong 
+Article + 
+FAQPage + 
+Breadcru
+mbList 
+3,000 
+apollo 
+clay 
+gong 
+stack 
+alterna
+tive 
+Stack cost 
+math table 
+(cited #s with 
+sources) 
+3 /vs/gong Article + 
+FAQPage 2,500 
+gong 
+alterna
+tive 
+for 
+mid-
+market 
+Gong pricing 
+breakdown 
+table 
+(TechnologyInS
+ales/Oliv/Maxi
+q cited) 
+4 /vs/clay Article + 
+FAQPage 2,000 
+clay 
+alterna
+tive no 
+enginee
+r 
+“When Clay is 
+overkill” 
+decision matrix 
+5 /vs/apoll
+o 
+Article + 
+FAQPage 2,000 
+apollo 
+alterna
+tive 
+for 
+vertica
+l saas 
+Apollo bounce 
+rate cost math 
+6 
+/for/fiel
+d-
+service-
+saas 
+Article + 
+FAQPage + 
+Service 
+schema 
+2,500 
+hvac 
+softwar
+e sales 
+ServiceTitan/Jo
+bber/Housecal
+l Pro signature 
+library reveal 
+
+--- PAGE 41 ---
+intelli
+gence 
+7 
+/for/rest
+aurant-
+tech-saas 
+Article + 
+FAQPage + 
+Service 
+schema 
+2,500 
+restaur
+ant 
+tech 
+sales 
+intelli
+gence 
+OpenTable Lite 
+/ Toast / Resy 
+footer signal 
+reveal 
+8 
+/resource
+s/2026-
+vertical-
+saas-gtm-
+benchmark 
+Article + 
+FAQPage + 
+Dataset 
+schema 
+4,000 
+vertica
+l saas 
+gtm 
+benchma
+rk 2026 
+Annual data 
+report (Lemlist 
+/ Clay / Apollo / 
+ServiceTitan / 
+Toast public 
+data 
+triangulated) 
+9 
+/resource
+s/closed-
+loop-icp-
+refinemen
+t 
+Article + 
+FAQPage 1,800 
+closed-
+loop 
+icp 
+refinem
+ent 
+Walkthrough 
+with mermaid 
+diagrams 
+10 
+/resource
+s/apollo-
+bounce-
+rate-fix 
+Article + 
+FAQPage 1,500 
+apollo 
+bounce 
+rate 
+fix 
+Concrete fix 
+matrix 
+(verification 
+add-ons vs 
+platform 
+switch) 
+7.3 The AI search tracking dashboard (build by Day 30) 
+Weekly prompt benchmark — run these on ChatGPT, Perplexity, Claude, Gemini, 
+Copilot. Log which competitors appear, which (if any) cite LeadAC. 
+Track in a simple spreadsheet: Date / Query / Engine / Sources Cited (1-10) 
+/ LeadAC mentioned (Y/N) / Notes. 
+
+--- PAGE 42 ---
+Benchmark queries (run weekly): 
+1. “Best alternative to Apollo for vertical SaaS sales teams” 
+2. “What is the best account intelligence platform for restaurant tech vendors?” 
+3. “Gong alternative for mid-market sales teams” 
+4. “Clay alternative that doesn’t require a GTM engineer” 
+5. “How do vertical SaaS companies sell to local businesses?” 
+6. “Best outbound tool for HVAC software vendors” 
+7. “What is operational intelligence in sales?” 
+8. “Apollo + Clay alternative for vertical SaaS” 
+9. “Memory layer for vertical SaaS GTM teams” 
+10. “How to reduce SDR research time at a vertical SaaS company” 
+Day 0 baseline: LeadAC mentioned in 0/10 (probably). Day 90 target: 3/10. Day 180 
+target: 6/10. 
+ 
+8. 30/60/90 day marketing plan 
+Concrete actions, by week. Built to be executed by founder + 1 part-time content writer 
++ 0 paid agency in the first 60 days. Paid agency engagement starts Day 60. 
+8.1 Day 0–30 — Launch foundation 
+Goals: 
+• Brand identity complete + consistent across surfaces 
+• 5 cornerstone pages live (/manifesto, /vs/apollo-clay-gong, /vs/gong, 
+/vs/clay, /for/field-service-saas) 
+• AEO foundation shipped (robots.txt, Organization schema, FAQPage 
+schema on cornerstone pages) 
+• Founder LinkedIn cadence active (M/W/F posts, daily comments) 
+• G2 + Capterra + TrustRadius listing submitted 
+• 5 customer dev calls completed in HVAC vertical (beachhead validation) 
+Week-by-week breakdown: 
+
+--- PAGE 43 ---
+MDCSV↔ Expand⛶ Full 
+   
+Week 1 
+(a) Refresh homepage hero + subhero + CTA (2.7). 
+(b) Ship robots.txt + Organization schema 
+(7.1). © Set up LinkedIn cadence — write the first 
+3 posts. 
+Homepage live; 
+AEO bot 
+access; 
+LinkedIn week 1 
+posts 
+Week 2 
+(a) /manifesto page live. (b) /vs/apollo-
+clay-gong page refresh (Stack-bundle thesis). © 
+Submit G2 + Capterra listings. (d) Founder books 
+2 podcast intros (SaaStr CRO Confidential, 
+Topline). 
+Manifesto live; 
+first 
+comparison 
+live; review 
+listings 
+submitted 
+Week 3 
+(a) /vs/gong page live (Gong-defensive). (b) 
+/vs/clay page live. © FAQPage schema on all 
+live pages. (d) Founder runs 5 HVAC SaaS 
+customer dev calls. 
+4 cornerstone 
+pages live; 
+vertical 
+validation data 
+Week 4 
+(a) /for/field-service-saas page live 
+(beachhead vertical). (b) Founder reaches 100 
+LinkedIn impressions/post avg. © First 3 G2 
+reviews requested + landed (from pilot/design-
+partner customers). (d) AI search tracking 
+dashboard initialized (7.3). 
+Beachhead 
+vertical page 
+live; first social 
+proof; weekly AI 
+tracking 
+running 
+Day 30 success metrics: 
+• 5 cornerstone pages live with FAQPage schema 
+• Founder LinkedIn: 50-300 followers added, 3 inbound DMs from ICP 
+• G2: 3 reviews submitted 
+• AI search dashboard: tracking 10 weekly queries; baseline established 
+• 5 HVAC SaaS founder/VP Sales calls completed 
+
+--- PAGE 44 ---
+8.2 Day 31–60 — Activation + Distribution 
+Goals: 
+• 3 podcast appearances completed 
+• 5 additional G2 / Capterra / TrustRadius reviews 
+• /for/restaurant-tech-saas live (FineDine validation surface) 
+• First 100 LinkedIn followers in target ICP segment (VP Sales / SDR Manager at 
+vertical SaaS) 
+• Paid Google Ads soft-launched (Tier 3 comparison keywords only, $1K budget) 
+• First 5 inbound demos booked from organic 
+Week-by-week: 
+MDCSV↔ Expand⛶ Full 
+   
+Week 5 
+(a) /for/restaurant-tech-saas page live. (b) 
+Founder appears on Podcast #1 (likely Topline or 
+smaller industry pod). © Pavilion membership 
+active; first 3 substantive Slack posts. 
+Restaurant 
+vertical page; 
+first podcast; 
+community 
+foothold 
+Week 6 
+(a) /resources/apollo-bounce-rate-fix 
+cornerstone live (high-intent commercial). (b) 
+Founder appears on Podcast #2. © First paid 
+Google Ads campaign ($1K test budget) — apollo 
+alternative for vertical saas, clay 
+alternative no engineer. 
+First 
+commercial-
+intent resource 
+live; paid 
+acquisition data 
+starts 
+Week 7 
+(a) /resources/closed-loop-icp-refinement 
+live. (b) RevGenius + RevOps Co-op active 
+engagement. © First sample HVAC + restaurant 
+brief published as gated resource. 
+Whitespace 
+content; 
+community 
+engagement; 
+demand-
+capture gated 
+content 
+
+--- PAGE 45 ---
+Week 8 
+(a) /resources/2026-vertical-saas-gtm-
+benchmark cornerstone live (data report — the 
+linkable asset). (b) Founder appears on Podcast 
+#3. © AI search dashboard: target 1/10 LeadAC 
+mentions on tracked queries. 
+Annual report 
+(PR-grade); 3 
+podcasts 
+cumulative; first 
+AI citation 
+Day 60 success metrics: 
+• 10 cornerstone pages live 
+• 3 podcast appearances completed (with backlinks) 
+• 5+ G2 reviews 
+• 100-300 LinkedIn followers in ICP (Sales Navigator filter) 
+• 5 inbound demos booked from organic 
+• Paid CAC < $200 per demo booked (proof point that ads convert) 
+• AI search dashboard: LeadAC mentioned in 1-2 of 10 weekly benchmark queries 
+8.3 Day 61–90 — Compound + iterate 
+Goals: 
+• 10 G2 reviews (G2 ranking position improves) 
+• First customer case study published (with consent + metrics) 
+• First press placement (TechCrunch / The Information / SaaStr blog / Pavilion) 
+• First conference appearance (founder as speaker, not booth — SaaStr Annual, 
+Pavilion CRO Summit, or vertical event like ServiceTitan Pantheon) 
+• Paid budget scaled to 3K−3K−5K/mo based on Day 60 CAC data 
+• Second vertical pack content live (/for/dental-practice-software) 
+Week-by-week: 
+   
+Week 9 
+(a) /for/dental-practice-software page 
+live. (b) First case study draft from pilot 
+customer. © Paid LinkedIn Ads launched ($2K 
+budget, lookalike from customer list). 
+Wave 2 
+vertical; case 
+study; 
+LinkedIn 
+
+--- PAGE 46 ---
+audience 
+scale 
+Week 10 
+(a) Case study published as cornerstone page 
+(/customers/<name>). (b) Pavilion CRO Summit 
+speaking submission or attendance. © Press 
+outreach — pitch The Information / TechCrunch / 
+SaaStr on the “vertical SaaS revenue intelligence 
+emerging category” angle. 
+First social 
+proof page; 
+PR pipeline 
+started 
+Week 11 
+(a) /resources/[vertical]-sdr-playbook 
+series — first 2 published. (b) Second podcast 
+wave (target 2 more in this week). © Paid Google 
+Ads scaled to $5K/mo if Day 60 CAC worked. 
+Vertical SEO 
+compounding; 
+paid scaled 
+Week 12 
+(a) Quarterly cycle review (positioning.md §13) — 
+first formal Friday digest published. (b) AI search 
+dashboard: target 3/10 LeadAC mentions. © Day 
+90 metrics review: are we on track for $50K MRR 
+by Day 180? 
+Discipline 
+anchor; AEO 
+progress; 
+finance check 
+Day 90 success metrics: 
+• 15+ cornerstone pages live 
+• 10+ G2 reviews; G2 Top 25 in “Sales Intelligence” or category ranking visible 
+• 5+ podcast appearances; first press placement 
+• 500-1,000 LinkedIn followers in target ICP 
+• 15 inbound demos/month from organic + 10 from paid = 25 total 
+• Paid CAC stable < $250 per demo, LTV math indicates payback < 6 months 
+• AI search dashboard: LeadAC mentioned in 3/10 weekly benchmark queries 
+• 50K−50K−80K MRR target (10-15 paying customers @ 1.5K−1.5K−3K) 
+8.4 Risk gates (per cycle review, positioning.md §13) 
+MDCSV↔ Expand⛶ Full 
+   
+
+--- PAGE 47 ---
+Paid CAC > 
+$500/demo by Day 
+45 
+Day 45 
+paid 
+review 
+Pause paid; double down on organic LinkedIn + 
+community 
+LinkedIn followers < 
+100 ICP by Day 30 
+Day 30 
+review 
+Founder time on LinkedIn → reallocate from 
+podcasts to content + commenting 
+Zero AI citation by 
+Day 90 
+Day 90 
+review 
+Audit FAQPage schema; add Dataset schema; 
+pursue G2 category listicle placement 
+aggressively 
+Gong launches 
+<$30K/yr tier 
+Any 
+time Activate positioning crisis playbook (§10) 
+Less than 5 HVAC 
+paying customers by 
+Day 90 
+Day 90 
+review 
+Re-evaluate beachhead — consider restaurant 
+tech as primary (Wave 1 swap) 
+ 
+9. Asset shipping checklist 
+Concrete items to ship. Each is checkbox-binary. Maintain weekly. Anything past its 
+target date triggers a §13 cycle-review note. 
+9.1 Identity assets 
+ Logo SVG (light + dark + favicon) — already in /public 
+ Brand guidelines one-pager (colors, fonts, voice extract) — derived from globals.css 
++ §3 
+ Founder LinkedIn profile optimization (headline, About, featured posts pinned) 
+ Company LinkedIn page with tagline + description (§2.8 verbatim) + cover image 
+ Twitter/X account (founder + company) with bio (§2.9) 
+ G2 listing with full description + integrations + categories 
+ Capterra listing 
+ TrustRadius listing 
+ Crunchbase entry with full description 
+
+--- PAGE 48 ---
+ LinkedIn “Featured” section on founder profile: top 3 posts + manifesto link + demo 
+link 
+9.2 Cornerstone marketing pages (built by Day 30 / Day 60 / Day 90) 
+ / (homepage) refreshed with §2.7 hero 
+ /manifesto (Day 7) 
+ /vs/apollo-clay-gong refreshed (Day 14) 
+ /vs/gong (Day 21) 
+ /vs/clay (Day 21) 
+ /vs/apollo (Day 30) 
+ /for/field-service-saas (Day 28) 
+ /for/restaurant-tech-saas (Day 35) 
+ /for/dental-practice-software (Day 65) 
+ /pricing (Day 1) 
+ /about + /team (Day 10) 
+ /security (Day 30) 
+ /integrations/hubspot (Day 14) 
+ /integrations/smartlead (Day 45) 
+ /customers/<first-case-study> (Day 65) 
+ /resources/apollo-bounce-rate-fix (Day 42) 
+ /resources/closed-loop-icp-refinement (Day 49) 
+ /resources/2026-vertical-saas-gtm-benchmark (Day 56) 
+ /resources/<vertical>-sdr-playbook × 3 (Day 75-90) 
+9.3 Technical AEO assets 
+ robots.txt with all AI crawlers allowed (Day 1) 
+ Organization schema on homepage + /about (Day 7) 
+ FAQPage schema on every cornerstone page (Day 30) 
+ Article + BreadcrumbList schema on resources (Day 30) 
+ Service schema on /pricing (Day 7) 
+ Dataset schema on benchmark report page (Day 56) 
+ Sitemap.xml live and submitted to Google Search Console + Bing Webmaster (Day 7) 
+ llms.txt convention file (Day 14) — Anthropic / OpenAI proposal for LLM-readable site 
+maps 
+ Open Graph + Twitter Card meta tags on every page (Day 14) 
+
+--- PAGE 49 ---
+ Refresh dates (dateModified) visible in HTML + schema (Day 14) 
+9.4 Distribution assets 
+ LinkedIn weekly post calendar (Day 1, ongoing — M/W/F) 
+ Pavilion membership active (Day 15) 
+ RevGenius + RevOps Co-op profiles active (Day 15) 
+ Reddit account with 90-day organic history before commercial mention (start Day 1) 
+ Podcast pitch list (Day 14) — SaaStr CRO Confidential, Topline, The Executive 
+(Pavilion), RevOps Co-op, Modern Sales Pros, 20VC 
+ Speaker submission for vertical conferences (Day 30) — ServiceTitan Pantheon, Toast 
+Big Restaurant Show, SaaStr Annual 
+ Newsletter content sponsorship target list (Day 60) — Lenny’s, Topline, Pavilion 
+newsletter 
+ Founder email signature + auto-responder updated (Day 1) 
+9.5 Conversion assets 
+ /demo Calendly + booking form (Day 1) 
+ Pilot pricing page with $500 entry (Day 1) 
+ Sample HVAC account brief (gated download) (Day 28) 
+ Sample restaurant tech account brief (gated download) (Day 35) 
+ 2026 Vertical SaaS GTM Benchmark report (gated download) (Day 56) 
+ First case study (1-page + 4-page versions) (Day 65) 
+ Sales deck v1 (Day 30) — derived from §2.6 
+ 2-min demo video (Day 45) — sample account brief walk-through 
+ HubSpot connector demo Loom (Day 30) 
+ 
+10. Crisis playbook 
+What to do if a competitor copies us, attacks us, or shifts the market in a way that 
+threatens our positioning. Decision-ready, not panic-ready. 
+
+--- PAGE 50 ---
+10.1 Scenario: Gong launches sub-$30K/yr “Revenue Graph Lite” 
+• Trigger: Gong public announcement, pricing page change, or Battery Ventures / 
+Sequoia portfolio newsletter mention 
+• Day 0 action: Founder writes a public LinkedIn post within 24 hours framing 
+the move. Acknowledge it’s a validation of the memory-layer thesis. Reiterate the 
+four asymmetries (§1.2): substrate (operational vs conversation), CRM-native 
+(HubSpot Card vs Gong UI), vertical specificity (Gong is horizontal), 
+implementation time (1 hour vs 8 weeks). 
+• Week 1 action: Refresh /vs/gong page with the new pricing data and the same 
+asymmetries argument. Push the page through founder LinkedIn + Pavilion + 
+RevGenius. 
+• Reverse D-005? No — keep the vertical qualifier on “memory layer” framing. 
+Now more important than ever because Gong is broadening their footprint. 
+10.2 Scenario: Apollo or Clay launches local-business signal libraries 
+• Day 0 action: Acknowledge in public; pivot competition to closed-loop learning 
+(P-008 / whitespace closed-loop-icp) which they cannot easily replicate 
+without our CRM-native outcome ingestion. 
+• Week 1 action: Sharpen /vs/clay and /vs/apollo pages with the “they have 
+signals, we have memory of what closes” framing. 
+10.3 Scenario: A new entrant launches with our exact positioning 
+• Day 0 action: Founder reaches out personally — depending on the entrant, 
+possible partner / talent acquisition / friendly competition. 
+• Week 1 action: Lean harder into the founder-led brand. The new entrant has 
+zero brand equity; we have months of founder-led LinkedIn equity. 
+• Don’t: Drop prices. Don’t engage in price war. Lean into the asymmetric 
+advantages: customer references, vertical depth, CRM-native UX maturity. 
+10.4 Scenario: A bad public review or G2 1-star 
+• Day 0 action: Founder responds publicly with empathy. Offers to make it right. 
+• Week 1 action: Post-mortem in cycle review. If product issue → fix it. If 
+expectations issue → tighten ICP + onboarding wizard wording. 
+
+--- PAGE 51 ---
+10.5 Scenario: Pilot conversion < 20% by Day 90 
+• Trigger: Day 90 review: less than 20% of pilots convert to paid Team tier. 
+• Action: Re-examine the pilot scope. Likely the 30-day pilot doesn’t surface 
+closed-loop value yet (M-09 query regen demo arrives at day 60-90 — pilot ends 
+before customer sees it). Extend pilot to 60 days or pre-load the closed-loop 
+demo with synthetic historical data. 
+ 
+End of LeadAC Brand & Marketing Assets v1 (2026-05-22). Lives alongside 
+docs/positioning.md. Every shipped piece of marketing copy gets a row in 
+positioning.md §9 (Messaging House). Every channel-spend decision goes through this 
+doc’s §5 and §6 first. 
+ 

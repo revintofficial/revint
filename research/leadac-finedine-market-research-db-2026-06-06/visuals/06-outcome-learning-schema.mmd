@@ -1,0 +1,38 @@
+erDiagram
+  RESTAURANT_ACCOUNT ||--o{ ACCOUNT_SIGNAL : has
+  RESTAURANT_ACCOUNT ||--o{ SALES_ACTION : receives
+  SALES_ACTION ||--o{ OUTCOME : produces
+  OUTCOME ||--o{ PLAYBOOK_LEARNING : updates
+  PLAYBOOK_LEARNING }o--|| FINEDINE_MODULE : improves
+  RESTAURANT_ACCOUNT {
+    string account_id
+    string segment
+    string location
+    string chain_status
+  }
+  ACCOUNT_SIGNAL {
+    string signal_type
+    string source
+    string evidence
+    string confidence
+  }
+  SALES_ACTION {
+    string channel
+    string message_angle
+    string rep_id
+    date action_date
+  }
+  OUTCOME {
+    string outcome_type
+    string objection
+    string stage_change
+  }
+  PLAYBOOK_LEARNING {
+    string pattern
+    string recommendation_change
+    string confidence
+  }
+  FINEDINE_MODULE {
+    string module_name
+    string pitch_angle
+  }

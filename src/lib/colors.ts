@@ -14,15 +14,15 @@
  * them in sync with the matching --leadac-h / --leadac-s / --leadac-ns
  * declarations in `globals.css`).
  *
- *   LEADAC_HUE         → primary hue   (0-360, current 38 = warm ochre)
- *   LEADAC_SATURATION  → primary sat   (0-100, current 78)
+ *   LEADAC_HUE         → primary hue   (0-360, current 218 = royal azure)
+ *   LEADAC_SATURATION  → primary sat   (0-100, current 85)
  *   LEADAC_NEUTRAL_SAT → neutral sat   (0-100, current 7 for surfaces)
  *
  * Everything else derives from those three numbers.
  */
 
-export const LEADAC_HUE = 38;
-export const LEADAC_SATURATION = 78;
+export const LEADAC_HUE = 218;
+export const LEADAC_SATURATION = 85;
 export const LEADAC_NEUTRAL_SAT = 7;
 export const LEADAC_TEXT_SAT = 10;
 

@@ -60,7 +60,7 @@ export default function ChangelogPage() {
                       day: "numeric",
                     })}
                   </time>
-                  <span className="site-mono rounded-full border border-signal/30 bg-[hsl(38_60%_15%_/_0.4)] px-2 py-0.5 text-[10px] uppercase tracking-wider text-signal">
+                  <span className="site-mono rounded-full border border-signal/30 bg-[hsl(218_50%_16%_/_0.4)] px-2 py-0.5 text-[10px] uppercase tracking-wider text-signal">
                     {KIND_LABELS[c.kind]}
                   </span>
                   {c.version ? (

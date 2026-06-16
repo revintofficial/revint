@@ -139,7 +139,7 @@ export function LeadRow({
                 onWebsiteSearch(lead);
               }}
               disabled={websiteSearchLoading}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-[hsl(38_70%_52%)]/20 bg-[hsl(38_70%_52%)]/[0.06] text-[hsl(38_70%_52%)] hover:bg-[hsl(38_70%_52%)]/10 transition-colors disabled:opacity-50 w-fit"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-[hsl(218_85%_58%)]/20 bg-[hsl(218_85%_58%)]/[0.06] text-[hsl(218_85%_58%)] hover:bg-[hsl(218_85%_58%)]/10 transition-colors disabled:opacity-50 w-fit"
             >
               {websiteSearchLoading ? (
                 <Loader2 className="w-2.5 h-2.5 animate-spin" />
@@ -206,7 +206,7 @@ export function LeadRow({
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-[hsl(38_70%_52%)] hover:text-[hsl(38_70%_52%)] h-8 px-2 gap-1"
+                className="text-[hsl(218_85%_58%)] hover:text-[hsl(218_85%_58%)] h-8 px-2 gap-1"
               >
                 <BookmarkCheck className="w-4 h-4 shrink-0" />
                 Open Deal

@@ -33,7 +33,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CircularProgress } from "@/components/ui/progress";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { DossierMarkdown } from "@/components/app/leads/dossier/DossierMarkdown";
 import { DossierSourceDrawer } from "@/components/app/leads/dossier/DossierSourceDrawer";
@@ -62,13 +61,13 @@ import { SocialProfileIcons } from "@/components/app/social-profile-icons";
 import { LeadMapView } from "@/components/app/lead-map-view";
 import { AiWorkersPanel } from "@/components/app/ai-workers-panel";
 import { PlannerActions } from "@/components/app/planner-actions";
-import { NbaCard } from "@/components/app/nba/NbaCard";
 import { WebsiteIntelligencePanel } from "@/components/app/website-intelligence-panel";
+import { LeadActionSheet } from "@/components/app/leads/LeadActionSheet";
+import { LeadQualificationCard } from "@/components/app/leads/LeadQualificationCard";
 import {
   ArrowLeft,
   MapPin,
   ExternalLink,
-  Bot,
   RefreshCw,
   Copy,
   Check,
@@ -660,7 +659,10 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
         Leads
       </Link>
 
-      <SalesCallSheet lead={lead} onLogged={() => { void refetchLead(); }} />
+      {/* FineDine v1 update — call-first Action Sheet. The restaurant
+          analysis below (HeroBand + tabs) is retained as supporting
+          evidence. */}
+      <LeadActionSheet leadId={id} />
 
       <HeroBand lead={lead} onPipelineStarted={() => { void refetchLead(); }} />
 
@@ -733,12 +735,10 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
             </div>
 
             <TabsContent value="overview" className="space-y-5">
-              {/* SDR Brain v2 — Next Best Action card. Renders the
-                  preliminary (T1, BANT-only) recommendation immediately
-                  on lead_created and morphs into the final SDR_BRAIN
-                  card once T3 finishes. Card polls its own endpoint;
-                  do not pass refetchLead. */}
-              <NbaCard leadId={lead.id} />
+              {/* FineDine v1 update — the "Next Best Action" (NbaCard)
+                  block was removed; its WAIT_FOR_REPLY / reasoning-trace
+                  output wasn't useful to reps. The call-first Action
+                  Sheet at the top of the page now drives the workflow. */}
               <DossierSection
                 dossier={dossier}
                 loading={dossierLoading}
@@ -1049,47 +1049,14 @@ function HeroBand({
   lead: LeadDetail;
   onPipelineStarted?: () => void;
 }) {
-  const opp = lead.salesOpportunity;
-  // Phase 2.7 — `salesConfidence` (written by LEAD_INTELLIGENCE_BRIEF)
-  // is the canonical PRIMARY metric on the lead detail. The raw
-  // `opportunityScore` and `reviewAnalysis.leadScore` are still
-  // available as "Advanced metrics" further down the page (and via
-  // the Review IQ badge in the priority strip), but the hero tile
-  // ALWAYS shows the brief's roll-up when present so reps don't
-  // confuse "Google rating" with "should I call?". Falls back to
-  // opportunityScore only for leads enriched before the brief shipped
-  // (i.e. a workspace whose intelligenceVersion is 0).
-  const score = lead.salesConfidence ?? opp?.opportunityScore ?? null;
-  const scoreLabel = lead.salesConfidence != null ? "Sales Fit" : "Opportunity";
-  // Tooltip clarifies the most common misread: reps glance at the
-  // 88 next to a 4.6 Google rating and assume the system is just
-  // surfacing the rating. The metric measures sales-fit (audit gaps
-  // + review pain density + opportunity score), not customer love.
-  const scoreHint =
-    lead.salesConfidence != null
-      ? "Sales Fit measures how well this lead matches your offer (audit gaps + review pains + opportunity score). NOT the Google rating."
-      : "Opportunity score from the sales scorer (raw signal — re-run the intelligence brief for the rolled-up Sales Fit metric).";
-  const potentialLabel =
-    score == null ? null : score >= 60 ? "High Potential" : score >= 35 ? "Medium Potential" : "Low Potential";
-  const potentialColor =
-    score == null
-      ? "text-white/40"
-      : score >= 60
-      ? "text-[var(--leadac-success)]"
-      : score >= 35
-      ? "text-[var(--leadac-warning)]"
-      : "text-[var(--leadac-error)]";
-
+  // FineDine v1 update — the identity header (name / address / rating /
+  // chips) and the Sales Fit score ring moved up into the top
+  // LeadActionSheet. This hero now leads with the fit summary.
   const appleMapsUrl = (() => {
     if (lead.sourceLat == null || lead.sourceLng == null) return null;
     const q = encodeURIComponent(lead.businessName);
     return `https://maps.apple.com/?q=${q}&ll=${lead.sourceLat},${lead.sourceLng}`;
   })();
-
-  const chips: { label: string; icon?: typeof Star }[] = [];
-  if (lead.borough) chips.push({ label: lead.borough });
-  if (lead.primaryType) chips.push({ label: humanizePrimaryType(lead.primaryType) });
-  if (lead.businessStatus && lead.businessStatus !== "OPERATIONAL") chips.push({ label: lead.businessStatus });
 
   return (
     <div
@@ -1107,92 +1074,11 @@ function HeroBand({
         }}
       />
       <div className="relative p-5 sm:p-7 md:p-8">
-        <div className="flex flex-col-reverse md:flex-row md:items-start md:justify-between gap-6">
-          <div className="min-w-0 flex-1">
-            <h1
-              className="font-semibold leading-[1.1] wrap-break-word"
-              style={{
-                color: "var(--leadac-text-1)",
-                /* Lead detail is the only "hero" page in the app, so it
-                 * sits one step larger than --text-title-1 (which the
-                 * shared PageHeader uses). Anything bigger fights with
-                 * the address line and the metric column on the right. */
-                fontSize: "var(--text-display)",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {lead.businessName}
-            </h1>
-            <p
-              className="mt-2 max-w-2xl"
-              style={{
-                color: "var(--leadac-text-2)",
-                fontSize: "var(--text-callout)",
-              }}
-            >
-              {lead.formattedAddress}
-            </p>
-
-            <div className="flex flex-wrap items-center gap-2 mt-4">
-              {lead.rating != null && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[13px] text-white/85">
-                  <Star className="w-3.5 h-3.5 text-(--leadac-warning) fill-(--leadac-warning)" />
-                  {lead.rating.toFixed(1)}
-                  {lead.reviewCount != null && (
-                    <span className="text-white/50">({lead.reviewCount})</span>
-                  )}
-                </span>
-              )}
-              {chips.map((c) => (
-                <span
-                  key={c.label}
-                  className="inline-flex items-center rounded-full bg-white/8 px-3 py-1 text-[13px] text-white/70"
-                >
-                  {c.label}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-5 md:flex-col md:items-end md:gap-2 shrink-0">
-            {score != null ? (
-              <div
-                className="flex items-center gap-4 md:flex-col md:items-center md:gap-2"
-                title={scoreHint}
-              >
-                <div className="relative">
-                  <CircularProgress value={score} size={96} strokeWidth={7} />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[26px] font-semibold tracking-[-0.02em] text-white leading-none">
-                      {score}
-                    </span>
-                  </div>
-                </div>
-                <div className="md:text-center">
-                  <p className="text-[12px] uppercase tracking-[0.06em] text-white/40 inline-flex items-center gap-1">
-                    {scoreLabel}
-                    <span
-                      aria-hidden
-                      className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/20 text-[9px] text-white/50"
-                    >
-                      ?
-                    </span>
-                  </p>
-                  <p className={`text-[13px] font-medium ${potentialColor}`}>{potentialLabel}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center rounded-2xl bg-white/5 border border-white/10 px-5 py-4 w-[180px]">
-                <Bot className="w-6 h-6 text-white/30 mb-1.5" />
-                <p className="text-[12px] uppercase tracking-[0.06em] text-white/40">No analysis yet</p>
-              </div>
-            )}
-          </div>
-        </div>
-
         <HeroFitSummary lead={lead} />
 
         <HeroPriorityStrip lead={lead} />
+
+        <LeadQualificationCard leadId={lead.id} />
 
         <HeroContactBar
           phone={lead.phone}
@@ -2131,7 +2017,7 @@ function HeroContactBar({
           title={`Email ${primaryEmail}`}
           className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] text-white/85 hover:bg-white/10 hover:border-white/20 hover:text-white transition-colors"
         >
-          <Mail className="w-3.5 h-3.5 text-[hsl(38_70%_52%)]" />
+          <Mail className="w-3.5 h-3.5 text-[hsl(218_85%_58%)]" />
           <span className="truncate max-w-[240px]">{primaryEmail}</span>
         </a>
       )}
@@ -2349,219 +2235,6 @@ function formatDateRel(iso: string | null | undefined): string {
   const diffHr = Math.round(diffMin / 60);
   if (Math.abs(diffHr) < 48) return diffHr <= 0 ? `in ${-diffHr}h` : `${diffHr}h ago`;
   return d.toLocaleDateString();
-}
-
-/**
- * Phase 2 — small inline badge showing the prospect's local time
- * along with a hint ("lunch service — don't call"). Renders in the
- * sticky call sheet header next to last-contact / next-action info.
- * Re-renders once a minute so the time stays fresh while the rep
- * sits on the page.
- */
-function LocalTimeBadgeInline({ timezone }: { timezone: string }) {
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  let label = "";
-  let isCallable = true;
-  try {
-    const fmt = new Intl.DateTimeFormat("en-GB", {
-      timeZone: timezone,
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-    const time = fmt.format(new Date());
-    const hour = parseInt(time.split(":")[0] ?? "0", 10);
-    let hint: string | null = null;
-    if (hour < 9 || hour >= 19) {
-      hint = "after hours";
-      isCallable = false;
-    } else if (hour >= 12 && hour < 14) {
-      hint = "lunch service";
-      isCallable = false;
-    } else if (hour >= 14 && hour < 17) {
-      hint = "best window";
-    }
-    label = hint ? `${time} · ${hint}` : time;
-  } catch {
-    return null;
-  }
-  return (
-    <span
-      className="inline-flex items-center gap-1"
-      style={{ color: isCallable ? "var(--leadac-text-2)" : "hsl(35 80% 70%)" }}
-      title={`Prospect timezone: ${timezone}`}
-    >
-      <Clock className="w-3 h-3" />
-      {label}
-    </span>
-  );
-}
-
-/**
- * Phase 1 — sticky "Sales Call Sheet" header that appears at the top
- * of the lead detail page. Shows the rep at-a-glance:
- *   - Sales Confidence ring
- *   - Last contact + next action timing
- *   - Big inline buttons: Call, Email, WhatsApp, Log
- *   - DNC / opted-out red banner when appropriate
- * Mirrored on small screens by `MobileActionBar` (sticky bottom bar).
- */
-function SalesCallSheet({
-  lead,
-  onLogged,
-}: {
-  lead: LeadDetail;
-  onLogged?: () => void;
-}) {
-  const [logOpen, setLogOpen] = useState(false);
-  const confidence = lead.salesConfidence ?? lead.salesOpportunity?.opportunityScore ?? null;
-  const phone = lead.phone;
-  const whatsapp = lead.websiteAudit?.socialProfiles?.whatsapp ?? null;
-  const firstEmail = lead.websiteAudit?.contactEmails?.[0] ?? null;
-  const dncBlocked = !!(lead.dnc || lead.lastDisposition === "OPTED_OUT");
-
-  return (
-    <>
-      <div
-        className="sticky top-0 z-30 -mx-4 sm:-mx-6 md:-mx-8 lg:-mx-10 px-4 sm:px-6 md:px-8 lg:px-10 py-3 backdrop-blur-md border-b border-white/8"
-        style={{ background: "hsl(var(--leadac-h) var(--leadac-ns) 9% / 0.85)" }}
-      >
-        <div className="flex flex-wrap items-center gap-3 md:gap-4">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {confidence != null && (
-              <div className="hidden sm:block shrink-0">
-                <CircularProgress value={confidence} size={42} strokeWidth={4} />
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-[15px] sm:text-[16px] font-medium text-white truncate">
-                {lead.businessName}
-              </p>
-              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-white/55">
-                {confidence != null && (
-                  <span className="inline-flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    Confidence {confidence}
-                  </span>
-                )}
-                {lead.lastContactedAt && (
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    Last contact {formatDateRel(lead.lastContactedAt)}
-                  </span>
-                )}
-                {lead.nextActionDueAt && (
-                  <span className="inline-flex items-center gap-1">
-                    <ClipboardList className="w-3 h-3" />
-                    Next action {formatDateRel(lead.nextActionDueAt)}
-                  </span>
-                )}
-                {lead.lastDisposition && (
-                  <span className="inline-flex items-center gap-1 text-white/70">
-                    {DISPOSITION_LABELS[lead.lastDisposition] ?? lead.lastDisposition}
-                  </span>
-                )}
-                {lead.timezone && (
-                  <LocalTimeBadgeInline timezone={lead.timezone} />
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="hidden md:flex items-center gap-1.5 shrink-0">
-            {phone && (
-              dncBlocked ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full gap-1.5 opacity-50 cursor-not-allowed"
-                  disabled
-                  title="Do not contact — outbound blocked"
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  Call
-                </Button>
-              ) : (
-                <a href={`tel:${phone}`}>
-                  <Button size="sm" variant="outline" className="rounded-full gap-1.5">
-                    <Phone className="w-3.5 h-3.5" />
-                    Call
-                  </Button>
-                </a>
-              )
-            )}
-            {firstEmail && (
-              dncBlocked ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full gap-1.5 opacity-50 cursor-not-allowed"
-                  disabled
-                  title="Do not contact — outbound blocked"
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                  Email
-                </Button>
-              ) : (
-                <a href={`mailto:${firstEmail}`}>
-                  <Button size="sm" variant="outline" className="rounded-full gap-1.5">
-                    <Mail className="w-3.5 h-3.5" />
-                    Email
-                  </Button>
-                </a>
-              )
-            )}
-            {whatsapp && (
-              dncBlocked ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full gap-1.5 opacity-50 cursor-not-allowed"
-                  disabled
-                  title="Do not contact — outbound blocked"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  WhatsApp
-                </Button>
-              ) : (
-                <a href={whatsapp} target="_blank" rel="noopener noreferrer">
-                  <Button size="sm" variant="outline" className="rounded-full gap-1.5">
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    WhatsApp
-                  </Button>
-                </a>
-              )
-            )}
-            <Button size="sm" className="rounded-full gap-1.5" onClick={() => setLogOpen(true)}>
-              <ClipboardList className="w-3.5 h-3.5" />
-              Log call
-            </Button>
-          </div>
-        </div>
-
-        {dncBlocked && (
-          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[hsl(4_62%_54%)]/30 bg-[hsl(4_62%_54%)]/10 px-3 py-1 text-[12px] text-[hsl(4_42%_72%)]">
-            <PhoneOff className="w-3.5 h-3.5" />
-            Do not contact — outbound is blocked for this lead
-            {lead.consentSource && (
-              <span className="ml-2 text-white/40">· source: {lead.consentSource}</span>
-            )}
-          </div>
-        )}
-      </div>
-
-      <LogCallModal
-        open={logOpen}
-        onOpenChange={setLogOpen}
-        leadId={lead.id}
-        onLogged={onLogged}
-      />
-    </>
-  );
 }
 
 /**

@@ -1,0 +1,117 @@
+{
+  "id": "61dc3cd9-a8c4-4fa9-930a-eed435d9eaea",
+  "model": "sonar-pro",
+  "created": 1780769489,
+  "usage": {
+    "prompt_tokens": 182,
+    "completion_tokens": 3925,
+    "total_tokens": 4107,
+    "search_context_size": "low",
+    "cost": {
+      "input_tokens_cost": 0.00055,
+      "output_tokens_cost": 0.05888,
+      "request_cost": 0.006,
+      "total_cost": 0.06542
+    }
+  },
+  "citations": [
+    "https://gdprlocal.com/usa-e-mail-marketing-rules/",
+    "https://www.mailslurp.com/blog/cold-emailing-can-spam-compliance/",
+    "https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business",
+    "https://www.unsubcentral.com/can-spam-compliance/",
+    "https://instantly.ai/blog/what-are-the-legal-requirements-for-follow-up-emails/",
+    "https://www.truvisibility.com/blog/can-you-send-marketing-emails-to-companies/",
+    "https://massmailer.io/glossary/can-spam-compliance/",
+    "https://joinbreaker.ai/blog-posts/can-spam-act-requirements-b2b-marketers-know",
+    "https://mailazy.com/blog/can-spam-act-email-marketing-compliance"
+  ],
+  "search_results": [
+    {
+      "title": "USA e-mail marketing rules under the CAN-SPAM Act ... - GDPR Local",
+      "url": "https://gdprlocal.com/usa-e-mail-marketing-rules/",
+      "date": "2022-01-04",
+      "last_updated": "2026-05-31",
+      "snippet": "Under the CAN-SPAM Act, businesses do not need prior consent to send commercial emails to US recipients, which applies to B2C and B2B communications.",
+      "source": "web"
+    },
+    {
+      "title": "Cold Emailing in Compliance with CAN-SPAM Act Guidelines",
+      "url": "https://www.mailslurp.com/blog/cold-emailing-can-spam-compliance/",
+      "date": "2026-03-15",
+      "last_updated": "2026-06-06",
+      "snippet": "The CAN-SPAM Act mandates that any B2B email with a commercial offer must give the recipient the option to unsubscribe from subsequent correspondence at any ...",
+      "source": "web"
+    },
+    {
+      "title": "CAN-SPAM Act: A Compliance Guide for Business",
+      "url": "https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business",
+      "date": "2023-08-09",
+      "last_updated": "2026-05-11",
+      "snippet": "Don't use false or misleading header information. · Don't use deceptive subject lines. · Identify the message as an ad. · Tell recipients where you're located.",
+      "source": "web"
+    },
+    {
+      "title": "CAN-SPAM Compliance Guide | Avoid Fines & Build Trust",
+      "url": "https://www.unsubcentral.com/can-spam-compliance/",
+      "date": "2025-05-21",
+      "last_updated": "2026-06-02",
+      "snippet": "Keep emails compliant with the CAN-SPAM Act. Learn how to avoid fines, protect your email reputation, and improve inbox placement.",
+      "source": "web"
+    },
+    {
+      "title": "What Are the Legal Requirements for Follow-Up Emails Under ...",
+      "url": "https://instantly.ai/blog/what-are-the-legal-requirements-for-follow-up-emails/",
+      "date": "2026-01-31",
+      "last_updated": "2026-06-06",
+      "snippet": "Does CAN-SPAM apply to B2B emails? Yes. The law makes no exception for business-to-business email. All commercial messages, including B2B follow ...",
+      "source": "web"
+    },
+    {
+      "title": "Can You Send Marketing Emails to Companies? | TruVISIBILITY Blog",
+      "url": "https://www.truvisibility.com/blog/can-you-send-marketing-emails-to-companies/",
+      "date": "2025-04-02",
+      "last_updated": "2026-06-03",
+      "snippet": "Yes. Cold B2B email outreach is fully legal in the United States under the CAN-SPAM Act, provided your emails include a valid physical address, an honest sender ...",
+      "source": "web"
+    },
+    {
+      "title": "CAN-SPAM Compliance: Requirements, Checklist & Salesforce Setup",
+      "url": "https://massmailer.io/glossary/can-spam-compliance/",
+      "date": "2026-02-25",
+      "last_updated": "2026-06-06",
+      "snippet": "Do B2B emails need to comply with CAN-SPAM? Yes. CAN-SPAM applies to all commercial email—B2B and B2C. If your email promotes a commercial product or ...",
+      "source": "web"
+    },
+    {
+      "title": "CAN-SPAM Act Requirements: What B2B Marketers Must Know",
+      "url": "https://joinbreaker.ai/blog-posts/can-spam-act-requirements-b2b-marketers-know",
+      "date": "2026-05-24",
+      "last_updated": "2026-06-06",
+      "snippet": "Clear CAN-SPAM guidance for B2B email marketers: accurate sender headers, honest subject lines, a postal address, working unsubscribe links, ...",
+      "source": "web"
+    },
+    {
+      "title": "Navigating the CAN-SPAM Act: A Comprehensive Guide for Email ...",
+      "url": "https://mailazy.com/blog/can-spam-act-email-marketing-compliance",
+      "date": "2025-07-03",
+      "last_updated": "2025-07-23",
+      "snippet": "It's important to know that the CAN-SPAM Act applies to all businesses sending commercial emails in the U.S., and this includes B2B communications. Even if ...",
+      "source": "web"
+    }
+  ],
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "A US-first outbound GTM for restaurant-tech must (1) design email, SMS, and AI-voice workflows around **CAN‑SPAM** and **TCPA** consent/opt-out and suppression, and (2) tightly constrain use of **Google Maps/Places** and third‑party restaurant data licenses to only permitted use cases, with clear **privacy disclosures**. Below is a product-focused compliance memo for LeadAC x FineDine.\n\n---\n\n## 1) Key Findings (P0 Product Requirements)\n\n### A. CAN-SPAM – B2B Commercial Email\n\n**Scope & consent**\n\n- CAN‑SPAM applies to **all “commercial” email**, including B2B; there is **no B2B exemption**.[3]  \n- **Prior consent is not required** to send commercial email to US recipients, B2C or B2B, but strict content and opt-out rules apply.[1][3]  \n\n**Core requirements for every outbound commercial email**\n\nUnder the FTC’s CAN‑SPAM guide:[3]\n\n- **Accurate header information**: “From,” “To,” “Reply‑To,” and routing/domain must identify the sending business and not be misleading.[3]  \n- **Non‑deceptive subject line**: Subject must accurately reflect the email’s content.[3]  \n- **Identify as advertisement**: Email must **clearly and conspicuously** disclose it is an ad (flexible how; e.g., footer statement).[3][1]  \n- **Physical postal address**: Must include a **valid physical postal address** (street address, USPS PO Box, or commercial mail receiving agency).[3][1]  \n- **Clear opt‑out mechanism**: Must provide a clear, conspicuous, easy Internet‑based way to opt out of future emails (reply, one‑click web page, etc.).[3][1]  \n- **Opt‑out processing window**:  \n  - Mechanism must work for **at least 30 days** after send.[3][1]  \n  - Opt‑outs must be honored within **10 business days**.[3][1]  \n  - No fee, no additional personal data beyond email address, and no more than one web page to submit opt‑out.[3][1]  \n- **No sale or transfer of opted‑out addresses**: Except for compliance transfers, you cannot sell/transfer email addresses of people who opted out (including in a list).[3][1]  \n- **Liability for vendors**: Brand and email vendor/affiliate can both be held responsible; senders must **monitor vendors** and cannot contract away liability.[3][1]  \n\n**P0 implications for LeadAC x FineDine**\n\n- Outbound B2B cold email is **allowed** without prior consent **if** you:\n  - Include **valid physical address**, **ad disclosure**, and **simple opt‑out** in all commercial outreach.\n  - Implement a **global suppression list** that blocks further marketing to opted‑out addresses within 10 business days.\n  - Store **opt‑out status** persistently and propagate it to all email vendors and product surfaces.\n- UI/UX must:\n  - Provide **template-safe** fields (From, subject, footer) that cannot be configured into non‑compliance (e.g., require physical address, enforce opt‑out link).\n  - Support **multi‑brand sending profiles** with distinct addresses and suppression lists, but enforce CAN‑SPAM logic across all.\n- Data model must:\n  - Track **email address**, **opt‑out timestamp**, **opt‑out source**, and **scope** (this brand only vs all brands represented by LeadAC/FineDine).\n  - Ensure opted‑out addresses are never re‑uploaded/sold to other customers, except for compliance uses.\n\n---\n\n### B. TCPA / DNC – SMS (“robotext”) and AI/Automated Voice\n\n**Authority & scope**\n\n- The **Telephone Consumer Protection Act (TCPA)** and FCC rules govern autodialed calls, prerecorded/AI‑type voice, and text messages to wireless numbers.  \n- FCC treats **text messages as “calls”** under TCPA.  \n\n**Key consent standards (high‑level)**\n\nFrom FCC TCPA guidance and orders (summarizing core rules):\n\n- **Telemarketing / marketing calls or texts** generally require **prior express written consent** when made using an autodialer or prerecorded/artificial voice to wireless numbers.  \n- **Informational/non‑marketing** calls/texts may require **prior express consent** but not necessarily written, depending on context and equipment used.  \n- **National Do Not Call (DNC)** rules require honoring consumer DNC requests and checking the DNC registry for telemarketing to residential numbers.  \n- **Revocation of consent**: Recipients must be allowed to revoke consent in any reasonable way, and revocation must be honored promptly (case law plus FCC rulings).  \n\nBecause your product contemplates **robotexts and AI voice**, you must assume these are **high‑risk TCPA activities** and design for **written consent + easy opt‑out**.\n\n**P0 implications for LeadAC x FineDine**\n\n- Treat **all marketing texts and AI‑voice calls** as requiring:\n  - **Documented prior express written consent** from the recipient restaurant contact (e‑signature, checkbox + timestamp, or signed form).\n  - Clear disclosure at consent time that they agree to receive marketing texts/calls via automated systems at the provided number, not required for purchase.\n- Product must provide:\n  - **Consent capture** objects tied to each phone number (source page, language shown, time, IP, method).\n  - **Keyword-based opt‑out** logic for SMS (e.g., STOP, UNSUBSCRIBE) with immediate suppression for that number.\n  - Ability for agents to log **verbal revocation** and immediately suppress numbers.\n- For **lead lists uploaded by users**:\n  - Require them to designate whether each number has TCPA‑compliant consent for marketing texts/AI calls.\n  - Provide warnings and contractual terms that put **TCPA compliance responsibility** on the customer while still enforcing **opt‑out/suppression** centrally.\n- For **non‑marketing/operational** texts (e.g., reservation confirmations), separate workflows and templates; still maintain opt‑out where applicable, but they may fall under different TCPA categories.\n\n*(You should obtain TCPA‑specific counsel to classify each use case—cold text prospecting and AI outbound calls are among the most litigated practices; the above is conservative but aligned with FCC guidance.)*\n\n---\n\n### C. Suppression Lists and Cross‑Channel Opt‑out\n\n**CAN‑SPAM suppression**\n\n- Must maintain **suppression lists** of email addresses that opted out and cannot send further commercial emails to them, nor transfer/sell those addresses except as necessary for compliance.[3][1]  \n\n**TCPA / DNC suppression**\n\n- TCPA/DNC implies similar suppression duties for phone numbers where consent is revoked or DNC status is set, especially for telemarketing.  \n\n**P0 implications**\n\n- Central **“Do Not Contact” object** per identity (email, phone) with:\n  - Channel‑specific flags (email, SMS, voice).\n  - Source (user click, reply, verbal, import from brand’s CRM).\n  - Scope (campaign‑level vs brand vs all LeadAC/FineDine products).\n- All outbound systems (email, SMS, dialer, AI voice) must **check suppression before each send**.\n- Provide **export API/UI** to let restaurant customers sync their suppression lists with their own CRMs and vendors.\n- For multi‑tenant architecture, prevent **cross‑customer leakage** of suppression list contents, but still prevent re‑targeting the same address by the same customer.\n\n---\n\n### D. Google Maps / Places Data – Storage & Use Restrictions\n\n**Authoritative docs**\n\n- **Google Maps Platform Terms of Service** and **Places API policies** govern how you can store and use Places/Maps data.  \n\nCore constraints (summarized from Google policies):\n\n- **No stand‑alone dataset or database**: You may not **pre‑fetch, index, or store** Places data for purposes other than improving use within your application, and cannot create a separate **places/POI database** that replicates Google’s database.  \n- **Storage limits / caching**:\n  - You may **cache** certain data for limited periods to improve performance, but **long‑term or permanent storage of Places results** is restricted unless explicitly allowed.  \n- **No resale or redistribution**:\n  - You cannot **sell, resell, or redistribute** Google Places content or use it as the primary value of a commercial product that competes with Google Maps/Places.  \n- **Attribution & content integrity**:\n  - Must show appropriate **Google attribution** with Maps/Places content and cannot remove/obscure required branding.  \n- **Prohibition on mixing with certain other datasets**:\n  - You must not blend Google Places data with data from certain other providers in a way that misleads users about origin or violates those providers’ terms.  \n\n**P0 implications for LeadAC x FineDine**\n\n- If you use **Google Places** to find restaurants or enrich records:\n  - You **cannot** build a persistent “restaurant master file” whose core content is Google’s Places data and then resell or broadly expose that dataset.\n  - Use Places results **only inside the product experience** (e.g., helping a user select the right restaurant record, showing a map) and store only what Google expressly allows for permitted caching.\n  - If you need a **persistent, shareable restaurant directory** for outbound prospecting, obtain **separate first‑party or licensed data** not derived from Google Places, and keep it logically separated.\n- UI:\n  - Where you display Maps/Places, show **Google attribution** and comply with logo/branding rules.\n- Contracts:\n  - Ensure customer contracts state that they may not export or reuse Google‑sourced data outside the application in ways that violate Google’s terms.\n\n---\n\n### E. Vendor Data Licensing (Third‑party Restaurant Lists, Enrichment)\n\n**Common legal constraints** (synthesizing typical commercial data licenses & FTC guidance):\n\n- Many data providers limit:\n  - **Permitted uses** (e.g., marketing vs analytics vs resale).\n  - **Redistribution** or sub‑licensing to downstream customers.\n  - **Combining and co‑mingling** with other datasets in a way that recreates a derivative database.\n- FTC expects **truthful representations** around data sourcing, opt‑out, and privacy; misrepresenting your data sources or privacy practices can be considered deceptive.  \n\n**P0 implications**\n\n- For any third‑party restaurant/contact dataset used for prospecting:\n  - Treat the vendor’s contract as controlling: **no resale, no open export, no sharing** beyond allowed use cases.\n  - Implement per‑field or per‑record flags showing **source** and **use restrictions** (e.g., “marketing use only, no export CSV,” “analytics only,” etc.).\n  - Enforce technical controls:\n    - Disable bulk export of vendor‑licensed contact data if not allowed.\n    - Ensure that **customer‑uploaded data** can be exported back to that customer, but **vendor‑licensed data** cannot be “laundered” via export.\n- Maintain a **data provenance registry**: for each restaurant/contact, track whether information came from (a) customer, (b) Google APIs, (c) commercial data provider X, etc., and enforce different policies.\n\n---\n\n### F. Privacy Policy Requirements (US‑first, Restaurant‑Tech Context)\n\nThere is **no single federal omnibus privacy law** comparable to GDPR; instead, you face:\n\n- **Section 5 FTC Act**: prohibits **unfair or deceptive acts**, including misleading or incomplete privacy notices or violating your own posted privacy promises.  \n- Emerging **state privacy laws** (e.g., California, Colorado, others) may apply depending on your scale and user footprint; you should plan for **clear disclosures, access/opt‑out mechanisms**, and data security.\n\n**FTC expectations from enforcement and guidance**:\n\n- Privacy policies must be **accurate, not misleading, and consistent** with actual practices.  \n- You should disclose:\n  - Types of personal data collected (e.g., restaurant contact names, work emails, phone numbers, device data).\n  - Purposes (e.g., outbound marketing, analytics, AI model training).\n  - Categories of third‑party sharing (e.g., cloud hosting, enrichment vendors, CRMs).\n  - User choices/controls (opt‑out of marketing emails/SMS, DNC mechanisms).\n  - Security practices at a high level.\n- If you rely on **consent** (e.g., for texts), the consent language must be **clear, conspicuous, and preserved**.\n\n**P0 implications**\n\n- Privacy policy must:\n  - Explicitly describe **B2B marketing uses** of contact data and cross‑tenant limitations.\n  - Explain your **“Do Not Contact” / opt‑out rights** for email and phone.\n  - Describe use of **Google Maps/Places** and external data sources at a high level.\n  - Commit to **not selling/sublicensing** customer contact data in ways contrary to licenses or expectations.\n- Product flows:\n  - Provide links to privacy policy and terms at all points of **data capture** (lead forms, trial signups, demo requests).\n  - When capturing phone consent for SMS/AI voice, show **TCPA‑compliant consent language**, referencing your policy.\n\n---\n\n## 2) Evidence Table with URLs\n\n| Topic | Source | Key Point |\n| --- | --- | --- |\n| CAN‑SPAM basics & requirements | FTC – “CAN‑SPAM Act: A Compliance Guide for Business” | Defines commercial email, applies to B2B, requires accurate headers, non‑deceptive subject, ad identification, physical address, clear opt‑out, honoring opt‑outs within 10 business days, no sale of opt‑out addresses, sender liability.[3] URL: `https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business` |\n| CAN‑SPAM – no consent requirement, B2B coverage | GDPR Local explainer (summarizing FTC rules) | Notes that under CAN‑SPAM, prior consent is not needed for US recipients, B2C or B2B, but strict rules apply; confirms 10‑business‑day opt‑out window and 30‑day validity of mechanism, and that addresses cannot be sold after opt‑out.[1] URL: `https://gdprlocal.com/usa-e-mail-marketing-rules/` |\n| Cold B2B email legality under CAN‑SPAM | Various legal/compliance blogs summarizing FTC | State that CAN‑SPAM applies to B2B commercial emails and cold B2B outreach is lawful if CAN‑SPAM conditions are met.[5][6][7][8][9] (Secondary but consistent.) |\n| TCPA coverage of texts & telemarketing consent | FCC TCPA guidance | FCC explains that TCPA covers calls and texts using autodialers/prerecorded or artificial voice; telemarketing often requires prior express written consent; opt‑out/DNC obligations apply. (Use current FCC TCPA consumer guide.) URL: `https://www.fcc.gov/consumers/guides/stop-unwanted-robocalls-and-texts` |\n| TCPA rules & DNC registry | FCC – TCPA & DNC info | Provides details on telemarketing restrictions, Do Not Call rules, and consent expectations for marketing calls/texts to wireless and residential numbers. URL: `https://www.fcc.gov/general/telemarketing-and-robocalls` |\n| Google Maps Platform Terms | Google Maps Platform Terms of Service | Defines permissible use of Google Maps/Places APIs, restrictions on storage, prefetching, creating POI databases, resale, and attribution requirements. URL: `https://cloud.google.com/maps-platform/terms` |\n| Places API Policies | Google Maps Platform documentation (Places) | Details specific limitations on storing Places data, use in applications, and combining with other data sources. URL: `https://developers.google.com/maps/documentation/places/web-service/policies` |\n| FTC Privacy & Data Protection expectations | FTC Business Guidance | Explains Section 5 standards: deceptive privacy statements, data security expectations, and need for truthful, clear disclosures. A relevant overview is FTC’s privacy & data security guidance. URL: `https://www.ftc.gov/business-guidance/privacy-security` |\n\n*(For TCPA, you should rely primarily on the FCC URLs above; they are the authoritative regulator guidance. For Google, rely on Maps Platform Terms and Places policies. For CAN‑SPAM and privacy policy expectations, use the FTC URLs above.)*\n\n---\n\n## 3) Implications for LeadAC x FineDine Product & GTM\n\n**P0 design requirements across the stack**\n\n1. **Email (CAN‑SPAM)**\n   - Enforce **mandatory footer** elements in templates:\n     - Valid postal address.\n     - Clear ad identification (e.g., “This advertisement was sent by …”).\n     - Functional unsubscribe link or reply‑to mechanism.\n   - Central **email suppression service**:\n     - Stores opt‑out across all brands per legal scope.\n     - Blocks sends at send‑time, regardless of list imports.\n     - Prevents re‑sale/transfer of opt‑out addresses.\n   - Admin UI:\n     - Cannot save email templates or sending profiles without required fields.\n     - Exposes export of a customer’s own suppression list but not others’.\n\n2. **SMS & AI Voice (TCPA)**\n   - Separate **“marketing” vs “transactional”** message types with stricter gating for marketing.\n   - **Consent capture forms**:\n     - Store consent type (“TCPA marketing consent”), timestamp, channel, IP/user, exact consent language version.\n     - Link consent to specific phone number and brand.\n   - **Automatic opt‑out handling**:\n     - Built‑in STOP/UNSUBSCRIBE detection; immediate DNC flag for that number.\n     - Agent-side tools to log verbal revocation.\n   - Campaign launch checks:\n     - Prevent sending marketing texts/AI calls to numbers lacking required consent metadata.\n   - Legal configs:\n     - Allow region‑based rules (e.g., US numbers vs non‑US) and customer‑specific risk settings.\n\n3. **Data & Suppression Infrastructure**\n   - Unified **Contact** object with:\n     - Channels: email(s), phone(s).\n     - Source (customer, vendor, Google).\n     - Consent records by channel + purpose.\n     - Suppression flags (email marketing, SMS"
+      },
+      "delta": {
+        "role": "assistant",
+        "content": ""
+      },
+      "finish_reason": "length"
+    }
+  ]
+}

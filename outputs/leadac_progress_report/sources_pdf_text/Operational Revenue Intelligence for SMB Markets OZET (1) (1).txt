@@ -1,0 +1,379 @@
+
+
+--- PAGE 1 ---
+SMB Marketleri için Operational Revenue 
+Intelligence 
+Status: İlk research memo 
+Ana Soru 
+LeadAC, local lead generation/enrichment positioning’inde mi kalmalı, yoksa mevcut 
+lead/enrichment tool’larının üstünde çalışan intelligence layer’a mı çıkmalı? 
+Executive Take 
+Research’e göre positioning shift mantıklı görünüyor ama bu “revenue intelligence” gibi 
+generic bir alana kaymak anlamına gelmemeli. 
+Local SMB lead generation + enrichment tarafı artık ciddi şekilde crowded hale geliyor. 
+Orbital, Resquared, Openmart, Clay workflow’ları ve onlarca AI lead-gen tool’u şu işleri 
+zaten sahiplenmeye başladı: 
+• local business discovery 
+• owner/contact enrichment 
+• Google Maps extraction 
+• review scraping 
+• AI outreach generation 
+• basic lead scoring 
+“biz local lead buluyoruz ve enrich ediyoruz” artık yeterince sharp bir wedge değil. 
+Daha güçlü positioning şu: 
+LeadAC, local business market’lerine satış yapan ekipler için operational intelligence 
+layer’dır. 
+
+--- PAGE 2 ---
+Orbital, Resquared, Openmart, Clay, HubSpot, Apollo, Smartlead ve internal CRM 
+data’larını bağlar; sonra fragmented SMB signal’larını prioritized action’lara, vertical 
+playbook’lara ve gerçek conversion learning loop’una dönüştürür. 
+Bu başka bir data vendor olmak değil. 
+Mesaj şu: 
+“Data’nı getir. LeadAC onu actionable hale getirsin.” 
+ 
+Recommendation 
+Positioning’i: 
+“Local Lead Intelligence Layer” 
+tarafından çıkarıp: 
+“Operational Revenue Intelligence for SMB 
+Markets” 
+tarafına taşımak mantıklı. 
+Ama ilk wedge yine dar kalmalı: 
+• vertical SaaS 
+• agency’ler 
+• local business’e satış yapan GTM ekipleri 
+Product yine lead dossier + audit workflow’larına dayanmalı. 
+Ama strategic promise artık: 
+“more leads” 
+değil, 
+
+--- PAGE 3 ---
+“SMB GTM signal’larından compound learning üretmek” 
+olmalı. 
+ 
+Addendum — Daha Derin Competitive 
+Check Sonrası 
+İlk memo genel direction olarak doğruydu ama önemli bir risk yeterince hesaba 
+katılmamıştı: 
+Orbital artık sadece enrichment tool değil 
+Orbital şu language’i kullanıyor: 
+• “SMB Account Intelligence for Sales Teams” 
+• “agent-driven sales intelligence platform” 
+• vertical-specific signals 
+• inbound routing 
+• outbound activation 
+• AI models trained on SMB buying behavior 
+Yani: 
+“SMB account intelligence” 
+category’sini komple sahiplenmeye çalışıyorlar. 
+Bu yüzden LeadAC’in ana claim’i şu olmamalı: 
+  “We are the SMB account intelligence platform.” 
+Bunun yerine: 
+
+--- PAGE 4 ---
+“Post-enrichment operational 
+intelligence” 
+alanını sahiplenmek daha mantıklı. 
+Yani: 
+Data geldikten sonra ne önemli? 
+Ne yapılmalı? 
+Takım outcome’lardan ne öğrenmeli? 
+bunu çözen layer. 
+ 
+Revised Strategic Position 
+LeadAC Ne Dememeli 
+• “Biz SMB account intelligence platform’uyuz.” 
+• “Biz daha iyi data vendor’ız.” 
+• “Biz başka bir enrichment tool’uyuz.” 
+LeadAC Ne Demeli 
+“LeadAC, SMB account data’yı action + learning loop’a çeviren intelligence layer’dır.” 
+ 
+Core Differentiators 
+LeadAC’in sahiplenmesi gereken alanlar: 
+• closed-loop learning 
+
+--- PAGE 5 ---
+• source conflict resolution 
+• vertical playbook memory 
+• next-best-action reasoning 
+• operational GTM intelligence 
+ 
+Market Validation 
+Resquared 
+YC W21. 
+Local business satışına odaklı marketing automation platform’u. 
+Positioning: 
+• local business workflows 
+• local business data 
+• outbound personalization 
+Bu şunu doğruluyor: 
+“Selling to local businesses” ciddi bir category. 
+ 
+Openmart 
+Şu an local business API + enrichment market’ini commoditize ediyor. 
+Claim’ler: 
+• 200M+ local businesses 
+• owner contacts 
+• tech stack 
+• Google Maps scraping 
+• enrichment API 
+
+--- PAGE 6 ---
+Bu da şunu doğruluyor: 
+Raw local business data artık moat olmuyor. 
+ 
+Clay 
+Clay artık enrichment/workflow operating system’i gibi davranıyor. 
+İnsanlar istediği GTM workflow’unu build ediyor. 
+Bu yüzden: 
+LeadAC blank canvas olmamalı. 
+LeadAC packaged judgment satmalı. 
+ 
+HockeyStack 
+En güçlü analogy burada. 
+HockeyStack’in “Blueprint” modeli: 
+• won/lost deals öğreniyor 
+• winning patterns çıkarıyor 
+• sonra GTM agent’lerini buna göre yönlendiriyor 
+LeadAC’in SMB/local-business versiyonu burada yatıyor. 
+Ama: 
+• daha vertical 
+• daha lightweight 
+• daha operational 
+• local-business aware 
+olmalı. 
+
+--- PAGE 7 ---
+ 
+Market Structure 
+Market 5 layer’a ayrılıyor: 
+Layer Oyuncular Ne Yapıyor 
+Local SMB Data Rails Openmart, Resquared raw SMB data 
+SMB Account Intelligence Orbital SMB enrichment + 
+activation 
+Horizontal Workflow 
+Systems Clay enrichment orchestration 
+Buyer/Signal Intelligence Common Room, 
+Pocus signal prioritization 
+Revenue Learning Loop HockeyStack GTM learning systems 
+ 
+LeadAC’in Gerçek Pozisyonu 
+LeadAC şurada oturmalı: 
+Data’dan sonra gelen operational 
+reasoning layer 
+Yani: 
+• account ne kadar önemli? 
+• hangi signal önemli? 
+• next action ne? 
+• hangi vertical playbook çalışıyor? 
+• team ne öğrenmeli? 
+ 
+
+--- PAGE 8 ---
+Internal One-Liner 
+Orbital market’i bulur. 
+Openmart data sağlar. 
+Clay row’ları enrich eder. 
+HubSpot pipeline’ı tutar. 
+LeadAC neyin close ettiğini öğrenir. 
+ 
+Strategic Shift 
+Eski Narrative 
+LeadAC local lead bulur, enrich eder, score eder ve outreach yazar. 
+Yeni Narrative 
+LeadAC SMB GTM stack’ine bağlanır, account intelligence graph oluşturur, next revenue 
+action’ı prioritize eder ve tüm outcome’lardan learning üretir. 
+ 
+Ne Aynı Kalıyor? 
+• local-business focus 
+• audits 
+• review/website/business-context analysis 
+• lead dossiers 
+• opportunity scoring 
+• outreach support 
+• vertical packs 
+
+--- PAGE 9 ---
+ 
+Ne Değişiyor? 
+1. Primary Data Source Olmaya Çalışmıyoruz 
+Artık: 
+• Orbital 
+• Openmart 
+• Clay 
+• Apollo 
+• HubSpot 
+• Smartlead 
+• Instantly 
+gibi tool’ları upstream kabul ediyoruz. 
+2. Learning Loop Core Primitive Oluyor 
+LeadAC şunları öğreniyor: 
+• ne denendi? 
+• ne oldu? 
+• hangi signal conversion verdi? 
+• hangi playbook çalıştı? 
+ 
+Product Implications 
+Build Etmemiz Gereken Core Primitive’ler 
+Source Ingestion 
+İlk aşama: 
+
+--- PAGE 10 ---
+• CSV import 
+• Openmart import 
+• Clay export mapping 
+• HubSpot import/export 
+ 
+Source Provenance 
+Her field için: 
+• bu data nereden geldi? 
+• ne zaman güncellendi? 
+• confidence score ne? 
+ 
+Source Conflict Resolution 
+Örnek: 
+• Openmart → 3 location 
+• Website → 5 location 
+• Google → 4 location 
+LeadAC: 
+• source confidence hesaplıyor 
+• doğru source’u seçiyor 
+• reasoning gösteriyor 
+ 
+Vertical Playbook Memory 
+Öğrenilecek şeyler: 
+• hangi signal reply getiriyor? 
+• hangi signal meeting getiriyor? 
+• hangi objection hangi vertical’da çıkıyor? 
+
+--- PAGE 11 ---
+• hangi outreach style çalışıyor? 
+ 
+Next-Best-Action Layer 
+Sadece: 
+“Score: 82” 
+demek yetmez. 
+Şunu söylemeli: 
+• owner’ı ara 
+• audit email gönder 
+• senior rep’e route et 
+• suppress et 
+• expansion list’e ekle 
+ 
+Marketing Shift 
+Kaçınılması Gereken Language 
+  “AI lead generation” 
+  “Apollo for local” 
+  “Autonomous SDR” 
+  “SMB database” 
+ 
+
+--- PAGE 12 ---
+Kullanılması Gereken Language 
+   “Works with your stack” 
+   “Turns SMB signals into actions” 
+   “Operational intelligence for SMB GTM” 
+   “Learns what closes” 
+   “Local-business context layer” 
+ 
+Güçlü Messaging Örnekleri 
+“More local data is not the bottleneck anymore. Knowing what to do with it is.” 
+“Bring your leads. LeadAC tells you which ones deserve action and why.” 
+“Your CRM knows the deal. We know the business behind it.” 
+“LeadAC learns what closes in local-business markets.” 
+ 
+ICP Recommendation 
+Path A — Vertical SaaS GTM Teams 
+En güçlü strategic direction bu. 
+Kimler? 
+• $2M–$50M ARR vertical SaaS 
+• local business’e satış yapan ekipler 
+• HubSpot + Apollo + Clay kullanan şirketler 
+
+--- PAGE 13 ---
+Pain 
+• data fragmented 
+• reps manuel research yapıyor 
+• onboarding yavaş 
+• best rep knowledge kayboluyor 
+Avantaj 
+• higher willingness to pay 
+• stronger retention 
+• integration value yüksek 
+ 
+Path B — Agencies 
+Faster wedge olabilir. 
+Kimler? 
+• local SEO agencies 
+• outbound agencies 
+• web design agencies 
+• AI automation agencies 
+Pain 
+• raw list yeterli değil 
+• prioritization lazım 
+• personalization gerekiyor 
+Risk 
+LeadAC’i yine “lead gen software” sanabilirler. 
+ 
+
+--- PAGE 14 ---
+Recommended Strategic Direction 
+Agency wedge kullanılabilir ama ana category şu olmalı: 
+Operational Intelligence for SMB GTM 
+Teams 
+LeadAC’in goal’u: 
+local SMB data satmak değil, 
+local SMB market’lerinde decision-making layer olmak. 
+ 
+Homepage Direction 
+Hero 
+Operational Revenue Intelligence for SMB Markets 
+ 
+Problem 
+Takımın her yerde local lead’i var ama hangi account’un gerçekten convert olacağını 
+bilmiyor. 
+ 
+Mechanism 
+• data source’ları bağla 
+• business context oku 
+
+--- PAGE 15 ---
+• fit/intent score çıkar 
+• next action öner 
+• outcome’lardan öğren 
+ 
+Learning Loop 
+Her outcome vertical playbook’u günceller. 
+ 
+Ecosystem 
+Works with: 
+• Openmart 
+• Orbital 
+• Clay 
+• HubSpot 
+• Apollo 
+• Smartlead 
+• Instantly 
+ 
+Strategic Conclusion 
+Doğru move: 
+  local SMB’den çıkmak değil 
+  generic revenue intelligence olmak değil 
+Doğru move: 
+
+--- PAGE 16 ---
+local SMB data’nın üstündeki judgment 
+system olmak 
+LeadAC şunu sahiplenmeli: 
+• Account = object 
+• Signal = evidence 
+• Next action = deliverable 
+• Outcome = feedback loop 
+• Vertical playbook = compounding asset 
+ 
+Final Canonical Positioning 
+Local-business market’lerine satış yapan ekipler için LeadAC, fragmented SMB data’yı 
+prioritized account’lara, rep-ready brief’lere ve gerçek conversion learning loop’una 
+dönüştüren operational revenue intelligence layer’ıdır. 
+ 

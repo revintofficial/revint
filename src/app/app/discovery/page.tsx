@@ -515,8 +515,8 @@ export default function DiscoveryPage() {
         <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[hsl(38_70%_52%)]/10 flex items-center justify-center">
-                <Globe className="w-5 h-5 text-[hsl(38_70%_52%)]" />
+              <div className="w-10 h-10 rounded-xl bg-[hsl(218_85%_58%)]/10 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-[hsl(218_85%_58%)]" />
               </div>
               <div>
                 <CardTitle>Processing Queue</CardTitle>
