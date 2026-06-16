@@ -144,6 +144,40 @@ export class HubspotClient {
     );
   }
 
+  /**
+   * Page through all contacts (used by the one-time import / backfill).
+   * `after` is the opaque cursor from `paging.next.after`; omit it for
+   * the first page. HubSpot caps `limit` at 100.
+   */
+  listContacts(
+    properties: string[],
+    after?: string,
+    limit = 100,
+  ): Promise<{
+    results: HubspotObject[];
+    paging?: { next?: { after: string } };
+  }> {
+    const params = new URLSearchParams({ limit: String(Math.min(limit, 100)) });
+    if (properties.length) params.set("properties", properties.join(","));
+    if (after) params.set("after", after);
+    return this.request(`/crm/v3/objects/contacts?${params.toString()}`);
+  }
+
+  /** Page through all companies (import / backfill). */
+  listCompanies(
+    properties: string[],
+    after?: string,
+    limit = 100,
+  ): Promise<{
+    results: HubspotObject[];
+    paging?: { next?: { after: string } };
+  }> {
+    const params = new URLSearchParams({ limit: String(Math.min(limit, 100)) });
+    if (properties.length) params.set("properties", properties.join(","));
+    if (after) params.set("after", after);
+    return this.request(`/crm/v3/objects/companies?${params.toString()}`);
+  }
+
   searchContacts(
     filters: Array<{ propertyName: string; operator: string; value: string }>,
     properties: string[],

@@ -56,7 +56,7 @@ export default function HomePage() {
         layout="center"
         eyebrow="Operational revenue intelligence for SMB markets"
         headline="We remember what closes in local-business markets."
-        subhead="Bring the stack you already run. LeadAC scores every account against the deals your team has actually won, then writes the next best move into the HubSpot card your SDR already opens."
+        subhead="Bring the stack you already pay for. LeadAC scores every account against the deals your team won last quarter, then puts the next move in the HubSpot card your SDR opens before every dial."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}
         anchor={{
@@ -99,7 +99,7 @@ export default function HomePage() {
       <StackLayersDiagram
         eyebrow="Works with the stack you already run"
         title="Apollo finds. Clay enriches. Gong records. LeadAC remembers."
-        subtitle="Two layers do the work. Sales Intelligence reads every account and turns its operational signals into a sales angle. Operational Intelligence learns which of those signals actually closed and makes every claim carry its evidence. Both write into the HubSpot card your SDR already opens."
+        subtitle="Your data sources sit at the bottom. HubSpot sits in the middle as the surface your team already works in. The memory layer sits on top, learns what closed before, and writes the next action into the card."
       />
 
       <section className="site-section">
@@ -111,8 +111,8 @@ export default function HomePage() {
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-paper-2 md:text-[19px]">
               Your SDR doesn&rsquo;t open a research doc or dig through five tabs.
-              The fit score, the reason it matters this week, and the opener are
-              sitting on the company record before the dial.
+              Fit score, why now, suggested opener. All sitting on the company
+              record before the dial.
             </p>
           </div>
 
@@ -144,7 +144,7 @@ export default function HomePage() {
       <ProblemGrid
         eyebrow="What's broken"
         title="Your sales team has no memory."
-        intro="Everything your best rep knows — which accounts are worth a call, what to say, why the last one closed — lives in their head. Then they ramp for months, switch verticals, or quit, and it resets to zero. The stack underneath them stores activity, not judgment, so nobody learns from the deals you already won. The research backs this up."
+        intro="Everything your best rep knows lives in their head. Which accounts to call. Why the last deal closed. Then they ramp for six months and quit, and it resets to zero. The stack underneath them stores activity, not judgment, so nobody learns from the deals you already won."
         pains={painsByIds([
           "P-014",
           "P-004",

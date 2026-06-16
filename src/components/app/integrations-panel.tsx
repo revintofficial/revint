@@ -18,7 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Plug, CheckCircle2, AlertTriangle, Trash2 } from "lucide-react";
+import { Plug, CheckCircle2, AlertTriangle, Trash2, RefreshCw } from "lucide-react";
 
 interface HubspotState {
   status: "ACTIVE" | "EXPIRED" | "REVOKED" | "ERROR";
@@ -40,6 +40,7 @@ export function IntegrationsPanel({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("hubspot_connected")) {
@@ -57,6 +58,37 @@ export function IntegrationsPanel({
 
   const connect = () => {
     window.location.href = "/api/integrations/hubspot/connect";
+  };
+
+  const syncNow = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/integrations/hubspot/sync", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(
+          data?.error === "hubspot_not_connected"
+            ? "HubSpot is not connected"
+            : "Import failed",
+        );
+        return;
+      }
+      const created = data.totalCreated ?? 0;
+      const matched =
+        (data.contacts?.matched ?? 0) + (data.companies?.matched ?? 0);
+      toast.success(
+        `Imported ${created} new lead${created === 1 ? "" : "s"} from HubSpot` +
+          (matched ? ` · ${matched} matched to Google Places` : "") +
+          (data.hasMore ? " · more remaining, run again" : ""),
+      );
+      router.refresh();
+    } catch {
+      toast.error("Import failed");
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const disconnect = async () => {
@@ -130,14 +162,25 @@ export function IntegrationsPanel({
               {hubspot?.status === "ERROR" && hubspot.lastError && (
                 <p className="text-[12px] text-(--leadac-error)">{hubspot.lastError}</p>
               )}
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={connect} disabled={busy}>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={syncNow} disabled={syncing || busy}>
+                  <RefreshCw
+                    className={`w-4 h-4 mr-1 ${syncing ? "animate-spin" : ""}`}
+                  />
+                  {syncing ? "Importing…" : "Import leads from HubSpot"}
+                </Button>
+                <Button variant="outline" onClick={connect} disabled={busy || syncing}>
                   Reconnect
                 </Button>
-                <Button variant="ghost" onClick={disconnect} disabled={busy}>
+                <Button variant="ghost" onClick={disconnect} disabled={busy || syncing}>
                   <Trash2 className="w-4 h-4 mr-1" /> Disconnect
                 </Button>
               </div>
+              <p className="text-[12px] text-(--leadac-text-3)">
+                Pulls existing HubSpot contacts &amp; companies into Leads
+                (place-matched where possible). New HubSpot activity syncs
+                automatically via webhooks.
+              </p>
             </>
           ) : (
             <Button onClick={connect} disabled={busy}>
