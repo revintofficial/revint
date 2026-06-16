@@ -8,19 +8,29 @@ If you are about to write copy, an ad, an email, a landing page, a blog post, or
 
 ## What LeadAC is
 
-LeadAC is the local lead-intelligence layer for agencies that sell to local businesses.
+LeadAC is **operational revenue intelligence for SMB markets**. The memory layer that learns what closes in local-business markets and writes the next best action into the HubSpot card the SDR already opens.
 
-It pulls fresh Google Maps leads no other agency has, runs a 20-plus signal audit on every site, scores fit 0-100, and drafts the opener grounded in what the audit found. The output is a lead dossier ready for your pipeline review, plus a draft email that does the homework instead of pretending to. Sends through Smartlead, Instantly, GHL, Gmail, or Outlook. We do not replace the sender. We feed it.
+We do not try to be the data source. The SMB data rails are commoditising — Orbital, Openmart, Resquared, and Clay all sell rows. We sit one layer above. Bring the rows, we score fit against what your team has closed before, surface the next best action, and feed every won and lost outcome back into the vertical playbook. The deliverable is a per-account brief inside HubSpot, not a CSV.
 
 ### What we are NOT replacing
 
 This is the most common misframe — kill it on sight if you see it in copy:
 
-- **Apollo stays.** Apollo owns enterprise B2B contacts. We own local. They cover what we don't. Most agencies run LeadAC *in front of* Apollo, not *instead of* it. Never write "Apollo alternative" or "replace Apollo" in canonical positioning. (The `/alternatives/apollo-alternative` programmatic SEO page is a separate beast — that's a search-intent capture surface, not a positioning claim. Different rules.)
+- **Upstream data rails stay.** Apollo, Clay, Orbital, Openmart, Resquared, and any local-business data API the team already pays for. We sit *after* them, not *instead of* them. Never write "Orbital alternative", "Apollo alternative", or "replace Clay" in canonical positioning. (The `/alternatives/*` programmatic SEO pages are search-intent capture surfaces, not positioning claims. Different rules.)
 - **Smartlead / Instantly stay.** They are the sender. We feed them.
-- **Clay stays for what it's good at.** Clay is the heavy enrichment Lego set. We are a finished motion for one specific buyer (local-business outbound).
+- **The CRM stays.** HubSpot is where the team already lives. We write the brief into the HubSpot card; we do not ask the SDR to switch tabs.
 
-What we DO collapse: the research VA and the per-prospect homework that an SDR pretends to do but doesn't have time for. That is the cost line we replace.
+What we DO collapse: the research VA, the per-prospect homework an SDR pretends to do but doesn't have time for, and the team-memory that walks out the door every time a senior rep quits. That is the cost line we replace.
+
+### Integration reality (do not overpromise)
+
+HubSpot is the **only integration we claim live today**. Everything else lands via CSV import while native connectors ship. "Works with your stack" is the positioning; the implementation phasing is:
+
+1. CSV mapping for Apollo, Clay, Orbital, Openmart, Resquared, Smartlead, Instantly exports + HubSpot OAuth (live).
+2. Native HubSpot + Smartlead + Instantly (next).
+3. Two-way CRM writeback + Salesforce + native connectors for the data rails (later).
+
+Copy must not imply native integrations that have not shipped. Use "bring your stack" before "deeply integrates with."
 
 ### Mockup feature — vertical only, not homepage pillar
 
@@ -28,18 +38,15 @@ LeadAC also ships a one-page site mockup generator. **It is not a general-market
 
 ## Who buys it
 
-Agency owners running outbound for local-business clients. Specifically:
+**Primary ICP (homepage + canonical positioning lead with this):**
+Vertical SaaS GTM teams at $2M–$50M ARR selling into local-business / SMB markets. 5 to 30 sellers, HubSpot + some mix of Apollo/Clay/Smartlead/Orbital/Openmart/manual research. Verticals where we have signal depth: restaurant tech, field service, dental, beauty/wellness, hospitality, legal practice software.
 
-- B2B outbound agencies (1 to 10 SDRs)
-- SMMA owners (1 to 5 person social/web agencies)
-- Specialists going solo (Klaviyo, paid social, SEO operators starting their own book)
-- Walk-in web/local-services agencies
-- F&B and restaurant-tech BD teams (smaller ICP, but sticky)
-- Local SEO agencies (GMB pitch upgrade)
+Daniel (VP Sales), Mike (SDR Manager), Sarah (Head of Marketing — champion) live here. Full persona file: `BUYER-PERSONA.md`.
 
-Not for: enterprise SDR teams, product-led growth motions, B2C, anyone who sells software to companies above 200 employees.
+**Secondary ICP (faster proof wedge, sub-page treatment under `/for/agency`):**
+Agencies running outbound for local-business clients — B2B outbound agencies, SMMA owners, walk-in web agencies, local SEO operators. They convert faster but have lower willingness-to-pay and a tendency to read LeadAC as "another lead list" unless we discipline the framing to "the operating system for your local outbound motion."
 
-The full persona file is `BUYER-PERSONA.md` at the repo root.
+**Not for:** enterprise SDR teams with dedicated RevOps engineers and Gong + Salesforce already in place, product-led growth motions, B2C, anyone selling software to companies above 500 employees, anyone who wants a fully autonomous AI SDR.
 
 ## What changed in 2025-2026 (why we exist)
 
@@ -67,7 +74,6 @@ These get caught in the humanizer pass. Do not ship copy that contains them.
 
 - "agent" or "AI agent" (when describing LeadAC itself)
 - "copilot" (the existing Copilot UI element keeps the name internally; do NOT rename it for marketing)
-- "memory loop", "compounding intelligence", "compounding part"
 - "transformative", "groundbreaking", "revolutionary", "cutting-edge"
 - "delve", "leverage", "synergy", "robust", "seamless", "intuitive"
 - "stands as", "serves as", "marks a pivotal moment", "in the rapidly evolving landscape"
@@ -78,6 +84,18 @@ These get caught in the humanizer pass. Do not ship copy that contains them.
 - Rule of three lists when two would do
 - "It's not just X, it's Y" (negative parallelism)
 - Title Case In Headings (use sentence case)
+- Competitor-claimed phrases — see `src/content/site/keywords.ts` `AVOID_PHRASES`. Highlights: "SMB account intelligence" (Orbital), "selling to local businesses" (Orbital/Resquared), unqualified "revenue intelligence" (always qualify with "for SMB markets"), "AI lead generation", "Apollo for local", "AI SDR / digital workers", "buyer intelligence" (Common Room).
+
+### Un-banned (this is the thesis now, use them)
+
+The previous version of this file banned "memory loop / compounding intelligence." That was correct for the old "Apollo for local" positioning. It is wrong for the current Operational Revenue Intelligence positioning. These phrases are now the wedge — use them, repeat them across surfaces:
+
+- "memory layer", "remembers what closes", "what closes in your vertical"
+- "learning loop", "outcome loop", "vertical playbook memory"
+- "the next best revenue action", "next best action"
+- "operational revenue intelligence for SMB markets" (always qualified — never bare "revenue intelligence")
+
+The full keyword dataset (own / avoid / white-space) lives in `src/content/site/keywords.ts`. Read it before writing any new page or ad.
 
 ### Preferred phrases
 
@@ -93,27 +111,31 @@ These get caught in the humanizer pass. Do not ship copy that contains them.
 
 Before:
 
-> Leadac stands as a pivotal evolution in the agency outbound landscape, unlocking compounding intelligence through its memory loop and AI agents — empowering operators to deliver seamless, intuitive, and groundbreaking results.
+> LeadAC stands as a pivotal evolution in the SMB revenue intelligence landscape, unlocking transformative AI agents and groundbreaking buyer intelligence — empowering operators to deliver seamless, intuitive, and revolutionary results.
 
 After:
 
-> LeadAC pulls fresh leads off Google Maps, runs a real audit on each one before you write a word, and drops the homework into the opener so it does not read like every other AI cold email. The same SDR seat, different fuel.
+> LeadAC reads the accounts your team already imported, scores fit against what you have closed before, and writes the next best action into the HubSpot card the SDR opens before every dial. Same stack, different memory.
 
 ### Three lines the founder uses internally (lift these for copy)
 
 These are the lines the founder keeps repeating when describing what LeadAC is for. They translate well to hero copy, ad copy, and outbound subject lines.
 
-- "For your agency to close 3 more deals a month."
-- "Your SDR's brain, in software."
-- "Lead dossiers ready for your end-of-month pipeline review."
+- "We remember what closes in local-business markets."
+- "Bring your stack. We make it remember."
+- "Inside the HubSpot card your SDR already opens."
 
 ## Positioning sentence (canonical)
 
 Memorize this. Every page should rhyme with it.
 
-> For agency owners running outbound to local-business clients, LeadAC is the local lead-intelligence layer that covers the gap Apollo and Clay leave open. We pull live from Google Maps, audit every site, and ground the opener in what the audit found. Most agencies run LeadAC in front of Apollo, not instead of it.
+> For vertical SaaS GTM teams selling into local-business and SMB markets, LeadAC is operational revenue intelligence — the memory layer that learns what closes in your vertical and writes the next best action into the HubSpot card your SDR already opens. Bring the data rails you already pay for (Apollo, Clay, Orbital, Openmart, Resquared); LeadAC sits one layer above and makes them compound into team memory.
 
-The full version (3 paragraphs) and the "Apollo stays" reasoning are in `POSITIONING.md` § 3-4.
+Short version (sticker line):
+
+> Apollo finds. Clay enriches. Gong records. LeadAC remembers.
+
+The full version (3 paragraphs), competitor reframes, and category-defense reasoning are in `POSITIONING.md` § 3-4. The keyword dataset that grounds this sentence lives in `src/content/site/keywords.ts`.
 
 ## Pricing logic (current)
 
@@ -188,4 +210,4 @@ If you are about to read this file twice in the same session, you are probably l
 
 ---
 
-Last updated: 2026-05-06 (Phase A of web-presence overhaul).
+Last updated: 2026-06-16 (Operational Revenue Intelligence for SMB Markets repositioning — see `src/content/site/keywords.ts` and the homepage hero in `src/app/(site)/page.tsx`).

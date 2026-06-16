@@ -18,9 +18,18 @@ export type Competitor = {
   /** Per-seat / per-team price floor in USD (annual). Null if unknown. */
   priceFloorAnnualUsd: number | null;
   /** Their core primitive in one verb (used in the stack-position diagram). */
-  primitive: "finds" | "enriches" | "records" | "sends" | "forecasts" | "ai-sdr";
+  primitive:
+    | "finds"
+    | "enriches"
+    | "records"
+    | "sends"
+    | "forecasts"
+    | "ai-sdr"
+    | "smb-data"
+    | "buyer-signals"
+    | "learning-loop";
   /** Internal disposition — `compete` shipped on Day 1, `defer` later. */
-  status: "compete" | "compete-bundle" | "defer";
+  status: "compete" | "compete-bundle" | "defer" | "upstream" | "adjacent";
 };
 
 export const COMPETITORS_SITE: Competitor[] = [
@@ -117,6 +126,102 @@ export const COMPETITORS_SITE: Competitor[] = [
     priceFloorAnnualUsd: 60000,
     primitive: "ai-sdr",
     status: "defer",
+  },
+  {
+    slug: "orbital",
+    name: "Orbital",
+    publicTagline:
+      "Everything you need to sell to SMBs. Reach local businesses with AI prospecting, SMB data enrichment, and verified contacts.",
+    publicTaglineSource: {
+      name: "withorbital.com homepage",
+      url: "https://www.withorbital.com/",
+      date: "2026-06-16",
+    },
+    reframe:
+      "Orbital is the SMB data rail — TAM mapping, 200+ attributes, verified contacts. LeadAC sits one layer above: source-confidence scoring, next best action, and a learning loop on which Orbital accounts actually converted in your vertical.",
+    priceFloorAnnualUsd: null,
+    primitive: "smb-data",
+    status: "upstream",
+  },
+  {
+    slug: "openmart",
+    name: "Openmart",
+    publicTagline:
+      "Access comprehensive local business data with verified emails, phones, and decision-maker details. 200M+ verified contacts.",
+    publicTaglineSource: {
+      name: "openmart.com homepage",
+      url: "https://www.openmart.com/",
+      date: "2026-06-16",
+    },
+    reframe:
+      "Openmart is a local-business data API. LeadAC treats it as an upstream rail — bring the export, we tell you which accounts deserve a rep's time this week and what to do next.",
+    priceFloorAnnualUsd: null,
+    primitive: "smb-data",
+    status: "upstream",
+  },
+  {
+    slug: "resquared",
+    name: "Resquared",
+    publicTagline:
+      "The AI platform for selling to local businesses. Contact data on every local business, optimized outreach, and step-by-step playbooks.",
+    publicTaglineSource: {
+      name: "re2.ai homepage",
+      url: "https://www.re2.ai/",
+      date: "2026-06-16",
+    },
+    reframe:
+      "Resquared owns local-business outreach workflows. LeadAC is the memory layer that learns which Resquared-sourced accounts close in your vertical and feeds that pattern back into prioritisation.",
+    priceFloorAnnualUsd: null,
+    primitive: "smb-data",
+    status: "upstream",
+  },
+  {
+    slug: "pocus",
+    name: "Pocus",
+    publicTagline:
+      "Pocus AI tells reps where to focus and what to do next. Opinionated guidance, not more signals.",
+    publicTaglineSource: {
+      name: "pocus.com homepage",
+      url: "https://www.pocus.com/",
+      date: "2026-06-16",
+    },
+    reframe:
+      "Pocus prescribes the next action from product-usage signals — great for PLG sales motions. LeadAC prescribes the next action for teams selling into local-business and SMB markets, where the context lives in websites, reviews, locations and owner activity, not in your app analytics.",
+    priceFloorAnnualUsd: null,
+    primitive: "buyer-signals",
+    status: "adjacent",
+  },
+  {
+    slug: "common-room",
+    name: "Common Room",
+    publicTagline:
+      "The AI-native go-to-market platform for buyer intelligence and action. Identify, prioritize, and act on the right buyers with precision.",
+    publicTaglineSource: {
+      name: "commonroom.io homepage",
+      url: "https://www.commonroom.io/",
+      date: "2026-06-16",
+    },
+    reframe:
+      "Common Room is broad buyer intelligence — community, product, web, CRM. LeadAC is narrower and deeper on SMB / local-business context, with a simpler onboarding and a price that fits a 5-seat team.",
+    priceFloorAnnualUsd: null,
+    primitive: "buyer-signals",
+    status: "adjacent",
+  },
+  {
+    slug: "hockeystack",
+    name: "HockeyStack",
+    publicTagline:
+      "GTM Intelligence That Actually Converts. Turn Sales and Marketing Data Into Insights, Plans and Actions.",
+    publicTaglineSource: {
+      name: "hockeystack.com homepage",
+      url: "https://www.hockeystack.com/",
+      date: "2026-06-16",
+    },
+    reframe:
+      "HockeyStack learns enterprise GTM patterns and runs revenue agents on top. LeadAC is the SMB-market version of that learning loop — lighter, vertical-aware, lower setup cost, and grounded in local-business context rather than enterprise revenue orchestration.",
+    priceFloorAnnualUsd: null,
+    primitive: "learning-loop",
+    status: "adjacent",
   },
 ];
 

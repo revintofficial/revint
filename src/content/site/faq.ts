@@ -31,12 +31,27 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
     {
       question: "What is LeadAC?",
       answer:
-        "LeadAC is the operational intelligence layer for vertical SaaS GTM teams selling to local business. We find the right local accounts, sync vertical context into HubSpot, and learn from every won and lost deal. Built for restaurant tech, field service, dental, beauty, legal, and hospitality SaaS vendors at $2M to $50M ARR.",
+        "LeadAC is operational revenue intelligence for SMB markets — the memory layer that learns what closes in local-business markets and writes the next best action into the HubSpot card your SDR already opens. Built for vertical SaaS GTM teams at $2M to $50M ARR selling into restaurants, field service, dental, beauty, and hospitality.",
     },
     {
-      question: "How is LeadAC different from Apollo?",
+      question: "We already use Orbital, Openmart, or Resquared. Do you replace them?",
       answer:
-        "Apollo gives you a list of contacts based on firmographic data. LeadAC gives you operational context — location count, vertical software stack signature, review tone, owner activity — that Apollo's database does not index. Apollo finds. LeadAC times. You keep Apollo; we sit on top and write 12 enriched fields per account into HubSpot.",
+        "No. Orbital, Openmart, and Resquared are upstream data rails — they find the SMB accounts. LeadAC sits one layer above and decides which of those accounts deserve a rep's time this week, why, and what to do next. Bring their exports as CSV or keep them in HubSpot. LeadAC turns their rows into a learning loop on what actually converts in your vertical.",
+    },
+    {
+      question: "We can build this in Clay. Why pay for LeadAC?",
+      answer:
+        "You can build pieces of it in Clay. Clay is a workbench — flexible, but unopinionated, and it needs a GTM engineer to operate. LeadAC is the finished SMB-vertical brain: vertical signal libraries, source-confidence scoring, rep-ready brief, the next best action, and an outcome loop that learns from every won and lost deal. No GTM engineer required.",
+    },
+    {
+      question: "Is this like Common Room, HockeyStack, or Pocus?",
+      answer:
+        "Similar direction, different market. Common Room is broad buyer intelligence for PLG and community-led GTM. HockeyStack is enterprise revenue agents and attribution. Pocus prioritises product-usage signals for PLG sales. LeadAC focuses on teams selling into local-business and SMB markets, where the buyer's context lives in websites, reviews, locations, owner activity — not in your product analytics.",
+    },
+    {
+      question: "Is this just lead gen?",
+      answer:
+        "No. Lead gen gives you rows. LeadAC tells you which rows deserve action, why, what to say, and what the team should learn after the outcome lands. The deliverable is a per-account brief with a recommended next action inside HubSpot, not a CSV. We don't try to be your data source — we make the data sources you already pay for compound into team memory.",
     },
     {
       question: "How is LeadAC different from Gong?",
@@ -44,19 +59,14 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
         "Gong is conversation intelligence — it remembers what your team said on calls and emails. LeadAC is operational intelligence — we remember what the account is doing in the world. Gong starts at $100,000 per year for 25 reps and requires 8 weeks of RevOps engineering. LeadAC starts at $1,500 per month for 5 reps and onboards in under an hour.",
     },
     {
-      question: "How is LeadAC different from Clay?",
-      answer:
-        "Clay is a programmable GTM workflow runtime — flexible, but requires a GTM engineer to operate and burns credits unpredictably. LeadAC is the finished product for vertical SaaS teams: pre-built vertical signal libraries (HVAC, restaurant, dental, beauty, legal), CRM-native sync, closed-loop ICP refinement out of the box. Connect HubSpot in one hour, no engineer required.",
-    },
-    {
       question: "Which CRMs does LeadAC integrate with?",
       answer:
-        "LeadAC ships with native HubSpot integration via OAuth on day one. Pipedrive and Close integrations follow within 60 days. Salesforce integration is on the roadmap for the Growth and Enterprise tiers. The integration writes 12 enriched fields per account into the CRM contact and company records, with closed-loop outcome ingestion from CRM webhooks.",
+        "HubSpot only, today. The HubSpot OAuth integration writes 12 enriched fields per account into the company record and ingests closed-won and closed-lost outcomes back into the learning loop. Other sources — Apollo, Clay, Orbital, Openmart, Resquared, Salesforce — land via CSV import while native connectors ship. We'd rather promise one connector that works than five that drift.",
     },
     {
       question: "Do you replace our SDRs with an AI SDR?",
       answer:
-        "No. LeadAC is not an AI SDR. We do the homework your SDR was doing manually — the account research, the vertical signal lookup, the pre-call brief — so the human SDR still does the conversation. The 11x / Artisan / AiSDR pattern of fully autonomous outreach is the opposite of what we build.",
+        "No. LeadAC is not an AI SDR. We do the homework your SDR was doing manually — the account research, the vertical signal lookup, the pre-call brief, the recommended next action — so the human SDR still owns the conversation. The 11x / Artisan / AiSDR pattern of fully autonomous outreach is the opposite of what we build.",
     },
   ],
 

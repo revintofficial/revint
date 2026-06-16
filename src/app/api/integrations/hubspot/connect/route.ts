@@ -10,7 +10,12 @@ import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 
 import { requireWorkspaceAdminApi, UnauthorizedError, ForbiddenError } from "@/lib/auth";
-import { buildHubspotAuthUrl, isHubspotConfigured } from "@/lib/integrations/hubspot/oauth";
+import {
+  buildHubspotAuthUrl,
+  deriveCodeChallenge,
+  generateCodeVerifier,
+  isHubspotConfigured,
+} from "@/lib/integrations/hubspot/oauth";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -38,14 +43,22 @@ export async function GET() {
       }),
     ).toString("base64url");
 
-    const res = NextResponse.redirect(buildHubspotAuthUrl(state));
-    res.cookies.set("hubspot_oauth_state", nonce, {
+    // PKCE: keep the verifier server-side (httpOnly cookie); send only
+    // the derived S256 challenge to HubSpot. The callback replays the
+    // verifier on token exchange.
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = deriveCodeChallenge(codeVerifier);
+
+    const res = NextResponse.redirect(buildHubspotAuthUrl(state, codeChallenge));
+    const cookieOpts = {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "lax" as const,
       secure: process.env.NODE_ENV === "production",
       maxAge: 600,
       path: "/",
-    });
+    };
+    res.cookies.set("hubspot_oauth_state", nonce, cookieOpts);
+    res.cookies.set("hubspot_pkce_verifier", codeVerifier, cookieOpts);
     return res;
   } catch (err) {
     if (err instanceof UnauthorizedError) {

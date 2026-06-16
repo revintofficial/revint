@@ -1,4 +1,4 @@
-import { ExternalLink } from "lucide-react";
+import { ArrowRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -7,9 +7,22 @@ import { cn } from "@/lib/utils";
  *
  * Static SVG/HTML mock — no live HubSpot connection needed. The shape is
  * the marketing asset.
+ *
+ * The `nextAction` block is the first-class output that closes the gap
+ * with Pocus / HockeyStack's "tell reps what to do next" framing — see
+ * `src/content/site/keywords.ts` (WHITE_SPACE: "the next best revenue
+ * action"). Always render it on the homepage hero card; optional on the
+ * HubSpot integration page where the field map is the focus.
  */
 
 type SignalRow = { label: string; value: string };
+
+type NextAction = {
+  /** Short verb-phrase, e.g. "Call the owner today" or "Hold for Q3 budget cycle". */
+  label: string;
+  /** One-sentence reason grounded in the signals above. */
+  reason: string;
+};
 
 type PreCallBriefCardProps = {
   /** Account name shown at the top. */
@@ -22,6 +35,8 @@ type PreCallBriefCardProps = {
   signals: SignalRow[];
   /** Suggested opener — 2 sentences max. */
   opener: string;
+  /** Recommended next action — first-class output, rendered above the opener. */
+  nextAction?: NextAction;
   className?: string;
 };
 
@@ -31,6 +46,7 @@ export function PreCallBriefCard({
   context,
   signals,
   opener,
+  nextAction,
   className,
 }: PreCallBriefCardProps) {
   return (
@@ -75,7 +91,22 @@ export function PreCallBriefCard({
           ))}
         </div>
 
-        <div className="mt-5 rounded-md border border-signal/30 bg-[hsl(218_50%_16%_/_0.3)] p-4">
+        {nextAction ? (
+          <div className="mt-5 rounded-md border border-signal/50 bg-[hsl(218_50%_16%/0.45)] p-4">
+            <div className="site-mono text-[12px] uppercase tracking-wider text-signal">
+              Recommended next action
+            </div>
+            <div className="mt-2 flex items-start gap-2 text-[15px] leading-snug text-paper-0">
+              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-signal" />
+              <span className="font-medium">{nextAction.label}</span>
+            </div>
+            <p className="mt-1 pl-6 text-[13px] leading-relaxed text-paper-2">
+              {nextAction.reason}
+            </p>
+          </div>
+        ) : null}
+
+        <div className="mt-5 rounded-md border border-signal/30 bg-[hsl(218_50%_16%/0.3)] p-4">
           <div className="site-mono text-[12px] uppercase tracking-wider text-signal">
             Suggested opener
           </div>

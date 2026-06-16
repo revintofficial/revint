@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import {
   Hero,
   ProofRow,
-  StackPositionDiagram,
+  StackLayersDiagram,
   ProblemGrid,
   ClosedLoopDiagram,
   PreCallBriefCard,
@@ -17,29 +17,32 @@ import {
   websiteSchema,
   softwareApplicationSchema,
 } from "@/components/seo/json-ld";
-import { painsForVertical } from "@/content/site/pains";
+import { painsByIds } from "@/content/site/pains";
 import { PERSONAS } from "@/content/site/personas";
 import { FAQS } from "@/content/site/faq";
 
 /**
  * Homepage — /
  *
- * Psych model: Anchoring + Contrast + Status-quo bias break (psych-map).
- * Structure per _style-guide.md §2:
- *   eyebrow → headline → subhead → CTAs → proof row → stack position →
- *   problem grid → closed loop → in-CRM preview → persona quote →
- *   FAQ → CTA.
+ * Posture: Apple/Clari. Centered hero (single column, large light type,
+ * one anchor pill), then the layered-stack diagram as the marquee visual,
+ * then the brief preview as its own "what the rep opens" section.
  *
- * Anchor pattern: hero shows "$29K/yr Apollo+Clay+Gong+Smartlead stack"
- * so the LeadAC price reads as a small additive line, not a switch cost.
+ * Psych model: Anchoring + Contrast + Status-quo bias break (psych-map).
+ * Structure:
+ *   hero (centered) → proof row → stack layers → in-CRM brief →
+ *   problem grid → closed loop → persona quote → FAQ → CTA.
+ *
+ * Anchor pattern: hero prices LeadAC against the $100K/yr Gong floor so the
+ * category reads as operational intelligence, not another lead list.
  */
 
 export const metadata: Metadata = buildMetadata({
   path: "/",
   title:
-    "LeadAC — operational intelligence for vertical SaaS sales teams",
+    "LeadAC — operational revenue intelligence for SMB markets",
   description:
-    "LeadAC is the memory layer your CRM never had. We find the right local accounts, sync vertical context into HubSpot, and learn from every won and lost deal. Built for vertical SaaS GTM teams at $2M–$50M ARR.",
+    "LeadAC is the memory layer that learns what closes in local-business markets and tells your reps the next best action, inside the HubSpot card they already open. Built for vertical SaaS GTM teams selling to SMBs at $2M–$50M ARR.",
 });
 
 export default function HomePage() {
@@ -50,32 +53,16 @@ export default function HomePage() {
       <JsonLd id="ld-app" data={softwareApplicationSchema()} />
 
       <Hero
-        eyebrow="Operational intelligence for vertical SaaS"
-        headline="We remember what closes for vertical SaaS sales teams."
-        subhead="Apollo finds. Clay enriches. Gong records. LeadAC remembers — inside the HubSpot card your SDR already opens before every dial."
+        layout="center"
+        eyebrow="Operational revenue intelligence for SMB markets"
+        headline="We remember what closes in local-business markets."
+        subhead="Bring the stack you already run. LeadAC scores every account against the deals your team has actually won, then writes the next best move into the HubSpot card your SDR already opens."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}
         anchor={{
           note: "Same money as",
-          label: "$100K/yr Gong floor — without the 8-week onboarding.",
+          label: "the $100K/yr Gong floor, minus the 8-week setup.",
         }}
-        visual={
-          <PreCallBriefCard
-            account="Pacific Coast Eats Group"
-            tag="Restaurant tech · 4 locations · Migration candidate"
-            context="Multi-location group on OpenTable Lite. Two new locations added in the last 90 days, owner posted a hiring opening for an Operations Director in Seattle. Reviews mention waitlist friction at the flagship."
-            signals={[
-              {
-                label: "Stack signature",
-                value: "OpenTable Lite + Square POS",
-              },
-              { label: "Location count", value: "4 (3 active, 1 opening)" },
-              { label: "Owner activity", value: "Hiring · last 14 days" },
-              { label: "Review tone", value: "Operations-strained" },
-            ]}
-            opener="Saw you opened the Belltown location two weeks ago — most groups on OpenTable Lite hit a waitlist ceiling around four spots. Want the brief on what worked for two other Pacific Northwest groups that moved up to the full platform last quarter?"
-          />
-        }
       />
 
       <ProofRow
@@ -104,28 +91,74 @@ export default function HomePage() {
           {
             value: "< 1 hr",
             label:
-              "Onboarding to first brief — no RevOps engineer required.",
+              "From signup to your first brief. You won't need a RevOps engineer.",
           },
         ]}
       />
 
-      <StackPositionDiagram
-        eyebrow="Where we live in your stack"
+      <StackLayersDiagram
+        eyebrow="Works with the stack you already run"
         title="Apollo finds. Clay enriches. Gong records. LeadAC remembers."
-        subtitle="We do not replace your stack. We sit one layer below the orchestrator and tie the four boxes together with the memory layer they don't share."
+        subtitle="Two layers do the work. Sales Intelligence reads every account and turns its operational signals into a sales angle. Operational Intelligence learns which of those signals actually closed and makes every claim carry its evidence. Both write into the HubSpot card your SDR already opens."
       />
+
+      <section className="site-section">
+        <div className="site-container">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="site-eyebrow mb-3">What the rep opens</div>
+            <h2 className="text-[34px] font-light leading-[1.05] tracking-[-0.03em] text-paper-0 md:text-[52px]">
+              The Account Intelligence Brief is already in the HubSpot card.
+            </h2>
+            <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-paper-2 md:text-[19px]">
+              Your SDR doesn&rsquo;t open a research doc or dig through five tabs.
+              The fit score, the reason it matters this week, and the opener are
+              sitting on the company record before the dial.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-12 max-w-xl">
+            <PreCallBriefCard
+              account="Pacific Coast Eats Group"
+              tag="Restaurant tech · 4 locations · Migration candidate"
+              context="Multi-location group on OpenTable Lite. Two new locations opened in the last 90 days, and the owner just posted a hiring opening for an Operations Director in Seattle. Reviews mention waitlist friction at the flagship."
+              signals={[
+                {
+                  label: "Stack signature",
+                  value: "OpenTable Lite + Square POS",
+                },
+                { label: "Location count", value: "4 (3 active, 1 opening)" },
+                { label: "Owner activity", value: "Hiring · last 14 days" },
+                { label: "Review tone", value: "Operations-strained" },
+              ]}
+              nextAction={{
+                label: "Call the operator this week",
+                reason:
+                  "Three of your last four closed-won deals looked exactly like this: OpenTable Lite, four-plus locations, expansion in the last 90 days. Those closed in 19 days on average.",
+              }}
+              opener="Saw you opened the Belltown location two weeks ago. Most groups on OpenTable Lite hit a waitlist ceiling around four spots. Want the brief on what worked for two other Pacific Northwest groups that moved up to the full platform last quarter?"
+            />
+          </div>
+        </div>
+      </section>
 
       <ProblemGrid
         eyebrow="What's broken"
-        title="The dominant outbound stack was built for desk-worker B2B."
-        intro="Apollo, Clay, Gong, Outreach — all built for B2B SaaS selling to other B2B SaaS, where the buyer has a LinkedIn profile and a Crunchbase entry. Vertical SaaS GTM teams selling to local business sit in the gap below."
-        pains={painsForVertical("cross-vertical", 6)}
+        title="Your sales team has no memory."
+        intro="Everything your best rep knows — which accounts are worth a call, what to say, why the last one closed — lives in their head. Then they ramp for months, switch verticals, or quit, and it resets to zero. The stack underneath them stores activity, not judgment, so nobody learns from the deals you already won. The research backs this up."
+        pains={painsByIds([
+          "P-014",
+          "P-004",
+          "P-016",
+          "P-015",
+          "P-011",
+          "P-001",
+        ])}
       />
 
       <ClosedLoopDiagram
         eyebrow="How the memory works"
-        title="Every won and lost deal sharpens the next list — automatically."
-        subtitle="Your CRM is already telling you what closes. LeadAC reads the closed-won and closed-lost signals back into the discovery layer, then weights the next ICP query against your team's own pattern."
+        title="Every won and lost deal sharpens the next list on its own."
+        subtitle="Your CRM already knows what closes. LeadAC reads the closed-won and closed-lost records back into discovery, then weights the next ICP query toward the pattern your team keeps winning."
       />
 
       <QuoteBlock persona={PERSONAS.mike} />
@@ -138,8 +171,8 @@ export default function HomePage() {
 
       <CtaBlock
         eyebrow="Twenty minutes, on your own data"
-        title="Bring one prospect URL. We'll show you the brief that lands in your HubSpot card."
-        subtitle="No slideware. Paste a URL on the call, we run LeadAC live, you see the field map and the suggested opener before the call ends."
+        title="Bring one prospect URL. We'll show you the brief that lands in the HubSpot card."
+        subtitle="Skip the slideware. Paste a prospect URL on the call, we run LeadAC live, and you see the field map and the suggested opener before we hang up."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}
       />

@@ -18,7 +18,7 @@ export type Pain = {
     date: string; // ISO 8601
   };
   /** Tags so vertical pages can filter to the pains that matter to them. */
-  tags: Array<"cross-vertical" | "field-service" | "restaurant" | "dental" | "tooling" | "ramp" | "ai-sdr">;
+  tags: Array<"cross-vertical" | "field-service" | "restaurant" | "dental" | "tooling" | "ramp" | "ai-sdr" | "memory">;
 };
 
 export const PAINS: Pain[] = [
@@ -33,7 +33,7 @@ export const PAINS: Pain[] = [
       url: "https://www.kwanzoo.com/blog/sdrs-spend-40-percent-researching-leads",
       date: "2026-03-22",
     },
-    tags: ["cross-vertical", "ramp"],
+    tags: ["cross-vertical", "ramp", "memory"],
   },
   {
     id: "P-002",
@@ -72,7 +72,7 @@ export const PAINS: Pain[] = [
       url: "https://www.saastr.com/10-things-that-are-different-in-vertical-smb-sales-with-toasts-cro/",
       date: "2026-01-30",
     },
-    tags: ["cross-vertical", "ramp"],
+    tags: ["cross-vertical", "ramp", "memory"],
   },
   {
     id: "P-005",
@@ -137,7 +137,7 @@ export const PAINS: Pain[] = [
       url: "https://www.prnewswire.com/news-releases/gong-growth-accelerates-past-55-yoy-as-enterprises-adopt-revenue-ai-arr-tops-500m-302769127.html",
       date: "2026-05-12",
     },
-    tags: ["cross-vertical", "tooling"],
+    tags: ["cross-vertical", "tooling", "memory"],
   },
   {
     id: "P-012",
@@ -165,12 +165,62 @@ export const PAINS: Pain[] = [
     },
     tags: ["cross-vertical"],
   },
+  {
+    id: "P-014",
+    summary:
+      "Median SDR tenure is 14–18 months and annual turnover runs about 34%. On a ten-rep team that's three or four people leaving every year — and every account pattern, objection, and 'why this one closed' leaves with them, because it only ever lived in the rep's head.",
+    quote:
+      "Median SDR tenure is 14 to 18 months. Average ramp time is 3 to 6 months. That means a typical SDR spends a quarter or more of their entire tenure below full productivity — and then leaves.",
+    source: {
+      name: "Dialfyne — Sales Rep Turnover Statistics 2026 (The Bridge Group)",
+      url: "https://dialfyne.com/blog/sales-rep-turnover-statistics-2026",
+      date: "2026-02-10",
+    },
+    tags: ["cross-vertical", "memory", "ramp"],
+  },
+  {
+    id: "P-015",
+    summary:
+      "Only about 40% of deals ever get a win-loss review, and most of those are last month's. The other 60% close or die with nobody recording which signals predicted the outcome, so the pattern never makes it back into the next list.",
+    quote:
+      "On average, 40% of deals go through win-loss analysis, and 70% of these deals analyzed were closed within the month prior.",
+    source: {
+      name: "Klue — 2025 Win-Loss Trends Report",
+      url: "https://klue.com/win-loss-trends-report",
+      date: "2025-09-01",
+    },
+    tags: ["cross-vertical", "memory"],
+  },
+  {
+    id: "P-016",
+    summary:
+      "Ramp to full quota takes about three months, and reps plateau around month 15 — right before they leave. With tenure near 1.9 years, teams live in perpetual ramp-up, re-teaching the same tacit knowledge to each new hire because the last one took it with them.",
+    quote:
+      "Industry data from The Bridge Group confirms in-house SDR tenure is now just 22 months with diminishing returns after 15 months, leading to 'perpetual ramp-up.'",
+    source: {
+      name: "Telenet Marketing — The SDR Churn",
+      url: "https://telenetmarketing.com/2026/01/the-sdr-churn-how-to-avoid-structure-risks-in-the-modern-sdr-lifecycle/",
+      date: "2026-01-20",
+    },
+    tags: ["cross-vertical", "memory", "ramp"],
+  },
 ];
 
 /** Filter helper — returns the N most-relevant pains for a vertical. */
 export function painsForVertical(
-  vertical: "field-service" | "restaurant" | "dental" | "cross-vertical",
+  vertical: "field-service" | "restaurant" | "dental" | "cross-vertical" | "memory",
   limit = 6,
 ): Pain[] {
   return PAINS.filter((p) => p.tags.includes(vertical)).slice(0, limit);
+}
+
+/**
+ * Explicit, ordered selection by id — use when a section needs the cards in a
+ * specific narrative order rather than array order (e.g. the memoryless-team
+ * "what's broken" grid on the homepage). Silently skips unknown ids.
+ */
+export function painsByIds(ids: string[]): Pain[] {
+  return ids
+    .map((id) => PAINS.find((p) => p.id === id))
+    .filter((p): p is Pain => Boolean(p));
 }

@@ -69,15 +69,29 @@ export async function GET(request: Request) {
       });
       return NextResponse.json({ error: "OAuth state nonce mismatch" }, { status: 403 });
     }
-    cookieStore.set("hubspot_oauth_state", "", {
+    const codeVerifier = cookieStore.get("hubspot_pkce_verifier")?.value;
+    if (!codeVerifier) {
+      logger.warn("api.hubspot.pkce_verifier_missing", {
+        workspaceId: session.workspaceId,
+        userId: session.user.id,
+      });
+      return NextResponse.json(
+        { error: "OAuth PKCE verifier missing or expired" },
+        { status: 400 },
+      );
+    }
+
+    const clearOpts = {
       httpOnly: true,
-      sameSite: "lax",
+      sameSite: "lax" as const,
       secure: process.env.NODE_ENV === "production",
       maxAge: 0,
       path: "/",
-    });
+    };
+    cookieStore.set("hubspot_oauth_state", "", clearOpts);
+    cookieStore.set("hubspot_pkce_verifier", "", clearOpts);
 
-    const tokens = await exchangeHubspotCode(code);
+    const tokens = await exchangeHubspotCode(code, codeVerifier);
     const info = await getHubspotTokenInfo(tokens.access_token);
     const portalId = String(info.hub_id);
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);

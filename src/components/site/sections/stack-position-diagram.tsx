@@ -68,12 +68,12 @@ export function StackPositionDiagram({
                 </div>
                 <div className="mt-3 text-[13px] text-paper-2">
                   {isLeadac
-                    ? "Operational memory: what closes, in your CRM."
+                    ? "Memory + next best action, inside the HubSpot card."
                     : step.slug === "apollo"
-                      ? "Contact list, firmographic match."
+                      ? "Contact list, firmographic match. Upstream."
                       : step.slug === "clay"
-                        ? "Workflow + enrichment chain."
-                        : "Call recordings + deal forecast."}
+                        ? "Workflow + enrichment chain. Upstream."
+                        : "Call recordings + deal forecast. Adjacent."}
                 </div>
               </div>
             );

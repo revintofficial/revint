@@ -42,7 +42,14 @@ export type PsychModel =
   | "lindy-effect";
 
 export const PAGE_PSYCH_MAP: Record<string, PsychModel[]> = {
-  "/": ["anchoring", "specificity", "mimetic", "curse-of-knowledge"],
+  "/": [
+    "anchoring",
+    "specificity",
+    "mimetic",
+    "curse-of-knowledge",
+    "status-quo-antidote",
+    "loss-aversion",
+  ],
   "/manifesto": ["confirmation-bias", "unity"],
   "/pricing": [
     "decoy",

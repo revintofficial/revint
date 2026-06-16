@@ -4,6 +4,7 @@ export { ProblemGrid } from "./problem-grid";
 export { ManifestoBlock } from "./manifesto-block";
 export { ComparisonTable } from "./comparison-table";
 export { StackPositionDiagram } from "./stack-position-diagram";
+export { StackLayersDiagram } from "./stack-layers-diagram";
 export { PreCallBriefCard } from "./pre-call-brief-card";
 export { ClosedLoopDiagram } from "./closed-loop-diagram";
 export { VerticalSignalList } from "./vertical-signal-list";

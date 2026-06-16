@@ -11,6 +11,8 @@
  * is opt-in).
  */
 
+import { createHash, randomBytes } from "node:crypto";
+
 const AUTH_URL = "https://app.hubspot.com/oauth/authorize";
 const TOKEN_URL = "https://api.hubapi.com/oauth/v1/token";
 
@@ -62,16 +64,37 @@ function clientSecret(): string {
 }
 
 /**
+ * PKCE (RFC 7636). HubSpot now requires a `code_challenge` on the
+ * authorization request ("PKCE is required for this authorization
+ * request"). We generate a high-entropy `code_verifier`, derive the
+ * S256 `code_challenge` from it, stash the verifier in a short-lived
+ * httpOnly cookie at connect time, and replay it on token exchange.
+ */
+export function generateCodeVerifier(): string {
+  // 32 random bytes → 43-char base64url string (within the 43–128 range).
+  return randomBytes(32).toString("base64url");
+}
+
+export function deriveCodeChallenge(codeVerifier: string): string {
+  return createHash("sha256").update(codeVerifier).digest("base64url");
+}
+
+/**
  * Build the HubSpot consent URL. `state` is an opaque CSRF token the
  * connect route stores in a short-lived signed cookie and re-validates
- * on callback.
+ * on callback. `codeChallenge` is the S256 PKCE challenge.
  */
-export function buildHubspotAuthUrl(state: string): string {
+export function buildHubspotAuthUrl(
+  state: string,
+  codeChallenge: string,
+): string {
   const params = new URLSearchParams({
     client_id: clientId(),
     redirect_uri: getHubspotRedirectUri(),
     scope: HUBSPOT_SCOPES.join(" "),
     state,
+    code_challenge: codeChallenge,
+    code_challenge_method: "S256",
   });
   return `${AUTH_URL}?${params.toString()}`;
 }
@@ -85,6 +108,7 @@ export interface HubspotTokenResponse {
 
 export async function exchangeHubspotCode(
   code: string,
+  codeVerifier: string,
 ): Promise<HubspotTokenResponse> {
   const body = new URLSearchParams({
     grant_type: "authorization_code",
@@ -92,6 +116,7 @@ export async function exchangeHubspotCode(
     client_secret: clientSecret(),
     redirect_uri: getHubspotRedirectUri(),
     code,
+    code_verifier: codeVerifier,
   });
   const res = await fetch(TOKEN_URL, {
     method: "POST",
