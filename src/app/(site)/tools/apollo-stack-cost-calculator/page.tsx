@@ -39,7 +39,6 @@ export default function ApolloStackCostCalculatorPage() {
           name: TITLE,
           description: DESCRIPTION,
           url: `${SITE.url}${PATH}`,
-          applicationCategory: "BusinessApplication",
         })}
       />
 

@@ -75,7 +75,6 @@ export default async function GlossaryTermPage({
           name: term.term,
           description: term.oneSentence,
           url: `${SITE.url}/glossary/${term.slug}`,
-          inDefinedTermSet: `${SITE.url}/glossary`,
         })}
       />
 

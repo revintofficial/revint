@@ -39,7 +39,6 @@ export default function SdrRampEstimatorPage() {
           name: TITLE,
           description: DESCRIPTION,
           url: `${SITE.url}${PATH}`,
-          applicationCategory: "BusinessApplication",
         })}
       />
 
