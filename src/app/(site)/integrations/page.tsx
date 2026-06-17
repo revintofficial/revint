@@ -25,7 +25,7 @@ const INTEGRATIONS = [
     name: "Smartlead",
     status: "Native · day one",
     description:
-      "Webhook handoff. LeadAC fills Smartlead merge variables with per-account context. Replies flow back into the closed loop.",
+      "Webhook handoff. Revint fills Smartlead merge variables with per-account context. Replies flow back into the closed loop.",
   },
 ];
 
@@ -42,7 +42,7 @@ export const metadata: Metadata = buildMetadata({
   path: PATH,
   title: "Integrations — HubSpot and Smartlead native, more on the roadmap",
   description:
-    "LeadAC ships native HubSpot and Smartlead on day one. Pipedrive, Close, Instantly, Outreach, and Salesforce follow on a dated roadmap.",
+    "Revint ships native HubSpot and Smartlead on day one. Pipedrive, Close, Instantly, Outreach, and Salesforce follow on a dated roadmap.",
 });
 
 export default function IntegrationsIndexPage() {
@@ -52,7 +52,7 @@ export default function IntegrationsIndexPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Integrations", url: PATH },
         ])}
       />

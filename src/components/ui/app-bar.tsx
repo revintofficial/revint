@@ -61,7 +61,7 @@ export function AppBar({
       style={{
         background: transparent
           ? "transparent"
-          : "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.85)",
+          : "hsl(var(--revint-h) var(--revint-ns) 8% / 0.85)",
         backdropFilter: transparent ? undefined : "saturate(180%) blur(30px)",
         WebkitBackdropFilter: transparent
           ? undefined
@@ -83,8 +83,8 @@ export function AppBar({
                 href={backHref}
                 onClick={() => triggerHaptic("light")}
                 aria-label={backLabel}
-                className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500) -ml-1"
-                style={{ color: "var(--leadac-text-1)" }}
+                className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--revint-500) -ml-1"
+                style={{ color: "var(--revint-text-1)" }}
               >
                 <ChevronLeft className="w-6 h-6" strokeWidth={2.25} />
               </Link>
@@ -92,8 +92,8 @@ export function AppBar({
               <button
                 onClick={handleBack}
                 aria-label={backLabel}
-                className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500) -ml-1"
-                style={{ color: "var(--leadac-text-1)" }}
+                className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--revint-500) -ml-1"
+                style={{ color: "var(--revint-text-1)" }}
               >
                 <ChevronLeft className="w-6 h-6" strokeWidth={2.25} />
               </button>
@@ -105,7 +105,7 @@ export function AppBar({
             <h1
               className="font-semibold tracking-tight truncate"
               style={{
-                color: "var(--leadac-text-1)",
+                color: "var(--revint-text-1)",
                 fontSize: "var(--text-title-3)",
                 letterSpacing: "-0.01em",
               }}
@@ -143,8 +143,8 @@ export function AppBarIconButton({
 }) {
   const inner = (
     <span
-      className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500) relative"
-      style={{ color: "var(--leadac-text-1)" }}
+      className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--revint-500) relative"
+      style={{ color: "var(--revint-text-1)" }}
     >
       <Icon className="w-5 h-5" strokeWidth={2} />
       {badge ? (
@@ -155,9 +155,9 @@ export function AppBarIconButton({
             minWidth: "16px",
             height: "16px",
             padding: typeof badge === "number" && badge > 9 ? "0 4px" : "0",
-            background: "var(--leadac-error)",
+            background: "var(--revint-error)",
             color: "white",
-            border: "1.5px solid hsl(var(--leadac-h) var(--leadac-ns) 8%)",
+            border: "1.5px solid hsl(var(--revint-h) var(--revint-ns) 8%)",
           }}
         >
           {typeof badge === "number" ? (badge > 99 ? "99+" : badge) : ""}

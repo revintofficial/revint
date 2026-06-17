@@ -24,15 +24,15 @@ import { SITE } from "@/lib/seo/metadata";
  *
  * Psych: Status-quo bias break + Anchoring (psych-map). The page admits
  * the current stack works for individual jobs, then names the one job it
- * doesn't do — learn — and positions LeadAC as the additive memory layer
+ * doesn't do — learn — and positions Revint as the additive memory layer
  * at $18K/yr that closes the loop.
  */
 
 const PATH = "/vs/apollo-clay-gong";
 const TITLE =
-  "LeadAC vs Apollo + Clay + Gong — the memory layer your stack doesn't share.";
+  "Revint vs Apollo + Clay + Gong — the memory layer your stack doesn't share.";
 const DESCRIPTION =
-  "Apollo finds contacts. Clay enriches them. Gong records calls. None of the three feeds your won and lost outcomes back into the next list. LeadAC is the $18K/yr memory layer that ties the stack together.";
+  "Apollo finds contacts. Clay enriches them. Gong records calls. None of the three feeds your won and lost outcomes back into the next list. Revint is the $18K/yr memory layer that ties the stack together.";
 const PUBLISHED = "2026-05-22";
 
 export const metadata: Metadata = buildMetadata({
@@ -48,7 +48,7 @@ export default function VsApolloClayGongPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Compare", url: "/vs" },
           { name: "Apollo + Clay + Gong", url: PATH },
         ])}
@@ -68,7 +68,7 @@ export default function VsApolloClayGongPage() {
       <Hero
         eyebrow="Compare · Apollo + Clay + Gong"
         headline="Your stack already finds, enriches, and records. None of the three remembers."
-        subhead="A typical 5-seat vertical SaaS GTM team running Apollo + Clay + Smartlead + a Gong pilot spends roughly $29K per year and still doesn't ingest its own won and lost outcomes. LeadAC sits next to the four boxes and closes the loop."
+        subhead="A typical 5-seat vertical SaaS GTM team running Apollo + Clay + Smartlead + a Gong pilot spends roughly $29K per year and still doesn't ingest its own won and lost outcomes. Revint sits next to the four boxes and closes the loop."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}
         anchor={{
@@ -96,7 +96,7 @@ export default function VsApolloClayGongPage() {
           {
             value: "+$18,000/yr",
             label:
-              "LeadAC Team — adds the memory layer, replaces zero of the existing tools.",
+              "Revint Team — adds the memory layer, replaces zero of the existing tools.",
           },
           {
             value: "< 1 hr",
@@ -108,7 +108,7 @@ export default function VsApolloClayGongPage() {
 
       <StackPositionDiagram
         eyebrow="Where each tool lives"
-        title="Apollo finds. Clay enriches. Gong records. LeadAC remembers."
+        title="Apollo finds. Clay enriches. Gong records. Revint remembers."
         subtitle="The four boxes do four different jobs well. We do the fifth job none of them do, at a price that fits on top of the stack you already paid for."
       />
 
@@ -120,7 +120,7 @@ export default function VsApolloClayGongPage() {
           { label: "Apollo" },
           { label: "Clay" },
           { label: "Gong" },
-          { label: "LeadAC", isUs: true, subLabel: "from $1,500/mo" },
+          { label: "Revint", isUs: true, subLabel: "from $1,500/mo" },
         ]}
         rows={[
           {
@@ -186,7 +186,7 @@ export default function VsApolloClayGongPage() {
       <CtaBlock
         eyebrow="Twenty minutes, one of your accounts"
         title="Bring one prospect URL. We'll show you the brief your current stack didn't write."
-        subtitle="No slideware. Paste the URL on the call, we run LeadAC live, you compare what landed in HubSpot against what Apollo + Clay would have surfaced for the same account."
+        subtitle="No slideware. Paste the URL on the call, we run Revint live, you compare what landed in HubSpot against what Apollo + Clay would have surfaced for the same account."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/tools/apollo-stack-cost-calculator", label: "Run the stack-cost calculator" }}
       />

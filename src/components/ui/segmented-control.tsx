@@ -92,17 +92,17 @@ export function SegmentedControl<V extends string = string>({
             className={cn(
               "flex items-center justify-center gap-1.5 rounded-[10px] font-medium",
               "transition-all duration-200 ease-out",
-              "focus-visible:outline-2 focus-visible:outline-(--leadac-500)",
+              "focus-visible:outline-2 focus-visible:outline-(--revint-500)",
               variant === "fill" ? "flex-1 min-w-0" : "px-3",
               size === "sm" ? "h-8 text-[12.5px] px-2" : "h-10 px-3",
             )}
             style={{
               background: isActive
-                ? "hsl(var(--leadac-h) var(--leadac-ns) 18% / 0.95)"
+                ? "hsl(var(--revint-h) var(--revint-ns) 18% / 0.95)"
                 : "transparent",
               color: isActive
-                ? "var(--leadac-text-1)"
-                : "var(--leadac-text-2)",
+                ? "var(--revint-text-1)"
+                : "var(--revint-text-2)",
               fontWeight: isActive ? 600 : 500,
               fontSize: size === "sm" ? "12.5px" : "var(--text-subhead)",
               boxShadow: isActive

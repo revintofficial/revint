@@ -20,7 +20,7 @@ export interface TimeSeriesPoint {
 /**
  * Stacked area chart for sessions / visitors / conversions over time.
  * Bucket labels render hour-of-day for "today" granularity and
- * MMM-DD for daily. Dark theme via --leadac-* tokens.
+ * MMM-DD for daily. Dark theme via --revint-* tokens.
  */
 export function TimeSeriesChart({
   data,
@@ -31,7 +31,7 @@ export function TimeSeriesChart({
 }) {
   if (data.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center text-sm text-[var(--leadac-text-3)]">
+      <div className="h-64 flex items-center justify-center text-sm text-[var(--revint-text-3)]">
         No traffic in this window yet.
       </div>
     );
@@ -45,8 +45,8 @@ export function TimeSeriesChart({
     return d.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
   };
 
-  const stroke = "hsl(var(--leadac-h, 38) var(--leadac-s, 78%) 60%)";
-  const visitorStroke = "hsl(var(--leadac-h, 38) var(--leadac-s, 78%) 35%)";
+  const stroke = "hsl(var(--revint-h, 38) var(--revint-s, 78%) 60%)";
+  const visitorStroke = "hsl(var(--revint-h, 38) var(--revint-s, 78%) 35%)";
   const conversionStroke = "hsl(150 70% 55%)";
 
   return (
@@ -84,13 +84,13 @@ export function TimeSeriesChart({
           <Tooltip
             cursor={{ stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 }}
             contentStyle={{
-              backgroundColor: "var(--leadac-card)",
-              border: "1px solid var(--leadac-border)",
+              backgroundColor: "var(--revint-card)",
+              border: "1px solid var(--revint-border)",
               borderRadius: 8,
               fontSize: 12,
             }}
-            labelStyle={{ color: "var(--leadac-text-3)" }}
-            itemStyle={{ color: "var(--leadac-text-1)" }}
+            labelStyle={{ color: "var(--revint-text-3)" }}
+            itemStyle={{ color: "var(--revint-text-1)" }}
             labelFormatter={(v) => (typeof v === "string" ? fmtX(v) : "")}
           />
           <Area
@@ -119,7 +119,7 @@ export function TimeSeriesChart({
           />
         </AreaChart>
       </ResponsiveContainer>
-      <div className="flex items-center gap-4 mt-2 text-[11px] text-[var(--leadac-text-3)]">
+      <div className="flex items-center gap-4 mt-2 text-[11px] text-[var(--revint-text-3)]">
         <Legend dot={stroke} label="Sessions" />
         <Legend dot={visitorStroke} label="Visitors" />
         <Legend dot={conversionStroke} label="Conversions" />

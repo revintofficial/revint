@@ -64,7 +64,7 @@ export default async function GlossaryTermPage({
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Glossary", url: "/glossary" },
           { name: term.term, url: `/glossary/${term.slug}` },
         ])}

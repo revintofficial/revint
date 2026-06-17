@@ -51,7 +51,7 @@ export function LeadCard({
   return (
     <Card
       className={`animate-fade-in-up transition-colors ${
-        isSelected ? "border-(--leadac-500) bg-(--leadac-500)/[0.06]" : ""
+        isSelected ? "border-(--revint-500) bg-(--revint-500)/[0.06]" : ""
       }`}
       style={{ animationDelay: `${index * 25}ms` }}
     >
@@ -66,7 +66,7 @@ export function LeadCard({
           <div className="min-w-0 flex-1">
             <Link
               href={`/app/leads/${lead.id}`}
-              className="font-medium text-white hover:text-(--leadac-500) transition-colors text-[15px] leading-snug break-words"
+              className="font-medium text-white hover:text-(--revint-500) transition-colors text-[15px] leading-snug break-words"
             >
               {lead.businessName}
             </Link>

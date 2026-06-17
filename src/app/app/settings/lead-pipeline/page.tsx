@@ -79,7 +79,7 @@ export default async function LeadPipelineSettingsPage() {
         <h2
           className="font-semibold tracking-tight"
           style={{
-            color: "var(--leadac-text-1)",
+            color: "var(--revint-text-1)",
             fontSize: "var(--text-title-2)",
             letterSpacing: "-0.01em",
           }}
@@ -88,7 +88,7 @@ export default async function LeadPipelineSettingsPage() {
         </h2>
         <p
           className="text-[13px]"
-          style={{ color: "var(--leadac-text-2)" }}
+          style={{ color: "var(--revint-text-2)" }}
         >
           Configure what runs automatically when a new lead is added. Pick a
           preset for one-click defaults or toggle individual workers.

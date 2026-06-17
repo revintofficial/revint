@@ -15,10 +15,10 @@ export default async function InsightPerformanceSettingsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-[var(--leadac-text-1)]">
+        <h2 className="text-lg font-semibold text-[var(--revint-text-1)]">
           Commercial insight performance
         </h2>
-        <p className="mt-1 text-sm text-[var(--leadac-text-3)]">
+        <p className="mt-1 text-sm text-[var(--revint-text-3)]">
           Win-rate by Challenger reframe across every lead in this workspace.
           Insights with zero applications are displayed below the active set,
           ordered by their seeded base priority.

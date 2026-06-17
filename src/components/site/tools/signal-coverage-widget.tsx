@@ -172,7 +172,7 @@ export function SignalCoverageWidget() {
 
           <p className="mt-6 text-[13px] leading-relaxed text-paper-2">
             Most HubSpot company records score under 15% on operational
-            signal coverage. The gap is the part LeadAC writes — vertical
+            signal coverage. The gap is the part Revint writes — vertical
             stack, owner activity, location count, expansion tag — into
             the same record alongside your firmographic fields.
           </p>

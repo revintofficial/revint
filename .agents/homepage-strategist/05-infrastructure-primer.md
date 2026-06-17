@@ -79,22 +79,22 @@ Single source: [`src/app/globals.css`](../../src/app/globals.css).
 Four "knobs" re-skin the entire product:
 
 ```css
---leadac-h:   38;   /* hue 0–360 */
---leadac-s:   78%;  /* saturation */
---leadac-ns:  7%;   /* neutral surface saturation */
---leadac-nts: 10%;  /* neutral text saturation */
+--revint-h:   38;   /* hue 0–360 */
+--revint-s:   78%;  /* saturation */
+--revint-ns:  7%;   /* neutral surface saturation */
+--revint-nts: 10%;  /* neutral text saturation */
 ```
 
 Everything derives from those. The full token taxonomy:
-- Primary scale: `--leadac-100` ... `--leadac-900`.
-- Surfaces: `--leadac-bg`, `--leadac-surface`, `--leadac-card`, `--leadac-hover`, `--leadac-border`.
-- Text: `--leadac-text-1` (primary), `--leadac-text-2` (secondary), `--leadac-text-3`, `--leadac-muted`.
-- Semantic: `--leadac-success`, `--leadac-warning`, `--leadac-error`, `--leadac-info`.
-- Glow: `--leadac-glow-soft/medium/strong`.
+- Primary scale: `--revint-100` ... `--revint-900`.
+- Surfaces: `--revint-bg`, `--revint-surface`, `--revint-card`, `--revint-hover`, `--revint-border`.
+- Text: `--revint-text-1` (primary), `--revint-text-2` (secondary), `--revint-text-3`, `--revint-muted`.
+- Semantic: `--revint-success`, `--revint-warning`, `--revint-error`, `--revint-info`.
+- Glow: `--revint-glow-soft/medium/strong`.
 - Legacy iOS-style names: `--system-blue/green/orange/red/purple/teal/yellow`.
 - Cinematic palette (marketing cine surfaces only): `--cine-ink`, `--cine-cream`, `--cine-ochre`, `--cine-terra`, `--cine-indigo`, `--cine-border`, `--cine-gutter`, `--cine-max`.
 
-What this means for your RFC: copy that references colors must reference token names, not hex values. "Use `--leadac-success` for the green confirm chip" is correct; "use `#22c55e` for the green confirm chip" is wrong.
+What this means for your RFC: copy that references colors must reference token names, not hex values. "Use `--revint-success` for the green confirm chip" is correct; "use `#22c55e` for the green confirm chip" is wrong.
 
 ---
 

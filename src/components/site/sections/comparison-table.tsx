@@ -20,9 +20,9 @@ type ComparisonRow = {
 };
 
 type ComparisonColumn = {
-  /** e.g. "LeadAC", "Apollo", "Clay". */
+  /** e.g. "Revint", "Apollo", "Clay". */
   label: string;
-  /** True on the LeadAC column to highlight with the signal lamp. */
+  /** True on the Revint column to highlight with the signal lamp. */
   isUs?: boolean;
   /** Optional one-line sub-label, e.g. "from $1,500/mo". */
   subLabel?: string;

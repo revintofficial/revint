@@ -38,7 +38,7 @@ Conventions in this file:
 
 **What it is.** Markets are not discovered; they are designed. A "category king" gets 76% of category economics. The play is to name the problem the new category solves, define the category, and condition the market to think your way before you sell your product.
 
-**Use when.** You are tempted to position LeadAC inside an existing category ("the best AI SDR tool"). Stop. Re-read [`POSITIONING.md`](../../POSITIONING.md) and remember we are explicitly *not* claiming to replace Apollo.
+**Use when.** You are tempted to position Revint inside an existing category ("the best AI SDR tool"). Stop. Re-read [`POSITIONING.md`](../../POSITIONING.md) and remember we are explicitly *not* claiming to replace Apollo.
 
 **Do not use when.** It is overkill for a section spec.
 
@@ -246,7 +246,7 @@ Conventions in this file:
 
 ## D. Sales methods — so you speak SDR
 
-These exist because LeadAC's product already speaks several of them in the UI ([`src/components/app/lead-detail-v2/MeddpiccChecklist.tsx`](../../src/components/app/lead-detail-v2/MeddpiccChecklist.tsx), `BantBars`, `SpinBoard`, `QualificationBlock`). If your lead-detail RFC ignores these methods, it will not fit the existing user expectations.
+These exist because Revint's product already speaks several of them in the UI ([`src/components/app/lead-detail-v2/MeddpiccChecklist.tsx`](../../src/components/app/lead-detail-v2/MeddpiccChecklist.tsx), `BantBars`, `SpinBoard`, `QualificationBlock`). If your lead-detail RFC ignores these methods, it will not fit the existing user expectations.
 
 ### D1. SPIN Selling (Neil Rackham)
 
@@ -312,7 +312,7 @@ These exist because LeadAC's product already speaks several of them in the UI ([
 
 **What it is.** The classic outbound playbook that separated SDR (prospecting), AE (closing), and CSM (retention) roles. Established cold-calling 2.0, email-first prospecting, and the idea of a predictable outbound pipeline.
 
-**Use when.** Background context for who an SDR is and why they exist as a role. Useful when explaining "why LeadAC exists" to someone outside sales.
+**Use when.** Background context for who an SDR is and why they exist as a role. Useful when explaining "why Revint exists" to someone outside sales.
 
 **Do not use when.** Treating it as current best practice. The playbook is 15 years old; the modern variants (signal-based outbound, multithreading) have moved on.
 
@@ -400,7 +400,7 @@ These exist because LeadAC's product already speaks several of them in the UI ([
 
 **What it is.** Funnels are linear and leak; growth loops are circular and compound. Each successful action creates the input for the next action — e.g., user signup → user invites teammate → teammate signs up → invites their teammate.
 
-**Use when.** Designing for compounding growth. LeadAC has a possible loop: user closes a deal → cited LeadAC in the win → posts about it → other agency owners see → sign up.
+**Use when.** Designing for compounding growth. Revint has a possible loop: user closes a deal → cited Revint in the win → posts about it → other agency owners see → sign up.
 
 **Do not use when.** Pretending a loop exists when it does not. Loops are real or they are not.
 
@@ -428,7 +428,7 @@ These exist because LeadAC's product already speaks several of them in the UI ([
 
 ### F5. North Star Metric
 
-**What it is.** The single metric that best captures the value the product delivers to customers. Not revenue (lagging); not signups (vanity); something in the middle that tracks actual usage value. For LeadAC a candidate is "leads acted on within 24h" — proxies for "the SDR found the audit useful enough to send".
+**What it is.** The single metric that best captures the value the product delivers to customers. Not revenue (lagging); not signups (vanity); something in the middle that tracks actual usage value. For Revint a candidate is "leads acted on within 24h" — proxies for "the SDR found the audit useful enough to send".
 
 **Use when.** Pre-registering the metric that an RFC will move. Tie every RFC back to whether it nudges the North Star.
 
@@ -438,7 +438,7 @@ These exist because LeadAC's product already speaks several of them in the UI ([
 
 ### F6. Activation rate
 
-**What it is.** % of new signups who reach the "aha" event within the activation window (often 7 days, sometimes 1 hour). The aha event must be the moment a user perceives core value. For LeadAC, candidate aha events: "first 50 leads imported", "first audit-grounded opener sent", "first reply received".
+**What it is.** % of new signups who reach the "aha" event within the activation window (often 7 days, sometimes 1 hour). The aha event must be the moment a user perceives core value. For Revint, candidate aha events: "first 50 leads imported", "first audit-grounded opener sent", "first reply received".
 
 **Use when.** Pre-launch and just-post-launch. The homepage RFC should pre-register an activation goal.
 

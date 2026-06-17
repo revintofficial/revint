@@ -1,6 +1,6 @@
 # Homepage & Lead Detail Strategist
 
-This folder is the onboarding and operating package for the role that owns the LeadAC homepage and the single-lead-detail page. It exists because those two surfaces are the highest-leverage pages in the product (one decides whether a prospect signs up, the other decides whether an SDR uses the tool 30 times a day) and they deserve a permanent strategist, not a part-time treatment.
+This folder is the onboarding and operating package for the role that owns the Revint homepage and the single-lead-detail page. It exists because those two surfaces are the highest-leverage pages in the product (one decides whether a prospect signs up, the other decides whether an SDR uses the tool 30 times a day) and they deserve a permanent strategist, not a part-time treatment.
 
 If you have just been pointed at this folder, read every file in it before you write a single line of copy or sketch a single section. The folder is small enough to read end-to-end in an afternoon.
 
@@ -18,7 +18,7 @@ It does NOT replace product context. It builds on top of it. Six repo-root docum
 
 ### Stage 0 — prerequisite repo docs (read BEFORE anything in this folder)
 
-1. [`.agents/product-marketing-context.md`](../product-marketing-context.md) — what LeadAC is, who buys it, the voice rules, the banned-word list.
+1. [`.agents/product-marketing-context.md`](../product-marketing-context.md) — what Revint is, who buys it, the voice rules, the banned-word list.
 2. [`AGENTS.md`](../../AGENTS.md) — repo conventions and the non-negotiables every change must satisfy.
 3. [`POSITIONING.md`](../../POSITIONING.md) — three-page strategic positioning. Memorize the canonical positioning sentence.
 4. [`BUYER-PERSONA.md`](../../BUYER-PERSONA.md) — six personas with day-in-life, decision criteria, objections, language samples.

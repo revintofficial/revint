@@ -1,5 +1,5 @@
 /**
- * Niche packs are the unit of vertical specialization in Leadac AI.
+ * Niche packs are the unit of vertical specialization in Revint.
  *
  * Each pack bundles together:
  *  - the Google Places search keywords that surface the right businesses,

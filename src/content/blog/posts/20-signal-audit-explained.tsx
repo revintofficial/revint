@@ -5,10 +5,10 @@ export const post: BlogPost = {
   slug: "20-signal-audit-explained",
   title: "The 20-signal website audit, explained",
   description:
-    "Every lead in Leadac AI runs through a 20-signal Playwright audit. Here's every signal we check, why it maps to a pitch angle, and how the opportunity score is computed.",
+    "Every lead in Revint runs through a 20-signal Playwright audit. Here's every signal we check, why it maps to a pitch angle, and how the opportunity score is computed.",
   lede: "What we check, why, and how each signal translates to a sales pitch.",
   publishedAt: "2026-01-08T09:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["audit", "playwright", "product"],
   readMinutes: 9,
   body: () => (

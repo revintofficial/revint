@@ -10,7 +10,7 @@ export const post: BlogPost = {
   lede: "Every outbound agency starts in Apollo. Every one of them has hit the same wall.",
   publishedAt: "2025-11-01T09:00:00Z",
   updatedAt: "2026-02-14T12:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["cold email", "apollo", "outbound"],
   readMinutes: 6,
   body: () => (
@@ -123,9 +123,9 @@ export const post: BlogPost = {
         </li>
       </ol>
 
-      <h2>Where Leadac AI fits</h2>
+      <h2>Where Revint fits</h2>
       <p>
-        We built Leadac AI because the "fresh lists, grounded openers" fix
+        We built Revint because the "fresh lists, grounded openers" fix
         above was hard to execute by hand. Discover by postcode and niche,
         run a 20-signal Playwright audit on every site, get a draft opener
         that references what the audit found.

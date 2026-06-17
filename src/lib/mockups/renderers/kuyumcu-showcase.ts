@@ -14,7 +14,7 @@
  *   (collection_grid, certifications, atelier, gold_price) Phase 2'de
  *   eklenecek, ayrı dosya bunları temiz tutar; (2) jenerik renderer'a
  *   regresyon riski sıfır — kuyumcu lead'i bu dosyaya, diğer her şey
- *   `renderLeadacShowcase`'e gider.
+ *   `renderRevintShowcase`'e gider.
  *
  * Variants:
  *   - "luxury"      → dark editorial, Cormorant Garamond serif, full-
@@ -81,7 +81,7 @@ export interface KuyumcuShowcaseRenderInput {
   secondaryHex?: string | null;
   workspaceName?: string;
   branding?: WorkspaceBranding | null;
-  showLeadacCredit?: boolean;
+  showRevintCredit?: boolean;
   lang: string; // "tr" | "en"
   /**
    * Niche label for the `<title>` suffix (e.g. "Kuyumcular (tümü)").
@@ -208,7 +208,7 @@ export function renderKuyumcuShowcase(input: KuyumcuShowcaseRenderInput): string
     (input.workspaceName
       ? `${escapeHtml(input.workspaceName)} tarafından hazırlandı`
       : labels.drafted_by);
-  const showCredit = input.showLeadacCredit !== false && !brand?.hideLeadacCredit;
+  const showCredit = input.showRevintCredit !== false && !brand?.hideRevintCredit;
   const safeLogoUrl = brand?.logoUrl ? escapeHtml(brand.logoUrl) : null;
 
   // Caller-supplied business identity — always escaped.
@@ -944,7 +944,7 @@ ${renderBody({
 </main>
 
 <footer class="footer">
-  ${footerText}${showCredit ? ` · <a href="https://leadac.ai" target="_blank" rel="noopener">leadac.ai</a>` : ""}
+  ${footerText}${showCredit ? ` · <a href="https://revint.dev" target="_blank" rel="noopener">revint.dev</a>` : ""}
 </footer>
 
 </body>
@@ -1880,7 +1880,7 @@ const BASE_LABELS: Record<"tr" | "en", KuyumcuLabels> = {
     message_us: "WhatsApp",
     get_directions: "Yol Tarifi",
     open_for: "Vitrinden teslime",
-    drafted_by: "Leadac AI tarafından hazırlandı",
+    drafted_by: "Revint tarafından hazırlandı",
     nav_collection: "Koleksiyon",
     nav_atelier: "Atölye",
     nav_appointment: "Randevu",
@@ -1927,7 +1927,7 @@ const BASE_LABELS: Record<"tr" | "en", KuyumcuLabels> = {
     message_us: "WhatsApp",
     get_directions: "Get directions",
     open_for: "From window to hand-over",
-    drafted_by: "Drafted by Leadac AI",
+    drafted_by: "Drafted by Revint",
     nav_collection: "Collection",
     nav_atelier: "Atelier",
     nav_appointment: "Appointment",

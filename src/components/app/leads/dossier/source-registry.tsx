@@ -478,10 +478,10 @@ export function chipClassesForTone(tone: SourceTone): {
   switch (tone) {
     case "primary":
       return {
-        bg: "bg-[var(--leadac-500)]/12 hover:bg-[var(--leadac-500)]/20",
-        text: "text-[var(--leadac-500)]",
-        border: "border-[var(--leadac-500)]/30",
-        iconColor: "text-[var(--leadac-500)]",
+        bg: "bg-[var(--revint-500)]/12 hover:bg-[var(--revint-500)]/20",
+        text: "text-[var(--revint-500)]",
+        border: "border-[var(--revint-500)]/30",
+        iconColor: "text-[var(--revint-500)]",
       };
     case "blue":
       return {

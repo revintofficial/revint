@@ -1,7 +1,7 @@
-# Leadac AI — Launch Video Design Spec
+# Revint — Launch Video Design Spec
 
 **Date:** 2026-05-01  
-**Product:** Leadac AI (B2B SaaS, agency lead generation)  
+**Product:** Revint (B2B SaaS, agency lead generation)  
 **Tool:** Remotion + React + TypeScript  
 **Status:** Approved — ready for implementation planning
 

@@ -9,7 +9,7 @@ export const post: BlogPost = {
     "AI-written cold email isn't the problem. AI-written cold email on top of LinkedIn bios is the problem. How to tell the difference, and why ground truth beats prompt engineering every time.",
   lede: "Most 'AI personalised' cold emails are worse than token-swap templates. They sound personalised without being personal, which is the worst combination.",
   publishedAt: "2025-11-22T09:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["ai", "cold email", "personalisation"],
   readMinutes: 7,
   body: () => (

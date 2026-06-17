@@ -53,11 +53,11 @@ import type { LeadListItem } from "@/components/app/leads/useLeadsQuery";
 type Stage = "NEW" | "REACHED_OUT" | "IN_TALKS" | "WON" | "LOST";
 
 const STAGES: { id: Stage; accent: string }[] = [
-  { id: "NEW", accent: "text-[var(--leadac-text-2)]" },
-  { id: "REACHED_OUT", accent: "text-[var(--leadac-warning)]" },
-  { id: "IN_TALKS", accent: "text-(--leadac-400)" },
-  { id: "WON", accent: "text-[var(--leadac-success)]" },
-  { id: "LOST", accent: "text-[var(--leadac-error)]" },
+  { id: "NEW", accent: "text-[var(--revint-text-2)]" },
+  { id: "REACHED_OUT", accent: "text-[var(--revint-warning)]" },
+  { id: "IN_TALKS", accent: "text-(--revint-400)" },
+  { id: "WON", accent: "text-[var(--revint-success)]" },
+  { id: "LOST", accent: "text-[var(--revint-error)]" },
 ];
 
 export interface LeadKanbanLiteProps {
@@ -166,7 +166,7 @@ export default function LeadKanbanLite({
           </p>
           <Link
             href="/app/discovery"
-            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--leadac-500) hover:bg-(--leadac-600) text-white text-sm font-medium transition-colors"
+            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--revint-500) hover:bg-(--revint-600) text-white text-sm font-medium transition-colors"
           >
             Go to Discovery
           </Link>
@@ -219,7 +219,7 @@ function Column({
       ref={setNodeRef}
       className={`rounded-2xl border bg-white/[0.02] flex flex-col min-h-[420px] transition-colors ${
         isOver
-          ? "border-(--leadac-500)/60 bg-(--leadac-500)/[0.06]"
+          ? "border-(--revint-500)/60 bg-(--revint-500)/[0.06]"
           : "border-white/5"
       }`}
     >
@@ -264,8 +264,8 @@ function LeadKanbanCard({
       style={style}
       {...attributes}
       {...listeners}
-      className={`rounded-xl border border-white/10 bg-(--leadac-card) p-2.5 cursor-grab active:cursor-grabbing transition-shadow ${
-        isDragging || dragging ? "shadow-lg ring-1 ring-(--leadac-500)/40" : ""
+      className={`rounded-xl border border-white/10 bg-(--revint-card) p-2.5 cursor-grab active:cursor-grabbing transition-shadow ${
+        isDragging || dragging ? "shadow-lg ring-1 ring-(--revint-500)/40" : ""
       }`}
     >
       <div className="flex items-start gap-2">
@@ -276,7 +276,7 @@ function LeadKanbanCard({
               href={`/app/leads/${lead.id}`}
               onClick={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
-              className="text-[12.5px] font-semibold text-white hover:text-(--leadac-500) transition-colors leading-tight line-clamp-2"
+              className="text-[12.5px] font-semibold text-white hover:text-(--revint-500) transition-colors leading-tight line-clamp-2"
             >
               {lead.businessName}
             </Link>

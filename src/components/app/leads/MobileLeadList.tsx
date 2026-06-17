@@ -193,13 +193,13 @@ export function MobileLeadList({
         <CardContent className="p-8 sm:p-10 flex flex-col items-center justify-center gap-3 text-center">
           <Users
             className="w-10 h-10"
-            style={{ color: "var(--leadac-muted)" }}
+            style={{ color: "var(--revint-muted)" }}
             aria-hidden="true"
           />
           <p
             className="font-medium"
             style={{
-              color: "var(--leadac-text-1)",
+              color: "var(--revint-text-1)",
               fontSize: "var(--text-callout)",
             }}
           >
@@ -207,7 +207,7 @@ export function MobileLeadList({
           </p>
           <p
             style={{
-              color: "var(--leadac-text-3)",
+              color: "var(--revint-text-3)",
               fontSize: "var(--text-footnote)",
             }}
           >
@@ -254,8 +254,8 @@ export function MobileLeadList({
                     triggerHaptic("light");
                     setLongPressed(lead);
                   }}
-                  className="absolute top-2 right-2 touch-target rounded-lg hover:bg-white/10 active:bg-white/15 focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
-                  style={{ color: "var(--leadac-text-2)" }}
+                  className="absolute top-2 right-2 touch-target rounded-lg hover:bg-white/10 active:bg-white/15 focus-visible:outline-2 focus-visible:outline-(--revint-500)"
+                  style={{ color: "var(--revint-text-2)" }}
                 >
                   <MoreVertical className="w-4 h-4" />
                 </button>

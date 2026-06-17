@@ -24,7 +24,7 @@ import {
   GENERIC_THEME,
   GENERIC_IMAGERY,
 } from "@/lib/niches/theme";
-import { renderLeadacShowcase } from "@/lib/mockups/renderers/leadac-showcase";
+import { renderRevintShowcase } from "@/lib/mockups/renderers/leadac-showcase";
 import type { WebsiteMockupSections } from "@/lib/prompts/website-mockup-prompt";
 
 const baseSections: WebsiteMockupSections = {
@@ -203,7 +203,7 @@ describe("niche visual identity registry", () => {
 
 describe("leadac-showcase renderer with niche imagery", () => {
   it("paints the hero photo as a CSS background image when imagery is supplied", () => {
-    const html = renderLeadacShowcase({
+    const html = renderRevintShowcase({
       ...baseRenderInput,
       imagery: {
         hero: ["https://images.unsplash.com/photo-1234567890?w=1600"],
@@ -217,7 +217,7 @@ describe("leadac-showcase renderer with niche imagery", () => {
   });
 
   it("rejects non-allowlisted photo hosts (defence-in-depth)", () => {
-    const html = renderLeadacShowcase({
+    const html = renderRevintShowcase({
       ...baseRenderInput,
       imagery: {
         hero: ["https://evil.example.com/track.gif"],
@@ -231,7 +231,7 @@ describe("leadac-showcase renderer with niche imagery", () => {
   });
 
   it("rejects javascript: URLs even on the allowlist host", () => {
-    const html = renderLeadacShowcase({
+    const html = renderRevintShowcase({
       ...baseRenderInput,
       imagery: {
         hero: ["javascript:alert(1)"],
@@ -242,7 +242,7 @@ describe("leadac-showcase renderer with niche imagery", () => {
   });
 
   it("uses the niche secondary hex in the hero gradient", () => {
-    const html = renderLeadacShowcase({
+    const html = renderRevintShowcase({
       ...baseRenderInput,
       secondaryHex: "#abcdef",
     });
@@ -285,7 +285,7 @@ describe("leadac-showcase renderer with niche imagery", () => {
         instructors: [],
       },
     };
-    const html = renderLeadacShowcase({
+    const html = renderRevintShowcase({
       ...baseRenderInput,
       sections: populatedSections,
       lang: "tr",
@@ -341,7 +341,7 @@ describe("leadac-showcase renderer with niche imagery", () => {
         },
       ],
     };
-    const html = renderLeadacShowcase({
+    const html = renderRevintShowcase({
       ...baseRenderInput,
       sections: populated,
       lang: "tr",

@@ -277,16 +277,16 @@ function stepIcon(status: PlanStep["status"]) {
 function stepColor(status: PlanStep["status"]): string {
   switch (status) {
     case "SUCCEEDED":
-      return "text-[var(--leadac-success)]";
+      return "text-[var(--revint-success)]";
     case "SUCCEEDED_NO_MEMORY":
-      return "text-[var(--leadac-warning)]";
+      return "text-[var(--revint-warning)]";
     case "FAILED":
-      return "text-[var(--leadac-error)]";
+      return "text-[var(--revint-error)]";
     case "RUNNING":
-      return "text-(--leadac-400)";
+      return "text-(--revint-400)";
     case "SKIPPED":
-      return "text-[var(--leadac-warning)]";
+      return "text-[var(--revint-warning)]";
     default:
-      return "text-[var(--leadac-muted)]";
+      return "text-[var(--revint-muted)]";
   }
 }

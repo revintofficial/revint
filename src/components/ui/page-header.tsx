@@ -33,7 +33,7 @@ export function PageHeader({
           <h1
             className="font-bold tracking-tight wrap-break-word"
             style={{
-              color: "var(--leadac-text-1)",
+              color: "var(--revint-text-1)",
               fontSize: "var(--text-title-1)",
               letterSpacing: "-0.02em",
             }}
@@ -44,7 +44,7 @@ export function PageHeader({
             <p
               className="mt-1"
               style={{
-                color: "var(--leadac-text-2)",
+                color: "var(--revint-text-2)",
                 fontSize: "var(--text-callout)",
               }}
             >

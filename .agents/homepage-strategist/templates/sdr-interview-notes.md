@@ -15,7 +15,7 @@
 - **Company size:** `<solo / 2-5 / 5-20 / 20+ employees>`
 - **Industry / vertical they sell into:** `<e.g. F&B, dental, real estate, agencies>`
 - **Tool stack (current):** `<e.g. Apollo + Smartlead + Pipedrive>`
-- **LeadAC user? :** Yes / No / Trialing
+- **Revint user? :** Yes / No / Trialing
 - **Tier (if user):** Free / Solo / Studio / Agency+
 - **Date:**
 - **Length:**
@@ -128,7 +128,7 @@ Pull every quote that hits. Tag by theme.
 
 ---
 
-## 7. Their reaction to current LeadAC homepage (live 5-second test)
+## 7. Their reaction to current Revint homepage (live 5-second test)
 
 > Show: [`src/app/(marketing)/page.tsx`](../../../src/app/(marketing)/page.tsx) live page. Allow 5 seconds. Hide. Ask the three questions.
 

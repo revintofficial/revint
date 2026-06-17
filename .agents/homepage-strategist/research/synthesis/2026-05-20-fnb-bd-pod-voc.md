@@ -22,7 +22,7 @@
 - **Setup:** B2B SaaS BD team selling to restaurants, cafes, bars, hotels. 2 to 10 person business development team at a company like FineDine, Toast, Square for Restaurants, or a regional POS / QR-menu vendor. Reps are part outbound SDR, part account exec, part on-the-ground demo runner.
 - **Day in life (verbatim from BUYER-PERSONA § 5):** "8am pull a list of new restaurants opened in the past 30 days. 9-11am manually check each one's website, social, and online ordering setup. 11am-1pm calls with shortlisted prospects. Afternoon: in-person demos at restaurants in the territory. Evening: write up activity in HubSpot."
 - **Buying triggers:** manual restaurant research caps each BD rep at 30-40 prospects per day. Existing purchased B2B database has stale data ("this restaurant closed a year ago"). Reply rates on cold email to GMs are under 1% because the messaging is generic.
-- **The pivot this RFC turns on:** the BD pod is not an email-first motion. Calls and in-person demos are the closer. Email is the booking layer for the call. Whatever LeadAC ships to this persona needs to feed the dial, not the inbox.
+- **The pivot this RFC turns on:** the BD pod is not an email-first motion. Calls and in-person demos are the closer. Email is the booking layer for the call. Whatever Revint ships to this persona needs to feed the dial, not the inbox.
 
 ---
 
@@ -58,11 +58,11 @@ Pull exact. These become FaqBlock entries in the RFC.
 
 | # | Objection verbatim | What's underneath it | FaqBlock target |
 |---|---|---|---|
-| O1 | "We have HubSpot already." | "I do not need another CRM. Why is this not a duplicate?" | FAQ Q1 — frames LeadAC as the pre-call brief layer, not a CRM. |
+| O1 | "We have HubSpot already." | "I do not need another CRM. Why is this not a duplicate?" | FAQ Q1 — frames Revint as the pre-call brief layer, not a CRM. |
 | O2 | "Most local restaurants don't reply to cold email anyway." | "Your wedge is the inbox. Mine is the dial." | FAQ Q2 — answers with the dialer-fed positioning. |
 | O3 | "Our BD team needs in-person, not more email." | "I am a feet-on-the-street motion. Is this for me?" | FAQ Q3 — answers with the morning queue / dossier framing. |
 
-The wedge for the homepage rewrite is that O2 and O3 are not objections to LeadAC if the positioning is "the brief in front of every dial". They are objections to the current page's email-coded framing.
+The wedge for the homepage rewrite is that O2 and O3 are not objections to Revint if the positioning is "the brief in front of every dial". They are objections to the current page's email-coded framing.
 
 ---
 

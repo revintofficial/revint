@@ -46,7 +46,7 @@ export function BottomTabBar({ items, className }: BottomTabBarProps) {
         className,
       )}
       style={{
-        background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.85)",
+        background: "hsl(var(--revint-h) var(--revint-ns) 8% / 0.85)",
         backdropFilter: "saturate(180%) blur(30px)",
         WebkitBackdropFilter: "saturate(180%) blur(30px)",
         borderTop: "0.5px solid hsl(0 0% 100% / 0.08)",
@@ -73,12 +73,12 @@ export function BottomTabBar({ items, className }: BottomTabBarProps) {
                 }}
                 aria-current={isActive ? "page" : undefined}
                 aria-label={item.label}
-                className="flex flex-col items-center justify-center gap-1 w-full px-1 py-1.5 focus-visible:outline-2 focus-visible:outline-(--leadac-500) focus-visible:-outline-offset-4 rounded-lg active:bg-white/5 transition-colors"
+                className="flex flex-col items-center justify-center gap-1 w-full px-1 py-1.5 focus-visible:outline-2 focus-visible:outline-(--revint-500) focus-visible:-outline-offset-4 rounded-lg active:bg-white/5 transition-colors"
                 style={{
                   minHeight: "var(--touch-target-min)",
                   color: isActive
-                    ? "var(--leadac-300)"
-                    : "var(--leadac-text-2)",
+                    ? "var(--revint-300)"
+                    : "var(--revint-text-2)",
                 }}
               >
                 <span className="relative">
@@ -97,10 +97,10 @@ export function BottomTabBar({ items, className }: BottomTabBarProps) {
                           typeof item.badge === "number" && item.badge > 9
                             ? "0 4px"
                             : "0",
-                        background: "var(--leadac-error)",
+                        background: "var(--revint-error)",
                         color: "white",
                         border:
-                          "1.5px solid hsl(var(--leadac-h) var(--leadac-ns) 8%)",
+                          "1.5px solid hsl(var(--revint-h) var(--revint-ns) 8%)",
                       }}
                     >
                       {typeof item.badge === "number"

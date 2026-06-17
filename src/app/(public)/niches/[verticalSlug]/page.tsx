@@ -77,12 +77,12 @@ function nicheFaqs(nicheName: string) {
     {
       question: `Can I export the ${nicheName} list?`,
       answer:
-        "Yes. Every row you see on this page can be exported to CSV from inside the Leadac AI workspace (free trial includes 50 exports). One-click push to Smartlead and Instantly is supported.",
+        "Yes. Every row you see on this page can be exported to CSV from inside the Revint workspace (free trial includes 50 exports). One-click push to Smartlead and Instantly is supported.",
     },
     {
       question: `How do you find new ${nicheName} businesses?`,
       answer:
-        "Leadac AI reads live from the Google Places API. Feed it a postcode and a vertical, it returns the fresh ranked list — not the same Apollo contacts every other agency has.",
+        "Revint reads live from the Google Places API. Feed it a postcode and a vertical, it returns the fresh ranked list — not the same Apollo contacts every other agency has.",
     },
     {
       question: `How fresh is the ${nicheName} directory?`,
@@ -123,8 +123,8 @@ export default async function NichePage({
     ? `${pack.tagline} Browse ${businesses.length} audited businesses below — every entry includes a 20-signal website audit, Google rating, and contact details. Refreshed weekly.`
     : `${businesses.length} ${niche.nicheName.toLowerCase()} businesses with verified contact details, Google ratings, and a 20-signal website audit on each one. Refreshed weekly.`;
   const directAnswerCopy = pack
-    ? `${pack.pitchAngle} The Leadac AI ${displayLabel.toLowerCase()} directory lists ${businesses.length} audited businesses worldwide, each with a verified website audit, Google rating, and contact details.`
-    : `The Leadac AI ${niche.nicheName.toLowerCase()} directory currently lists ${businesses.length} audited businesses worldwide, each with a verified website audit, Google rating, and contact details. Browse by city below, or open an individual profile for the full 20-signal audit report.`;
+    ? `${pack.pitchAngle} The Revint ${displayLabel.toLowerCase()} directory lists ${businesses.length} audited businesses worldwide, each with a verified website audit, Google rating, and contact details.`
+    : `The Revint ${niche.nicheName.toLowerCase()} directory currently lists ${businesses.length} audited businesses worldwide, each with a verified website audit, Google rating, and contact details. Browse by city below, or open an individual profile for the full 20-signal audit report.`;
 
   return (
     <>
@@ -178,7 +178,7 @@ export default async function NichePage({
                   key={signal}
                   className="flex items-start gap-2 text-[13.5px] text-white/85 rounded-2xl bg-white/4 border border-white/8 px-4 py-2.5"
                 >
-                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-(--leadac-500) shrink-0" />
+                  <span className="mt-1 w-1.5 h-1.5 rounded-full bg-(--revint-500) shrink-0" />
                   <span className="capitalize">{signal}</span>
                 </li>
               ))}
@@ -200,7 +200,7 @@ export default async function NichePage({
               {pack.featuredProductModules.map((m) => (
                 <span
                   key={m}
-                  className="inline-flex items-center rounded-full bg-(--leadac-500)/10 border border-(--leadac-500)/25 px-3 py-1.5 text-[12.5px] text-(--leadac-200)"
+                  className="inline-flex items-center rounded-full bg-(--revint-500)/10 border border-(--revint-500)/25 px-3 py-1.5 text-[12.5px] text-(--revint-200)"
                 >
                   {m}
                 </span>

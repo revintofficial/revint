@@ -1,9 +1,9 @@
 /**
- * Verticals LeadAC speaks — the local-business segments our customers
+ * Verticals Revint speaks — the local-business segments our customers
  * sell into.
  *
  * Design intent: tell the reader which local-business verticals
- * LeadAC's account intelligence is calibrated for. Restaurant tech is
+ * Revint's account intelligence is calibrated for. Restaurant tech is
  * the live beachhead cohort — we are validating the model alongside a
  * first design-partner SaaS vendor in that segment. Field service /
  * HVAC, dental practice software, and legal practice management ship
@@ -86,7 +86,7 @@ export function UnderstandsGrid() {
     <Section
       eyebrow="Verticals we speak"
       headline="Calibrated for the local-business segments you sell into."
-      sub="LeadAC's account intelligence is tuned per vertical. A two-location independent restaurant and a regional HVAC chain get reasoned about with the right operational context, instead of the same generic firmographic noise."
+      sub="Revint's account intelligence is tuned per vertical. A two-location independent restaurant and a regional HVAC chain get reasoned about with the right operational context, instead of the same generic firmographic noise."
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {VERTICALS.map((vertical) => {
@@ -95,15 +95,15 @@ export function UnderstandsGrid() {
           return (
             <article
               key={vertical.name}
-              className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]"
+              className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--revint-h)_var(--revint-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]"
             >
               <div className="flex items-center justify-between gap-2">
                 <span
                   className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06]"
                   style={{
                     background:
-                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.08)",
-                    color: "hsl(var(--leadac-h) var(--leadac-s) 72%)",
+                      "hsl(var(--revint-h) var(--revint-s) 50% / 0.08)",
+                    color: "hsl(var(--revint-h) var(--revint-s) 72%)",
                   }}
                 >
                   <Icon className="h-4 w-4" />
@@ -114,17 +114,17 @@ export function UnderstandsGrid() {
                     className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wider"
                     style={{
                       background:
-                        "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)",
-                      color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+                        "hsl(var(--revint-h) var(--revint-s) 50% / 0.12)",
+                      color: "hsl(var(--revint-h) var(--revint-s) 78%)",
                       border:
-                        "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.30)",
+                        "1px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.30)",
                     }}
                   >
                     <span
                       aria-hidden
                       className="inline-block h-1.5 w-1.5 rounded-full animate-pulse motion-reduce:animate-none"
                       style={{
-                        background: "hsl(var(--leadac-h) var(--leadac-s) 70%)",
+                        background: "hsl(var(--revint-h) var(--revint-s) 70%)",
                       }}
                     />
                     Live
@@ -156,7 +156,7 @@ export function UnderstandsGrid() {
                     <ChevronRight
                       className="h-3.5 w-3.5 mt-0.5 shrink-0"
                       style={{
-                        color: "hsl(var(--leadac-h) var(--leadac-s) 60%)",
+                        color: "hsl(var(--revint-h) var(--revint-s) 60%)",
                       }}
                     />
                     <span>{b}</span>

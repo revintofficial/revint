@@ -12,7 +12,7 @@ alwaysApply: false
 
 # Multi-tenant scope guard
 
-LeadAC is a multi-tenant SaaS. **Cross-tenant data leak is the highest-severity bug class.** Every Prisma query that touches workspace-owned data MUST be scoped by `workspaceId`.
+Revint is a multi-tenant SaaS. **Cross-tenant data leak is the highest-severity bug class.** Every Prisma query that touches workspace-owned data MUST be scoped by `workspaceId`.
 
 ## Trusted source of `workspaceId`
 

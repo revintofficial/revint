@@ -43,6 +43,7 @@ const COLUMNS: Array<{
       { href: "/for/field-service-saas", label: "Field service SaaS" },
       { href: "/for/restaurant-tech-saas", label: "Restaurant tech SaaS" },
       { href: "/for/dental-practice-software", label: "Dental software" },
+      { href: "/for/agency", label: "Agencies" },
     ],
   },
   {
@@ -88,7 +89,7 @@ export function SiteFooter() {
             <Link
               href="/"
               className="flex items-center gap-2"
-              aria-label="LeadAC home"
+              aria-label="Revint home"
             >
               <Image
                 src="/logo.png"
@@ -98,7 +99,7 @@ export function SiteFooter() {
                 className="h-8 w-8"
               />
               <span className="text-[18px] font-semibold tracking-tight text-paper-0">
-                LeadAC
+                Revint
               </span>
             </Link>
             <p className="mt-5 max-w-sm text-[14px] leading-relaxed text-paper-2">

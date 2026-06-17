@@ -36,11 +36,11 @@ import { DealSidePanel } from "./deal-side-panel";
 import type { PipelineStage, DealItem } from "./types";
 
 const STAGES: { id: PipelineStage; label: string; accent: string }[] = [
-  { id: "NEW", label: "New", accent: "text-[var(--leadac-text-2)]" },
-  { id: "REACHED_OUT", label: "Reached Out", accent: "text-[var(--leadac-warning)]" },
-  { id: "IN_TALKS", label: "In Talks", accent: "text-(--leadac-400)" },
-  { id: "WON", label: "Won", accent: "text-[var(--leadac-success)]" },
-  { id: "LOST", label: "Lost", accent: "text-[var(--leadac-error)]" },
+  { id: "NEW", label: "New", accent: "text-[var(--revint-text-2)]" },
+  { id: "REACHED_OUT", label: "Reached Out", accent: "text-[var(--revint-warning)]" },
+  { id: "IN_TALKS", label: "In Talks", accent: "text-(--revint-400)" },
+  { id: "WON", label: "Won", accent: "text-[var(--revint-success)]" },
+  { id: "LOST", label: "Lost", accent: "text-[var(--revint-error)]" },
 ];
 
 export default function DealsPage() {
@@ -367,7 +367,7 @@ function DealsBoard() {
             ariaLabel="Filter deals by pipeline stage"
           />
           <div className="flex items-center justify-between text-xs px-1">
-            <span style={{ color: "var(--leadac-text-2)" }}>
+            <span style={{ color: "var(--revint-text-2)" }}>
               {phoneActiveItems.length} deal
               {phoneActiveItems.length === 1 ? "" : "s"} in{" "}
               {STAGES.find((s) => s.id === activePhoneStage)?.label}
@@ -376,7 +376,7 @@ function DealsBoard() {
           {phoneActiveItems.length === 0 ? (
             <Card>
               <CardContent className="py-10 text-center">
-                <p className="text-sm" style={{ color: "var(--leadac-text-3)" }}>
+                <p className="text-sm" style={{ color: "var(--revint-text-3)" }}>
                   No deals in this stage yet.
                 </p>
               </CardContent>
@@ -477,7 +477,7 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       className={`flex flex-col rounded-2xl border bg-white/2 transition-colors ${
-        isOver ? "border-(--leadac-500)/40 bg-(--leadac-500)/[0.04]" : "border-white/10"
+        isOver ? "border-(--revint-500)/40 bg-(--revint-500)/[0.04]" : "border-white/10"
       }`}
     >
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/5">
@@ -552,7 +552,7 @@ function SortableCard({
         e.stopPropagation();
         onClick();
       }}
-      className={`cursor-grab active:cursor-grabbing ${highlighted ? "ring-2 ring-(--leadac-500)/50 rounded-xl" : ""}`}
+      className={`cursor-grab active:cursor-grabbing ${highlighted ? "ring-2 ring-(--revint-500)/50 rounded-xl" : ""}`}
     >
       <DealCard item={item} />
     </div>
@@ -591,10 +591,10 @@ function PhoneDealCard({
     <div
       className={`flex items-stretch gap-2 rounded-xl border transition-shadow ${
         highlighted
-          ? "border-(--leadac-500)/50 ring-1 ring-(--leadac-500)/30"
+          ? "border-(--revint-500)/50 ring-1 ring-(--revint-500)/30"
           : hasBuiltSite
             ? "border-[hsl(152_48%_50%)]/40 bg-[hsl(152_48%_50%)]/10"
-            : "border-white/10 bg-(--leadac-card)"
+            : "border-white/10 bg-(--revint-card)"
       }`}
     >
       <button
@@ -621,8 +621,8 @@ function PhoneDealCard({
                   item.selectedOffer === "STARTER"
                     ? "bg-[hsl(152_48%_50%)]/10 text-[hsl(152_48%_50%)] border-[hsl(152_48%_50%)]/20 text-[10px] px-1.5 py-0"
                     : item.selectedOffer === "GROWTH"
-                      ? "bg-(--leadac-500)/10 text-(--leadac-500) border-(--leadac-500)/20 text-[10px] px-1.5 py-0"
-                      : "bg-(--leadac-400)/10 text-(--leadac-300) text-[10px] px-1.5 py-0"
+                      ? "bg-(--revint-500)/10 text-(--revint-500) border-(--revint-500)/20 text-[10px] px-1.5 py-0"
+                      : "bg-(--revint-400)/10 text-(--revint-300) text-[10px] px-1.5 py-0"
                 }
               >
                 {item.selectedOffer}
@@ -677,10 +677,10 @@ function DealCard({ item, dragging }: { item: DealItem; dragging?: boolean }) {
     <div
       className={`rounded-xl border p-2.5 space-y-1.5 transition-shadow ${
         dragging
-          ? "border-(--leadac-500)/50 bg-(--leadac-card) shadow-lg shadow-black/40"
+          ? "border-(--revint-500)/50 bg-(--revint-card) shadow-lg shadow-black/40"
           : hasBuiltSite
             ? "border-[hsl(152_48%_50%)]/40 bg-[hsl(152_48%_50%)]/10 hover:border-[hsl(152_48%_50%)]/60"
-            : "border-white/10 bg-(--leadac-card) hover:border-white/20"
+            : "border-white/10 bg-(--revint-card) hover:border-white/20"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -703,8 +703,8 @@ function DealCard({ item, dragging }: { item: DealItem; dragging?: boolean }) {
                 item.selectedOffer === "STARTER"
                   ? "bg-[hsl(152_48%_50%)]/10 text-[hsl(152_48%_50%)] border-[hsl(152_48%_50%)]/20 text-[10px] px-1.5 py-0"
                   : item.selectedOffer === "GROWTH"
-                    ? "bg-(--leadac-500)/10 text-(--leadac-500) border-(--leadac-500)/20 text-[10px] px-1.5 py-0"
-                    : "bg-(--leadac-400)/10 text-(--leadac-300) text-[10px] px-1.5 py-0"
+                    ? "bg-(--revint-500)/10 text-(--revint-500) border-(--revint-500)/20 text-[10px] px-1.5 py-0"
+                    : "bg-(--revint-400)/10 text-(--revint-300) text-[10px] px-1.5 py-0"
               }
             >
               {item.selectedOffer}

@@ -70,7 +70,7 @@ function cityFaqs(cityName: string, leadCount: number) {
     },
     {
       question: `Is this list the same as Google Maps for ${cityName}?`,
-      answer: `No. Google Maps is a raw directory. Leadac AI adds a website-quality score, a 20-signal audit, and a short pitch angle for each business so sales teams can work the list without researching every lead by hand.`,
+      answer: `No. Google Maps is a raw directory. Revint adds a website-quality score, a 20-signal audit, and a short pitch angle for each business so sales teams can work the list without researching every lead by hand.`,
     },
     {
       question: `How often is the ${cityName} directory updated?`,
@@ -132,7 +132,7 @@ export default async function CityPage({
       >
         <DirectAnswer>
           There are {businesses.length} audited local-service businesses in
-          the Leadac AI directory for {city.cityName}, each with a website
+          the Revint directory for {city.cityName}, each with a website
           audit, Google rating, and contact details. Listings refresh weekly
           from live Google Maps data.
         </DirectAnswer>

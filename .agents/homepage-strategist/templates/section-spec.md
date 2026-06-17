@@ -109,11 +109,11 @@ Reference [`src/app/globals.css`](../../../src/app/globals.css). No hex literals
 
 | Element | Token | Notes |
 |---|---|---|
-| Background | `--leadac-card` | |
-| Border | `--leadac-border` | |
-| Primary text | `--leadac-text-1` | |
-| Accent | `--leadac-500` | |
-| Success state | `--leadac-success` | |
+| Background | `--revint-card` | |
+| Border | `--revint-border` | |
+| Primary text | `--revint-text-1` | |
+| Accent | `--revint-500` | |
+| Success state | `--revint-success` | |
 | (other) | | |
 
 ---

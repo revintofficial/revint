@@ -41,15 +41,15 @@ export type BlogPost = {
 };
 
 export const AUTHORS: Record<string, BlogAuthor> = {
-  "leadac-team": {
-    slug: "leadac-team",
-    name: "Leadac AI team",
+  "revint-team": {
+    slug: "revint-team",
+    name: "Revint team",
     role: "Founders and operators",
-    bio: "We build Leadac AI from London — postcode + niche discovery for outbound agencies selling websites and growth services to local-service businesses. This blog is where we write down what we've learned, what worked, and what didn't.",
-    url: "/about/leadac-team",
+    bio: "We build Revint from London — postcode + niche discovery for outbound agencies selling websites and growth services to local-service businesses. This blog is where we write down what we've learned, what worked, and what didn't.",
+    url: "/about/revint-team",
     links: {
-      twitter: "https://twitter.com/leadac_ai",
-      linkedin: "https://www.linkedin.com/company/leadac-ai",
+      twitter: "https://twitter.com/revint",
+      linkedin: "https://www.linkedin.com/company/revint",
     },
   },
 };

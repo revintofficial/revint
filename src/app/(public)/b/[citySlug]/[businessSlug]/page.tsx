@@ -21,7 +21,7 @@ import {
  *
  * Why this exists: ChatGPT, Perplexity, and increasingly Google answer "best
  * phone repair in Camden" by reading structured pages from the open web.
- * Leadac AI's audit data + Schema.org LocalBusiness markup makes us a
+ * Revint's audit data + Schema.org LocalBusiness markup makes us a
  * candidate source. Indirect SEO play, but cheap to ship.
  */
 
@@ -258,7 +258,7 @@ export default async function PublicLeadProfile({
         </nav>
 
         <p style={pageStyles.footer}>
-          Profile compiled by {lead.workspace.name} via Leadac AI.
+          Profile compiled by {lead.workspace.name} via Revint.
         </p>
       </div>
     </div>
@@ -278,7 +278,7 @@ const pageStyles = {
     fontSize: 11,
     textTransform: "uppercase" as const,
     letterSpacing: "0.12em",
-    color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+    color: "hsl(var(--revint-h) var(--revint-s) 78%)",
     fontWeight: 600,
     margin: "0 0 12px",
   } as const,
@@ -300,7 +300,7 @@ const pageStyles = {
     fontSize: 14,
     margin: "0 0 36px",
   } as const,
-  metaLink: { color: "hsl(var(--leadac-h) var(--leadac-s) 78%)", textDecoration: "none" } as const,
+  metaLink: { color: "hsl(var(--revint-h) var(--revint-s) 78%)", textDecoration: "none" } as const,
   metaPlain: { color: "rgba(237,237,240,0.55)" } as const,
   section: {
     marginBottom: 32,
@@ -325,7 +325,7 @@ const pageStyles = {
     borderRadius: 12,
   } as const,
   crossLink: {
-    color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+    color: "hsl(var(--revint-h) var(--revint-s) 78%)",
     fontSize: 14,
     textDecoration: "none",
   } as const,

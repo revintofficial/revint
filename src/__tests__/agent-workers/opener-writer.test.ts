@@ -156,7 +156,7 @@ function makeCtx(overrides: Partial<AgentWorkerContext> = {}): AgentWorkerContex
       offerHook: "Free audit",
       objective: null,
       senderName: "Sam",
-      conversionLink: "https://leadac.ai/demo",
+      conversionLink: "https://revint.dev/demo",
       socialProof: null,
       branding: null,
       niche: "WEB_AGENCY",

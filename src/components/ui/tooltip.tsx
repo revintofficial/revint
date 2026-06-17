@@ -20,7 +20,7 @@ const TooltipContent = React.forwardRef<
       className
     )}
     style={{
-      background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.95)",
+      background: "hsl(var(--revint-h) var(--revint-ns) 11% / 0.95)",
       backdropFilter: "saturate(180%) blur(20px)",
       border: "0.5px solid rgba(255, 255, 255, 0.12)",
       boxShadow: "0 4px 16px rgba(0, 0, 0, 0.3)",

@@ -36,14 +36,14 @@ export type CompetitorProfile = {
     url: string;
     note?: string;
   }>;
-  /** Top 3 reasons a Leadac-leaning buyer would switch. */
-  whyLeadacInstead: string[];
+  /** Top 3 reasons a Revint-leaning buyer would switch. */
+  whyRevintInstead: string[];
 };
 
 export const LEADAC_SELF: CompetitorProfile = {
-  slug: "leadac-ai",
-  name: "Leadac AI",
-  homepage: "https://leadac.ai",
+  slug: "revint",
+  name: "Revint",
+  homepage: "https://revint.dev",
   tagline: "Postcode and a niche. Fresh local leads, audited and pitched.",
   positioning:
     "Live Google Maps discovery plus a 20-signal Playwright audit on every site, a 0-100 opportunity score, and a cold-email opener grounded in what the audit actually found.",
@@ -68,12 +68,12 @@ export const LEADAC_SELF: CompetitorProfile = {
   },
   citations: [
     {
-      label: "Leadac AI product overview",
-      url: "https://leadac.ai/",
+      label: "Revint product overview",
+      url: "https://revint.dev/",
       note: "Homepage, updated monthly",
     },
   ],
-  whyLeadacInstead: [
+  whyRevintInstead: [
     "Per-lead website audits with screenshots beat contact-only lead lists.",
     "Cold openers reference the audit — not a persona guess.",
     "Postcode plus niche gives you the list other agencies don't already have.",

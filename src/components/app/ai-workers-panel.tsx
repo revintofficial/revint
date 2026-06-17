@@ -381,7 +381,7 @@ export function AiWorkersPanel({ leadId }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-(--leadac-500)" />
+            <Sparkles className="w-5 h-5 text-(--revint-500)" />
             AI Workers
           </CardTitle>
         </CardHeader>
@@ -413,7 +413,7 @@ export function AiWorkersPanel({ leadId }: Props) {
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-(--leadac-500) shrink-0" />
+                <Sparkles className="w-5 h-5 text-(--revint-500) shrink-0" />
                 AI Workers
               </CardTitle>
               <p className="text-xs text-white/30 mt-1">
@@ -498,7 +498,7 @@ function WorkerRow({
     // is mounted on; harmless `scrollIntoView` no-op otherwise.
     <div id={`worker-${worker.kind}`} className="rounded-xl border border-white/10 bg-white/5 p-3">
       <div className="flex items-start gap-3">
-        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 text-(--leadac-500)">
+        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0 text-(--revint-500)">
           <Icon className="w-4 h-4" />
         </div>
         <div className="min-w-0 flex-1">
@@ -763,7 +763,7 @@ function RunOutputView({ run }: { run: AgentRunDetail }) {
           href={run.artifactUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs text-(--leadac-500) hover:underline"
+          className="inline-flex items-center gap-1.5 text-xs text-(--revint-500) hover:underline"
         >
           <ExternalLink className="w-3 h-3" />
           {run.artifactUrl}
@@ -841,7 +841,7 @@ function ExportMenu({
       </Button>
       {open && (
         <div
-          className="absolute right-0 mt-1 z-20 rounded-lg border border-white/10 bg-(--leadac-card) p-1 min-w-[140px] shadow-xl"
+          className="absolute right-0 mt-1 z-20 rounded-lg border border-white/10 bg-(--revint-card) p-1 min-w-[140px] shadow-xl"
           onMouseLeave={() => setOpen(false)}
         >
           {formats.map((f) => (

@@ -37,9 +37,9 @@ export const instantly: CompetitorProfile = {
       url: "https://www.g2.com/compare/instantly-vs-smartlead-ai",
     },
   ],
-  whyLeadacInstead: [
-    "Instantly sends. Leadac sources. They're complementary — but Leadac replaces the upstream list provider.",
+  whyRevintInstead: [
+    "Instantly sends. Revint sources. They're complementary — but Revint replaces the upstream list provider.",
     "Per-lead website audits give your Instantly sequences something real to say in email #1.",
-    "Push Leadac exports straight into Instantly; no duplicate data entry.",
+    "Push Revint exports straight into Instantly; no duplicate data entry.",
   ],
 };

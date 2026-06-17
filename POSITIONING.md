@@ -1,4 +1,4 @@
-# LeadAC — positioning
+# Revint — positioning
 
 This is the strategic positioning doc. Three pages. Read this before changing any marketing copy or pitching the product.
 
@@ -16,7 +16,7 @@ Three things shifted between mid-2024 and early 2026 that broke the previous out
 
 **Manual research caps at 10 prospects a day.** A senior SDR can write a great per-prospect message — for ten prospects. That is not a pipeline. The middle path between "AI slop at scale" and "hand-write every email" is the gap nothing was filling.
 
-LeadAC is the third path: fresh local data nobody else has, a real audit attached to every email, and an opener that references something the prospect can see on their own homepage right now.
+Revint is the third path: fresh local data nobody else has, a real audit attached to every email, and an opener that references something the prospect can see on their own homepage right now.
 
 ## 2. ICP (who this is for)
 
@@ -24,7 +24,7 @@ We sell to **agency owners running outbound for local-business clients.** Not a 
 
 Inside that, six personas (full breakdown in `BUYER-PERSONA.md`):
 
-| Persona | Setup | What they buy LeadAC for |
+| Persona | Setup | What they buy Revint for |
 |---|---|---|
 | B2B outbound agency owner | 1 owner + 1 to 3 SDRs | Local-business lead-gen layer Apollo doesn't cover, plus the per-prospect homework |
 | SMMA owner | 1 to 5 person social/web shop | Stop pricing-pressure spiral with predictable lead pipeline |
@@ -47,11 +47,11 @@ The hype-tourist exclusion is deliberate. Our previous FREE plan was their hideo
 
 Memorize this. Every page should rhyme with it.
 
-> For agency owners running outbound to local-business clients, LeadAC is the local lead-intelligence layer that covers the gap Apollo and Clay leave open.
+> For agency owners running outbound to local-business clients, Revint is the local lead-intelligence layer that covers the gap Apollo and Clay leave open.
 >
 > Apollo owns the enterprise B2B database. We own local. We pull live from Google Maps, run a 20-plus signal audit on every site, score fit 0-100, and draft the opener grounded in what the audit found. The deliverable is a lead dossier ready for your pipeline review.
 >
-> Result: 3-5x reply rates over recycled-list outbound, and retainer-grade clients in week 4 instead of pilot calls in month 2. Most agencies run LeadAC in front of Apollo, not instead of it.
+> Result: 3-5x reply rates over recycled-list outbound, and retainer-grade clients in week 4 instead of pilot calls in month 2. Most agencies run Revint in front of Apollo, not instead of it.
 
 The first paragraph is the category. The second is the mechanism. The third is the outcome. Do not lead with the mechanism. Do not say "replaces Apollo" — that misreads the category and starts an argument we don't need to be in.
 
@@ -61,7 +61,7 @@ We are not in Apollo's category. We are in the category Apollo doesn't cover. Sa
 
 | Tool | Strong at | Weak at (the gap we cover) | Our angle |
 |---|---|---|---|
-| **Apollo** | Enterprise B2B contacts at scale ($99-149/mo) | Local SMBs barely covered. The dentist, the cafe, the contractor — Apollo's data is thin or stale. | "Apollo for enterprise. LeadAC for local. Run them in front of each other, not against." |
+| **Apollo** | Enterprise B2B contacts at scale ($99-149/mo) | Local SMBs barely covered. The dentist, the cafe, the contractor — Apollo's data is thin or stale. | "Apollo for enterprise. Revint for local. Run them in front of each other, not against." |
 | **Clay** | Heavy enrichment + waterfall data + GPT first-lines | $$$$ at scale; prompts go stale; not designed around local-business signals or per-site audits | "Clay is a Lego set. We are a finished motion for one specific buyer." |
 | **Smartlead / Instantly** | Sender, warmup, deliverability, sequencing | They ship the email; they don't tell you what to write | "We feed your sender. Smartlead and Instantly stay where they are." |
 | **Hire an SDR / VA** | Per-prospect research + writing | Scales linearly, $4k-$8k/mo plus management overhead | "$249/mo Agency+ = ~$8/day. One $1,500/mo retainer pays it back 75x." |
@@ -71,7 +71,7 @@ We do **not** compete with Apollo on enterprise contact coverage. We do not comp
 
 Pricing argument that always works:
 
-> Local outbound costs more than people think: a research VA at $3-5/hour for 30 hours/week is $360-600/month. Add a Clay seat and an enrichment credit pack on top of that and the homework alone runs $500+/month. LeadAC Agency+ does it for $249, with the audit and draft already attached to the lead. One subscription. No credit math.
+> Local outbound costs more than people think: a research VA at $3-5/hour for 30 hours/week is $360-600/month. Add a Clay seat and an enrichment credit pack on top of that and the homework alone runs $500+/month. Revint Agency+ does it for $249, with the audit and draft already attached to the lead. One subscription. No credit math.
 
 Note: do NOT phrase the pricing argument as "$249 instead of Apollo + Clay + Smartlead + VA = $X." It misreads the category. Apollo and Smartlead stay; the VA cost is what we collapse.
 

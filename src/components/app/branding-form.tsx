@@ -28,10 +28,10 @@ export function BrandingForm({
   role,
 }: Props) {
   const [logoUrl, setLogoUrl] = useState(initialBranding.logoUrl ?? "");
-  const [primaryColor, setPrimaryColor] = useState(initialBranding.primaryColor ?? "hsl(var(--leadac-h) var(--leadac-s) 50%)");
-  const [accentColor, setAccentColor] = useState(initialBranding.accentColor ?? "hsl(var(--leadac-h) var(--leadac-s) 78%)");
+  const [primaryColor, setPrimaryColor] = useState(initialBranding.primaryColor ?? "hsl(var(--revint-h) var(--revint-s) 50%)");
+  const [accentColor, setAccentColor] = useState(initialBranding.accentColor ?? "hsl(var(--revint-h) var(--revint-s) 78%)");
   const [footerText, setFooterText] = useState(initialBranding.footerText ?? "");
-  const [hideCredit, setHideCredit] = useState(initialBranding.hideLeadacCredit);
+  const [hideCredit, setHideCredit] = useState(initialBranding.hideRevintCredit);
   const [publicProfiles, setPublicProfiles] = useState(initialPublicProfilesEnabled);
   const [busy, setBusy] = useState(false);
 
@@ -49,7 +49,7 @@ export function BrandingForm({
           primaryColor: primaryColor || null,
           accentColor: accentColor || null,
           footerText: footerText || null,
-          hideLeadacCredit: hideCredit,
+          hideRevintCredit: hideCredit,
         },
       }),
     });
@@ -103,11 +103,11 @@ export function BrandingForm({
                 </p>
                 <p className="text-[12px] text-white/55 mt-1">
                   You&apos;re on {getPlanLabel(plan)}. Upgrade to swap the logo, colors, and
-                  remove the &quot;Leadac AI&quot; credit on shared mockups.
+                  remove the &quot;Revint&quot; credit on shared mockups.
                 </p>
                 <Link
                   href="/app/settings/billing"
-                  className="text-[12px] text-(--leadac-300) hover:underline mt-2 inline-block"
+                  className="text-[12px] text-(--revint-300) hover:underline mt-2 inline-block"
                 >
                   Upgrade to Agency →
                 </Link>
@@ -144,7 +144,7 @@ export function BrandingForm({
                     value={primaryColor}
                     onChange={(e) => setPrimaryColor(e.target.value)}
                     disabled={!canEdit}
-                    placeholder="hsl(var(--leadac-h) var(--leadac-s) 50%)"
+                    placeholder="hsl(var(--revint-h) var(--revint-s) 50%)"
                   />
                 </div>
               </div>
@@ -162,7 +162,7 @@ export function BrandingForm({
                     value={accentColor}
                     onChange={(e) => setAccentColor(e.target.value)}
                     disabled={!canEdit}
-                    placeholder="hsl(var(--leadac-h) var(--leadac-s) 78%)"
+                    placeholder="hsl(var(--revint-h) var(--revint-s) 78%)"
                   />
                 </div>
               </div>
@@ -187,7 +187,7 @@ export function BrandingForm({
                 className="mt-0.5"
               />
               <span>
-                Remove the &ldquo;Drafted by Leadac AI&rdquo; line at the bottom
+                Remove the &ldquo;Drafted by Revint&rdquo; line at the bottom
                 of mockup pages.
               </span>
             </label>
@@ -208,7 +208,7 @@ export function BrandingForm({
             Public lead profiles
           </CardTitle>
           <CardDescription>
-            When enabled, Leadac AI generates indexable public pages for each
+            When enabled, Revint generates indexable public pages for each
             audited lead so prospects searching ChatGPT or Perplexity for your
             niche can find you.
           </CardDescription>

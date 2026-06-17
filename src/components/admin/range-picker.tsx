@@ -24,7 +24,7 @@ export function RangePicker({
     }
   }
   return (
-    <div className="inline-flex items-center gap-1 rounded-lg border border-[var(--leadac-border)] bg-[var(--leadac-card)] p-1">
+    <div className="inline-flex items-center gap-1 rounded-lg border border-[var(--revint-border)] bg-[var(--revint-card)] p-1">
       {RANGES.map((r) => {
         const sp = new URLSearchParams(search);
         sp.set("range", r.id);
@@ -37,8 +37,8 @@ export function RangePicker({
             className={cn(
               "px-3 py-1 rounded-md text-xs",
               active
-                ? "bg-[var(--leadac-hover)] text-[var(--leadac-text-1)]"
-                : "text-[var(--leadac-text-2)] hover:text-[var(--leadac-text-1)]",
+                ? "bg-[var(--revint-hover)] text-[var(--revint-text-1)]"
+                : "text-[var(--revint-text-2)] hover:text-[var(--revint-text-1)]",
             )}
           >
             {r.label}

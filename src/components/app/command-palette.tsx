@@ -244,7 +244,7 @@ export function CommandPalette({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
         className="sm:max-w-[600px] p-0 gap-0 top-[20%] translate-y-0"
-        style={{ background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.95)", border: "0.5px solid rgba(255, 255, 255, 0.1)" }}
+        style={{ background: "hsl(var(--revint-h) var(--revint-ns) 8% / 0.95)", border: "0.5px solid rgba(255, 255, 255, 0.1)" }}
       >
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <DialogDescription className="sr-only">
@@ -255,7 +255,7 @@ export function CommandPalette({
           className="flex items-center gap-3 px-4 py-3.5"
           style={{ borderBottom: "0.5px solid rgba(255, 255, 255, 0.08)" }}
         >
-          <Search className="w-4 h-4 shrink-0" style={{ color: "var(--leadac-text-3)" }} />
+          <Search className="w-4 h-4 shrink-0" style={{ color: "var(--revint-text-3)" }} />
           <input
             ref={inputRef}
             value={query}
@@ -269,7 +269,7 @@ export function CommandPalette({
             className="text-[10px] px-1.5 py-0.5 rounded"
             style={{
               background: "rgba(255, 255, 255, 0.05)",
-              color: "var(--leadac-text-3)",
+              color: "var(--revint-text-3)",
             }}
           >
             ESC
@@ -281,8 +281,8 @@ export function CommandPalette({
             <div
               className="mx-3 mb-2 px-3 py-2 rounded-lg text-[12px]"
               style={{
-                background: "color-mix(in oklab, var(--leadac-error) 12%, transparent)",
-                color: "var(--leadac-error-soft)",
+                background: "color-mix(in oklab, var(--revint-error) 12%, transparent)",
+                color: "var(--revint-error-soft)",
               }}
             >
               {leadsError}
@@ -306,7 +306,7 @@ export function CommandPalette({
               <div key={group} className="px-2 mb-2 last:mb-0">
                 <p
                   className="px-3 py-1 text-[10px] uppercase tracking-wider font-semibold"
-                  style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.35)" }}
+                  style={{ color: "hsl(var(--revint-h) var(--revint-nts) 92% / 0.35)" }}
                 >
                   {group}
                 </p>
@@ -321,25 +321,25 @@ export function CommandPalette({
                       onClick={() => selectResult(r)}
                       className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left text-[13px]"
                       style={{
-                        background: isActive ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.13)" : "transparent",
-                        color: isActive ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.85)",
+                        background: isActive ? "hsl(var(--revint-h) var(--revint-s) 50% / 0.13)" : "transparent",
+                        color: isActive ? "white" : "hsl(var(--revint-h) var(--revint-nts) 92% / 0.85)",
                       }}
                     >
                       {Icon && (
                         <Icon
                           className="w-3.5 h-3.5 shrink-0"
-                          style={{ color: isActive ? "var(--leadac-500)" : "var(--leadac-text-3)" }}
+                          style={{ color: isActive ? "var(--revint-500)" : "var(--revint-text-3)" }}
                         />
                       )}
                       <span className="flex-1 truncate font-medium">{r.label}</span>
                       {r.hint && (
-                        <span className="text-[11px]" style={{ color: "var(--leadac-text-3)" }}>
+                        <span className="text-[11px]" style={{ color: "var(--revint-text-3)" }}>
                           {r.hint}
                         </span>
                       )}
                       <ArrowRight
                         className="w-3 h-3 shrink-0 opacity-0 transition-opacity"
-                        style={{ opacity: isActive ? 1 : 0, color: "var(--leadac-text-3)" }}
+                        style={{ opacity: isActive ? 1 : 0, color: "var(--revint-text-3)" }}
                       />
                     </button>
                   );

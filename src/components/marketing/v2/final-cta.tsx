@@ -42,10 +42,10 @@ export function FinalCta() {
             <span
               className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-semibold cursor-default select-none"
               style={{
-                background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18)",
-                color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+                background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.18)",
+                color: "hsl(var(--revint-h) var(--revint-s) 78%)",
                 border:
-                  "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35)",
+                  "1px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.35)",
               }}
               aria-disabled="true"
             >
@@ -54,7 +54,7 @@ export function FinalCta() {
                 aria-hidden
                 className="inline-block h-1.5 w-1.5 rounded-full animate-pulse motion-reduce:animate-none"
                 style={{
-                  background: "hsl(var(--leadac-h) var(--leadac-s) 70%)",
+                  background: "hsl(var(--revint-h) var(--revint-s) 70%)",
                 }}
               />
             </span>
@@ -64,9 +64,9 @@ export function FinalCta() {
               className="group inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-semibold text-black"
               style={{
                 background:
-                  "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 72%) 0%, hsl(var(--leadac-h) var(--leadac-s) 58%) 100%)",
+                  "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-s) 72%) 0%, hsl(var(--revint-h) var(--revint-s) 58%) 100%)",
                 boxShadow:
-                  "0 1px 0 rgba(255,255,255,0.4) inset, 0 12px 36px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35)",
+                  "0 1px 0 rgba(255,255,255,0.4) inset, 0 12px 36px hsl(var(--revint-h) var(--revint-s) 50% / 0.35)",
               }}
             >
               Book a 20-min demo
@@ -76,7 +76,7 @@ export function FinalCta() {
 
           {MARKETING_COMING_SOON ? (
             <a
-              href="mailto:mert@leadacai.com"
+              href="mailto:mert@revint.dev"
               className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-medium text-white/85 hover:text-white border border-white/15 hover:border-white/30 transition-colors"
             >
               Email the founder

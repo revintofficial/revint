@@ -299,14 +299,14 @@ export function LeadPipelineEditor({
               className={cn(
                 "text-left rounded-2xl p-4 transition-all border",
                 active
-                  ? "border-(--leadac-500) shadow-[0_0_0_1px_var(--leadac-500)]"
+                  ? "border-(--revint-500) shadow-[0_0_0_1px_var(--revint-500)]"
                   : "border-white/10 hover:border-white/20",
                 !canEdit && "opacity-60 cursor-not-allowed",
               )}
               style={{
                 background: active
-                  ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)"
-                  : "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
+                  ? "hsl(var(--revint-h) var(--revint-s) 50% / 0.10)"
+                  : "hsl(var(--revint-h) var(--revint-ns) 11% / 0.5)",
               }}
               aria-pressed={active}
             >
@@ -374,12 +374,12 @@ export function LeadPipelineEditor({
                       onClick={() => toggleWorker(w)}
                       className={cn(
                         "text-left rounded-xl p-3 border transition-colors",
-                        isOn ? "border-(--leadac-500)/50" : "border-white/10",
+                        isOn ? "border-(--revint-500)/50" : "border-white/10",
                         (locked || !canEdit) && "opacity-60 cursor-not-allowed",
                       )}
                       style={{
                         background: isOn
-                          ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.08)"
+                          ? "hsl(var(--revint-h) var(--revint-s) 50% / 0.08)"
                           : "transparent",
                       }}
                       aria-pressed={isOn}

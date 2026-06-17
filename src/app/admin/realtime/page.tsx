@@ -11,10 +11,10 @@ export default async function AdminRealtimePage() {
   return (
     <div className="space-y-4">
       <header>
-        <h1 className="text-2xl font-semibold text-[var(--leadac-text-1)]">
+        <h1 className="text-2xl font-semibold text-[var(--revint-text-1)]">
           Realtime
         </h1>
-        <p className="mt-1 text-sm text-[var(--leadac-text-2)]">
+        <p className="mt-1 text-sm text-[var(--revint-text-2)]">
           Visitors active in the last 5 minutes. Refreshes every 5 seconds.
         </p>
       </header>

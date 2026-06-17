@@ -90,7 +90,7 @@ async function checkUrl(url: string): Promise<{ reachable: boolean; title: strin
     const { response: res, finalUrl } = await safeFetchFollow(url, {
       init: {
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; LeadacBot/1.0; +https://leadac.ai/bot)",
+          "User-Agent": "Mozilla/5.0 (compatible; RevintBot/1.0; +https://revint.dev/bot)",
           Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           "Accept-Language": "en-US,en;q=0.5",
         },

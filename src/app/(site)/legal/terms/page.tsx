@@ -23,7 +23,7 @@ export const metadata: Metadata = buildMetadata({
   path: PATH,
   title: "Terms of Service",
   description:
-    "The agreement between LeadAC and the customer when you start a pilot or subscription. Plain English. Updated May 22, 2026.",
+    "The agreement between Revint and the customer when you start a pilot or subscription. Plain English. Updated May 22, 2026.",
 });
 
 export default function TermsPage() {
@@ -33,7 +33,7 @@ export default function TermsPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Legal", url: "/legal" },
           { name: "Terms", url: PATH },
         ])}
@@ -52,7 +52,7 @@ export default function TermsPage() {
 
             <Section title="1. The agreement">
               <p>
-                When you start a LeadAC subscription you agree to these
+                When you start a Revint subscription you agree to these
                 Terms. If you sign a custom MSA later, the MSA governs and
                 these Terms become a fallback for anything the MSA
                 doesn&apos;t cover.
@@ -97,7 +97,7 @@ export default function TermsPage() {
                 — is yours. You export it whenever you want.
               </p>
               <p>
-                <strong>We own the platform.</strong> The LeadAC software,
+                <strong>We own the platform.</strong> The Revint software,
                 the signal libraries, the vertical packs, the prompts, and
                 the models stay ours. Your subscription is a licence to
                 use them, not a transfer of ownership.
@@ -108,16 +108,16 @@ export default function TermsPage() {
               <p>You agree not to:</p>
               <ul>
                 <li>
-                  Use LeadAC to send unsolicited bulk email, run scams, or
+                  Use Revint to send unsolicited bulk email, run scams, or
                   contact lists you do not have lawful permission to
                   contact.
                 </li>
                 <li>
                   Reverse-engineer the platform, scrape the dashboard, or
-                  redistribute LeadAC outputs as your own product.
+                  redistribute Revint outputs as your own product.
                 </li>
                 <li>
-                  Use LeadAC to enrich consumer-grade contact data outside
+                  Use Revint to enrich consumer-grade contact data outside
                   of B2B sales contexts.
                 </li>
               </ul>

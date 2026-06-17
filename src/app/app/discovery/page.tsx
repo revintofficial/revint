@@ -235,8 +235,8 @@ export default function DiscoveryPage() {
         <Card className="hover:shadow-md transition-shadow duration-200">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-(--leadac-500)/10 flex items-center justify-center">
-                <Search className="w-5 h-5 text-(--leadac-500)" />
+              <div className="w-10 h-10 rounded-xl bg-(--revint-500)/10 flex items-center justify-center">
+                <Search className="w-5 h-5 text-(--revint-500)" />
               </div>
               <div>
                 <CardTitle>Find Businesses</CardTitle>
@@ -376,7 +376,7 @@ export default function DiscoveryPage() {
               <p className="text-[11px] text-white/35 mt-1.5">
                 Niche packs come with vertical-specific audit signals and mockup templates.
                 {fanOutMode && selectedPack && (
-                  <span className="block mt-1 text-(--leadac-500)">
+                  <span className="block mt-1 text-(--revint-500)">
                     Fan-out mode: {(CHILDREN_BY_PARENT.get(selectedPack.slug)?.length ?? 0)} parallel queries → deduped by Place ID.
                   </span>
                 )}

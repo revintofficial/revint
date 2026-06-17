@@ -52,10 +52,10 @@ export default async function AdminOverviewPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--leadac-text-1)]">
+          <h1 className="text-2xl font-semibold text-[var(--revint-text-1)]">
             Overview
           </h1>
-          <p className="mt-1 text-sm text-[var(--leadac-text-2)]">
+          <p className="mt-1 text-sm text-[var(--revint-text-2)]">
             Marketing forensics. Every visitor, every step.
           </p>
         </div>
@@ -83,12 +83,12 @@ export default async function AdminOverviewPage({
         />
       </div>
 
-      <section className="rounded-xl border border-[var(--leadac-border)] bg-[var(--leadac-card)] p-4">
+      <section className="rounded-xl border border-[var(--revint-border)] bg-[var(--revint-card)] p-4">
         <header className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-medium text-[var(--leadac-text-1)]">
+          <h2 className="text-sm font-medium text-[var(--revint-text-1)]">
             Traffic over time
           </h2>
-          <span className="text-[10px] uppercase tracking-wider text-[var(--leadac-text-3)]">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--revint-text-3)]">
             {granularity === "hour" ? "Hourly" : "Daily"}
           </span>
         </header>
@@ -109,7 +109,7 @@ export default async function AdminOverviewPage({
               value: c.sessions,
               hint:
                 c.conversions > 0 ? (
-                  <span className="text-[var(--leadac-success)]">
+                  <span className="text-[var(--revint-success)]">
                     +{formatNumber(c.conversions)} conv
                   </span>
                 ) : undefined,
@@ -140,7 +140,7 @@ export default async function AdminOverviewPage({
           <BarList
             rows={topPages.map((p) => ({
               key: p.path,
-              label: <code className="text-[var(--leadac-text-1)]">{p.path}</code>,
+              label: <code className="text-[var(--revint-text-1)]">{p.path}</code>,
               value: p.views,
             }))}
             emptyLabel="No traffic in this window yet."
@@ -174,13 +174,13 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-[var(--leadac-border)] bg-[var(--leadac-card)]">
-      <header className="px-4 py-3 border-b border-[var(--leadac-border)] flex items-center justify-between">
-        <h2 className="text-sm font-medium text-[var(--leadac-text-1)]">{title}</h2>
+    <section className="rounded-xl border border-[var(--revint-border)] bg-[var(--revint-card)]">
+      <header className="px-4 py-3 border-b border-[var(--revint-border)] flex items-center justify-between">
+        <h2 className="text-sm font-medium text-[var(--revint-text-1)]">{title}</h2>
         {linkHref && (
           <Link
             href={linkHref}
-            className="text-xs text-[var(--leadac-text-3)] hover:text-[var(--leadac-text-1)]"
+            className="text-xs text-[var(--revint-text-3)] hover:text-[var(--revint-text-1)]"
           >
             {linkLabel ?? "Open"} →
           </Link>

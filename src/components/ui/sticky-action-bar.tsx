@@ -44,7 +44,7 @@ export function StickyActionBar({
         bottom: aboveTabBar
           ? "var(--tab-bar-height-offset, 0px)"
           : "0px",
-        background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.92)",
+        background: "hsl(var(--revint-h) var(--revint-ns) 8% / 0.92)",
         backdropFilter: "saturate(180%) blur(30px)",
         WebkitBackdropFilter: "saturate(180%) blur(30px)",
         borderTop: divider ? "0.5px solid hsl(0 0% 100% / 0.08)" : "none",

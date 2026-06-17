@@ -30,7 +30,7 @@ const FAQS = [
       "Niches with visible website quality gaps, reasonable willingness-to-pay, and enough density per postcode to iterate on. Phone repair, dental clinics, opticians, HVAC, driving instructors, and mobile mechanics all score well; restaurants, hair salons, and gyms are saturated or chain-dominated.",
   },
   {
-    question: "How many niches does Leadac AI cover?",
+    question: "How many niches does Revint cover?",
     answer:
       "We index any local-service vertical that has at least three audited businesses in any single city. The list grows as our agency customers run discovery in new verticals.",
   },
@@ -77,7 +77,7 @@ export default async function NichesIndexPage() {
         intro="Every niche below has at least three audited businesses. Drill into a niche to see the list, or cross a niche with a city for a focused view."
       >
         <DirectAnswer>
-          The Leadac AI directory indexes {niches.length} local-service
+          The Revint directory indexes {niches.length} local-service
           niches — each with at least three audited businesses.
           Intersect a niche with a city for the highest-intent view.
         </DirectAnswer>

@@ -37,7 +37,7 @@ const PUBLISHED = "2026-05-22";
 
 const ALTS = [
   {
-    name: "LeadAC",
+    name: "Revint",
     pitch: "Operational intelligence layer for vertical SaaS GTM. Indexes location count, vertical stack, owner activity — not contact databases.",
     fit: "Best when you sell vertical SaaS to local business and want operational context Apollo's database does not carry.",
     cost: "$18,000/yr for 5 seats",
@@ -82,7 +82,7 @@ export default function ApolloAlternativesPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Alternatives", url: "/alternatives" },
           { name: "Apollo alternatives", url: PATH },
         ])}
@@ -135,7 +135,7 @@ export default function ApolloAlternativesPage() {
           {
             value: "Keep Apollo",
             label:
-              "Most LeadAC customers keep Apollo. We sit on top, never in place of.",
+              "Most Revint customers keep Apollo. We sit on top, never in place of.",
           },
         ]}
       />
@@ -180,7 +180,7 @@ export default function ApolloAlternativesPage() {
                       href="/vs/apollo"
                       className="mt-4 inline-flex items-center gap-2 text-[13px] text-signal hover:underline"
                     >
-                      Side-by-side: LeadAC vs Apollo
+                      Side-by-side: Revint vs Apollo
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                   ) : null}
@@ -197,7 +197,7 @@ export default function ApolloAlternativesPage() {
         subtitle="The matrix names the capability gap, not the cost gap. Cost is a different conversation per category."
         columns={[
           { label: "Apollo Pro" },
-          { label: "LeadAC Team", isUs: true, subLabel: "from $18,000/yr" },
+          { label: "Revint Team", isUs: true, subLabel: "from $18,000/yr" },
           { label: "Clay Growth" },
           { label: "Cognism" },
           { label: "ZoomInfo" },
@@ -259,7 +259,7 @@ export default function ApolloAlternativesPage() {
 
       <CtaBlock
         eyebrow="Keep Apollo, add the layer"
-        title="Most LeadAC customers keep Apollo. We sit on top, not in place of."
+        title="Most Revint customers keep Apollo. We sit on top, not in place of."
         subtitle="The pilot writes the operational context Apollo's database doesn't carry — into the same HubSpot company record your team already opens. Twenty-minute demo on one of your own accounts."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}

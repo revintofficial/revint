@@ -28,7 +28,7 @@ export default function SdrRampEstimatorPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Free tools", url: "/tools" },
           { name: TITLE, url: PATH },
         ])}
@@ -55,7 +55,7 @@ export default function SdrRampEstimatorPage() {
           <SdrRampWidget />
           <p className="mt-6 text-[12px] text-paper-3">
             Median 11-week ramp from the 2026 vertical SaaS GTM benchmark
-            (200 teams). Median 6-week ramp from the LeadAC customer
+            (200 teams). Median 6-week ramp from the Revint customer
             cohort running pre-call brief inside HubSpot.
           </p>
         </div>

@@ -37,9 +37,9 @@ export const lemlist: CompetitorProfile = {
       url: "https://www.lemlist.com/case-studies",
     },
   ],
-  whyLeadacInstead: [
+  whyRevintInstead: [
     "Audit-grounded openers land on substance, not a token-swapped image.",
     "Postcode + niche discovery gives you a list Lemlist can't generate.",
-    "Leadac can push to Lemlist or any other sender you already use.",
+    "Revint can push to Lemlist or any other sender you already use.",
   ],
 };

@@ -44,7 +44,7 @@ const sends: PreviewSpec[] = [
         subject: `[Preview] ${WelcomeEmail.buildSubject("Mert Okumus", "tr")}`,
         react: WelcomeEmail({
           fullName: "Mert Okumus",
-          workspaceName: "Leadac HQ",
+          workspaceName: "Revint HQ",
           locale: "tr",
         }),
         tags: [
@@ -79,10 +79,10 @@ const sends: PreviewSpec[] = [
     run: () =>
       sendEmail({
         to: recipient,
-        subject: `[Preview] ${TeamInviteEmail.buildSubject("Leadac HQ", "tr")}`,
+        subject: `[Preview] ${TeamInviteEmail.buildSubject("Revint HQ", "tr")}`,
         react: TeamInviteEmail({
           inviterName: "Mert Okumus",
-          workspaceName: "Leadac HQ",
+          workspaceName: "Revint HQ",
           role: "OWNER",
           locale: "tr",
         }),

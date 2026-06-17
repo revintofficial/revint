@@ -25,7 +25,7 @@ type FaqBlockProps = {
 
 export function FaqBlock({
   eyebrow,
-  title = "Questions buyers ask before they pick LeadAC",
+  title = "Questions buyers ask before they pick Revint",
   entries,
   className,
   defaultOpen = 0,

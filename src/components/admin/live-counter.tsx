@@ -39,13 +39,13 @@ export function LiveCounter() {
       <span
         className={
           error
-            ? "h-2 w-2 rounded-full bg-[var(--leadac-error)]"
+            ? "h-2 w-2 rounded-full bg-[var(--revint-error)]"
             : count && count > 0
-              ? "h-2 w-2 rounded-full bg-[var(--leadac-success)] animate-pulse"
-              : "h-2 w-2 rounded-full bg-[var(--leadac-text-3)]"
+              ? "h-2 w-2 rounded-full bg-[var(--revint-success)] animate-pulse"
+              : "h-2 w-2 rounded-full bg-[var(--revint-text-3)]"
         }
       />
-      <span className="text-[var(--leadac-text-2)]">
+      <span className="text-[var(--revint-text-2)]">
         {error
           ? "live offline"
           : count === null

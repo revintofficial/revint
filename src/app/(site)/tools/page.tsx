@@ -33,7 +33,7 @@ export default function ToolsIndexPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Free tools", url: PATH },
         ])}
       />

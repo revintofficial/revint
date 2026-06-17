@@ -304,8 +304,8 @@ export function LocationPicker({
       <div
         className="flex flex-wrap items-center gap-1.5 rounded-xl border min-h-10 px-2 py-1.5"
         style={{
-          backgroundColor: "var(--leadac-card)",
-          borderColor: "var(--leadac-border)",
+          backgroundColor: "var(--revint-card)",
+          borderColor: "var(--revint-border)",
         }}
       >
         {value.map((loc) => (
@@ -313,8 +313,8 @@ export function LocationPicker({
             key={loc.placeId}
             className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[12px] text-white"
             style={{
-              backgroundColor: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.14)",
-              borderColor: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.32)",
+              backgroundColor: "hsl(var(--revint-h) var(--revint-s) 50% / 0.14)",
+              borderColor: "hsl(var(--revint-h) var(--revint-s) 50% / 0.32)",
             }}
             title={loc.displayName}
           >
@@ -375,7 +375,7 @@ export function LocationPicker({
         <div
           className="absolute left-0 right-0 mt-1.5 rounded-xl overflow-hidden shadow-lg z-30"
           style={{
-            backgroundColor: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.96)",
+            backgroundColor: "hsl(var(--revint-h) var(--revint-ns) 11% / 0.96)",
             backdropFilter: "saturate(180%) blur(20px)",
             WebkitBackdropFilter: "saturate(180%) blur(20px)",
             border: "0.5px solid hsl(0 0% 100% / 0.12)",
@@ -410,9 +410,9 @@ export function LocationPicker({
                   className="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] text-white transition-colors"
                   style={{
                     backgroundColor:
-                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.16)",
+                      "hsl(var(--revint-h) var(--revint-s) 50% / 0.16)",
                     borderColor:
-                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.36)",
+                      "hsl(var(--revint-h) var(--revint-s) 50% / 0.36)",
                   }}
                 >
                   <MapPin className="w-3 h-3" />

@@ -1,4 +1,4 @@
-# LeadAC site style guide
+# Revint site style guide
 
 > Single source of truth for every shipped copy block under `src/app/(site)/*`.
 > Built from prelogin_site_rebuild plan §3 + brand-assets §3 + positioning §3.
@@ -25,7 +25,7 @@ Hits → fix, no exceptions.
 | H4 | AI vocab | `crucial, pivotal, key, vital, delve, leverage, foster, garner, underscore, intricate, tapestry, landscape (abstract), seamless, robust, comprehensive, navigate (abstract), realm, journey, ecosystem (overused), holistic, paradigm, synergy, empower, unlock, harness, transformative, revolutionary, cutting-edge, next-generation, best-in-class` | Search each page before merge. Most of these collapse to a verb. |
 | H5 | "Despite challenges…" / formulaic closer | "Despite these complexities, the future…" | Cut. End with a sentence carrying a specific number or a specific next action. |
 | H6 | Vague attribution | "Experts say", "Industry reports show", "Studies indicate" | Name the source. Add the date. Link it. (positioning §3.1 has the real list.) |
-| H7 | Rule of three | "We find, enrich, and learn" everywhere | Mix in 2- and 4-element groups deliberately. The brand line is intentionally 4: "Apollo finds. Clay enriches. Gong records. LeadAC remembers." |
+| H7 | Rule of three | "We find, enrich, and learn" everywhere | Mix in 2- and 4-element groups deliberately. The brand line is intentionally 4: "Apollo finds. Clay enriches. Gong records. Revint remembers." |
 | H8 | Title case headings | "Strategic Negotiations And Global Partnerships" | Sentence case. Only brand names and the first word are capitalised. |
 | H9 | Curly quotes | `"…"` `'…'` | Straight quotes `"…"` `'…'` everywhere. `font-feature-settings` in `.site-root` enforces it. |
 | H10 | Generic upbeat ending | "The future looks bright for vertical SaaS…" | Page ends with a concrete next step (CTA + what the user gets). |

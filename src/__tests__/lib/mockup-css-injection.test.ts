@@ -60,7 +60,7 @@ describe("M6 - renderMockupHtml uses sanitized branding colors", () => {
         accentColor: "#000;}body{background:url(http://evil/track.gif)}",
         primaryColor: "#000",
         footerText: null,
-        hideLeadacCredit: false,
+        hideRevintCredit: false,
         logoUrl: null,
       },
     });
@@ -80,7 +80,7 @@ describe("M6 - renderMockupHtml uses sanitized branding colors", () => {
         accentColor: "#ff5500",
         primaryColor: "#cc4400",
         footerText: null,
-        hideLeadacCredit: false,
+        hideRevintCredit: false,
         logoUrl: null,
       },
     });

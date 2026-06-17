@@ -21,7 +21,7 @@ export function BarList({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="px-4 py-6 text-sm text-[var(--leadac-text-3)] text-center">
+      <div className="px-4 py-6 text-sm text-[var(--revint-text-3)] text-center">
         {emptyLabel}
       </div>
     );
@@ -34,21 +34,21 @@ export function BarList({
         return (
           <li key={r.key} className="text-xs">
             <div className="flex items-center justify-between gap-2 mb-0.5">
-              <span className="text-[var(--leadac-text-1)] truncate min-w-0 flex-1">
+              <span className="text-[var(--revint-text-1)] truncate min-w-0 flex-1">
                 {r.label}
               </span>
               {r.hint && (
-                <span className="text-[var(--leadac-text-3)] shrink-0">
+                <span className="text-[var(--revint-text-3)] shrink-0">
                   {r.hint}
                 </span>
               )}
-              <span className="tabular-nums text-[var(--leadac-text-1)] shrink-0 w-14 text-right">
+              <span className="tabular-nums text-[var(--revint-text-1)] shrink-0 w-14 text-right">
                 {r.value.toLocaleString("en-US")}
               </span>
             </div>
-            <div className="h-1.5 rounded-full bg-[var(--leadac-hover)] overflow-hidden">
+            <div className="h-1.5 rounded-full bg-[var(--revint-hover)] overflow-hidden">
               <div
-                className="h-full bg-[var(--leadac-500)]/70"
+                className="h-full bg-[var(--revint-500)]/70"
                 style={{ width: `${pct}%` }}
               />
             </div>

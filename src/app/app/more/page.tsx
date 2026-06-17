@@ -159,8 +159,8 @@ export default async function MorePage() {
           border: "0.5px solid hsl(0 0% 100% / 0.08)",
         }}
       >
-        <Bell className="w-4 h-4" style={{ color: "var(--leadac-text-3)" }} />
-        <p className="text-[13px]" style={{ color: "var(--leadac-text-2)" }}>
+        <Bell className="w-4 h-4" style={{ color: "var(--revint-text-3)" }} />
+        <p className="text-[13px]" style={{ color: "var(--revint-text-2)" }}>
           On larger screens you can use the sidebar. This list is optimised for phones.
         </p>
       </div>
@@ -177,7 +177,7 @@ export default async function MorePage() {
             <section key={section.title}>
               <h2
                 className="text-[11px] font-semibold uppercase tracking-wider mb-2 px-1"
-                style={{ color: "var(--leadac-muted)" }}
+                style={{ color: "var(--revint-muted)" }}
               >
                 {section.title}
               </h2>
@@ -201,15 +201,15 @@ export default async function MorePage() {
                   >
                     <Link
                       href={row.href}
-                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500) focus-visible:-outline-offset-2"
+                      className="flex items-center gap-3 px-4 py-3.5 hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--revint-500) focus-visible:-outline-offset-2"
                       style={{ minHeight: "var(--touch-target-large)" }}
                     >
                       <div
                         className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                         style={{
                           background:
-                            "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)",
-                          color: "var(--leadac-300)",
+                            "hsl(var(--revint-h) var(--revint-s) 50% / 0.12)",
+                          color: "var(--revint-300)",
                         }}
                       >
                         <row.icon className="w-4.5 h-4.5" strokeWidth={2} />
@@ -218,7 +218,7 @@ export default async function MorePage() {
                         <div
                           className="font-medium truncate"
                           style={{
-                            color: "var(--leadac-text-1)",
+                            color: "var(--revint-text-1)",
                             fontSize: "var(--text-callout)",
                           }}
                         >
@@ -228,7 +228,7 @@ export default async function MorePage() {
                           <div
                             className="truncate mt-0.5"
                             style={{
-                              color: "var(--leadac-text-3)",
+                              color: "var(--revint-text-3)",
                               fontSize: "var(--text-footnote)",
                             }}
                           >
@@ -238,7 +238,7 @@ export default async function MorePage() {
                       </div>
                       <ChevronRight
                         className="w-4 h-4 shrink-0"
-                        style={{ color: "var(--leadac-muted)" }}
+                        style={{ color: "var(--revint-muted)" }}
                         aria-hidden="true"
                       />
                     </Link>

@@ -135,9 +135,9 @@ const TEMP_META: Record<
   ActionSheet["temperature"],
   { label: string; icon: typeof Flame; color: string }
 > = {
-  HOT: { label: "Hot", icon: Flame, color: "var(--leadac-error)" },
-  WARM: { label: "Warm", icon: ThermometerSun, color: "var(--leadac-warning)" },
-  COLD: { label: "Cold", icon: Snowflake, color: "var(--leadac-info)" },
+  HOT: { label: "Hot", icon: Flame, color: "var(--revint-error)" },
+  WARM: { label: "Warm", icon: ThermometerSun, color: "var(--revint-warning)" },
+  COLD: { label: "Cold", icon: Snowflake, color: "var(--revint-info)" },
 };
 
 /**
@@ -180,7 +180,7 @@ function LocalTimeBadge({ timezone }: { timezone: string }) {
   return (
     <span
       className="inline-flex items-center gap-1 text-[12.5px]"
-      style={{ color: isCallable ? "var(--leadac-text-2)" : "hsl(35 80% 70%)" }}
+      style={{ color: isCallable ? "var(--revint-text-2)" : "hsl(35 80% 70%)" }}
       title={`Prospect timezone: ${timezone}`}
     >
       <Clock className="w-3.5 h-3.5" />
@@ -285,12 +285,12 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
     score == null ? null : score >= 60 ? "High Potential" : score >= 35 ? "Medium Potential" : "Low Potential";
   const potentialColor =
     score == null
-      ? "var(--leadac-text-3)"
+      ? "var(--revint-text-3)"
       : score >= 60
-        ? "var(--leadac-success)"
+        ? "var(--revint-success)"
         : score >= 35
-          ? "var(--leadac-warning)"
-          : "var(--leadac-error)";
+          ? "var(--revint-warning)"
+          : "var(--revint-error)";
   const chips: string[] = [];
   if (sheet.borough) chips.push(sheet.borough);
   if (sheet.primaryType) chips.push(humanizePrimaryType(sheet.primaryType));
@@ -304,7 +304,7 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1 space-y-2.5">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-lg sm:text-xl font-semibold text-(--leadac-text-1) mr-1">
+                <h1 className="text-lg sm:text-xl font-semibold text-(--revint-text-1) mr-1">
                   {sheet.businessName}
                 </h1>
                 <Badge
@@ -318,7 +318,7 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-medium border border-(--leadac-border) text-(--leadac-text-2) hover:bg-(--leadac-hover) transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-medium border border-(--revint-border) text-(--revint-text-2) hover:bg-(--revint-hover) transition-colors"
                       disabled={busy}
                     >
                       {currentStage?.label ?? "Set stage"}
@@ -331,7 +331,7 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
                         <div>
                           <div className="text-[13px]">{s.label}</div>
                           {s.meaning && (
-                            <div className="text-[11px] text-(--leadac-text-3)">{s.meaning}</div>
+                            <div className="text-[11px] text-(--revint-text-3)">{s.meaning}</div>
                           )}
                         </div>
                       </DropdownMenuItem>
@@ -349,25 +349,25 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
 
               {/* Address */}
               {sheet.formattedAddress && (
-                <p className="text-[13px] text-(--leadac-text-2)">{sheet.formattedAddress}</p>
+                <p className="text-[13px] text-(--revint-text-2)">{sheet.formattedAddress}</p>
               )}
 
               {/* Rating + identity chips */}
               {(sheet.rating != null || chips.length > 0) && (
                 <div className="flex flex-wrap items-center gap-2">
                   {sheet.rating != null && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-(--leadac-hover) px-2.5 py-0.5 text-[12.5px] text-(--leadac-text-2)">
-                      <Star className="w-3.5 h-3.5 text-(--leadac-warning) fill-(--leadac-warning)" />
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-(--revint-hover) px-2.5 py-0.5 text-[12.5px] text-(--revint-text-2)">
+                      <Star className="w-3.5 h-3.5 text-(--revint-warning) fill-(--revint-warning)" />
                       {sheet.rating.toFixed(1)}
                       {sheet.reviewCount != null && (
-                        <span className="text-(--leadac-text-3)">({sheet.reviewCount})</span>
+                        <span className="text-(--revint-text-3)">({sheet.reviewCount})</span>
                       )}
                     </span>
                   )}
                   {chips.map((c) => (
                     <span
                       key={c}
-                      className="inline-flex items-center rounded-full bg-(--leadac-hover) px-2.5 py-0.5 text-[12.5px] text-(--leadac-text-2)"
+                      className="inline-flex items-center rounded-full bg-(--revint-hover) px-2.5 py-0.5 text-[12.5px] text-(--revint-text-2)"
                     >
                       {c}
                     </span>
@@ -385,13 +385,13 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
                 <div className="relative">
                   <CircularProgress value={score} size={64} strokeWidth={5} />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-[18px] font-semibold text-(--leadac-text-1) leading-none">
+                    <span className="text-[18px] font-semibold text-(--revint-text-1) leading-none">
                       {score}
                     </span>
                   </div>
                 </div>
                 <div className="text-center leading-tight">
-                  <p className="text-[10px] uppercase tracking-[0.06em] text-(--leadac-text-3)">
+                  <p className="text-[10px] uppercase tracking-[0.06em] text-(--revint-text-3)">
                     {scoreLabel}
                   </p>
                   <p className="text-[11.5px] font-medium" style={{ color: potentialColor }}>
@@ -404,11 +404,11 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
 
           {/* SLA line */}
           {slaParts.length > 0 && (
-            <div className="flex items-center gap-1.5 text-[12.5px] text-(--leadac-text-2)">
+            <div className="flex items-center gap-1.5 text-[12.5px] text-(--revint-text-2)">
               <Clock className="w-3.5 h-3.5" />
               <span>{slaParts.join(" · ")}</span>
               {sheet.sla.leadSource && (
-                <span className="text-(--leadac-text-3)">· {sheet.sla.leadSource}</span>
+                <span className="text-(--revint-text-3)">· {sheet.sla.leadSource}</span>
               )}
             </div>
           )}
@@ -447,7 +447,7 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-[14px]">
-              <Plug className="w-4 h-4 text-(--leadac-300)" /> HubSpot context
+              <Plug className="w-4 h-4 text-(--revint-300)" /> HubSpot context
             </CardTitle>
           </CardHeader>
           <CardContent className="text-[13px]">
@@ -474,7 +474,7 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
                 )}
               </dl>
             ) : (
-              <p className="text-(--leadac-text-3)">Loading HubSpot context…</p>
+              <p className="text-(--revint-text-3)">Loading HubSpot context…</p>
             )}
           </CardContent>
         </Card>
@@ -484,12 +484,12 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-[14px]">
-            <Clock className="w-4 h-4 text-(--leadac-300)" /> Call attempt history
+            <Clock className="w-4 h-4 text-(--revint-300)" /> Call attempt history
           </CardTitle>
         </CardHeader>
         <CardContent className="text-[13px]">
           {activities.length === 0 ? (
-            <p className="text-(--leadac-text-3) flex items-center gap-1.5">
+            <p className="text-(--revint-text-3) flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5" /> No activity yet — make the first touch.
             </p>
           ) : (
@@ -501,13 +501,13 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
                   (a.payload?.body as string | undefined);
                 return (
                   <li key={a.id} className="flex items-start gap-2">
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-(--leadac-500) shrink-0" />
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-(--revint-500) shrink-0" />
                     <div className="min-w-0">
-                      <span className="text-(--leadac-text-1)">{a.kind.replace(/_/g, " ").toLowerCase()}</span>
+                      <span className="text-(--revint-text-1)">{a.kind.replace(/_/g, " ").toLowerCase()}</span>
                       {disposition && (
-                        <span className="text-(--leadac-text-2)"> · {String(disposition)}</span>
+                        <span className="text-(--revint-text-2)"> · {String(disposition)}</span>
                       )}
-                      <span className="text-(--leadac-text-3)">
+                      <span className="text-(--revint-text-3)">
                         {" "}· {new Date(a.createdAt).toLocaleString()}
                       </span>
                     </div>
@@ -525,8 +525,8 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-(--leadac-text-3) text-[11px]">{label}</dt>
-      <dd className="text-(--leadac-text-1) truncate">{value}</dd>
+      <dt className="text-(--revint-text-3) text-[11px]">{label}</dt>
+      <dd className="text-(--revint-text-1) truncate">{value}</dd>
     </div>
   );
 }

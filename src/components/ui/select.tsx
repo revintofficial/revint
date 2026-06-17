@@ -16,18 +16,18 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm text-white ring-offset-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--leadac-500)/55 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 transition-colors duration-200",
+      "flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm text-white ring-offset-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--revint-500)/55 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 transition-colors duration-200",
       className
     )}
     style={{
-      backgroundColor: "var(--leadac-card)",
-      borderColor: "var(--leadac-border)",
+      backgroundColor: "var(--revint-card)",
+      borderColor: "var(--revint-border)",
     }}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4" style={{ color: "var(--leadac-text-3)" }} />
+      <ChevronDown className="h-4 w-4" style={{ color: "var(--revint-text-3)" }} />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -50,7 +50,7 @@ const SelectContent = React.forwardRef<
       {...props}
     >
       <SelectPrimitive.ScrollUpButton className="flex cursor-default items-center justify-center py-1">
-        <ChevronUp className="h-4 w-4" style={{ color: "var(--leadac-text-3)" }} />
+        <ChevronUp className="h-4 w-4" style={{ color: "var(--revint-text-3)" }} />
       </SelectPrimitive.ScrollUpButton>
       <SelectPrimitive.Viewport
         className={cn(
@@ -62,7 +62,7 @@ const SelectContent = React.forwardRef<
         {children}
       </SelectPrimitive.Viewport>
       <SelectPrimitive.ScrollDownButton className="flex cursor-default items-center justify-center py-1">
-        <ChevronDown className="h-4 w-4" style={{ color: "var(--leadac-text-3)" }} />
+        <ChevronDown className="h-4 w-4" style={{ color: "var(--revint-text-3)" }} />
       </SelectPrimitive.ScrollDownButton>
     </SelectPrimitive.Content>
   </SelectPrimitive.Portal>
@@ -76,14 +76,14 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-(--leadac-500)/15 focus:text-(--leadac-300) data-disabled:pointer-events-none data-disabled:opacity-50 transition-colors",
+      "relative flex w-full cursor-default select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-(--revint-500)/15 focus:text-(--revint-300) data-disabled:pointer-events-none data-disabled:opacity-50 transition-colors",
       className
     )}
     {...props}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4 text-(--leadac-300)" />
+        <Check className="h-4 w-4 text-(--revint-300)" />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

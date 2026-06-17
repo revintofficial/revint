@@ -14,6 +14,7 @@ import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { VIDEO_SCRIPT_PROMPT } from "@/lib/prompts/video-script-prompt";
 import { assertCanUseAi, recordAiUsed, QuotaExceededError } from "@/lib/quotas";
 import { internalError } from "@/lib/api-errors";
+import { siteHost } from "@/lib/seo/metadata";
 
 export async function POST(
   _request: Request,
@@ -83,7 +84,7 @@ export async function POST(
       .replaceAll("{mockup_solution}", "a new hero and booking widget that solves the " + topPain + " problem")
       .replaceAll("{offer_value_proposition}", ws.valueProposition || "Modern website for local businesses")
       .replaceAll("{offer_hook}", ws.offerHook || "I put together a draft that shows three issues on your current site")
-      .replaceAll("{conversion_link}", ws.conversionLink || "leadac.ai")
+      .replaceAll("{conversion_link}", ws.conversionLink || siteHost())
       .replaceAll("{workspace_objective}", ws.objective || "Book a 15-min call")
       .replaceAll("{workspace_tone}", ws.tone || "friendly")
       .replaceAll("{workspace_language}", ws.language || "en");

@@ -1,4 +1,4 @@
-# LeadAC — Brand & Marketing Assets v1
+# Revint — Brand & Marketing Assets v1
 
 > Built on `docs/positioning.md`. Where the positioning workbook is the **strategy**, this doc is the **execution surface** — what to say, in which exact words, where to show up, what to spend on, and how to defend the position against the Gong threat in 2026.
 >
@@ -25,7 +25,7 @@
 
 ## 1. The Gong Reframe
 
-> **Threat assessment first.** Gong's May 12, 2026 PRNewswire announcement (`$500M ARR, +55% YoY, Revenue Graph as "living memory layer"`) was the single biggest competitive event for our positioning. Some people inside LeadAC will panic when they read it. They shouldn't. Here is why.
+> **Threat assessment first.** Gong's May 12, 2026 PRNewswire announcement (`$500M ARR, +55% YoY, Revenue Graph as "living memory layer"`) was the single biggest competitive event for our positioning. Some people inside Revint will panic when they read it. They shouldn't. Here is why.
 
 ### 1.1 The threat, named plainly
 
@@ -41,7 +41,7 @@ Each one of these is asymmetric. Stack them:
 
 **Asymmetry 1 — Data substrate (the moat-decider)**
 
-| | Gong Revenue Graph | LeadAC |
+| | Gong Revenue Graph | Revint |
 |---|---|---|
 | What gets indexed | Calls, emails, meetings, deals — *what your team said and did* | Reviews, location count, vertical-stack signature, owner activity — *what the account is actually doing in the world* |
 | Source | Internal (rep behavior + customer-facing comms) | External (operational signals about the local business) |
@@ -67,7 +67,7 @@ Plus: 2–3 year prepaid contract minimum, 5–15% annual renewal uplift, $7.5K�
 
 Our ICP (vertical SaaS, $2M–$50M ARR, 5–30 sellers, no RevOps engineer) hits **every disqualifier**.
 
-| Plan | LeadAC | Equivalent Gong |
+| Plan | Revint | Equivalent Gong |
 |---|---|---|
 | Pilot (1 mo, ≤5 seats) | $500/month | Not available — minimum 25 seats, 2-yr contract |
 | Team (5 seats) | $1,500/month = $18K/yr | Foundation-only ≈ $7.5K platform + $7K licenses + $7.5K onboarding = $22K Yıl 1, then $18K/yr — *and that's conversation intel only, no Revenue Graph* |
@@ -79,7 +79,7 @@ Our ICP (vertical SaaS, $2M–$50M ARR, 5–30 sellers, no RevOps engineer) hits
 
 Gong's memory lives in **Gong** — a separate cockpit that revenue teams open. SDR alt-tabs in.
 
-LeadAC's memory lives **inside the HubSpot card** (M-10 in MoSCoW). SDR doesn't leave the CRM. Pre-call brief is on the same screen as the contact record.
+Revint's memory lives **inside the HubSpot card** (M-10 in MoSCoW). SDR doesn't leave the CRM. Pre-call brief is on the same screen as the contact record.
 
 This UX difference is small in product but huge in pitch: **"our memory layer doesn't need a new app, it shows up where your SDRs already are."**
 
@@ -117,32 +117,32 @@ Until one of these three fires: **we are safe, we are differentiated, we are ten
 
 ### 2.1 Brand name + 1-word descriptor (AI search entity)
 
-- **Name:** LeadAC
+- **Name:** Revint
 - **Pronunciation:** Lead-A-C (three syllables, like "Lead-A-C," not "leadak")
 - **Always followed by:** *"the revenue intelligence layer for vertical SaaS GTM"* OR *"the operational memory for vertical SaaS sales teams"* — never standalone in first mention because the name is not yet recognized
 - **Entity descriptor for `Organization` schema (`knowsAbout` field):** `revenue intelligence`, `account intelligence`, `vertical SaaS sales`, `closed-loop ICP refinement`, `operational intelligence`, `vertical-aware account discovery`, `local business outbound`, `CRM-native enrichment`, `pre-call brief`, `SDR ramp acceleration`
 
 ### 2.2 The 3-second pitch (handshake / billboard / Slack one-liner)
 
-> **"LeadAC remembers what closes for vertical SaaS sales teams."**
+> **"Revint remembers what closes for vertical SaaS sales teams."**
 
-7 words. Has subject (LeadAC), verb (remembers), object (what closes), qualifier (for vertical SaaS sales teams). Memorable because it pairs "remember" with a commercial outcome ("what closes").
+7 words. Has subject (Revint), verb (remembers), object (what closes), qualifier (for vertical SaaS sales teams). Memorable because it pairs "remember" with a commercial outcome ("what closes").
 
 **TR version:**
-> **"LeadAC, vertical SaaS satış ekiplerinin neyin kapandığını hatırlar."**
+> **"Revint, vertical SaaS satış ekiplerinin neyin kapandığını hatırlar."**
 
 ### 2.3 The 10-second pitch (Slack DM, conference badge scan, LinkedIn bio)
 
-> **"LeadAC is the memory layer for vertical SaaS teams selling to local business — we find the right accounts, sync the context your CRM never had, and learn from every won and lost deal."**
+> **"Revint is the memory layer for vertical SaaS teams selling to local business — we find the right accounts, sync the context your CRM never had, and learn from every won and lost deal."**
 
 35 words. Adds the three pillars (find, sync, learn). Ships on LinkedIn company description, Twitter/X bio, founder bio.
 
 **TR:**
-> **"LeadAC, local business'a satan vertical SaaS ekiplerinin operasyonel hafıza katmanı. Doğru hesapları bulur, CRM'in görmediği bağlamı senkronize eder, her kapalı ve kaybedilmiş anlaşmadan öğrenir."**
+> **"Revint, local business'a satan vertical SaaS ekiplerinin operasyonel hafıza katmanı. Doğru hesapları bulur, CRM'in görmediği bağlamı senkronize eder, her kapalı ve kaybedilmiş anlaşmadan öğrenir."**
 
 ### 2.4 The 30-second pitch (first cold call opener / 1st email body / podcast intro)
 
-> **"Vertical SaaS GTM teams — companies selling Toast, ServiceTitan, Curve Dental-class software to local business — burn 5+ hours per SDR per week on manual account research because Apollo doesn't index location count, vertical-stack signatures, or owner activity. LeadAC is the operational intelligence layer that fills that gap. We find your next 200 local accounts, sync 12 fields per account into HubSpot, and every won and lost deal automatically sharpens the next list. Apollo finds, Clay enriches, Gong records — we remember what closes. Connect HubSpot, define your ICP, get live in under an hour."**
+> **"Vertical SaaS GTM teams — companies selling Toast, ServiceTitan, Curve Dental-class software to local business — burn 5+ hours per SDR per week on manual account research because Apollo doesn't index location count, vertical-stack signatures, or owner activity. Revint is the operational intelligence layer that fills that gap. We find your next 200 local accounts, sync 12 fields per account into HubSpot, and every won and lost deal automatically sharpens the next list. Apollo finds, Clay enriches, Gong records — we remember what closes. Connect HubSpot, define your ICP, get live in under an hour."**
 
 90 words. Has the *pain* (5 hours/SDR/week from Salesforce 2026 State of Sales), the *outcome* (200 enriched accounts), the *differentiator* (closed-loop learning), the *positioning* (vs Apollo/Clay/Gong), and the *onboarding promise* (under 1 hour).
 
@@ -170,11 +170,11 @@ companies, $2M to $50M ARR, 5 to 30 sellers. They have:
 
   → No memory — when their best SDR quits, the playbook leaves.
 
-That's the gap LeadAC fills. We're the operational intelligence layer
+That's the gap Revint fills. We're the operational intelligence layer
 for vertical SaaS GTM. We find the right local accounts, sync vertical
 context into HubSpot, and learn from every won and lost deal.
 
-Apollo finds. Clay enriches. Gong records. LeadAC remembers what closes.
+Apollo finds. Clay enriches. Gong records. Revint remembers what closes.
 
 5 minutes to onboard. Less than $2K per month for a 5-person team.
 First 200 enriched accounts in your HubSpot in under an hour.
@@ -200,14 +200,14 @@ Maps to existing positioning.md §1.4 "External manifesto" — that 250-word blo
 
 #### Homepage hero (alt — stack-vs-platform variant)
 
-> **Headline:** Apollo finds. Clay enriches. Gong records. LeadAC remembers what closes.
+> **Headline:** Apollo finds. Clay enriches. Gong records. Revint remembers what closes.
 > **Subhead:** The intelligence layer your vertical SaaS stack never had. 200 local accounts in HubSpot in under an hour.
 > **CTA:** See the workflow · Book a demo
 
 #### `/vs/apollo-clay-gong` hero
 
 > **Headline:** Same money. One platform. Plus the memory your stack never had.
-> **Subhead:** Apollo gives lists. Clay gives workflows. Gong records calls. LeadAC remembers what closes for vertical SaaS teams selling to local business.
+> **Subhead:** Apollo gives lists. Clay gives workflows. Gong records calls. Revint remembers what closes for vertical SaaS teams selling to local business.
 > **CTA:** See the cost math · See the demo
 
 #### `/for/field-service-saas` (HVAC beachhead vertical)
@@ -222,9 +222,9 @@ Maps to existing positioning.md §1.4 "External manifesto" — that 250-word blo
 > **Subhead:** Operational intelligence for F&B SaaS GTM. Built with FineDine and the next generation of restaurant tech vendors.
 > **CTA:** See a sample restaurant brief
 
-### 2.8 The one-paragraph "About LeadAC" (press release boilerplate, podcast bio, LinkedIn company page)
+### 2.8 The one-paragraph "About Revint" (press release boilerplate, podcast bio, LinkedIn company page)
 
-> **LeadAC is the operational intelligence layer for vertical SaaS GTM teams selling to local business. Where horizontal tools like Apollo and Clay give you lists and workflows, and where enterprise platforms like Gong give you conversation intelligence at a $100K floor, LeadAC gives mid-market vertical SaaS sales teams — restaurant tech, field service software, dental practice management, beauty and wellness platforms — the memory layer their CRM never had. We find the right local accounts, sync vertical context into HubSpot, and every won and lost deal automatically sharpens the next list. Built for the 50,000+ vertical SaaS companies that the enterprise revenue intelligence category leaves out.**
+> **Revint is the operational intelligence layer for vertical SaaS GTM teams selling to local business. Where horizontal tools like Apollo and Clay give you lists and workflows, and where enterprise platforms like Gong give you conversation intelligence at a $100K floor, Revint gives mid-market vertical SaaS sales teams — restaurant tech, field service software, dental practice management, beauty and wellness platforms — the memory layer their CRM never had. We find the right local accounts, sync vertical context into HubSpot, and every won and lost deal automatically sharpens the next list. Built for the 50,000+ vertical SaaS companies that the enterprise revenue intelligence category leaves out.**
 
 96 words. Use verbatim in press releases, podcast bios, LinkedIn company description, and `Organization.description` JSON-LD.
 
@@ -235,15 +235,15 @@ Maps to existing positioning.md §1.4 "External manifesto" — that 250-word blo
 | **LinkedIn company tagline** | The operational memory for vertical SaaS sales |
 | **LinkedIn company description** | (paste 2.8 verbatim, 96 words) |
 | **Twitter / X bio** | Operational intelligence for vertical SaaS GTM. We remember what closes. |
-| **Founder LinkedIn headline** | Founder @ LeadAC · operational memory for vertical SaaS sales teams selling to local business |
-| **Email signature (founder)** | LeadAC — we remember what closes. ⏤ Book a demo: leadac.ai/demo |
+| **Founder LinkedIn headline** | Founder @ Revint · operational memory for vertical SaaS sales teams selling to local business |
+| **Email signature (founder)** | Revint — we remember what closes. ⏤ Book a demo: revint.dev/demo |
 | **Out-of-office line** | Building the operational memory layer for vertical SaaS sales. Back soon. |
-| **Slack bot tagline** | LeadAC · the memory layer your stack never had |
-| **HubSpot card subtitle** | LeadAC operational brief · vertical SaaS context for this account |
+| **Slack bot tagline** | Revint · the memory layer your stack never had |
+| **HubSpot card subtitle** | Revint operational brief · vertical SaaS context for this account |
 | **Pricing page subtitle** | Connect HubSpot. 200 local accounts in under an hour. Cancel anytime. |
 | **Free-trial-not-available copy** | We're sales-led. Pilot starts at $500/month for 30 days. No free tier — we attract operators, not browsers. |
 | **404 page** | This page got lost. The 200 local accounts in your HubSpot didn't. → home |
-| **Conference badge / sticker** | apollo finds. clay enriches. gong records. we remember. — leadac.ai |
+| **Conference badge / sticker** | apollo finds. clay enriches. gong records. we remember. — revint.dev |
 
 ---
 
@@ -255,7 +255,7 @@ Maps to existing positioning.md §1.4 "External manifesto" — that 250-word blo
 
 1. **Specific over abstract.** "Apollo's 12-14% bounce rate" beats "data quality issues." "OpenTable Lite footer signal" beats "intent signals." Buyer trusts numbers and verbs, not adjectives.
 2. **Verbs of memory.** *remembers, learns, sharpens, compounds, surfaces, traces, retraces.* Never *automates, optimizes, scales, transforms, revolutionizes.*
-3. **Quietly confident.** State, don't shout. *"LeadAC is the operational memory."* Not *"LeadAC is the world's most advanced AI-powered revolutionary operational memory platform."*
+3. **Quietly confident.** State, don't shout. *"Revint is the operational memory."* Not *"Revint is the world's most advanced AI-powered revolutionary operational memory platform."*
 4. **Operator empathy.** Speak like an SDR Manager talking to another SDR Manager. *"You know that 5 hours per rep per week your team is losing to research."* Not *"Industry-leading research efficiency."*
 5. **Anti-Gong elegance.** When mentioning Gong, never sneer. State the price, state the time, state the surface, move on. Buyers respect competition; they don't trust trash talk.
 
@@ -265,7 +265,7 @@ Maps to existing positioning.md §1.4 "External manifesto" — that 250-word blo
 2. **Don't say "agentic."** Saturation 0.93 (positioning.md §5). Every competitor uses it. Saying it makes us indistinguishable.
 3. **Don't say "platform" without a qualifier.** We are an "intelligence *layer*," "memory *layer*," "context *layer*." Layers add to a stack. Platforms try to replace it. Our customer's stack is HubSpot+Apollo+Smartlead+Slack — we don't replace it, we sit between it.
 4. **Don't promise "10x."** Don't say "transform," "revolutionize," "disrupt." We say *"the playbook your best SDR built in their head, finally inside the system."* Concrete > vague hyperbole.
-5. **Don't write copy that Apollo could also write tomorrow.** If a sentence is true for any AI-anything-platform, drop it. Test: replace "LeadAC" with "Apollo" in the sentence. If it still reads correctly, the sentence is wrong.
+5. **Don't write copy that Apollo could also write tomorrow.** If a sentence is true for any AI-anything-platform, drop it. Test: replace "Revint" with "Apollo" in the sentence. If it still reads correctly, the sentence is wrong.
 
 ### 3.3 The 12-word test
 
@@ -320,7 +320,7 @@ These must rank #1 organically + appear in every AI search citation. SEO + Brand
 | Keyword | Page target | Status |
 |---|---|---|
 | `leadac` | `/` | Day 1 |
-| `leadac.ai` | `/` | Day 1 |
+| `revint.dev` | `/` | Day 1 |
 | `leadac pricing` | `/pricing` | Day 1 |
 | `leadac demo` | `/demo` | Day 1 |
 | `leadac vs apollo` | `/vs/apollo` | Day 1 |
@@ -587,9 +587,9 @@ Implementation note: live `robots.txt` route in `src/app/robots.ts` (Next.js 16 
 {
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": "LeadAC",
-  "url": "https://leadac.ai",
-  "logo": "https://leadac.ai/logo.png",
+  "name": "Revint",
+  "url": "https://revint.dev",
+  "logo": "https://revint.dev/logo.png",
   "description": "Operational intelligence layer for vertical SaaS GTM teams selling to local business. Built for restaurant tech, field service, dental, beauty, legal, and hospitality software vendors who need account intelligence, vertical-aware account discovery, and closed-loop ICP refinement at mid-market pricing.",
   "founder": {
     "@type": "Person",
@@ -605,7 +605,7 @@ Implementation note: live `robots.txt` route in `src/app/robots.ts` (Next.js 16 
     "https://twitter.com/leadac",
     "https://www.crunchbase.com/organization/leadac",
     "https://www.g2.com/products/leadac",
-    "https://en.wikipedia.org/wiki/LeadAC"
+    "https://en.wikipedia.org/wiki/Revint"
   ],
   "knowsAbout": [
     "revenue intelligence",
@@ -637,7 +637,7 @@ Ship this on `/` (homepage) and `/about`.
 
 Direct-answer paragraphs of 40-60 words per question. LLMs lift these verbatim.
 
-Example for `/manifesto` (the "what is LeadAC" page):
+Example for `/manifesto` (the "what is Revint" page):
 
 ```json
 {
@@ -646,39 +646,39 @@ Example for `/manifesto` (the "what is LeadAC" page):
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "What is LeadAC?",
+      "name": "What is Revint?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "LeadAC is the operational intelligence layer for vertical SaaS GTM teams selling to local business. We find the right local accounts, sync vertical context into HubSpot, and learn from every won and lost deal. Built for restaurant tech, field service software, dental, beauty, legal, and hospitality SaaS vendors at $2M to $50M ARR."
+        "text": "Revint is the operational intelligence layer for vertical SaaS GTM teams selling to local business. We find the right local accounts, sync vertical context into HubSpot, and learn from every won and lost deal. Built for restaurant tech, field service software, dental, beauty, legal, and hospitality SaaS vendors at $2M to $50M ARR."
       }
     },
     {
       "@type": "Question",
-      "name": "How is LeadAC different from Apollo?",
+      "name": "How is Revint different from Apollo?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Apollo gives you a list of contacts based on firmographic data. LeadAC gives you operational context — location count, vertical software stack signature, review tone, owner activity — that Apollo's database does not index. Apollo finds, LeadAC times. You keep Apollo; we sit on top and write 12 enriched fields per account into HubSpot."
+        "text": "Apollo gives you a list of contacts based on firmographic data. Revint gives you operational context — location count, vertical software stack signature, review tone, owner activity — that Apollo's database does not index. Apollo finds, Revint times. You keep Apollo; we sit on top and write 12 enriched fields per account into HubSpot."
       }
     },
     {
       "@type": "Question",
-      "name": "How is LeadAC different from Gong?",
+      "name": "How is Revint different from Gong?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Gong is conversation intelligence: it remembers what your team said on calls and emails. LeadAC is operational intelligence: we remember what the account is doing in the world. Gong starts at $100K per year for 25 reps and requires 8 weeks of RevOps engineering. LeadAC starts at $1,500 per month for 5 reps and onboards in under an hour."
+        "text": "Gong is conversation intelligence: it remembers what your team said on calls and emails. Revint is operational intelligence: we remember what the account is doing in the world. Gong starts at $100K per year for 25 reps and requires 8 weeks of RevOps engineering. Revint starts at $1,500 per month for 5 reps and onboards in under an hour."
       }
     },
     {
       "@type": "Question",
-      "name": "How is LeadAC different from Clay?",
+      "name": "How is Revint different from Clay?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Clay is a programmable GTM workflow runtime — extremely flexible, but requires a GTM engineer to operate and burns credits unpredictably. LeadAC is the finished product for vertical SaaS teams: pre-built vertical signal libraries (HVAC, restaurant, dental, beauty, legal, hospitality), CRM-native sync, closed-loop ICP refinement out of the box. Connect HubSpot in one hour, no engineer required."
+        "text": "Clay is a programmable GTM workflow runtime — extremely flexible, but requires a GTM engineer to operate and burns credits unpredictably. Revint is the finished product for vertical SaaS teams: pre-built vertical signal libraries (HVAC, restaurant, dental, beauty, legal, hospitality), CRM-native sync, closed-loop ICP refinement out of the box. Connect HubSpot in one hour, no engineer required."
       }
     },
     {
       "@type": "Question",
-      "name": "What does LeadAC cost?",
+      "name": "What does Revint cost?",
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Pilot tier starts at $500 per month for a 30-day evaluation with 500 accounts and one CRM. Team tier is $1,500 per month for 5 seats and 5,000 accounts per month. Growth tier is $3,000 per month for 15 seats and 20,000 accounts per month. Enterprise tier starts at $5,000 per month. All plans cancel anytime — no annual contract."
@@ -686,10 +686,10 @@ Example for `/manifesto` (the "what is LeadAC" page):
     },
     {
       "@type": "Question",
-      "name": "Which CRMs does LeadAC integrate with?",
+      "name": "Which CRMs does Revint integrate with?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "LeadAC ships with native HubSpot integration via OAuth on day one. Pipedrive and Close integrations follow within 60 days. Salesforce integration is on the roadmap for enterprise customers. The integration writes 12 enriched fields per account directly into the CRM contact and company records, with closed-loop outcome ingestion from CRM webhooks."
+        "text": "Revint ships with native HubSpot integration via OAuth on day one. Pipedrive and Close integrations follow within 60 days. Salesforce integration is on the roadmap for enterprise customers. The integration writes 12 enriched fields per account directly into the CRM contact and company records, with closed-loop outcome ingestion from CRM webhooks."
       }
     }
   ]
@@ -704,7 +704,7 @@ Why: ChatGPT, Perplexity, and Gemini cite G2 listicles heavily for "best [catego
 
 Action items:
 
-- Day 7: Submit LeadAC for listing in G2 categories: "Revenue Operations and Intelligence", "Sales Intelligence", "Lead Intelligence", "Account-Based Analytics", "Sales Enablement"
+- Day 7: Submit Revint for listing in G2 categories: "Revenue Operations and Intelligence", "Sales Intelligence", "Lead Intelligence", "Account-Based Analytics", "Sales Enablement"
 - Day 14: Same on Capterra + TrustRadius + SoftwareAdvice + GetApp
 - Day 21: First 3 customer reviews submitted (founder asks pilot customers personally; offers $50 Amazon card per verified review)
 - Day 60: 10 verified reviews target
@@ -719,7 +719,7 @@ Action items:
 - Founder establishes account 90 days before any commercial mention (no instant-post-and-sell)
 - Post genuine practitioner content (e.g., "We benchmarked Apollo bounce rates across 12 verticals — here's the data") with light or no brand mention
 - Comment substantively on existing threads; never lead with a product pitch
-- After 90 days of authentic posting, mention LeadAC in context (e.g., responding to "anyone know a Gong alternative for mid-market" with a value-first answer that ends in product mention)
+- After 90 days of authentic posting, mention Revint in context (e.g., responding to "anyone know a Gong alternative for mid-market" with a value-first answer that ends in product mention)
 
 ### 7.2 The cornerstone content map (build over Day 0-90)
 
@@ -740,9 +740,9 @@ Per the LoudFace 2026 AEO research, cornerstone pages get extracted by LLMs ~10�
 
 ### 7.3 The AI search tracking dashboard (build by Day 30)
 
-Weekly prompt benchmark — run these on ChatGPT, Perplexity, Claude, Gemini, Copilot. Log which competitors appear, which (if any) cite LeadAC.
+Weekly prompt benchmark — run these on ChatGPT, Perplexity, Claude, Gemini, Copilot. Log which competitors appear, which (if any) cite Revint.
 
-Track in a simple spreadsheet: `Date / Query / Engine / Sources Cited (1-10) / LeadAC mentioned (Y/N) / Notes`.
+Track in a simple spreadsheet: `Date / Query / Engine / Sources Cited (1-10) / Revint mentioned (Y/N) / Notes`.
 
 **Benchmark queries (run weekly):**
 
@@ -757,7 +757,7 @@ Track in a simple spreadsheet: `Date / Query / Engine / Sources Cited (1-10) / L
 9. "Memory layer for vertical SaaS GTM teams"
 10. "How to reduce SDR research time at a vertical SaaS company"
 
-Day 0 baseline: LeadAC mentioned in 0/10 (probably). Day 90 target: 3/10. Day 180 target: 6/10.
+Day 0 baseline: Revint mentioned in 0/10 (probably). Day 90 target: 3/10. Day 180 target: 6/10.
 
 ---
 
@@ -811,7 +811,7 @@ Day 0 baseline: LeadAC mentioned in 0/10 (probably). Day 90 target: 3/10. Day 18
 | **Week 5** | (a) `/for/restaurant-tech-saas` page live. (b) Founder appears on Podcast #1 (likely Topline or smaller industry pod). (c) Pavilion membership active; first 3 substantive Slack posts. | Restaurant vertical page; first podcast; community foothold |
 | **Week 6** | (a) `/resources/apollo-bounce-rate-fix` cornerstone live (high-intent commercial). (b) Founder appears on Podcast #2. (c) First paid Google Ads campaign ($1K test budget) — `apollo alternative for vertical saas`, `clay alternative no engineer`. | First commercial-intent resource live; paid acquisition data starts |
 | **Week 7** | (a) `/resources/closed-loop-icp-refinement` live. (b) RevGenius + RevOps Co-op active engagement. (c) First sample HVAC + restaurant brief published as gated resource. | Whitespace content; community engagement; demand-capture gated content |
-| **Week 8** | (a) `/resources/2026-vertical-saas-gtm-benchmark` cornerstone live (data report — the linkable asset). (b) Founder appears on Podcast #3. (c) AI search dashboard: target 1/10 LeadAC mentions on tracked queries. | Annual report (PR-grade); 3 podcasts cumulative; first AI citation |
+| **Week 8** | (a) `/resources/2026-vertical-saas-gtm-benchmark` cornerstone live (data report — the linkable asset). (b) Founder appears on Podcast #3. (c) AI search dashboard: target 1/10 Revint mentions on tracked queries. | Annual report (PR-grade); 3 podcasts cumulative; first AI citation |
 
 **Day 60 success metrics:**
 
@@ -821,7 +821,7 @@ Day 0 baseline: LeadAC mentioned in 0/10 (probably). Day 90 target: 3/10. Day 18
 - 100-300 LinkedIn followers in ICP (Sales Navigator filter)
 - 5 inbound demos booked from organic
 - Paid CAC < $200 per demo booked (proof point that ads convert)
-- AI search dashboard: LeadAC mentioned in 1-2 of 10 weekly benchmark queries
+- AI search dashboard: Revint mentioned in 1-2 of 10 weekly benchmark queries
 
 ### 8.3 Day 61–90 — Compound + iterate
 
@@ -841,7 +841,7 @@ Day 0 baseline: LeadAC mentioned in 0/10 (probably). Day 90 target: 3/10. Day 18
 | **Week 9** | (a) `/for/dental-practice-software` page live. (b) First case study draft from pilot customer. (c) Paid LinkedIn Ads launched ($2K budget, lookalike from customer list). | Wave 2 vertical; case study; LinkedIn audience scale |
 | **Week 10** | (a) Case study published as cornerstone page (`/customers/<name>`). (b) Pavilion CRO Summit speaking submission or attendance. (c) Press outreach — pitch The Information / TechCrunch / SaaStr on the "vertical SaaS revenue intelligence emerging category" angle. | First social proof page; PR pipeline started |
 | **Week 11** | (a) `/resources/[vertical]-sdr-playbook` series — first 2 published. (b) Second podcast wave (target 2 more in this week). (c) Paid Google Ads scaled to $5K/mo if Day 60 CAC worked. | Vertical SEO compounding; paid scaled |
-| **Week 12** | (a) Quarterly cycle review (positioning.md §13) — first formal Friday digest published. (b) AI search dashboard: target 3/10 LeadAC mentions. (c) Day 90 metrics review: are we on track for $50K MRR by Day 180? | Discipline anchor; AEO progress; finance check |
+| **Week 12** | (a) Quarterly cycle review (positioning.md §13) — first formal Friday digest published. (b) AI search dashboard: target 3/10 Revint mentions. (c) Day 90 metrics review: are we on track for $50K MRR by Day 180? | Discipline anchor; AEO progress; finance check |
 
 **Day 90 success metrics:**
 
@@ -851,7 +851,7 @@ Day 0 baseline: LeadAC mentioned in 0/10 (probably). Day 90 target: 3/10. Day 18
 - 500-1,000 LinkedIn followers in target ICP
 - 15 inbound demos/month from organic + 10 from paid = 25 total
 - Paid CAC stable < $250 per demo, LTV math indicates payback < 6 months
-- AI search dashboard: LeadAC mentioned in 3/10 weekly benchmark queries
+- AI search dashboard: Revint mentioned in 3/10 weekly benchmark queries
 - $50K-$80K MRR target (10-15 paying customers @ $1.5K-$3K)
 
 ### 8.4 Risk gates (per cycle review, positioning.md §13)
@@ -977,4 +977,4 @@ Day 0 baseline: LeadAC mentioned in 0/10 (probably). Day 90 target: 3/10. Day 18
 
 ---
 
-*End of LeadAC Brand & Marketing Assets v1 (2026-05-22). Lives alongside `docs/positioning.md`. Every shipped piece of marketing copy gets a row in positioning.md §9 (Messaging House). Every channel-spend decision goes through this doc's §5 and §6 first.*
+*End of Revint Brand & Marketing Assets v1 (2026-05-22). Lives alongside `docs/positioning.md`. Every shipped piece of marketing copy gets a row in positioning.md §9 (Messaging House). Every channel-spend decision goes through this doc's §5 and §6 first.*

@@ -5,10 +5,10 @@ export const post: BlogPost = {
   slug: "choosing-first-niche",
   title: "How to choose your first niche as a local outbound agency",
   description:
-    "Choosing your first niche is the highest-leverage decision you'll make in year one. Here's the framework we use with new Leadac AI customers — plus the six niches that work today and three to avoid.",
+    "Choosing your first niche is the highest-leverage decision you'll make in year one. Here's the framework we use with new Revint customers — plus the six niches that work today and three to avoid.",
   lede: "Pick wrong and you're three months in with no traction. Pick right and month one pays for the year.",
   publishedAt: "2026-03-14T10:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["agency", "strategy", "niche selection"],
   readMinutes: 6,
   body: () => (
@@ -45,7 +45,7 @@ export const post: BlogPost = {
       <h3>3. Density in your target postcode</h3>
       <p>
         Your discovery run needs to produce 30+ leads in a single postcode
-        district. If Leadac returns eight phone-repair shops in NW1, phone
+        district. If Revint returns eight phone-repair shops in NW1, phone
         repair isn't dense enough in NW1 — pick a different niche or a
         different postcode. Density matters because it's what enables the
         "20 sends, measure, adjust" iteration loop.

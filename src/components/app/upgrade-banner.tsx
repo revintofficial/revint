@@ -53,12 +53,12 @@ export function UpgradeBanner({ usage }: UpgradeBannerProps) {
         className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
         style={{
           background: isHard
-            ? "color-mix(in oklab, var(--leadac-error) 8%, transparent)"
-            : "color-mix(in oklab, var(--leadac-warning) 7%, transparent)",
+            ? "color-mix(in oklab, var(--revint-error) 8%, transparent)"
+            : "color-mix(in oklab, var(--revint-warning) 7%, transparent)",
           border: `0.5px solid ${
             isHard
-              ? "color-mix(in oklab, var(--leadac-error) 25%, transparent)"
-              : "color-mix(in oklab, var(--leadac-warning) 20%, transparent)"
+              ? "color-mix(in oklab, var(--revint-error) 25%, transparent)"
+              : "color-mix(in oklab, var(--revint-warning) 20%, transparent)"
           }`,
         }}
       >
@@ -66,22 +66,22 @@ export function UpgradeBanner({ usage }: UpgradeBannerProps) {
           className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
           style={{
             background: isHard
-              ? "color-mix(in oklab, var(--leadac-error) 15%, transparent)"
-              : "color-mix(in oklab, var(--leadac-warning) 15%, transparent)",
+              ? "color-mix(in oklab, var(--revint-error) 15%, transparent)"
+              : "color-mix(in oklab, var(--revint-warning) 15%, transparent)",
           }}
         >
           <Sparkles
             className="w-3.5 h-3.5"
-            style={{ color: isHard ? "var(--leadac-error)" : "var(--leadac-warning)" }}
+            style={{ color: isHard ? "var(--revint-error)" : "var(--revint-warning)" }}
           />
         </div>
-        <p className="flex-1 text-[12.5px]" style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.85)" }}>
+        <p className="flex-1 text-[12.5px]" style={{ color: "hsl(var(--revint-h) var(--revint-nts) 92% / 0.85)" }}>
           {message}
         </p>
         <button
           type="button"
           onClick={() => setModalOpen(true)}
-          className="flex items-center gap-1 text-[12px] font-semibold text-(--leadac-500) hover:text-(--leadac-300) focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--leadac-500) rounded px-1"
+          className="flex items-center gap-1 text-[12px] font-semibold text-(--revint-500) hover:text-(--revint-300) focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--revint-500) rounded px-1"
           aria-haspopup="dialog"
           aria-expanded={modalOpen}
         >

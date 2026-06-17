@@ -45,20 +45,20 @@ if (files.length === 0) {
 const replacements = [
   // Tailwind arbitrary class syntax: bg-[#XXXXXX], text-[#XXXXXX], etc.
   // Map all known indigo/blue/purple variants to the leadac scale.
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#0A84FF\]/g, "$1-(--leadac-500)"],
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#007AFF\]/g, "$1-(--leadac-500)"],
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#3B82F6\]/g, "$1-(--leadac-500)"],
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#0070f3\]/gi, "$1-(--leadac-400)"],
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#64D2FF\]/g, "$1-(--leadac-300)"],
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#BF5AF2\]/g, "$1-(--leadac-400)"],
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#A855F7\]/g, "$1-(--leadac-400)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#0A84FF\]/g, "$1-(--revint-500)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#007AFF\]/g, "$1-(--revint-500)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#3B82F6\]/g, "$1-(--revint-500)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#0070f3\]/gi, "$1-(--revint-400)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#64D2FF\]/g, "$1-(--revint-300)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#BF5AF2\]/g, "$1-(--revint-400)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#A855F7\]/g, "$1-(--revint-400)"],
   // Linear-style legacy indigos (used for default Button + sparkle accents)
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#5E6AD2\]/g, "$1-(--leadac-500)"],
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#4F5BD6\]/g, "$1-(--leadac-500)"],
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#3730A3\]/g, "$1-(--leadac-700)"],
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#A5B4FC\]/g, "$1-(--leadac-300)"],
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#C7CCFF\]/g, "$1-(--leadac-200)"],
-  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#C49AFF\]/g, "$1-(--leadac-300)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#5E6AD2\]/g, "$1-(--revint-500)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#4F5BD6\]/g, "$1-(--revint-500)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#3730A3\]/g, "$1-(--revint-700)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#A5B4FC\]/g, "$1-(--revint-300)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#C7CCFF\]/g, "$1-(--revint-200)"],
+  [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow|caret|decoration|divide|placeholder|accent)-\[#C49AFF\]/g, "$1-(--revint-300)"],
   // Semantic colors
   [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow)-\[#30D158\]/g, "$1-[hsl(152_48%_50%)]"],
   [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow)-\[#22C55E\]/g, "$1-[hsl(152_48%_50%)]"],
@@ -72,19 +72,19 @@ const replacements = [
   [/(bg|text|border|from|to|via|ring|outline|fill|stroke|shadow)-\[#FBBF24\]/g, "$1-[hsl(38_70%_52%)]"],
 
   // Quoted hex literals (in style={{ color: "#XXXXXX" }} etc.)
-  [/(["'`])#0A84FF\1/g, "$1var(--leadac-500)$1"],
-  [/(["'`])#007AFF\1/g, "$1var(--leadac-500)$1"],
-  [/(["'`])#3B82F6\1/g, "$1var(--leadac-500)$1"],
-  [/(["'`])#0070f3\1/gi, "$1var(--leadac-400)$1"],
-  [/(["'`])#64D2FF\1/g, "$1var(--leadac-300)$1"],
-  [/(["'`])#BF5AF2\1/g, "$1var(--leadac-400)$1"],
-  [/(["'`])#A855F7\1/g, "$1var(--leadac-400)$1"],
-  [/(["'`])#5E6AD2\1/g, "$1var(--leadac-500)$1"],
-  [/(["'`])#4F5BD6\1/g, "$1var(--leadac-500)$1"],
-  [/(["'`])#3730A3\1/g, "$1var(--leadac-700)$1"],
-  [/(["'`])#A5B4FC\1/g, "$1var(--leadac-300)$1"],
-  [/(["'`])#C7CCFF\1/g, "$1var(--leadac-200)$1"],
-  [/(["'`])#C49AFF\1/g, "$1var(--leadac-300)$1"],
+  [/(["'`])#0A84FF\1/g, "$1var(--revint-500)$1"],
+  [/(["'`])#007AFF\1/g, "$1var(--revint-500)$1"],
+  [/(["'`])#3B82F6\1/g, "$1var(--revint-500)$1"],
+  [/(["'`])#0070f3\1/gi, "$1var(--revint-400)$1"],
+  [/(["'`])#64D2FF\1/g, "$1var(--revint-300)$1"],
+  [/(["'`])#BF5AF2\1/g, "$1var(--revint-400)$1"],
+  [/(["'`])#A855F7\1/g, "$1var(--revint-400)$1"],
+  [/(["'`])#5E6AD2\1/g, "$1var(--revint-500)$1"],
+  [/(["'`])#4F5BD6\1/g, "$1var(--revint-500)$1"],
+  [/(["'`])#3730A3\1/g, "$1var(--revint-700)$1"],
+  [/(["'`])#A5B4FC\1/g, "$1var(--revint-300)$1"],
+  [/(["'`])#C7CCFF\1/g, "$1var(--revint-200)$1"],
+  [/(["'`])#C49AFF\1/g, "$1var(--revint-300)$1"],
   [/(["'`])#30D158\1/g, "$1hsl(152 48% 50%)$1"],
   [/(["'`])#22C55E\1/g, "$1hsl(152 48% 50%)$1"],
   [/(["'`])#34D399\1/g, "$1hsl(152 48% 50%)$1"],
@@ -174,15 +174,15 @@ const replacements = [
   [/#FCD34D\b/gi, "hsl(38 70% 60%)"],
 
   // Final pass: convert hardcoded `hsl(248 62% X%)` and `hsl(248 62% X% / Y)`
-  // literals to CSS-variable form so a single change to --leadac-h / --leadac-s
+  // literals to CSS-variable form so a single change to --revint-h / --revint-s
   // in globals.css re-skins every consumer. Skipped for files that need a JS
   // string the browser can't resolve (Recharts uses src/lib/colors.ts).
-  [/hsl\(248\s+62%\s+(\d+)%\s*\/\s*([\d.]+)\)/g, "hsl(var(--leadac-h) var(--leadac-s) $1% / $2)"],
-  [/hsl\(248\s+62%\s+(\d+)%\)/g, "hsl(var(--leadac-h) var(--leadac-s) $1%)"],
-  [/hsl\(248\s+7%\s+(\d+)%\s*\/\s*([\d.]+)\)/g, "hsl(var(--leadac-h) var(--leadac-ns) $1% / $2)"],
-  [/hsl\(248\s+7%\s+(\d+)%\)/g, "hsl(var(--leadac-h) var(--leadac-ns) $1%)"],
-  [/hsl\(248\s+10%\s+(\d+)%\s*\/\s*([\d.]+)\)/g, "hsl(var(--leadac-h) var(--leadac-nts) $1% / $2)"],
-  [/hsl\(248\s+10%\s+(\d+)%\)/g, "hsl(var(--leadac-h) var(--leadac-nts) $1%)"],
+  [/hsl\(248\s+62%\s+(\d+)%\s*\/\s*([\d.]+)\)/g, "hsl(var(--revint-h) var(--revint-s) $1% / $2)"],
+  [/hsl\(248\s+62%\s+(\d+)%\)/g, "hsl(var(--revint-h) var(--revint-s) $1%)"],
+  [/hsl\(248\s+7%\s+(\d+)%\s*\/\s*([\d.]+)\)/g, "hsl(var(--revint-h) var(--revint-ns) $1% / $2)"],
+  [/hsl\(248\s+7%\s+(\d+)%\)/g, "hsl(var(--revint-h) var(--revint-ns) $1%)"],
+  [/hsl\(248\s+10%\s+(\d+)%\s*\/\s*([\d.]+)\)/g, "hsl(var(--revint-h) var(--revint-nts) $1% / $2)"],
+  [/hsl\(248\s+10%\s+(\d+)%\)/g, "hsl(var(--revint-h) var(--revint-nts) $1%)"],
 ];
 
 let touched = 0;

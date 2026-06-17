@@ -26,9 +26,9 @@ export function useScrollToLeadHash(ready: boolean) {
         const el = document.getElementById(id);
         if (!el) return;
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.classList.add("ring-2", "ring-(--leadac-500)", "ring-offset-2", "ring-offset-black");
+        el.classList.add("ring-2", "ring-(--revint-500)", "ring-offset-2", "ring-offset-black");
         window.setTimeout(() => {
-          el.classList.remove("ring-2", "ring-(--leadac-500)", "ring-offset-2", "ring-offset-black");
+          el.classList.remove("ring-2", "ring-(--revint-500)", "ring-offset-2", "ring-offset-black");
         }, 2400);
       });
     }

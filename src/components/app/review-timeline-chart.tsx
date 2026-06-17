@@ -180,7 +180,7 @@ export function ReviewTimelineChart({ leadId }: { leadId: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <LineChartIcon className="w-5 h-5 text-(--leadac-300)" />
+            <LineChartIcon className="w-5 h-5 text-(--revint-300)" />
             Review Timeline
           </CardTitle>
         </CardHeader>
@@ -198,7 +198,7 @@ export function ReviewTimelineChart({ leadId }: { leadId: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <LineChartIcon className="w-5 h-5 text-(--leadac-300)" />
+            <LineChartIcon className="w-5 h-5 text-(--revint-300)" />
             Review Timeline
           </CardTitle>
         </CardHeader>
@@ -211,8 +211,8 @@ export function ReviewTimelineChart({ leadId }: { leadId: string }) {
     );
   }
 
-  const positiveColor = "var(--leadac-success)";
-  const negativeColor = "var(--leadac-error)";
+  const positiveColor = "var(--revint-success)";
+  const negativeColor = "var(--revint-error)";
   const neutralColor = "rgba(255,255,255,0.30)";
   const granLabel =
     granularity === "year"
@@ -225,7 +225,7 @@ export function ReviewTimelineChart({ leadId }: { leadId: string }) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          <LineChartIcon className="w-5 h-5 text-(--leadac-300)" />
+          <LineChartIcon className="w-5 h-5 text-(--revint-300)" />
           Review Timeline
         </CardTitle>
         <p className="text-xs text-white/40 mt-1">
@@ -264,13 +264,13 @@ export function ReviewTimelineChart({ leadId }: { leadId: string }) {
               <Tooltip
                 cursor={{ fill: "rgba(255,255,255,0.04)" }}
                 contentStyle={{
-                  backgroundColor: "var(--leadac-card)",
-                  border: "1px solid var(--leadac-border)",
+                  backgroundColor: "var(--revint-card)",
+                  border: "1px solid var(--revint-border)",
                   borderRadius: 8,
                   fontSize: 12,
                 }}
-                labelStyle={{ color: "var(--leadac-text-3)" }}
-                itemStyle={{ color: "var(--leadac-text-1)" }}
+                labelStyle={{ color: "var(--revint-text-3)" }}
+                itemStyle={{ color: "var(--revint-text-1)" }}
               />
               <Bar
                 name="Positive (4-5★)"

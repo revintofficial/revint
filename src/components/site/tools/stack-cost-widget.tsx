@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
  * Apollo + Clay + Gong stack cost calculator widget.
  *
  * Inputs: seats (Apollo), seats (Clay), seats (Gong-or-Outreach), verification
- * monthly spend per seat. Outputs: annual stack cost vs LeadAC Team annual,
+ * monthly spend per seat. Outputs: annual stack cost vs Revint Team annual,
  * delta, and where the delta lands.
  *
  * Pricing baselines come from competitors.ts (sourced + dated). Anything
@@ -194,7 +194,7 @@ export function StackCostWidget() {
 
           <div className="mt-6 rounded-lg border border-signal/40 bg-[hsl(218_50%_16%_/_0.3)] p-4">
             <div className="text-[13px] text-paper-1">
-              LeadAC Team (5 seats, all integrations)
+              Revint Team (5 seats, all integrations)
             </div>
             <div className="site-mono mt-1 text-[24px] text-paper-0">
               {fmt(LEADAC_TEAM_ANNUAL)}/yr
@@ -210,7 +210,7 @@ export function StackCostWidget() {
                 </>
               ) : (
                 <>
-                  Your stack is already lean. LeadAC adds the closed-loop
+                  Your stack is already lean. Revint adds the closed-loop
                   layer the other four don't carry — for a delta of {fmt(Math.abs(delta))}/yr.
                 </>
               )}

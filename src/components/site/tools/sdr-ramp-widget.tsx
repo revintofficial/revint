@@ -135,7 +135,7 @@ export function SdrRampWidget() {
           </ul>
 
           <p className="mt-6 text-[13px] leading-relaxed text-paper-2">
-            Vertical SaaS GTM teams running LeadAC's pre-call brief see
+            Vertical SaaS GTM teams running Revint's pre-call brief see
             ramp time drop from 11 weeks to 6–7 weeks because new SDRs
             inherit the operational pattern instead of building it from
             scratch.

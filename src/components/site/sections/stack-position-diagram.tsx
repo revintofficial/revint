@@ -2,11 +2,11 @@ import { cn } from "@/lib/utils";
 import { STACK_LINE } from "@/content/site/competitors";
 
 /**
- * StackPositionDiagram — "Apollo finds. Clay enriches. Gong records. LeadAC remembers."
+ * StackPositionDiagram — "Apollo finds. Clay enriches. Gong records. Revint remembers."
  *
  * brand-assets §2.9 ships this as the conference sticker line. Rendered as
  * 4 columns with the verbs in mono so the line reads as the instrument
- * panel label set. LeadAC's column carries the signal-amber lamp dot.
+ * panel label set. Revint's column carries the signal-amber lamp dot.
  */
 
 type StackPositionDiagramProps = {
@@ -39,24 +39,24 @@ export function StackPositionDiagram({
 
         <div className="mt-12 grid gap-px overflow-hidden rounded-xl border border-ink-3 bg-ink-3 md:grid-cols-4">
           {STACK_LINE.map((step) => {
-            const isLeadac = step.slug === "leadac";
+            const isRevint = step.slug === "leadac";
             const label =
               step.slug === "leadac"
-                ? "LeadAC"
+                ? "Revint"
                 : step.slug.charAt(0).toUpperCase() + step.slug.slice(1);
             return (
               <div
                 key={step.slug}
                 className={cn(
                   "p-6 md:p-7",
-                  isLeadac ? "bg-ink-2" : "bg-ink-1",
+                  isRevint ? "bg-ink-2" : "bg-ink-1",
                 )}
               >
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
                       "inline-block h-2 w-2 rounded-full",
-                      isLeadac ? "site-signal-dot" : "bg-paper-3",
+                      isRevint ? "site-signal-dot" : "bg-paper-3",
                     )}
                   />
                   <div className="text-[15px] font-medium text-paper-0">
@@ -67,7 +67,7 @@ export function StackPositionDiagram({
                   {step.verb}.
                 </div>
                 <div className="mt-3 text-[13px] text-paper-2">
-                  {isLeadac
+                  {isRevint
                     ? "Memory + next best action, inside the HubSpot card."
                     : step.slug === "apollo"
                       ? "Contact list, firmographic match. Upstream."

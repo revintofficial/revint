@@ -273,7 +273,7 @@ export default async function SeoDashboardPage() {
                 <table className="w-full min-w-[460px] text-sm px-4 sm:px-0">
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wide text-white/50">
-                      <th className="pb-2 sticky left-0 bg-(--leadac-card) z-10">
+                      <th className="pb-2 sticky left-0 bg-(--revint-card) z-10">
                         Query
                       </th>
                       <th className="pb-2 text-right">Clicks</th>
@@ -292,7 +292,7 @@ export default async function SeoDashboardPage() {
                           key={`${row.keys[0]}-${i}`}
                           className="border-t border-white/5"
                         >
-                          <td className="py-1.5 pr-3 text-white/90 sticky left-0 bg-(--leadac-card) z-10">
+                          <td className="py-1.5 pr-3 text-white/90 sticky left-0 bg-(--revint-card) z-10">
                             {row.keys[0]}
                           </td>
                           <td className="py-1.5 text-right text-white/70 tabular-nums">
@@ -328,7 +328,7 @@ export default async function SeoDashboardPage() {
                 <table className="w-full min-w-[360px] text-sm px-4 sm:px-0">
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wide text-white/50">
-                      <th className="pb-2 sticky left-0 bg-(--leadac-card) z-10">
+                      <th className="pb-2 sticky left-0 bg-(--revint-card) z-10">
                         Page
                       </th>
                       <th className="pb-2 text-right">Clicks</th>
@@ -345,7 +345,7 @@ export default async function SeoDashboardPage() {
                           key={`${row.keys[0]}-${i}`}
                           className="border-t border-white/5"
                         >
-                          <td className="truncate py-1.5 pr-3 text-white/80 sticky left-0 bg-(--leadac-card) z-10 max-w-[220px]">
+                          <td className="truncate py-1.5 pr-3 text-white/80 sticky left-0 bg-(--revint-card) z-10 max-w-[220px]">
                             <span className="font-mono text-xs">
                               {shortenUrl(row.keys[0])}
                             </span>
@@ -373,7 +373,7 @@ export default async function SeoDashboardPage() {
           <CardHeader>
             <CardTitle
               className="text-base"
-              style={{ color: "var(--leadac-error-soft)" }}
+              style={{ color: "var(--revint-error-soft)" }}
             >
               Broken links — {broken.broken.length} of {broken.sampled} sampled
             </CardTitle>
@@ -383,7 +383,7 @@ export default async function SeoDashboardPage() {
               <table className="w-full min-w-[420px] text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-white/50">
-                    <th className="pb-2 sticky left-0 bg-(--leadac-card) z-10">
+                    <th className="pb-2 sticky left-0 bg-(--revint-card) z-10">
                       URL
                     </th>
                     <th className="pb-2 text-right">Status</th>
@@ -392,12 +392,12 @@ export default async function SeoDashboardPage() {
                 <tbody>
                   {broken.broken.slice(0, 200).map((b) => (
                     <tr key={b.url} className="border-t border-white/5">
-                      <td className="truncate py-1.5 pr-3 sticky left-0 bg-(--leadac-card) z-10 max-w-[260px]">
+                      <td className="truncate py-1.5 pr-3 sticky left-0 bg-(--revint-card) z-10 max-w-[260px]">
                         <a
                           href={b.url}
                           rel="nofollow noopener"
                           className="font-mono text-xs hover:underline"
-                          style={{ color: "var(--leadac-error-soft)" }}
+                          style={{ color: "var(--revint-error-soft)" }}
                         >
                           {shortenUrl(b.url)}
                         </a>
@@ -459,19 +459,19 @@ function VitalPill({
 }) {
   const tones: Record<typeof tone, React.CSSProperties> = {
     good: {
-      background: "color-mix(in oklab, var(--leadac-success) 15%, transparent)",
-      color: "var(--leadac-success-soft)",
-      borderColor: "color-mix(in oklab, var(--leadac-success) 20%, transparent)",
+      background: "color-mix(in oklab, var(--revint-success) 15%, transparent)",
+      color: "var(--revint-success-soft)",
+      borderColor: "color-mix(in oklab, var(--revint-success) 20%, transparent)",
     },
     ni: {
-      background: "color-mix(in oklab, var(--leadac-warning) 15%, transparent)",
-      color: "var(--leadac-warning-soft)",
-      borderColor: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
+      background: "color-mix(in oklab, var(--revint-warning) 15%, transparent)",
+      color: "var(--revint-warning-soft)",
+      borderColor: "color-mix(in oklab, var(--revint-warning) 20%, transparent)",
     },
     poor: {
-      background: "color-mix(in oklab, var(--leadac-error) 15%, transparent)",
-      color: "var(--leadac-error-soft)",
-      borderColor: "color-mix(in oklab, var(--leadac-error) 20%, transparent)",
+      background: "color-mix(in oklab, var(--revint-error) 15%, transparent)",
+      color: "var(--revint-error-soft)",
+      borderColor: "color-mix(in oklab, var(--revint-error) 20%, transparent)",
     },
     unknown: {
       background: "rgba(255,255,255,0.05)",
@@ -500,9 +500,9 @@ function OpsRow({
 }) {
   const dotStyle: React.CSSProperties =
     status === "ready"
-      ? { background: "var(--leadac-success)" }
+      ? { background: "var(--revint-success)" }
       : status === "pending"
-        ? { background: "var(--leadac-warning)" }
+        ? { background: "var(--revint-warning)" }
         : { background: "rgba(255,255,255,0.3)" };
   return (
     <div className="flex items-start gap-3">

@@ -16,19 +16,19 @@ Stack: **Tailwind v4** (PostCSS plugin), **Radix UI** primitives, **Framer Motio
 Re-skin the entire app by changing four knobs:
 
 ```css
---leadac-h:   38;   /* hue 0–360 — current: warm ochre/orange */
---leadac-s:   78%;  /* saturation */
---leadac-ns:  7%;   /* neutral surface saturation */
---leadac-nts: 10%;  /* neutral text saturation */
+--revint-h:   38;   /* hue 0–360 — current: warm ochre/orange */
+--revint-s:   78%;  /* saturation */
+--revint-ns:  7%;   /* neutral surface saturation */
+--revint-nts: 10%;  /* neutral text saturation */
 ```
 
 Everything below derives from those:
 
-- Primary scale: `--leadac-100` ... `--leadac-900` (HSL, lightness step ramp)
-- Surfaces: `--leadac-bg`, `--leadac-surface`, `--leadac-card`, `--leadac-hover`, `--leadac-border`
-- Text: `--leadac-text-1` (primary), `--leadac-text-2` (secondary), `--leadac-text-3`, `--leadac-muted`
-- Semantic: `--leadac-success`, `--leadac-warning`, `--leadac-error`, `--leadac-info`
-- Glow: `--leadac-glow-soft`, `--leadac-glow-medium`, `--leadac-glow-strong`
+- Primary scale: `--revint-100` ... `--revint-900` (HSL, lightness step ramp)
+- Surfaces: `--revint-bg`, `--revint-surface`, `--revint-card`, `--revint-hover`, `--revint-border`
+- Text: `--revint-text-1` (primary), `--revint-text-2` (secondary), `--revint-text-3`, `--revint-muted`
+- Semantic: `--revint-success`, `--revint-warning`, `--revint-error`, `--revint-info`
+- Glow: `--revint-glow-soft`, `--revint-glow-medium`, `--revint-glow-strong`
 
 **Legacy tokens map onto the leadac scale**:
 - `--system-blue/green/orange/red/purple/teal/yellow` (iOS dark mode names — kept for backward compat)
@@ -39,14 +39,14 @@ Everything below derives from those:
 **Cinematic palette** (only used by `src/components/marketing/cine/*`):
 - `--cine-ink`, `--cine-cream`, `--cine-ochre`, `--cine-terra`, `--cine-indigo`, `--cine-border`, `--cine-gutter`, `--cine-max`
 
-`src/lib/colors.ts` (`LEADAC_HUE` / `LEADAC_SATURATION`) MUST stay in sync with the CSS knobs.
+`src/lib/colors.ts` (`REVINT_HUE` / `REVINT_SATURATION`) MUST stay in sync with the CSS knobs.
 
 ## Tailwind v4 — what's different
 
 - Use `@import "tailwindcss"` in the CSS entry point (we do, see `globals.css`).
 - Theme extension is via `@theme inline { ... }` — see `globals.css` for `--color-*`, `--font-*`, `--animate-*`.
 - No `tailwind.config.js`. Customisations go in `globals.css` with `@theme`.
-- Class arbitrary values still work: `bg-[var(--leadac-card)]`, `text-[hsl(var(--leadac-h)_var(--leadac-s)_50%)]`.
+- Class arbitrary values still work: `bg-[var(--revint-card)]`, `text-[hsl(var(--revint-h)_var(--revint-s)_50%)]`.
 - Use `cn()` from `src/lib/utils.ts` (clsx + tailwind-merge) for conditional classes.
 
 ## Component conventions
@@ -60,10 +60,10 @@ Everything below derives from those:
 
 ```tsx
 // ✅ token references
-<div className="bg-[var(--leadac-card)] text-[var(--leadac-text-1)] border border-[var(--leadac-border)]" />
+<div className="bg-[var(--revint-card)] text-[var(--revint-text-1)] border border-[var(--revint-border)]" />
 
 // ✅ semantic
-<span className="text-[var(--leadac-success)]" />
+<span className="text-[var(--revint-success)]" />
 
 // ❌ hex / rgb literals
 <div className="bg-[#1a1a1a] text-white" />
@@ -95,11 +95,11 @@ Bilingual TR/EN content lives in `src/i18n/`. Marketing surfaces support both vi
 
 ## Charts
 
-`recharts` for in-app analytics dashboards. Theme via `--leadac-*` tokens — pass `stroke="var(--leadac-500)"` style.
+`recharts` for in-app analytics dashboards. Theme via `--revint-*` tokens — pass `stroke="var(--revint-500)"` style.
 
 ## Anti-patterns
 
-- ❌ Hardcoded hex/rgb/named colors in JSX — use `--leadac-*` / `--system-*` tokens
+- ❌ Hardcoded hex/rgb/named colors in JSX — use `--revint-*` / `--system-*` tokens
 - ❌ Adding a `tailwind.config.js` — Tailwind v4 doesn't use one here
 - ❌ Inline `<style>` blocks for one-off styling — extend `globals.css` if it's a real pattern
 - ❌ Client component for static content — keep it server unless you need interactivity

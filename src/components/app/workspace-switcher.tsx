@@ -197,20 +197,20 @@ export function WorkspaceSwitcher({ current, role, collapsed }: WorkspaceSwitche
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <button
-            className={`group flex items-center gap-1.5 min-w-0 rounded-md px-1.5 py-1 -mx-1.5 hover:bg-white/5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--leadac-500) ${
+            className={`group flex items-center gap-1.5 min-w-0 rounded-md px-1.5 py-1 -mx-1.5 hover:bg-white/5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--revint-500) ${
               collapsed ? "md:hidden" : ""
             }`}
             aria-label="Switch workspace"
           >
             <span
               className="text-[11px] truncate"
-              style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)" }}
+              style={{ color: "hsl(var(--revint-h) var(--revint-nts) 92% / 0.55)" }}
             >
               {current.name}
             </span>
             <ChevronsUpDown
               className="w-3 h-3 shrink-0 opacity-60 group-hover:opacity-100"
-              style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)" }}
+              style={{ color: "hsl(var(--revint-h) var(--revint-nts) 92% / 0.55)" }}
               aria-hidden="true"
             />
           </button>
@@ -249,7 +249,7 @@ export function WorkspaceSwitcher({ current, role, collapsed }: WorkspaceSwitche
               >
                 <Building2
                   className="w-3.5 h-3.5 shrink-0"
-                  style={{ color: isActive ? "var(--leadac-500)" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)" }}
+                  style={{ color: isActive ? "var(--revint-500)" : "hsl(var(--revint-h) var(--revint-nts) 92% / 0.55)" }}
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-medium truncate text-white">{ws.name}</p>
@@ -260,7 +260,7 @@ export function WorkspaceSwitcher({ current, role, collapsed }: WorkspaceSwitche
                 {isSwitching ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-white/60" />
                 ) : isActive ? (
-                  <Check className="w-3.5 h-3.5 text-(--leadac-500)" />
+                  <Check className="w-3.5 h-3.5 text-(--revint-500)" />
                 ) : canDelete ? (
                   <button
                     type="button"

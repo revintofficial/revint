@@ -22,10 +22,10 @@ export function MarketingFooter({
                 height={28}
                 className="w-7 h-7 object-contain"
               />
-              <span className="text-[14px] font-semibold tracking-tight">LeadAC</span>
+              <span className="text-[14px] font-semibold tracking-tight">Revint</span>
             </Link>
             <p className="text-[12.5px] text-white/45 leading-relaxed max-w-xs">
-              LeadAC — revenue intelligence for local business sales.
+              Revint — revenue intelligence for local business sales.
             </p>
           </div>
 
@@ -70,7 +70,7 @@ export function MarketingFooter({
                 </Link>
               </li>
               <li>
-                <a href="mailto:hello@leadacai.com" className="text-white/65 hover:text-white">
+                <a href="mailto:hello@revint.dev" className="text-white/65 hover:text-white">
                   Contact
                 </a>
               </li>
@@ -106,7 +106,7 @@ export function MarketingFooter({
           style={{ borderTop: "0.5px solid rgba(255,255,255,0.06)" }}
         >
           <p className="text-[11.5px] text-white/35">
-            © {new Date().getFullYear()} LeadAC. All rights reserved.
+            © {new Date().getFullYear()} Revint. All rights reserved.
           </p>
           <p className="text-[11.5px] text-white/35">
             Built with Next.js, Supabase, and Gemini.

@@ -61,8 +61,8 @@ export function renderMockupHtml(input: {
   // falls back to the safe defaults below on anything else.
   const accent = sanitizeHex(branding?.accentColor, "#a5b4fc");
   const primary = sanitizeHex(branding?.primaryColor, "#5e6ad2");
-  const footerText = branding?.footerText || (input.workspaceName ? `Drafted by ${escapeHtml(input.workspaceName)}` : "Drafted by Leadac AI");
-  const showLeadacCredit = !branding?.hideLeadacCredit;
+  const footerText = branding?.footerText || (input.workspaceName ? `Drafted by ${escapeHtml(input.workspaceName)}` : "Drafted by Revint");
+  const showRevintCredit = !branding?.hideRevintCredit;
   // Logo URL is rendered as `<img src="...">`. `data:` is fine for
   // a tiny PNG; `javascript:` is not. safeUrl() narrows to
   // http(s) + data: image whitelist.
@@ -122,7 +122,7 @@ export function renderMockupHtml(input: {
   </p>
   <div class="panel">${body}</div>
   <p class="footer">
-    ${footerText}${showLeadacCredit ? ` &middot; <a href="https://leadac.ai" target="_blank" rel="noopener">leadac.ai</a>` : ""}
+    ${footerText}${showRevintCredit ? ` &middot; <a href="https://revint.dev" target="_blank" rel="noopener">revint.dev</a>` : ""}
   </p>
 </div>
 </body>

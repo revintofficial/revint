@@ -105,7 +105,7 @@ export function BottomSheet({
               "shadow-[0_-8px_40px_rgba(0,0,0,0.5)]",
             )}
             style={{
-              background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.97)",
+              background: "hsl(var(--revint-h) var(--revint-ns) 11% / 0.97)",
               backdropFilter: "saturate(180%) blur(30px)",
               WebkitBackdropFilter: "saturate(180%) blur(30px)",
               border: "0.5px solid hsl(0 0% 100% / 0.1)",
@@ -140,7 +140,7 @@ export function BottomSheet({
                         tabIndex={-1}
                         className="font-semibold tracking-tight focus:outline-none"
                         style={{
-                          color: "var(--leadac-text-1)",
+                          color: "var(--revint-text-1)",
                           fontSize: "var(--text-title-3)",
                           letterSpacing: "-0.01em",
                         }}
@@ -153,7 +153,7 @@ export function BottomSheet({
                     <DialogPrimitive.Description
                       className="mt-0.5"
                       style={{
-                        color: "var(--leadac-text-2)",
+                        color: "var(--revint-text-2)",
                         fontSize: "var(--text-footnote)",
                       }}
                     >
@@ -164,8 +164,8 @@ export function BottomSheet({
                 {!hideClose && (
                   <DialogPrimitive.Close
                     aria-label="Close"
-                    className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500) -mr-1.5 -mt-1"
-                    style={{ color: "var(--leadac-text-2)" }}
+                    className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--revint-500) -mr-1.5 -mt-1"
+                    style={{ color: "var(--revint-text-2)" }}
                   >
                     <X className="w-5 h-5" strokeWidth={2.25} />
                   </DialogPrimitive.Close>
@@ -196,7 +196,7 @@ export function BottomSheetFooter({
       )}
       style={{
         borderTop: "0.5px solid hsl(0 0% 100% / 0.06)",
-        background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.6)",
+        background: "hsl(var(--revint-h) var(--revint-ns) 8% / 0.6)",
       }}
     >
       {children}

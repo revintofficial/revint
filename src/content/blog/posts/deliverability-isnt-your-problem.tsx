@@ -8,7 +8,7 @@ export const post: BlogPost = {
     "Most agencies blaming Smartlead, Instantly, or SPF records for low reply rates have a list problem hiding underneath. How to tell the difference, and what to fix first.",
   lede: "If you're on your third sender in six months and reply rates still suck, the sender isn't the variable.",
   publishedAt: "2026-02-14T09:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["deliverability", "cold email", "contrarian"],
   readMinutes: 7,
   body: () => (

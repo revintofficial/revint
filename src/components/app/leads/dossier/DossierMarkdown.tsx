@@ -301,7 +301,7 @@ export function DossierMarkdown({
       elements.push(
         <blockquote
           key={`bq-${i}`}
-          className="border-l-3 border-(--leadac-500)/30 pl-3 my-2 text-sm text-white/55 italic"
+          className="border-l-3 border-(--revint-500)/30 pl-3 my-2 text-sm text-white/55 italic"
         >
           {renderInline(text, seen)}
         </blockquote>,

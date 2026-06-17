@@ -18,7 +18,7 @@ import {
 } from "@/lib/integrations/hubspot/oauth";
 import { encryptSecret } from "@/lib/integrations/crypto";
 import { HubspotClient } from "@/lib/integrations/hubspot/client";
-import { ensureLeadacProperties } from "@/lib/integrations/hubspot/properties";
+import { ensureRevintProperties } from "@/lib/integrations/hubspot/properties";
 import { buildDefaultStageMapping } from "@/lib/integrations/hubspot/field-map";
 import { getPlaybook } from "@/lib/playbook/resolve";
 import { logger } from "@/lib/logger";
@@ -138,7 +138,7 @@ export async function GET(request: Request) {
         portalId,
       });
 
-      const provisioned = await ensureLeadacProperties(client);
+      const provisioned = await ensureRevintProperties(client);
 
       let defaultPipelineId: string | null = null;
       let fieldMappingJson: object = {};

@@ -58,11 +58,11 @@ const OFFER_PACKAGES: {
     price: "£800–1500",
     description: "Multi-page, SEO, online sales",
     cls: {
-      selected: "border-(--leadac-500) bg-(--leadac-500)/10 ring-2 ring-(--leadac-500)/20",
-      hover: "hover:border-(--leadac-500)/40 hover:bg-(--leadac-500)/5",
-      dot: "bg-(--leadac-500)",
-      label: "text-(--leadac-500)",
-      price: "text-(--leadac-500)",
+      selected: "border-(--revint-500) bg-(--revint-500)/10 ring-2 ring-(--revint-500)/20",
+      hover: "hover:border-(--revint-500)/40 hover:bg-(--revint-500)/5",
+      dot: "bg-(--revint-500)",
+      label: "text-(--revint-500)",
+      price: "text-(--revint-500)",
     },
   },
 ];
@@ -202,7 +202,7 @@ export function DealSidePanel({
       <aside
         role="dialog"
         aria-label={`Deal details for ${item.lead.businessName}`}
-        className={`fixed top-0 right-0 z-50 h-dvh w-full sm:w-[480px] bg-(--leadac-card) border-l border-white/10 shadow-2xl transition-transform duration-200 ${
+        className={`fixed top-0 right-0 z-50 h-dvh w-full sm:w-[480px] bg-(--revint-card) border-l border-white/10 shadow-2xl transition-transform duration-200 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -211,7 +211,7 @@ export function DealSidePanel({
             <div className="min-w-0 flex-1">
               <Link
                 href={`/app/leads/${item.lead.id}`}
-                className="text-base font-semibold text-white hover:text-(--leadac-500) transition-colors"
+                className="text-base font-semibold text-white hover:text-(--revint-500) transition-colors"
               >
                 {item.lead.businessName}
               </Link>
@@ -273,7 +273,7 @@ export function DealSidePanel({
                     href={item.lead.googleMapsUri}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-(--leadac-500) hover:underline"
+                    className="inline-flex items-center gap-1.5 text-(--revint-500) hover:underline"
                   >
                     <MapPin className="w-3.5 h-3.5 shrink-0" />
                     Open in Google Maps

@@ -49,7 +49,7 @@ export function InsightPerformanceTable() {
 
   if (error) {
     return (
-      <div className="rounded-md border border-[var(--leadac-error)]/40 bg-[var(--leadac-card)] p-4 text-sm text-[var(--leadac-error)]">
+      <div className="rounded-md border border-[var(--revint-error)]/40 bg-[var(--revint-card)] p-4 text-sm text-[var(--revint-error)]">
         Failed to load insight performance: {error}
       </div>
     );
@@ -67,7 +67,7 @@ export function InsightPerformanceTable() {
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-[var(--leadac-border)] bg-[var(--leadac-card)] p-6 text-center text-sm text-[var(--leadac-text-3)]">
+      <div className="rounded-md border border-dashed border-[var(--revint-border)] bg-[var(--revint-card)] p-6 text-center text-sm text-[var(--revint-text-3)]">
         No commercial insights are available yet. Seed a niche pack
         (e.g. <code className="font-mono">scripts/seed-restaurant-tech.ts</code>)
         or wait for a workspace admin to add one.
@@ -76,9 +76,9 @@ export function InsightPerformanceTable() {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-[var(--leadac-border)] bg-[var(--leadac-card)]">
+    <div className="overflow-hidden rounded-lg border border-[var(--revint-border)] bg-[var(--revint-card)]">
       <table className="w-full text-left text-sm">
-        <thead className="bg-[var(--leadac-bg)] text-[10px] uppercase tracking-wide text-[var(--leadac-text-3)]">
+        <thead className="bg-[var(--revint-bg)] text-[10px] uppercase tracking-wide text-[var(--revint-text-3)]">
           <tr>
             <th className="px-3 py-2 font-medium">Insight</th>
             <th className="px-3 py-2 text-right font-medium">Applied</th>
@@ -88,48 +88,48 @@ export function InsightPerformanceTable() {
             <th className="px-3 py-2 text-right font-medium">Won</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[var(--leadac-border)]">
+        <tbody className="divide-y divide-[var(--revint-border)]">
           {rows.map((r) => (
             <tr key={r.insightId} className="align-top">
               <td className="px-3 py-3">
-                <div className="font-medium text-[var(--leadac-text-1)]">
+                <div className="font-medium text-[var(--revint-text-1)]">
                   {r.industryMyth}
                 </div>
-                <div className="mt-0.5 line-clamp-2 text-xs text-[var(--leadac-text-3)]">
+                <div className="mt-0.5 line-clamp-2 text-xs text-[var(--revint-text-3)]">
                   {r.reframe}
                 </div>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {r.nicheSlug ? (
                     <Badge
                       variant="outline"
-                      className="border-[var(--leadac-border)] text-[10px] text-[var(--leadac-text-2)]"
+                      className="border-[var(--revint-border)] text-[10px] text-[var(--revint-text-2)]"
                     >
                       {r.nicheSlug}
                     </Badge>
                   ) : null}
                   <Badge
                     variant="outline"
-                    className="border-[var(--leadac-border)] text-[10px] text-[var(--leadac-text-3)]"
+                    className="border-[var(--revint-border)] text-[10px] text-[var(--revint-text-3)]"
                   >
                     base priority {r.basePriority}
                   </Badge>
                 </div>
               </td>
-              <td className="px-3 py-3 text-right tabular-nums text-[var(--leadac-text-2)]">
+              <td className="px-3 py-3 text-right tabular-nums text-[var(--revint-text-2)]">
                 {r.applied}
               </td>
               <td className="px-3 py-3 text-right">
                 <WinRateBadge rate={r.winRate} applied={r.applied} />
               </td>
-              <td className="px-3 py-3 text-right text-xs tabular-nums text-[var(--leadac-text-2)]">
-                <span className="text-[var(--leadac-success)]">+{r.replyPositive}</span>
+              <td className="px-3 py-3 text-right text-xs tabular-nums text-[var(--revint-text-2)]">
+                <span className="text-[var(--revint-success)]">+{r.replyPositive}</span>
                 {" / "}
-                <span className="text-[var(--leadac-error)]">−{r.replyNegative}</span>
+                <span className="text-[var(--revint-error)]">−{r.replyNegative}</span>
               </td>
-              <td className="px-3 py-3 text-right tabular-nums text-[var(--leadac-text-2)]">
+              <td className="px-3 py-3 text-right tabular-nums text-[var(--revint-text-2)]">
                 {r.meetingBooked}
               </td>
-              <td className="px-3 py-3 text-right tabular-nums font-medium text-[var(--leadac-text-1)]">
+              <td className="px-3 py-3 text-right tabular-nums font-medium text-[var(--revint-text-1)]">
                 {r.won}
               </td>
             </tr>
@@ -143,27 +143,27 @@ export function InsightPerformanceTable() {
 function WinRateBadge({ rate, applied }: { rate: number; applied: number }) {
   if (applied === 0) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-[var(--leadac-text-3)]">
+      <span className="inline-flex items-center gap-1 text-xs text-[var(--revint-text-3)]">
         <Minus className="h-3 w-3" /> n/a
       </span>
     );
   }
   if (rate >= 30) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--leadac-success)]">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--revint-success)]">
         <TrendingUp className="h-3 w-3" /> {rate.toFixed(1)}%
       </span>
     );
   }
   if (rate <= 5) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--leadac-error)]">
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--revint-error)]">
         <TrendingDown className="h-3 w-3" /> {rate.toFixed(1)}%
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-[var(--leadac-text-2)]">
+    <span className="inline-flex items-center gap-1 text-xs text-[var(--revint-text-2)]">
       <Minus className="h-3 w-3" /> {rate.toFixed(1)}%
     </span>
   );

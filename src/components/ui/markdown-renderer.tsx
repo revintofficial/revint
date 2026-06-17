@@ -189,7 +189,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
       elements.push(
         <blockquote
           key={`bq-${i}`}
-          className="border-l-3 border-(--leadac-500)/30 pl-3 my-2 text-sm text-white/50 italic"
+          className="border-l-3 border-(--revint-500)/30 pl-3 my-2 text-sm text-white/50 italic"
         >
           {renderInline(text)}
         </blockquote>

@@ -82,7 +82,7 @@ export function NicheProductFitCard({ nicheSlug, subNicheSlug, auditFeatures }: 
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <CardTitle className="text-[15px] flex items-center gap-2">
-              <Target className="w-4 h-4 text-(--leadac-500) shrink-0" />
+              <Target className="w-4 h-4 text-(--revint-500) shrink-0" />
               {pack.label} product fit
             </CardTitle>
             <p className="text-[12px] text-white/45 mt-1">
@@ -108,7 +108,7 @@ export function NicheProductFitCard({ nicheSlug, subNicheSlug, auditFeatures }: 
 
         <div className="rounded-lg border border-white/5 bg-white/2 px-3 py-2.5">
           <div className="flex items-start gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-(--leadac-500) mt-0.5 shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 text-(--revint-500) mt-0.5 shrink-0" />
             <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-wider text-white/40 mb-1">
                 Pitch angle
@@ -144,18 +144,18 @@ function ModuleChip({ verdict }: { verdict: ModuleVerdict }) {
     { border: string; bg: string; iconColor: string; labelColor: string; detailColor: string }
   > = {
     detected: {
-      border: "color-mix(in oklab, var(--leadac-success) 25%, transparent)",
-      bg: "color-mix(in oklab, var(--leadac-success) 6%, transparent)",
-      iconColor: "var(--leadac-success)",
-      labelColor: "color-mix(in oklab, var(--leadac-success-soft) 95%, white)",
-      detailColor: "color-mix(in oklab, var(--leadac-success-soft) 70%, transparent)",
+      border: "color-mix(in oklab, var(--revint-success) 25%, transparent)",
+      bg: "color-mix(in oklab, var(--revint-success) 6%, transparent)",
+      iconColor: "var(--revint-success)",
+      labelColor: "color-mix(in oklab, var(--revint-success-soft) 95%, white)",
+      detailColor: "color-mix(in oklab, var(--revint-success-soft) 70%, transparent)",
     },
     weak: {
-      border: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
-      bg: "color-mix(in oklab, var(--leadac-warning) 5%, transparent)",
-      iconColor: "var(--leadac-warning)",
-      labelColor: "color-mix(in oklab, var(--leadac-warning-soft) 95%, white)",
-      detailColor: "color-mix(in oklab, var(--leadac-warning-soft) 70%, transparent)",
+      border: "color-mix(in oklab, var(--revint-warning) 20%, transparent)",
+      bg: "color-mix(in oklab, var(--revint-warning) 5%, transparent)",
+      iconColor: "var(--revint-warning)",
+      labelColor: "color-mix(in oklab, var(--revint-warning-soft) 95%, white)",
+      detailColor: "color-mix(in oklab, var(--revint-warning-soft) 70%, transparent)",
     },
     opportunity: {
       border: "rgba(255,255,255,0.08)",

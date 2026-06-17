@@ -1,5 +1,5 @@
 /**
- * FineDine v1 update — HubSpot ↔ LeadAC field mapping.
+ * FineDine v1 update — HubSpot ↔ Revint field mapping.
  *
  * Two responsibilities:
  *   1. Map a HubSpot deal pipeline stage id → a playbook stage key

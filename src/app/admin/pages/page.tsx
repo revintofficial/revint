@@ -19,19 +19,19 @@ export default async function AdminPagesPage({
     <div className="space-y-4">
       <header className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--leadac-text-1)]">
+          <h1 className="text-2xl font-semibold text-[var(--revint-text-1)]">
             Pages
           </h1>
-          <p className="mt-1 text-sm text-[var(--leadac-text-2)]">
+          <p className="mt-1 text-sm text-[var(--revint-text-2)]">
             Per-path engagement, scroll depth and exit rate.
           </p>
         </div>
         <RangePicker current={preset} basePath="/admin/pages" />
       </header>
 
-      <div className="rounded-xl border border-[var(--leadac-border)] bg-[var(--leadac-card)] overflow-hidden">
+      <div className="rounded-xl border border-[var(--revint-border)] bg-[var(--revint-card)] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-[var(--leadac-hover)]/40 text-xs uppercase tracking-wider text-[var(--leadac-text-3)]">
+          <thead className="bg-[var(--revint-hover)]/40 text-xs uppercase tracking-wider text-[var(--revint-text-3)]">
             <tr>
               <th className="text-left px-3 py-2">Path</th>
               <th className="text-right px-3 py-2">Views</th>
@@ -43,12 +43,12 @@ export default async function AdminPagesPage({
               <th className="text-right px-3 py-2">Exit rate</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--leadac-border)]">
+          <tbody className="divide-y divide-[var(--revint-border)]">
             {rows.length === 0 && (
               <tr>
                 <td
                   colSpan={8}
-                  className="px-4 py-8 text-center text-sm text-[var(--leadac-text-3)]"
+                  className="px-4 py-8 text-center text-sm text-[var(--revint-text-3)]"
                 >
                   No page data yet.
                 </td>
@@ -58,9 +58,9 @@ export default async function AdminPagesPage({
               const total =
                 r.bucketLt25 + r.bucket25to50 + r.bucket50to75 + r.bucket75to100 || 1;
               return (
-                <tr key={r.path} className="hover:bg-[var(--leadac-hover)]/40">
+                <tr key={r.path} className="hover:bg-[var(--revint-hover)]/40">
                   <td className="px-3 py-2 align-middle">
-                    <code className="text-[var(--leadac-text-1)]">{r.path}</code>
+                    <code className="text-[var(--revint-text-1)]">{r.path}</code>
                   </td>
                   <td className="px-3 py-2 align-middle text-right tabular-nums">
                     {formatNumber(r.views)}
@@ -95,7 +95,7 @@ export default async function AdminPagesPage({
         </table>
       </div>
 
-      <p className="text-xs text-[var(--leadac-text-3)]">
+      <p className="text-xs text-[var(--revint-text-3)]">
         Distribution colors: red &lt;25% · orange 25–50% · yellow 50–75% ·
         green 75–100%. Hover bars to read exact share.
       </p>
@@ -115,13 +115,13 @@ function DistributionBar({
   m75: number;
 }) {
   const segs = [
-    { v: lt25, color: "var(--leadac-error)", label: "<25%" },
-    { v: m25, color: "var(--leadac-warning)", label: "25-50%" },
-    { v: m50, color: "var(--leadac-300)", label: "50-75%" },
-    { v: m75, color: "var(--leadac-success)", label: "75-100%" },
+    { v: lt25, color: "var(--revint-error)", label: "<25%" },
+    { v: m25, color: "var(--revint-warning)", label: "25-50%" },
+    { v: m50, color: "var(--revint-300)", label: "50-75%" },
+    { v: m75, color: "var(--revint-success)", label: "75-100%" },
   ];
   return (
-    <div className="flex h-3 w-full overflow-hidden rounded-md bg-[var(--leadac-hover)]">
+    <div className="flex h-3 w-full overflow-hidden rounded-md bg-[var(--revint-hover)]">
       {segs.map((s, i) => {
         if (s.v <= 0) return null;
         return (

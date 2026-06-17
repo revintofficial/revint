@@ -175,7 +175,7 @@ function LeadGridCard({
     <Card
       className={`group relative animate-fade-in-up overflow-hidden transition-colors ${
         isSelected
-          ? "border-(--leadac-500) bg-(--leadac-500)/[0.06]"
+          ? "border-(--revint-500) bg-(--revint-500)/[0.06]"
           : "hover:bg-white/[0.02]"
       }`}
       style={{ animationDelay: `${index * 25}ms` }}
@@ -196,7 +196,7 @@ function LeadGridCard({
           <div className="min-w-0 flex-1">
             <Link
               href={`/app/leads/${lead.id}`}
-              className="block font-medium text-white hover:text-(--leadac-500) transition-colors text-[15px] leading-snug line-clamp-2"
+              className="block font-medium text-white hover:text-(--revint-500) transition-colors text-[15px] leading-snug line-clamp-2"
             >
               {lead.businessName}
             </Link>
@@ -283,10 +283,10 @@ function OpenerPreview({ text }: { text: string }) {
           type="button"
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}
-          className="text-left rounded-lg border border-white/5 bg-white/[0.02] p-2.5 hover:border-(--leadac-500)/40 transition-colors w-full"
+          className="text-left rounded-lg border border-white/5 bg-white/[0.02] p-2.5 hover:border-(--revint-500)/40 transition-colors w-full"
         >
           <div className="flex items-start gap-1.5">
-            <MessageSquareText className="w-3 h-3 text-(--leadac-300) mt-0.5 shrink-0" />
+            <MessageSquareText className="w-3 h-3 text-(--revint-300) mt-0.5 shrink-0" />
             <p className="text-[11.5px] leading-relaxed text-white/70 line-clamp-2">
               {truncated}
             </p>
@@ -295,7 +295,7 @@ function OpenerPreview({ text }: { text: string }) {
       </PopoverTrigger>
       <PopoverContent className="max-w-md text-xs leading-relaxed">
         <div className="flex items-center gap-2 mb-2 text-white/50">
-          <Sparkles className="w-3 h-3 text-(--leadac-300)" />
+          <Sparkles className="w-3 h-3 text-(--revint-300)" />
           <span className="text-[11px] font-medium uppercase tracking-wider">
             Personalized opener
           </span>
@@ -318,10 +318,10 @@ function ScoreRing({ score }: { score: number | null }) {
   const clamped = Math.max(0, Math.min(100, score));
   const color =
     clamped >= 60
-      ? "var(--leadac-success)"
+      ? "var(--revint-success)"
       : clamped >= 35
-      ? "var(--leadac-warning)"
-      : "var(--leadac-error)";
+      ? "var(--revint-warning)"
+      : "var(--revint-error)";
   // Conic gradient ring; the inner mask makes it a hollow ring.
   const background = `conic-gradient(${color} ${clamped * 3.6}deg, hsl(0 0% 100% / 0.08) 0deg)`;
   return (
@@ -329,7 +329,7 @@ function ScoreRing({ score }: { score: number | null }) {
       className="w-14 h-14 shrink-0 rounded-full p-1 flex items-center justify-center"
       style={{ background }}
     >
-      <div className="w-full h-full rounded-full bg-(--leadac-card) flex flex-col items-center justify-center">
+      <div className="w-full h-full rounded-full bg-(--revint-card) flex flex-col items-center justify-center">
         <span className="text-base font-bold text-white">{clamped}</span>
         <span className="text-[8px] uppercase tracking-wider text-white/40">
           score

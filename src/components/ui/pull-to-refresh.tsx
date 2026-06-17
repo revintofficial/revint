@@ -120,7 +120,7 @@ export function PullToRefresh({
         <div
           className="rounded-full p-2"
           style={{
-            background: "hsl(var(--leadac-h) var(--leadac-ns) 14% / 0.9)",
+            background: "hsl(var(--revint-h) var(--revint-ns) 14% / 0.9)",
             border: "0.5px solid hsl(0 0% 100% / 0.1)",
             transform: refreshing
               ? "rotate(0deg)"
@@ -133,8 +133,8 @@ export function PullToRefresh({
             style={{
               color:
                 progress >= 1 || refreshing
-                  ? "var(--leadac-300)"
-                  : "var(--leadac-text-2)",
+                  ? "var(--revint-300)"
+                  : "var(--revint-text-2)",
             }}
             strokeWidth={2.25}
           />

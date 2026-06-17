@@ -2,25 +2,25 @@ import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * StackLayersDiagram — the architectural picture of where LeadAC sits.
+ * StackLayersDiagram — the architectural picture of where Revint sits.
  *
  * Structure inspired by Clari's "AI + Revenue Context" diagram (stacked
  * tiered cards on a dark canvas) with Apple's typographic restraint
  * (sentence case, generous tracking, single accent color, light weights).
  *
- * The layers mirror LeadAC's real bounded-context architecture (see the
+ * The layers mirror Revint's real bounded-context architecture (see the
  * Notion architecture hub: SI / OI / CH). Top to bottom, output first,
  * raw sources last — data flows UP the stack:
  *
  *   1. Output  — the Account Intelligence Brief, inside the HubSpot card.
  *   2. OI      — Operational Intelligence. Learns what actually closed and
- *                makes every claim carry its evidence. (LeadAC core.)
+ *                makes every claim carry its evidence. (Revint core.)
  *   3. SI      — Sales Intelligence. AI workers read each account and turn
- *                operational signals into a sales angle. (LeadAC core.)
+ *                operational signals into a sales angle. (Revint core.)
  *   4. Sources — your CRM and the data rails you already run.
  *
  * Reads tokens from globals.css so it re-skins automatically when the
- * `--leadac-h` / `--signal` knobs change.
+ * `--revint-h` / `--signal` knobs change.
  */
 
 type LayerKind = "output" | "oi" | "si" | "sources";

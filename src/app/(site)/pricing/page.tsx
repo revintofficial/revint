@@ -47,14 +47,14 @@ export default function PricingPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Pricing", url: PATH },
         ])}
       />
       <JsonLd
         id="ld-service"
         data={serviceSchema({
-          name: "LeadAC operational intelligence platform",
+          name: "Revint operational intelligence platform",
           description:
             "Closed-loop account discovery and CRM enrichment for vertical SaaS GTM teams selling to local business.",
           url: `${SITE.url}${PATH}`,
@@ -109,15 +109,15 @@ export default function PricingPage() {
 
       <ComparisonTable
         eyebrow="The stack-cost math"
-        title="What you pay today — and where LeadAC fits."
-        subtitle="A typical 5-seat vertical SaaS GTM team running Apollo + Clay + Smartlead + a Gong pilot already spends roughly $29K per year. LeadAC adds the memory layer for $18K per year and doesn't ask you to switch the rest of the stack."
+        title="What you pay today — and where Revint fits."
+        subtitle="A typical 5-seat vertical SaaS GTM team running Apollo + Clay + Smartlead + a Gong pilot already spends roughly $29K per year. Revint adds the memory layer for $18K per year and doesn't ask you to switch the rest of the stack."
         columns={[
           { label: "Apollo Pro" },
           { label: "Clay Growth" },
           { label: "Smartlead Pro" },
           { label: "Gong Foundation" },
           {
-            label: "LeadAC Team",
+            label: "Revint Team",
             isUs: true,
             subLabel: "from $18,000/yr",
           },

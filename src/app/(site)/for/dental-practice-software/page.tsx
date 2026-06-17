@@ -44,7 +44,7 @@ export default function DentalPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "For verticals", url: "/for" },
           { name: vertical.shortName, url: PATH },
         ])}
@@ -52,7 +52,7 @@ export default function DentalPage() {
       <JsonLd
         id="ld-service"
         data={serviceSchema({
-          name: `LeadAC for ${vertical.name}`,
+          name: `Revint for ${vertical.name}`,
           description:
             "Operational intelligence for dental practice management software vendors: PMS signature detection, DSO parent linking via NPI registry, multi-location practice targeting, HubSpot-native sync.",
           url: `${SITE.url}${PATH}`,

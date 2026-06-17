@@ -3,7 +3,7 @@
  *
  * Each vertical exposes the same shape so `/for/<slug>` pages render
  * identically from data. Signals are the public, observable footprints
- * that LeadAC's discovery indexes for that vertical.
+ * that Revint's discovery indexes for that vertical.
  */
 
 export type VerticalPack = {
@@ -18,7 +18,7 @@ export type VerticalPack = {
   /** Public software signatures (footers / scripts / domain patterns). */
   signals: Array<{
     label: string;
-    /** A specific observable — what LeadAC's crawler looks for. */
+    /** A specific observable — what Revint's crawler looks for. */
     observable: string;
   }>;
   /** Pain IDs (from pains.ts) the vertical page features. */

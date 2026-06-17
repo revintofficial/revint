@@ -2,7 +2,7 @@
  * Account-detail bento for the v2 marketing hero.
  *
  * Design intent: a static no-JS bento that mirrors what the actual
- * account-detail page shows when LeadAC has fully analysed a target
+ * account-detail page shows when Revint has fully analysed a target
  * account. Same vocabulary the product writes back into Postgres
  * (real `LeadTrigger.type` enum values, real `SalesOpportunity.reasonCodes`,
  * real `ReviewAnalysis.weaknessKpis`) and the same severity /
@@ -95,9 +95,9 @@ const DISPOSITIONS: DispositionChip[] = [
 ];
 
 function severityTone(s: number): string {
-  if (s >= 70) return "var(--leadac-error)";
-  if (s >= 50) return "var(--leadac-warning)";
-  return "var(--leadac-info)";
+  if (s >= 70) return "var(--revint-error)";
+  if (s >= 50) return "var(--revint-warning)";
+  return "var(--revint-info)";
 }
 
 export function LeadDetailBento() {
@@ -106,7 +106,7 @@ export function LeadDetailBento() {
       className="relative w-full max-w-[580px] mx-auto rounded-[28px] overflow-hidden"
       style={{
         background:
-          "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 11%) 0%, hsl(var(--leadac-h) var(--leadac-ns) 7%) 100%)",
+          "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-ns) 11%) 0%, hsl(var(--revint-h) var(--revint-ns) 7%) 100%)",
         border: "0.5px solid rgba(255,255,255,0.08)",
         boxShadow:
           "0 1px 0 rgba(255,255,255,0.04) inset, 0 24px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02)",
@@ -136,9 +136,9 @@ export function LeadDetailBento() {
             <span
               className="inline-flex rounded-full px-2 py-0.5 text-[10.5px] font-medium"
               style={{
-                background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)",
-                color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
-                border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.28)",
+                background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.12)",
+                color: "hsl(var(--revint-h) var(--revint-s) 78%)",
+                border: "0.5px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.28)",
               }}
             >
               Italian · 2 locations
@@ -164,9 +164,9 @@ export function LeadDetailBento() {
           className="rounded-lg px-2.5 py-1 text-[11px] font-semibold tabular-nums flex items-center gap-1"
           style={{
             background:
-              "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18), hsl(var(--leadac-h) var(--leadac-s) 50% / 0.06))",
-            color: "hsl(var(--leadac-h) var(--leadac-s) 80%)",
-            border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.32)",
+              "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-s) 50% / 0.18), hsl(var(--revint-h) var(--revint-s) 50% / 0.06))",
+            color: "hsl(var(--revint-h) var(--revint-s) 80%)",
+            border: "0.5px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.32)",
           }}
         >
           <span className="text-[9.5px] uppercase tracking-wider opacity-70">
@@ -186,7 +186,7 @@ export function LeadDetailBento() {
           <span
             className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px]"
             style={{
-              background: "var(--leadac-error)",
+              background: "var(--revint-error)",
               color: "white",
               opacity: 0.92,
             }}
@@ -225,7 +225,7 @@ export function LeadDetailBento() {
                 <span
                   className="inline-flex items-center gap-0.5 rounded px-1 py-px text-[9.5px] font-mono tabular-nums"
                   style={{
-                    background: "var(--leadac-error)",
+                    background: "var(--revint-error)",
                     color: "white",
                     opacity: 0.9,
                   }}
@@ -254,7 +254,7 @@ export function LeadDetailBento() {
           className="p-5"
           style={{
             background:
-              "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 10%), hsl(var(--leadac-h) var(--leadac-ns) 8%))",
+              "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-ns) 10%), hsl(var(--revint-h) var(--revint-ns) 8%))",
           }}
         >
           <div className="flex items-center justify-between mb-3">
@@ -310,7 +310,7 @@ export function LeadDetailBento() {
           className="p-5 flex flex-col"
           style={{
             background:
-              "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 10%), hsl(var(--leadac-h) var(--leadac-ns) 8%))",
+              "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-ns) 10%), hsl(var(--revint-h) var(--revint-ns) 8%))",
           }}
         >
           <div className="flex items-center justify-between mb-3">
@@ -320,8 +320,8 @@ export function LeadDetailBento() {
             <span
               className="text-[10px] font-medium px-1.5 py-0.5 rounded"
               style={{
-                background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.14)",
-                color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+                background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.14)",
+                color: "hsl(var(--revint-h) var(--revint-s) 78%)",
               }}
             >
               Talk track
@@ -332,7 +332,7 @@ export function LeadDetailBento() {
             className="flex-1 pl-3 text-[12px] italic text-white/75 leading-relaxed"
             style={{
               borderLeft:
-                "2px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45)",
+                "2px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.45)",
             }}
           >
             Sarah, this is [REP]. Saw Cucina&apos;s third location announced
@@ -428,14 +428,14 @@ export function LeadDetailBento() {
         <span
           className="hidden md:inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] text-white/55"
           style={{
-            background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.1)",
-            border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.22)",
+            background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.1)",
+            border: "0.5px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.22)",
           }}
         >
           <span
             aria-hidden
             className="inline-block h-1 w-1 rounded-full animate-pulse motion-reduce:animate-none"
-            style={{ background: "hsl(var(--leadac-h) var(--leadac-s) 70%)" }}
+            style={{ background: "hsl(var(--revint-h) var(--revint-s) 70%)" }}
           />
           CRM-synced
         </span>

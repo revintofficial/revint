@@ -66,13 +66,13 @@ export function ActionSheet({
             className={cn(
               "flex items-center gap-3 px-3 py-3 rounded-xl text-left",
               "hover:bg-white/5 active:bg-white/10 disabled:opacity-40 disabled:pointer-events-none",
-              "focus-visible:outline-2 focus-visible:outline-(--leadac-500)",
+              "focus-visible:outline-2 focus-visible:outline-(--revint-500)",
             )}
             style={{
               minHeight: "var(--touch-target-min)",
               color: item.destructive
-                ? "var(--leadac-error)"
-                : "var(--leadac-text-1)",
+                ? "var(--revint-error)"
+                : "var(--revint-text-1)",
             }}
           >
             {item.icon && (
@@ -93,7 +93,7 @@ export function ActionSheet({
                 <div
                   className="truncate mt-0.5"
                   style={{
-                    color: "var(--leadac-text-3)",
+                    color: "var(--revint-text-3)",
                     fontSize: "var(--text-footnote)",
                   }}
                 >
@@ -113,11 +113,11 @@ export function ActionSheet({
               triggerHaptic("light");
               onOpenChange(false);
             }}
-            className="w-full rounded-xl py-3 font-semibold focus-visible:outline-2 focus-visible:outline-(--leadac-500) hover:bg-white/5 active:bg-white/10"
+            className="w-full rounded-xl py-3 font-semibold focus-visible:outline-2 focus-visible:outline-(--revint-500) hover:bg-white/5 active:bg-white/10"
             style={{
               minHeight: "var(--touch-target-min)",
               fontSize: "var(--text-callout)",
-              color: "var(--leadac-text-1)",
+              color: "var(--revint-text-1)",
               background: "hsl(0 0% 100% / 0.04)",
             }}
           >

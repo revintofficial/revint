@@ -12,24 +12,38 @@ import type { Metadata } from "next";
  * `{ "en-US": url }`; phase 2 turns on `tr-TR` without touching every page.
  */
 
-const DEFAULT_SITE_URL = "https://leadac.ai";
+const DEFAULT_SITE_URL = "https://revint.dev";
 
 function resolveSiteUrl(): string {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
   return raw || DEFAULT_SITE_URL;
 }
 
+/**
+ * Hostname of the canonical site URL (no scheme, no path). Used by code
+ * that needs a bare domain (e.g. Host header fallbacks, mailto display,
+ * "visit site" links). Always derived from SITE.url so a single env var
+ * (`NEXT_PUBLIC_SITE_URL`) flips marketing, app, and admin together.
+ */
+export function siteHost(): string {
+  try {
+    return new URL(resolveSiteUrl()).host;
+  } catch {
+    return "revint.dev";
+  }
+}
+
 export const SITE = {
   get url() {
     return resolveSiteUrl();
   },
-  name: "LeadAC",
-  legalName: "LeadAC",
+  name: "Revint",
+  legalName: "Revint",
   // brand-assets.md §2.2 — 7-word tagline
   tagline: "We remember what closes for vertical SaaS sales teams.",
   // brand-assets.md §2.8 — 96-word boilerplate, verbatim
   description:
-    "LeadAC is the operational intelligence layer for vertical SaaS GTM teams selling to local business. Where horizontal tools like Apollo and Clay give you lists and workflows, and where enterprise platforms like Gong give you conversation intelligence at a $100K floor, LeadAC gives mid-market vertical SaaS sales teams — restaurant tech, field service software, dental practice management, beauty and wellness platforms — the memory layer their CRM never had. We find the right local accounts, sync vertical context into HubSpot, and every won and lost deal automatically sharpens the next list.",
+    "Revint is the operational intelligence layer for vertical SaaS GTM teams selling to local business. Where horizontal tools like Apollo and Clay give you lists and workflows, and where enterprise platforms like Gong give you conversation intelligence at a $100K floor, Revint gives mid-market vertical SaaS sales teams — restaurant tech, field service software, dental practice management, beauty and wellness platforms — the memory layer their CRM never had. We find the right local accounts, sync vertical context into HubSpot, and every won and lost deal automatically sharpens the next list.",
   // brand-assets.md §2.1 — knowsAbout entity descriptors for Organization schema
   knowsAbout: [
     "revenue intelligence",
@@ -50,15 +64,15 @@ export const SITE = {
   locale: "en_US",
   defaultLanguage: "en-US" as const,
   supportedLanguages: ["en-US"] as const,
-  twitter: "@leadac",
-  email: "hello@leadac.ai",
+  twitter: "@revint",
+  email: "hello@revint.dev",
   sameAs: [
-    "https://twitter.com/leadac",
-    "https://www.linkedin.com/company/leadac",
-    "https://www.crunchbase.com/organization/leadac",
-    "https://www.g2.com/products/leadac",
-    "https://www.capterra.com/p/leadac",
-    "https://alternativeto.net/software/leadac/",
+    "https://twitter.com/revint",
+    "https://www.linkedin.com/company/revint",
+    "https://www.crunchbase.com/organization/revint",
+    "https://www.g2.com/products/revint",
+    "https://www.capterra.com/p/revint",
+    "https://alternativeto.net/software/revint/",
   ] as const,
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,

@@ -19,7 +19,7 @@ import {
   getWorker,
 } from "@/lib/agent-workers/registry";
 import { getLimit, UNLIMITED } from "@/lib/agent-workers/quota";
-import { renderLeadacShowcase } from "@/lib/mockups/renderers/leadac-showcase";
+import { renderRevintShowcase } from "@/lib/mockups/renderers/leadac-showcase";
 import type { WebsiteMockupSections } from "@/lib/prompts/website-mockup-prompt";
 import {
   exportReceptionistArtifact,
@@ -224,7 +224,7 @@ describe("AI Workers - leadac-showcase renderer", () => {
   };
 
   it("renders required sections and primary CTA", () => {
-    const html = renderLeadacShowcase({
+    const html = renderRevintShowcase({
       businessName: "Acme HVAC",
       formattedAddress: "123 Main St, Brooklyn, NY",
       borough: "Brooklyn",
@@ -234,7 +234,7 @@ describe("AI Workers - leadac-showcase renderer", () => {
       reviewCount: 127,
       googleMapsUri: "https://maps.google.com/?q=Acme+HVAC",
       sections,
-      workspaceName: "Leadac Demo",
+      workspaceName: "Revint Demo",
       lang: "en",
     });
     expect(html).toContain("<!doctype html>");
@@ -264,7 +264,7 @@ describe("AI Workers - leadac-showcase renderer", () => {
         headline: "<script>alert(1)</script>",
       },
     };
-    const html = renderLeadacShowcase({
+    const html = renderRevintShowcase({
       businessName: "<img src=x onerror=alert(1) />",
       formattedAddress: "1 Main",
       borough: null,
@@ -282,7 +282,7 @@ describe("AI Workers - leadac-showcase renderer", () => {
   });
 
   it("renders tr labels when lang=tr", () => {
-    const html = renderLeadacShowcase({
+    const html = renderRevintShowcase({
       businessName: "Demo",
       formattedAddress: "A",
       borough: null,
@@ -300,7 +300,7 @@ describe("AI Workers - leadac-showcase renderer", () => {
   });
 
   it("omits booking section when no phone is set", () => {
-    const html = renderLeadacShowcase({
+    const html = renderRevintShowcase({
       businessName: "Demo",
       formattedAddress: "A",
       borough: null,

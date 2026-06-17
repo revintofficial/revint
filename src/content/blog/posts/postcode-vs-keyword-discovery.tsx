@@ -9,7 +9,7 @@ export const post: BlogPost = {
     "If you're finding local-service leads by typing 'plumbers Manchester' into Google, you're working with Google's SEO winners, not the market. Postcode-first discovery flips it. Here's the difference in practice.",
   lede: "The businesses that rank on Google and the businesses that need your help are mostly not the same businesses.",
   publishedAt: "2025-12-06T09:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["discovery", "postcode", "lead generation"],
   readMinutes: 6,
   body: () => (
@@ -186,7 +186,7 @@ export const post: BlogPost = {
         "Yes, with two caveats. Some countries (France, Germany, Japan) have less granular Google Maps coverage for small businesses. And postcode systems vary — Turkey's is 5-digit and not very geographic, so district-level discovery works better. For the UK and US, postcode/ZIP discovery is the cleanest unit.",
     },
     {
-      question: "Is Leadac built on this principle?",
+      question: "Is Revint built on this principle?",
       answer:
         "Yes. Our discovery layer starts with postcode + niche and returns every operating business in that area, not the Google SEO winners. The 20-signal audit runs on each site so the openers write themselves.",
     },

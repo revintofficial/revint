@@ -64,22 +64,22 @@ export function ProblemGrid() {
           return (
             <article
               key={item.title}
-              className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]"
+              className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--revint-h)_var(--revint-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]"
             >
               <div className="flex items-center gap-3 mb-5">
                 <span
                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06]"
                   style={{
                     background:
-                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.08)",
-                    color: "hsl(var(--leadac-h) var(--leadac-s) 72%)",
+                      "hsl(var(--revint-h) var(--revint-s) 50% / 0.08)",
+                    color: "hsl(var(--revint-h) var(--revint-s) 72%)",
                   }}
                 >
                   <Icon className="h-4 w-4" />
                 </span>
                 <span
                   className="text-[11px] font-mono font-semibold tracking-wider"
-                  style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 70%)" }}
+                  style={{ color: "hsl(var(--revint-h) var(--revint-s) 70%)" }}
                 >
                   {item.index}
                 </span>

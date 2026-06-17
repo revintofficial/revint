@@ -50,7 +50,7 @@ export default function PublicDirectoryLayout({
               letterSpacing: "-0.01em",
             }}
           >
-            Leadac AI
+            Revint
           </Link>
           <nav
             style={{
@@ -96,7 +96,7 @@ export default function PublicDirectoryLayout({
               href="/signup"
               style={{
                 fontSize: 13,
-                color: "var(--leadac-300)",
+                color: "var(--revint-300)",
                 textDecoration: "none",
                 fontWeight: 600,
               }}
@@ -125,7 +125,7 @@ export default function PublicDirectoryLayout({
       >
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <p>
-            Business profiles compiled by Leadac AI from public Google Maps
+            Business profiles compiled by Revint from public Google Maps
             data. Not affiliated with the businesses listed.
           </p>
           <p style={{ marginTop: 8 }}>

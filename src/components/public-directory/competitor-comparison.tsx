@@ -3,7 +3,7 @@ import type { CompetitorProfile } from "@/content/competitors";
 import { LEADAC_SELF } from "@/content/competitors";
 
 /**
- * Dimension-by-dimension comparison between Leadac AI and one competitor.
+ * Dimension-by-dimension comparison between Revint and one competitor.
  * Rendered as a real <table> (not a flex layout) so answer engines can
  * extract it cleanly.
  */
@@ -45,7 +45,7 @@ export function ScorecardTable({
           }}
         >
           <th style={{ padding: "12px 16px" }}>Dimension</th>
-          <th style={{ padding: "12px 16px", color: "var(--leadac-300)" }}>
+          <th style={{ padding: "12px 16px", color: "var(--revint-300)" }}>
             {LEADAC_SELF.name}
           </th>
           <th style={{ padding: "12px 16px" }}>{competitor.name}</th>
@@ -60,7 +60,7 @@ export function ScorecardTable({
             <td style={{ padding: "12px 16px", color: "#ededf0" }}>
               {d.label}
             </td>
-            <td style={{ padding: "12px 16px", color: "var(--leadac-300)" }}>
+            <td style={{ padding: "12px 16px", color: "var(--revint-300)" }}>
               {"★".repeat(LEADAC_SELF.scorecard[d.key])}
               <span style={{ color: "rgba(255,255,255,0.15)" }}>
                 {"★".repeat(5 - LEADAC_SELF.scorecard[d.key])}
@@ -111,35 +111,35 @@ export function PricingComparison({
           }}
         >
           <th style={{ padding: "12px 16px" }}>Plan tier</th>
-          <th style={{ padding: "12px 16px", color: "var(--leadac-300)" }}>{a.name}</th>
+          <th style={{ padding: "12px 16px", color: "var(--revint-300)" }}>{a.name}</th>
           <th style={{ padding: "12px 16px" }}>{b.name}</th>
         </tr>
       </thead>
       <tbody>
         <tr style={{ borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
           <td style={{ padding: "12px 16px" }}>Entry</td>
-          <td style={{ padding: "12px 16px", color: "var(--leadac-300)" }}>
+          <td style={{ padding: "12px 16px", color: "var(--revint-300)" }}>
             {a.pricing.entry}
           </td>
           <td style={{ padding: "12px 16px" }}>{b.pricing.entry}</td>
         </tr>
         <tr style={{ borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
           <td style={{ padding: "12px 16px" }}>Mid</td>
-          <td style={{ padding: "12px 16px", color: "var(--leadac-300)" }}>
+          <td style={{ padding: "12px 16px", color: "var(--revint-300)" }}>
             {a.pricing.mid ?? "—"}
           </td>
           <td style={{ padding: "12px 16px" }}>{b.pricing.mid ?? "—"}</td>
         </tr>
         <tr style={{ borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
           <td style={{ padding: "12px 16px" }}>Enterprise</td>
-          <td style={{ padding: "12px 16px", color: "var(--leadac-300)" }}>
+          <td style={{ padding: "12px 16px", color: "var(--revint-300)" }}>
             {a.pricing.enterprise ?? "—"}
           </td>
           <td style={{ padding: "12px 16px" }}>{b.pricing.enterprise ?? "—"}</td>
         </tr>
         <tr style={{ borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
           <td style={{ padding: "12px 16px" }}>Free trial</td>
-          <td style={{ padding: "12px 16px", color: "var(--leadac-300)" }}>
+          <td style={{ padding: "12px 16px", color: "var(--revint-300)" }}>
             {a.pricing.freeTrial}
           </td>
           <td style={{ padding: "12px 16px" }}>{b.pricing.freeTrial}</td>
@@ -193,7 +193,7 @@ export function CitationsBlock({
               href={c.url}
               target="_blank"
               rel="nofollow noopener"
-              style={{ color: "var(--leadac-300)" }}
+              style={{ color: "var(--revint-300)" }}
             >
               {c.label}
             </a>
@@ -239,7 +239,7 @@ export function WhyReasons({ reasons }: { reasons: string[] }) {
         >
           <span
             style={{
-              color: "var(--leadac-300)",
+              color: "var(--revint-300)",
               fontWeight: 700,
               fontSize: 14,
               minWidth: 20,
@@ -301,14 +301,14 @@ export function CompetitorLinkGrid({
             <Link
               href={`${basePath}/${c.slug}`}
               style={{
-                color: "var(--leadac-300)",
+                color: "var(--revint-300)",
                 fontSize: 14,
                 textDecoration: "none",
               }}
             >
               {basePath === "/alternatives"
                 ? `${c.name} alternative`
-                : `Leadac vs ${c.name}`}
+                : `Revint vs ${c.name}`}
             </Link>
           </li>
         ))}

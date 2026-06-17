@@ -23,7 +23,7 @@ export const metadata: Metadata = buildMetadata({
   path: PATH,
   title: "Privacy Policy",
   description:
-    "How LeadAC collects, uses, and protects the data you bring into the platform. Plain English. Updated May 22, 2026.",
+    "How Revint collects, uses, and protects the data you bring into the platform. Plain English. Updated May 22, 2026.",
 });
 
 export default function PrivacyPage() {
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Legal", url: "/legal" },
           { name: "Privacy", url: PATH },
         ])}
@@ -52,8 +52,8 @@ export default function PrivacyPage() {
 
             <Section title="1. What this covers">
               <p>
-                This policy covers how LeadAC (&ldquo;we&rdquo;, &ldquo;us&rdquo;) handles
-                information when you visit {SITE.url} or use the LeadAC
+                This policy covers how Revint (&ldquo;we&rdquo;, &ldquo;us&rdquo;) handles
+                information when you visit {SITE.url} or use the Revint
                 product. It covers the marketing site, the authenticated
                 app, and the data we ingest from third-party integrations
                 you choose to connect.
@@ -85,11 +85,11 @@ export default function PrivacyPage() {
 
             <Section title="3. What we collect — customers">
               <p>
-                Once you sign in, LeadAC ingests data you authorise via
+                Once you sign in, Revint ingests data you authorise via
                 OAuth: HubSpot company and contact records (plus the deal
                 stages you select for closed-loop ingestion), Pipedrive
                 or Close records (if connected), and SDR-level usage data
-                inside the LeadAC dashboard.
+                inside the Revint dashboard.
               </p>
               <p>
                 Customer-content data is stored encrypted at rest with
@@ -111,7 +111,7 @@ export default function PrivacyPage() {
                   email delivery.
                 </li>
                 <li>
-                  To improve LeadAC — aggregated, non-identifying usage
+                  To improve Revint — aggregated, non-identifying usage
                   data informs product decisions. Customer CRM data is
                   never used to train models.
                 </li>
@@ -142,7 +142,7 @@ export default function PrivacyPage() {
 
             <Section title="6. Sub-processors">
               <p>
-                LeadAC runs on AWS (us-east-1, with EU/UK residency on
+                Revint runs on AWS (us-east-1, with EU/UK residency on
                 Enterprise). We rely on the following sub-processors for
                 specific functions: Supabase (auth), Stripe (billing),
                 Resend (transactional email), Google Gemini (signal
@@ -163,7 +163,7 @@ export default function PrivacyPage() {
               </p>
               <p>
                 If you cancel your subscription, you have 30 days to
-                export your data through the LeadAC dashboard. After 30
+                export your data through the Revint dashboard. After 30
                 days, the data is deleted per the retention policy.
               </p>
             </Section>

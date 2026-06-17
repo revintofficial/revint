@@ -253,7 +253,7 @@ export const RESOURCE_BODIES: Record<string, ResourceBody> = {
             The data Apollo lacks isn't another contact field — it's the
             operational shape of the account. Location count, vertical
             software signature, owner activity, review tone. This is what
-            LeadAC writes into the HubSpot company record alongside the
+            Revint writes into the HubSpot company record alongside the
             Apollo-sourced contact. The SDR opens the contact and reads
             the operational brief; they no longer rely on Apollo's
             inferred email as the only piece of context.

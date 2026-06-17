@@ -19,7 +19,7 @@ const FIELD_STYLE: React.CSSProperties = {
   background: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(255,255,255,0.10)",
   ["--tw-ring-color" as never]:
-    "hsl(var(--leadac-h) var(--leadac-s) 60% / 0.4)",
+    "hsl(var(--revint-h) var(--revint-s) 60% / 0.4)",
 };
 
 /**
@@ -76,14 +76,14 @@ export function WaitlistForm() {
         }
         if (!res.ok || !data.ok) {
           setError(
-            "Something bounced. Email mert@leadacai.com directly and I'll add you by hand.",
+            "Something bounced. Email mert@revint.dev directly and I'll add you by hand.",
           );
           return;
         }
         setSubmitted(true);
       } catch {
         setError(
-          "Something bounced. Email mert@leadacai.com directly and I'll add you by hand.",
+          "Something bounced. Email mert@revint.dev directly and I'll add you by hand.",
         );
       }
     });
@@ -95,8 +95,8 @@ export function WaitlistForm() {
         className="rounded-2xl p-6 md:p-7 flex items-start gap-4"
         style={{
           background:
-            "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60% / 0.16), hsl(var(--leadac-h) var(--leadac-s) 50% / 0.04))",
-          border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.32)",
+            "linear-gradient(135deg, hsl(var(--revint-h) var(--revint-s) 60% / 0.16), hsl(var(--revint-h) var(--revint-s) 50% / 0.04))",
+          border: "1px solid hsl(var(--revint-h) var(--revint-s) 60% / 0.32)",
         }}
         role="status"
         aria-live="polite"
@@ -105,7 +105,7 @@ export function WaitlistForm() {
           className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center"
           style={{
             background:
-              "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60%), hsl(var(--leadac-h) var(--leadac-s) 36%))",
+              "linear-gradient(135deg, hsl(var(--revint-h) var(--revint-s) 60%), hsl(var(--revint-h) var(--revint-s) 36%))",
             color: "white",
           }}
           aria-hidden
@@ -182,9 +182,9 @@ export function WaitlistForm() {
           className="group inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-semibold text-black transition-transform hover:-translate-y-px disabled:opacity-70 disabled:cursor-wait"
           style={{
             background:
-              "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 72%) 0%, hsl(var(--leadac-h) var(--leadac-s) 58%) 100%)",
+              "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-s) 72%) 0%, hsl(var(--revint-h) var(--revint-s) 58%) 100%)",
             boxShadow:
-              "0 1px 0 rgba(255,255,255,0.4) inset, 0 12px 36px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35)",
+              "0 1px 0 rgba(255,255,255,0.4) inset, 0 12px 36px hsl(var(--revint-h) var(--revint-s) 50% / 0.35)",
           }}
         >
           {isPending ? "Adding..." : "Join the waitlist"}

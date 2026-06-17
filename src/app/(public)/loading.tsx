@@ -18,7 +18,7 @@ export default function PublicLoading() {
           height: 32,
           borderRadius: "50%",
           border: "2px solid rgba(255,255,255,0.08)",
-          borderTopColor: "var(--leadac-300)",
+          borderTopColor: "var(--revint-300)",
           animation: "spin 0.9s linear infinite",
         }}
       />

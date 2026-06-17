@@ -1,4 +1,4 @@
-# LeadAC — Tam Ürün Dokümantasyonu
+# Revint — Tam Ürün Dokümantasyonu
 
 > Kaynak doğrudan koddan çıkarılmıştır: `prisma/schema.prisma`, `src/lib/agent-workers/registry.ts`, `src/lib/ai-core/chains.ts`, `src/lib/plans.ts`, `src/app/**`, `src/workers/**`. Pazarlama söyleminden değil, gerçekten kurulu olan işlevsellikten yazılmıştır.
 
@@ -6,7 +6,7 @@
 
 ## 1. Tek Cümlede Ürün
 
-LeadAC, **lokal işletmelere outbound satış yapan ajansların** kullandığı **lokal lead-intelligence (potansiyel müşteri istihbaratı) katmanıdır**. Bir posta kodu ve niş yazarsınız; sistem Google Maps'ten taze leadleri çeker, her sitede 20+ sinyalli denetim çalıştırır, fit skoru üretir (0–100), ve denetim bulgularına dayanan bir cold-email taslağı yazar. Gönderme işini Smartlead, Instantly, GHL, Gmail veya Outlook yapmaya devam eder; LeadAC onlara yakıt verir.
+Revint, **lokal işletmelere outbound satış yapan ajansların** kullandığı **lokal lead-intelligence (potansiyel müşteri istihbaratı) katmanıdır**. Bir posta kodu ve niş yazarsınız; sistem Google Maps'ten taze leadleri çeker, her sitede 20+ sinyalli denetim çalıştırır, fit skoru üretir (0–100), ve denetim bulgularına dayanan bir cold-email taslağı yazar. Gönderme işini Smartlead, Instantly, GHL, Gmail veya Outlook yapmaya devam eder; Revint onlara yakıt verir.
 
 İçinde 30'dan fazla AI worker, planner DAG'i, vector-tabanlı semantic memory, kanban deal pipeline, çoklu kullanıcı workspace + rol yönetimi, native Gmail/Outlook entegrasyonu, Stripe billing, multi-tenant izolasyon ve programmatic SEO katmanı barındırır.
 
@@ -830,19 +830,19 @@ Hepsi `requireUser()` kapısından geçer (webhook'lar hariç, onlar imza doğru
 `src/app/globals.css` tek doğru kaynak. 4 ana knob ile tüm uygulama re-skin edilir:
 
 ```css
---leadac-h:   38;     /* hue */
---leadac-s:   78%;    /* saturation */
---leadac-ns:  7%;     /* neutral surface saturation */
---leadac-nts: 10%;    /* neutral text saturation */
+--revint-h:   38;     /* hue */
+--revint-s:   78%;    /* saturation */
+--revint-ns:  7%;     /* neutral surface saturation */
+--revint-nts: 10%;    /* neutral text saturation */
 ```
 
-Türetilenler: `--leadac-100..900` ramp, `--leadac-bg/surface/card/hover/border`, `--leadac-text-1/2/3`, `--leadac-muted`, `--leadac-success/warning/error/info`, `--leadac-glow-soft/medium/strong`.
+Türetilenler: `--revint-100..900` ramp, `--revint-bg/surface/card/hover/border`, `--revint-text-1/2/3`, `--revint-muted`, `--revint-success/warning/error/info`, `--revint-glow-soft/medium/strong`.
 
 Legacy iOS dark-mode token'ları (`--system-blue/green/orange/red/purple/teal/yellow`, `--label-primary/secondary/tertiary/quaternary`, `--shadow-sm/card/elevated/modal`, `--border-primary/light`, `--separator`) ana ramp'e map edilmiş.
 
-`src/lib/colors.ts` — `LEADAC_HUE` ve `LEADAC_SATURATION` CSS knob'larıyla senkron tutulur.
+`src/lib/colors.ts` — `REVINT_HUE` ve `REVINT_SATURATION` CSS knob'larıyla senkron tutulur.
 
-**Hardcoded hex/rgb yasak** — her yerde `var(--leadac-*)`. Cinematic palette sadece marketing cine bölümünde.
+**Hardcoded hex/rgb yasak** — her yerde `var(--revint-*)`. Cinematic palette sadece marketing cine bölümünde.
 
 ---
 
@@ -874,15 +874,15 @@ Migration script: `tsx prisma/migrations/apply.ts <file>.sql` — schema editler
 
 ---
 
-## 34. Ne LeadAC DEĞİL (negatif scope)
+## 34. Ne Revint DEĞİL (negatif scope)
 
-- **Apollo replacement değil** — Apollo enterprise B2B'yi sahiplenir; LeadAC lokal işletmeleri sahiplenir. Çoğu ajans LeadAC'i Apollo'nun **önünde** çalıştırır, yerine değil.
-- **Smartlead / Instantly replacement değil** — onlar gönderici; LeadAC onlara yakıt verir.
+- **Apollo replacement değil** — Apollo enterprise B2B'yi sahiplenir; Revint lokal işletmeleri sahiplenir. Çoğu ajans Revint'i Apollo'nun **önünde** çalıştırır, yerine değil.
+- **Smartlead / Instantly replacement değil** — onlar gönderici; Revint onlara yakıt verir.
 - **CRM değil** — `WatchlistItem` minimal kanban'dır; HubSpot/Salesforce'la rekabet etmez.
 - **AutoGPT / agent platform değil** — sabit, opinionated workflow'a sahip bir SaaS'tır; "build any agent" değil.
 - **B2C için değil** — sadece B2B agency/operator ICP.
 - **PLG/freemium toy değil** — FREE tier sunset edildi; 14-day trial + card on file modeli.
-- **Enterprise SDR teams için değil** — 6-9 aylık satış döngüsü ekonomisi LeadAC pricing'iyle uyumsuz.
+- **Enterprise SDR teams için değil** — 6-9 aylık satış döngüsü ekonomisi Revint pricing'iyle uyumsuz.
 - **Yeni BullMQ queue eklenmez** — AI iş `agent-runs` discriminator'ı veya AI Core chains üzerinden.
 - **Yeni Gemini-çağıran endpoint eklenmez** — her çağrı `src/lib/agent-workers/` altında bir worker.
 - **`prisma.semanticMemory.*` direkt çağrılmaz** — yalnızca `src/lib/ai-core/memory.ts`.

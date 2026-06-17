@@ -28,7 +28,7 @@ export function WaitlistBlock() {
           className="rounded-3xl p-7 md:p-9"
           style={{
             background:
-              "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 11%), hsl(var(--leadac-h) var(--leadac-ns) 8%))",
+              "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-ns) 11%), hsl(var(--revint-h) var(--revint-ns) 8%))",
             border: "0.5px solid rgba(255,255,255,0.08)",
             boxShadow:
               "0 1px 0 rgba(255,255,255,0.04) inset, 0 24px 60px rgba(0,0,0,0.4)",
@@ -57,7 +57,7 @@ export function WaitlistBlock() {
                 aria-hidden
                 className="mt-2 inline-block h-1.5 w-1.5 rounded-full shrink-0"
                 style={{
-                  background: "hsl(var(--leadac-h) var(--leadac-s) 60%)",
+                  background: "hsl(var(--revint-h) var(--revint-s) 60%)",
                 }}
               />
               <div>

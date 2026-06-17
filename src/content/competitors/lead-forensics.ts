@@ -37,9 +37,9 @@ export const leadForensics: CompetitorProfile = {
       url: "https://www.reddit.com/r/sales/",
     },
   ],
-  whyLeadacInstead: [
-    "Lead Forensics waits for visitors. Leadac goes and finds them — postcode + niche returns 47 fresh targets in five minutes.",
-    "Every Leadac lead arrives audited; Lead Forensics gives you a company name with no context.",
+  whyRevintInstead: [
+    "Lead Forensics waits for visitors. Revint goes and finds them — postcode + niche returns 47 fresh targets in five minutes.",
+    "Every Revint lead arrives audited; Lead Forensics gives you a company name with no context.",
     "Flat monthly pricing, cancel anytime — no multi-year lock-in.",
   ],
 };

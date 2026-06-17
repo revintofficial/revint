@@ -89,7 +89,7 @@ export function GoogleReviewsAccordion({ leadId }: { leadId: string }) {
               <ChevronDown className="w-5 h-5 text-white/30 shrink-0" />
             )}
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <MessageSquare className="w-5 h-5 text-(--leadac-500) shrink-0" />
+              <MessageSquare className="w-5 h-5 text-(--revint-500) shrink-0" />
               Google Reviews
             </CardTitle>
             {loaded && reviews.length > 0 && (

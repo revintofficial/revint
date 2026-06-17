@@ -9,7 +9,7 @@ export const post: BlogPost = {
     "A 20-signal Playwright audit across 10,000 plumbers, dentists, roofers, and agencies in 47 UK/US cities. The four signals that correlated with closes. The eight that correlated with nothing.",
   lede: "If you've ever sold websites or growth services to local businesses, you already have an instinct for who's going to buy. We wanted to know if the instinct holds up against the data.",
   publishedAt: "2026-03-28T09:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["data", "website audit", "local service", "sales"],
   readMinutes: 9,
   body: () => (
@@ -172,7 +172,7 @@ export const post: BlogPost = {
       <h2>How we use this in the product</h2>
       <p>
         The four high-signal checks above are the backbone of the 20-signal
-        audit Leadac runs on every lead we surface. Openers draft themselves
+        audit Revint runs on every lead we surface. Openers draft themselves
         from the specific finding, not from a generic "your site could use
         improvement" template.
       </p>
@@ -208,7 +208,7 @@ export const post: BlogPost = {
   ],
   citations: [
     {
-      label: "Leadac internal audit dataset (anonymised export)",
+      label: "Revint internal audit dataset (anonymised export)",
       url: "/blog/10000-website-audits-what-we-found",
       note: "Aggregate numbers only. Individual sites are not published.",
     },

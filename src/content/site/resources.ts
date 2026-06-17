@@ -36,7 +36,7 @@ export const RESOURCES: Resource[] = [
       "How 200 vertical SaaS GTM teams at $2M–$50M ARR ran outbound in 2026. Tool spend, SDR ramp, account-research time, and the gap memory leaves behind.",
     kind: "report",
     publishedAt: "2026-05-22",
-    author: "LeadAC research",
+    author: "Revint research",
     dataset: {
       description:
         "Cross-vertical benchmark dataset covering tool spend (Apollo, Clay, Smartlead, Gong), SDR ramp time, manual-research hours, and closed-loop ICP refinement adoption among vertical SaaS GTM teams at $2M–$50M ARR.",
@@ -57,7 +57,7 @@ export const RESOURCES: Resource[] = [
       "Why Apollo's contact data bounces at 12–14% on local-business segments — and the four-step fix vertical SaaS GTM teams ship in 30 days.",
     kind: "playbook",
     publishedAt: "2026-05-22",
-    author: "LeadAC playbooks",
+    author: "Revint playbooks",
   },
   {
     slug: "closed-loop-icp-refinement",
@@ -66,7 +66,7 @@ export const RESOURCES: Resource[] = [
       "The mechanism that turns won and lost CRM deal outcomes into a sharper next list. What the loop indexes, what it ignores, what breaks without it.",
     kind: "guide",
     publishedAt: "2026-05-22",
-    author: "LeadAC guides",
+    author: "Revint guides",
   },
 ];
 

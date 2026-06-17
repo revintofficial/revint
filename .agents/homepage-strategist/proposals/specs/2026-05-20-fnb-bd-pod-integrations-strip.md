@@ -67,7 +67,7 @@ SECONDARY CTA:
 
 **Voice-of-customer source.**
 
-- The phrase "we do not replace the sender" comes verbatim from [`.agents/product-marketing-context.md` § What LeadAC is](../../../product-marketing-context.md) ("We do not replace the sender. We feed it."). The footnote extends the same construction to dialers.
+- The phrase "we do not replace the sender" comes verbatim from [`.agents/product-marketing-context.md` § What Revint is](../../../product-marketing-context.md) ("We do not replace the sender. We feed it."). The footnote extends the same construction to dialers.
 - The objection-pattern is BUYER-PERSONA § 5 objection O3 ("Our BD team needs in-person, not more email"). The dialer row says, without writing a word, "we know your motion is dial-first; we fit it".
 
 ---
@@ -88,7 +88,7 @@ ASCII sketch:
 +---------------------------------------------------------------------+
 ```
 
-The existing centered "Works with your stack." caption (line 23 of the current component) stays as the cap. Below it, the two labeled rows sit centered. Each row label uses the same uppercase eyebrow grammar already established in [`section.tsx`](../../../../src/components/marketing/v2/section.tsx) line 47-52 (`text-[11.5px] font-semibold uppercase tracking-[0.16em]` with `hsl(var(--leadac-h) var(--leadac-s) 62%)` color). Pills keep the current grammar from [`integrations-strip.tsx`](../../../../src/components/marketing/v2/integrations-strip.tsx) lines 28-37.
+The existing centered "Works with your stack." caption (line 23 of the current component) stays as the cap. Below it, the two labeled rows sit centered. Each row label uses the same uppercase eyebrow grammar already established in [`section.tsx`](../../../../src/components/marketing/v2/section.tsx) line 47-52 (`text-[11.5px] font-semibold uppercase tracking-[0.16em]` with `hsl(var(--revint-h) var(--revint-s) 62%)` color). Pills keep the current grammar from [`integrations-strip.tsx`](../../../../src/components/marketing/v2/integrations-strip.tsx) lines 28-37.
 
 ---
 
@@ -120,7 +120,7 @@ State which patterns this spec reuses:
 | Pill background | `rgba(255,255,255,0.02)` (existing recipe) | Inline style, matches current file. Per [ui-components.mdc](../../../../.cursor/rules/ui-components.mdc), this is a borderline anti-pattern (hardcoded rgba). Current file already does this; leaving the recipe alone for v0.1 to keep cost label Small. Flagged as a follow-up. |
 | Pill border | `rgba(255,255,255,0.12)` (existing recipe) | Same caveat. |
 | Pill text | `text-white/75` (Tailwind utility) | Existing recipe. |
-| Row label color | `hsl(var(--leadac-h) var(--leadac-s) 62%)` | Same eyebrow color used by [`section.tsx`](../../../../src/components/marketing/v2/section.tsx) line 49. |
+| Row label color | `hsl(var(--revint-h) var(--revint-s) 62%)` | Same eyebrow color used by [`section.tsx`](../../../../src/components/marketing/v2/section.tsx) line 49. |
 | Caption text ("Works with your stack.") | `text-white/45` | Existing recipe (line 23). |
 
 ---

@@ -19,9 +19,9 @@ const PATH = "/login";
 
 export const metadata: Metadata = buildMetadata({
   path: PATH,
-  title: "Sign in to LeadAC",
+  title: "Sign in to Revint",
   description:
-    "Sign in with email or Google. New to LeadAC? The pilot starts at $500 for 30 days — book a 20-minute demo first.",
+    "Sign in with email or Google. New to Revint? The pilot starts at $500 for 30 days — book a 20-minute demo first.",
   index: false,
   follow: true,
 });
@@ -33,7 +33,7 @@ export default function LoginPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Sign in", url: PATH },
         ])}
       />

@@ -123,16 +123,16 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[440px] rounded-full opacity-25 blur-3xl"
-          style={{ background: "radial-gradient(closest-side, hsl(var(--leadac-h) var(--leadac-s) 60% / 0.55), transparent)" }}
+          style={{ background: "radial-gradient(closest-side, hsl(var(--revint-h) var(--revint-s) 60% / 0.55), transparent)" }}
         />
       </div>
 
       <div className="w-full max-w-[400px]">
         <div className="text-center mb-7">
-          <Link href="/" className="inline-block mb-5" aria-label="Leadac AI home">
+          <Link href="/" className="inline-block mb-5" aria-label="Revint home">
             <Image
               src="/logo.png"
-              alt="Leadac AI"
+              alt="Revint"
               width={44}
               height={44}
               priority
@@ -148,15 +148,15 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           <p className="text-[13px] text-white/55">
             {mode === "signup"
               ? "Discover your first 50 leads — free."
-              : "Sign in to your Leadac AI workspace."}
+              : "Sign in to your Revint workspace."}
           </p>
           {intentPlan && (intentPlan === "PRO" || intentPlan === "PRO_TEAM" || intentPlan === "AGENCY") && (
             <div
               className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11.5px]"
               style={{
-                background: "hsl(var(--leadac-h) var(--leadac-s) 60% / 0.12)",
-                border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.32)",
-                color: "var(--leadac-300)",
+                background: "hsl(var(--revint-h) var(--revint-s) 60% / 0.12)",
+                border: "0.5px solid hsl(var(--revint-h) var(--revint-s) 60% / 0.32)",
+                color: "var(--revint-300)",
               }}
             >
               <Check className="w-3 h-3" />
@@ -168,7 +168,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <div
           className="rounded-2xl p-6"
           style={{
-            background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.85)",
+            background: "hsl(var(--revint-h) var(--revint-ns) 8% / 0.85)",
             border: "0.5px solid rgba(255,255,255,0.08)",
             backdropFilter: "saturate(180%) blur(20px)",
           }}
@@ -195,7 +195,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   setMagicSent(false);
                   setError(null);
                 }}
-                className="mt-5 text-[12px] text-(--leadac-300) hover:underline"
+                className="mt-5 text-[12px] text-(--revint-300) hover:underline"
               >
                 Use a different email
               </button>
@@ -236,7 +236,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   className="flex-1 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all"
                   style={{
                     background: tab === "password" ? "rgba(255,255,255,0.08)" : "transparent",
-                    color: tab === "password" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.5)",
+                    color: tab === "password" ? "white" : "hsl(var(--revint-h) var(--revint-nts) 92% / 0.5)",
                   }}
                   role="tab"
                   aria-selected={tab === "password"}
@@ -248,7 +248,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
                   className="flex-1 px-3 py-1.5 rounded-md text-[12px] font-medium transition-all"
                   style={{
                     background: tab === "magic" ? "rgba(255,255,255,0.08)" : "transparent",
-                    color: tab === "magic" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.5)",
+                    color: tab === "magic" ? "white" : "hsl(var(--revint-h) var(--revint-nts) 92% / 0.5)",
                   }}
                   role="tab"
                   aria-selected={tab === "magic"}
@@ -353,17 +353,17 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
               Already have an account?{" "}
               <Link
                 href={`/login${params.toString() ? `?${params.toString()}` : ""}`}
-                className="text-(--leadac-300) hover:underline"
+                className="text-(--revint-300) hover:underline"
               >
                 Log in
               </Link>
             </>
           ) : (
             <>
-              New to Leadac AI?{" "}
+              New to Revint?{" "}
               <Link
                 href={`/signup${params.toString() ? `?${params.toString()}` : ""}`}
-                className="text-(--leadac-300) hover:underline"
+                className="text-(--revint-300) hover:underline"
               >
                 Create an account
               </Link>

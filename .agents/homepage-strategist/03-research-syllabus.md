@@ -126,7 +126,7 @@ What you are answering: what does an SDR actually do all day, what tools do they
 
 ## D. Local-business sales playbooks
 
-What you are answering: how do real sellers actually sell to the local SMB that LeadAC ends up touching? This is the FineDine / OpenTable / restaurant-tech BD playbook, the SMMA owner-on-Reddit playbook, the walk-in web agency playbook, the [`docs/berkay-paketler.md`](../../docs/berkay-paketler.md) jeweler playbook. If you do not understand how this sale happens, your RFCs will optimize for the wrong moments.
+What you are answering: how do real sellers actually sell to the local SMB that Revint ends up touching? This is the FineDine / OpenTable / restaurant-tech BD playbook, the SMMA owner-on-Reddit playbook, the walk-in web agency playbook, the [`docs/berkay-paketler.md`](../../docs/berkay-paketler.md) jeweler playbook. If you do not understand how this sale happens, your RFCs will optimize for the wrong moments.
 
 ### Sources
 
@@ -141,7 +141,7 @@ What you are answering: how do real sellers actually sell to the local SMB that 
 - The 3 friction points a local-business buyer has when buying any software.
 - The 3 trust signals that move them faster.
 - The pricing register that works (subscription anxiety is real for SMBs).
-- The role of a partner / agency in the sale (because LeadAC's user is often selling THROUGH an agency to an SMB).
+- The role of a partner / agency in the sale (because Revint's user is often selling THROUGH an agency to an SMB).
 
 ### Output
 

@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import {
   Hero,
-  ProofRow,
-  StackLayersDiagram,
   ProblemGrid,
   ClosedLoopDiagram,
   PreCallBriefCard,
-  QuoteBlock,
+  LearnedPatternCard,
+  BeforeAfterTable,
   FaqBlock,
   CtaBlock,
 } from "@/components/site/sections";
@@ -18,31 +17,33 @@ import {
   softwareApplicationSchema,
 } from "@/components/seo/json-ld";
 import { painsByIds } from "@/content/site/pains";
-import { PERSONAS } from "@/content/site/personas";
 import { FAQS } from "@/content/site/faq";
 
 /**
  * Homepage — /
  *
- * Posture: Apple/Clari. Centered hero (single column, large light type,
- * one anchor pill), then the layered-stack diagram as the marquee visual,
- * then the brief preview as its own "what the rep opens" section.
+ * v3: one ICP (vertical SaaS GTM leader selling into local business), one
+ * vertical example (restaurant), two concepts (memory + next-best-action).
+ * Conversion-ordered, ~half the length of v2 — the stack diagram, the
+ * efficiency proof-row, the persona quote, and the multi-vertical pattern
+ * strip were cut to keep a single narrative spine: a closed-loop revenue
+ * learning system.
  *
- * Psych model: Anchoring + Contrast + Status-quo bias break (psych-map).
- * Structure:
- *   hero (centered) → proof row → stack layers → in-CRM brief →
- *   problem grid → closed loop → persona quote → FAQ → CTA.
- *
- * Anchor pattern: hero prices LeadAC against the $100K/yr Gong floor so the
- * category reads as operational intelligence, not another lead list.
+ * Order:
+ *   1. hero            — one-line definition: past wins → next accounts.
+ *   2. why ORI         — the data-ontology shift: signals, not firmographics.
+ *   3. memory          — the brief + the one learned pattern behind it.
+ *   4. problem         — felt, not paper: the CRM stores activity, not judgment.
+ *   5. closed loop     — the memory compounds with every won/lost deal.
+ *   6. before → after  — the transformation (+ proof anchor).
+ *   7. FAQ → CTA.
  */
 
 export const metadata: Metadata = buildMetadata({
   path: "/",
-  title:
-    "LeadAC — operational revenue intelligence for SMB markets",
+  title: "Revint — operational revenue intelligence for SMB markets",
   description:
-    "LeadAC is the memory layer that learns what closes in local-business markets and tells your reps the next best action, inside the HubSpot card they already open. Built for vertical SaaS GTM teams selling to SMBs at $2M–$50M ARR.",
+    "Revint learns the pattern behind your closed-won deals and scores every new account against it — then drops the next best action into the HubSpot card your rep already opens. Built for vertical SaaS GTM teams selling to local business at $2M–$50M ARR.",
 });
 
 export default function HomePage() {
@@ -55,8 +56,8 @@ export default function HomePage() {
       <Hero
         layout="center"
         eyebrow="Operational revenue intelligence for SMB markets"
-        headline="We remember what closes in local-business markets."
-        subhead="Bring the stack you already pay for. LeadAC scores every account against the deals your team won last quarter, then puts the next move in the HubSpot card your SDR opens before every dial."
+        headline="We turn your past wins into the next accounts your SDR should call."
+        subhead="Revint learns the pattern behind your closed-won deals, scores every new account against it, and drops the next move into the HubSpot card your rep already opens."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}
         anchor={{
@@ -65,58 +66,75 @@ export default function HomePage() {
         }}
       />
 
-      <ProofRow
-        cells={[
-          {
-            value: "5.6 hrs",
-            label: "Per SDR per week spent on manual research before LeadAC.",
-            source: {
-              name: "Salesforce State of Sales 2026",
-              url: "https://salesmotion.io/blog/sales-team-manual-account-research-time",
-            },
-          },
-          {
-            value: "$22K/rep/yr",
-            label: "Burned on account research at the average SDR salary.",
-            source: {
-              name: "Kwanzoo synthesis",
-              url: "https://www.kwanzoo.com/blog/sdrs-spend-40-percent-researching-leads",
-            },
-          },
-          {
-            value: "12 fields",
-            label:
-              "Written into the HubSpot company record on the first sync.",
-          },
-          {
-            value: "< 1 hr",
-            label:
-              "From signup to your first brief. You won't need a RevOps engineer.",
-          },
-        ]}
-      />
+      <section className="site-section">
+        <div className="site-container">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="site-eyebrow mb-3">Why operational intelligence</div>
+            <h2 className="text-[34px] font-light leading-[1.05] tracking-[-0.03em] text-paper-0 md:text-[52px]">
+              Local businesses don&rsquo;t have firmographics. They have signals.
+            </h2>
+            <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-paper-2 md:text-[19px]">
+              A restaurant doesn&rsquo;t buy because it has 120 employees. It buys
+              when the operation changes. Those signals never reach a database, so
+              Revint reads them off the open web and remembers which ones turned
+              into revenue.
+            </p>
+          </div>
 
-      <StackLayersDiagram
-        eyebrow="Works with the stack you already run"
-        title="Apollo finds. Clay enriches. Gong records. LeadAC remembers."
-        subtitle="Your data sources sit at the bottom. HubSpot sits in the middle as the surface your team already works in. The memory layer sits on top, learns what closed before, and writes the next action into the card."
-      />
+          <div className="mx-auto mt-12 grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              {
+                signal: "Reviews dropped",
+                why: "Service strain. A switching window just opened.",
+              },
+              {
+                signal: "Expansion started",
+                why: "New locations in the last 90 days. Budget is moving.",
+              },
+              {
+                signal: "Stack changed",
+                why: "A POS or platform migration — the buying moment.",
+              },
+              {
+                signal: "Hiring accelerated",
+                why: "Ops scaling faster than the current tools allow.",
+              },
+              {
+                signal: "Waitlist pressure",
+                why: "Capacity pain showing up in the reviews.",
+              },
+            ].map((s) => (
+              <div
+                key={s.signal}
+                className="rounded-xl border border-paper-2/15 bg-paper-2/5 p-4 text-left"
+              >
+                <div className="text-[15px] font-medium text-paper-0">
+                  {s.signal}
+                </div>
+                <div className="mt-1 text-[13px] leading-relaxed text-paper-2">
+                  {s.why}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section className="site-section">
         <div className="site-container">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="site-eyebrow mb-3">What the rep opens</div>
+            <div className="site-eyebrow mb-3">The memory, made visible</div>
             <h2 className="text-[34px] font-light leading-[1.05] tracking-[-0.03em] text-paper-0 md:text-[52px]">
-              The Account Intelligence Brief is already in the HubSpot card.
+              The recommendation, and the memory behind it.
             </h2>
             <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-paper-2 md:text-[19px]">
-              Your SDR doesn&rsquo;t open a research doc or dig through five tabs.
-              Fit score, why now, suggested opener. All sitting on the company
-              record before the dial.
+              Left: the brief your rep opens in HubSpot. Right: the closed-won
+              pattern behind it — so the next move is a learned behavior, not an
+              AI guess.
             </p>
           </div>
 
-          <div className="mx-auto mt-12 max-w-xl">
+          <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-2 lg:items-start">
             <PreCallBriefCard
               account="Pacific Coast Eats Group"
               tag="Restaurant tech · 4 locations · Migration candidate"
@@ -133,9 +151,21 @@ export default function HomePage() {
               nextAction={{
                 label: "Call the operator this week",
                 reason:
-                  "Three of your last four closed-won deals looked exactly like this: OpenTable Lite, four-plus locations, expansion in the last 90 days. Those closed in 19 days on average.",
+                  "Matches closed-won pattern #14 — three of your last four wins looked exactly like this and closed in 19 days on average.",
               }}
               opener="Saw you opened the Belltown location two weeks ago. Most groups on OpenTable Lite hit a waitlist ceiling around four spots. Want the brief on what worked for two other Pacific Northwest groups that moved up to the full platform last quarter?"
+            />
+            <LearnedPatternCard
+              patternId="Closed-won pattern #14"
+              signals={["OpenTable Lite", "4+ locations", "Expansion < 90 days"]}
+              stats={[
+                { label: "Accounts seen", value: "37" },
+                { label: "Won", value: "9" },
+                { label: "Lost", value: "2" },
+              ]}
+              winRate={82}
+              confidence="T3"
+              footnote="Learned from your own HubSpot closed-won and closed-lost records — so the recommendation on the left carries the pattern that earned it."
             />
           </div>
         </div>
@@ -144,35 +174,50 @@ export default function HomePage() {
       <ProblemGrid
         eyebrow="What's broken"
         title="Your sales team has no memory."
-        intro="Everything your best rep knows lives in their head. Which accounts to call. Why the last deal closed. Then they ramp for six months and quit, and it resets to zero. The stack underneath them stores activity, not judgment, so nobody learns from the deals you already won."
-        pains={painsByIds([
-          "P-014",
-          "P-004",
-          "P-016",
-          "P-015",
-          "P-011",
-          "P-001",
-        ])}
+        intro="Your CRM stores activity, not judgment. It knows what happened — not why it happened. So everything your best rep knows — which accounts to call, why the last deal closed — lives in their head until they ramp out or quit. Then the next hire starts from zero, and nobody learns from the deals you already won."
+        pains={painsByIds(["P-014", "P-015"])}
       />
 
       <ClosedLoopDiagram
         eyebrow="How the memory works"
         title="Every won and lost deal sharpens the next list on its own."
-        subtitle="Your CRM already knows what closes. LeadAC reads the closed-won and closed-lost records back into discovery, then weights the next ICP query toward the pattern your team keeps winning."
+        subtitle="Revint reads your closed-won and closed-lost records back into discovery, then weights the next list toward the pattern your team keeps winning — so each cycle skews toward accounts that look like revenue, not just accounts that look like your ICP."
       />
 
-      <QuoteBlock persona={PERSONAS.mike} />
+      <BeforeAfterTable
+        eyebrow="The shift"
+        title="From guessing to pattern-driven."
+        subtitle="Same stack, same reps. The difference is whether the system remembers why you win — or whether that knowledge leaves when the rep does."
+        rows={[
+          {
+            before: "Reps lose hours every week to manual account research.",
+            after: "Every account arrives scored against your closed-won patterns.",
+          },
+          {
+            before: "The CRM is full of activity and empty of judgment.",
+            after: "The next best action is waiting inside the HubSpot card.",
+          },
+          {
+            before: "ICP is a guess; lists go stale within a quarter.",
+            after: "Each won and lost deal sharpens the next list automatically.",
+          },
+          {
+            before: "Win patterns walk out the door at every resignation.",
+            after: "The pattern stays in the system when the rep leaves.",
+          },
+        ]}
+      />
 
       <FaqBlock
         eyebrow="Buyer questions"
         entries={FAQS.home}
-        title="What buyers ask before they pick LeadAC"
+        title="What buyers ask before they pick Revint"
       />
 
       <CtaBlock
         eyebrow="Twenty minutes, on your own data"
         title="Bring one prospect URL. We'll show you the brief that lands in the HubSpot card."
-        subtitle="Skip the slideware. Paste a prospect URL on the call, we run LeadAC live, and you see the field map and the suggested opener before we hang up."
+        subtitle="Skip the slideware. Paste a prospect URL on the call, we run Revint live, and you see the field map and the suggested opener before we hang up."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}
       />

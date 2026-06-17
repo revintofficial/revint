@@ -1,16 +1,16 @@
-# LeadAC x FineDine US-First Compliance Strategy Review
+# Revint x FineDine US-First Compliance Strategy Review
 
 Status: improved strategy after full plan review  
 Date: 2026-05-29  
 Language: Turkish  
-Audience: LeadAC founder team, product, engineering, sales, FineDine activation stakeholders  
-Project: LeadAC Restaurant-Tech Operational Intelligence Pilot for FineDine, US-first version
+Audience: Revint founder team, product, engineering, sales, FineDine activation stakeholders  
+Project: Revint Restaurant-Tech Operational Intelligence Pilot for FineDine, US-first version
 
 > Not: Bu dokuman hukuki danismanlik degildir. US outreach, privacy ve telemarketing kurallari hizli degisebildigi icin launch oncesi US counsel review gereklidir. Bu dokuman product/engineering strateji ve risk tasarimi icindir.
 
 ## 1. Yeni ana karar
 
-Onceki planin ana tezi dogru: LeadAC veri kaynagi olmak yerine restaurant-tech ekipleri icin post-enrichment operational intelligence layer olmali. Ancak proje artik US merkezli dusunulecekse planin ilk sirasi degismeli.
+Onceki planin ana tezi dogru: Revint veri kaynagi olmak yerine restaurant-tech ekipleri icin post-enrichment operational intelligence layer olmali. Ancak proje artik US merkezli dusunulecekse planin ilk sirasi degismeli.
 
 Eski ana sira:
 
@@ -29,11 +29,11 @@ Yeni US-first ana sira:
 
 US markette "native-first" tek basina guclu ama eksik bir stratejidir. Cunku outbound email, owner mobile, SMS, AI voice, phone calls, data resale, Google Places storage ve state privacy haklari ayni anda risk yaratir. Bu yuzden dogru kategori cumlesi su sekilde daraltilmali:
 
-> LeadAC is the compliance-aware operational intelligence layer for US restaurant-tech GTM teams: it connects CRM, sender and approved data sources, turns restaurant signals into rep-ready actions, and learns from outcomes without becoming a spam engine or data broker.
+> Revint is the compliance-aware operational intelligence layer for US restaurant-tech GTM teams: it connects CRM, sender and approved data sources, turns restaurant signals into rep-ready actions, and learns from outcomes without becoming a spam engine or data broker.
 
 Bu karar product promise'i de degistirir:
 
-> Connect HubSpot, connect one compliant sender, choose approved data rails, define your US target market, then LeadAC builds restaurant account briefs, field-ready next actions, suppression-safe activation lists, and an auditable outcome loop.
+> Connect HubSpot, connect one compliant sender, choose approved data rails, define your US target market, then Revint builds restaurant account briefs, field-ready next actions, suppression-safe activation lists, and an auditable outcome loop.
 
 ## 2. Plan hakkinda genel hukum
 
@@ -41,11 +41,11 @@ Mevcut plan yon olarak iyi ama US launch icin fazla "integration-forward". En bu
 
 Plan sunlari iyi yakalamis:
 
-- LeadAC'in Openmart, Orbital, Clay, HubSpot, Smartlead, Instantly ve Google Places gibi araclari replace etmemesi gerektigini dogru soyluyor.
+- Revint'in Openmart, Orbital, Clay, HubSpot, Smartlead, Instantly ve Google Places gibi araclari replace etmemesi gerektigini dogru soyluyor.
 - FineDine icin "QR menu eksigi" yerine restaurant-specific digital stack angle secimini dogru merkeze aliyor.
-- HubSpot'u CRM truth source, sender'lari activation rail, LeadAC'i learning/judgment layer olarak ayirmasi dogru.
+- HubSpot'u CRM truth source, sender'lari activation rail, Revint'i learning/judgment layer olarak ayirmasi dogru.
 - Source provenance ve conflict resolution ihtiyacini dogru tespit ediyor.
-- Existing LeadAC code reality tarafinda semantic memory, AI Core, Apify, Gmail/Outlook, Google Places, account/lead/activity modellerini dogru okuyor.
+- Existing Revint code reality tarafinda semantic memory, AI Core, Apify, Gmail/Outlook, Google Places, account/lead/activity modellerini dogru okuyor.
 
 Plan su noktalarda zayif:
 
@@ -68,7 +68,7 @@ https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-bu
 
 Implication:
 
-- LeadAC email gondermiyorsa bile generated sequence fields, unsubscribe merge field, sender identity, physical address ve suppression status uretmelidir.
+- Revint email gondermiyorsa bile generated sequence fields, unsubscribe merge field, sender identity, physical address ve suppression status uretmelidir.
 - Smartlead/Instantly'e giden her contact icin `email_permission_basis`, `suppression_status`, `last_opt_out_at`, `source_provider`, `source_observed_at` gibi alanlar zorunlu olmalidir.
 - "AI writes opener" yeterli degildir; "AI writes CAN-SPAM-safe opener variables" product requirement olmali.
 
@@ -84,7 +84,7 @@ Kaynaklar:
 
 Implication:
 
-- LeadAC MVP'de SMS marketing, AI voice call, autodialer, prerecorded voicemail ve auto-call feature olmamalidir.
+- Revint MVP'de SMS marketing, AI voice call, autodialer, prerecorded voicemail ve auto-call feature olmamalidir.
 - Manual call task ve field visit task olabilir, ama number type, DNC/suppression, consent/source ve call disposition loglanmalidir.
 - Owner mobile "high-value data" degil, "high-risk channel" olarak tasarlanmalidir.
 
@@ -100,7 +100,7 @@ Kaynaklar:
 
 Implication:
 
-- LeadAC "data broker" gibi konumlanmamalidir. FineDine icin processor/service provider posture hedeflenmelidir.
+- Revint "data broker" gibi konumlanmamalidir. FineDine icin processor/service provider posture hedeflenmelidir.
 - Contact enrichment source'lari icin "license allows storage/use for outreach?" kontrolu olmadan data urune alinmamalidir.
 - Deletion, access, opt-out, suppression, retention ve data source audit log P0 olmalidir.
 
@@ -134,7 +134,7 @@ Kaynaklar:
 Implication:
 
 - Day 1 private app path: CRM read/write plus scheduled delta sync.
-- If webhook needed in Day 1: user manually configures private app webhook settings or LeadAC uses a public/OAuth app.
+- If webhook needed in Day 1: user manually configures private app webhook settings or Revint uses a public/OAuth app.
 - Roadmap "private app token + webhook subscriptions fully automated" diye yazilmamali.
 
 ### 3.6 US restaurant-tech GTM: field, density, referrals ve local ecosystem var
@@ -150,7 +150,7 @@ Kaynaklar:
 Implication:
 
 - FineDine US pilotu sadece Smartlead/Instantly campaign loop olmamali.
-- LeadAC brief output'u `EMAIL_NOW` kadar `FIELD_VISIT`, `CALL_BETWEEN_SHIFTS`, `ASK_FOR_REFERRAL`, `ROUTE_TO_PARTNER`, `SUPPRESS`, `ENRICH_MORE` gibi actions icermeli.
+- Revint brief output'u `EMAIL_NOW` kadar `FIELD_VISIT`, `CALL_BETWEEN_SHIFTS`, `ASK_FOR_REFERRAL`, `ROUTE_TO_PARTNER`, `SUPPRESS`, `ENRICH_MORE` gibi actions icermeli.
 - Territory density ve local social proof, scoring'e girmeli.
 
 ### 3.7 Restaurant operator needs: digital ordering/payment/loyalty/labor/profitability
@@ -240,7 +240,7 @@ Smartlead ve Instantly event capture dogru. Ancak plan, send eligibility'yi send
 
 Duzeltme:
 
-LeadAC sender'a yalniz `activation_eligible=true` olan contacts push etmeli. Eligibility:
+Revint sender'a yalniz `activation_eligible=true` olan contacts push etmeli. Eligibility:
 
 - email present and syntactically valid
 - not suppressed
@@ -304,15 +304,15 @@ Duzeltme:
 
 ### Zayif nokta 9: Data broker boundary yok
 
-LeadAC "Openmart/Google/Apify ile restoran buluyoruz ve FineDine'e veriyoruz" gibi anlatilirsa data broker algisi ve privacy obligation buyur.
+Revint "Openmart/Google/Apify ile restoran buluyoruz ve FineDine'e veriyoruz" gibi anlatilirsa data broker algisi ve privacy obligation buyur.
 
 Duzeltme:
 
 Role language:
 
-- LeadAC is not selling a standalone list.
-- LeadAC processes FineDine workspace data and approved provider data to produce account intelligence.
-- LeadAC does not resell contact data across customers.
+- Revint is not selling a standalone list.
+- Revint processes FineDine workspace data and approved provider data to produce account intelligence.
+- Revint does not resell contact data across customers.
 - Cross-customer learning uses aggregated, non-identifying playbook patterns only.
 - Provider data rights are tracked per provider and per workspace.
 
@@ -328,7 +328,7 @@ MVP posture:
 - Human approves.
 - Existing sender sends.
 - CRM stores truth.
-- LeadAC records why.
+- Revint records why.
 
 Autonomous sending, autonomous SMS, AI voice, auto-dialing, automated voicemail drop yok.
 
@@ -388,7 +388,7 @@ Day 1 scope:
 
 - private app token read/write
 - Company/Contact/Deal standard object mapping
-- LeadAC property group
+- Revint property group
 - scheduled delta sync
 - manual webhook setup checklist or polling
 - no custom object dependency
@@ -398,10 +398,10 @@ Day 1 scope:
 One sender only:
 
 - Smartlead OR Instantly V2.
-- LeadAC does not replace sender.
-- LeadAC pushes compliant, shortlisted, suppression-safe rows.
-- LeadAC receives reply/bounce/unsubscribe/sent events.
-- LeadAC writes back to HubSpot and internal outcome graph.
+- Revint does not replace sender.
+- Revint pushes compliant, shortlisted, suppression-safe rows.
+- Revint receives reply/bounce/unsubscribe/sent events.
+- Revint writes back to HubSpot and internal outcome graph.
 
 Manual/field rails:
 
@@ -425,7 +425,7 @@ Priority:
 
 #### Layer 4: Intelligence core
 
-LeadAC owns:
+Revint owns:
 
 - entity resolution
 - account/location/contact graph
@@ -622,7 +622,7 @@ Example objective:
 
 > "New York City and North Jersey independent full-service restaurants, 2-10 locations, strong review volume, weak direct ordering or reservation flow, target 20 demos this quarter."
 
-LeadAC converts this into:
+Revint converts this into:
 
 - metro
 - state compliance profile
@@ -645,7 +645,7 @@ Order:
 
 ### Step 3: Resolve identity and source rights
 
-LeadAC resolves:
+Revint resolves:
 
 - HubSpot company ID
 - account/group
@@ -836,7 +836,7 @@ Avoid:
 
 Use:
 
-> LeadAC helps FineDine's US team decide which restaurant accounts deserve action, which route is safe and sensible, what operational angle to use, and what each outcome teaches the next market.
+> Revint helps FineDine's US team decide which restaurant accounts deserve action, which route is safe and sensible, what operational angle to use, and what each outcome teaches the next market.
 
 Short version:
 
@@ -872,7 +872,7 @@ Do not build yet:
 - Google Places raw warehouse
 - generic US restaurant contact database
 
-## 14. Engineering implications for current LeadAC code
+## 14. Engineering implications for current Revint code
 
 Current code already has:
 
@@ -907,7 +907,7 @@ Every workspace-data query must keep `workspaceId` scope. Memory writes still go
 
 ## 15. Final improved plan
 
-LeadAC should keep the post-enrichment operational intelligence strategy, but the FineDine pilot should be rewritten as a US compliance-aware operating layer, not simply a native integration pilot.
+Revint should keep the post-enrichment operational intelligence strategy, but the FineDine pilot should be rewritten as a US compliance-aware operating layer, not simply a native integration pilot.
 
 The corrected MVP is:
 
@@ -924,7 +924,7 @@ The corrected MVP is:
 
 Strategic sentence:
 
-> Openmart and Orbital can find SMB accounts. HubSpot stores pipeline. Smartlead and Instantly send email. Field reps build local trust. LeadAC decides which account action is safe, timely and commercially intelligent, then learns from what happened.
+> Openmart and Orbital can find SMB accounts. HubSpot stores pipeline. Smartlead and Instantly send email. Field reps build local trust. Revint decides which account action is safe, timely and commercially intelligent, then learns from what happened.
 
 ## 16. Source list
 

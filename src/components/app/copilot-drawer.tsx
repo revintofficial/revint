@@ -173,14 +173,14 @@ export function CopilotDrawer() {
           aria-expanded={open}
           // `fab-above-tabbar` (in globals.css) moves the button above the
           // phone tab bar, then drops it to a 1.25rem corner on tablet+.
-          className="fab-above-tabbar fixed right-4 sm:right-5 z-40 rounded-full text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-(--leadac-500) focus-visible:outline-offset-2"
+          className="fab-above-tabbar fixed right-4 sm:right-5 z-40 rounded-full text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-(--revint-500) focus-visible:outline-offset-2"
           style={{
             width: "var(--fab-size)",
             height: "var(--fab-size)",
             background:
-              "linear-gradient(135deg, var(--leadac-500), var(--leadac-700))",
+              "linear-gradient(135deg, var(--revint-500), var(--revint-700))",
             boxShadow:
-              "0 12px 32px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.5)",
+              "0 12px 32px hsl(var(--revint-h) var(--revint-s) 34% / 0.5)",
           }}
         >
           <Bot className="w-5 h-5" strokeWidth={2.25} />
@@ -196,7 +196,7 @@ export function CopilotDrawer() {
           aria-label="AI sales co-pilot"
         >
           <div
-            className="bg-(--leadac-surface) flex flex-col shadow-2xl w-full
+            className="bg-(--revint-surface) flex flex-col shadow-2xl w-full
                        sm:w-[400px] sm:h-[640px] sm:rounded-2xl sm:mr-5 sm:border sm:border-white/10
                        sm:max-h-[calc(100vh-2.5rem)]"
             onClick={(e) => e.stopPropagation()}
@@ -215,7 +215,7 @@ export function CopilotDrawer() {
                   className="w-8 h-8 rounded-lg flex items-center justify-center"
                   style={{
                     background:
-                      "linear-gradient(135deg, var(--leadac-500), var(--leadac-700))",
+                      "linear-gradient(135deg, var(--revint-500), var(--revint-700))",
                   }}
                 >
                   <Bot className="w-4 h-4 text-white" strokeWidth={2.25} />
@@ -225,7 +225,7 @@ export function CopilotDrawer() {
                     className="font-semibold tracking-tight"
                     style={{
                       fontSize: "var(--text-callout)",
-                      color: "var(--leadac-text-1)",
+                      color: "var(--revint-text-1)",
                     }}
                   >
                     Sales co-pilot
@@ -233,7 +233,7 @@ export function CopilotDrawer() {
                   <p
                     style={{
                       fontSize: "var(--text-caption)",
-                      color: "var(--leadac-text-3)",
+                      color: "var(--revint-text-3)",
                     }}
                   >
                     Asks your full lead list anything
@@ -244,8 +244,8 @@ export function CopilotDrawer() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close co-pilot"
-                className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500) -mr-1"
-                style={{ color: "var(--leadac-text-2)" }}
+                className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--revint-500) -mr-1"
+                style={{ color: "var(--revint-text-2)" }}
               >
                 <X className="w-5 h-5" strokeWidth={2.25} />
               </button>
@@ -261,7 +261,7 @@ export function CopilotDrawer() {
                 <div className="flex items-center justify-center h-full">
                   <Loader2
                     className="w-5 h-5 animate-spin"
-                    style={{ color: "var(--leadac-text-3)" }}
+                    style={{ color: "var(--revint-text-3)" }}
                   />
                 </div>
               ) : messages.length === 0 ? (
@@ -276,7 +276,7 @@ export function CopilotDrawer() {
                     <p
                       style={{
                         fontSize: "var(--text-subhead)",
-                        color: "var(--leadac-text-2)",
+                        color: "var(--revint-text-2)",
                         lineHeight: 1.5,
                       }}
                     >
@@ -290,11 +290,11 @@ export function CopilotDrawer() {
                         key={s}
                         type="button"
                         onClick={() => handleSuggestion(s)}
-                        className="text-left rounded-xl px-3 py-2.5 hover:bg-white/5 active:bg-white/10 transition-colors focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
+                        className="text-left rounded-xl px-3 py-2.5 hover:bg-white/5 active:bg-white/10 transition-colors focus-visible:outline-2 focus-visible:outline-(--revint-500)"
                         style={{
                           background: "hsl(0 0% 100% / 0.03)",
                           border: "0.5px solid hsl(0 0% 100% / 0.06)",
-                          color: "var(--leadac-text-2)",
+                          color: "var(--revint-text-2)",
                           fontSize: "var(--text-subhead)",
                           minHeight: "var(--touch-target-min)",
                         }}
@@ -319,12 +319,12 @@ export function CopilotDrawer() {
                         fontSize: "var(--text-subhead)",
                         background:
                           m.role === "USER"
-                            ? "var(--leadac-500)"
+                            ? "var(--revint-500)"
                             : "hsl(0 0% 100% / 0.06)",
                         color:
                           m.role === "USER"
                             ? "white"
-                            : "var(--leadac-text-1)",
+                            : "var(--revint-text-1)",
                         border:
                           m.role === "USER"
                             ? "none"
@@ -348,7 +348,7 @@ export function CopilotDrawer() {
                       background: "hsl(0 0% 100% / 0.06)",
                       border: "0.5px solid hsl(0 0% 100% / 0.08)",
                       borderBottomLeftRadius: "6px",
-                      color: "var(--leadac-text-3)",
+                      color: "var(--revint-text-3)",
                       fontSize: "var(--text-subhead)",
                     }}
                   >
@@ -385,7 +385,7 @@ export function CopilotDrawer() {
                 rows={1}
                 aria-label="Message co-pilot"
                 enterKeyHint="send"
-                className="flex-1 rounded-2xl px-3.5 py-2.5 text-white placeholder:text-white/30 focus:outline-none focus-visible:outline-2 focus-visible:outline-(--leadac-500) resize-none"
+                className="flex-1 rounded-2xl px-3.5 py-2.5 text-white placeholder:text-white/30 focus:outline-none focus-visible:outline-2 focus-visible:outline-(--revint-500) resize-none"
                 style={{
                   background: "hsl(0 0% 100% / 0.05)",
                   border: "0.5px solid hsl(0 0% 100% / 0.08)",
@@ -399,12 +399,12 @@ export function CopilotDrawer() {
                 type="submit"
                 disabled={sending || !input.trim()}
                 aria-label="Send message"
-                className="touch-target rounded-full text-white disabled:opacity-30 transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-(--leadac-500) focus-visible:outline-offset-2"
+                className="touch-target rounded-full text-white disabled:opacity-30 transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-(--revint-500) focus-visible:outline-offset-2"
                 style={{
                   width: "var(--touch-target-min)",
                   height: "var(--touch-target-min)",
                   background:
-                    "linear-gradient(135deg, var(--leadac-500), var(--leadac-700))",
+                    "linear-gradient(135deg, var(--revint-500), var(--revint-700))",
                 }}
               >
                 <Send className="w-4 h-4 mx-auto" strokeWidth={2.25} />

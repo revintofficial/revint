@@ -46,7 +46,7 @@ CardTitle.displayName = "CardTitle";
 
 const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => (
-    <p ref={ref} className={cn("text-sm", className)} style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.6)" }} {...props} />
+    <p ref={ref} className={cn("text-sm", className)} style={{ color: "hsl(var(--revint-h) var(--revint-nts) 92% / 0.6)" }} {...props} />
   )
 );
 CardDescription.displayName = "CardDescription";

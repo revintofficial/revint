@@ -21,7 +21,7 @@ import { SITE } from "@/lib/seo/metadata";
  * /integrations/smartlead — the handoff page.
  *
  * Psych: Endowment (psych-map). Smartlead is already in the buyer's
- * stack; LeadAC sits behind it and feeds the per-account context
+ * stack; Revint sits behind it and feeds the per-account context
  * Smartlead's variables can't synthesize on their own.
  */
 
@@ -31,7 +31,7 @@ export const metadata: Metadata = buildMetadata({
   path: PATH,
   title: "Smartlead handoff — pre-call context for your existing sequencer",
   description:
-    "LeadAC writes per-account context Smartlead's variables can't synthesize — location count, vertical stack, owner activity. Webhook into your existing Smartlead workflow. No replacement, no rip-and-replace.",
+    "Revint writes per-account context Smartlead's variables can't synthesize — location count, vertical stack, owner activity. Webhook into your existing Smartlead workflow. No replacement, no rip-and-replace.",
 });
 
 const STEPS = [
@@ -43,7 +43,7 @@ const STEPS = [
   {
     icon: ArrowRight,
     title: "2. Smartlead pulls the brief",
-    body: "On sequence-trigger, Smartlead fetches the LeadAC brief variables via webhook. No new tab, no SDR copy-paste.",
+    body: "On sequence-trigger, Smartlead fetches the Revint brief variables via webhook. No new tab, no SDR copy-paste.",
   },
   {
     icon: Send,
@@ -53,7 +53,7 @@ const STEPS = [
   {
     icon: ShieldCheck,
     title: "4. Replies flow back",
-    body: "Smartlead reply data ingests back into LeadAC. Replies on the 'multi-location operator' tag refine the next list.",
+    body: "Smartlead reply data ingests back into Revint. Replies on the 'multi-location operator' tag refine the next list.",
   },
 ];
 
@@ -64,7 +64,7 @@ export default function SmartleadIntegrationPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Integrations", url: "/integrations" },
           { name: "Smartlead", url: PATH },
         ])}
@@ -72,9 +72,9 @@ export default function SmartleadIntegrationPage() {
       <JsonLd
         id="ld-service"
         data={serviceSchema({
-          name: "LeadAC Smartlead handoff",
+          name: "Revint Smartlead handoff",
           description:
-            "Webhook-based handoff from LeadAC's operational memory layer into Smartlead sequences. Per-account context as merge variables, reply data ingested back into the LeadAC closed loop.",
+            "Webhook-based handoff from Revint's operational memory layer into Smartlead sequences. Per-account context as merge variables, reply data ingested back into the Revint closed loop.",
           url: `${SITE.url}${PATH}`,
           serviceType: "Outbound Integration",
         })}
@@ -83,7 +83,7 @@ export default function SmartleadIntegrationPage() {
       <Hero
         eyebrow="Integrations · Smartlead"
         headline="Smartlead sends. We decide what should go in the send."
-        subhead="LeadAC writes per-account context into the Smartlead merge fields your sequence already uses. Same sequence, same domain warmup, same dashboard — with the operational signal Smartlead's variables can't synthesise on their own."
+        subhead="Revint writes per-account context into the Smartlead merge fields your sequence already uses. Same sequence, same domain warmup, same dashboard — with the operational signal Smartlead's variables can't synthesise on their own."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/integrations/hubspot", label: "HubSpot first" }}
         anchor={{
@@ -93,7 +93,7 @@ export default function SmartleadIntegrationPage() {
         visual={
           <div className="rounded-2xl border border-ink-3 bg-ink-1 p-6">
             <div className="site-mono text-[12px] uppercase tracking-wider text-signal">
-              Smartlead merge fields LeadAC fills
+              Smartlead merge fields Revint fills
             </div>
             <ul className="mt-5 grid gap-3 site-mono text-[13px] text-paper-0">
               <li className="flex justify-between gap-3 border-b border-ink-3 pb-2">
@@ -122,7 +122,7 @@ export default function SmartleadIntegrationPage() {
           {
             value: "Webhook",
             label:
-              "One webhook from Smartlead into LeadAC. No new sender, no new domain warmup.",
+              "One webhook from Smartlead into Revint. No new sender, no new domain warmup.",
           },
           {
             value: "8 fields",
@@ -137,7 +137,7 @@ export default function SmartleadIntegrationPage() {
           {
             value: "Reply loop",
             label:
-              "Smartlead replies ingest back into the LeadAC closed-loop refinement.",
+              "Smartlead replies ingest back into the Revint closed-loop refinement.",
           },
         ]}
       />
@@ -150,7 +150,7 @@ export default function SmartleadIntegrationPage() {
               Four steps. Most of them happen in tools you already pay for.
             </h2>
             <p className="mt-4 text-[18px] leading-relaxed text-paper-2">
-              Smartlead remains the sender of record. LeadAC sits one layer
+              Smartlead remains the sender of record. Revint sits one layer
               behind it, filling the merge fields and reading the reply
               data to sharpen the next list.
             </p>
@@ -182,9 +182,9 @@ export default function SmartleadIntegrationPage() {
         title="What SDR managers ask before they wire the webhook."
         entries={[
           {
-            question: "Does LeadAC replace Smartlead?",
+            question: "Does Revint replace Smartlead?",
             answer:
-              "No. Smartlead stays the sender of record — your domain warmup, your reply inbox, your sequence templates. LeadAC fills the merge fields the sequence already uses; the email goes out from the same Smartlead account that sends today.",
+              "No. Smartlead stays the sender of record — your domain warmup, your reply inbox, your sequence templates. Revint fills the merge fields the sequence already uses; the email goes out from the same Smartlead account that sends today.",
           },
           {
             question: "What about Instantly, Apollo Sequences, or Outreach?",
@@ -194,12 +194,12 @@ export default function SmartleadIntegrationPage() {
           {
             question: "Do you write the sequences for us?",
             answer:
-              "No. The sequence cadence, copy, and templates stay yours. LeadAC writes the per-account variables your sequence merges; the strategic decision about what cadence to send is your team's, not ours.",
+              "No. The sequence cadence, copy, and templates stay yours. Revint writes the per-account variables your sequence merges; the strategic decision about what cadence to send is your team's, not ours.",
           },
           {
             question: "Will replies still land in Smartlead?",
             answer:
-              "Yes. Smartlead remains the reply inbox. LeadAC reads the reply data via webhook for the closed-loop ICP refinement; we never insert ourselves into the reply path.",
+              "Yes. Smartlead remains the reply inbox. Revint reads the reply data via webhook for the closed-loop ICP refinement; we never insert ourselves into the reply path.",
           },
         ]}
       />
@@ -207,7 +207,7 @@ export default function SmartleadIntegrationPage() {
       <CtaBlock
         eyebrow="See the handoff live"
         title="Bring your Smartlead account to the call. We'll wire the webhook in 10 minutes."
-        subtitle="Twenty minutes. Smartlead OAuth on the call. You see one of your own active sequences pick up a LeadAC-filled brief in real time."
+        subtitle="Twenty minutes. Smartlead OAuth on the call. You see one of your own active sequences pick up a Revint-filled brief in real time."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{
           href: "/integrations/hubspot",

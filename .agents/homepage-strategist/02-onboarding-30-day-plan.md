@@ -10,7 +10,7 @@ You are not graded on speed in month one. You are graded on quality of the first
 
 ## Week 1 — Absorb
 
-Goal: understand what LeadAC is, who it is for, what is on the page today, and why each thing is there.
+Goal: understand what Revint is, who it is for, what is on the page today, and why each thing is there.
 
 ### Reading (in this order)
 

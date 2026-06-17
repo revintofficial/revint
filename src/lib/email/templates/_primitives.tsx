@@ -116,7 +116,7 @@ export function BrandMark() {
             lineHeight: "22px",
           }}
         >
-          Leadac AI
+          Revint
         </Text>
         <Text
           style={{

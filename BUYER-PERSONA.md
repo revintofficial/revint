@@ -1,4 +1,4 @@
-# LeadAC — buyer personas
+# Revint — buyer personas
 
 Six personas. Each one maps to an existing or planned vertical landing page. The shared profile across all six is at the bottom (skip there if you're scanning for the common thread).
 
@@ -15,7 +15,7 @@ This file feeds copy for vertical landings, ad targeting, cold email subject lin
 **Day in life:**
 6:30am check Smartlead deliverability. 8am stand-up with the SDR pod. 9-11am writing variant openers because last week's reply rate dipped. 12pm-2pm client check-in calls. Afternoon: refining sequences, pitching new prospects, and rebuilding lists because Apollo just spat out the same companies they pulled three weeks ago. Closes laptop at 9pm wondering if the SDR they hired in February is going to work out.
 
-**The thing that triggered them to look for a tool like LeadAC:**
+**The thing that triggered them to look for a tool like Revint:**
 - Reply rate dropped from 4% to 1.6% over Q1 2026
 - Two clients churned citing "your pipeline isn't moving"
 - The SDR pod is asking for a personalization assistant; the obvious move is hiring a research VA, but $4-6k/month hurts when retainer revenue is already soft

@@ -30,7 +30,7 @@ const COMPARE_PAGES = [
     slug: "clay",
     name: "vs Clay",
     description:
-      "Clay is a workshop, LeadAC is the finished tool. Pick by staffing model, not by feature count.",
+      "Clay is a workshop, Revint is the finished tool. Pick by staffing model, not by feature count.",
   },
   {
     slug: "gong",
@@ -42,9 +42,9 @@ const COMPARE_PAGES = [
 
 export const metadata: Metadata = buildMetadata({
   path: PATH,
-  title: "Compare LeadAC — honest side-by-side with the outbound stack",
+  title: "Compare Revint — honest side-by-side with the outbound stack",
   description:
-    "Side-by-side comparisons of LeadAC against Apollo, Clay, Gong, and the four-tool stack most vertical SaaS teams run today. No leaderboards — different primitives, different fits.",
+    "Side-by-side comparisons of Revint against Apollo, Clay, Gong, and the four-tool stack most vertical SaaS teams run today. No leaderboards — different primitives, different fits.",
 });
 
 export default function VsIndexPage() {
@@ -54,7 +54,7 @@ export default function VsIndexPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Compare", url: PATH },
         ])}
       />

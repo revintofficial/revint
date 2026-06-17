@@ -9,7 +9,7 @@ export const post: BlogPost = {
     "Dentists get reviewed like restaurants. We pulled 2,000 Google reviews from 127 UK practices and tagged every complaint. Five themes dominate — and three of them are buying triggers for anyone selling to practice owners.",
   lede: "If you've ever wondered what your buyer's customers are actually complaining about, read their reviews. We did, for dentists, and the pattern was cleaner than expected.",
   publishedAt: "2025-12-20T09:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["data", "dentists", "review mining"],
   readMinutes: 7,
   body: () => (

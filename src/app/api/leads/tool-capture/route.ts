@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
  * Stores the email against the tool slug plus a JSON blob of the computed
  * metrics so a downstream worker can personalize the follow-up email. The
  * model is intentionally lightweight — no tenant scoping because these
- * leads belong to Leadac's own marketing list, not to an org.
+ * leads belong to Revint's own marketing list, not to an org.
  *
  * Persistence is best-effort: if the `MarketingCapture` table doesn't exist
  * yet (migration not yet applied), the request still succeeds and the

@@ -19,9 +19,9 @@ const PATH = "/signup";
 
 export const metadata: Metadata = buildMetadata({
   path: PATH,
-  title: "Create a LeadAC workspace",
+  title: "Create a Revint workspace",
   description:
-    "Create your LeadAC workspace. Most teams start with a 20-minute demo first — the pilot fee covers the same evaluation with a live walkthrough.",
+    "Create your Revint workspace. Most teams start with a 20-minute demo first — the pilot fee covers the same evaluation with a live walkthrough.",
   index: false,
   follow: true,
 });
@@ -33,7 +33,7 @@ export default function SignupPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Sign up", url: PATH },
         ])}
       />

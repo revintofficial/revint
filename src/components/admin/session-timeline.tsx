@@ -9,18 +9,18 @@ export interface TimelineEvent {
 }
 
 const TYPE_STYLES: Record<string, { dot: string; label: string }> = {
-  page_view: { dot: "bg-[var(--leadac-info)]", label: "page" },
-  page_leave: { dot: "bg-[var(--leadac-text-3)]", label: "left" },
-  click: { dot: "bg-[var(--leadac-500)]", label: "click" },
-  cta_click: { dot: "bg-[var(--leadac-warning)]", label: "CTA" },
-  scroll: { dot: "bg-[var(--leadac-300)]", label: "scroll" },
-  form_focus: { dot: "bg-[var(--leadac-info)]", label: "focus" },
-  form_blur: { dot: "bg-[var(--leadac-text-3)]", label: "blur" },
-  form_submit: { dot: "bg-[var(--leadac-success)]", label: "submit" },
-  signup: { dot: "bg-[var(--leadac-success)]", label: "signup" },
-  error: { dot: "bg-[var(--leadac-error)]", label: "error" },
-  video_play: { dot: "bg-[var(--leadac-300)]", label: "video" },
-  video_progress: { dot: "bg-[var(--leadac-300)]", label: "video" },
+  page_view: { dot: "bg-[var(--revint-info)]", label: "page" },
+  page_leave: { dot: "bg-[var(--revint-text-3)]", label: "left" },
+  click: { dot: "bg-[var(--revint-500)]", label: "click" },
+  cta_click: { dot: "bg-[var(--revint-warning)]", label: "CTA" },
+  scroll: { dot: "bg-[var(--revint-300)]", label: "scroll" },
+  form_focus: { dot: "bg-[var(--revint-info)]", label: "focus" },
+  form_blur: { dot: "bg-[var(--revint-text-3)]", label: "blur" },
+  form_submit: { dot: "bg-[var(--revint-success)]", label: "submit" },
+  signup: { dot: "bg-[var(--revint-success)]", label: "signup" },
+  error: { dot: "bg-[var(--revint-error)]", label: "error" },
+  video_play: { dot: "bg-[var(--revint-300)]", label: "video" },
+  video_progress: { dot: "bg-[var(--revint-300)]", label: "video" },
 };
 
 function fmtTime(d: Date | string): string {
@@ -81,7 +81,7 @@ function eventDescription(ev: TimelineEvent): string {
 export function SessionTimeline({ events }: { events: TimelineEvent[] }) {
   if (events.length === 0) {
     return (
-      <div className="rounded-xl border border-[var(--leadac-border)] bg-[var(--leadac-card)] p-6 text-sm text-[var(--leadac-text-3)] text-center">
+      <div className="rounded-xl border border-[var(--revint-border)] bg-[var(--revint-card)] p-6 text-sm text-[var(--revint-text-3)] text-center">
         No events captured for this session.
       </div>
     );
@@ -89,28 +89,28 @@ export function SessionTimeline({ events }: { events: TimelineEvent[] }) {
 
   return (
     <ol className="relative pl-6">
-      <span className="absolute left-2 top-2 bottom-2 w-px bg-[var(--leadac-border)]" />
+      <span className="absolute left-2 top-2 bottom-2 w-px bg-[var(--revint-border)]" />
       {events.map((ev) => {
         const style = TYPE_STYLES[ev.type] ?? {
-          dot: "bg-[var(--leadac-text-3)]",
+          dot: "bg-[var(--revint-text-3)]",
           label: ev.type,
         };
         return (
           <li key={ev.id} className="relative pb-3">
             <span
               className={cn(
-                "absolute -left-[18px] top-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-[var(--leadac-bg)]",
+                "absolute -left-[18px] top-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-[var(--revint-bg)]",
                 style.dot,
               )}
             />
             <div className="flex items-baseline gap-3 text-sm">
-              <span className="text-xs text-[var(--leadac-text-3)] tabular-nums shrink-0 w-20">
+              <span className="text-xs text-[var(--revint-text-3)] tabular-nums shrink-0 w-20">
                 {fmtTime(ev.ts)}
               </span>
-              <span className="text-[10px] uppercase tracking-wider text-[var(--leadac-text-3)] shrink-0 w-16">
+              <span className="text-[10px] uppercase tracking-wider text-[var(--revint-text-3)] shrink-0 w-16">
                 {style.label}
               </span>
-              <span className="text-[var(--leadac-text-1)] break-words">
+              <span className="text-[var(--revint-text-1)] break-words">
                 {eventDescription(ev)}
               </span>
             </div>

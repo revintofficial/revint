@@ -90,7 +90,7 @@ export function TeamPanel({
                 <div key={m.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold text-white shrink-0"
-                    style={{ background: "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 42%))" }}
+                    style={{ background: "linear-gradient(135deg, hsl(var(--revint-h) var(--revint-s) 50%), hsl(var(--revint-h) var(--revint-s) 42%))" }}
                   >
                     {(m.fullName || m.email).slice(0, 2).toUpperCase()}
                   </div>

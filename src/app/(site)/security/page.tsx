@@ -26,7 +26,7 @@ const PATH = "/security";
 export const metadata: Metadata = buildMetadata({
   path: PATH,
   title:
-    "Security & trust — how LeadAC handles your CRM data and HubSpot OAuth scope",
+    "Security & trust — how Revint handles your CRM data and HubSpot OAuth scope",
   description:
     "SOC 2 Type II audit in progress. AES-256 at rest, TLS 1.3 in transit. Per-workspace row-level isolation. Never trains models on customer data. Plain English.",
 });
@@ -71,7 +71,7 @@ export default function SecurityPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Security", url: PATH },
         ])}
       />
@@ -79,7 +79,7 @@ export default function SecurityPage() {
       <Hero
         eyebrow="Security & trust"
         headline="What we do with your data. What we never do with your data."
-        subhead="LeadAC stores customer CRM data, OAuth tokens, and signal extractions. This page is the honest map of how those three are kept apart, encrypted, and never used to train cross-workspace models."
+        subhead="Revint stores customer CRM data, OAuth tokens, and signal extractions. This page is the honest map of how those three are kept apart, encrypted, and never used to train cross-workspace models."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "#controls", label: "See the controls" }}
       />

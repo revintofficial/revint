@@ -75,7 +75,7 @@ const FIELDS = [
   {
     name: "leadac_brief_url",
     description:
-      "Direct link into the LeadAC dashboard view for this account.",
+      "Direct link into the Revint dashboard view for this account.",
     type: "URL",
   },
 ];
@@ -95,7 +95,7 @@ export default function HubSpotIntegrationPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Integrations", url: "/integrations" },
           { name: "HubSpot", url: PATH },
         ])}
@@ -103,7 +103,7 @@ export default function HubSpotIntegrationPage() {
       <JsonLd
         id="ld-service"
         data={serviceSchema({
-          name: "LeadAC HubSpot Integration",
+          name: "Revint HubSpot Integration",
           description:
             "Native HubSpot OAuth integration that writes 12 enriched fields per company record and ingests closed-loop deal outcomes via HubSpot webhooks.",
           url: `${SITE.url}${PATH}`,
@@ -165,7 +165,7 @@ export default function HubSpotIntegrationPage() {
           <div className="max-w-3xl">
             <div className="site-eyebrow mb-3">Field map</div>
             <h2 className="text-[30px] leading-tight tracking-tight text-paper-0 md:text-[44px]">
-              The exact fields LeadAC writes into HubSpot.
+              The exact fields Revint writes into HubSpot.
             </h2>
             <p className="mt-4 text-[18px] leading-relaxed text-paper-2">
               Every field is a custom property prefixed with leadac_ so

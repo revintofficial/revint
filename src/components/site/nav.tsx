@@ -136,7 +136,7 @@ export function SiteNav() {
           <Link
             href="/"
             className="flex items-center gap-2"
-            aria-label="LeadAC home"
+            aria-label="Revint home"
           >
             <Image
               src="/logo.png"
@@ -147,7 +147,7 @@ export function SiteNav() {
               priority
             />
             <span className="text-[15px] font-semibold tracking-tight text-paper-0">
-              LeadAC
+              Revint
             </span>
           </Link>
 

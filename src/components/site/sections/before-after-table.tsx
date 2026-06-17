@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
  *
  * Psych: Status-quo bias break + Contrast effect (psych-map). The "Before"
  * column reads as the team's current reality; the "After" column reads as
- * what a working LeadAC team looks like. Each row pairs one fixed pain
+ * what a working Revint team looks like. Each row pairs one fixed pain
  * with one shipped behaviour — no aspirational copy.
  *
  * Visual: two-column instrument panel. Before column muted (ink + paper-2),
@@ -34,8 +34,8 @@ export function BeforeAfterTable({
   title,
   subtitle,
   rows,
-  beforeLabel = "Before LeadAC",
-  afterLabel = "After LeadAC",
+  beforeLabel = "Before Revint",
+  afterLabel = "After Revint",
   className,
 }: BeforeAfterTableProps) {
   return (

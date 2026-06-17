@@ -48,7 +48,7 @@ export function SettingsNav({ role }: { role: WorkspaceRole }) {
       <nav
         className="inline-flex items-center gap-1 p-1 rounded-xl mx-4 sm:mx-0 whitespace-nowrap"
         style={{
-          background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
+          background: "hsl(var(--revint-h) var(--revint-ns) 11% / 0.5)",
           border: "0.5px solid hsl(0 0% 100% / 0.06)",
         }}
         aria-label="Settings sections"
@@ -60,10 +60,10 @@ export function SettingsNav({ role }: { role: WorkspaceRole }) {
               key={t.href}
               href={t.href}
               aria-current={isActive ? "page" : undefined}
-              className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--leadac-500) shrink-0"
+              className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--revint-500) shrink-0"
               style={{
-                background: isActive ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.15)" : "transparent",
-                color: isActive ? "white" : "var(--leadac-text-2)",
+                background: isActive ? "hsl(var(--revint-h) var(--revint-s) 50% / 0.15)" : "transparent",
+                color: isActive ? "white" : "var(--revint-text-2)",
               }}
             >
               {t.label}

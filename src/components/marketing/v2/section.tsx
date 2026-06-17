@@ -36,7 +36,7 @@ export function Section({
       className={cn(
         "relative w-full py-24 md:py-32",
         variant === "soft" &&
-          "bg-[hsl(var(--leadac-h)_var(--leadac-ns)_8%)] border-y border-white/[0.04]",
+          "bg-[hsl(var(--revint-h)_var(--revint-ns)_8%)] border-y border-white/[0.04]",
         className,
       )}
     >
@@ -46,7 +46,7 @@ export function Section({
             {eyebrow && (
               <p
                 className="mb-4 text-[11.5px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 62%)" }}
+                style={{ color: "hsl(var(--revint-h) var(--revint-s) 62%)" }}
               >
                 {eyebrow}
               </p>

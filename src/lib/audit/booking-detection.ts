@@ -5,7 +5,7 @@
  * Returns the canonical provider name when found (e.g. "Calendly", "Setmore"),
  * or null when no booking system is detected.
  *
- * Why this matters: in Leadac AI's outbound flow, "no booking system" is the
+ * Why this matters: in Revint's outbound flow, "no booking system" is the
  * highest-conviction segment for the "modernize their site" pitch. Confidently
  * detecting Calendly / Setmore / etc. prevents false-positive outreach to
  * prospects who already solved the problem.

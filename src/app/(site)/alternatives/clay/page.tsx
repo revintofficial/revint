@@ -29,7 +29,7 @@ const PUBLISHED = "2026-05-22";
 
 const ALTS = [
   {
-    name: "LeadAC",
+    name: "Revint",
     pitch:
       "Finished vertical packs — Field service, Restaurant tech, Dental — instead of a programmable workflow runtime.",
     fit: "Best when you don't have a GTM engineer, send under 10K emails/month, or want pre-built workflows for your specific vertical.",
@@ -53,7 +53,7 @@ const ALTS = [
   {
     name: "Smartlead",
     pitch:
-      "Sequencer that pairs with LeadAC's brief variables natively. Sender of record, not workflow runtime.",
+      "Sequencer that pairs with Revint's brief variables natively. Sender of record, not workflow runtime.",
     fit: "Best when you already have decent data and just need a clean sender + reply loop.",
     cost: "$468/yr Pro",
   },
@@ -79,7 +79,7 @@ export default function ClayAlternativesPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Alternatives", url: "/alternatives" },
           { name: "Clay alternatives", url: PATH },
         ])}
@@ -132,7 +132,7 @@ export default function ClayAlternativesPage() {
           {
             value: "3 packs",
             label:
-              "LeadAC vertical packs that ship the workflow Clay teams try to build in week one.",
+              "Revint vertical packs that ship the workflow Clay teams try to build in week one.",
           },
         ]}
       />
@@ -177,7 +177,7 @@ export default function ClayAlternativesPage() {
                       href="/vs/clay"
                       className="mt-4 inline-flex items-center gap-2 text-[13px] text-signal hover:underline"
                     >
-                      Side-by-side: LeadAC vs Clay
+                      Side-by-side: Revint vs Clay
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                   ) : null}
@@ -194,7 +194,7 @@ export default function ClayAlternativesPage() {
         subtitle="Clay is freeform workflow. Each row asks: does this tool need a GTM engineer to operate?"
         columns={[
           { label: "Clay Growth" },
-          { label: "LeadAC Team", isUs: true, subLabel: "from $18,000/yr" },
+          { label: "Revint Team", isUs: true, subLabel: "from $18,000/yr" },
           { label: "Apollo Pro" },
           { label: "Smartlead Pro" },
           { label: "Ocean.io" },
@@ -252,7 +252,7 @@ export default function ClayAlternativesPage() {
 
       <CtaBlock
         eyebrow="The pilot"
-        title="Run the LeadAC vertical pack for 30 days. Decide at the end."
+        title="Run the Revint vertical pack for 30 days. Decide at the end."
         subtitle="If our vertical pack covers your motion, you'll know inside the first hour. If you need freeform workflow logic Clay handles, we'll say so on the call and point you back."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}

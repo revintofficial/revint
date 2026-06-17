@@ -31,14 +31,14 @@ const NAV: Array<{ href: string; label: string; icon: React.ComponentType<{ clas
 export function AdminNav() {
   const pathname = usePathname() || "";
   return (
-    <aside className="w-60 shrink-0 border-r border-[var(--leadac-border)] bg-[var(--leadac-surface)] min-h-screen sticky top-0">
-      <div className="p-5 border-b border-[var(--leadac-border)]">
-        <div className="text-xs uppercase tracking-wider text-[var(--leadac-text-3)]">
-          LeadAC
+    <aside className="w-60 shrink-0 border-r border-[var(--revint-border)] bg-[var(--revint-surface)] min-h-screen sticky top-0">
+      <div className="p-5 border-b border-[var(--revint-border)]">
+        <div className="text-xs uppercase tracking-wider text-[var(--revint-text-3)]">
+          Revint
         </div>
         <div className="mt-1 flex items-center gap-2">
-          <Activity className="h-4 w-4 text-[var(--leadac-500)]" />
-          <span className="text-sm font-semibold text-[var(--leadac-text-1)]">
+          <Activity className="h-4 w-4 text-[var(--revint-500)]" />
+          <span className="text-sm font-semibold text-[var(--revint-text-1)]">
             Admin · Analytics
           </span>
         </div>
@@ -57,8 +57,8 @@ export function AdminNav() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
                 active
-                  ? "bg-[var(--leadac-hover)] text-[var(--leadac-text-1)]"
-                  : "text-[var(--leadac-text-2)] hover:bg-[var(--leadac-hover)] hover:text-[var(--leadac-text-1)]",
+                  ? "bg-[var(--revint-hover)] text-[var(--revint-text-1)]"
+                  : "text-[var(--revint-text-2)] hover:bg-[var(--revint-hover)] hover:text-[var(--revint-text-1)]",
               )}
             >
               <Icon className="h-4 w-4" />

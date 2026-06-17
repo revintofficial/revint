@@ -6,7 +6,7 @@
  * cold-email recipient taps from their phone, so page-weight discipline
  * is non-negotiable (target: ~50-65KB total).
  *
- * Aesthetic: matches the cinematic Leadac marketing site (dark bg,
+ * Aesthetic: matches the cinematic Revint marketing site (dark bg,
  * glass panels, multi-gradient mesh, 16px radius, 0.5px borders).
  * The primary / accent / secondary palette comes from the niche pack
  * so two leads in the same vertical read as visually consistent.
@@ -66,7 +66,7 @@ import {
   buildMapsEmbedUrl,
 } from "./_shared";
 
-export interface LeadacShowcaseRenderInput {
+export interface RevintShowcaseRenderInput {
   businessName: string;
   formattedAddress: string;
   borough: string | null;
@@ -85,7 +85,7 @@ export interface LeadacShowcaseRenderInput {
   secondaryHex?: string | null;
   workspaceName?: string;
   branding?: WorkspaceBranding | null;
-  showLeadacCredit?: boolean;
+  showRevintCredit?: boolean;
   lang: string; // "tr" | "en"
   /**
    * Optional niche label for the `<title>` tag suffix, e.g.
@@ -128,7 +128,7 @@ export interface LeadacShowcaseRenderInput {
   leadPhotoUrls?: string[] | null;
 }
 
-export function renderLeadacShowcase(input: LeadacShowcaseRenderInput): string {
+export function renderRevintShowcase(input: RevintShowcaseRenderInput): string {
   const s = input.sections;
   const lang = input.lang === "tr" ? "tr" : "en";
   const labels = resolveLabels(lang, input.nicheSlug ?? null, input.nicheParentSlug ?? null);
@@ -194,7 +194,7 @@ export function renderLeadacShowcase(input: LeadacShowcaseRenderInput): string {
   const footerText =
     brand?.footerText ||
     (input.workspaceName ? `${escapeHtml(input.workspaceName)} tarafından hazırlandı` : labels.drafted_by);
-  const showCredit = input.showLeadacCredit !== false && !brand?.hideLeadacCredit;
+  const showCredit = input.showRevintCredit !== false && !brand?.hideRevintCredit;
   const safeLogoUrl = brand?.logoUrl ? escapeHtml(brand.logoUrl) : null;
 
   // Caller-supplied business identity. Always HTML-escape — they come
@@ -575,7 +575,7 @@ ${renderShowcaseBody({
 </main>
 
 <footer class="footer">
-  ${footerText}${showCredit ? ` · <a href="https://leadac.ai" target="_blank" rel="noopener">leadac.ai</a>` : ""}
+  ${footerText}${showCredit ? ` · <a href="https://revint.dev" target="_blank" rel="noopener">revint.dev</a>` : ""}
 </footer>
 
 </body>
@@ -1188,7 +1188,7 @@ const LABELS: Record<string, Labels> = {
     message_us: "WhatsApp'tan Yaz",
     get_directions: "Yol Tarifi",
     open_for: "Hizmet veriyoruz",
-    drafted_by: "Leadac AI tarafından hazırlandı",
+    drafted_by: "Revint tarafından hazırlandı",
     numbers: "Rakamlarla",
     stats_title: "Neden bizi seçiyorlar",
     process_eyebrow: "Süreç",
@@ -1225,7 +1225,7 @@ const LABELS: Record<string, Labels> = {
     message_us: "WhatsApp",
     get_directions: "Get directions",
     open_for: "Serving your area",
-    drafted_by: "Drafted by Leadac AI",
+    drafted_by: "Drafted by Revint",
     numbers: "In numbers",
     stats_title: "Why customers choose us",
     process_eyebrow: "Process",

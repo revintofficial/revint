@@ -198,7 +198,7 @@ export function LiveProcessingStrip({
         className={cn(
           "rounded-2xl border px-4 py-3",
           active
-            ? "border-(--leadac-500)/25 bg-(--leadac-500)/[0.06]"
+            ? "border-(--revint-500)/25 bg-(--revint-500)/[0.06]"
             : "border-[hsl(152_48%_50%)]/25 bg-[hsl(152_48%_50%)]/[0.06]",
           className,
         )}
@@ -208,7 +208,7 @@ export function LiveProcessingStrip({
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3 min-w-0">
             {active ? (
-              <Loader2 className="w-4 h-4 shrink-0 text-(--leadac-500) animate-spin" />
+              <Loader2 className="w-4 h-4 shrink-0 text-(--revint-500) animate-spin" />
             ) : (
               <CheckCircle2 className="w-4 h-4 shrink-0 text-[hsl(152_48%_50%)]" />
             )}
@@ -217,7 +217,7 @@ export function LiveProcessingStrip({
                 className={cn(
                   "text-sm font-semibold truncate",
                   active
-                    ? "text-(--leadac-500)"
+                    ? "text-(--revint-500)"
                     : "text-[hsl(152_48%_50%)]",
                 )}
               >
@@ -273,7 +273,7 @@ export function LiveProcessingStrip({
                 <Badge
                   key={kind}
                   variant="outline"
-                  className="border-(--leadac-500)/30 text-[11px] text-white/70"
+                  className="border-(--revint-500)/30 text-[11px] text-white/70"
                   title={kind}
                 >
                   {workerLabel(kind)}

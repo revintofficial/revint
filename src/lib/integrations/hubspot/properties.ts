@@ -123,8 +123,12 @@ export const LEADAC_PROPERTY_NAMES = LEADAC_PROPERTIES.map((p) => p.name);
  * of newly-created property names. Best-effort: a failure to create one
  * property logs and continues (a customer who pre-created a property
  * with the same name shouldn't block the rest).
+ *
+ * Function name keeps the post-rename brand (`ensureRevintProperties`)
+ * while the actual HubSpot property keys are still `leadac_*` because
+ * renaming them in a customer's portal would orphan all historical data.
  */
-export async function ensureLeadacProperties(
+export async function ensureRevintProperties(
   client: HubspotClient,
 ): Promise<{ created: string[]; skipped: string[]; errors: string[] }> {
   const created: string[] = [];

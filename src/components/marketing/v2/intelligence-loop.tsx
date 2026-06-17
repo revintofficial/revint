@@ -66,13 +66,13 @@ export function IntelligenceLoop() {
     <Section
       eyebrow="What changes when the system remembers"
       headline="Six months of pattern, on every new SDR's first day."
-      sub="Today, the rep who has been on the team for six months is your only memory of what works in each segment. When they take an offer somewhere else, the company starts over. LeadAC writes that memory into a place anyone on the team can read, including the new hire on her first Monday."
+      sub="Today, the rep who has been on the team for six months is your only memory of what works in each segment. When they take an offer somewhere else, the company starts over. Revint writes that memory into a place anyone on the team can read, including the new hire on her first Monday."
     >
       <div
         className="relative mx-auto max-w-3xl rounded-2xl border border-white/[0.06] overflow-hidden"
         style={{
           background:
-            "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 10%) 0%, hsl(var(--leadac-h) var(--leadac-ns) 7%) 100%)",
+            "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-ns) 10%) 0%, hsl(var(--revint-h) var(--revint-ns) 7%) 100%)",
         }}
       >
         <div
@@ -80,7 +80,7 @@ export function IntelligenceLoop() {
           className="pointer-events-none absolute inset-0"
           style={{
             background:
-              "radial-gradient(60% 60% at 50% 50%, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10), transparent 70%)",
+              "radial-gradient(60% 60% at 50% 50%, hsl(var(--revint-h) var(--revint-s) 50% / 0.10), transparent 70%)",
           }}
         />
 
@@ -95,12 +95,12 @@ export function IntelligenceLoop() {
               <linearGradient id="memoryEdge" x1="0" y1="0" x2="1" y2="1">
                 <stop
                   offset="0%"
-                  stopColor="hsl(var(--leadac-h) var(--leadac-s) 60%)"
+                  stopColor="hsl(var(--revint-h) var(--revint-s) 60%)"
                   stopOpacity="0.55"
                 />
                 <stop
                   offset="100%"
-                  stopColor="hsl(var(--leadac-h) var(--leadac-s) 60%)"
+                  stopColor="hsl(var(--revint-h) var(--revint-s) 60%)"
                   stopOpacity="0.15"
                 />
               </linearGradient>
@@ -129,14 +129,14 @@ export function IntelligenceLoop() {
                   cx={n.x}
                   cy={n.y}
                   r="0.9"
-                  fill="hsl(var(--leadac-h) var(--leadac-s) 70%)"
+                  fill="hsl(var(--revint-h) var(--revint-s) 70%)"
                 />
                 <circle
                   cx={n.x}
                   cy={n.y}
                   r="2.2"
                   fill="none"
-                  stroke="hsl(var(--leadac-h) var(--leadac-s) 60% / 0.35)"
+                  stroke="hsl(var(--revint-h) var(--revint-s) 60% / 0.35)"
                   strokeWidth="0.25"
                   vectorEffect="non-scaling-stroke"
                 />
@@ -158,10 +158,10 @@ export function IntelligenceLoop() {
             <span
               className="absolute left-[8%] top-[48%] rounded-full px-2.5 py-1 text-[10.5px] font-semibold"
               style={{
-                background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)",
-                color: "hsl(var(--leadac-h) var(--leadac-s) 80%)",
+                background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.12)",
+                color: "hsl(var(--revint-h) var(--revint-s) 80%)",
                 border:
-                  "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.30)",
+                  "1px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.30)",
               }}
             >
               reply rate +14%
@@ -169,10 +169,10 @@ export function IntelligenceLoop() {
             <span
               className="absolute right-[6%] top-[44%] rounded-full px-2.5 py-1 text-[10.5px] font-semibold"
               style={{
-                background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)",
-                color: "hsl(var(--leadac-h) var(--leadac-s) 80%)",
+                background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.12)",
+                color: "hsl(var(--revint-h) var(--revint-s) 80%)",
                 border:
-                  "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.30)",
+                  "1px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.30)",
               }}
             >
               pipeline +3
@@ -180,10 +180,10 @@ export function IntelligenceLoop() {
             <span
               className="absolute left-1/2 bottom-[6%] -translate-x-1/2 rounded-full px-2.5 py-1 text-[10.5px] font-semibold"
               style={{
-                background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)",
-                color: "hsl(var(--leadac-h) var(--leadac-s) 80%)",
+                background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.12)",
+                color: "hsl(var(--revint-h) var(--revint-s) 80%)",
                 border:
-                  "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.30)",
+                  "1px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.30)",
               }}
             >
               ICP sharper
@@ -196,7 +196,7 @@ export function IntelligenceLoop() {
         {PROOF_CARDS.map((card) => (
           <div
             key={card.title}
-            className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_9%)] p-6"
+            className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--revint-h)_var(--revint-ns)_9%)] p-6"
           >
             <h3 className="text-[15px] font-semibold text-white">
               {card.title}

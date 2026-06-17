@@ -60,7 +60,7 @@ export function PreCallBriefCard({
         <div className="flex items-center gap-2">
           <span className="site-signal-dot" />
           <div className="site-mono text-[12px] uppercase tracking-wider text-paper-2">
-            LeadAC brief · inside HubSpot
+            Revint brief · inside HubSpot
           </div>
         </div>
         <ExternalLink className="h-3.5 w-3.5 text-paper-3" />

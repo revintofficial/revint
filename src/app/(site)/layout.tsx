@@ -11,7 +11,7 @@ import { buildMetadata } from "@/lib/seo/metadata";
  * What it does:
  *   - Applies the "operator instrument panel" body class so the whole
  *     subtree reads against --ink-* / --paper-* / --signal tokens instead
- *     of the legacy --leadac-* product palette.
+ *     of the legacy --revint-* product palette.
  *   - Renders the global nav + footer that brand-assets §6 mandates.
  *   - Mounts SiteAnalytics once for the whole route group.
  *
@@ -21,7 +21,7 @@ import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildMetadata({
   path: "/",
-  title: "LeadAC — we remember what closes for vertical SaaS sales teams",
+  title: "Revint — we remember what closes for vertical SaaS sales teams",
   description:
     "Operational intelligence for vertical SaaS GTM teams selling to local business. Find the right local accounts, sync vertical context into HubSpot, learn from every won and lost deal.",
 });

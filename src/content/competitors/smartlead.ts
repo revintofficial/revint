@@ -38,9 +38,9 @@ export const smartlead: CompetitorProfile = {
       note: "Frequent comparison threads; both rank well on deliverability.",
     },
   ],
-  whyLeadacInstead: [
-    "Smartlead sends. Leadac sources + audits. Use them together: one-click push from Leadac to Smartlead.",
+  whyRevintInstead: [
+    "Smartlead sends. Revint sources + audits. Use them together: one-click push from Revint to Smartlead.",
     "Your Smartlead campaigns perform better when email #1 references the recipient's actual website, not a persona.",
-    "Leadac handles the research Smartlead doesn't — postcode, niche, 20-signal audit, pitch angle.",
+    "Revint handles the research Smartlead doesn't — postcode, niche, 20-signal audit, pitch angle.",
   ],
 };

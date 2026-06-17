@@ -33,7 +33,7 @@
 | Subhead | `Quick answers. Longer ones are one email away.` (existing dynamic copy per lines 56-58) | Keep. |
 | Body | Seven `<details>` accordion items. Four kept verbatim (Q4 / Q5 / Q6 / Q7 below). Three swapped out for call-pod objections from BUYER-PERSONA § 5 (Q1 / Q2 / Q3 below). | Total stays at seven, matching the existing density. |
 | Proof | None per item; the answer copy is the proof. | The cohort numbers stay in PreCallBrief and IntelligenceLoop; FAQ stays text-only. |
-| Primary CTA | None at the item level. Footer email link "Email mert@leadacai.com" stays (lines 82-90). | Existing behavior. |
+| Primary CTA | None at the item level. Footer email link "Email mert@revint.dev" stays (lines 82-90). | Existing behavior. |
 | Secondary CTA | Same footer link. | Same. |
 
 ---
@@ -45,9 +45,9 @@ Grepped against banned list 2026-05-20. Zero hits.
 Three NEW Q&As (replace current items 1, 5, and 7 of [`faq-block.tsx`](../../../../src/components/marketing/v2/faq-block.tsx) lines 22-49):
 
 ```
-Q1: We have HubSpot already. What does LeadAC do that HubSpot does not?
+Q1: We have HubSpot already. What does Revint do that HubSpot does not?
 
-A1: HubSpot is the activity ledger. LeadAC is the brief that gets written
+A1: HubSpot is the activity ledger. Revint is the brief that gets written
 before the activity. We do not replace your CRM. We feed your reps the
 dossier for each restaurant they will dial this morning, plus the
 first 30 seconds they should open with. Activity then writes back into
@@ -70,7 +70,7 @@ Q3: Our BD team needs in-person, not more email. Is this for us?
 A3: Yes. The morning queue, the talk track for the first 30 seconds, the
 shared disposition chips, and the repeat-call guard all serve a pod
 whose closer is the in-person demo. The dial is the booking layer for
-the demo. LeadAC sits in front of the dial, not in front of the
+the demo. Revint sits in front of the dial, not in front of the
 inbox.
 ```
 
@@ -79,14 +79,14 @@ Four KEPT Q&As (verbatim from current [`faq-block.tsx`](../../../../src/componen
 ```
 Q4: How does the AI scoring actually work?
 
-A4: LeadAC reads operational signals: review velocity, reservation maturity,
+A4: Revint reads operational signals: review velocity, reservation maturity,
 social activity, site quality, and sub-niche fit. The score is a
 calibrated 0-100 with the reasons listed, so you can sanity-check
 before pitching.
 
 ---
 
-Q5: What signals does LeadAC analyze?
+Q5: What signals does Revint analyze?
 
 A5: Maps coverage, up to 500 reviews per business, reservation and ordering
 tooling, SEO and site signals, social activity, competitor ad presence,
@@ -111,8 +111,8 @@ attribution when teammates send.
 
 Three Q&As DROPPED from current copy:
 
-- "Does LeadAC send emails for me?" (current Q1, lines 22-25) — drop because it positions LeadAC against email-send, which is exactly the framing the v0.1 cycle is moving away from. The "we feed the sender, we do not replace it" message moves to the new Q1 (HubSpot) more naturally.
-- "Does LeadAC work outside restaurants?" (current Q5, lines 38-41) — drop because the BuiltFor section now answers this implicitly with the secondary chips (Local agencies + Restaurant-tech in-house BD).
+- "Does Revint send emails for me?" (current Q1, lines 22-25) — drop because it positions Revint against email-send, which is exactly the framing the v0.1 cycle is moving away from. The "we feed the sender, we do not replace it" message moves to the new Q1 (HubSpot) more naturally.
+- "Does Revint work outside restaurants?" (current Q5, lines 38-41) — drop because the BuiltFor section now answers this implicitly with the secondary chips (Local agencies + Restaurant-tech in-house BD).
 - "Where does the lead data come from?" (current Q7, lines 47-49) — drop because the HowItThinks Detect layer card (after the retune in RFC § 4) already covers the data-source question.
 
 **Voice-of-customer source.**
@@ -137,7 +137,7 @@ ASCII sketch (collapsed state):
 |  Quick answers. Longer ones are one email away.       |
 |                                                       |
 |  +-------------------------------------------------+  |
-|  | We have HubSpot already. What does LeadAC...  v |  |
+|  | We have HubSpot already. What does Revint...  v |  |
 |  | -------------------------------------------     |  |
 |  | Most local restaurants do not reply to cold...v |  |
 |  | -------------------------------------------     |  |
@@ -145,7 +145,7 @@ ASCII sketch (collapsed state):
 |  | -------------------------------------------     |  |
 |  | How does the AI scoring actually work?      v   |  |
 |  | -------------------------------------------     |  |
-|  | What signals does LeadAC analyze?           v   |  |
+|  | What signals does Revint analyze?           v   |  |
 |  | -------------------------------------------     |  |
 |  | Does the system learn from outreach...      v   |  |
 |  | -------------------------------------------     |  |
@@ -183,7 +183,7 @@ State which patterns this spec reuses:
 
 ## 7. Design tokens
 
-No change from current. The `divide-y divide-white/[0.06]`, `border-white/[0.06]`, `bg-[hsl(var(--leadac-h)_var(--leadac-ns)_8%)]`, `text-white/90`, `text-white/60` recipe stays intact (lines 62-77).
+No change from current. The `divide-y divide-white/[0.06]`, `border-white/[0.06]`, `bg-[hsl(var(--revint-h)_var(--revint-ns)_8%)]`, `text-white/90`, `text-white/60` recipe stays intact (lines 62-77).
 
 ---
 
@@ -200,7 +200,7 @@ No change. The chevron `transition-transform` already lives in the existing clas
 - ARIA: native `<details>` provides correct `aria-expanded` semantics by default; no overrides needed.
 - Focus order: native, no overrides. Each `<summary>` is keyboard-focusable.
 - Contrast ratio: ≥ 4.5:1 confirmed by inheriting from the current shipped recipe.
-- Screen reader narrative: "Section: Questions. Before you sign up. Quick answers. Longer ones are one email away. Disclosure: We have HubSpot already. What does LeadAC do that HubSpot does not? Collapsed. [+ 6 more disclosures]. Still have questions? Email mert@leadacai.com link."
+- Screen reader narrative: "Section: Questions. Before you sign up. Quick answers. Longer ones are one email away. Disclosure: We have HubSpot already. What does Revint do that HubSpot does not? Collapsed. [+ 6 more disclosures]. Still have questions? Email mert@revint.dev link."
 
 ---
 
@@ -233,12 +233,12 @@ Homepage section, not lead-detail. Skipped at the per-Q&A level. If section-leve
 - [x] Sentence case. All question and answer text is sentence case.
 - [x] No em dashes. Periods, commas, colons only.
 - [x] No false ranges. None.
-- [x] No negative parallelism. A1 uses positive parallelism ("HubSpot is the activity ledger. LeadAC is the brief..."), which is the opposite of the banned "not just X, it's Y" construction.
+- [x] No negative parallelism. A1 uses positive parallelism ("HubSpot is the activity ledger. Revint is the brief..."), which is the opposite of the banned "not just X, it's Y" construction.
 
 ---
 
 ## 14. Open questions for this section
 
 - A2's "the email is only the booking layer for the next call" needs founder review for product-accuracy. If the actual product surfaces email-as-primary-channel in any UI, this line over-positions the dial. Owner: founder.
-- Consider whether to retain "Does LeadAC send emails for me?" (current Q1) as Q8, given the page still drafts openers. Recommendation: drop it; the new A1 (HubSpot) and A2 (no-reply) cover the same ground with the right pivot. If the reviewer prefers retaining it for explicit no-send reassurance, move it to position 4.
+- Consider whether to retain "Does Revint send emails for me?" (current Q1) as Q8, given the page still drafts openers. Recommendation: drop it; the new A1 (HubSpot) and A2 (no-reply) cover the same ground with the right pivot. If the reviewer prefers retaining it for explicit no-send reassurance, move it to position 4.
 - Verify with the founder that the dropped current Q7 ("Where does the lead data come from?") is genuinely covered by the retuned HowItThinks Detect layer (per RFC § 4 row 4) before deleting from FAQ. If HowItThinks ends up not stating the data provenance explicitly, retain current Q7 and drop one of the kept ones (Q6 learning is the weakest candidate at the BD-pod stage of the buyer journey).

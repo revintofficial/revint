@@ -28,7 +28,7 @@ export default function HubspotSignalCoveragePage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Free tools", url: "/tools" },
           { name: TITLE, url: PATH },
         ])}
@@ -64,7 +64,7 @@ export default function HubspotSignalCoveragePage() {
 
       <CtaBlock
         eyebrow="Fill the gap"
-        title="LeadAC writes the operational fields next to your firmographic ones."
+        title="Revint writes the operational fields next to your firmographic ones."
         subtitle="Twelve fields per company record on day one — vertical stack, location count, owner activity, expansion tag, suggested opener. Same HubSpot company object your team already opens."
         primaryCta={{
           href: "/integrations/hubspot",

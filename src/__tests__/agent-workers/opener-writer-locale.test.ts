@@ -156,7 +156,7 @@ function makeGreenwichCtx(
       offerHook: "Free 5-min audit",
       objective: null,
       senderName: "Sam",
-      conversionLink: "https://leadac.ai/demo",
+      conversionLink: "https://revint.dev/demo",
       socialProof: null,
       branding: null,
       niche: "RESTAURANT_TECH",

@@ -9,7 +9,7 @@
  *     on across web and native.
  *   - Stays JSON-serialisable so it can be passed to a worker or Storybook.
  *
- * Whenever you edit the `:root { --leadac-* }` block in globals.css or the
+ * Whenever you edit the `:root { --revint-* }` block in globals.css or the
  * mobile UX additions below it, mirror the change here.
  */
 
@@ -94,25 +94,25 @@ export const z = {
 
 /**
  * Color tokens are kept as CSS-variable references on the web because the
- * `--leadac-*` system is the single re-skin knob. For native, resolve at runtime
+ * `--revint-*` system is the single re-skin knob. For native, resolve at runtime
  * using a CSS-vars→JS resolver; do NOT hardcode hex/HSL here.
  */
 export const colorVar = {
-  bg: "var(--leadac-bg)",
-  surface: "var(--leadac-surface)",
-  card: "var(--leadac-card)",
-  hover: "var(--leadac-hover)",
-  border: "var(--leadac-border)",
-  text1: "var(--leadac-text-1)",
-  text2: "var(--leadac-text-2)",
-  text3: "var(--leadac-text-3)",
-  muted: "var(--leadac-muted)",
-  primary: "var(--leadac-500)",
-  primaryHover: "var(--leadac-400)",
-  success: "var(--leadac-success)",
-  warning: "var(--leadac-warning)",
-  error: "var(--leadac-error)",
-  info: "var(--leadac-info)",
+  bg: "var(--revint-bg)",
+  surface: "var(--revint-surface)",
+  card: "var(--revint-card)",
+  hover: "var(--revint-hover)",
+  border: "var(--revint-border)",
+  text1: "var(--revint-text-1)",
+  text2: "var(--revint-text-2)",
+  text3: "var(--revint-text-3)",
+  muted: "var(--revint-muted)",
+  primary: "var(--revint-500)",
+  primaryHover: "var(--revint-400)",
+  success: "var(--revint-success)",
+  warning: "var(--revint-warning)",
+  error: "var(--revint-error)",
+  info: "var(--revint-info)",
 } as const;
 
 export const breakpoints = {

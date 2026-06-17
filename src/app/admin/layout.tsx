@@ -36,16 +36,16 @@ export default async function AdminLayout({
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-[var(--leadac-bg)] text-[var(--leadac-text-1)] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[var(--revint-bg)] text-[var(--revint-text-1)] flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-3">
-          <div className="text-xs uppercase tracking-wider text-[var(--leadac-text-3)]">
+          <div className="text-xs uppercase tracking-wider text-[var(--revint-text-3)]">
             403 · Forbidden
           </div>
           <h1 className="text-xl font-semibold">Admin dashboard access required</h1>
-          <p className="text-sm text-[var(--leadac-text-2)]">
+          <p className="text-sm text-[var(--revint-text-2)]">
             This panel is gated by the founder email allowlist. If you should
             have access, ask ops to add your email to{" "}
-            <code className="text-[var(--leadac-300)]">ADMIN_DASHBOARD_EMAILS</code>.
+            <code className="text-[var(--revint-300)]">ADMIN_DASHBOARD_EMAILS</code>.
           </p>
         </div>
       </div>
@@ -53,15 +53,15 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[var(--leadac-bg)] text-[var(--leadac-text-1)] flex">
+    <div className="min-h-screen bg-[var(--revint-bg)] text-[var(--revint-text-1)] flex">
       <AdminNav />
       <main className="flex-1 min-w-0">
-        <div className="border-b border-[var(--leadac-border)] bg-[var(--leadac-surface)]/60 backdrop-blur sticky top-0 z-10">
+        <div className="border-b border-[var(--revint-border)] bg-[var(--revint-surface)]/60 backdrop-blur sticky top-0 z-10">
           <div className="px-6 py-3 flex items-center justify-between text-xs">
-            <div className="text-[var(--leadac-text-3)]">
+            <div className="text-[var(--revint-text-3)]">
               Marketing forensics · first-party + PostHog replay
             </div>
-            <div className="text-[var(--leadac-text-3)]">
+            <div className="text-[var(--revint-text-3)]">
               {session.user.email}
             </div>
           </div>

@@ -233,7 +233,7 @@ function SwipeActionPanel({
       style={{
         [side === "leading" ? "left" : "right"]: 0,
         width: `${width}px`,
-        background: action.color ?? "var(--leadac-500)",
+        background: action.color ?? "var(--revint-500)",
         color: action.textColor ?? "white",
       }}
     >

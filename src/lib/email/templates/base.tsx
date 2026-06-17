@@ -135,20 +135,20 @@ export function BaseEmail({
             <Row>
               <td>
                 <Text style={styles.footerText}>
-                  <strong style={{ color: tokens.colors.text }}>Leadac AI</strong>{" "}
+                  <strong style={{ color: tokens.colors.text }}>Revint</strong>{" "}
                   · {copy.tagline}
                 </Text>
                 <Text style={styles.footerDim}>
                   {copy.supportPrefix}{" "}
                   <Link
-                    href="mailto:hello@leadacai.com"
+                    href="mailto:hello@revint.dev"
                     style={styles.footerLink}
                   >
-                    hello@leadacai.com
+                    hello@revint.dev
                   </Link>
                   {" · "}
-                  <Link href="https://leadacai.com" style={styles.footerLinkMuted}>
-                    leadacai.com
+                  <Link href="https://revint.dev" style={styles.footerLinkMuted}>
+                    revint.dev
                   </Link>
                 </Text>
                 <Text style={styles.footerDim}>
@@ -167,11 +167,11 @@ const footerCopy = {
   tr: {
     tagline: "Yerel servis işletmeleri için AI destekli satış pipeline'ı",
     supportPrefix: "Destek:",
-    address: "Leadac AI · Londra, UK",
+    address: "Revint · Londra, UK",
   },
   en: {
     tagline: "AI-assisted sales pipeline for local service businesses",
     supportPrefix: "Support:",
-    address: "Leadac AI · London, UK",
+    address: "Revint · London, UK",
   },
 };

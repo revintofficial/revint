@@ -656,7 +656,7 @@ function LeadsPageContent() {
           <span className="flex-1 text-left">Filters</span>
           <span
             className="text-[11px] tabular-nums"
-            style={{ color: "var(--leadac-text-3)" }}
+            style={{ color: "var(--revint-text-3)" }}
           >
             {pagination.total.toLocaleString()}
           </span>
@@ -774,7 +774,7 @@ function LeadsPageContent() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <ScanSearch className="w-5 h-5 text-(--leadac-500)" />
+              <ScanSearch className="w-5 h-5 text-(--revint-500)" />
               Content Check Result
             </DialogTitle>
             <DialogDescription>
@@ -783,7 +783,7 @@ function LeadsPageContent() {
           </DialogHeader>
           {contentCheckLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 text-(--leadac-500) animate-spin" />
+              <Loader2 className="w-8 h-8 text-(--revint-500) animate-spin" />
               <p className="text-sm text-white/30 mt-3">Analyzing website...</p>
             </div>
           ) : contentCheckResult ? (
@@ -809,7 +809,7 @@ function LeadsPageContent() {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Globe className="w-5 h-5 text-(--leadac-warning)" />
+              <Globe className="w-5 h-5 text-(--revint-warning)" />
               Website Search Result
             </DialogTitle>
             <DialogDescription>
@@ -820,7 +820,7 @@ function LeadsPageContent() {
           </DialogHeader>
           {websiteSearchLoading ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 text-(--leadac-warning) animate-spin" />
+              <Loader2 className="w-8 h-8 text-(--revint-warning) animate-spin" />
               <p className="text-sm text-white/30 mt-3">
                 Searching for website...
               </p>
@@ -872,16 +872,16 @@ function LeadsPageContent() {
       <Link
         href="/app/discovery"
         aria-label="Start discovery"
-        className="md:hidden fixed right-4 z-40 flex items-center justify-center rounded-full shadow-lg active:scale-95 transition-transform focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
+        className="md:hidden fixed right-4 z-40 flex items-center justify-center rounded-full shadow-lg active:scale-95 transition-transform focus-visible:outline-2 focus-visible:outline-(--revint-500)"
         style={{
           bottom: "calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + 16px)",
           width: "var(--fab-size)",
           height: "var(--fab-size)",
           background:
-            "linear-gradient(135deg, var(--leadac-500), var(--leadac-700))",
+            "linear-gradient(135deg, var(--revint-500), var(--revint-700))",
           color: "white",
           boxShadow:
-            "0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.5)",
+            "0 8px 24px hsl(var(--revint-h) var(--revint-s) 50% / 0.5)",
         }}
       >
         <Plus className="w-6 h-6" strokeWidth={2.5} />
@@ -894,7 +894,7 @@ function LeadsPageContent() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Bookmark className="w-5 h-5 text-(--leadac-500)" />
+              <Bookmark className="w-5 h-5 text-(--revint-500)" />
               Add to Shortlist
             </DialogTitle>
             <DialogDescription>
@@ -956,18 +956,18 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
   > = {
     placeholder: {
       label: "Placeholder / Empty Site",
-      color: "text-(--leadac-error)",
-      bg: "bg-[color-mix(in_oklab,var(--leadac-error)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-error)_20%,transparent)]",
+      color: "text-(--revint-error)",
+      bg: "bg-[color-mix(in_oklab,var(--revint-error)_6%,transparent)] border-[color-mix(in_oklab,var(--revint-error)_20%,transparent)]",
     },
     basic: {
       label: "Basic Website",
-      color: "text-(--leadac-warning)",
-      bg: "bg-[color-mix(in_oklab,var(--leadac-warning)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-warning)_20%,transparent)]",
+      color: "text-(--revint-warning)",
+      bg: "bg-[color-mix(in_oklab,var(--revint-warning)_6%,transparent)] border-[color-mix(in_oklab,var(--revint-warning)_20%,transparent)]",
     },
     developed: {
       label: "Developed Website",
-      color: "text-(--leadac-success)",
-      bg: "bg-[color-mix(in_oklab,var(--leadac-success)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-success)_20%,transparent)]",
+      color: "text-(--revint-success)",
+      bg: "bg-[color-mix(in_oklab,var(--revint-success)_6%,transparent)] border-[color-mix(in_oklab,var(--revint-success)_20%,transparent)]",
     },
     unreachable: {
       label: "Unreachable",
@@ -989,10 +989,10 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
             <span
               className={`text-lg font-bold ${
                 result.score >= 65
-                  ? "text-(--leadac-success)"
+                  ? "text-(--revint-success)"
                   : result.score >= 35
-                  ? "text-(--leadac-warning)"
-                  : "text-(--leadac-error)"
+                  ? "text-(--revint-warning)"
+                  : "text-(--revint-error)"
               }`}
             >
               {result.score}
@@ -1021,9 +1021,9 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
       </div>
 
       {result.builderDetected && (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-(--leadac-500)/6 border border-(--leadac-500)/20">
-          <Info className="w-4 h-4 text-(--leadac-500) shrink-0" />
-          <span className="text-sm text-(--leadac-500)">
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-(--revint-500)/6 border border-(--revint-500)/20">
+          <Info className="w-4 h-4 text-(--revint-500) shrink-0" />
+          <span className="text-sm text-(--revint-500)">
             Built with <strong>{result.builderDetected}</strong>
           </span>
         </div>
@@ -1042,10 +1042,10 @@ function ContentCheckPanel({ result }: { result: ContentCheckResult }) {
               <div
                 className={`w-1.5 h-1.5 rounded-full ${
                   signal.status === "good"
-                    ? "bg-(--leadac-success)"
+                    ? "bg-(--revint-success)"
                     : signal.status === "warning"
-                    ? "bg-(--leadac-warning)"
-                    : "bg-(--leadac-error)"
+                    ? "bg-(--revint-warning)"
+                    : "bg-(--revint-error)"
                 }`}
               />
               <span className="text-xs font-medium text-white/70">
@@ -1067,14 +1067,14 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
     <div className="space-y-4 pt-2">
       {result.found ? (
         <>
-          <div className="rounded-xl border border-[color-mix(in_oklab,var(--leadac-success)_20%,transparent)] bg-[color-mix(in_oklab,var(--leadac-success)_6%,transparent)] p-4">
+          <div className="rounded-xl border border-[color-mix(in_oklab,var(--revint-success)_20%,transparent)] bg-[color-mix(in_oklab,var(--revint-success)_6%,transparent)] p-4">
             <div className="flex items-center gap-2 mb-2">
-              <CircleCheck className="w-5 h-5 text-(--leadac-success)" />
-              <p className="font-semibold text-(--leadac-success)">
+              <CircleCheck className="w-5 h-5 text-(--revint-success)" />
+              <p className="font-semibold text-(--revint-success)">
                 {result.websites.length} website(s) found!
               </p>
             </div>
-            <p className="text-sm text-(--leadac-success)">
+            <p className="text-sm text-(--revint-success)">
               Website(s) found online that were not listed in Google Places.
               The first match was saved to the lead automatically.
             </p>
@@ -1092,7 +1092,7 @@ function WebsiteSearchPanel({ result }: { result: WebsiteSearchResult }) {
                       href={website.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm font-medium text-(--leadac-500) hover:underline break-all"
+                      className="text-sm font-medium text-(--revint-500) hover:underline break-all"
                     >
                       {website.url}
                     </a>

@@ -2,7 +2,7 @@
  * Competitor index — positioning §1.3 + §11.
  *
  * Each row carries the public hero language (so we don't paraphrase it
- * wrong), our reframe sentence, and the price floor LeadAC compares
+ * wrong), our reframe sentence, and the price floor Revint compares
  * against. Comparison pages and the homepage stack-position diagram both
  * read from this list.
  */
@@ -138,7 +138,7 @@ export const COMPETITORS_SITE: Competitor[] = [
       date: "2026-06-16",
     },
     reframe:
-      "Orbital is the SMB data rail — TAM mapping, 200+ attributes, verified contacts. LeadAC sits one layer above: source-confidence scoring, next best action, and a learning loop on which Orbital accounts actually converted in your vertical.",
+      "Orbital is the SMB data rail — TAM mapping, 200+ attributes, verified contacts. Revint sits one layer above: source-confidence scoring, next best action, and a learning loop on which Orbital accounts actually converted in your vertical.",
     priceFloorAnnualUsd: null,
     primitive: "smb-data",
     status: "upstream",
@@ -154,7 +154,7 @@ export const COMPETITORS_SITE: Competitor[] = [
       date: "2026-06-16",
     },
     reframe:
-      "Openmart is a local-business data API. LeadAC treats it as an upstream rail — bring the export, we tell you which accounts deserve a rep's time this week and what to do next.",
+      "Openmart is a local-business data API. Revint treats it as an upstream rail — bring the export, we tell you which accounts deserve a rep's time this week and what to do next.",
     priceFloorAnnualUsd: null,
     primitive: "smb-data",
     status: "upstream",
@@ -170,7 +170,7 @@ export const COMPETITORS_SITE: Competitor[] = [
       date: "2026-06-16",
     },
     reframe:
-      "Resquared owns local-business outreach workflows. LeadAC is the memory layer that learns which Resquared-sourced accounts close in your vertical and feeds that pattern back into prioritisation.",
+      "Resquared owns local-business outreach workflows. Revint is the memory layer that learns which Resquared-sourced accounts close in your vertical and feeds that pattern back into prioritisation.",
     priceFloorAnnualUsd: null,
     primitive: "smb-data",
     status: "upstream",
@@ -186,7 +186,7 @@ export const COMPETITORS_SITE: Competitor[] = [
       date: "2026-06-16",
     },
     reframe:
-      "Pocus prescribes the next action from product-usage signals — great for PLG sales motions. LeadAC prescribes the next action for teams selling into local-business and SMB markets, where the context lives in websites, reviews, locations and owner activity, not in your app analytics.",
+      "Pocus prescribes the next action from product-usage signals — great for PLG sales motions. Revint prescribes the next action for teams selling into local-business and SMB markets, where the context lives in websites, reviews, locations and owner activity, not in your app analytics.",
     priceFloorAnnualUsd: null,
     primitive: "buyer-signals",
     status: "adjacent",
@@ -202,7 +202,7 @@ export const COMPETITORS_SITE: Competitor[] = [
       date: "2026-06-16",
     },
     reframe:
-      "Common Room is broad buyer intelligence — community, product, web, CRM. LeadAC is narrower and deeper on SMB / local-business context, with a simpler onboarding and a price that fits a 5-seat team.",
+      "Common Room is broad buyer intelligence — community, product, web, CRM. Revint is narrower and deeper on SMB / local-business context, with a simpler onboarding and a price that fits a 5-seat team.",
     priceFloorAnnualUsd: null,
     primitive: "buyer-signals",
     status: "adjacent",
@@ -218,14 +218,14 @@ export const COMPETITORS_SITE: Competitor[] = [
       date: "2026-06-16",
     },
     reframe:
-      "HockeyStack learns enterprise GTM patterns and runs revenue agents on top. LeadAC is the SMB-market version of that learning loop — lighter, vertical-aware, lower setup cost, and grounded in local-business context rather than enterprise revenue orchestration.",
+      "HockeyStack learns enterprise GTM patterns and runs revenue agents on top. Revint is the SMB-market version of that learning loop — lighter, vertical-aware, lower setup cost, and grounded in local-business context rather than enterprise revenue orchestration.",
     priceFloorAnnualUsd: null,
     primitive: "learning-loop",
     status: "adjacent",
   },
 ];
 
-/** Brand-line shape — `Apollo finds. Clay enriches. Gong records. LeadAC remembers.` */
+/** Brand-line shape — `Apollo finds. Clay enriches. Gong records. Revint remembers.` */
 export const STACK_LINE = [
   { slug: "apollo", verb: "finds" },
   { slug: "clay", verb: "enriches" },

@@ -8,7 +8,7 @@ export const post: BlogPost = {
     "Forget personas. Local outbound wins on a postcode plus a niche. Here's the exact workflow — discovery, audit, and opener — that beats 'Apollo + Instantly' by 4-10× on reply rate.",
   lede: "One postcode. One niche. Forty-seven leads. Zero wasted sequencer slots.",
   publishedAt: "2025-12-03T10:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["local lead gen", "playbook", "outbound"],
   readMinutes: 8,
   body: () => (
@@ -43,7 +43,7 @@ export const post: BlogPost = {
 
       <h2>The full workflow</h2>
       <p>
-        Here's the exact sequence we teach new agencies joining Leadac AI:
+        Here's the exact sequence we teach new agencies joining Revint:
       </p>
 
       <ol>
@@ -61,7 +61,7 @@ export const post: BlogPost = {
         </li>
         <li>
           <strong>Run discovery.</strong> Feed the postcode + niche to
-          Leadac AI (or any Google Places API wrapper). You'll get 30-60
+          Revint (or any Google Places API wrapper). You'll get 30-60
           businesses depending on density.
         </li>
         <li>
@@ -159,12 +159,12 @@ export const post: BlogPost = {
     {
       question: "Does this work outside the UK?",
       answer:
-        "Yes. Postcodes are UK terminology; the equivalent is ZIP code in the US or zone in other countries. The logic is 'small geographic radius + single vertical'. Leadac AI is locale-neutral.",
+        "Yes. Postcodes are UK terminology; the equivalent is ZIP code in the US or zone in other countries. The logic is 'small geographic radius + single vertical'. Revint is locale-neutral.",
     },
     {
       question: "Can I do this with ChatGPT and Google Maps manually?",
       answer:
-        "You can do a crude version. But auditing 47 sites by hand takes a day; Leadac runs it in five minutes and writes the draft opener. The product exists because the manual path is too slow to scale past the first cohort.",
+        "You can do a crude version. But auditing 47 sites by hand takes a day; Revint runs it in five minutes and writes the draft opener. The product exists because the manual path is too slow to scale past the first cohort.",
     },
   ],
 };

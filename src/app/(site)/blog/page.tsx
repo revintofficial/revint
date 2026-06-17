@@ -16,7 +16,7 @@ const PATH = "/blog";
 
 export const metadata: Metadata = buildMetadata({
   path: PATH,
-  title: "Blog — field notes from building LeadAC",
+  title: "Blog — field notes from building Revint",
   description:
     "What we are learning about vertical SaaS GTM — playbooks, audits, opener frameworks, and candid reporting on what is working today. Published when we have something worth saying.",
 });
@@ -28,16 +28,16 @@ export default function BlogIndexPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Blog", url: PATH },
         ])}
       />
       <JsonLd
         id="ld-coll"
         data={collectionPageSchema({
-          name: "LeadAC blog",
+          name: "Revint blog",
           description:
-            "Field notes from building LeadAC — playbooks, audits, opener frameworks, and candid reporting on vertical SaaS GTM.",
+            "Field notes from building Revint — playbooks, audits, opener frameworks, and candid reporting on vertical SaaS GTM.",
           url: `${SITE.url}${PATH}`,
         })}
       />

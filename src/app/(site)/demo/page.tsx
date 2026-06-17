@@ -30,9 +30,9 @@ const PATH = "/demo";
 export const metadata: Metadata = buildMetadata({
   path: PATH,
   title:
-    "Book a 20-minute demo — we'll run LeadAC on one of your own accounts",
+    "Book a 20-minute demo — we'll run Revint on one of your own accounts",
   description:
-    "Twenty minutes. Bring one prospect URL. We run LeadAC live, walk the brief that lands in your HubSpot card, and answer the four questions VPs of Sales ask before buying. No slideware.",
+    "Twenty minutes. Bring one prospect URL. We run Revint live, walk the brief that lands in your HubSpot card, and answer the four questions VPs of Sales ask before buying. No slideware.",
   index: true,
   follow: true,
 });
@@ -47,7 +47,7 @@ export default function DemoPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Demo", url: PATH },
         ])}
       />
@@ -55,7 +55,7 @@ export default function DemoPage() {
       <Hero
         eyebrow="Twenty-minute walkthrough"
         headline="Bring one prospect URL. We'll write the HubSpot brief on the call."
-        subhead="No slideware. Paste a website URL on the call, we run LeadAC live in our environment, and you see the twelve fields that would land in your HubSpot company record before your SDR opens the contact."
+        subhead="No slideware. Paste a website URL on the call, we run Revint live in our environment, and you see the twelve fields that would land in your HubSpot company record before your SDR opens the contact."
         primaryCta={{ href: "#book", label: "Pick a 20-minute slot" }}
         secondaryCta={{ href: "/pricing", label: "See pricing first" }}
         visual={
@@ -183,7 +183,7 @@ export default function DemoPage() {
               <div className="rounded-2xl border border-ink-3 bg-ink-1 p-6">
                 <div className="site-eyebrow mb-3">What happens after</div>
                 <p className="text-[14px] leading-relaxed text-paper-2">
-                  If LeadAC fits, you start the pilot the same week — $500
+                  If Revint fits, you start the pilot the same week — $500
                   for 30 days, 500 accounts, one vertical pack, your real
                   CRM. If it doesn&apos;t fit, we say so on the call and
                   point you to whichever tool does.

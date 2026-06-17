@@ -1,8 +1,8 @@
-# LeadAC Positioning Workbook
+# Revint Positioning Workbook
 
-> Notion-ready template for owning LeadAC's category language. Drop this `.md` into Notion via **Import → Markdown** and every heading becomes a page block, every table becomes a Notion table (convertible to a database with right-click → Turn into database).
+> Notion-ready template for owning Revint's category language. Drop this `.md` into Notion via **Import → Markdown** and every heading becomes a page block, every table becomes a Notion table (convertible to a database with right-click → Turn into database).
 
-**Purpose.** A founder's working document for owning LeadAC's category language. Every concept that came out of the Positioning Intelligence System maps to a section here. Fill it in, debate it, ship it.
+**Purpose.** A founder's working document for owning Revint's category language. Every concept that came out of the Positioning Intelligence System maps to a section here. Fill it in, debate it, ship it.
 
 **How to use.**
 
@@ -378,7 +378,7 @@ flowchart LR
 
 ## 9. Messaging House
 
-> Banks of approved copy. Each entry has provenance — which whitespace it came from, which evidence supports it, which test it won (or lost). Approved entries ship to LeadAC via the activation pipeline.
+> Banks of approved copy. Each entry has provenance — which whitespace it came from, which evidence supports it, which test it won (or lost). Approved entries ship to Revint via the activation pipeline.
 
 ### Hero headlines
 
@@ -485,10 +485,10 @@ flowchart LR
 
 > One angle per competitor. The angle is the THING WE DO that they don't / can't / won't. Comparison pages live at `/compare/<competitor>` and `/alternatives/<competitor>`.
 
-### LeadAC vs Apollo
+### Revint vs Apollo
 
 - **Their strength:** identity data at scale
-- **Our angle:** "Apollo finds. LeadAC times."
+- **Our angle:** "Apollo finds. Revint times."
 - **The proof:** [link to evidence]
 - **The objection we'll get:** "But we already use Apollo"
 - **Our objection handler:** "We're not replacing them. We're telling you which Apollo lead is ready to buy this week."
@@ -496,23 +496,23 @@ flowchart LR
 - **CTA draft:**
 - **Status:** Drafted / Shipped
 
-### LeadAC vs ZoomInfo
+### Revint vs ZoomInfo
 
 [same]
 
-### LeadAC vs Outreach
+### Revint vs Outreach
 
 [same]
 
-### LeadAC vs Lemlist
+### Revint vs Lemlist
 
 [same]
 
-### LeadAC vs Smartlead
+### Revint vs Smartlead
 
 [same]
 
-### LeadAC vs Clay
+### Revint vs Clay
 
 [same]
 

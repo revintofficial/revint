@@ -15,7 +15,7 @@ const FIELD_STYLE: React.CSSProperties = {
   // Tailwind's focus:ring color falls back to currentColor if unset
   // — explicit color prevents that surprise.
   ["--tw-ring-color" as never]:
-    "hsl(var(--leadac-h) var(--leadac-s) 60% / 0.4)",
+    "hsl(var(--revint-h) var(--revint-s) 60% / 0.4)",
 };
 
 const LABEL_CLASS =
@@ -129,14 +129,14 @@ export function DemoRequestForm() {
         }
         if (!res.ok || !data.ok) {
           toast.error(
-            "The form bounced. Email mert@leadacai.com directly and I'll set up the call by hand.",
+            "The form bounced. Email mert@revint.dev directly and I'll set up the call by hand.",
           );
           return;
         }
         setSubmitted(true);
       } catch {
         toast.error(
-          "The form bounced. Email mert@leadacai.com directly and I'll set up the call by hand.",
+          "The form bounced. Email mert@revint.dev directly and I'll set up the call by hand.",
         );
       }
     });
@@ -151,9 +151,9 @@ export function DemoRequestForm() {
         className="rounded-2xl p-7 md:p-9 flex flex-col gap-4"
         style={{
           background:
-            "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60% / 0.16), hsl(var(--leadac-h) var(--leadac-s) 50% / 0.04))",
+            "linear-gradient(135deg, hsl(var(--revint-h) var(--revint-s) 60% / 0.16), hsl(var(--revint-h) var(--revint-s) 50% / 0.04))",
           border:
-            "1px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.32)",
+            "1px solid hsl(var(--revint-h) var(--revint-s) 60% / 0.32)",
         }}
         role="status"
         aria-live="polite"
@@ -162,7 +162,7 @@ export function DemoRequestForm() {
           className="w-11 h-11 rounded-xl flex items-center justify-center"
           style={{
             background:
-              "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60%), hsl(var(--leadac-h) var(--leadac-s) 36%))",
+              "linear-gradient(135deg, hsl(var(--revint-h) var(--revint-s) 60%), hsl(var(--revint-h) var(--revint-s) 36%))",
             color: "white",
           }}
           aria-hidden
@@ -176,7 +176,7 @@ export function DemoRequestForm() {
           A confirmation just landed in your inbox. Before the call I&apos;ll build a sample account graph on the vertical + ICP brief you flagged so we can open the enriched list on screen instead of a deck. You&apos;ll walk away with accounts either way — no signup required.
         </p>
         <p className="text-[13px] text-white/50 leading-relaxed">
-          Don&apos;t see the email in 5 minutes? Check the spam folder, or reply directly to mert@leadacai.com.
+          Don&apos;t see the email in 5 minutes? Check the spam folder, or reply directly to mert@revint.dev.
         </p>
       </motion.div>
     );
@@ -309,9 +309,9 @@ export function DemoRequestForm() {
           className="inline-flex items-center gap-1.5 px-5 py-3 rounded-xl text-[14.5px] font-semibold text-white transition-transform hover:-translate-y-px disabled:opacity-70 disabled:cursor-wait"
           style={{
             background:
-              "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 34%))",
+              "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-s) 50%), hsl(var(--revint-h) var(--revint-s) 34%))",
             boxShadow:
-              "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.7), 0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.35)",
+              "0 1px 0 rgba(255,255,255,0.15) inset, 0 0 0 0.5px hsl(var(--revint-h) var(--revint-s) 50% / 0.7), 0 8px 24px hsl(var(--revint-h) var(--revint-s) 34% / 0.35)",
           }}
         >
           {isPending ? "Sending..." : "Book the walkthrough"}

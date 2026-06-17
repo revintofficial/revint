@@ -404,6 +404,13 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  // Platform-admin flag: gates /admin and /api/admin/**. Replaces the
+  // ADMIN_DASHBOARD_EMAILS env allowlist as the source of truth. The
+  // env var stays in place as a bootstrap fallback (see
+  // src/lib/admin-auth.ts) so a fresh database without any admin rows
+  // can still be operated by the founders.
+  isPlatformAdmin Boolean @default(false) @map("is_platform_admin")
+
   ownedWorkspaces Workspace[]       @relation("WorkspaceOwner")
   memberships     WorkspaceMember[]
   assignedLeads   Lead[]            @relation("LeadAssignee")

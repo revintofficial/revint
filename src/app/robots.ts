@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/seo/metadata";
 
 /**
- * Crawler policy for LeadAC.
+ * Crawler policy for Revint.
  *
  * brand-assets §7.1 Task 1 mandates that every major AI crawler (GPTBot,
  * ChatGPT-User, ClaudeBot, PerplexityBot, Google-Extended, Applebot-Extended,

@@ -160,9 +160,9 @@ export function LeadActionBar({
 
   return (
     <div className="sticky top-3 z-40">
-      <div className="rounded-2xl border border-(--leadac-500)/40 bg-(--leadac-card)/95 backdrop-blur shadow-lg shadow-black/30 px-3 py-2 flex flex-wrap items-center gap-2">
+      <div className="rounded-2xl border border-(--revint-500)/40 bg-(--revint-card)/95 backdrop-blur shadow-lg shadow-black/30 px-3 py-2 flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2 mr-2">
-          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-(--leadac-500) text-white text-xs font-bold">
+          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-(--revint-500) text-white text-xs font-bold">
             {selectedIds.length}
           </span>
           <span className="text-xs text-white/70">
@@ -170,7 +170,7 @@ export function LeadActionBar({
           </span>
           <button
             onClick={onSelectAll}
-            className="text-[11px] text-(--leadac-300) hover:text-white"
+            className="text-[11px] text-(--revint-300) hover:text-white"
           >
             Select page
           </button>
@@ -230,7 +230,7 @@ export function LeadActionBar({
             <button
               type="button"
               disabled={!!running}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border border-(--leadac-500)/30 bg-(--leadac-500)/[0.08] text-(--leadac-200) hover:bg-(--leadac-500)/[0.14] disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border border-(--revint-500)/30 bg-(--revint-500)/[0.08] text-(--revint-200) hover:bg-(--revint-500)/[0.14] disabled:opacity-50"
             >
               {isWorkerRun ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

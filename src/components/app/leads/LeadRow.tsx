@@ -70,7 +70,7 @@ export function LeadRow({
   return (
     <tr
       className={`border-b border-white/5 transition-colors animate-fade-in-up ${
-        isSelected ? "bg-(--leadac-500)/[0.06]" : "hover:bg-white/5"
+        isSelected ? "bg-(--revint-500)/[0.06]" : "hover:bg-white/5"
       }`}
       style={{ animationDelay: `${index * 25}ms` }}
     >
@@ -87,7 +87,7 @@ export function LeadRow({
         <div className="flex flex-col gap-1.5 min-w-0">
           <Link
             href={`/app/leads/${lead.id}`}
-            className="font-medium text-white hover:text-(--leadac-500) transition-colors leading-tight"
+            className="font-medium text-white hover:text-(--revint-500) transition-colors leading-tight"
           >
             {lead.businessName}
           </Link>
@@ -117,7 +117,7 @@ export function LeadRow({
                 onContentCheck(lead);
               }}
               disabled={contentCheckLoading}
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-(--leadac-500)/20 bg-(--leadac-500)/[0.06] text-(--leadac-500) hover:bg-(--leadac-500)/10 transition-colors disabled:opacity-50 w-fit"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium rounded-md border border-(--revint-500)/20 bg-(--revint-500)/[0.06] text-(--revint-500) hover:bg-(--revint-500)/10 transition-colors disabled:opacity-50 w-fit"
             >
               {contentCheckLoading ? (
                 <Loader2 className="w-2.5 h-2.5 animate-spin" />
@@ -294,7 +294,7 @@ export function LeadBadgeRow({ lead }: { lead: LeadListItem }) {
                 className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium border ${
                   lowConfidenceAuto
                     ? "border-[hsl(4_62%_54%)]/30 bg-[hsl(4_62%_54%)]/[0.06] text-[hsl(4_42%_72%)]"
-                    : "border-(--leadac-500)/25 bg-(--leadac-500)/[0.06] text-(--leadac-300)"
+                    : "border-(--revint-500)/25 bg-(--revint-500)/[0.06] text-(--revint-300)"
                 }`}
               >
                 <Sparkles className="w-2.5 h-2.5" />
@@ -317,8 +317,8 @@ export function LeadBadgeRow({ lead }: { lead: LeadListItem }) {
               <span
                 className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-medium border"
                 style={{
-                  backgroundColor: "color-mix(in oklab, var(--leadac-warning) 8%, transparent)",
-                  borderColor: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
+                  backgroundColor: "color-mix(in oklab, var(--revint-warning) 8%, transparent)",
+                  borderColor: "color-mix(in oklab, var(--revint-warning) 20%, transparent)",
                   color: "hsl(38 50% 72%)",
                 }}
               >

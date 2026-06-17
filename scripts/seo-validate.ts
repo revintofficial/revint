@@ -17,7 +17,7 @@
  *     vs-single, vs-pair, compare, cities-index, niches-index
  *
  * Run via:   npm run seo:validate
- * CI mode:   SEO_VALIDATE_BASE=https://leadac.ai npm run seo:validate
+ * CI mode:   SEO_VALIDATE_BASE=https://revint.dev npm run seo:validate
  *
  * Exits 1 if any assertion fails so CI blocks the PR.
  */

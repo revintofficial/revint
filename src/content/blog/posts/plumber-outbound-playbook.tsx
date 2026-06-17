@@ -9,7 +9,7 @@ export const post: BlogPost = {
     "A specific, tested outbound playbook for selling websites, SEO, or lead-gen services to UK and US plumbers. Where to source the list, what opener works, what offer closes, what follow-up re-engages.",
   lede: "We've run outbound into plumbers for 18 months. Some things work. Most things don't. Here's the short version.",
   publishedAt: "2026-01-17T09:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["playbook", "plumbers", "local service", "niche"],
   readMinutes: 9,
   body: () => (
@@ -249,7 +249,7 @@ export const post: BlogPost = {
     {
       question: "How do I build a Google Maps list by postcode?",
       answer:
-        "Either manually (slow but free), via a scraping tool like Outscraper or Apify, or through Leadac — we do discovery by postcode and audit the sites as one flow. Any of the three works. The important thing is the list is fresh, not three months old.",
+        "Either manually (slow but free), via a scraping tool like Outscraper or Apify, or through Revint — we do discovery by postcode and audit the sites as one flow. Any of the three works. The important thing is the list is fresh, not three months old.",
     },
     {
       question: "What price points close best?",

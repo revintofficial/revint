@@ -1,7 +1,7 @@
 /**
  * Workspace-level branding for the white-label tier.
  *
- * Agency plan customers can override the Leadac AI logo, primary color, and
+ * Agency plan customers can override the Revint logo, primary color, and
  * footer text on public mockup pages so the prospect sees the agency's brand,
  * not ours. Pro and Free fall back to the defaults below.
  */
@@ -11,7 +11,7 @@ export interface WorkspaceBranding {
   primaryColor: string | null;
   accentColor: string | null;
   footerText: string | null;
-  hideLeadacCredit: boolean;
+  hideRevintCredit: boolean;
 }
 
 export const DEFAULT_BRANDING: WorkspaceBranding = {
@@ -19,12 +19,18 @@ export const DEFAULT_BRANDING: WorkspaceBranding = {
   primaryColor: null,
   accentColor: null,
   footerText: null,
-  hideLeadacCredit: false,
+  hideRevintCredit: false,
 };
 
 /**
  * Coerce a free-form Json field into a branding object, dropping unknown
  * fields and clamping color strings to safe values.
+ *
+ * Backwards compatibility: rows persisted before the Revint rename still
+ * carry `hideLeadacCredit` in their JSON blob. We read either key and
+ * always write the new one (see `branding-form.tsx`). New deploys can
+ * remove the legacy fallback once a one-shot DB rewrite migrates the
+ * existing rows.
  */
 export function parseBranding(raw: unknown): WorkspaceBranding {
   if (!raw || typeof raw !== "object") return DEFAULT_BRANDING;
@@ -34,7 +40,8 @@ export function parseBranding(raw: unknown): WorkspaceBranding {
     primaryColor: typeof obj.primaryColor === "string" ? clampColor(obj.primaryColor) : null,
     accentColor: typeof obj.accentColor === "string" ? clampColor(obj.accentColor) : null,
     footerText: typeof obj.footerText === "string" ? obj.footerText.slice(0, 200) : null,
-    hideLeadacCredit: obj.hideLeadacCredit === true,
+    hideRevintCredit:
+      obj.hideRevintCredit === true || obj.hideLeadacCredit === true,
   };
 }
 

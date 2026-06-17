@@ -16,7 +16,7 @@ const PATH = "/for";
 
 export const metadata: Metadata = buildMetadata({
   path: PATH,
-  title: "LeadAC for vertical SaaS — pick your category",
+  title: "Revint for vertical SaaS — pick your category",
   description:
     "Three vertical packs ship on day one: Field service, Restaurant tech, Dental. Each pack carries pre-built signal libraries, persona briefs, and HubSpot field maps for the vertical it covers.",
 });
@@ -28,7 +28,7 @@ export default function ForIndexPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "For verticals", url: PATH },
         ])}
       />

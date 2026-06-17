@@ -39,11 +39,11 @@ export function OutreachStepper({
                   compact ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-xs"
                 } font-medium ${
                   isCompleted
-                    ? "bg-[color-mix(in_oklab,var(--leadac-success)_14%,transparent)] text-[color-mix(in_oklab,var(--leadac-success)_70%,white)]"
+                    ? "bg-[color-mix(in_oklab,var(--revint-success)_14%,transparent)] text-[color-mix(in_oklab,var(--revint-success)_70%,white)]"
                     : isCurrent
-                      ? "bg-(--leadac-500)/15 text-(--leadac-300) ring-2 ring-(--leadac-500)/25"
+                      ? "bg-(--revint-500)/15 text-(--revint-300) ring-2 ring-(--revint-500)/25"
                       : isNext
-                        ? "bg-white/10 text-white/70 hover:bg-(--leadac-500)/10 hover:text-(--leadac-300) cursor-pointer"
+                        ? "bg-white/10 text-white/70 hover:bg-(--revint-500)/10 hover:text-(--revint-300) cursor-pointer"
                         : "bg-white/5 text-white/30"
                 } ${isLost ? "bg-white/5 text-white/30" : ""}`}
                 title={canClick ? `Advance to ${OUTREACH_LABELS[step]}` : OUTREACH_LABELS[step]}
@@ -52,7 +52,7 @@ export function OutreachStepper({
                   <Check className={compact ? "w-3 h-3" : "w-3.5 h-3.5"} />
                 ) : (
                   <span className={`${compact ? "w-3 h-3" : "w-3.5 h-3.5"} rounded-full border-2 inline-block ${
-                    isCurrent ? "border-(--leadac-400) bg-(--leadac-400)" : "border-current"
+                    isCurrent ? "border-(--revint-400) bg-(--revint-400)" : "border-current"
                   }`} />
                 )}
                 <span className={compact ? "hidden sm:inline" : ""}>{OUTREACH_LABELS[step]}</span>
@@ -60,7 +60,7 @@ export function OutreachStepper({
               {i < STEPS.length - 1 && (
                 <div className={`h-0.5 flex-1 mx-1 rounded-full transition-all ${
                   isCompleted
-                    ? "bg-[color-mix(in_oklab,var(--leadac-success)_30%,transparent)]"
+                    ? "bg-[color-mix(in_oklab,var(--revint-success)_30%,transparent)]"
                     : "bg-white/10"
                 }`} />
               )}
@@ -73,7 +73,7 @@ export function OutreachStepper({
         <button
           onClick={() => !disabled && onStatusChange("LOST")}
           disabled={disabled}
-          className="flex items-center gap-1 text-xs text-white/30 hover:text-[color-mix(in_oklab,var(--leadac-error)_72%,white)] transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 text-xs text-white/30 hover:text-[color-mix(in_oklab,var(--revint-error)_72%,white)] transition-colors disabled:opacity-50"
         >
           <X className="w-3 h-3" />
           Mark as Lost
@@ -83,8 +83,8 @@ export function OutreachStepper({
       {isLost && (
         <div className="flex items-center gap-1.5 text-xs font-medium rounded-full px-3 py-1.5 w-fit"
           style={{
-            color: "color-mix(in oklab, var(--leadac-error) 72%, white)",
-            backgroundColor: "color-mix(in oklab, var(--leadac-error) 14%, transparent)",
+            color: "color-mix(in oklab, var(--revint-error) 72%, white)",
+            backgroundColor: "color-mix(in oklab, var(--revint-error) 14%, transparent)",
           }}
         >
           <X className="w-3.5 h-3.5" />

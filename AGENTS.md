@@ -1,5 +1,5 @@
 <!-- BEGIN:project-overview -->
-# LeadAC (`leadac-ai`) — agent quick context
+# Revint (`revint`) — agent quick context
 
 B2B SaaS for agency lead generation. Stack: **Next.js 16.2.3 (App Router, Webpack), React 19, TypeScript, Prisma 6 + Postgres + pgvector, Supabase auth, BullMQ + Redis, Gemini, Stripe v22, Tailwind v4, Radix, Framer Motion, Resend, Apify, Playwright.**
 

@@ -11,11 +11,11 @@ import { Plus, Trash2, CheckSquare, X } from "lucide-react";
 type Todo = { id: string; text: string; done: boolean; column: string };
 
 const ACCENT_COLORS = [
-  "var(--leadac-500)",
-  "var(--leadac-success)",
-  "var(--leadac-warning)",
-  "var(--leadac-error)",
-  "var(--leadac-300)",
+  "var(--revint-500)",
+  "var(--revint-success)",
+  "var(--revint-warning)",
+  "var(--revint-error)",
+  "var(--revint-300)",
 ];
 
 const STORAGE_KEY = "todo-columns";
@@ -305,7 +305,7 @@ export default function TodosPage() {
                               type="checkbox"
                               checked={todo.done}
                               onChange={() => toggleTodo(key, todo.id)}
-                              className="peer h-4 w-4 rounded border-[hsl(var(--leadac-h) var(--leadac-ns) 35% / 0.35)] text-(--leadac-500) focus:ring-(--leadac-500)/40 transition-all"
+                              className="peer h-4 w-4 rounded border-[hsl(var(--revint-h) var(--revint-ns) 35% / 0.35)] text-(--revint-500) focus:ring-(--revint-500)/40 transition-all"
                             />
                           </div>
                           <span

@@ -29,14 +29,14 @@ export default function ResourcesIndexPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Resources", url: PATH },
         ])}
       />
       <JsonLd
         id="ld-coll"
         data={collectionPageSchema({
-          name: "LeadAC resources",
+          name: "Revint resources",
           description:
             "Cornerstone resources for vertical SaaS GTM teams — annual benchmark, playbooks, and guides.",
           url: `${SITE.url}${PATH}`,

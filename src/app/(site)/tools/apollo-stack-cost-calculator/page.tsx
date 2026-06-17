@@ -13,7 +13,7 @@ import { SITE } from "@/lib/seo/metadata";
 const PATH = "/tools/apollo-stack-cost-calculator";
 const TITLE = "Apollo + Clay + Gong stack cost calculator";
 const DESCRIPTION =
-  "Punch in your seat count and tool mix. See the real annual stack cost with the verification add-ons most teams forget to list — compared to the LeadAC Team annual.";
+  "Punch in your seat count and tool mix. See the real annual stack cost with the verification add-ons most teams forget to list — compared to the Revint Team annual.";
 
 export const metadata: Metadata = buildMetadata({
   path: PATH,
@@ -28,7 +28,7 @@ export default function ApolloStackCostCalculatorPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Free tools", url: "/tools" },
           { name: TITLE, url: PATH },
         ])}

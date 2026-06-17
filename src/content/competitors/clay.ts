@@ -38,7 +38,7 @@ export const clay: CompetitorProfile = {
       note: "Ongoing threads comparing credit cost vs Apollo flat fee.",
     },
   ],
-  whyLeadacInstead: [
+  whyRevintInstead: [
     "No waterfall to maintain. Enter a postcode and a niche; the audit runs automatically.",
     "Flat pricing beats credit-burn for agencies running 2-5k leads/mo.",
     "Purpose-built for local-service outbound, not generic SaaS enrichment.",

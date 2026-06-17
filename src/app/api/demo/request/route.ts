@@ -33,7 +33,7 @@ import { logger } from "@/lib/logger";
 export const runtime = "nodejs";
 
 const FOUNDER_NOTIFY_EMAIL =
-  process.env.DEMO_NOTIFY_EMAIL?.trim() || "mert@leadacai.com";
+  process.env.DEMO_NOTIFY_EMAIL?.trim() || "mert@revint.dev";
 
 const MAX_FIELD_LENGTH = 500;
 const MAX_NOTES_LENGTH = 2000;
@@ -167,10 +167,10 @@ function confirmationHtml(req: CleanRequest): string {
   return `
 <div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:560px;color:#111;line-height:1.55;">
   <p>Hi ${escapeHtml(req.name.split(" ")[0] || "there")},</p>
-  <p>Got it — Mert from LeadAC here. A 15-min walkthrough is booked into the calendar; you'll get the link in a follow-up shortly.</p>
+  <p>Got it — Mert from Revint here. A 15-min walkthrough is booked into the calendar; you'll get the link in a follow-up shortly.</p>
   <p>Before the call I'll run the audit on <strong>${escapeHtml(req.postcodeNiche)}</strong> so we can open a real audited shortlist on screen instead of a slide deck. You'll walk away with a list of audited prospects either way — no signup required.</p>
   <p>If the timing slips or you'd like to add anything, just reply to this email.</p>
-  <p style="color:#666;font-size:13px;margin-top:24px;">— Mert · LeadAC</p>
+  <p style="color:#666;font-size:13px;margin-top:24px;">— Mert · Revint</p>
 </div>`.trim();
 }
 
@@ -178,13 +178,13 @@ function confirmationText(req: CleanRequest): string {
   return [
     `Hi ${req.name.split(" ")[0] || "there"},`,
     "",
-    "Got it — Mert from LeadAC here. A 15-min walkthrough is booked into the calendar; you'll get the link in a follow-up shortly.",
+    "Got it — Mert from Revint here. A 15-min walkthrough is booked into the calendar; you'll get the link in a follow-up shortly.",
     "",
     `Before the call I'll run the audit on ${req.postcodeNiche} so we can open a real audited shortlist on screen instead of a slide deck. You'll walk away with a list of audited prospects either way — no signup required.`,
     "",
     "If the timing slips or you'd like to add anything, just reply to this email.",
     "",
-    "— Mert · LeadAC",
+    "— Mert · Revint",
   ].join("\n");
 }
 
@@ -248,7 +248,7 @@ export async function POST(req: NextRequest) {
   // the lead, so we log and shrug rather than turning the form red.
   const confirmResult = await sendEmail({
     to: cleaned.email,
-    subject: "We got your demo request — LeadAC",
+    subject: "We got your demo request — Revint",
     html: confirmationHtml(cleaned),
     text: confirmationText(cleaned),
     tags: [

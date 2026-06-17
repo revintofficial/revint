@@ -40,10 +40,10 @@ function bar(used: number, limit: number) {
     pct,
     color:
       pct >= 90
-        ? "var(--leadac-error)"
+        ? "var(--revint-error)"
         : pct >= 70
-          ? "var(--leadac-warning)"
-          : "var(--leadac-500)",
+          ? "var(--revint-warning)"
+          : "var(--revint-500)",
   };
 }
 
@@ -200,12 +200,12 @@ export function BillingPanel({ plan, role, billingEnabled, usage }: BillingPanel
           <div
             className="px-6 py-5 rounded-2xl flex items-center gap-3 max-w-sm"
             style={{
-              background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.95)",
+              background: "hsl(var(--revint-h) var(--revint-ns) 11% / 0.95)",
               border: "0.5px solid rgba(255,255,255,0.12)",
               boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
             }}
           >
-            <Loader2 className="w-5 h-5 animate-spin text-(--leadac-500)" />
+            <Loader2 className="w-5 h-5 animate-spin text-(--revint-500)" />
             <div>
               <p className="text-[14px] font-semibold text-white">Redirecting to secure checkout</p>
               <p className="text-[12px] text-white/55 flex items-center gap-1.5 mt-0.5">
@@ -279,8 +279,8 @@ export function BillingPanel({ plan, role, billingEnabled, usage }: BillingPanel
             <div
               className="mt-4 px-3 py-2 rounded-lg text-[12px]"
               style={{
-                background: "color-mix(in oklab, var(--leadac-warning) 7%, transparent)",
-                border: "0.5px solid color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
+                background: "color-mix(in oklab, var(--revint-warning) 7%, transparent)",
+                border: "0.5px solid color-mix(in oklab, var(--revint-warning) 20%, transparent)",
                 color: "hsl(38 50% 70%)",
               }}
             >
@@ -317,7 +317,7 @@ export function BillingPanel({ plan, role, billingEnabled, usage }: BillingPanel
                     className="px-2.5 py-1 rounded-md text-[11.5px] font-medium transition-all"
                     style={{
                       background: cycle === "monthly" ? "rgba(255,255,255,0.08)" : "transparent",
-                      color: cycle === "monthly" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
+                      color: cycle === "monthly" ? "white" : "hsl(var(--revint-h) var(--revint-nts) 92% / 0.55)",
                     }}
                   >
                     Monthly
@@ -329,15 +329,15 @@ export function BillingPanel({ plan, role, billingEnabled, usage }: BillingPanel
                     className="px-2.5 py-1 rounded-md text-[11.5px] font-medium transition-all flex items-center gap-1"
                     style={{
                       background: cycle === "annual" ? "rgba(255,255,255,0.08)" : "transparent",
-                      color: cycle === "annual" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
+                      color: cycle === "annual" ? "white" : "hsl(var(--revint-h) var(--revint-nts) 92% / 0.55)",
                     }}
                   >
                     Annual
                     <span
                       className="text-[9.5px] font-semibold px-1 py-0.5 rounded"
                       style={{
-                        background: "color-mix(in oklab, var(--leadac-success) 20%, transparent)",
-                        color: "var(--leadac-success-soft)",
+                        background: "color-mix(in oklab, var(--revint-success) 20%, transparent)",
+                        color: "var(--revint-success-soft)",
                       }}
                     >
                       -{ANNUAL_DISCOUNT_PCT}%
@@ -362,7 +362,7 @@ export function BillingPanel({ plan, role, billingEnabled, usage }: BillingPanel
                       className="px-2.5 py-1 rounded-md text-[11px] font-medium transition-all"
                       style={{
                         background: currency === c ? "rgba(255,255,255,0.08)" : "transparent",
-                        color: currency === c ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
+                        color: currency === c ? "white" : "hsl(var(--revint-h) var(--revint-nts) 92% / 0.55)",
                       }}
                     >
                       {CURRENCY_LABEL[c]}
@@ -388,23 +388,23 @@ export function BillingPanel({ plan, role, billingEnabled, usage }: BillingPanel
                     className="relative p-4 rounded-xl flex flex-col"
                     style={{
                       background: isCurrent
-                        ? "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.07)"
+                        ? "hsl(var(--revint-h) var(--revint-s) 50% / 0.07)"
                         : isHighlight
-                        ? "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 60% / 0.14), hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5))"
-                        : "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.5)",
+                        ? "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-s) 60% / 0.14), hsl(var(--revint-h) var(--revint-ns) 11% / 0.5))"
+                        : "hsl(var(--revint-h) var(--revint-ns) 11% / 0.5)",
                       border: isCurrent
-                        ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35)"
+                        ? "0.5px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.35)"
                         : isHighlight
-                        ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 60% / 0.45)"
+                        ? "0.5px solid hsl(var(--revint-h) var(--revint-s) 60% / 0.45)"
                         : "0.5px solid rgba(255,255,255,0.06)",
-                      boxShadow: isHighlight ? "0 16px 40px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18)" : "none",
+                      boxShadow: isHighlight ? "0 16px 40px hsl(var(--revint-h) var(--revint-s) 50% / 0.18)" : "none",
                     }}
                   >
                     {isHighlight && (
                       <span
                         className="absolute -top-2 left-4 px-1.5 py-0.5 rounded text-[9.5px] font-semibold"
                         style={{
-                          background: "linear-gradient(180deg, var(--leadac-500), var(--leadac-700))",
+                          background: "linear-gradient(180deg, var(--revint-500), var(--revint-700))",
                           color: "white",
                         }}
                       >
@@ -448,9 +448,9 @@ export function BillingPanel({ plan, role, billingEnabled, usage }: BillingPanel
                           disabled={busy === id || redirecting}
                           className="w-full"
                           style={isHighlight ? {
-                            background: "linear-gradient(180deg, var(--leadac-500), var(--leadac-700))",
+                            background: "linear-gradient(180deg, var(--revint-500), var(--revint-700))",
                             color: "white",
-                            boxShadow: "0 1px 0 rgba(255,255,255,0.15) inset, 0 8px 20px hsl(var(--leadac-h) var(--leadac-s) 34% / 0.4)",
+                            boxShadow: "0 1px 0 rgba(255,255,255,0.15) inset, 0 8px 20px hsl(var(--revint-h) var(--revint-s) 34% / 0.4)",
                           } : undefined}
                         >
                           {busy === id ? (

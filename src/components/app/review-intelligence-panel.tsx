@@ -212,7 +212,7 @@ export function ReviewIntelligencePanel({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-(--leadac-300)" />
+            <Sparkles className="w-5 h-5 text-(--revint-300)" />
             Review Intelligence
           </CardTitle>
         </CardHeader>
@@ -228,7 +228,7 @@ export function ReviewIntelligencePanel({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-(--leadac-300)" />
+            <Sparkles className="w-5 h-5 text-(--revint-300)" />
             Review Intelligence
           </CardTitle>
         </CardHeader>
@@ -246,7 +246,7 @@ export function ReviewIntelligencePanel({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-(--leadac-300)" />
+            <Sparkles className="w-5 h-5 text-(--revint-300)" />
             Review Intelligence
           </CardTitle>
         </CardHeader>
@@ -262,7 +262,7 @@ export function ReviewIntelligencePanel({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-(--leadac-300)" />
+            <Sparkles className="w-5 h-5 text-(--revint-300)" />
             Review Intelligence
           </CardTitle>
           <Button size="sm" onClick={runAnalysis} disabled={running || status === "ANALYZING"}>
@@ -282,9 +282,9 @@ export function ReviewIntelligencePanel({
             <div
               className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs"
               style={{
-                background: "color-mix(in oklab, var(--leadac-warning) 10%, transparent)",
-                borderColor: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
-                color: "var(--leadac-warning-soft)",
+                background: "color-mix(in oklab, var(--revint-warning) 10%, transparent)",
+                borderColor: "color-mix(in oklab, var(--revint-warning) 20%, transparent)",
+                color: "var(--revint-warning-soft)",
               }}
             >
               <span>
@@ -296,8 +296,8 @@ export function ReviewIntelligencePanel({
                 variant="outline"
                 className="ml-3 h-6 px-2 text-[11px]"
                 style={{
-                  borderColor: "color-mix(in oklab, var(--leadac-warning) 30%, transparent)",
-                  color: "var(--leadac-warning-soft)",
+                  borderColor: "color-mix(in oklab, var(--revint-warning) 30%, transparent)",
+                  color: "var(--revint-warning-soft)",
                 }}
                 onClick={runDeepReviews}
                 disabled={fetchingDeep}
@@ -322,7 +322,7 @@ export function ReviewIntelligencePanel({
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-(--leadac-300)" />
+            <Sparkles className="w-5 h-5 text-(--revint-300)" />
             Review Intelligence
           </CardTitle>
           <p className="text-xs text-white/30 mt-1">
@@ -340,8 +340,8 @@ export function ReviewIntelligencePanel({
               variant="outline"
               className="h-7 px-2 text-[11px]"
               style={{
-                borderColor: "color-mix(in oklab, var(--leadac-warning) 30%, transparent)",
-                color: "var(--leadac-warning-soft)",
+                borderColor: "color-mix(in oklab, var(--revint-warning) 30%, transparent)",
+                color: "var(--revint-warning-soft)",
               }}
               onClick={runDeepReviews}
               disabled={fetchingDeep}
@@ -362,9 +362,9 @@ export function ReviewIntelligencePanel({
             <div
               className="flex items-start gap-2 rounded-lg border px-3 py-2 text-xs"
               style={{
-                background: "color-mix(in oklab, var(--leadac-error) 10%, transparent)",
-                borderColor: "color-mix(in oklab, var(--leadac-error) 30%, transparent)",
-                color: "var(--leadac-error-soft)",
+                background: "color-mix(in oklab, var(--revint-error) 10%, transparent)",
+                borderColor: "color-mix(in oklab, var(--revint-error) 30%, transparent)",
+                color: "var(--revint-error-soft)",
               }}
             >
               <AlertTriangle className="w-4 h-4 shrink-0 mt-px" />
@@ -374,7 +374,7 @@ export function ReviewIntelligencePanel({
                 </p>
                 <p
                   className="text-[11px] mt-0.5 leading-relaxed"
-                  style={{ color: "color-mix(in oklab, var(--leadac-error-soft) 85%, transparent)" }}
+                  style={{ color: "color-mix(in oklab, var(--revint-error-soft) 85%, transparent)" }}
                 >
                   Percentages below are derived from a tiny pool and can be
                   misleading. Pull more reviews via Apify before relying on
@@ -426,7 +426,7 @@ export function ReviewIntelligencePanel({
               {analysis.weaknessKpis.length > 0 && (
                 <div>
                   <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-                    <TrendingDown className="w-3.5 h-3.5 text-[var(--leadac-error)]" />{" "}
+                    <TrendingDown className="w-3.5 h-3.5 text-[var(--revint-error)]" />{" "}
                     What customers complain about
                   </p>
                   <div className="space-y-2">
@@ -446,7 +446,7 @@ export function ReviewIntelligencePanel({
               {analysis.strengthKpis.length > 0 && (
                 <div>
                   <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-                    <TrendingUp className="w-3.5 h-3.5 text-[var(--leadac-success)]" />{" "}
+                    <TrendingUp className="w-3.5 h-3.5 text-[var(--revint-success)]" />{" "}
                     What customers praise
                   </p>
                   <div className="space-y-2">
@@ -469,7 +469,7 @@ export function ReviewIntelligencePanel({
         {analysis.switchSignals.length > 0 && (
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <ArrowRight className="w-3.5 h-3.5 text-(--leadac-300)" /> Competitor switch signals
+              <ArrowRight className="w-3.5 h-3.5 text-(--revint-300)" /> Competitor switch signals
             </p>
             <div className="space-y-2">
               {analysis.switchSignals.map((s, i) => (
@@ -503,7 +503,7 @@ export function ReviewIntelligencePanel({
         {analysis.strengthPhrases.length > 0 && (
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2 flex items-center gap-1.5">
-              <Star className="w-3.5 h-3.5 text-[var(--leadac-warning)]" /> Most common praise
+              <Star className="w-3.5 h-3.5 text-[var(--revint-warning)]" /> Most common praise
             </p>
             <div className="flex flex-wrap gap-1.5">
               {analysis.strengthPhrases.map((p) => (
@@ -537,11 +537,11 @@ function KpiBarRow({
   poolCount?: number;
   poolLabel?: string;
 }) {
-  const color = variant === "weakness" ? "var(--leadac-error)" : "var(--leadac-success)";
+  const color = variant === "weakness" ? "var(--revint-error)" : "var(--revint-success)";
   const bg =
     variant === "weakness"
-      ? "color-mix(in oklab, var(--leadac-error) 12%, transparent)"
-      : "color-mix(in oklab, var(--leadac-success) 12%, transparent)";
+      ? "color-mix(in oklab, var(--revint-error) 12%, transparent)"
+      : "color-mix(in oklab, var(--revint-success) 12%, transparent)";
   const percent = Math.max(0, Math.min(100, kpi.percent));
   const count = typeof kpi.count === "number" ? kpi.count : undefined;
   const tooltip =
@@ -581,9 +581,9 @@ function SentimentBar({ breakdown }: { breakdown: SentimentBreakdown }) {
     <div>
       <p className="text-[13px] font-medium text-white/60 mb-2">Sentiment breakdown</p>
       <div className="flex h-2 rounded-full overflow-hidden bg-white/5">
-        <div style={{ width: `${pos}%`, backgroundColor: "var(--leadac-success)" }} />
+        <div style={{ width: `${pos}%`, backgroundColor: "var(--revint-success)" }} />
         <div className="bg-white/30" style={{ width: `${neu}%` }} />
-        <div style={{ width: `${neg}%`, backgroundColor: "var(--leadac-error)" }} />
+        <div style={{ width: `${neg}%`, backgroundColor: "var(--revint-error)" }} />
       </div>
       <div className="flex justify-between text-[11px] text-white/45 mt-1.5">
         <span>{pos}% positive</span>

@@ -1,6 +1,6 @@
 /**
  * Glossary terms — one-screen definition pages for sales, outbound, and SEO
- * vocabulary relevant to Leadac AI users. Each term renders at /glossary/{slug}
+ * vocabulary relevant to Revint users. Each term renders at /glossary/{slug}
  * with DefinedTerm JSON-LD.
  *
  * Keep definitions short (60-180 words), write them as answer-engine-ready
@@ -137,7 +137,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "A lead is any identified contact or company with some chance of becoming a customer.",
     oneSentence:
       "A lead is any identified contact or company with some chance of becoming a customer, regardless of the strength of signal.",
-    body: "'Lead' is deliberately loose. A lead can be as cold as a scraped company name or as hot as an inbound demo request. Outbound leads are leads you generated (list-sourced, event-sourced, referral); inbound leads raised their hand. In Leadac AI the term refers to a business discovered via Google Maps plus audit data — cold by definition, but pre-researched.",
+    body: "'Lead' is deliberately loose. A lead can be as cold as a scraped company name or as hot as an inbound demo request. Outbound leads are leads you generated (list-sourced, event-sourced, referral); inbound leads raised their hand. In Revint the term refers to a business discovered via Google Maps plus audit data — cold by definition, but pre-researched.",
     related: ["mql", "sql", "prospect"],
   },
   {
@@ -174,27 +174,27 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     slug: "postcode-niche",
     name: "Postcode-niche (playbook)",
     category: "leadac",
-    meta: "Postcode-niche is the Leadac AI playbook: one postcode plus one vertical equals one hyper-targeted outbound list.",
+    meta: "Postcode-niche is the Revint playbook: one postcode plus one vertical equals one hyper-targeted outbound list.",
     oneSentence:
-      "Postcode-niche is the Leadac AI playbook — discover the list by intersecting a single postcode district with a single vertical.",
+      "Postcode-niche is the Revint playbook — discover the list by intersecting a single postcode district with a single vertical.",
     body: "The postcode-niche intersection returns ~30-60 businesses in most UK cities; each has a Google Maps listing, a website, and a phone number. This list is dense enough to iterate on (send 20, measure, adjust) and narrow enough to write openers that reference the neighborhood the prospect operates in. It is the opposite of the persona-driven motion that Apollo enables.",
     related: ["postcode", "niche", "audit"],
   },
   {
     slug: "audit",
-    name: "Website audit (Leadac)",
+    name: "Website audit (Revint)",
     category: "leadac",
-    meta: "A Leadac AI website audit checks 20 signals on every prospect's site and feeds an opportunity score plus opener angles.",
+    meta: "A Revint website audit checks 20 signals on every prospect's site and feeds an opportunity score plus opener angles.",
     oneSentence:
-      "A Leadac AI website audit is a 20-signal Playwright-driven inspection of every prospect's site, covering speed, security, mobile experience, booking, discoverability, and freshness.",
-    body: "The audit is the differentiator. It runs automatically on every lead Leadac surfaces, produces a 0-100 opportunity score (higher = weaker site = bigger upside to rebuild), and hands back three pitchable red-flag findings per site. Those findings become the opener. The audit is what lets a cold email read as 'you probably want to know your mobile LCP is 7.2 seconds' rather than 'hope you're well'.",
+      "A Revint website audit is a 20-signal Playwright-driven inspection of every prospect's site, covering speed, security, mobile experience, booking, discoverability, and freshness.",
+    body: "The audit is the differentiator. It runs automatically on every lead Revint surfaces, produces a 0-100 opportunity score (higher = weaker site = bigger upside to rebuild), and hands back three pitchable red-flag findings per site. Those findings become the opener. The audit is what lets a cold email read as 'you probably want to know your mobile LCP is 7.2 seconds' rather than 'hope you're well'.",
     related: ["opportunity-score", "lcp", "cls", "inp", "core-web-vitals"],
   },
   {
     slug: "opportunity-score",
     name: "Opportunity score",
     category: "leadac",
-    meta: "The opportunity score is Leadac AI's 0-100 weighted sum of audit signals ranking which prospects have the biggest pitchable upside.",
+    meta: "The opportunity score is Revint's 0-100 weighted sum of audit signals ranking which prospects have the biggest pitchable upside.",
     oneSentence:
       "The opportunity score is a 0-100 weighted sum of audit signals — higher means a weaker site, bigger upside to rebuild, and a more pitchable target.",
     body: "The score weights speed (30%), mobile experience (25%), booking and conversion infrastructure (20%), security/hygiene (15%), and discoverability plus freshness (10%). Typical phone-repair and HVAC shops score in the 60-80 range. We deliberately exclude sites scoring below 40 (already good, no pitch) and above 90 (probably going out of business or unstaffed).",
@@ -204,29 +204,29 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     slug: "leave-behind",
     name: "Leave-behind (audit PDF)",
     category: "leadac",
-    meta: "A leave-behind is the PDF audit report Leadac AI generates for every prospect so you can attach it to the first cold email.",
+    meta: "A leave-behind is the PDF audit report Revint generates for every prospect so you can attach it to the first cold email.",
     oneSentence:
-      "A leave-behind is the PDF audit report Leadac AI generates for every prospect, designed to be attached to the first cold email and look like the deliverable of a paid engagement.",
-    body: "The leave-behind is what elevates a Leadac cold email from 'sales pitch' to 'free work'. It summarises the 20-signal audit, calls out the three biggest issues in plain English, and closes with 'these are fixable' without a hard sell. Recipients who don't reply to the email often forward the PDF to a colleague — and that's where a share of reply traffic comes from.",
+      "A leave-behind is the PDF audit report Revint generates for every prospect, designed to be attached to the first cold email and look like the deliverable of a paid engagement.",
+    body: "The leave-behind is what elevates a Revint cold email from 'sales pitch' to 'free work'. It summarises the 20-signal audit, calls out the three biggest issues in plain English, and closes with 'these are fixable' without a hard sell. Recipients who don't reply to the email often forward the PDF to a colleague — and that's where a share of reply traffic comes from.",
     related: ["audit", "opener", "cold-email"],
   },
   {
     slug: "vertical-pack",
     name: "Vertical pack",
     category: "leadac",
-    meta: "A vertical pack is a Leadac-curated bundle of audit templates, opener libraries, and FAQ frames for one specific niche.",
+    meta: "A vertical pack is a Revint-curated bundle of audit templates, opener libraries, and FAQ frames for one specific niche.",
     oneSentence:
       "A vertical pack is a curated bundle of audit templates, opener libraries, and niche-specific FAQs for one specific vertical (e.g., phone repair, dental).",
-    body: "Vertical packs reduce the ramp time for a new niche. Instead of writing openers from scratch, agencies start with 10-20 pre-written opener variants that reference the audit findings most common to that vertical, plus a set of objection-handling frames and a mini-FAQ about the industry. Packs ship for every niche Leadac indexes past an evidence floor.",
+    body: "Vertical packs reduce the ramp time for a new niche. Instead of writing openers from scratch, agencies start with 10-20 pre-written opener variants that reference the audit findings most common to that vertical, plus a set of objection-handling frames and a mini-FAQ about the industry. Packs ship for every niche Revint indexes past an evidence floor.",
     related: ["niche", "opener", "audit"],
   },
   {
     slug: "discovery",
     name: "Discovery (leads)",
     category: "leadac",
-    meta: "Discovery is the first phase of Leadac AI's pipeline: intersecting a postcode and niche to surface candidate businesses.",
+    meta: "Discovery is the first phase of Revint's pipeline: intersecting a postcode and niche to surface candidate businesses.",
     oneSentence:
-      "Discovery is the first step of the Leadac AI pipeline — intersecting a postcode and a niche to surface 30-60 candidate businesses from Google Maps live data.",
+      "Discovery is the first step of the Revint pipeline — intersecting a postcode and a niche to surface 30-60 candidate businesses from Google Maps live data.",
     body: "Discovery is where the list is born. We query Google Places for businesses matching the vertical in the target postcode, deduplicate, filter out chains and closed businesses, and pass the result to the audit stage. Discovery is deliberately small-batch — the goal is 30-60 leads per run, not thousands, so the downstream audit remains fresh and the output stays manageable.",
     related: ["audit", "postcode-niche", "niche"],
   },
@@ -237,7 +237,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "Core Web Vitals are Google's three specific performance metrics — LCP, CLS, INP — that feed ranking and are surfaced in audits.",
     oneSentence:
       "Core Web Vitals are Google's three user-experience metrics — Largest Contentful Paint, Cumulative Layout Shift, and Interaction to Next Paint — that feed ranking and are measurable on any site.",
-    body: "CWV replaced the older 'page speed' metric as the single user-experience signal Google ranks on. LCP targets under 2.5s on mobile; CLS under 0.1; INP under 200ms. A site failing two of three is almost always losing rankings to competitors that pass. Every Leadac audit includes the three CWV measurements on a throttled mobile connection, which become some of the strongest opener angles in the playbook.",
+    body: "CWV replaced the older 'page speed' metric as the single user-experience signal Google ranks on. LCP targets under 2.5s on mobile; CLS under 0.1; INP under 200ms. A site failing two of three is almost always losing rankings to competitors that pass. Every Revint audit includes the three CWV measurements on a throttled mobile connection, which become some of the strongest opener angles in the playbook.",
     related: ["lcp", "cls", "inp", "audit"],
   },
   {
@@ -257,7 +257,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "CLS is the Core Web Vital measuring unexpected shifts of visible content during page load — target under 0.1.",
     oneSentence:
       "CLS (Cumulative Layout Shift) is the Core Web Vital measuring how much visible content moves around during initial load — target under 0.1.",
-    body: "High CLS usually comes from images without dimension attributes, fonts that swap mid-load, or ads injected above the fold. CLS matters not just for ranking but conversion: a layout shift that happens the moment a user is about to click something measurably increases bounce. Leadac's audit flags any CLS above 0.25 as red.",
+    body: "High CLS usually comes from images without dimension attributes, fonts that swap mid-load, or ads injected above the fold. CLS matters not just for ranking but conversion: a layout shift that happens the moment a user is about to click something measurably increases bounce. Revint's audit flags any CLS above 0.25 as red.",
     related: ["core-web-vitals", "lcp", "inp"],
   },
   {
@@ -277,7 +277,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "Schema markup is structured JSON-LD data embedded in pages so search engines and AI can extract entities reliably.",
     oneSentence:
       "Schema markup (typically JSON-LD) is structured data embedded in a page so search engines and AI can reliably extract entities like business, address, price, and review.",
-    body: "For local-service businesses, the most important schemas are LocalBusiness, Service, OpeningHours, and AggregateRating. For content, Article/BlogPosting, FAQPage, HowTo, and BreadcrumbList. AI search engines (ChatGPT Search, Perplexity, Google AI Overviews) rely heavily on schema to decide which sites to cite. Leadac AI emits schema on every indexable page as a matter of principle.",
+    body: "For local-service businesses, the most important schemas are LocalBusiness, Service, OpeningHours, and AggregateRating. For content, Article/BlogPosting, FAQPage, HowTo, and BreadcrumbList. AI search engines (ChatGPT Search, Perplexity, Google AI Overviews) rely heavily on schema to decide which sites to cite. Revint emits schema on every indexable page as a matter of principle.",
     related: ["seo", "localbusiness-schema", "faqpage-schema"],
   },
   {
@@ -287,7 +287,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "LocalBusiness is the schema.org type that marks up a physical-location business with address, hours, and contact info.",
     oneSentence:
       "LocalBusiness is the schema.org type that marks up a physical-location business — address, opening hours, phone, aggregate rating — for search-engine understanding.",
-    body: "Every /b/{city}/{business} page on Leadac AI emits a LocalBusiness schema block with nested PostalAddress, GeoCoordinates, OpeningHoursSpecification, and AggregateRating when we have review data. This is what powers rich results in Google (star ratings in search, knowledge-panel cards) and what makes the page citable by AI search engines.",
+    body: "Every /b/{city}/{business} page on Revint emits a LocalBusiness schema block with nested PostalAddress, GeoCoordinates, OpeningHoursSpecification, and AggregateRating when we have review data. This is what powers rich results in Google (star ratings in search, knowledge-panel cards) and what makes the page citable by AI search engines.",
     related: ["schema-markup", "seo"],
   },
   {
@@ -297,7 +297,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "FAQPage schema marks up question-answer pairs so Google and AI can extract them directly into answers.",
     oneSentence:
       "FAQPage schema is the schema.org type that marks up question-answer pairs on a page, making them extractable for search rich results and AI citations.",
-    body: "FAQPage is one of the highest-leverage schemas in 2026 because AI search engines cite FAQ blocks directly. Every Leadac programmatic page (city, niche, niche-city, comparison) ends with a 3-6 question FAQ block wrapped in FAQPage schema. The questions are written in the form users actually ask; the answers are 40-80 words — long enough to be useful, short enough to be extracted whole.",
+    body: "FAQPage is one of the highest-leverage schemas in 2026 because AI search engines cite FAQ blocks directly. Every Revint programmatic page (city, niche, niche-city, comparison) ends with a 3-6 question FAQ block wrapped in FAQPage schema. The questions are written in the form users actually ask; the answers are 40-80 words — long enough to be useful, short enough to be extracted whole.",
     related: ["schema-markup", "seo", "aeo"],
   },
   {
@@ -327,7 +327,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "llms.txt is an emerging standard — a single file at your site root that describes your site to AI crawlers in a structured way.",
     oneSentence:
       "llms.txt is an emerging standard — a single plain-text file at /llms.txt that describes your site to AI crawlers with a citation-friendly summary, top pages, and license.",
-    body: "Where robots.txt tells crawlers what they may fetch, llms.txt tells them what is worth citing. The file typically contains: a one-paragraph summary of the product, a list of top-linked pages with brief descriptions, the license for training versus inference use, and optional contact for licensing. Leadac AI emits /llms.txt as part of Layer 4 of the SEO plan.",
+    body: "Where robots.txt tells crawlers what they may fetch, llms.txt tells them what is worth citing. The file typically contains: a one-paragraph summary of the product, a list of top-linked pages with brief descriptions, the license for training versus inference use, and optional contact for licensing. Revint emits /llms.txt as part of Layer 4 of the SEO plan.",
     related: ["aeo", "geo", "seo"],
   },
   {
@@ -337,7 +337,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "A canonical URL is the preferred version of a page when duplicates or near-duplicates exist — signalled via <link rel='canonical'>.",
     oneSentence:
       "A canonical URL is the preferred version of a page, signalled to search engines via <link rel='canonical'> when duplicates or near-duplicates exist.",
-    body: "Every page on Leadac AI declares its own canonical URL via the buildMetadata() helper. Canonical signalling matters most for programmatic sites with query parameters (UTM tags, tracking) or paginated content. A missing canonical on 10,000+ programmatic pages causes index bloat and ranking dilution; getting it right from day one is one of the cheapest wins in technical SEO.",
+    body: "Every page on Revint declares its own canonical URL via the buildMetadata() helper. Canonical signalling matters most for programmatic sites with query parameters (UTM tags, tracking) or paginated content. A missing canonical on 10,000+ programmatic pages causes index bloat and ranking dilution; getting it right from day one is one of the cheapest wins in technical SEO.",
     related: ["seo", "robots-txt", "sitemap"],
   },
   {
@@ -347,7 +347,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "A sitemap is an XML file listing the URLs on your site for search engines to discover and crawl efficiently.",
     oneSentence:
       "A sitemap is an XML file listing the URLs on your site that you want search engines to discover, with optional lastmod, priority, and changefreq hints.",
-    body: "Google has a hard cap of 50,000 URLs or 50MB per sitemap file. Any site larger than that must use a sitemap index that points to multiple chunked sitemaps. Leadac AI uses Next.js `generateSitemaps()` to emit seven chunks: core, niches, cities, niche-city, businesses-{n} (in 45k slices), blog, and competitors. The robots.txt points to the sitemap index, not individual chunks.",
+    body: "Google has a hard cap of 50,000 URLs or 50MB per sitemap file. Any site larger than that must use a sitemap index that points to multiple chunked sitemaps. Revint uses Next.js `generateSitemaps()` to emit seven chunks: core, niches, cities, niche-city, businesses-{n} (in 45k slices), blog, and competitors. The robots.txt points to the sitemap index, not individual chunks.",
     related: ["canonical-url", "robots-txt", "seo"],
   },
   {
@@ -357,7 +357,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "robots.txt is the root-level file that tells crawlers what they may and may not fetch from your site.",
     oneSentence:
       "robots.txt is a plain-text file at /robots.txt that tells user-agent crawlers what they may and may not fetch from your site, and points to your sitemap.",
-    body: "robots.txt is advisory — well-behaved crawlers respect it, but it is not a security boundary. Use it to disallow query-string crawl traps, internal routes, and authentication gates. Leadac AI disallows /app/, /api/, /auth/, /m/, and common UTM/gclid patterns, and points to the sitemap index. It also sets crawl-delay for noisier bots like AhrefsBot, SemrushBot, and MJ12bot.",
+    body: "robots.txt is advisory — well-behaved crawlers respect it, but it is not a security boundary. Use it to disallow query-string crawl traps, internal routes, and authentication gates. Revint disallows /app/, /api/, /auth/, /m/, and common UTM/gclid patterns, and points to the sitemap index. It also sets crawl-delay for noisier bots like AhrefsBot, SemrushBot, and MJ12bot.",
     related: ["sitemap", "seo"],
   },
   {
@@ -367,7 +367,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "IndexNow is a protocol for notifying Bing, Yandex, and others the moment a page is created or updated.",
     oneSentence:
       "IndexNow is an open protocol for notifying search engines — Bing, Yandex, Seznam, Naver — the moment a new page is created or an existing one is materially updated.",
-    body: "IndexNow is Bing's counterweight to Google's Search Console URL-submission API. You post JSON to a single endpoint and the participating engines crawl your URLs within minutes. For high-volume sites like Leadac's directory, IndexNow dramatically shortens the 'we published it → it shows up in search' gap. Google ignores IndexNow but accepts similar signals via GSC's Indexing API.",
+    body: "IndexNow is Bing's counterweight to Google's Search Console URL-submission API. You post JSON to a single endpoint and the participating engines crawl your URLs within minutes. For high-volume sites like Revint's directory, IndexNow dramatically shortens the 'we published it → it shows up in search' gap. Google ignores IndexNow but accepts similar signals via GSC's Indexing API.",
     related: ["sitemap", "seo"],
   },
   {
@@ -437,7 +437,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "AggregateRating is the schema.org type that represents the overall rating (star score + count) for a business, product, or service.",
     oneSentence:
       "AggregateRating is the schema.org type that represents the overall rating — a star score plus review count — for a business, product, or service.",
-    body: "Every /b/{city}/{business} page on Leadac AI emits AggregateRating where we have review data. The fields are ratingValue (e.g., 4.7), reviewCount (e.g., 183), bestRating (5) and worstRating (1). This is what drives star-rating rich results in Google and gives AI search engines a citable quantitative signal.",
+    body: "Every /b/{city}/{business} page on Revint emits AggregateRating where we have review data. The fields are ratingValue (e.g., 4.7), reviewCount (e.g., 183), bestRating (5) and worstRating (1). This is what drives star-rating rich results in Google and gives AI search engines a citable quantitative signal.",
     related: ["schema-markup", "localbusiness-schema", "review"],
   },
   {
@@ -447,7 +447,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "Review is the schema.org type representing a single rating+comment, usually nested under LocalBusiness alongside AggregateRating.",
     oneSentence:
       "Review is the schema.org type representing a single rating and comment about a business, product, or service — typically nested under LocalBusiness alongside AggregateRating.",
-    body: "Review schema is the complement to AggregateRating: where AggregateRating is the summary number, Review marks up individual testimonials with author, datePublished, reviewRating, and reviewBody. Google may display individual review snippets in rich results, and AI search engines cite review content when asked 'is X any good?'. Leadac AI surfaces 3-5 review excerpts per business page.",
+    body: "Review schema is the complement to AggregateRating: where AggregateRating is the summary number, Review marks up individual testimonials with author, datePublished, reviewRating, and reviewBody. Google may display individual review snippets in rich results, and AI search engines cite review content when asked 'is X any good?'. Revint surfaces 3-5 review excerpts per business page.",
     related: ["schema-markup", "localbusiness-schema", "aggregate-rating"],
   },
   {
@@ -457,7 +457,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "A breadcrumb is the hierarchy of links showing where the current page sits in a site — also a schema.org type for the same.",
     oneSentence:
       "A breadcrumb is the hierarchy of links (Home → Cities → London → NW1) showing a page's position in site structure, and the schema.org BreadcrumbList type marks it up for search engines.",
-    body: "Breadcrumbs serve two purposes: user orientation and search-engine understanding of site hierarchy. Google uses BreadcrumbList schema to replace the URL in search results with a breadcrumb chain, which reads better and clicks higher. Every indexable Leadac page emits both a visible breadcrumb and matching BreadcrumbList JSON-LD.",
+    body: "Breadcrumbs serve two purposes: user orientation and search-engine understanding of site hierarchy. Google uses BreadcrumbList schema to replace the URL in search results with a breadcrumb chain, which reads better and clicks higher. Every indexable Revint page emits both a visible breadcrumb and matching BreadcrumbList JSON-LD.",
     related: ["schema-markup", "seo", "canonical-url"],
   },
   {
@@ -477,16 +477,16 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "Index bloat is when search engines index large numbers of low-quality URLs from your site, diluting rankings for the ones that matter.",
     oneSentence:
       "Index bloat is when search engines index large numbers of low-quality URLs — query-string variants, thin pages, duplicate content — from your site, diluting rankings for the pages that actually matter.",
-    body: "The fix for index bloat is surgical: noindex the low-value pages (GSC coverage report will tell you which), canonical the duplicates, and disallow the crawl traps in robots.txt. Leadac AI's 'evidence floor' rule is index-bloat prevention upstream — any programmatic page that fails the floor is noindexed and excluded from the sitemap before it can dilute the good ones.",
+    body: "The fix for index bloat is surgical: noindex the low-value pages (GSC coverage report will tell you which), canonical the duplicates, and disallow the crawl traps in robots.txt. Revint's 'evidence floor' rule is index-bloat prevention upstream — any programmatic page that fails the floor is noindexed and excluded from the sitemap before it can dilute the good ones.",
     related: ["crawl-budget", "canonical-url", "sitemap"],
   },
   {
     slug: "evidence-floor",
-    name: "Evidence floor (Leadac)",
+    name: "Evidence floor (Revint)",
     category: "leadac",
-    meta: "The evidence floor is Leadac's minimum content-quality rule: every indexable programmatic page must have at least one unique data block.",
+    meta: "The evidence floor is Revint's minimum content-quality rule: every indexable programmatic page must have at least one unique data block.",
     oneSentence:
-      "The evidence floor is Leadac AI's minimum content-quality rule — every indexable programmatic page must surface at least one unique data block (audit, review excerpt, price band, named operator) before it qualifies for the sitemap.",
+      "The evidence floor is Revint's minimum content-quality rule — every indexable programmatic page must surface at least one unique data block (audit, review excerpt, price band, named operator) before it qualifies for the sitemap.",
     body: "Programmatic SEO can fail in one specific way: producing tens of thousands of near-identical thin pages that trip Google's 'unhelpful content' signal and drag down the whole domain. The evidence floor prevents that. It's enforced in code (`passesEvidenceFloor()` in `src/lib/seo/programmatic.ts`); pages that fail are auto-noindexed and never listed in the sitemap.",
     related: ["audit", "index-bloat", "seo"],
   },
@@ -517,7 +517,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "Data freshness is how recently lead or contact data was verified — older data has higher bounce rates and lower reply rates.",
     oneSentence:
       "Data freshness is how recently lead or contact data was verified — fresher data has lower bounce rates, lower deliverability risk, and higher reply rates.",
-    body: "Contact data decays at roughly 2.5% per month: people change jobs, titles, email addresses, phone numbers. A database last updated six months ago has ~15% rot. For cold email, sending to a 15% rotted list is a deliverability disaster — every bounce scores negatively against sender reputation. Leadac AI's advantage over list vendors is that it pulls businesses live from Google Maps at query time, so the bounce rate on the core business data is effectively zero.",
+    body: "Contact data decays at roughly 2.5% per month: people change jobs, titles, email addresses, phone numbers. A database last updated six months ago has ~15% rot. For cold email, sending to a 15% rotted list is a deliverability disaster — every bounce scores negatively against sender reputation. Revint's advantage over list vendors is that it pulls businesses live from Google Maps at query time, so the bounce rate on the core business data is effectively zero.",
     related: ["waterfall-enrichment", "deliverability"],
   },
   {
@@ -527,7 +527,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "sameAs is a schema.org property linking an entity to its other authoritative profiles, consolidating identity in the Knowledge Graph.",
     oneSentence:
       "sameAs is a schema.org property that links an entity to its other authoritative profiles (Twitter, LinkedIn, Crunchbase, G2), helping search engines consolidate the entity in the Knowledge Graph.",
-    body: "sameAs matters specifically for entity SEO — the thing that determines whether Google sees 'Leadac AI' and 'Leadac' as the same company, and whether AI search engines cite the brand accurately. Every Organization schema should include sameAs pointing to Twitter, LinkedIn, GitHub, Crunchbase, Product Hunt, G2, Capterra, and any other profile that mentions the brand.",
+    body: "sameAs matters specifically for entity SEO — the thing that determines whether Google sees 'Revint' and 'Revint' as the same company, and whether AI search engines cite the brand accurately. Every Organization schema should include sameAs pointing to Twitter, LinkedIn, GitHub, Crunchbase, Product Hunt, G2, Capterra, and any other profile that mentions the brand.",
     related: ["schema-markup", "seo", "aeo"],
   },
   {
@@ -547,7 +547,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     meta: "A featured snippet is the boxed answer Google shows above the organic results for many queries, drawn from a single page.",
     oneSentence:
       "A featured snippet is the boxed answer Google shows above the organic results for many queries, drawn from a single page — sometimes called 'position zero'.",
-    body: "Winning a featured snippet doubles or triples CTR for most queries. The tactics: answer the implied question in the first 40-60 words, use the question phrasing as an H2 or H3, and format the answer as a short paragraph, numbered list, or table — whichever matches the query intent. Google picks the format. Every Leadac blog post opens with a one-sentence direct answer specifically for snippet capture.",
+    body: "Winning a featured snippet doubles or triples CTR for most queries. The tactics: answer the implied question in the first 40-60 words, use the question phrasing as an H2 or H3, and format the answer as a short paragraph, numbered list, or table — whichever matches the query intent. Google picks the format. Every Revint blog post opens with a one-sentence direct answer specifically for snippet capture.",
     related: ["aeo", "serp", "seo"],
   },
 ];

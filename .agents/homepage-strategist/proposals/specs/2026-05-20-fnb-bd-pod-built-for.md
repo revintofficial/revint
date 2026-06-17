@@ -30,7 +30,7 @@
 |---|---|---|
 | Eyebrow / badge | `Built for` (no change from current) | Sentence case, matches existing. |
 | Headline | `One pod. One screen. One morning at a time.` | Replaces current "Three teams, one system." which list-coded the audience. New headline pivots to the pod's day. Sentence case, 9 words. |
-| Subhead | `LeadAC was built for the BD manager who runs a 5 to 10 person calling pod selling to restaurants and local businesses.` | Replaces current "LeadAC was built for the operators who pitch local businesses every day." Pivots from "operators" (vague) to "BD manager" (specific). |
+| Subhead | `Revint was built for the BD manager who runs a 5 to 10 person calling pod selling to restaurants and local businesses.` | Replaces current "Revint was built for the operators who pitch local businesses every day." Pivots from "operators" (vague) to "BD manager" (specific). |
 | Body | One primary chip + two secondary chips. Primary takes 2 of 3 grid columns at `md+`; secondary chips split the remaining 1 column stacked. On mobile, primary is full-width, secondaries are full-width stacked. | Visual weight shift makes the primary the unmistakable headline of the section. |
 | Proof | Each chip carries a one-line operational detail. | The detail is the proof. Persona-card grammar already established. |
 | Primary CTA | None. | Section sits 2 below from the WaitlistBlock; not the place to push action. |
@@ -47,7 +47,7 @@ HEADLINE:
 One pod. One screen. One morning at a time.
 
 SUBHEAD:
-LeadAC was built for the BD manager who runs a 5 to 10 person calling pod selling to restaurants and local businesses.
+Revint was built for the BD manager who runs a 5 to 10 person calling pod selling to restaurants and local businesses.
 
 CHIPS (1 primary, 2 secondary):
 
@@ -105,7 +105,7 @@ ASCII sketch (desktop, 3-col grid with primary spanning 2 cols):
 +--------------------------------------------------------------------+
 ```
 
-Pattern source: the per-card grammar comes directly from the current [`built-for.tsx`](../../../../src/components/marketing/v2/built-for.tsx) lines 48-67 (`<article className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]">`). The change is only the grid template, which moves from `md:grid-cols-3` to `md:grid-cols-3` with the primary getting `md:col-span-2` and the two secondaries each `md:col-span-1` and stacked via wrapping into the third column.
+Pattern source: the per-card grammar comes directly from the current [`built-for.tsx`](../../../../src/components/marketing/v2/built-for.tsx) lines 48-67 (`<article className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--revint-h)_var(--revint-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]">`). The change is only the grid template, which moves from `md:grid-cols-3` to `md:grid-cols-3` with the primary getting `md:col-span-2` and the two secondaries each `md:col-span-1` and stacked via wrapping into the third column.
 
 Icon swap: the current file uses `Building2 / Headset / ChefHat` (lines 9). New order: primary uses `Headset` (the BD pod), secondary 1 uses `Building2` (the agency), secondary 2 uses `ChefHat` (the vendor BD). The icons are reordered, not replaced.
 
@@ -122,7 +122,7 @@ Icon swap: the current file uses `Building2 / Headset / ChefHat` (lines 9). New 
 ## 6. Component pattern to reuse
 
 - Section wrapper: existing [`section.tsx`](../../../../src/components/marketing/v2/section.tsx) with default variant (current file uses default per [`built-for.tsx`](../../../../src/components/marketing/v2/built-for.tsx) line 37-42).
-- Card grammar: existing `<article>` per lines 48-67. Reuse the `rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]` recipe exactly.
+- Card grammar: existing `<article>` per lines 48-67. Reuse the `rounded-2xl border border-white/[0.06] bg-[hsl(var(--revint-h)_var(--revint-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]` recipe exactly.
 - Icon chip: existing `<span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06]">` (lines 51-58).
 - Lucide icons: `Headset`, `Building2`, `ChefHat` already imported in the current file (line 9).
 
@@ -138,11 +138,11 @@ State which patterns this spec reuses:
 
 | Element | Token | Notes |
 |---|---|---|
-| Card background | `hsl(var(--leadac-h) var(--leadac-ns) 9%)` | Existing recipe (line 49). |
+| Card background | `hsl(var(--revint-h) var(--revint-ns) 9%)` | Existing recipe (line 49). |
 | Card border | `border-white/[0.06]` | Existing recipe. |
 | Card hover border | `border-white/[0.12]` | Existing recipe. |
-| Icon chip background | `hsl(var(--leadac-h) var(--leadac-s) 50% / 0.08)` | Existing recipe (line 54). |
-| Icon color | `hsl(var(--leadac-h) var(--leadac-s) 72%)` | Existing recipe (line 55). |
+| Icon chip background | `hsl(var(--revint-h) var(--revint-s) 50% / 0.08)` | Existing recipe (line 54). |
+| Icon color | `hsl(var(--revint-h) var(--revint-s) 72%)` | Existing recipe (line 55). |
 | Heading text | `text-white` | Existing recipe (line 61). |
 | Body text | `text-white/55` | Existing recipe (line 64). |
 

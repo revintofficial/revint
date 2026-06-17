@@ -1,5 +1,5 @@
 /**
- * Rasterize the Leadac AI brand logo (public/logo.png) into PWA icon PNGs.
+ * Rasterize the Revint brand logo (public/logo.png) into PWA icon PNGs.
  *
  * iOS Safari and several Android launchers ignore SVG manifest icons, so we
  * pre-render PNG fallbacks at 192 and 512, plus a maskable 512 with a 20%

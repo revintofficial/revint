@@ -9,7 +9,7 @@ export const post: BlogPost = {
     "A controlled 90-day test: same ICP, same sequence, same sender. Half the sends sourced from Apollo, half from a live-data discovery workflow. What the reply, booking, and close numbers actually looked like.",
   lede: "Everyone's 'I tested Apollo and it didn't work' thread is anecdotal. We wanted a clean A/B. So we ran one.",
   publishedAt: "2026-02-28T09:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["apollo", "cold email", "teardown"],
   readMinutes: 10,
   body: () => (

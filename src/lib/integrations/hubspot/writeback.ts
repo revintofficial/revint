@@ -1,5 +1,5 @@
 /**
- * FineDine v1 update — HubSpot writeback (LeadAC → HubSpot).
+ * FineDine v1 update — HubSpot writeback (Revint → HubSpot).
  *
  * Pushes LeadAC intelligence onto the HubSpot contact via the `leadac_*`
  * custom properties, optionally logs a call/note engagement, and updates
@@ -57,7 +57,7 @@ function leadSheetUrl(leadId: string): string {
  * Build the `leadac_*` property map for a lead. Only includes properties
  * we have a value for (HubSpot rejects empty enumeration writes).
  */
-async function buildLeadacProperties(
+async function buildRevintProperties(
   prisma: PrismaClient,
   workspaceId: string,
   leadId: string,
@@ -123,7 +123,7 @@ export async function enqueueCrmWriteback(
 ): Promise<{ status: "SUCCESS" | "FAILED" | "SKIPPED"; reason?: string }> {
   const { workspaceId, leadId, reason } = input;
 
-  const built = await buildLeadacProperties(prisma, workspaceId, leadId);
+  const built = await buildRevintProperties(prisma, workspaceId, leadId);
   if (!built) return { status: "SKIPPED", reason: "lead_not_found" };
 
   const lead = await prisma.lead.findFirst({
@@ -198,7 +198,7 @@ export async function enqueueCrmWriteback(
           await client.createCall({
             contactId: lead.crmContactId,
             body: input.engagementNote,
-            title: "LeadAC call disposition",
+            title: "Revint call disposition",
           });
         } catch (err) {
           logger.warn("hubspot.writeback.engagement_failed", { leadId, err });

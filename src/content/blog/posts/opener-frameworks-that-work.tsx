@@ -8,7 +8,7 @@ export const post: BlogPost = {
     "The '{FirstName}, quick question about {Company}' template is dead. Here are four opener frameworks that still earn replies — each with a real example pulled from our pipeline.",
   lede: "Four templates, four examples, a rubric for picking between them.",
   publishedAt: "2026-02-05T09:30:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["cold email", "copywriting", "templates"],
   readMinutes: 7,
   body: () => (

@@ -204,6 +204,32 @@ export const PAINS: Pain[] = [
     },
     tags: ["cross-vertical", "memory", "ramp"],
   },
+  {
+    id: "P-017",
+    summary:
+      "40% of reps still track leads in spreadsheets and email alongside the CRM, and the average CRM's features sit around 22% used. The judgment that decides who to call lives in a side sheet and the rep's head — not in any system the team can learn from.",
+    quote:
+      "40% of sales reps still use spreadsheets or informal methods alongside their CRM to track leads.",
+    source: {
+      name: "HubSpot State of Sales, via Searchlab Sales Statistics 2026",
+      url: "https://searchlab.nl/en/statistics/sales-statistics-2026",
+      date: "2026-02-01",
+    },
+    tags: ["cross-vertical", "memory", "tooling"],
+  },
+  {
+    id: "P-018",
+    summary:
+      "Only 35% of sales pros completely trust their CRM data, and 76% say less than half of it is accurate. The CRM is a system of record for activity, not a system that knows which signals predict a close — so reps don't ask it, they guess.",
+    quote:
+      "Only 35% of sales professionals completely trust the accuracy of their organization's data. 47% say data accuracy is a more challenging problem now than it was a year ago.",
+    source: {
+      name: "Salesforce State of Sales 2026, via Attention",
+      url: "https://www.attention.com/blog-posts/crm-data-entry-tax-rep-time-2026",
+      date: "2026-03-01",
+    },
+    tags: ["cross-vertical", "memory", "tooling"],
+  },
 ];
 
 /** Filter helper — returns the N most-relevant pains for a vertical. */

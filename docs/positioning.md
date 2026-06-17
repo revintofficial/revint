@@ -1,4 +1,4 @@
-# LeadAC — Positioning Workbook v2
+# Revint — Positioning Workbook v2
 
 > **Status:** Living doc. This is the post-pivot canonical positioning source. Every marketing surface, sales deck, comparison page, onboarding wizard, and pricing decision references this file. If a piece of copy contradicts this doc, the doc wins until explicitly overridden in §14 (Decision Log).
 >
@@ -137,7 +137,7 @@ converts faster than a single-shop competitor lives in your best SDR's head, not
 Your worst SDR rebuilds that pattern from zero. Your new hire rebuilds it again three months
 later. The new vertical your CRO just opened? Rebuild from zero a third time.
 
-LeadAC is the memory layer your stack is missing. We find the right local accounts for your
+Revint is the memory layer your stack is missing. We find the right local accounts for your
 vertical, sync the operational context your CRM never had — location count, vertical tech
 footprint, review tone, owner activity — and learn from every won and lost deal so the next
 list comes back sharper than the last.
@@ -205,7 +205,7 @@ Run every new feature, every page, every campaign, every comparison angle throug
 |---|---|---|
 | **Vertical-focused agencies** (e.g., agencies that exclusively serve dental, HVAC, F&B SMB clients) | They have the local context need, but the buyer profile is different — solo-operator agency owners with no CRM, no SDR team, lower willingness-to-pay. Confusing for primary positioning. | Deprioritize until 50 vertical SaaS customers shipped. Then explore as a separate vertical pack. |
 | **Mid-market PE-rolled local services companies** (e.g., a multi-state HVAC chain that bought 8 regional plumbers) | Strong fit for local context + closed-loop learning, but they buy at enterprise speed and ask for Salesforce-grade integrations. | Promote only when we have a dedicated Enterprise tier ($5K+/mo). |
-| **Outbound agencies running vertical campaigns for vertical SaaS clients** | Same product fit but through an agency relationship. Pricing is messy (per-client seat allocation), brand confusion ("isn't LeadAC for the SaaS company, not us?"). | Address with a partner program in Year 2. Until then, do not target. |
+| **Outbound agencies running vertical campaigns for vertical SaaS clients** | Same product fit but through an agency relationship. Pricing is messy (per-client seat allocation), brand confusion ("isn't Revint for the SaaS company, not us?"). | Address with a partner program in Year 2. Until then, do not target. |
 | **Sales-led horizontal SaaS targeting SMB** (e.g., Gusto, Square Banking, Rippling for SMB) | Have outbound teams hitting local businesses but their motion is so high-volume / commoditized that local context matters less. Apollo + Clay can mostly do it. | Watch. If a primary ICP customer asks for it, we expand. Otherwise ignore for 12 months. |
 
 ### 2.3 Persona cards
@@ -223,7 +223,7 @@ Run every new feature, every page, every campaign, every comparison angle throug
 - **What gets them fired:** Two consecutive quarters of pipeline miss, a public catastrophe (lawsuit, security breach), losing a strategic logo. Slowest path to fired: nothing's working and they can't show why.
 - **What gets them promoted:** Hitting plan three quarters in a row, building a repeatable motion that survives them, a clean exit (acquisition, IPO).
 - **A direct quote (source: Salesforce State of Sales 2026, captured via Salesmotion 2026):** *"Account research and call prep consume 14% of the workweek. That's roughly 5.6 hours per rep. For a 10-rep team, $130,000 of selling time per year, gone."* — Salesforce State of Sales 2026, cited in [salesmotion.io/blog/sales-team-manual-account-research-time](https://salesmotion.io/blog/sales-team-manual-account-research-time)
-- **Buying authority:** Decision-maker for $1K-$10K/month tools. Above $10K/mo needs CFO/CEO sign-off. Most LeadAC deals fall within VP-signable band.
+- **Buying authority:** Decision-maker for $1K-$10K/month tools. Above $10K/mo needs CFO/CEO sign-off. Most Revint deals fall within VP-signable band.
 
 #### Persona: "Sarah" — Head of Marketing / Demand Gen Lead (Influencer)
 
@@ -238,7 +238,7 @@ Run every new feature, every page, every campaign, every comparison angle throug
 - **What gets them fired:** Pipeline coverage gap that sales can blame marketing for. Bad ABM rollout. CRO arrival.
 - **What gets them promoted:** Provable attribution to pipeline. Successful ABM motion in a new vertical.
 - **A direct quote (source: Lemlist CMO podcast May 2026):** *"70% of our own users still spray and pray because it's easier. Positioning doesn't change behavior — enablement does."* — Domitille de Saint-Exupéry, CMO Lemlist, [Listen Notes — The Executive podcast](https://www.listennotes.com/podcasts/the-executive/scaling-in-a-crowded-market-QCxpyOilRo4/)
-- **Buying authority:** Influencer / champion. Often the one who finds LeadAC, schedules the demo, and hands it to Daniel.
+- **Buying authority:** Influencer / champion. Often the one who finds Revint, schedules the demo, and hands it to Daniel.
 
 #### Persona: "Mike" — SDR Manager / Senior AE (Champion)
 
@@ -263,9 +263,9 @@ Run every new feature, every page, every campaign, every comparison angle throug
 - [ ] Pure inbound / PLG motion with no SDR team → no outbound pain to solve
 - [ ] <30 employees → no SDR motion, can't justify our price
 - [ ] >300 employees with >50 sellers → Gong / Clari is the right tier, we're under-engineered for them
-- [ ] First-call ask: "do you do email warmup / sending?" → they want Smartlead, not LeadAC
-- [ ] First-call ask: "can you write the emails for us?" → they want 11x / Artisan / AiSDR, not LeadAC
-- [ ] Wants to use LeadAC to sell *to* HVAC/restaurant/dental owners directly (i.e., they're the local business buyer themselves, not the vertical SaaS) → wrong ICP entirely
+- [ ] First-call ask: "do you do email warmup / sending?" → they want Smartlead, not Revint
+- [ ] First-call ask: "can you write the emails for us?" → they want 11x / Artisan / AiSDR, not Revint
+- [ ] Wants to use Revint to sell *to* HVAC/restaurant/dental owners directly (i.e., they're the local business buyer themselves, not the vertical SaaS) → wrong ICP entirely
 - [ ] Agency without a single vertical specialty → too horizontal, wrong fit for the vertical-aware discovery primitive
 
 ---
@@ -397,7 +397,7 @@ Run every new feature, every page, every campaign, every comparison angle throug
 - **What they ignore:** Local-business operational context (reviews, location count, vertical tech stack, booking flow, owner activity); deliverability infrastructure for SMB segments; closed-loop ICP learning; vertical-specific signal libraries.
 - **Where we attack them:**
   1. **Vertical context** — we know what OpenTable Lite, Mews, ServiceTitan, Dentrix, Jobber signatures *mean*; Apollo just sees them as opaque BuiltWith tags.
-  2. **Closed-loop learning** — Apollo's data doesn't learn from your won/lost deals; LeadAC's SemanticMemory does.
+  2. **Closed-loop learning** — Apollo's data doesn't learn from your won/lost deals; Revint's SemanticMemory does.
   3. **CRM-native enrichment** — we write 12 fields to HubSpot per account; Apollo writes 4-5.
   4. **Bounce-rate hidden cost** — Apollo's $59/user/mo balloons to ~$200/user/mo once you add verification, dialer, dedicated sender. We don't hide that cost; we use existing senders and just enrich what they have.
 - **Where we don't compete:** Database size (Apollo: 230M+ contacts; us: zero — we use their data + add context). Multichannel sequencing (we don't send emails; we hand off to Smartlead/Instantly/Apollo). Coverage for B2B SaaS-to-SaaS selling motion.
@@ -455,9 +455,9 @@ Run every new feature, every page, every campaign, every comparison angle throug
 - **What they ignore:** Teams without a GTM Engineer, out-of-the-box closed-loop learning, vertical-specific signal libraries, sequencing-native flow.
 - **Where we attack them:**
   1. **Out-of-the-box** — they need 2 weeks of GTM engineering; we need 1 hour of HubSpot OAuth.
-  2. **Closed-loop learning** — Clay enriches today's list; LeadAC remembers yesterday's outcomes.
+  2. **Closed-loop learning** — Clay enriches today's list; Revint remembers yesterday's outcomes.
   3. **Vertical specificity** — Clay is horizontal; we ship pre-built signal libraries for restaurant, HVAC, dental, legal.
-  4. **Credit predictability** — Clay's credit model is famously surprise-bill-prone; LeadAC charges flat tier.
+  4. **Credit predictability** — Clay's credit model is famously surprise-bill-prone; Revint charges flat tier.
 - **Where we don't compete:** Workflow flexibility (Clay can build literally anything), data provider count (150+ vs our handful), the GTM Engineer practitioner.
 - **Last reviewed:** 2026-05-22.
 - **Comparison page:** `/vs/clay` — high priority. Most overlap with our buyer's current stack.
@@ -476,10 +476,10 @@ Run every new feature, every page, every campaign, every comparison angle throug
 - **Recent landing pages launched:** `/platform` (Revenue AI OS), `/revenue-intelligence` (category page), `/press/gong-growth-accelerates-past-55-yoy-arr-tops-500m`, State of Revenue AI 2026 report.
 - **What they ignore:** Sub-50-rep teams, vertical SaaS GTM in the $2M-$50M ARR band, local-business operational signals, anything under $30K ACV, teams without RevOps engineers.
 - **Where we attack them:**
-  1. **Price floor** — Gong starts at $30K/yr per 5 seats. LeadAC starts at $6K/yr for the same seat count. 5× cheaper.
-  2. **Implementation** — Gong takes 8-12 weeks + services SOW. LeadAC takes 1 hour.
+  1. **Price floor** — Gong starts at $30K/yr per 5 seats. Revint starts at $6K/yr for the same seat count. 5× cheaper.
+  2. **Implementation** — Gong takes 8-12 weeks + services SOW. Revint takes 1 hour.
   3. **ICP fit** — Gong's "memory layer" is built for the enterprise revenue motion (call-heavy, complex multi-thread). We build memory for the *local-business outbound motion* (high-volume, density-based, owner-operator buyers).
-  4. **Surface area** — Gong's memory is in the Gong UI. LeadAC's memory writes directly into HubSpot, where the SDR already lives.
+  4. **Surface area** — Gong's memory is in the Gong UI. Revint's memory writes directly into HubSpot, where the SDR already lives.
 - **Where we don't compete:** Call recording, conversation intelligence, deal forecasting, enterprise revenue orchestration.
 - **Last reviewed:** 2026-05-22.
 - **Comparison page:** `/vs/gong` — high priority. Even if Gong doesn't compete in our deals, prospects ask about it because of the Revenue Graph announcement.
@@ -528,7 +528,7 @@ Run every new feature, every page, every campaign, every comparison angle throug
 - **Stated/real ICP:** Agencies, high-volume senders, technical operators. API-first design.
 - **Growth channel:** Agency channel + PLG + word-of-mouth + comparison content.
 - **What they ignore:** Account intelligence layer above the sender; vertical SaaS GTM teams selling, not just sending.
-- **Where we attack them:** We don't. **Smartlead is a partner, not a competitor.** LeadAC + Smartlead is the ideal stack: LeadAC discovers + enriches + writes to HubSpot, Smartlead sends.
+- **Where we attack them:** We don't. **Smartlead is a partner, not a competitor.** Revint + Smartlead is the ideal stack: Revint discovers + enriches + writes to HubSpot, Smartlead sends.
 - **Last reviewed:** 2026-05-22.
 - **Comparison page:** No `/vs/smartlead`. Instead build `/with/smartlead` integration story.
 
@@ -661,7 +661,7 @@ This is the bundle every comparison page positions against — not any single ve
 - **Buyer intent class:** Solution Seeking + Buying Intent
 - **Estimated saturation:** 0.10
 - **Estimated commercial volume:** Low today; high once the term lands (this is a thing buyers want but don't know to ask for)
-- **Why we can own it:** The "ICP evolves over 90 days" demo is unique to LeadAC; it requires SemanticMemory + closed-loop CRM ingestion + discovery query auto-regeneration — all four of which are ours.
+- **Why we can own it:** The "ICP evolves over 90 days" demo is unique to Revint; it requires SemanticMemory + closed-loop CRM ingestion + discovery query auto-regeneration — all four of which are ours.
 - **Risk of failure:** The metric isn't legible until 60-90 days into a customer relationship — long enough that early evangelist demos are abstract.
 - **Status:** **Claimed (2026-05-22)**
 - **First headline ship date:** 2026-07 (after first paying customer has 60+ days of data).
@@ -731,13 +731,13 @@ This is the bundle every comparison page positions against — not any single ve
 | **Pain** | User frustration | *"Apollo's bounce rate is killing our domain"* | Hook copy, social proof, problem-grid block |
 | **Solution Seeking** | Active search | *"alternative to Clay for non-technical teams"* | Comparison page, alternative page |
 | **Switching Intent** | Replacing a tool | *"moving off Outreach to save money"* | Switching guide + migration content |
-| **Buying Intent** | Purchase likelihood | *"LeadAC pricing 2026"* | Pricing-page SEO, retargeting, sales handoff |
+| **Buying Intent** | Purchase likelihood | *"Revint pricing 2026"* | Pricing-page SEO, retargeting, sales handoff |
 | **Awareness** | Educational | *"what is account intelligence"* | Top-of-funnel SEO, glossary content |
 | **Operational Trigger** | Operational shift at the target account | *"restaurant just opened second location"* | Timed outbound (within signal-defined window) |
 | **Reputation Signal** | Review issues at target account | *"negative reviews about delivery"* | Trigger-based pitch (operational stress → eval probability) |
 | **Growth Signal** | Expansion at target account | *"hiring sales rep"* | Growth-mode pitch (often used adjacent to launch announcements) |
 | **Urgency** | Immediate pain | *"lost 30% of bookings this month"* | Urgent outbound (high-priority queue) |
-| **Comparison** | Alt evaluation | *"Apollo vs ZoomInfo vs LeadAC"* | Comparison page (`/vs/<competitor>`, `/alternatives/<competitor>`) |
+| **Comparison** | Alt evaluation | *"Apollo vs ZoomInfo vs Revint"* | Comparison page (`/vs/<competitor>`, `/alternatives/<competitor>`) |
 
 ---
 
@@ -783,7 +783,7 @@ flowchart LR
 
 ## 9. Messaging House
 
-> Banks of approved copy. Every entry tagged with provenance — whitespace + supporting evidence + competitor gap. Approved entries ship to LeadAC via the activation pipeline (Appendix A).
+> Banks of approved copy. Every entry tagged with provenance — whitespace + supporting evidence + competitor gap. Approved entries ship to Revint via the activation pipeline (Appendix A).
 
 ### 9.1 Hero headlines
 
@@ -804,12 +804,12 @@ flowchart LR
 
 | ID | Text | Pairs with | Status | Lang |
 |---|---|---|---|---|
-| **S-101** | LeadAC finds your next 200 local accounts, syncs them into HubSpot, and learns from every won and lost deal. Built for vertical SaaS GTM teams selling to HVAC, restaurant, dental, legal, beauty, auto, and field service businesses. | H-101 | **Shipped** | EN |
+| **S-101** | Revint finds your next 200 local accounts, syncs them into HubSpot, and learns from every won and lost deal. Built for vertical SaaS GTM teams selling to HVAC, restaurant, dental, legal, beauty, auto, and field service businesses. | H-101 | **Shipped** | EN |
 | **S-102** | Stop rebuilding the playbook every time you open a new vertical. Connect HubSpot, define your ICP, and we'll have your first 200 enriched local accounts running in under an hour. | H-101 / H-103 | Draft | EN |
 | **S-103** | Apollo's data is firmographic. Ours is operational. We see location count, vertical-stack signatures, review tone, and owner activity — context the desk-worker stack was never built for. | H-105 / H-107 | Draft | EN |
 | **S-104** | Connect your CRM. We have your first 200 local accounts, enriched and synced, in under an hour. No RevOps engineer required. | H-104 | Draft (used in onboarding promise) | EN |
 | **S-105** | The system every vertical SaaS sales team builds in their best SDR's head, finally inside the stack. Every won and lost deal sharpens tomorrow's list. | H-106 | Draft | EN |
-| **S-201** | LeadAC, restoran tech, HVAC, dental ve diğer local-business vertical'larına satan SaaS şirketlerinin ilk 200 hedef hesabını HubSpot'a yazıp her kapalı deal'den öğrenir. | H-108 | Draft | TR |
+| **S-201** | Revint, restoran tech, HVAC, dental ve diğer local-business vertical'larına satan SaaS şirketlerinin ilk 200 hedef hesabını HubSpot'a yazıp her kapalı deal'den öğrenir. | H-108 | Draft | TR |
 
 ### 9.3 CTAs
 
@@ -830,7 +830,7 @@ flowchart LR
 #### Ad group: brand
 
 **Headlines:**
-1. LeadAC: Revenue Intelligence
+1. Revint: Revenue Intelligence
 2. Built for Vertical SaaS GTM
 3. The Memory Layer Your CRM Needs
 4. Find. Enrich. Sync. Learn.
@@ -844,11 +844,11 @@ flowchart LR
 12. Pre-Call Briefs Inside HubSpot
 13. 200 Local Accounts, Under 1 Hour
 14. Learn From Every Won Deal
-15. Apollo Finds. LeadAC Times.
+15. Apollo Finds. Revint Times.
 
 **Descriptions:**
 1. Account intelligence for vertical SaaS GTM teams selling to HVAC, restaurant, dental, beauty, legal, and field service. Synced to HubSpot.
-2. Stop rebuilding the playbook every time you open a new vertical. LeadAC learns what closes and sharpens tomorrow's list.
+2. Stop rebuilding the playbook every time you open a new vertical. Revint learns what closes and sharpens tomorrow's list.
 3. Connect HubSpot. Define your ICP. Get 200 enriched local accounts running in under an hour. No RevOps engineer required.
 4. We don't replace your SDRs — we make their homework disappear. Apollo + Clay alternative for vertical SaaS GTM teams.
 
@@ -858,7 +858,7 @@ flowchart LR
 1. Apollo for Local Business?
 2. Apollo Alternative for Vertical SaaS
 3. Beyond Apollo's Firmographic Data
-4. Apollo + Local Context = LeadAC
+4. Apollo + Local Context = Revint
 5. Fix Apollo's Bounce Rate Problem
 6. Apollo for SDRs Selling to Restaurants
 7. Better Apollo for HVAC SaaS Sales
@@ -872,16 +872,16 @@ flowchart LR
 15. Vertical SaaS Apollo Alternative
 
 **Descriptions:**
-1. Apollo finds businesses. LeadAC finds local businesses ready to switch. Vertical-aware account intelligence synced to HubSpot in 1 hour.
+1. Apollo finds businesses. Revint finds local businesses ready to switch. Vertical-aware account intelligence synced to HubSpot in 1 hour.
 2. Apollo's 12-14% bounce rate costs you $50/mo in verification + your domain reputation. We layer context on top, don't compete on volume.
-3. Stop paying for Apollo + Clay + Smartlead + verification + your SDR's research time. LeadAC bundles the intelligence layer for vertical SaaS GTM.
+3. Stop paying for Apollo + Clay + Smartlead + verification + your SDR's research time. Revint bundles the intelligence layer for vertical SaaS GTM.
 4. Mid-market vertical SaaS teams use Apollo for lists, then waste 5+ hours per SDR per week researching. We fix that, not replace Apollo.
 
 #### Ad group: vertical / restaurant tech
 
 **Headlines:**
 1. Restaurant Tech SaaS Outbound
-2. Sell Toast Faster With LeadAC
+2. Sell Toast Faster With Revint
 3. Local Account Intel for Restaurant SaaS
 4. F&B SaaS Sales Intelligence
 5. Restaurant Discovery for SaaS Sellers
@@ -897,7 +897,7 @@ flowchart LR
 15. Restaurant POS Software Outbound
 
 **Descriptions:**
-1. Sell restaurant tech faster. LeadAC sees OpenTable, Toast, Resy, Square footprints + review tone + location count and writes it to HubSpot.
+1. Sell restaurant tech faster. Revint sees OpenTable, Toast, Resy, Square footprints + review tone + location count and writes it to HubSpot.
 2. Built for restaurant tech SaaS teams selling POS, reservation, online ordering, and loyalty modules. 200 local accounts in 1 hour.
 3. Apollo gives you a restaurant list. We give you the operational story — current stack, expansion signals, review tone, owner activity.
 4. Stop rebuilding restaurant outreach when you open a new vertical. Memory layer for F&B SaaS GTM teams. HubSpot-native.
@@ -923,21 +923,21 @@ flowchart LR
 
 **Descriptions:**
 1. See which HVAC companies use ServiceTitan vs Jobber vs Housecall Pro, plus location count, review pattern, and owner activity. HubSpot-native.
-2. Beachhead vertical for LeadAC. Built for HVAC software vendors selling to multi-tech, multi-location field service businesses.
-3. 5+ hours per SDR per week on manual research goes away. LeadAC writes 12 fields to HubSpot per HVAC account in seconds.
+2. Beachhead vertical for Revint. Built for HVAC software vendors selling to multi-tech, multi-location field service businesses.
+3. 5+ hours per SDR per week on manual research goes away. Revint writes 12 fields to HubSpot per HVAC account in seconds.
 4. Vertical-aware discovery for field service SaaS teams. We see the vertical stack signature, you see the brief in HubSpot.
 
 ### 9.5 Meta Ads (primary text, ≤125 chars)
 
 | ID | Text | Persona | Status |
 |---|---|---|---|
-| **M-101** | SDR teams learn. Systems don't. LeadAC is the memory layer for vertical SaaS GTM. | Daniel | Draft |
+| **M-101** | SDR teams learn. Systems don't. Revint is the memory layer for vertical SaaS GTM. | Daniel | Draft |
 | **M-102** | Your CRM knows the deal. We know the business behind it. | Mike | Draft |
 | **M-103** | Stop rebuilding the playbook every time you open a new vertical. | Daniel | Draft |
-| **M-104** | Apollo gives lists. Clay gives workflows. LeadAC remembers what closes. | Mike | Draft |
+| **M-104** | Apollo gives lists. Clay gives workflows. Revint remembers what closes. | Mike | Draft |
 | **M-105** | 200 enriched local accounts in HubSpot in under an hour. No RevOps engineer. | Sarah / Mike | Draft |
 
-### 9.6 Outbound: subject lines (LeadAC's own outreach to VPs Sales at vertical SaaS)
+### 9.6 Outbound: subject lines (Revint's own outreach to VPs Sales at vertical SaaS)
 
 | ID | Subject | Persona | Vertical | Status |
 |---|---|---|---|---|
@@ -999,12 +999,12 @@ Each pack lives or dies by whether it sounds native to that vertical. Format:
 - **What they Google:** "restaurant tech SDR ramp," "Apollo for restaurants," "Toast vs Square sales angle," "OpenTable footer signal," "restaurant POS outbound playbook"
 - **What they fear:** Losing a multi-location group deal because the SDR didn't know the existing stack. Repeating restaurant lessons every time they open boutique hotels.
 - **3 pain stories:** Story 1 (Ahmet/FineDine, §3.2), Story 4 (Daniel/Restaurant tech CRO, §3.2), Story 5 (Lena/Hospitality RevOps, §3.2)
-- **Hero headline (vertical-specific):** *"Sell restaurant tech faster. LeadAC sees the footer, the menu, the booking flow, and the reviews — your CRM only sees the address."*
+- **Hero headline (vertical-specific):** *"Sell restaurant tech faster. Revint sees the footer, the menu, the booking flow, and the reviews — your CRM only sees the address."*
 - **5 buyer questions (PAA / FAQ schema):**
-  1. How is LeadAC different from Apollo for restaurant tech outbound?
-  2. Can LeadAC detect OpenTable Lite, Toast Starter, Square Menu, and Resy footers automatically?
-  3. How does LeadAC speed up SDR ramp for restaurant tech teams?
-  4. Does LeadAC work with our existing HubSpot + Smartlead workflow?
+  1. How is Revint different from Apollo for restaurant tech outbound?
+  2. Can Revint detect OpenTable Lite, Toast Starter, Square Menu, and Resy footers automatically?
+  3. How does Revint speed up SDR ramp for restaurant tech teams?
+  4. Does Revint work with our existing HubSpot + Smartlead workflow?
   5. What happens when we expand from restaurant tech to hospitality?
 - **Competitor gap exploited:** Apollo + ZoomInfo don't reliably classify reservation / POS / online ordering stacks. Clay can but you write the workflow yourself.
 - **URL:** `/for/restaurant-tech-saas` (currently routed via `/vs/apollo-clay-gong` until vertical pages ship)
@@ -1020,7 +1020,7 @@ Each pack lives or dies by whether it sounds native to that vertical. Format:
 - **3 pain stories:** Story 2 (Mike/HVAC SDR Manager, §3.2), Story 4 (Daniel — adapt for HVAC context), and a third to be sourced from the first paying field-service customer.
 - **Hero headline:** *"Field service software outbound, with the memory layer your SDRs are already building in their heads."*
 - **5 buyer questions:**
-  1. Can LeadAC tell which HVAC companies use ServiceTitan vs Jobber vs Housecall Pro?
+  1. Can Revint tell which HVAC companies use ServiceTitan vs Jobber vs Housecall Pro?
   2. How does this work for selling field service SaaS to multi-location field-service companies?
   3. What signals matter for the field-service vertical (PowerDialer adoption, multi-tech expansion, etc.)?
   4. How do we ramp new BDRs targeting trades faster?
@@ -1065,10 +1065,10 @@ Each pack lives or dies by whether it sounds native to that vertical. Format:
 
 > One angle per competitor. The angle is the *thing we do that they don't / can't / won't*. Comparison pages live at `/vs/<competitor>` and `/alternatives/<competitor>`.
 
-### 11.1 LeadAC vs Apollo
+### 11.1 Revint vs Apollo
 
 - **Their strength:** Identity data at scale (230M contacts), free tier, brand recognition.
-- **Our angle:** *"Apollo finds. LeadAC times."* — Apollo gives you a list; we give you the moment to call.
+- **Our angle:** *"Apollo finds. Revint times."* — Apollo gives you a list; we give you the moment to call.
 - **The proof:**
   - Apollo bounce rate 12-14% → forces $50/mo verification add-on (P-002)
   - Apollo CRM sync delays of 3 hours (P-006)
@@ -1079,16 +1079,16 @@ Each pack lives or dies by whether it sounds native to that vertical. Format:
 - **CTA draft:** *"See your Apollo list, enriched in 1 hour"*
 - **Status:** Drafted; ships post-pivot homepage relaunch.
 
-### 11.2 LeadAC vs ZoomInfo
+### 11.2 Revint vs ZoomInfo
 
 - **Their strength:** Enterprise database scale, brand safety as a procurement choice, Copilot + GTM Workspace + GTM Studio.
-- **Our angle:** *"ZoomInfo is for enterprises with RevOps teams. LeadAC is for vertical SaaS teams whose budget can't justify $50K floors."*
+- **Our angle:** *"ZoomInfo is for enterprises with RevOps teams. Revint is for vertical SaaS teams whose budget can't justify $50K floors."*
 - **The proof:** ZoomInfo's "demo only, no self-serve" model + opaque pricing + 8-week implementation; our 1-hour onboarding + transparent $1.5K-$3K/mo tiers.
 - **The objection:** *"But ZoomInfo's data is the gold standard."*
 - **Objection handler:** *"ZoomInfo's gold-standard data is firmographic. For local business, the data that wins is operational — review tone, location count, vertical-stack signature. ZoomInfo doesn't index that. We do."*
 - **Status:** Low priority page — rarely competes directly with us. Ship as defensive content only.
 
-### 11.3 LeadAC vs Outreach.ai (formerly Outreach.io)
+### 11.3 Revint vs Outreach.ai (formerly Outreach.io)
 
 - **Their strength:** Enterprise-grade sales engagement, agentic AI agents (Omni, Agent Studio, Revenue Agent, Deal Agent).
 - **Our angle:** *"Outreach rebuilt itself for enterprise. We were built for the mid-market vertical SaaS team they left behind."*
@@ -1097,7 +1097,7 @@ Each pack lives or dies by whether it sounds native to that vertical. Format:
 - **Objection handler:** *"Outreach is mature in the wrong direction. You're not their ICP anymore — you're paying enterprise prices for an enterprise platform when you have 12 SDRs and one RevOps person. We're built for your tier."*
 - **Status:** Medium priority — high commercial intent from cost-conscious mid-market churn buyers.
 
-### 11.4 LeadAC vs Clay
+### 11.4 Revint vs Clay
 
 - **Their strength:** Workflow flexibility, 150+ data providers, GTM Engineer community, $5B valuation, Sculptor NL builder.
 - **Our angle:** *"Clay is a workshop. We're the finished tool. Clay needs a GTM engineer. We need a HubSpot OAuth."*
@@ -1106,7 +1106,7 @@ Each pack lives or dies by whether it sounds native to that vertical. Format:
 - **Objection handler:** *"Yes — if you have a GTM engineer to do the doing. We've already built the vertical-specific workflows. Add one Clay-class capability we don't have, and we'll talk."*
 - **Status:** **High priority.** Most overlap with our buyer's current stack.
 
-### 11.5 LeadAC vs Gong
+### 11.5 Revint vs Gong
 
 - **Their strength:** Owns "Revenue Intelligence" category; Revenue Graph launched May 2026 as a "living memory layer"; $500M ARR, +55% YoY; Gartner Leader.
 - **Our angle:** *"Gong's Revenue Graph is the memory layer for enterprise. We are the memory layer for mid-market vertical SaaS — 1/5 the price, 1/8 the time to onboard, vertical context Gong doesn't have."*
@@ -1115,34 +1115,34 @@ Each pack lives or dies by whether it sounds native to that vertical. Format:
 - **Objection handler:** *"Gong's playbook is the enterprise playbook. Your team is 18 SDRs selling Toast or ServiceTitan licenses to local business owners — different motion, different price band, different signals."*
 - **Status:** **High priority.** Buyers ask about Gong even when not evaluating it because of the Revenue Graph PR.
 
-### 11.6 LeadAC vs Salesloft + Clari (merged Dec 2025)
+### 11.6 Revint vs Salesloft + Clari (merged Dec 2025)
 
 - **Their strength:** "Predictive Revenue System," Gartner Leader for Revenue Action Orchestration, MCP Server (open AI surface April 2026).
 - **Our angle:** *"They're the predictive revenue system for the enterprise. We're the operational memory for the SDR team selling into local business."*
 - **The proof:** Their floor is $30K+/yr for small teams; 8-16 week implementation; the MCP Server is a brilliant enterprise move that has zero relevance to a 5-rep SDR team on HubSpot.
 - **Status:** Low-medium priority. Buyers may mention Salesloft (familiar) but rarely Clari at our tier.
 
-### 11.7 LeadAC vs 11x.ai
+### 11.7 Revint vs 11x.ai
 
 - **Their strength:** Autonomous AI workers (Alice for outbound + Julian for inbound voice), 400M contact DB, enterprise polish.
 - **Our angle:** *"11x replaces your SDR. We make your SDR's homework disappear. If your SDR's value is the conversation, the relationship, the closing — keep them. If it was the typing, fine, fire them. Our buyer's SDRs are too valuable for the typing-only model."*
 - **The proof:** 11x pricing ($2K+/mo enterprise floor, $5K typical); enterprise customers (Xerox, Checkr, Sage, Rho); Alice's outputs need vertical-specific tuning that's not their problem to solve.
 - **Status:** **High priority.** This is the most commonly evaluated alternative.
 
-### 11.8 LeadAC vs Artisan (AVA AI BDR)
+### 11.8 Revint vs Artisan (AVA AI BDR)
 
 - **Their strength:** Email + LinkedIn outbound automation, "virtual SDR" framing, built-in contact DB.
 - **Our angle:** *"Artisan's Ava writes the email. We write the brief Ava (or your human SDR) reads before they write the email."*
 - **Status:** Medium priority.
 
-### 11.9 LeadAC vs Lemlist
+### 11.9 Revint vs Lemlist
 
 - **Their strength:** AI Agentic Enrichment (April 2026), agency-friendly UI, multichannel.
 - **Our angle:** *"Lemlist enriches one prospect at a time. We learn the pattern across all your won and lost deals — and write that pattern into your CRM, not just into your next sequence."*
 - **The proof:** Lemlist's AI Agentic Enrichment reads website/LinkedIn/CRM/past calls per prospect; doesn't store closed-loop pattern across deals; horizontal not vertical.
 - **Status:** Medium priority.
 
-### 11.10 LeadAC vs the bundle (Apollo + Clay + Gong / Apollo + Clay + Smartlead)
+### 11.10 Revint vs the bundle (Apollo + Clay + Gong / Apollo + Clay + Smartlead)
 
 - **Their "strength":** Best-of-breed.
 - **Our angle:** *"Three tools that don't share context. Same money. One platform. Plus the memory your stack never had."*
@@ -1260,7 +1260,7 @@ Each pack lives or dies by whether it sounds native to that vertical. Format:
 | **D-007** | 2026-05-22 | Pricing tiers: Pilot $500/mo (30 days, 500 accounts) → Team $1.5K/mo (5 seats, 5K accounts) → Growth $3K/mo (15 seats, 20K accounts) → Enterprise custom $5K+ | Salesgraph's $1K-$10K range is right band; ours is slightly aggressive at the floor to match price-conscious mid-market and a 30-day pilot entry point | Founder | First 5 paid customers find Team tier too tight on seat / account count → bump | Active |
 | **D-008** | 2026-05-22 | No PLG self-serve trial. Sales-led only. Pilot ($500/mo) is the entry point. | ICP is sales-led / VP Sales-driven. PLG self-serve creates wrong-fit signups (agencies, solo founders) that we can't economically support. | Founder | Q4 2026 data shows >40% of qualified inbound demos come from individual SDRs / solo operators → introduce limited self-serve | Active |
 | **D-009** | 2026-05-22 | Onboarding promise = *"Connect your CRM. We'll have your first 200 local accounts, enriched and synced, in under an hour."* | More aggressive than Salesgraph's "1 week" because our chain orchestrator + ICP brief + Apify-backed discovery can actually do it. Used as marketing AND as a literal SLA. | Founder | First 5 customer onboardings consistently take >2 hours → soften to 1 day | Active |
-| **D-010** | 2026-05-22 | Anti-persona: local business owners themselves (HVAC owner, restaurant owner, dentist) are never our customer. They are our buyer's customer. Onboarding must reject those signups politely with a redirect to a partner directory. | Cross-tenant confusion and brand damage if a local business owner thinks LeadAC is for them | Founder | Never reverse | Locked |
+| **D-010** | 2026-05-22 | Anti-persona: local business owners themselves (HVAC owner, restaurant owner, dentist) are never our customer. They are our buyer's customer. Onboarding must reject those signups politely with a redirect to a partner directory. | Cross-tenant confusion and brand damage if a local business owner thinks Revint is for them | Founder | Never reverse | Locked |
 
 ### Reversal protocol
 
@@ -1295,9 +1295,9 @@ Each pack lives or dies by whether it sounds native to that vertical. Format:
 | **GTM Engineer** | A practitioner identity invented by Clay (Kareem Amin, 2024) describing a technical operator who builds enrichment pipelines and outbound workflows. Used here to articulate "Clay needs a GTM engineer; we don't." |
 | **Vertical SaaS** | Software built for a specific industry (restaurant, HVAC, dental, legal, beauty) rather than horizontal across all B2B. Toast, ServiceTitan, Jobber, FineDine, Boulevard, Curve Dental, Clio are canonical examples. |
 | **SDR ramp time** | The time from SDR hire to consistent quota attainment. Industry benchmark: 4-6 months. Our claim: shrink to 3-4 weeks for the second-and-later SDR through memory-layer transfer. |
-| **Closed-loop ICP refinement** | The process by which won/lost deal outcomes automatically sharpen tomorrow's target account list. LeadAC primitive. |
-| **Vertical-aware discovery** | Account discovery that understands vertical-specific software signatures (OpenTable Lite, ServiceTitan, Dentrix) and operational signals — not just firmographic data. LeadAC primitive. |
-| **AgentRun** | LeadAC's audit primitive — every agent worker invocation, every memory write, every CRM sync writes to AgentRun for compliance + observability. Mentioned in §6 as a candidate sellable feature. |
+| **Closed-loop ICP refinement** | The process by which won/lost deal outcomes automatically sharpen tomorrow's target account list. Revint primitive. |
+| **Vertical-aware discovery** | Account discovery that understands vertical-specific software signatures (OpenTable Lite, ServiceTitan, Dentrix) and operational signals — not just firmographic data. Revint primitive. |
+| **AgentRun** | Revint's audit primitive — every agent worker invocation, every memory write, every CRM sync writes to AgentRun for compliance + observability. Mentioned in §6 as a candidate sellable feature. |
 
 ---
 
@@ -1379,4 +1379,4 @@ If you're filling this in from scratch (e.g. a new niche or major repositioning)
 
 ---
 
-*End of LeadAC Positioning Workbook v2 (2026-05-22). Living doc — every Friday cycle review (§13) appends a new entry; every positioning decision goes into §14; every shipped piece of copy gets a row in §9.*
+*End of Revint Positioning Workbook v2 (2026-05-22). Living doc — every Friday cycle review (§13) appends a new entry; every positioning decision goes into §14; every shipped piece of copy gets a row in §9.*

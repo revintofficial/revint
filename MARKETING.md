@@ -1,4 +1,4 @@
-# LeadAC — master copy book
+# Revint — master copy book
 
 This file holds the canonical copy for every public surface. Every hero, sub, CTA, FAQ answer, and reusable copy block lives here. Page components import or mirror from this doc so we never have three slightly different versions of the same headline scattered across the codebase.
 
@@ -28,8 +28,8 @@ Component map:
 ### 1.1 Metadata
 
 ```
-title:       LeadAC — Find your next local customer.
-description: Type a postcode and a niche. LeadAC pulls 50 fresh leads off Google Maps, audits every site, and drafts an opener grounded in what the audit found. Pipeline-ready dossiers in five minutes. Built for the local-business segment Apollo doesn't index. Works with Smartlead, Instantly, GHL, Gmail, Outlook.
+title:       Revint — Find your next local customer.
+description: Type a postcode and a niche. Revint pulls 50 fresh leads off Google Maps, audits every site, and drafts an opener grounded in what the audit found. Pipeline-ready dossiers in five minutes. Built for the local-business segment Apollo doesn't index. Works with Smartlead, Instantly, GHL, Gmail, Outlook.
 ```
 
 Title is short on purpose (under 50 chars) so it reads cleanly in SERPs and tab strips. The verb "find" is the point — passes the 5-second test. Keywords list lives in `src/app/(marketing)/page.tsx`. Do not add anything that contains "AI agent" or "AI cold email"; the keyword set leans on "local lead generation", "agency outbound", "google maps lead intelligence".
@@ -40,7 +40,7 @@ Title is short on purpose (under 50 chars) so it reads cleanly in SERPs and tab 
 badge:        New
 tagline:      Local lead generation for outbound agencies
 headline:     Find your next local customer.
-sub:          Type a postcode and a niche. LeadAC pulls fresh leads off Google Maps, audits every site against 20+ signals, and drafts the opener from what the audit found. Pipeline-ready dossiers in your tab in five minutes — for the local-business segment Apollo doesn't index.
+sub:          Type a postcode and a niche. Revint pulls fresh leads off Google Maps, audits every site against 20+ signals, and drafts the opener from what the audit found. Pipeline-ready dossiers in your tab in five minutes — for the local-business segment Apollo doesn't index.
 ctaPrimary:   { label: "Audit your first 10 leads", href: "/signup" }
 ctaSecondary: { label: "Book a 15-min walkthrough", href: "/demo" }
 partnersLabel: Works with your sender. We don't replace it.
@@ -206,7 +206,7 @@ sub:      Apollo and Smartlead stay where they are. We collapse the per-prospect
           One workspace, one card on file.
 ```
 
-(Old copy: "Apollo + Clay + Smartlead + a receptionist runs $300-475/month before your agency retainer. Leadac Agency does it all for about 15% of that." This is the misframe we corrected away from. Replace with the version above.)
+(Old copy: "Apollo + Clay + Smartlead + a receptionist runs $300-475/month before your agency retainer. Revint Agency does it all for about 15% of that." This is the misframe we corrected away from. Replace with the version above.)
 
 ### 1.11 FAQ (homepage)
 
@@ -218,7 +218,7 @@ Final list (10 items):
 1. Q: How is this different from Apollo or Clay?
    A: Apollo and Clay own the enterprise B2B database — that's where they're
       strong. We're the local-business lead-intelligence layer Apollo doesn't
-      cover. Most agencies run LeadAC in front of Apollo, not instead of it.
+      cover. Most agencies run Revint in front of Apollo, not instead of it.
 
 2. Q: Where do the leads come from?
    A: Live Google Maps on every search. Businesses keep their own profiles

@@ -33,9 +33,9 @@ interface QualificationData {
 }
 
 function riskColor(risk: string | null): string {
-  if (risk === "high") return "var(--leadac-error)";
-  if (risk === "medium") return "var(--leadac-warning)";
-  if (risk === "low") return "var(--leadac-success)";
+  if (risk === "high") return "var(--revint-error)";
+  if (risk === "medium") return "var(--revint-warning)";
+  if (risk === "low") return "var(--revint-success)";
   return "rgba(255,255,255,0.45)";
 }
 
@@ -104,9 +104,9 @@ export function LeadQualificationCard({ leadId }: { leadId: string }) {
           className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11.5px] font-medium capitalize"
           style={{
             background: qualified
-              ? "color-mix(in srgb, var(--leadac-success) 20%, transparent)"
+              ? "color-mix(in srgb, var(--revint-success) 20%, transparent)"
               : "rgba(255,255,255,0.06)",
-            color: qualified ? "var(--leadac-success)" : "rgba(255,255,255,0.55)",
+            color: qualified ? "var(--revint-success)" : "rgba(255,255,255,0.55)",
           }}
         >
           {humanizeStatus(data.qualification.status)}
@@ -125,14 +125,14 @@ export function LeadQualificationCard({ leadId }: { leadId: string }) {
               }
               className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors ${
                 checked
-                  ? "border-(--leadac-500)/50 bg-(--leadac-500)/12"
+                  ? "border-(--revint-500)/50 bg-(--revint-500)/12"
                   : "border-white/8 bg-white/4 hover:bg-white/8"
               }`}
             >
               <span
                 className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border transition-colors ${
                   checked
-                    ? "border-(--leadac-400) bg-(--leadac-500)"
+                    ? "border-(--revint-400) bg-(--revint-500)"
                     : "border-white/25"
                 }`}
               >

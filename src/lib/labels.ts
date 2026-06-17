@@ -188,11 +188,11 @@ export const SUPPRESS_WHEN_NO_WEBSITE: Set<string> = new Set([
 
 // Per-stage dot color. Derived from the theme tokens so re-skinning the
 // primary hue shifts the mid-pipeline dot too; semantic colors (success /
-// warning / error) come from --leadac-{success,warning,error}.
+// warning / error) come from --revint-{success,warning,error}.
 export const PIPELINE_STAGE_DOT: Record<string, string> = {
-  NEW: "var(--leadac-muted)",
-  REACHED_OUT: "var(--leadac-warning)",
-  IN_TALKS: "var(--leadac-400)",
-  WON: "var(--leadac-success)",
-  LOST: "var(--leadac-error)",
+  NEW: "var(--revint-muted)",
+  REACHED_OUT: "var(--revint-warning)",
+  IN_TALKS: "var(--revint-400)",
+  WON: "var(--revint-success)",
+  LOST: "var(--revint-error)",
 };

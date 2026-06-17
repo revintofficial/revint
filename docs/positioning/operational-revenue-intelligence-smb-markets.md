@@ -1,33 +1,33 @@
-# LeadAC x FineDine pivot project paper
+# Revint x FineDine pivot project paper
 
 > Status: Master project paper
 > Date: 2026-05-29
 > Language: Turkish
-> Audience: LeadAC founder team, product, engineering, marketing, sales, FineDine activation stakeholders
-> Project name: **LeadAC Restaurant-Tech Intelligence Pilot for FineDine**
+> Audience: Revint founder team, product, engineering, marketing, sales, FineDine activation stakeholders
+> Project name: **Revint Restaurant-Tech Intelligence Pilot for FineDine**
 
 ---
 
 ## 1. Yonetici ozeti
 
-LeadAC'in yeni yonu netlesmistir: urun artik sadece local lead generation veya enrichment araci olarak konumlanmamalidir. Bu katman piyasada hizla kalabaliklasmistir. Orbital, Resquared, Openmart, Clay workflow'lari ve benzeri araclar local business discovery, owner/contact enrichment, Google Maps extraction, review scraping, basic scoring ve outreach workflow alanlarini sahiplenmeye baslamistir.
+Revint'in yeni yonu netlesmistir: urun artik sadece local lead generation veya enrichment araci olarak konumlanmamalidir. Bu katman piyasada hizla kalabaliklasmistir. Orbital, Resquared, Openmart, Clay workflow'lari ve benzeri araclar local business discovery, owner/contact enrichment, Google Maps extraction, review scraping, basic scoring ve outreach workflow alanlarini sahiplenmeye baslamistir.
 
-LeadAC'in kazanabilecegi alan bu veriyi uretmekten cok, verinin ustunde karar veren katmandir:
+Revint'in kazanabilecegi alan bu veriyi uretmekten cok, verinin ustunde karar veren katmandir:
 
-> LeadAC, restaurant-tech ve local-business marketlerine satis yapan ekipler icin post-enrichment operational intelligence layer'dir.
+> Revint, restaurant-tech ve local-business marketlerine satis yapan ekipler icin post-enrichment operational intelligence layer'dir.
 
 Bu su anlama gelir:
 
 - Openmart, Orbital, Resquared, Clay, HubSpot, Smartlead, Instantly, Google Places ve Apify gibi kaynaklar veri uretir.
-- LeadAC bu kaynaklardan gelen veriyi birlestirir, catisan sinyalleri cozer, hangi account'in aksiyon almaya deger oldugunu belirler.
+- Revint bu kaynaklardan gelen veriyi birlestirir, catisan sinyalleri cozer, hangi account'in aksiyon almaya deger oldugunu belirler.
 - Sistem her outreach, reply, bounce, meeting, no-show, closed-won ve closed-lost sonucundan ogrenir.
 - Bu ogrenim FineDine gibi restaurant-tech sirketleri icin vertical playbook'a donusur.
 
-Ilk beachhead FineDine olmalidir. FineDine QR menu, digital menu, online ordering, reservation, payment, guest CRM, marketing automation ve restaurant website alanlarinda faaliyet gosteren restaurant-tech sirketidir. FineDine'in satis problemi LeadAC'in yeni vizyonunu test etmek icin idealdir: binlerce restoran arasindan hangisinin gercekten FineDine'e ihtiyaci oldugunu anlamak, dogru pitch acisini secmek, chain ile independent restoranlari ayirmak, her sonucdan ogrenmek ve BD ekibinin tekrar tekrar ayni arastirmayi yapmasini engellemek.
+Ilk beachhead FineDine olmalidir. FineDine QR menu, digital menu, online ordering, reservation, payment, guest CRM, marketing automation ve restaurant website alanlarinda faaliyet gosteren restaurant-tech sirketidir. FineDine'in satis problemi Revint'in yeni vizyonunu test etmek icin idealdir: binlerce restoran arasindan hangisinin gercekten FineDine'e ihtiyaci oldugunu anlamak, dogru pitch acisini secmek, chain ile independent restoranlari ayirmak, her sonucdan ogrenmek ve BD ekibinin tekrar tekrar ayni arastirmayi yapmasini engellemek.
 
 Bu dokumanin karari:
 
-1. LeadAC'in kategori dili **Operational Revenue Intelligence for SMB Markets** olarak korunur, ancak FineDine pilotunda daha somut ifade kullanilir: **Restaurant-Tech Operational Intelligence**.
+1. Revint'in kategori dili **Operational Revenue Intelligence for SMB Markets** olarak korunur, ancak FineDine pilotunda daha somut ifade kullanilir: **Restaurant-Tech Operational Intelligence**.
 2. MVP bir lead listesi degil, FineDine icin native entegrasyonlu account intelligence ve closed-loop learning pilotudur.
 3. MVP'nin amaci revenue automation degil, FineDine'in restaurant outbound motion'inda karar kalitesini, rep hizini ve ogrenme dongusunu kanitlamaktir.
 4. Ilk 30 gunluk pilot, FineDine ile design partner olarak yurur ve sonraki restaurant-tech ICP'sinin kanit zemini olur.
@@ -38,7 +38,7 @@ Bu dokumanin karari:
 
 ### 2.1 Eski positioning neden zayifladi?
 
-LeadAC'in onceki positioning'i local lead generation, enrichment, audit ve opener hazirlama uzerine kuruluydu. Bu dil pazarin ilk boslugunu iyi yakaladi: Apollo ve ZoomInfo local SMB'lerde zayifti; agency ve restaurant-tech ekipleri Google Maps, websites, reviews ve sosyal hesaplari manuel kontrol etmek zorundaydi.
+Revint'in onceki positioning'i local lead generation, enrichment, audit ve opener hazirlama uzerine kuruluydu. Bu dil pazarin ilk boslugunu iyi yakaladi: Apollo ve ZoomInfo local SMB'lerde zayifti; agency ve restaurant-tech ekipleri Google Maps, websites, reviews ve sosyal hesaplari manuel kontrol etmek zorundaydi.
 
 Ancak 2025-2026 arasinda bu katman kalabaliklasti:
 
@@ -48,7 +48,7 @@ Ancak 2025-2026 arasinda bu katman kalabaliklasti:
 - Clay, GTM engineer kitlesi icin enrichment, waterfall, AI research ve workflow platformu haline geldi.
 - Apify/n8n/Google Maps scraper kombinasyonlari raw local listeleri ucuzlatiyor.
 
-Bu yuzden "biz local lead buluyoruz" artik yeterince savunulabilir bir stratejik alan degildir. Bu alan veri maliyeti, coverage claim'i ve provider yarisi haline gelir. LeadAC'in gercek farki, local SMB verisini satis kararina ve ekip hafizasina cevirmekte olmalidir.
+Bu yuzden "biz local lead buluyoruz" artik yeterince savunulabilir bir stratejik alan degildir. Bu alan veri maliyeti, coverage claim'i ve provider yarisi haline gelir. Revint'in gercek farki, local SMB verisini satis kararina ve ekip hafizasina cevirmekte olmalidir.
 
 ### 2.2 Yeni tez
 
@@ -56,18 +56,18 @@ Yeni tez:
 
 > Piyasada daha fazla local data eksigi kalmiyor. Yeni eksik, bu datanin ne anlama geldigini bilen ve her outcome'dan ogrenerek sonraki aksiyonu daha iyi secen operational intelligence layer'dir.
 
-Bu, LeadAC'i su noktalarda farklilastirir:
+Bu, Revint'i su noktalarda farklilastirir:
 
-- LeadAC veri kaynagi olmak zorunda degil; veri kaynaklarinin ustundeki karar sistemi olabilir.
-- LeadAC tek seferlik audit raporu degil; surekli ogrenebilen sales intelligence sistemi olabilir.
-- LeadAC generic AI SDR degil; vertical-specific operational playbook engine olabilir.
-- LeadAC'in moat'i proprietary data degil, proprietary outcome graph olabilir.
+- Revint veri kaynagi olmak zorunda degil; veri kaynaklarinin ustundeki karar sistemi olabilir.
+- Revint tek seferlik audit raporu degil; surekli ogrenebilen sales intelligence sistemi olabilir.
+- Revint generic AI SDR degil; vertical-specific operational playbook engine olabilir.
+- Revint'in moat'i proprietary data degil, proprietary outcome graph olabilir.
 
-### 2.3 AI-native LeadAC vizyonu
+### 2.3 AI-native Revint vizyonu
 
-LeadAC'i AI-native yapmak, urune daha fazla AI feature eklemek degildir. Sistemin calisma mantigini intelligence-first hale getirmektir.
+Revint'i AI-native yapmak, urune daha fazla AI feature eklemek degildir. Sistemin calisma mantigini intelligence-first hale getirmektir.
 
-Bugunku LeadAC ileri seviye AI-assisted outbound platformudur: kullanici bir aksiyon alir, belirli worker'lar calisir, audit/scoring/dossier/opener uretilir. AI arac gibi davranir.
+Bugunku Revint ileri seviye AI-assisted outbound platformudur: kullanici bir aksiyon alir, belirli worker'lar calisir, audit/scoring/dossier/opener uretilir. AI arac gibi davranir.
 
 AI-native evrimde sistem operasyonu yoneten bir varlik gibi davranir:
 
@@ -80,7 +80,7 @@ Bu vizyonun dort temel parcasi vardir:
 3. **Behavioral learning:** Semantic memory sadece retrieval katmani degil, outcome-driven ogrenme katmani olur. Hangi opener reply aldi, hangi tone spam gibi algilandi, hangi sub-niche hangi pain'e cevap verdi sistem tarafindan ogrenilir.
 4. **Niche ontology:** Sistem F&B ekonomisini bilir. Fine dining, cafe, bakery, ghost kitchen, bar, hotel restaurant, QSR ve chain farkli davranir. Reservation flow, table turnover, no-show, brunch economics, delivery dependency, local SEO, review psychology, booking provider friction ve Instagram influence structured bilgi haline gelir.
 
-Uzun vadede LeadAC'in esas moati sudur:
+Uzun vadede Revint'in esas moati sudur:
 
 > Market knowledge + historical outcomes + sales psychology + retrieval memory + tool graph + vertical ontology.
 
@@ -100,7 +100,7 @@ Toast CRO anlatiminda restoran satisinin ozellikleri net gorulur:
 - Social proof ve referral cok gucludur.
 - Bir bolgede yeterli density olusunca flywheel baslar.
 
-Bu, LeadAC icin kritik bir insight'tir: restaurant-tech satisinda account intelligence sadece "bu restoranin email'i nedir?" sorusu degildir. Asil soru sudur:
+Bu, Revint icin kritik bir insight'tir: restaurant-tech satisinda account intelligence sadece "bu restoranin email'i nedir?" sorusu degildir. Asil soru sudur:
 
 - Bu restoran hangi operasyonel sinyallerle FineDine'e uygun?
 - Bu bolgede density var mi?
@@ -128,7 +128,7 @@ QR menu artik tek basina yeterli bir positioning degildir. COVID sonrasi QR menu
 
 FineDine'in resmi positioning'i de bunu destekler: platform QR menus, AI, websites, automated marketing, quick payments ve reservations gibi daha genis bir all-in-one restaurant platformu olarak sunulur. FineDine Help Center tarafinda da menu linki, QR code, tablet menu, delivery/pickup ordering ve plan yapisi anlatilir.
 
-LeadAC bu nedenle FineDine icin sadece "QR menu olmayan restoranlari bulma" araci olmamalidir. Daha dogru vaad:
+Revint bu nedenle FineDine icin sadece "QR menu olmayan restoranlari bulma" araci olmamalidir. Daha dogru vaad:
 
 > FineDine'in hangi restorana hangi digital stack angle'iyle gitmesi gerektigini belirleyen operational intelligence sistemi.
 
@@ -147,7 +147,7 @@ Restoran sahipleri ve yoneticileri feature listesiyle satin almaz. Cogu zaman su
 - Sadakat ve repeat visit
 - Multi-location operasyon kontrolu
 
-Bu nedenle LeadAC'in FineDine icin uretecegi account intelligence brief su soruya cevap vermelidir:
+Bu nedenle Revint'in FineDine icin uretecegi account intelligence brief su soruya cevap vermelidir:
 
 > Bu restoranin bugunku operasyonel goruntusune gore FineDine hangi sonucu satar?
 
@@ -167,39 +167,39 @@ Ornekler:
 
 Pazar bes katmana ayriliyor:
 
-| Katman | Ornekler | Ne yapiyor? | LeadAC'in yorumu |
+| Katman | Ornekler | Ne yapiyor? | Revint'in yorumu |
 |---|---|---|---|
-| Local SMB data rails | Openmart, Resquared, Google Maps scrapers, Apify | Local business kaydi, owner, website, review, category, location, contact | Bu katman veri uretir; LeadAC bunun ustunde karar verir. |
+| Local SMB data rails | Openmart, Resquared, Google Maps scrapers, Apify | Local business kaydi, owner, website, review, category, location, contact | Bu katman veri uretir; Revint bunun ustunde karar verir. |
 | SMB account intelligence | Orbital | SMB TAM mapping, enrichment, vertical signals, outbound/inbound activation | Orbital en yakin positioning tehdidi; "SMB account intelligence" diliyle carpismamak gerekir. |
-| Enrichment/workflow workbench | Clay | Data waterfall, AI research, CRM sync, workflow builder | Clay teknik ekipler icin lego setidir; LeadAC packaged vertical intelligence olmalidir. |
+| Enrichment/workflow workbench | Clay | Data waterfall, AI research, CRM sync, workflow builder | Clay teknik ekipler icin lego setidir; Revint packaged vertical intelligence olmalidir. |
 | Buyer/signal intelligence | Pocus, Common Room | Sinyal toplama, scoring, plays, buyer context | Sinyal -> aksiyon trendini dogrular; ancak local-business derinligi yoktur. |
-| Revenue learning loop / agents | HockeyStack | Revenue data, journey, blueprint, agents | Enterprise tarafta learning-loop tezini dogrular; LeadAC bunun SMB/local versiyonudur. |
+| Revenue learning loop / agents | HockeyStack | Revenue data, journey, blueprint, agents | Enterprise tarafta learning-loop tezini dogrular; Revint bunun SMB/local versiyonudur. |
 
 ### 4.2 Tool-by-tool degerlendirme
 
-| Tool | Kategori claim'i | Funding/backing/traction | Sahiplendigi alan | LeadAC icin tehdit | LeadAC icin firsat |
+| Tool | Kategori claim'i | Funding/backing/traction | Sahiplendigi alan | Revint icin tehdit | Revint icin firsat |
 |---|---|---|---|---|---|
-| Orbital | SMB Account Intelligence for Sales Teams | Funding miktari net public degil; olgun GTM dili, CRM/GTM tooling ve GTM Engineer onboarding anlatimi var | SMB TAM mapping, 200+ SMB attribute, contacts beyond LinkedIn, inbound routing, outbound activation, vertical-specific signals | En yakin positioning tehdidi. "SMB account intelligence" dili Orbital'e cok yakin. | Orbital upstream data/intelligence kaynagi gibi konumlanir; LeadAC post-enrichment judgement, source conflict, playbook memory ve next-best-action katmani olur. |
-| Resquared | Platform for selling to local businesses | YC W21; VentureBeat tarafinda $5M seed olarak raporlandi | Local business data, outreach workflow, CRM/social flows | Agency/local outbound use case'ini sahiplenir | Resquared kaynakli account'larda hangi sinyallerin convert ettigini LeadAC ogrenir. |
-| Openmart | Local business data intelligence/API | YC W24; public profillerde seed backing gorunuyor, detayli funding rakamlari kaynaga gore degisebilir | 200M+ local business claim, owner contacts, tech stack, Google Maps scraping, API, Clay integration | Raw local data ve owner finding commodity hale gelir | En guclu integration/data rail adaylarindan biri. LeadAC Openmart account'larini aksiyona cevirir. |
-| Clay | GTM enrichment/workflow platform | GTM engineering kategorisinin en bilinen platformlarindan | Enrichment waterfall, 75+ provider, AI scraping/research, CRM sync | Teknik ekipler LeadAC'in basit versiyonunu Clay'de kurabilir | LeadAC, Clay workflow'larinin ustune vertical playbook ve learning loop koyar. |
-| Pocus | Product-led sales / signals | 2022'de $23M funding duyurdu | Product usage signals, explainable scoring, plays | "signals to revenue" mental modelini PLG tarafinda sahiplenir | LeadAC product-usage-first degil, local-business-context-first olur. |
-| Common Room | AI-native GTM / buyer intelligence | $52M total funding ile launch; Series B haberleri var | Buyer intelligence, identity resolution, signal aggregation, AI agents | Broad platform olarak vertical SMB'ye inebilir | LeadAC daha dar, restoran/local operational context ile ayrisir. |
-| HockeyStack | Revenue Agents for the Enterprise | $20M Series A, Bessemer liderliginde | Revenue attribution, buyer journeys, Blueprint, Odin/Nova agents | Enterprise learning-loop beklentisini yukari tasir | LeadAC "HockeyStack-style learning loop, restaurant-tech ve SMB GTM icin hafif versiyon" olarak anlatilabilir. |
-| Sixtyfour | Intelligence infrastructure on people/entities | YC-backed; 2025 spring batch duyurusu var | Deep research agents, people/company intelligence, entity resolution | Research/enrichment infrastructure olarak API katmanina inebilir | Potansiyel upstream research provider; LeadAC applied revenue action'i sahiplenir. |
+| Orbital | SMB Account Intelligence for Sales Teams | Funding miktari net public degil; olgun GTM dili, CRM/GTM tooling ve GTM Engineer onboarding anlatimi var | SMB TAM mapping, 200+ SMB attribute, contacts beyond LinkedIn, inbound routing, outbound activation, vertical-specific signals | En yakin positioning tehdidi. "SMB account intelligence" dili Orbital'e cok yakin. | Orbital upstream data/intelligence kaynagi gibi konumlanir; Revint post-enrichment judgement, source conflict, playbook memory ve next-best-action katmani olur. |
+| Resquared | Platform for selling to local businesses | YC W21; VentureBeat tarafinda $5M seed olarak raporlandi | Local business data, outreach workflow, CRM/social flows | Agency/local outbound use case'ini sahiplenir | Resquared kaynakli account'larda hangi sinyallerin convert ettigini Revint ogrenir. |
+| Openmart | Local business data intelligence/API | YC W24; public profillerde seed backing gorunuyor, detayli funding rakamlari kaynaga gore degisebilir | 200M+ local business claim, owner contacts, tech stack, Google Maps scraping, API, Clay integration | Raw local data ve owner finding commodity hale gelir | En guclu integration/data rail adaylarindan biri. Revint Openmart account'larini aksiyona cevirir. |
+| Clay | GTM enrichment/workflow platform | GTM engineering kategorisinin en bilinen platformlarindan | Enrichment waterfall, 75+ provider, AI scraping/research, CRM sync | Teknik ekipler Revint'in basit versiyonunu Clay'de kurabilir | Revint, Clay workflow'larinin ustune vertical playbook ve learning loop koyar. |
+| Pocus | Product-led sales / signals | 2022'de $23M funding duyurdu | Product usage signals, explainable scoring, plays | "signals to revenue" mental modelini PLG tarafinda sahiplenir | Revint product-usage-first degil, local-business-context-first olur. |
+| Common Room | AI-native GTM / buyer intelligence | $52M total funding ile launch; Series B haberleri var | Buyer intelligence, identity resolution, signal aggregation, AI agents | Broad platform olarak vertical SMB'ye inebilir | Revint daha dar, restoran/local operational context ile ayrisir. |
+| HockeyStack | Revenue Agents for the Enterprise | $20M Series A, Bessemer liderliginde | Revenue attribution, buyer journeys, Blueprint, Odin/Nova agents | Enterprise learning-loop beklentisini yukari tasir | Revint "HockeyStack-style learning loop, restaurant-tech ve SMB GTM icin hafif versiyon" olarak anlatilabilir. |
+| Sixtyfour | Intelligence infrastructure on people/entities | YC-backed; 2025 spring batch duyurusu var | Deep research agents, people/company intelligence, entity resolution | Research/enrichment infrastructure olarak API katmanina inebilir | Potansiyel upstream research provider; Revint applied revenue action'i sahiplenir. |
 
 ### 4.3 Strategic conclusion
 
 Bu pazar arastirmasi su sonucu verir:
 
-- LeadAC data vendor olmamali.
-- LeadAC "SMB account intelligence" kategorisini genis sekilde sahiplenmemeli; Orbital ile carpismaya cok yakin.
-- LeadAC "post-enrichment operational intelligence" olarak konumlanmali.
+- Revint data vendor olmamali.
+- Revint "SMB account intelligence" kategorisini genis sekilde sahiplenmemeli; Orbital ile carpismaya cok yakin.
+- Revint "post-enrichment operational intelligence" olarak konumlanmali.
 - FineDine pilotu, bu farki gostermek icin somut ve guclu bir ornektir.
 
 Kisa ic ifade:
 
-> Openmart ve Orbital marketi bulur. Clay row'lari enrich eder. HubSpot pipeline'i tutar. Smartlead ve Instantly mesajlari gonderir. LeadAC neyin ise yaradigini ogrenir ve siradaki dogru aksiyonu soyler.
+> Openmart ve Orbital marketi bulur. Clay row'lari enrich eder. HubSpot pipeline'i tutar. Smartlead ve Instantly mesajlari gonderir. Revint neyin ise yaradigini ogrenir ve siradaki dogru aksiyonu soyler.
 
 ---
 
@@ -266,7 +266,7 @@ Sorulari:
 - Chain hesaplarda enterprise pitch'i ne zaman dogru?
 - Kazandigimiz ve kaybettigimiz deal'lerden ne ogrendik?
 
-LeadAC'in cevabi:
+Revint'in cevabi:
 
 - Segment ve geography bazli account intelligence.
 - Outcome'a dayali playbook.
@@ -283,7 +283,7 @@ Sorulari:
 - Chain restoranlarin istekleri independent restoranlardan nasil ayriliyor?
 - Market expansion icin hangi vertical insights product roadmap'e girmeli?
 
-LeadAC'in cevabi:
+Revint'in cevabi:
 
 - Field sales ve outbound outcome'larindan product insight.
 - Restaurant sub-niche ontology.
@@ -318,7 +318,7 @@ Bu MVP icin yanlis musteri:
 
 ### 6.1 FineDine bu proje icin neden dogru partner?
 
-FineDine, LeadAC'in yeni pivotunu test etmek icin iyi design partner'dir:
+FineDine, Revint'in yeni pivotunu test etmek icin iyi design partner'dir:
 
 - Restaurant-tech pazarinda gercek vertical context vardir.
 - QR menu ile baslar ama ordering, reservation, payment, website, marketing ve guest CRM gibi genis digital stack'e uzanir.
@@ -329,7 +329,7 @@ FineDine, LeadAC'in yeni pivotunu test etmek icin iyi design partner'dir:
 
 ### 6.2 FineDine icin proje ne ise yarar?
 
-FineDine icin LeadAC pilotu su anlama gelir:
+FineDine icin Revint pilotu su anlama gelir:
 
 > FineDine'in restaurant outbound motion'unu daha hizli, daha dogru ve ogrenebilen hale getiren intelligence pilotu.
 
@@ -345,9 +345,9 @@ Somut faydalar:
 - Hangi sub-niche ve geography'nin daha iyi tepki verdigini gorme.
 - FineDine product/strategy ekibine market insight saglama.
 
-### 6.3 FineDine LeadAC'e ne kazandirir?
+### 6.3 FineDine Revint'e ne kazandirir?
 
-FineDine, LeadAC icin sadece beta kullanicisi degil, category proof'tur:
+FineDine, Revint icin sadece beta kullanicisi degil, category proof'tur:
 
 - Restaurant-tech ICP'si icin gercek veri.
 - Outcome-based learning loop icin ilk closed-loop dataset.
@@ -373,9 +373,9 @@ Bu pilotun ana amaci bu dersleri urunlesmis closed-loop sisteme cevirmektir.
 
 ## 7. Urun vizyonu
 
-### 7.1 LeadAC ne olacak?
+### 7.1 Revint ne olacak?
 
-LeadAC'in hedef hali:
+Revint'in hedef hali:
 
 > Objective-driven outbound operating system for local-business GTM teams.
 
@@ -440,7 +440,7 @@ Bu kurallar hardcoded master prompt olmamali. Ilk MVP'de seed rule olarak baslar
 
 ### 8.1 Project mandate
 
-LeadAC, FineDine ile restaurant-tech vertical'inda native entegrasyonlu bir operational intelligence pilotu baslatir. Pilotun amaci FineDine'in restaurant account selection, outreach prioritization, pitch angle selection ve sales learning loop sureclerini iyilestirmektir.
+Revint, FineDine ile restaurant-tech vertical'inda native entegrasyonlu bir operational intelligence pilotu baslatir. Pilotun amaci FineDine'in restaurant account selection, outreach prioritization, pitch angle selection ve sales learning loop sureclerini iyilestirmektir.
 
 ### 8.2 Business case
 
@@ -455,7 +455,7 @@ FineDine ve benzeri restaurant-tech ekipleri binlerce restorana satis yapar, anc
 
 #### Opportunity
 
-LeadAC, FineDine icin restaurant-specific operational intelligence layer olarak calisir:
+Revint, FineDine icin restaurant-specific operational intelligence layer olarak calisir:
 
 - Daha az manuel research.
 - Daha iyi account prioritization.
@@ -476,7 +476,7 @@ Pilotun basarisi uc sekilde olculur:
 
 Urun:
 
-**LeadAC Restaurant-Tech Intelligence Pilot for FineDine**
+**Revint Restaurant-Tech Intelligence Pilot for FineDine**
 
 MVP ciktisi:
 
@@ -489,11 +489,11 @@ MVP ciktisi:
 
 | Benefit | Measurement | Owner | Review timing |
 |---|---|---|---|
-| Research time azalmasi | Rep basina account research dakika | FineDine BD lead + LeadAC PM | Day 15, Day 30 |
+| Research time azalmasi | Rep basina account research dakika | FineDine BD lead + Revint PM | Day 15, Day 30 |
 | Account prioritization kalitesi | FineDine tarafindan "actionable" isaretlenen account orani | FineDine sales lead | Weekly |
-| Outreach outcome ogrenimi | Reply/booked/no-show/closed outcome'larin playbook'a yazilma orani | LeadAC product | Weekly |
-| Chain vs independent ayrimi | Yanlis pitch flag sayisi | FineDine reviewer + LeadAC QA | Weekly |
-| HubSpot context degeri | HubSpot'ta sync edilen account field ve rep usage | LeadAC engineering | Day 30 |
+| Outreach outcome ogrenimi | Reply/booked/no-show/closed outcome'larin playbook'a yazilma orani | Revint product | Weekly |
+| Chain vs independent ayrimi | Yanlis pitch flag sayisi | FineDine reviewer + Revint QA | Weekly |
+| HubSpot context degeri | HubSpot'ta sync edilen account field ve rep usage | Revint engineering | Day 30 |
 | Pilot case study readiness | FineDine'in public veya anonymized referans izni | Founder | Day 30-45 |
 
 ### 8.5 Quality criteria
@@ -549,7 +549,7 @@ MVP kabul edilebilir kalite icin:
 | Stage 1: Data and integration setup | 1-2 weeks | HubSpot + sender + data source connections | 50-100 accounts ingested with source provenance |
 | Stage 2: Intelligence brief MVP | 1-2 weeks | FineDine account brief, scoring, next action, pitch angle | FineDine reviews 30 briefs and marks quality |
 | Stage 3: Closed-loop learning | 2 weeks | Outcome sync, feedback capture, playbook updates | First campaign outcomes affect scoring/pitch |
-| Stage 4: Pilot review | 1 week | Benefits report, case study decision, scale/no-scale recommendation | FineDine and LeadAC decide next market/vertical |
+| Stage 4: Pilot review | 1 week | Benefits report, case study decision, scale/no-scale recommendation | FineDine and Revint decide next market/vertical |
 
 ### 8.8 Work packages
 
@@ -568,7 +568,7 @@ MVP kabul edilebilir kalite icin:
 | Role | Responsibility |
 |---|---|
 | Executive sponsor | Approves pivot and pilot investment |
-| LeadAC founder | Owns FineDine relationship, activation meeting, business case |
+| Revint founder | Owns FineDine relationship, activation meeting, business case |
 | Product owner | Owns project paper, MVP requirements, acceptance criteria |
 | Engineering lead | Owns integration architecture, identity resolution, reliability |
 | AI/core lead | Owns planner/tool graph/memory/playbook behavior |
@@ -612,8 +612,8 @@ Why:
 
 Data flow:
 
-- LeadAC -> HubSpot: account intelligence fields, fit score, next action, pitch angle, source links, last audit date.
-- HubSpot -> LeadAC: deal stage, owner, activity, outcome, closed-won/lost, no-show, disqualification reason.
+- Revint -> HubSpot: account intelligence fields, fit score, next action, pitch angle, source links, last audit date.
+- HubSpot -> Revint: deal stage, owner, activity, outcome, closed-won/lost, no-show, disqualification reason.
 
 MVP role:
 
@@ -638,8 +638,8 @@ Why:
 
 Data flow:
 
-- Smartlead -> LeadAC: lead replied, opened, bounced, unsubscribed, sent, campaign metadata.
-- LeadAC -> Smartlead: selected leads, sequence fields, personalization variables.
+- Smartlead -> Revint: lead replied, opened, bounced, unsubscribed, sent, campaign metadata.
+- Revint -> Smartlead: selected leads, sequence fields, personalization variables.
 
 MVP role:
 
@@ -652,7 +652,7 @@ Risk:
 
 Mitigation:
 
-- Email + domain + HubSpot company + LeadAC account ID mapping kullanilir.
+- Email + domain + HubSpot company + Revint account ID mapping kullanilir.
 
 ### 9.3 Instantly
 
@@ -662,8 +662,8 @@ Why:
 
 Data flow:
 
-- Instantly -> LeadAC: reply_received, bounced, unsubscribed, sent, campaign events.
-- LeadAC -> Instantly: campaign-ready contact rows and variables.
+- Instantly -> Revint: reply_received, bounced, unsubscribed, sent, campaign events.
+- Revint -> Instantly: campaign-ready contact rows and variables.
 
 MVP role:
 
@@ -685,8 +685,8 @@ Why:
 
 Data flow:
 
-- Clay -> LeadAC: enriched rows via webhook/export.
-- LeadAC -> Clay: account list or fields for further enrichment where needed.
+- Clay -> Revint: enriched rows via webhook/export.
+- Revint -> Clay: account list or fields for further enrichment where needed.
 
 MVP role:
 
@@ -708,8 +708,8 @@ Why:
 
 Data flow:
 
-- Openmart -> LeadAC: restaurant records, owner/contact, website, location, tech stack, ratings.
-- LeadAC -> Openmart: no initial writeback required.
+- Openmart -> Revint: restaurant records, owner/contact, website, location, tech stack, ratings.
+- Revint -> Openmart: no initial writeback required.
 
 MVP role:
 
@@ -731,8 +731,8 @@ Why:
 
 Data flow:
 
-- Orbital -> LeadAC: SMB attributes, contacts, fit/intent signals, inbound/outbound context.
-- LeadAC -> Orbital: not required in MVP.
+- Orbital -> Revint: SMB attributes, contacts, fit/intent signals, inbound/outbound context.
+- Revint -> Orbital: not required in MVP.
 
 MVP role:
 
@@ -744,7 +744,7 @@ Risk:
 
 Mitigation:
 
-- Orbital upstream data/intelligence rail olarak anlatilir; LeadAC post-enrichment action/learning layer olarak kalir.
+- Orbital upstream data/intelligence rail olarak anlatilir; Revint post-enrichment action/learning layer olarak kalir.
 
 ### 9.7 Resquared
 
@@ -754,7 +754,7 @@ Why:
 
 Data flow:
 
-- Resquared -> LeadAC: local business records and outreach context where available.
+- Resquared -> Revint: local business records and outreach context where available.
 
 MVP role:
 
@@ -776,7 +776,7 @@ Why:
 
 Data flow:
 
-- Google/Apify -> LeadAC: business identity, reviews, categories, rating, location, website, social, enrichment.
+- Google/Apify -> Revint: business identity, reviews, categories, rating, location, website, social, enrichment.
 
 MVP role:
 
@@ -798,8 +798,8 @@ Why:
 
 Data flow:
 
-- FineDine -> LeadAC: product modules, packages, positioning, disqualifiers, sales notes, corrected opener examples.
-- LeadAC -> FineDine: recommended module/package/angle and reason.
+- FineDine -> Revint: product modules, packages, positioning, disqualifiers, sales notes, corrected opener examples.
+- Revint -> FineDine: recommended module/package/angle and reason.
 
 MVP role:
 
@@ -819,11 +819,11 @@ Mitigation:
 
 ### 10.1 Gorusmenin amaci
 
-FineDine'e "LeadAC size lead listesi verecek" demek yanlis olur. Gorusmenin amaci yeni kategoriyi anlatmak ve FineDine'i design partner olarak projeye dahil etmektir.
+FineDine'e "Revint size lead listesi verecek" demek yanlis olur. Gorusmenin amaci yeni kategoriyi anlatmak ve FineDine'i design partner olarak projeye dahil etmektir.
 
 Ana mesaj:
 
-> Bu proje FineDine'in restaurant outbound motion'unu ogrenebilen bir sisteme cevirme pilotudur. LeadAC size sadece daha fazla restoran listesi vermeyecek; hangi restorana neden, hangi sirayla, hangi angle ile gidilecegini ve hangi sonuclarin playbook'a donmesi gerektigini belirleyecek.
+> Bu proje FineDine'in restaurant outbound motion'unu ogrenebilen bir sisteme cevirme pilotudur. Revint size sadece daha fazla restoran listesi vermeyecek; hangi restorana neden, hangi sirayla, hangi angle ile gidilecegini ve hangi sonuclarin playbook'a donmesi gerektigini belirleyecek.
 
 ### 10.2 Gorusme akisi
 
@@ -868,7 +868,7 @@ FineDine icin:
 - Hangi pitch angle'lari yanlis?
 - Chain hesaplarda hangi enterprise angle daha iyi?
 - HubSpot'ta hangi account context rep'ler tarafindan kullaniliyor?
-- LeadAC'in sonraki geography/sub-niche'e genislemesi mantikli mi?
+- Revint'in sonraki geography/sub-niche'e genislemesi mantikli mi?
 
 ---
 
@@ -878,7 +878,7 @@ FineDine icin:
 |---|---|---|---|
 | Native integrations MVP'yi yavaslatir | High | Medium | Stage plan; once HubSpot + one sender + one data source minimum kabul kriteri |
 | FineDine data access gecikir | High | Medium | CSV/export fallback; activation meetingde access checklist |
-| LeadAC hala lead-gen gibi algilanir | High | Medium | Dokuman ve sunumda "lead listesi degil, operational intelligence" vurgusu |
+| Revint hala lead-gen gibi algilanir | High | Medium | Dokuman ve sunumda "lead listesi degil, operational intelligence" vurgusu |
 | Orbital ile positioning overlap | Medium | High | "Post-enrichment learning/action layer" dili korunur |
 | AI hallucination rep guvenini bozar | High | Medium | Source provenance, confidence, grounded review snippets |
 | Chain accounts yanlis pitch edilir | High | Medium | Chain-aware ontology and QA set |
@@ -1000,15 +1000,15 @@ FineDine icin:
 
 ## 15. Final karar
 
-LeadAC local SMB pazarindan cikmamalidir. Ancak local SMB datasini urunun kendisi olmaktan cikarmalidir.
+Revint local SMB pazarindan cikmamalidir. Ancak local SMB datasini urunun kendisi olmaktan cikarmalidir.
 
 FineDine pilotu ile hedef:
 
 > Local restaurant data -> operational signal -> recommended action -> outcome -> learned playbook.
 
-Bu dongu calisirsa LeadAC'in yeni konumu savunulabilir hale gelir:
+Bu dongu calisirsa Revint'in yeni konumu savunulabilir hale gelir:
 
-> LeadAC, restaurant-tech ve local-business GTM ekipleri icin operational intelligence layer'dir. Veri kaynaklarini degistirmez; onlarin ustune karar, aksiyon ve ogrenme katmani koyar.
+> Revint, restaurant-tech ve local-business GTM ekipleri icin operational intelligence layer'dir. Veri kaynaklarini degistirmez; onlarin ustune karar, aksiyon ve ogrenme katmani koyar.
 
 Ilk public anlatim FineDine uzerinden kurulmalidir:
 

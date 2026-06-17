@@ -653,7 +653,7 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
     <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-5">
       <Link
         href="/app/leads"
-        className="inline-flex items-center gap-1 text-[13px] text-white/40 hover:text-(--leadac-500) transition-colors"
+        className="inline-flex items-center gap-1 text-[13px] text-white/40 hover:text-(--revint-500) transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Leads
@@ -933,7 +933,7 @@ function HeroFitSummary({ lead }: { lead: LeadDetail }) {
             <ul className="text-[13px] text-white/68 space-y-1.5 list-none pl-0">
               {pains.map((p) => (
                 <li key={p} className="flex gap-2">
-                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-(--leadac-500)/70" aria-hidden />
+                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-(--revint-500)/70" aria-hidden />
                   <span className="leading-snug">{p}</span>
                 </li>
               ))}
@@ -995,7 +995,7 @@ function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
   return (
     <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 sm:px-5">
       <p className="text-[10px] uppercase tracking-[0.1em] text-white/40 mb-2.5 flex items-center gap-1.5 font-medium">
-        <Zap className="w-3 h-3 text-(--leadac-500)" aria-hidden />
+        <Zap className="w-3 h-3 text-(--revint-500)" aria-hidden />
         At a glance
       </p>
       <div className="flex flex-wrap gap-2">
@@ -1032,7 +1032,7 @@ function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
             key={code}
             variant="outline"
             title={code}
-            className="text-[11px] font-normal border-(--leadac-500)/25 bg-(--leadac-500)/10 text-(--leadac-200)"
+            className="text-[11px] font-normal border-(--revint-500)/25 bg-(--revint-500)/10 text-(--revint-200)"
           >
             {REASON_LABELS[code] ?? code.replace(/_/g, " ")}
           </Badge>
@@ -1062,7 +1062,7 @@ function HeroBand({
     <div
       className="relative overflow-hidden rounded-[28px] glass-card"
       style={{
-        background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.68)",
+        background: "hsl(var(--revint-h) var(--revint-ns) 11% / 0.68)",
       }}
     >
       <div
@@ -1070,7 +1070,7 @@ function HeroBand({
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse at top right, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18), transparent 55%), radial-gradient(ellipse at bottom left, color-mix(in oklab, var(--leadac-success) 8%, transparent), transparent 60%)",
+            "radial-gradient(ellipse at top right, hsl(var(--revint-h) var(--revint-s) 50% / 0.18), transparent 55%), radial-gradient(ellipse at bottom left, color-mix(in oklab, var(--revint-success) 8%, transparent), transparent 60%)",
         }}
       />
       <div className="relative p-5 sm:p-7 md:p-8">
@@ -1238,7 +1238,7 @@ const DIRECTORY_META: Record<
   pinterest: { label: "Pinterest", dot: "#E60023", category: "social" },
   reddit: { label: "Reddit", dot: "#FF4500", category: "social" },
   yell: { label: "Yell", dot: "#FFD100", category: "directory" },
-  bark: { label: "Bark", dot: "var(--leadac-success)", category: "directory" },
+  bark: { label: "Bark", dot: "var(--revint-success)", category: "directory" },
   checkatrade: { label: "Checkatrade", dot: "#F8A01B", category: "directory" },
   trustatrader: { label: "TrustATrader", dot: "#0083C1", category: "directory" },
   yellowpages: { label: "Yellow Pages", dot: "#FFD100", category: "directory" },
@@ -1386,18 +1386,18 @@ function CollapsibleIdentityRail(props: {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-controls="mobile-identity-rail"
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500) rounded-2xl"
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--revint-500) rounded-2xl"
         style={{
           minHeight: "var(--touch-target-min)",
-          background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.65)",
+          background: "hsl(var(--revint-h) var(--revint-ns) 11% / 0.65)",
           border: "0.5px solid hsl(0 0% 100% / 0.06)",
         }}
       >
-        <Layers className="w-4 h-4 shrink-0" style={{ color: "var(--leadac-300)" }} />
+        <Layers className="w-4 h-4 shrink-0" style={{ color: "var(--revint-300)" }} />
         <span
           className="flex-1 text-left font-medium"
           style={{
-            color: "var(--leadac-text-1)",
+            color: "var(--revint-text-1)",
             fontSize: "var(--text-callout)",
           }}
         >
@@ -1405,14 +1405,14 @@ function CollapsibleIdentityRail(props: {
         </span>
         <span
           className="text-[12px]"
-          style={{ color: "var(--leadac-text-3)" }}
+          style={{ color: "var(--revint-text-3)" }}
         >
           {open ? "Hide" : "Show"}
         </span>
         {open ? (
-          <ChevronUp className="w-4 h-4" style={{ color: "var(--leadac-text-3)" }} />
+          <ChevronUp className="w-4 h-4" style={{ color: "var(--revint-text-3)" }} />
         ) : (
-          <ChevronDown className="w-4 h-4" style={{ color: "var(--leadac-text-3)" }} />
+          <ChevronDown className="w-4 h-4" style={{ color: "var(--revint-text-3)" }} />
         )}
       </button>
       {open && (
@@ -1448,7 +1448,7 @@ function IdentityRail({
               {lead.phone ? (
                 <a
                   href={`tel:${lead.phone}`}
-                  className="inline-flex items-center gap-1.5 text-[14px] font-medium text-white hover:text-(--leadac-500) transition-colors"
+                  className="inline-flex items-center gap-1.5 text-[14px] font-medium text-white hover:text-(--revint-500) transition-colors"
                 >
                   <Phone className="w-3.5 h-3.5 text-white/40" />
                   {lead.phone}
@@ -1465,7 +1465,7 @@ function IdentityRail({
                     href={lead.websiteUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[14px] font-medium text-(--leadac-500) hover:underline truncate"
+                    className="text-[14px] font-medium text-(--revint-500) hover:underline truncate"
                   >
                     {lead.websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}
                   </a>
@@ -1488,7 +1488,7 @@ function IdentityRail({
                   type="button"
                   onClick={onWebsiteSearch}
                   disabled={websiteSearchLoading}
-                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-(--leadac-500) hover:underline disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-(--revint-500) hover:underline disabled:opacity-50"
                 >
                   {websiteSearchLoading ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1506,7 +1506,7 @@ function IdentityRail({
                   href={lead.googleMapsUri}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[14px] font-medium text-(--leadac-500) hover:underline"
+                  className="inline-flex items-center gap-1.5 text-[14px] font-medium text-(--revint-500) hover:underline"
                 >
                   Open
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -1618,7 +1618,7 @@ function RecommendedPackageCard({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-[17px] flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-(--leadac-500)" />
+          <Sparkles className="w-4 h-4 text-(--revint-500)" />
           {pkg ? "Recommended package" : "Recommended tier"}
         </CardTitle>
       </CardHeader>
@@ -1627,7 +1627,7 @@ function RecommendedPackageCard({
           <>
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="text-[18px] font-semibold tracking-[-0.01em] text-white">{pkg.name}</span>
-              <span className="text-[14px] text-(--leadac-300)">{pkg.priceLabel}</span>
+              <span className="text-[14px] text-(--revint-300)">{pkg.priceLabel}</span>
             </div>
             {reason && (
               <p className="text-[14px] leading-[1.6] text-white/75">{reason}</p>
@@ -1673,7 +1673,7 @@ function PersonalizedMessageCard({
     <Card className="relative">
       <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between space-y-0 pb-3">
         <CardTitle className="text-[17px] flex items-center gap-2">
-          <FileText className="w-4 h-4 text-(--leadac-500)" />
+          <FileText className="w-4 h-4 text-(--revint-500)" />
           Personalized Message
         </CardTitle>
         <Button
@@ -1687,7 +1687,7 @@ function PersonalizedMessageCard({
       </CardHeader>
       <CardContent>
         <div className="relative rounded-2xl bg-white/5 border border-white/8 p-5 pl-6">
-          <div className="absolute left-0 top-5 bottom-5 w-[2px] rounded-full bg-(--leadac-500)" />
+          <div className="absolute left-0 top-5 bottom-5 w-[2px] rounded-full bg-(--revint-500)" />
           <p className="text-[15px] leading-[1.65] text-white/85 whitespace-pre-wrap">{message}</p>
         </div>
       </CardContent>
@@ -1768,7 +1768,7 @@ function WebsitePlanSection({
         >
           <div className="min-w-0">
             <CardTitle className="text-[17px] flex items-center gap-2">
-              <FileText className="w-4 h-4 text-(--leadac-500) shrink-0" />
+              <FileText className="w-4 h-4 text-(--revint-500) shrink-0" />
               Sales Talking Points
             </CardTitle>
             <p className="text-[12px] text-white/40 mt-1">{summaryLine}</p>
@@ -1861,7 +1861,7 @@ function DossierSection({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <CardTitle className="text-[17px] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-(--leadac-500)" />
+              <Sparkles className="w-4 h-4 text-(--revint-500)" />
               AI Dossier
             </CardTitle>
             <p className="text-[12px] text-white/40 mt-1 max-w-xl">
@@ -1917,7 +1917,7 @@ function DossierSection({
       {loading && !hasContent && (
         <CardContent>
           <div className="py-10 flex flex-col items-center justify-center text-center gap-2">
-            <Loader2 className="w-5 h-5 text-(--leadac-500) animate-spin" />
+            <Loader2 className="w-5 h-5 text-(--revint-500) animate-spin" />
             <p className="text-[13px] text-white/55">
               Gathering raw agent data and sending it to Gemini 2.5 Flash...
             </p>
@@ -1995,7 +1995,7 @@ function HeroContactBar({
           title={`Call ${phone}`}
           className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[12px] text-white/85 hover:bg-white/10 hover:border-white/20 hover:text-white transition-colors"
         >
-          <Phone className="w-3.5 h-3.5 text-(--leadac-500)" />
+          <Phone className="w-3.5 h-3.5 text-(--revint-500)" />
           <span className="truncate max-w-[200px]">{phone}</span>
         </a>
       )}
@@ -2149,7 +2149,7 @@ function SubNicheOverride({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-[15px] flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-(--leadac-500)" />
+          <Sparkles className="w-4 h-4 text-(--revint-500)" />
           Sub-niche
         </CardTitle>
         <p className="text-[12px] text-white/40 mt-1">
@@ -2193,7 +2193,7 @@ function SubNicheOverride({
             value={subNicheSlug ?? "__none__"}
             disabled={saving || optionsLoading}
             onChange={(e) => save(e.target.value)}
-            className="h-9 rounded-md bg-white/5 border border-white/10 px-3 text-[13px] text-white/85 focus:outline-none focus:border-(--leadac-500)/40 disabled:opacity-60"
+            className="h-9 rounded-md bg-white/5 border border-white/10 px-3 text-[13px] text-white/85 focus:outline-none focus:border-(--revint-500)/40 disabled:opacity-60"
           >
             <option value="__none__">— Clear / let classifier re-pick —</option>
             {options.map((o) => (
@@ -2260,7 +2260,7 @@ function MobileActionBar({
       <div
         className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-white/10 backdrop-blur-md"
         style={{
-          background: "hsl(var(--leadac-h) var(--leadac-ns) 7% / 0.92)",
+          background: "hsl(var(--revint-h) var(--revint-ns) 7% / 0.92)",
           paddingBottom: "calc(env(safe-area-inset-bottom, 0) + 8px)",
           paddingTop: "8px",
         }}
@@ -2307,7 +2307,7 @@ function MobileActionBar({
           <button
             type="button"
             onClick={() => setLogOpen(true)}
-            className="flex flex-col items-center justify-center rounded-xl py-2 text-(--leadac-500)"
+            className="flex flex-col items-center justify-center rounded-xl py-2 text-(--revint-500)"
           >
             <ClipboardList className="w-5 h-5" />
             <span className="text-[10px] mt-0.5">Log</span>
@@ -2390,7 +2390,7 @@ function LogCallModal({
               onClick={() => setDisposition(value)}
               className={
                 disposition === value
-                  ? "w-full text-left rounded-xl border border-(--leadac-500)/40 bg-(--leadac-500)/10 px-3 py-2 text-[13px] text-white"
+                  ? "w-full text-left rounded-xl border border-(--revint-500)/40 bg-(--revint-500)/10 px-3 py-2 text-[13px] text-white"
                   : "w-full text-left rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[13px] text-white/70 hover:bg-white/10"
               }
             >

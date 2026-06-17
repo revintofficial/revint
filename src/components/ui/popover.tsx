@@ -22,7 +22,7 @@ const PopoverContent = React.forwardRef<
         className
       )}
       style={{
-        background: "hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.95)",
+        background: "hsl(var(--revint-h) var(--revint-ns) 11% / 0.95)",
         backdropFilter: "saturate(180%) blur(20px)",
         WebkitBackdropFilter: "saturate(180%) blur(20px)",
         border: "0.5px solid hsl(0 0% 100% / 0.12)",

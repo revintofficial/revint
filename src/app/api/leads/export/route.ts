@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { internalError } from "@/lib/api-errors";
+import { siteHost } from "@/lib/seo/metadata";
 
 type ExportFormat = "smartlead" | "instantly" | "csv";
 
@@ -152,7 +153,7 @@ export async function POST(request: Request) {
     }
 
     const proto = request.headers.get("x-forwarded-proto") || "https";
-    const host = request.headers.get("host") || "leadac.ai";
+    const host = request.headers.get("host") || siteHost();
     const baseUrl = `${proto}://${host}`;
 
     const headers =
@@ -232,7 +233,7 @@ export async function POST(request: Request) {
     }
 
     const csv = rows.join("\r\n") + "\r\n";
-    const filename = `leadac-${format}-${new Date().toISOString().slice(0, 10)}.csv`;
+    const filename = `revint-${format}-${new Date().toISOString().slice(0, 10)}.csv`;
 
     return new NextResponse(csv, {
       status: 200,

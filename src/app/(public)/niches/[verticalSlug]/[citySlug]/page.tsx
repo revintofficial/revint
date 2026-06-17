@@ -88,7 +88,7 @@ export async function generateMetadata({
 function combinedFaqs(nicheName: string, cityName: string, count: number) {
   return [
     {
-      question: `How many ${nicheName.toLowerCase()} businesses does Leadac AI track in ${cityName}?`,
+      question: `How many ${nicheName.toLowerCase()} businesses does Revint track in ${cityName}?`,
       answer: `We currently list ${count} audited ${nicheName.toLowerCase()} businesses in ${cityName}. The list updates whenever a new crawl completes; public entries refresh at least weekly.`,
     },
     {
@@ -97,11 +97,11 @@ function combinedFaqs(nicheName: string, cityName: string, count: number) {
     },
     {
       question: `Can I use this ${nicheName.toLowerCase()} list for cold outreach in ${cityName}?`,
-      answer: `Yes. Sign up for a Leadac AI workspace to export the list to CSV or push straight into Smartlead, Instantly, or GHL. Free trial includes 50 leads plus three per-lead website plans.`,
+      answer: `Yes. Sign up for a Revint workspace to export the list to CSV or push straight into Smartlead, Instantly, or GHL. Free trial includes 50 leads plus three per-lead website plans.`,
     },
     {
       question: `How is this different from Google Maps for ${nicheName.toLowerCase()} in ${cityName}?`,
-      answer: `Google Maps is a raw directory. Leadac AI adds a website-quality score, a detailed audit, a draft cold-email opener grounded in the audit, and a handbook-based website plan. Google Maps hands you a contact — Leadac hands you a contact plus the first two emails of the pitch.`,
+      answer: `Google Maps is a raw directory. Revint adds a website-quality score, a detailed audit, a draft cold-email opener grounded in the audit, and a handbook-based website plan. Google Maps hands you a contact — Revint hands you a contact plus the first two emails of the pitch.`,
     },
     {
       question: `Are there other cities with ${nicheName.toLowerCase()} listings?`,
@@ -204,7 +204,7 @@ export default async function NicheCityPage({
         >
           <strong>Short answer:</strong> {businesses.length}{" "}
           {displayLabel.toLowerCase()} businesses in {city.cityName} are
-          currently audited and listed in the Leadac AI directory, ranked by
+          currently audited and listed in the Revint directory, ranked by
           Google review volume.
         </p>
 

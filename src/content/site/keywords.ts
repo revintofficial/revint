@@ -9,7 +9,7 @@
  * Three buckets:
  *
  *   1. OWNED_BY_COMPETITORS — verbatim hero language each player claims.
- *      Do NOT paraphrase into LeadAC copy; if a buyer reads it on our site
+ *      Do NOT paraphrase into Revint copy; if a buyer reads it on our site
  *      and on theirs, the one they read first wins the association.
  *   2. COMMODITY — table-stakes vocabulary every player uses. Safe to use,
  *      but it does not differentiate. Never lead a hero with these.
@@ -42,7 +42,7 @@ export type WhiteSpacePhrase = {
   phrase: string;
   /** Why no incumbent owns it yet. */
   rationale: string;
-  /** How LeadAC should use it (hero, eyebrow, subhead, FAQ, etc.). */
+  /** How Revint should use it (hero, eyebrow, subhead, FAQ, etc.). */
   usage: string;
 };
 
@@ -234,7 +234,7 @@ export const COMMODITY_WORDS: string[] = [
 ];
 
 /**
- * Phrases to AVOID in LeadAC copy. Either claimed by a competitor or
+ * Phrases to AVOID in Revint copy. Either claimed by a competitor or
  * commoditized to the point of being a deliverability liability.
  */
 export const AVOID_PHRASES: Array<{ phrase: string; why: string }> = [
@@ -277,7 +277,7 @@ export const AVOID_PHRASES: Array<{ phrase: string; why: string }> = [
 ];
 
 /**
- * White space — the wedge words LeadAC should own and repeat.
+ * White space — the wedge words Revint should own and repeat.
  * These are the phrases that should appear in the hero, the eyebrow, the
  * meta description, the FAQ answers, and every vertical landing.
  */
@@ -293,7 +293,7 @@ export const WHITE_SPACE: WhiteSpacePhrase[] = [
     rationale:
       "Gong only says 'records'. HockeyStack's 'Blueprints' is enterprise. Nobody markets the memory framing for SMB / local-business markets — open lane.",
     usage:
-      "Hero headline. Stack-position diagram (LeadAC's verb stays 'remembers'). Recurring brand line.",
+      "Hero headline. Stack-position diagram (Revint's verb stays 'remembers'). Recurring brand line.",
   },
   {
     phrase: "The next best revenue action",

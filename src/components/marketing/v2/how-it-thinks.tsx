@@ -1,7 +1,7 @@
 /**
  * Platform layer explainer for the v2 marketing surface.
  *
- * Design intent: position LeadAC as one model with four layers, not a
+ * Design intent: position Revint as one model with four layers, not a
  * list of features. Four blocks (Graph / Patterns / Execution /
  * Learning) on a 2x2 grid at lg+, each with a numbered chip, a
  * sentence-case heading, a short paragraph, and a small static
@@ -72,21 +72,21 @@ export function HowItThinks() {
       id="platform"
       eyebrow="Platform"
       headline="Account, vertical, and deal history in one model."
-      sub="LeadAC reads CRM, enrichment, reviews, websites, and detected vertical stacks. The system assembles a graph of accounts, buying signals, and outcomes your SDRs run on and your VP of Sales operates from."
+      sub="Revint reads CRM, enrichment, reviews, websites, and detected vertical stacks. The system assembles a graph of accounts, buying signals, and outcomes your SDRs run on and your VP of Sales operates from."
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {BLOCKS.map((block) => (
           <article
             key={block.number}
-            className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_8%)] p-6 md:p-7"
+            className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--revint-h)_var(--revint-ns)_8%)] p-6 md:p-7"
           >
             <span
               className="inline-flex items-center justify-center h-7 px-2.5 rounded-md text-[11px] font-mono font-semibold tracking-wider"
               style={{
-                background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)",
-                color: "hsl(var(--leadac-h) var(--leadac-s) 72%)",
+                background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.10)",
+                color: "hsl(var(--revint-h) var(--revint-s) 72%)",
                 border:
-                  "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.22)",
+                  "1px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.22)",
               }}
             >
               {block.number}
@@ -113,8 +113,8 @@ export function HowItThinks() {
                       className="rounded-md px-2 py-0.5 text-[11.5px] font-medium"
                       style={{
                         background:
-                          "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)",
-                        color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+                          "hsl(var(--revint-h) var(--revint-s) 50% / 0.10)",
+                        color: "hsl(var(--revint-h) var(--revint-s) 78%)",
                       }}
                     >
                       {row.chip}

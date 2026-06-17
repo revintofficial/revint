@@ -159,13 +159,13 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
       ) : items.length === 0 ? (
         <div
           className="flex flex-col items-center justify-center py-10 text-center gap-3"
-          style={{ color: "var(--leadac-text-2)" }}
+          style={{ color: "var(--revint-text-2)" }}
         >
-          <Inbox className="w-10 h-10" style={{ color: "var(--leadac-muted)" }} />
+          <Inbox className="w-10 h-10" style={{ color: "var(--revint-muted)" }} />
           <p
             className="font-medium"
             style={{
-              color: "var(--leadac-text-1)",
+              color: "var(--revint-text-1)",
               fontSize: "var(--text-callout)",
             }}
           >
@@ -186,15 +186,15 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
             const Icon = ICONS[it.kind];
             const tone =
               it.kind === "success"
-                ? "var(--leadac-success)"
+                ? "var(--revint-success)"
                 : it.kind === "error"
-                  ? "var(--leadac-error)"
+                  ? "var(--revint-error)"
                   : it.kind === "highlight"
-                    ? "var(--leadac-300)"
-                    : "var(--leadac-text-2)";
+                    ? "var(--revint-300)"
+                    : "var(--revint-text-2)";
             const Inner = (
               <div
-                className="flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
+                className="flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--revint-500)"
                 style={{
                   minHeight: "var(--touch-target-min)",
                 }}
@@ -205,7 +205,7 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
                     <span
                       className="font-medium truncate"
                       style={{
-                        color: "var(--leadac-text-1)",
+                        color: "var(--revint-text-1)",
                         fontSize: "var(--text-callout)",
                       }}
                     >
@@ -214,7 +214,7 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
                     {it.at && (
                       <span
                         className="ml-auto shrink-0 text-[11px] tabular-nums"
-                        style={{ color: "var(--leadac-text-3)" }}
+                        style={{ color: "var(--revint-text-3)" }}
                       >
                         {formatRelative(it.at)}
                       </span>
@@ -224,7 +224,7 @@ export function NotificationsSheet({ open, onOpenChange }: NotificationsSheetPro
                     <p
                       className="truncate mt-0.5"
                       style={{
-                        color: "var(--leadac-text-2)",
+                        color: "var(--revint-text-2)",
                         fontSize: "var(--text-footnote)",
                       }}
                     >

@@ -63,7 +63,7 @@ export function SourceChip({ tag, sources, onOpen, disabled }: SourceChipProps) 
             // Slightly tighter than a normal pill so prose spacing stays natural.
             "h-[20px] px-1.5 mx-0.5 rounded-md border text-[10.5px] font-medium leading-none",
             "transition-colors duration-150",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-(--leadac-500)/40",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-(--revint-500)/40",
             tone.bg,
             tone.text,
             tone.border,

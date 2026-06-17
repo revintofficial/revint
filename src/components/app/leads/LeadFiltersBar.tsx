@@ -330,8 +330,8 @@ export function LeadFiltersBar({
                 type="button"
                 className="flex h-10 w-full items-center justify-between rounded-xl border px-3 py-2 text-sm text-white transition-colors duration-200"
                 style={{
-                  backgroundColor: "var(--leadac-card)",
-                  borderColor: "var(--leadac-border)",
+                  backgroundColor: "var(--revint-card)",
+                  borderColor: "var(--revint-border)",
                 }}
               >
                 <span className="flex items-center gap-2 truncate">
@@ -344,7 +344,7 @@ export function LeadFiltersBar({
                   <span
                     className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold"
                     style={{
-                      backgroundColor: "var(--leadac-500)",
+                      backgroundColor: "var(--revint-500)",
                       color: "#fff",
                     }}
                   >
@@ -359,7 +359,7 @@ export function LeadFiltersBar({
                 {filters.statuses.length > 0 && (
                   <button
                     onClick={handleClearStatuses}
-                    className="text-[11px] text-(--leadac-300) hover:text-white"
+                    className="text-[11px] text-(--revint-300) hover:text-white"
                   >
                     Clear
                   </button>
@@ -480,7 +480,7 @@ export function LeadFiltersBar({
           {geoActive ? (
             <button
               onClick={disableNearMe}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border border-(--leadac-500)/40 bg-(--leadac-500)/15 text-(--leadac-200) hover:bg-(--leadac-500)/25 transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border border-(--revint-500)/40 bg-(--revint-500)/15 text-(--revint-200) hover:bg-(--revint-500)/25 transition-colors"
             >
               <Compass className="w-3 h-3" />
               Near me · {filters.withinMiles ?? 5}mi
@@ -624,7 +624,7 @@ function QuickChip({
       onClick={onClick}
       className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
         active
-          ? "border border-(--leadac-500)/40 bg-(--leadac-500)/15 text-(--leadac-200)"
+          ? "border border-(--revint-500)/40 bg-(--revint-500)/15 text-(--revint-200)"
           : "border border-white/10 bg-white/[0.04] text-white/70 hover:bg-white/[0.08]"
       }`}
     >
@@ -651,8 +651,8 @@ function ScoreSliderField({ min, max, onCommit }: ScoreSliderFieldProps) {
     <div
       className="flex flex-col gap-1.5 rounded-xl border px-3 py-2"
       style={{
-        backgroundColor: "var(--leadac-card)",
-        borderColor: "var(--leadac-border)",
+        backgroundColor: "var(--revint-card)",
+        borderColor: "var(--revint-border)",
       }}
     >
       <div className="flex items-center justify-between text-[11px] text-white/50">

@@ -80,7 +80,7 @@ describe("M7 - renderMockupHtml link safety", () => {
         accentColor: "#fff",
         primaryColor: "#fff",
         footerText: null,
-        hideLeadacCredit: false,
+        hideRevintCredit: false,
         logoUrl: "javascript:alert(1)",
       },
     });

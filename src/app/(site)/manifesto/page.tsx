@@ -31,7 +31,7 @@ const PATH = "/manifesto";
 const TITLE =
   "The category is operational intelligence. The substrate is memory.";
 const DESCRIPTION =
-  "Why we built LeadAC: conversation intelligence covers what your team said. Operational intelligence covers what the account is doing. Vertical SaaS GTM teams need the second one at the first one's price band.";
+  "Why we built Revint: conversation intelligence covers what your team said. Operational intelligence covers what the account is doing. Vertical SaaS GTM teams need the second one at the first one's price band.";
 const PUBLISHED = "2026-05-22";
 
 export const metadata: Metadata = buildMetadata({
@@ -59,7 +59,7 @@ export default function ManifestoPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Manifesto", url: PATH },
         ])}
       />
@@ -82,7 +82,7 @@ export default function ManifestoPage() {
       <Hero
         eyebrow="Manifesto"
         headline={TITLE}
-        subhead="Two things are true at the same time. Gong proved the memory thesis is the future of revenue tooling. And the price floor that comes with that proof rules out roughly 50,000 vertical SaaS companies that need memory the most. LeadAC exists to close that gap."
+        subhead="Two things are true at the same time. Gong proved the memory thesis is the future of revenue tooling. And the price floor that comes with that proof rules out roughly 50,000 vertical SaaS companies that need memory the most. Revint exists to close that gap."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}
       />
@@ -105,7 +105,7 @@ export default function ManifestoPage() {
         eyebrow="The gap"
         title="Mid-market vertical SaaS lives between Apollo and Gong, and nothing serves them."
         paragraphs={[
-          "Apollo's contact data was built for B2B SaaS selling to other B2B SaaS. Restaurant operators don't have a Crunchbase entry. HVAC dispatchers don't show up in LinkedIn Sales Navigator the way a VP of Engineering does. The firmographic signature that powers Apollo's match logic is thin for the buyer LeadAC's customers sell to.",
+          "Apollo's contact data was built for B2B SaaS selling to other B2B SaaS. Restaurant operators don't have a Crunchbase entry. HVAC dispatchers don't show up in LinkedIn Sales Navigator the way a VP of Engineering does. The firmographic signature that powers Apollo's match logic is thin for the buyer Revint's customers sell to.",
           "Clay is a programmable workflow runtime. Powerful, real, well built — and it requires a GTM engineer to operate. Vertical SaaS teams at $5M to $30M ARR rarely have one. The Clay account that gets opened in week one usually goes idle by month two. Not because Clay is wrong; because the staffing assumption is wrong for the segment.",
           "Gong's $100K floor and 8-week implementation rule out almost every team under 50 sellers. Outreach is being repositioned upmarket. Smartlead and Instantly are sequencers — they send the email but don't decide what should be in it. The gap between Apollo's lists and Gong's transcripts is where vertical SaaS GTM teams live, and the dominant stack does not serve it.",
         ]}
@@ -113,7 +113,7 @@ export default function ManifestoPage() {
 
       <StackPositionDiagram
         eyebrow="How the layers stack"
-        title="Apollo finds. Clay enriches. Gong records. LeadAC remembers."
+        title="Apollo finds. Clay enriches. Gong records. Revint remembers."
         subtitle="We do not replace any of the four boxes. We are the operational memory layer that ties them together — the layer that learns from your won and lost deals and pushes that pattern back into discovery."
       />
 
@@ -121,7 +121,7 @@ export default function ManifestoPage() {
         eyebrow="What we are not"
         title="We are not another AI SDR. We are not a horizontal sales tool."
         paragraphs={[
-          "We do not write your emails. We do not replace your reps. We do not sell call recording, forecasting, or pipeline review. We do not bid on the keyword 'AI SDR' and we never describe LeadAC as 'agentic'. The 11x, Artisan, AiSDR pattern of fully autonomous outreach is the opposite of what we build — the homework is automated, the conversation stays human.",
+          "We do not write your emails. We do not replace your reps. We do not sell call recording, forecasting, or pipeline review. We do not bid on the keyword 'AI SDR' and we never describe Revint as 'agentic'. The 11x, Artisan, AiSDR pattern of fully autonomous outreach is the opposite of what we build — the homework is automated, the conversation stays human.",
           "We do not sell to enterprise GTM teams that have a dedicated RevOps engineer, a Salesforce + Gong stack, and a 12-month buying cycle. Gong serves that customer well and the price is fair for the buyer. We serve the 10x larger TAM below that price floor — vertical SaaS companies at $2M to $50M ARR with 5 to 30 sellers and a HubSpot instance that already runs the business.",
           "We do not promise 10x. We do not promise to replace your team. We promise to write twelve fields into your HubSpot company record before your SDR opens the contact, and to learn from your closed-won and closed-lost outcomes inside of every list we generate after that.",
         ]}
@@ -142,7 +142,7 @@ export default function ManifestoPage() {
 
       <CtaBlock
         eyebrow="The pilot"
-        title="Run LeadAC on five of your own accounts for thirty days."
+        title="Run Revint on five of your own accounts for thirty days."
         subtitle="$500, one vertical pack, your HubSpot. We refund the pilot fee if you don't see a brief land that your SDR would have used."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}

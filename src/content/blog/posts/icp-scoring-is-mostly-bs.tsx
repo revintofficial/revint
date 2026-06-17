@@ -9,7 +9,7 @@ export const post: BlogPost = {
     "Most ICP-scoring frameworks are elaborate procrastination. The three fields that predict close rate, the twelve that don't, and how to stop pretending a spreadsheet is strategy.",
   lede: "If your ICP doc is longer than a page, your ICP doc is procrastination.",
   publishedAt: "2026-01-31T09:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["icp", "sales", "contrarian"],
   readMinutes: 6,
   body: () => (
@@ -214,7 +214,7 @@ export const post: BlogPost = {
   ],
   citations: [
     {
-      label: "Leadac customer cohort analysis (aggregate)",
+      label: "Revint customer cohort analysis (aggregate)",
       url: "/blog/icp-scoring-is-mostly-bs",
     },
     {

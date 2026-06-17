@@ -9,6 +9,7 @@ import { generateMockupSlug } from "@/lib/mockup";
 import { getNicheByQuery } from "@/lib/niches";
 import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
 import { logger } from "@/lib/logger";
+import { siteHost } from "@/lib/seo/metadata";
 
 // Gemini plan generation can take 20-40s inline.
 export const runtime = "nodejs";
@@ -167,7 +168,7 @@ export async function POST(
         },
       });
       const proto = request.headers.get("x-forwarded-proto") || "https";
-      const host = request.headers.get("host") || "leadac.ai";
+      const host = request.headers.get("host") || siteHost();
       mockupUrl = `${proto}://${host}/m/${mockup.slug}`;
     } catch (mockupErr) {
       logger.error("api.website_plan.mockup_create_failed", { err: mockupErr });

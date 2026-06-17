@@ -37,7 +37,7 @@ const FAQS = [
   {
     question: "Can I request a city that isn't listed?",
     answer:
-      "Yes — we prioritise cities with active Leadac AI users. If you sign up and run discovery in your target postcode, your city's profile count will rise; once three businesses pass the floor, the city appears in the directory.",
+      "Yes — we prioritise cities with active Revint users. If you sign up and run discovery in your target postcode, your city's profile count will rise; once three businesses pass the floor, the city appears in the directory.",
   },
 ];
 
@@ -74,7 +74,7 @@ export default async function CitiesIndexPage() {
         intro="Every city below has at least three audited local-service businesses in our directory. We keep the list fresh by re-crawling weekly and dropping stale entries."
       >
         <DirectAnswer>
-          The Leadac AI directory currently lists {cities.length} cities
+          The Revint directory currently lists {cities.length} cities
           with at least three audited local-service businesses each,
           refreshed weekly from live Google Maps data.
         </DirectAnswer>

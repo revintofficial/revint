@@ -17,10 +17,10 @@ function bar(used: number, limit: number) {
   const pct = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
   const color =
     pct >= 90
-      ? "var(--leadac-error)"
+      ? "var(--revint-error)"
       : pct >= 70
-      ? "var(--leadac-warning)"
-      : "var(--leadac-500)";
+      ? "var(--revint-warning)"
+      : "var(--revint-500)";
   return { pct, color };
 }
 
@@ -39,7 +39,7 @@ export function UsageBadge({ usage }: UsageBadgeProps) {
   return (
     <Link
       href="/app/settings/billing"
-      className="block rounded-lg p-2.5 hover:bg-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
+      className="block rounded-lg p-2.5 hover:bg-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--revint-500)"
       style={{
         background: "rgba(255, 255, 255, 0.025)",
         border: "0.5px solid rgba(255, 255, 255, 0.06)",
@@ -51,15 +51,15 @@ export function UsageBadge({ usage }: UsageBadgeProps) {
           {usage.planName} plan
         </span>
         {usage.plan === "FREE" && (
-          <span className="text-[10px] font-medium text-(--leadac-500)">Upgrade →</span>
+          <span className="text-[10px] font-medium text-(--revint-500)">Upgrade →</span>
         )}
       </div>
 
       <div className="space-y-1.5">
         <div>
           <div className="flex items-center justify-between text-[10.5px] mb-0.5">
-            <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)" }}>Leads</span>
-            <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.7)" }}>
+            <span style={{ color: "hsl(var(--revint-h) var(--revint-nts) 92% / 0.55)" }}>Leads</span>
+            <span style={{ color: "hsl(var(--revint-h) var(--revint-nts) 92% / 0.7)" }}>
               {NUM_FMT.format(usage.leadsUsed)} / {NUM_FMT.format(usage.leadsLimit)}
             </span>
           </div>
@@ -75,8 +75,8 @@ export function UsageBadge({ usage }: UsageBadgeProps) {
         </div>
         <div>
           <div className="flex items-center justify-between text-[10.5px] mb-0.5">
-            <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)" }}>AI credits</span>
-            <span style={{ color: "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.7)" }}>
+            <span style={{ color: "hsl(var(--revint-h) var(--revint-nts) 92% / 0.55)" }}>AI credits</span>
+            <span style={{ color: "hsl(var(--revint-h) var(--revint-nts) 92% / 0.7)" }}>
               {NUM_FMT.format(usage.aiUsed)} / {NUM_FMT.format(usage.aiLimit)}
             </span>
           </div>

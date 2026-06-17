@@ -52,7 +52,7 @@ export default function FieldServicePage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "For verticals", url: "/for" },
           { name: vertical.shortName, url: PATH },
         ])}
@@ -60,7 +60,7 @@ export default function FieldServicePage() {
       <JsonLd
         id="ld-service"
         data={serviceSchema({
-          name: `LeadAC for ${vertical.name}`,
+          name: `Revint for ${vertical.name}`,
           description:
             "Operational intelligence for field service software vendors: vertical software signature detection, multi-location operator linking, owner-operator activity scoring, HubSpot-native sync.",
           url: `${SITE.url}${PATH}`,

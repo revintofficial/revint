@@ -31,7 +31,7 @@ export default function ChangelogPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Changelog", url: PATH },
         ])}
       />

@@ -1,7 +1,7 @@
 /**
  * Operator chip cards for the v2 marketing surface.
  *
- * Design intent: tell the reader who operates LeadAC every day, in
+ * Design intent: tell the reader who operates Revint every day, in
  * three concrete operator types. Small icon, label, one-line
  * description. No bullets, no decoration. Pure server.
  *
@@ -35,7 +35,7 @@ const SECONDARY: Chip[] = [
   {
     icon: Building2,
     label: "Founders running their own GTM",
-    body: "For the founder who is the SDR, the AE, and the marketer all at once. LeadAC gives the RevOps function that does not exist yet somewhere to leave its memory.",
+    body: "For the founder who is the SDR, the AE, and the marketer all at once. Revint gives the RevOps function that does not exist yet somewhere to leave its memory.",
   },
 ];
 
@@ -49,13 +49,13 @@ function ChipCard({
   const Icon = chip.icon;
   return (
     <article
-      className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_9%)] p-6 transition-colors hover:border-white/[0.12] h-full"
+      className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--revint-h)_var(--revint-ns)_9%)] p-6 transition-colors hover:border-white/[0.12] h-full"
     >
       <span
         className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.06]"
         style={{
-          background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.08)",
-          color: "hsl(var(--leadac-h) var(--leadac-s) 72%)",
+          background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.08)",
+          color: "hsl(var(--revint-h) var(--revint-s) 72%)",
         }}
       >
         <Icon className="h-4 w-4" />
@@ -87,7 +87,7 @@ export function BuiltFor() {
     <Section
       eyebrow="Who this is for"
       headline="If you sell to local business and your reps still research by hand, we built this for you."
-      sub="LeadAC fits the GTM teams stuck between Apollo's list and Gong's price tag. Five to thirty sellers. $2M to $50M ARR. No full-time RevOps engineer yet. The verticals we ship for are listed at the bottom of the page."
+      sub="Revint fits the GTM teams stuck between Apollo's list and Gong's price tag. Five to thirty sellers. $2M to $50M ARR. No full-time RevOps engineer yet. The verticals we ship for are listed at the bottom of the page."
     >
       <div
         className="grid grid-cols-1 md:grid-cols-3 gap-4"

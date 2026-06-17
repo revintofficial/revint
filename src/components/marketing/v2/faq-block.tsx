@@ -20,8 +20,8 @@ interface QA {
 
 export const HOMEPAGE_FAQ: QA[] = [
   {
-    q: "We already use HubSpot or Salesforce. What does LeadAC actually add?",
-    a: "Your CRM is the system of record. It knows the deal, the stage, and the owner. It does not know that this account has 8 locations, runs on Square POS, and has rising wait-time complaints in its last 30 reviews. LeadAC writes that context into the same lead and account records your team already opens. Nothing to migrate.",
+    q: "We already use HubSpot or Salesforce. What does Revint actually add?",
+    a: "Your CRM is the system of record. It knows the deal, the stage, and the owner. It does not know that this account has 8 locations, runs on Square POS, and has rising wait-time complaints in its last 30 reviews. Revint writes that context into the same lead and account records your team already opens. Nothing to migrate.",
   },
   {
     q: "How is this different from Apollo, Clay, or Gong?",
@@ -51,7 +51,7 @@ export function FaqBlock() {
 
   return (
     <Section id="faq" eyebrow="Questions" headline={headline} sub={sub}>
-      <div className="mx-auto max-w-3xl divide-y divide-white/[0.06] rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_8%)]">
+      <div className="mx-auto max-w-3xl divide-y divide-white/[0.06] rounded-2xl border border-white/[0.06] bg-[hsl(var(--revint-h)_var(--revint-ns)_8%)]">
         {HOMEPAGE_FAQ.map((item) => (
           <details
             key={item.q}
@@ -74,10 +74,10 @@ export function FaqBlock() {
       <p className="mt-6 text-center text-[13px] text-white/45">
         Still have questions?{" "}
         <a
-          href="mailto:mert@leadacai.com"
+          href="mailto:mert@revint.dev"
           className="text-white/75 hover:text-white underline-offset-4 hover:underline"
         >
-          Email mert@leadacai.com
+          Email mert@revint.dev
         </a>
       </p>
     </Section>

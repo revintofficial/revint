@@ -44,7 +44,7 @@ export default function RestaurantTechPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "For verticals", url: "/for" },
           { name: vertical.shortName, url: PATH },
         ])}
@@ -52,7 +52,7 @@ export default function RestaurantTechPage() {
       <JsonLd
         id="ld-service"
         data={serviceSchema({
-          name: `LeadAC for ${vertical.name}`,
+          name: `Revint for ${vertical.name}`,
           description:
             "Operational intelligence for restaurant tech vendors: footer signature detection (Toast, OpenTable, Resy, Square), migration-candidate identification, multi-location group linking.",
           url: `${SITE.url}${PATH}`,

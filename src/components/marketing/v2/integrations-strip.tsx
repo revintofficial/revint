@@ -1,7 +1,7 @@
 /**
  * Stack-compatibility strip for the v2 marketing surface.
  *
- * Design intent: position LeadAC as the revenue intelligence layer
+ * Design intent: position Revint as the revenue intelligence layer
  * that sits on top of the GTM stack vertical SaaS teams already run.
  * Brand logos rendered from `public/integrations/` (SimpleIcons-style
  * monoglyphs in brand color), arranged in two rows by role:
@@ -102,7 +102,7 @@ function RowLabel({ children }: { children: React.ReactNode }) {
   return (
     <p
       className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-center md:text-left"
-      style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 62%)" }}
+      style={{ color: "hsl(var(--revint-h) var(--revint-s) 62%)" }}
     >
       {children}
     </p>
@@ -116,7 +116,7 @@ export function IntegrationsStrip() {
         <header className="text-center max-w-2xl mx-auto">
           <p
             className="text-[11.5px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 62%)" }}
+            style={{ color: "hsl(var(--revint-h) var(--revint-s) 62%)" }}
           >
             Integrations
           </p>
@@ -171,7 +171,7 @@ export function IntegrationsStrip() {
 
         <p className="mt-10 text-center text-[12.5px] text-white/45 max-w-2xl mx-auto leading-relaxed">
           Brand names and logos are property of their respective owners and
-          shown to indicate stack compatibility. Nothing to migrate — LeadAC
+          shown to indicate stack compatibility. Nothing to migrate — Revint
           reads what you already use and operates it as one model.
         </p>
       </div>

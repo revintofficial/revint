@@ -1,8 +1,8 @@
 /**
- * Leadac theme — single source of truth for JS consumers.
+ * Revint theme — single source of truth for JS consumers.
  *
  * The CSS layer in [src/app/globals.css](src/app/globals.css) holds the
- * canonical token scale (--leadac-100 … --leadac-900, neutrals, semantics,
+ * canonical token scale (--revint-100 … --revint-900, neutrals, semantics,
  * glow). This module mirrors the same scale as JavaScript constants for
  * consumers that cannot read CSS custom properties at runtime, primarily:
  *
@@ -11,31 +11,31 @@
  *   - Funnel mono-palette generation across N steps
  *
  * To re-skin the application, change ONLY these three knobs (and keep
- * them in sync with the matching --leadac-h / --leadac-s / --leadac-ns
+ * them in sync with the matching --revint-h / --revint-s / --revint-ns
  * declarations in `globals.css`).
  *
- *   LEADAC_HUE         → primary hue   (0-360, current 218 = royal azure)
- *   LEADAC_SATURATION  → primary sat   (0-100, current 85)
- *   LEADAC_NEUTRAL_SAT → neutral sat   (0-100, current 7 for surfaces)
+ *   REVINT_HUE         → primary hue   (0-360, current 218 = royal azure)
+ *   REVINT_SATURATION  → primary sat   (0-100, current 85)
+ *   REVINT_NEUTRAL_SAT → neutral sat   (0-100, current 7 for surfaces)
  *
  * Everything else derives from those three numbers.
  */
 
-export const LEADAC_HUE = 218;
-export const LEADAC_SATURATION = 85;
-export const LEADAC_NEUTRAL_SAT = 7;
-export const LEADAC_TEXT_SAT = 10;
+export const REVINT_HUE = 218;
+export const REVINT_SATURATION = 85;
+export const REVINT_NEUTRAL_SAT = 7;
+export const REVINT_TEXT_SAT = 10;
 
-const H = LEADAC_HUE;
-const S = LEADAC_SATURATION;
-const NS = LEADAC_NEUTRAL_SAT;
-const TS = LEADAC_TEXT_SAT;
+const H = REVINT_HUE;
+const S = REVINT_SATURATION;
+const NS = REVINT_NEUTRAL_SAT;
+const TS = REVINT_TEXT_SAT;
 
 const primary = (l: number) => `hsl(${H} ${S}% ${l}%)`;
 const surface = (l: number) => `hsl(${H} ${NS}% ${l}%)`;
 const text = (l: number) => `hsl(${H} ${TS}% ${l}%)`;
 
-export const LEADAC = {
+export const REVINT = {
   primary100: primary(88),
   primary200: primary(78),
   primary300: primary(68),
@@ -77,7 +77,7 @@ export function getFunnelStepColor(stepIndex: number, totalSteps: number): strin
  * Derive a translucent primary-accent at a given lightness. Useful for
  * halos, focus rings, and category background tints (e.g., status badges).
  */
-export function leadacAlpha(lightness: number, alpha: number): string {
+export function revintAlpha(lightness: number, alpha: number): string {
   return `hsl(${H} ${S}% ${lightness}% / ${alpha})`;
 }
 
@@ -85,6 +85,6 @@ export function leadacAlpha(lightness: number, alpha: number): string {
  * Derive a translucent neutral surface at a given lightness. Useful for
  * panel overlays, glass surfaces, hover states.
  */
-export function leadacNeutralAlpha(lightness: number, alpha: number): string {
+export function revintNeutralAlpha(lightness: number, alpha: number): string {
   return `hsl(${H} ${NS}% ${lightness}% / ${alpha})`;
 }

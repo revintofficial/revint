@@ -22,6 +22,7 @@ type FaqRoute =
   | "for-field-service"
   | "for-restaurant-tech"
   | "for-dental"
+  | "for-agency"
   | "integrations-hubspot"
   | "security"
   | "about";
@@ -29,44 +30,44 @@ type FaqRoute =
 export const FAQS: Record<FaqRoute, FaqEntry[]> = {
   home: [
     {
-      question: "What is LeadAC?",
+      question: "What is Revint?",
       answer:
-        "LeadAC is operational revenue intelligence for SMB markets — the memory layer that learns what closes in local-business markets and writes the next best action into the HubSpot card your SDR already opens. Built for vertical SaaS GTM teams at $2M to $50M ARR selling into restaurants, field service, dental, beauty, and hospitality.",
+        "Revint is operational revenue intelligence for SMB markets — the memory layer that learns what closes in local-business markets and writes the next best action into the HubSpot card your SDR already opens. Built for vertical SaaS GTM teams at $2M to $50M ARR selling into restaurants, field service, dental, beauty, and hospitality.",
     },
     {
       question: "We already use Orbital, Openmart, or Resquared. Do you replace them?",
       answer:
-        "No. Orbital, Openmart, and Resquared are upstream data rails — they find the SMB accounts. LeadAC sits one layer above and decides which of those accounts deserve a rep's time this week, why, and what to do next. Bring their exports as CSV or keep them in HubSpot. LeadAC turns their rows into a learning loop on what actually converts in your vertical.",
+        "No. Orbital, Openmart, and Resquared are upstream data rails — they find the SMB accounts. Revint sits one layer above and decides which of those accounts deserve a rep's time this week, why, and what to do next. Bring their exports as CSV or keep them in HubSpot. Revint turns their rows into a learning loop on what actually converts in your vertical.",
     },
     {
-      question: "We can build this in Clay. Why pay for LeadAC?",
+      question: "We can build this in Clay. Why pay for Revint?",
       answer:
-        "You can build pieces of it in Clay. Clay is a workbench — flexible, but unopinionated, and it needs a GTM engineer to operate. LeadAC is the finished SMB-vertical brain: vertical signal libraries, source-confidence scoring, rep-ready brief, the next best action, and an outcome loop that learns from every won and lost deal. No GTM engineer required.",
+        "You can build pieces of it in Clay. Clay is a workbench — flexible, but unopinionated, and it needs a GTM engineer to operate. Revint is the finished SMB-vertical brain: vertical signal libraries, source-confidence scoring, rep-ready brief, the next best action, and an outcome loop that learns from every won and lost deal. No GTM engineer required.",
     },
     {
       question: "Is this like Common Room, HockeyStack, or Pocus?",
       answer:
-        "Similar direction, different market. Common Room is broad buyer intelligence for PLG and community-led GTM. HockeyStack is enterprise revenue agents and attribution. Pocus prioritises product-usage signals for PLG sales. LeadAC focuses on teams selling into local-business and SMB markets, where the buyer's context lives in websites, reviews, locations, owner activity — not in your product analytics.",
+        "Similar direction, different market. Common Room is broad buyer intelligence for PLG and community-led GTM. HockeyStack is enterprise revenue agents and attribution. Pocus prioritises product-usage signals for PLG sales. Revint focuses on teams selling into local-business and SMB markets, where the buyer's context lives in websites, reviews, locations, owner activity — not in your product analytics.",
     },
     {
       question: "Is this just lead gen?",
       answer:
-        "No. Lead gen gives you rows. LeadAC tells you which rows deserve action, why, what to say, and what the team should learn after the outcome lands. The deliverable is a per-account brief with a recommended next action inside HubSpot, not a CSV. We don't try to be your data source — we make the data sources you already pay for compound into team memory.",
+        "No. Lead gen gives you rows. Revint tells you which rows deserve action, why, what to say, and what the team should learn after the outcome lands. The deliverable is a per-account brief with a recommended next action inside HubSpot, not a CSV. We don't try to be your data source — we make the data sources you already pay for compound into team memory.",
     },
     {
-      question: "How is LeadAC different from Gong?",
+      question: "How is Revint different from Gong?",
       answer:
-        "Gong is conversation intelligence — it remembers what your team said on calls and emails. LeadAC is operational intelligence — we remember what the account is doing in the world. Gong starts at $100,000 per year for 25 reps and requires 8 weeks of RevOps engineering. LeadAC starts at $1,500 per month for 5 reps and onboards in under an hour.",
+        "Gong is conversation intelligence — it remembers what your team said on calls and emails. Revint is operational intelligence — we remember what the account is doing in the world. Gong starts at $100,000 per year for 25 reps and requires 8 weeks of RevOps engineering. Revint starts at $1,500 per month for 5 reps and onboards in under an hour.",
     },
     {
-      question: "Which CRMs does LeadAC integrate with?",
+      question: "Which CRMs does Revint integrate with?",
       answer:
         "HubSpot only, today. The HubSpot OAuth integration writes 12 enriched fields per account into the company record and ingests closed-won and closed-lost outcomes back into the learning loop. Other sources — Apollo, Clay, Orbital, Openmart, Resquared, Salesforce — land via CSV import while native connectors ship. We'd rather promise one connector that works than five that drift.",
     },
     {
       question: "Do you replace our SDRs with an AI SDR?",
       answer:
-        "No. LeadAC is not an AI SDR. We do the homework your SDR was doing manually — the account research, the vertical signal lookup, the pre-call brief, the recommended next action — so the human SDR still owns the conversation. The 11x / Artisan / AiSDR pattern of fully autonomous outreach is the opposite of what we build.",
+        "No. Revint is not an AI SDR. We do the homework your SDR was doing manually — the account research, the vertical signal lookup, the pre-call brief, the recommended next action — so the human SDR still owns the conversation. The 11x / Artisan / AiSDR pattern of fully autonomous outreach is the opposite of what we build.",
     },
   ],
 
@@ -74,7 +75,7 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
     {
       question: "Why operational intelligence and not conversation intelligence?",
       answer:
-        "Operational intelligence indexes what the account is doing in the world — reviews, location count, vertical software stack, owner activity. Conversation intelligence indexes what your team said on calls. Both are valuable. They live on different substrates and serve different buyers. Gong owns conversation intelligence at enterprise. LeadAC owns operational intelligence for vertical SaaS at mid-market.",
+        "Operational intelligence indexes what the account is doing in the world — reviews, location count, vertical software stack, owner activity. Conversation intelligence indexes what your team said on calls. Both are valuable. They live on different substrates and serve different buyers. Gong owns conversation intelligence at enterprise. Revint owns operational intelligence for vertical SaaS at mid-market.",
     },
     {
       question: "Why a memory layer instead of better lists?",
@@ -84,12 +85,12 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
     {
       question: "Why vertical SaaS as the only ICP?",
       answer:
-        "Horizontal sales tools work for horizontal sales. Vertical SaaS GTM teams selling to local business sit in a gap: Apollo's contact data is shallow on local businesses, Clay requires a GTM engineer, Gong is unaffordable. Roughly 50,000 vertical SaaS companies in the $2M-$50M ARR band live in that gap. LeadAC exists to serve them.",
+        "Horizontal sales tools work for horizontal sales. Vertical SaaS GTM teams selling to local business sit in a gap: Apollo's contact data is shallow on local businesses, Clay requires a GTM engineer, Gong is unaffordable. Roughly 50,000 vertical SaaS companies in the $2M-$50M ARR band live in that gap. Revint exists to serve them.",
     },
     {
       question: "How is this not just another AI tool?",
       answer:
-        "We never describe LeadAC as 'AI-powered' or 'agentic.' The product uses Gemini for signal extraction and pattern matching — that's a feature, not the product. The product is a closed-loop system that remembers what closes in your vertical. The AI inside is the same AI everyone has access to; the data substrate and the closed-loop CRM ingestion are what's hard to replicate.",
+        "We never describe Revint as 'AI-powered' or 'agentic.' The product uses Gemini for signal extraction and pattern matching — that's a feature, not the product. The product is a closed-loop system that remembers what closes in your vertical. The AI inside is the same AI everyone has access to; the data substrate and the closed-loop CRM ingestion are what's hard to replicate.",
     },
     {
       question: "What do you not do?",
@@ -135,7 +136,7 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
     {
       question: "How long is the demo?",
       answer:
-        "Twenty minutes. We walk through one of your own actual prospect accounts — you paste a website URL on the call, we run LeadAC live, and you see the brief that would land in your HubSpot card before your SDR dials. No slideware.",
+        "Twenty minutes. We walk through one of your own actual prospect accounts — you paste a website URL on the call, we run Revint live, and you see the brief that would land in your HubSpot card before your SDR dials. No slideware.",
     },
     {
       question: "Do I need to install anything before the call?",
@@ -145,7 +146,7 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
     {
       question: "What happens after the demo?",
       answer:
-        "If LeadAC fits, you start the pilot the same week — $500 for 30 days, 500 accounts, one vertical pack, your real CRM. If it doesn't fit, we say so on the call and point you to whichever tool does. We pass on more deals than we close because we'd rather lose a deal than ship a bad fit.",
+        "If Revint fits, you start the pilot the same week — $500 for 30 days, 500 accounts, one vertical pack, your real CRM. If it doesn't fit, we say so on the call and point you to whichever tool does. We pass on more deals than we close because we'd rather lose a deal than ship a bad fit.",
     },
   ],
 
@@ -153,22 +154,22 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
     {
       question: "Why not just keep using Apollo + Clay + Gong + Smartlead?",
       answer:
-        "You can. About 70% of vertical SaaS GTM teams do, and the stack works for individual jobs. What it doesn't do is learn — none of those tools ingest your won and lost deal outcomes back into the next list. Adding LeadAC at $1,500 per month replaces zero of those tools and adds the memory layer that ties them together.",
+        "You can. About 70% of vertical SaaS GTM teams do, and the stack works for individual jobs. What it doesn't do is learn — none of those tools ingest your won and lost deal outcomes back into the next list. Adding Revint at $1,500 per month replaces zero of those tools and adds the memory layer that ties them together.",
     },
     {
       question: "What does the stack cost together?",
       answer:
-        "A typical 5-seat vertical SaaS GTM team running Apollo Professional ($1,392/yr), Clay Growth ($5,352/yr), Smartlead Pro ($468/yr), and a Gong Foundation pilot ($22,000+ in year one) lands around $29,212 in stack cost — and gets no closed-loop learning. LeadAC Team at $18,000/yr replaces the missing memory layer and doesn't ask you to switch the rest of the stack.",
+        "A typical 5-seat vertical SaaS GTM team running Apollo Professional ($1,392/yr), Clay Growth ($5,352/yr), Smartlead Pro ($468/yr), and a Gong Foundation pilot ($22,000+ in year one) lands around $29,212 in stack cost — and gets no closed-loop learning. Revint Team at $18,000/yr replaces the missing memory layer and doesn't ask you to switch the rest of the stack.",
     },
     {
-      question: "Can I replace Apollo with LeadAC?",
+      question: "Can I replace Apollo with Revint?",
       answer:
-        "No. Apollo is a contact database with 230M records — we don't replace that primitive. LeadAC indexes operational signals on local business accounts; Apollo indexes desk-worker contact data. Most LeadAC customers keep Apollo for the contact list and use LeadAC for the per-account brief that turns the Apollo list into a working SDR motion.",
+        "No. Apollo is a contact database with 230M records — we don't replace that primitive. Revint indexes operational signals on local business accounts; Apollo indexes desk-worker contact data. Most Revint customers keep Apollo for the contact list and use Revint for the per-account brief that turns the Apollo list into a working SDR motion.",
     },
     {
-      question: "Can I replace Clay with LeadAC?",
+      question: "Can I replace Clay with Revint?",
       answer:
-        "Often, yes — if you don't have a GTM engineer. Clay is powerful and flexible; if you can hire the engineer to operate it, keep it. Without that engineer, Clay sits unused or burns credits. LeadAC's vertical packs are the finished version of the workflows most teams want to build in Clay.",
+        "Often, yes — if you don't have a GTM engineer. Clay is powerful and flexible; if you can hire the engineer to operate it, keep it. Without that engineer, Clay sits unused or burns credits. Revint's vertical packs are the finished version of the workflows most teams want to build in Clay.",
     },
   ],
 
@@ -179,14 +180,14 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
         "Apollo's data is right for B2B SaaS selling to other B2B SaaS, where the buyer has a LinkedIn profile and a Crunchbase entry. For vertical SaaS selling to local business — restaurants, HVAC operators, dental practices — Apollo's coverage is thin and the bounce rate runs 12 to 14 percent without third-party verification add-ons.",
     },
     {
-      question: "Will LeadAC break my Apollo workflow?",
+      question: "Will Revint break my Apollo workflow?",
       answer:
-        "No. LeadAC reads from HubSpot, not Apollo. You keep your Apollo workflow; LeadAC enriches the Apollo-sourced contacts with operational signals — location count, vertical software stack, owner activity — and writes those fields into the HubSpot company record so your SDR sees them before the dial.",
+        "No. Revint reads from HubSpot, not Apollo. You keep your Apollo workflow; Revint enriches the Apollo-sourced contacts with operational signals — location count, vertical software stack, owner activity — and writes those fields into the HubSpot company record so your SDR sees them before the dial.",
     },
     {
-      question: "How is LeadAC's discovery different from Apollo's?",
+      question: "How is Revint's discovery different from Apollo's?",
       answer:
-        "Apollo's discovery is firmographic — industry code, employee count, tech stack from LinkedIn. LeadAC's discovery is operational — location count from Google Business Profile, vertical software signature from the website footer, review tone from public reviews, owner activity from recent posts. Apollo answers 'is this a restaurant?'. LeadAC answers 'is this a Toast-on-Resy multi-location restaurant in expansion mode?'.",
+        "Apollo's discovery is firmographic — industry code, employee count, tech stack from LinkedIn. Revint's discovery is operational — location count from Google Business Profile, vertical software signature from the website footer, review tone from public reviews, owner activity from recent posts. Apollo answers 'is this a restaurant?'. Revint answers 'is this a Toast-on-Resy multi-location restaurant in expansion mode?'.",
     },
   ],
 
@@ -197,22 +198,22 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
         "When you don't have a GTM engineer, when you send fewer than 10,000 emails per month, when your verticals are stable, or when you keep losing your Clay workflows to credit overruns. SalesEcho's 2026 review names this directly: 'Clay is amazing at scale, but if you send fewer than 10k emails per month, it may not be worth the credits.'",
     },
     {
-      question: "Can LeadAC do everything Clay does?",
+      question: "Can Revint do everything Clay does?",
       answer:
-        "No. Clay is a programmable workflow runtime with 150+ enrichment providers and freeform workflow logic. LeadAC is a finished product with three vertical packs (Field service, Restaurant tech, Dental). If your vertical falls inside one of those packs, LeadAC is the faster path. If you need a completely custom workflow with 12 enrichment hops and conditional logic, Clay is the right tool.",
+        "No. Clay is a programmable workflow runtime with 150+ enrichment providers and freeform workflow logic. Revint is a finished product with three vertical packs (Field service, Restaurant tech, Dental). If your vertical falls inside one of those packs, Revint is the faster path. If you need a completely custom workflow with 12 enrichment hops and conditional logic, Clay is the right tool.",
     },
     {
-      question: "Is LeadAC built on top of Clay?",
+      question: "Is Revint built on top of Clay?",
       answer:
-        "No. LeadAC is its own data substrate — Playwright-based signal extraction, Gemini-based pattern matching, pgvector-backed semantic memory, HubSpot OAuth integration. Clay would not have been the right primitive for the closed-loop CRM ingestion that defines our category.",
+        "No. Revint is its own data substrate — Playwright-based signal extraction, Gemini-based pattern matching, pgvector-backed semantic memory, HubSpot OAuth integration. Clay would not have been the right primitive for the closed-loop CRM ingestion that defines our category.",
     },
   ],
 
   "vs-gong": [
     {
-      question: "How is LeadAC different from Gong Revenue Graph?",
+      question: "How is Revint different from Gong Revenue Graph?",
       answer:
-        "Gong's Revenue Graph indexes what your team said — calls, emails, meeting transcripts. LeadAC's memory layer indexes what the account is doing — reviews, location count, vertical software stack, owner activity. Same word ('memory'), different substrate. Same buyer ('VP Sales'), different price band ($100K vs $18K per year) and different surface (Gong app vs HubSpot card).",
+        "Gong's Revenue Graph indexes what your team said — calls, emails, meeting transcripts. Revint's memory layer indexes what the account is doing — reviews, location count, vertical software stack, owner activity. Same word ('memory'), different substrate. Same buyer ('VP Sales'), different price band ($100K vs $18K per year) and different surface (Gong app vs HubSpot card).",
     },
     {
       question: "Why can't we just use Gong?",
@@ -267,6 +268,29 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
     },
   ],
 
+  "for-agency": [
+    {
+      question: "Do you replace Apollo or Clay for my agency?",
+      answer:
+        "No. Most agencies run Revint in front of Apollo, not instead of it. Apollo gives you the contact; Revint gives you the local-business context Apollo's firmographics miss — the stack signature, location count, review tone, and the opener grounded in what the site audit found. Keep your existing tools; Revint fills the research gap your SDRs do by hand.",
+    },
+    {
+      question: "How fast can I stand up a new client niche?",
+      answer:
+        "Days, not weeks. A new niche means loading a signal pack — Field service, Restaurant tech, or Dental on day one — not a month of manual list-building. You point Revint at the client's market and ICP, and the first enriched accounts land in their HubSpot inside the first hour.",
+    },
+    {
+      question: "Can I run Revint across multiple client HubSpots?",
+      answer:
+        "Yes. Each client connects their own HubSpot via OAuth, scoped to their workspace. Briefs and the 12 enriched fields land in that client's company records; closed-won and closed-lost outcomes feed that client's learning loop only. Data never crosses between client workspaces — it's enforced at the database row level.",
+    },
+    {
+      question: "Does Revint make my agency look better in client reviews?",
+      answer:
+        "That's the point. You walk into the QBR with account-level intelligence the client's last agency never had — why these accounts, what changed, and what closed. The brief sits inside their HubSpot, so the work is visible where they already look, not buried in a deck.",
+    },
+  ],
+
   "for-dental": [
     {
       question: "Which dental practice management systems do you index?",
@@ -284,17 +308,17 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
     {
       question: "How long does the HubSpot integration take to set up?",
       answer:
-        "Under 30 minutes. OAuth flow with your HubSpot admin account, pick the company and contact properties you want LeadAC to write to (we propose a 12-field default map), pick which deal stages trigger the closed-loop ingestion (we default to closed-won and closed-lost). First 200 accounts land in HubSpot in under an hour.",
+        "Under 30 minutes. OAuth flow with your HubSpot admin account, pick the company and contact properties you want Revint to write to (we propose a 12-field default map), pick which deal stages trigger the closed-loop ingestion (we default to closed-won and closed-lost). First 200 accounts land in HubSpot in under an hour.",
     },
     {
-      question: "What HubSpot fields does LeadAC write?",
+      question: "What HubSpot fields does Revint write?",
       answer:
         "Twelve company-record fields: location_count, vertical_stack_signature, review_tone, owner_activity_score, expansion_signal_date, multi_location_flag, dso_parent (where applicable), and five vertical-specific signal fields that depend on your vertical pack. All custom property values prefixed with leadac_ so there's no collision with your own properties.",
     },
     {
-      question: "Does LeadAC modify our contact lists or sequences?",
+      question: "Does Revint modify our contact lists or sequences?",
       answer:
-        "No. LeadAC only writes to company-record and contact-record property fields. We never modify your lists, sequences, workflows, or pipelines. The SDR sees the LeadAC brief inside the HubSpot card view; they choose what to do with it.",
+        "No. Revint only writes to company-record and contact-record property fields. We never modify your lists, sequences, workflows, or pipelines. The SDR sees the Revint brief inside the HubSpot card view; they choose what to do with it.",
     },
     {
       question: "What permissions does the HubSpot OAuth scope request?",
@@ -305,7 +329,7 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
 
   security: [
     {
-      question: "Is LeadAC SOC 2 Type II certified?",
+      question: "Is Revint SOC 2 Type II certified?",
       answer:
         "SOC 2 Type II is in progress. Target completion is Q3 2026. Until then we run on a SOC 2 Type II compliant infrastructure provider (AWS) and follow the same internal controls — we just don't yet have the third-party audit report. The Trust page tracks the audit progress in real time.",
     },
@@ -328,19 +352,19 @@ export const FAQS: Record<FaqRoute, FaqEntry[]> = {
 
   about: [
     {
-      question: "Who built LeadAC?",
+      question: "Who built Revint?",
       answer:
-        "LeadAC was founded in 2026 by a small team that previously worked on outbound at vertical SaaS companies. We're based in London, with team members in Istanbul and the US. The founding team is intentionally small — we'd rather ship one vertical pack well than three vertical packs poorly.",
+        "Revint was founded in 2026 by a small team that previously worked on outbound at vertical SaaS companies. We're based in London, with team members in Istanbul and the US. The founding team is intentionally small — we'd rather ship one vertical pack well than three vertical packs poorly.",
     },
     {
-      question: "Is LeadAC venture-backed?",
+      question: "Is Revint venture-backed?",
       answer:
         "We've taken a small pre-seed round to ship the first three vertical packs (Field service, Restaurant tech, Dental) and the HubSpot integration. We're not optimizing for the next round — we're optimizing for the first 50 paying customers in vertical SaaS GTM.",
     },
     {
       question: "What's on the roadmap?",
       answer:
-        "Through Q3 2026: Beauty and wellness vertical pack, Salesforce integration, SOC 2 Type II report, EU and UK data residency. Through Q4 2026: legal practice software vertical pack, embedded HubSpot widget (the 'Powered by LeadAC' pre-call brief that lives inside the HubSpot contact card UI), and an annual vertical SaaS GTM benchmark report.",
+        "Through Q3 2026: Beauty and wellness vertical pack, Salesforce integration, SOC 2 Type II report, EU and UK data residency. Through Q4 2026: legal practice software vertical pack, embedded HubSpot widget (the 'Powered by Revint' pre-call brief that lives inside the HubSpot contact card UI), and an annual vertical SaaS GTM benchmark report.",
     },
   ],
 };

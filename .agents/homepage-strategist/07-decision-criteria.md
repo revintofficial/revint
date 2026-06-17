@@ -114,7 +114,7 @@ The shortcut test: open the page and time how long until you can confidently say
 **Passing looks like.** Zero banned phrases. Sentence-case headings. Periods or commas instead of em dashes. Operator-to-operator register. Specific numbers over round ones.
 
 **Failing looks like.** The presence of any of:
-- "agent" / "AI agent" (when describing LeadAC itself)
+- "agent" / "AI agent" (when describing Revint itself)
 - "transformative", "groundbreaking", "revolutionary", "cutting-edge"
 - "delve", "leverage", "synergy", "robust", "seamless", "intuitive"
 - "memory loop", "compounding intelligence", "compounding part"
@@ -162,7 +162,7 @@ The rule from [`.agents/product-marketing-context.md`](../product-marketing-cont
 
 **The question.** Does the proposal map to existing component patterns and design tokens? Or does it require new infrastructure? If new infrastructure, is the cost honestly flagged on the cost ladder?
 
-**Passing looks like.** Every proposed section reuses an existing pattern from [`src/components/marketing/v2/`](../../src/components/marketing/v2) or [`src/components/app/lead-detail-v2/`](../../src/components/app/lead-detail-v2), uses `--leadac-*` tokens, and slots into the current composition. Where the proposal needs something new, the RFC labels it on the cost ladder from [`05-infrastructure-primer.md`](./05-infrastructure-primer.md) § 11 (Trivial / Small / Medium / Large / Forbidden) and explains the trade-off.
+**Passing looks like.** Every proposed section reuses an existing pattern from [`src/components/marketing/v2/`](../../src/components/marketing/v2) or [`src/components/app/lead-detail-v2/`](../../src/components/app/lead-detail-v2), uses `--revint-*` tokens, and slots into the current composition. Where the proposal needs something new, the RFC labels it on the cost ladder from [`05-infrastructure-primer.md`](./05-infrastructure-primer.md) § 11 (Trivial / Small / Medium / Large / Forbidden) and explains the trade-off.
 
 **Failing looks like.** A proposal that:
 - Hardcodes a hex color instead of a token. Fix: use the token.

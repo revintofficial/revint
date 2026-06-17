@@ -23,9 +23,9 @@ import { SITE } from "@/lib/seo/metadata";
 
 const PATH = "/vs/apollo";
 const TITLE =
-  "LeadAC vs Apollo — operational context the contact database doesn't index.";
+  "Revint vs Apollo — operational context the contact database doesn't index.";
 const DESCRIPTION =
-  "Apollo gives you contacts and firmographic data. LeadAC gives you the location count, vertical software stack, review tone, and owner activity Apollo's database doesn't index. Keep Apollo. Add the brief.";
+  "Apollo gives you contacts and firmographic data. Revint gives you the location count, vertical software stack, review tone, and owner activity Apollo's database doesn't index. Keep Apollo. Add the brief.";
 const PUBLISHED = "2026-05-22";
 
 export const metadata: Metadata = buildMetadata({
@@ -46,7 +46,7 @@ export default function VsApolloPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Compare", url: "/vs" },
           { name: "vs Apollo", url: PATH },
         ])}
@@ -94,12 +94,12 @@ export default function VsApolloPage() {
           {
             value: "12 fields",
             label:
-              "LeadAC writes into HubSpot per account — none overlap with Apollo's firmographic set.",
+              "Revint writes into HubSpot per account — none overlap with Apollo's firmographic set.",
           },
           {
             value: "Same stack",
             label:
-              "Most LeadAC customers keep Apollo. We sit on top, not in place of.",
+              "Most Revint customers keep Apollo. We sit on top, not in place of.",
           },
         ]}
       />
@@ -107,11 +107,11 @@ export default function VsApolloPage() {
       <ComparisonTable
         eyebrow="Capability matrix"
         title="The contact database vs the operational layer."
-        subtitle="Apollo's primitive is firmographic contact matching. LeadAC's primitive is local-business operational signal. They sit on different substrates."
+        subtitle="Apollo's primitive is firmographic contact matching. Revint's primitive is local-business operational signal. They sit on different substrates."
         columns={[
           { label: "Apollo Pro", subLabel: "from $1,392/yr" },
           {
-            label: "LeadAC Team",
+            label: "Revint Team",
             isUs: true,
             subLabel: "from $18,000/yr",
           },
@@ -191,7 +191,7 @@ export default function VsApolloPage() {
 
       <CtaBlock
         eyebrow="Keep Apollo"
-        title="LeadAC layers on top of Apollo, never in place of."
+        title="Revint layers on top of Apollo, never in place of."
         subtitle="The pilot writes the operational context Apollo's database doesn't carry — into the same HubSpot company record your team already opens."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}

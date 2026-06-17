@@ -38,9 +38,9 @@ export const zoominfo: CompetitorProfile = {
       url: "https://www.g2.com/products/zoominfo/reviews",
     },
   ],
-  whyLeadacInstead: [
+  whyRevintInstead: [
     "Agencies selling websites don't need enterprise contact data — they need local-business discovery with site audits.",
     "Monthly pricing, no annual contract, no procurement dance.",
-    "Every lead audited; ZoomInfo gives you a name, Leadac gives you a name plus a pitch.",
+    "Every lead audited; ZoomInfo gives you a name, Revint gives you a name plus a pitch.",
   ],
 };

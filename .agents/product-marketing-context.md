@@ -1,14 +1,14 @@
-# LeadAC — product marketing context
+# Revint — product marketing context
 
 This file is the entry point every marketing-related agent reads first. It exists because the architecture rule references it and other context files (MARKETING.md, POSITIONING.md, BUYER-PERSONA.md) build on top of it.
 
-If you are about to write copy, an ad, an email, a landing page, a blog post, or a social caption for LeadAC, read this end to end before anything else.
+If you are about to write copy, an ad, an email, a landing page, a blog post, or a social caption for Revint, read this end to end before anything else.
 
 ---
 
-## What LeadAC is
+## What Revint is
 
-LeadAC is **operational revenue intelligence for SMB markets**. The memory layer that learns what closes in local-business markets and writes the next best action into the HubSpot card the SDR already opens.
+Revint is **operational revenue intelligence for SMB markets**. The memory layer that learns what closes in local-business markets and writes the next best action into the HubSpot card the SDR already opens.
 
 We do not try to be the data source. The SMB data rails are commoditising — Orbital, Openmart, Resquared, and Clay all sell rows. We sit one layer above. Bring the rows, we score fit against what your team has closed before, surface the next best action, and feed every won and lost outcome back into the vertical playbook. The deliverable is a per-account brief inside HubSpot, not a CSV.
 
@@ -34,7 +34,7 @@ Copy must not imply native integrations that have not shipped. Use "bring your s
 
 ### Mockup feature — vertical only, not homepage pillar
 
-LeadAC also ships a one-page site mockup generator. **It is not a general-marketing pillar.** Mockup belongs on the walk-in web agency landing, the SMMA web-services landing, and inside Pro+ feature lists. It does NOT belong in the homepage hero, hero pill, headline stats, or canonical positioning. B2B outbound agency buyers care about quality leads and audit signal, not "I will design your prospect a free site." Treat mockup like AI receptionist or review-reply: a Pro-tier feature, not the headline.
+Revint also ships a one-page site mockup generator. **It is not a general-marketing pillar.** Mockup belongs on the walk-in web agency landing, the SMMA web-services landing, and inside Pro+ feature lists. It does NOT belong in the homepage hero, hero pill, headline stats, or canonical positioning. B2B outbound agency buyers care about quality leads and audit signal, not "I will design your prospect a free site." Treat mockup like AI receptionist or review-reply: a Pro-tier feature, not the headline.
 
 ## Who buys it
 
@@ -44,7 +44,7 @@ Vertical SaaS GTM teams at $2M–$50M ARR selling into local-business / SMB mark
 Daniel (VP Sales), Mike (SDR Manager), Sarah (Head of Marketing — champion) live here. Full persona file: `BUYER-PERSONA.md`.
 
 **Secondary ICP (faster proof wedge, sub-page treatment under `/for/agency`):**
-Agencies running outbound for local-business clients — B2B outbound agencies, SMMA owners, walk-in web agencies, local SEO operators. They convert faster but have lower willingness-to-pay and a tendency to read LeadAC as "another lead list" unless we discipline the framing to "the operating system for your local outbound motion."
+Agencies running outbound for local-business clients — B2B outbound agencies, SMMA owners, walk-in web agencies, local SEO operators. They convert faster but have lower willingness-to-pay and a tendency to read Revint as "another lead list" unless we discipline the framing to "the operating system for your local outbound motion."
 
 **Not for:** enterprise SDR teams with dedicated RevOps engineers and Gong + Salesforce already in place, product-led growth motions, B2C, anyone selling software to companies above 500 employees, anyone who wants a fully autonomous AI SDR.
 
@@ -56,7 +56,7 @@ Three things broke the previous outbound stack:
 2. GPT first-line generators all sound the same. Reply rates dropped from 3-4% to under 2% across the industry through 2025. "I noticed you..." is a deliverability liability now.
 3. Hand-writing each email caps an SDR at maybe 10 prospects a day. That is not a pipeline.
 
-LeadAC is the third path: fresh local data nobody else has, a real audit attached to every email, and an opener that references something the prospect can see on their own homepage right now. Different fuel, not louder personalization.
+Revint is the third path: fresh local data nobody else has, a real audit attached to every email, and an opener that references something the prospect can see on their own homepage right now. Different fuel, not louder personalization.
 
 ## Voice rules (non-negotiable)
 
@@ -72,7 +72,7 @@ Voice should sound like a senior agency owner who is tired of the noise. Not a m
 
 These get caught in the humanizer pass. Do not ship copy that contains them.
 
-- "agent" or "AI agent" (when describing LeadAC itself)
+- "agent" or "AI agent" (when describing Revint itself)
 - "copilot" (the existing Copilot UI element keeps the name internally; do NOT rename it for marketing)
 - "transformative", "groundbreaking", "revolutionary", "cutting-edge"
 - "delve", "leverage", "synergy", "robust", "seamless", "intuitive"
@@ -111,15 +111,15 @@ The full keyword dataset (own / avoid / white-space) lives in `src/content/site/
 
 Before:
 
-> LeadAC stands as a pivotal evolution in the SMB revenue intelligence landscape, unlocking transformative AI agents and groundbreaking buyer intelligence — empowering operators to deliver seamless, intuitive, and revolutionary results.
+> Revint stands as a pivotal evolution in the SMB revenue intelligence landscape, unlocking transformative AI agents and groundbreaking buyer intelligence — empowering operators to deliver seamless, intuitive, and revolutionary results.
 
 After:
 
-> LeadAC reads the accounts your team already imported, scores fit against what you have closed before, and writes the next best action into the HubSpot card the SDR opens before every dial. Same stack, different memory.
+> Revint reads the accounts your team already imported, scores fit against what you have closed before, and writes the next best action into the HubSpot card the SDR opens before every dial. Same stack, different memory.
 
 ### Three lines the founder uses internally (lift these for copy)
 
-These are the lines the founder keeps repeating when describing what LeadAC is for. They translate well to hero copy, ad copy, and outbound subject lines.
+These are the lines the founder keeps repeating when describing what Revint is for. They translate well to hero copy, ad copy, and outbound subject lines.
 
 - "We remember what closes in local-business markets."
 - "Bring your stack. We make it remember."
@@ -129,11 +129,11 @@ These are the lines the founder keeps repeating when describing what LeadAC is f
 
 Memorize this. Every page should rhyme with it.
 
-> For vertical SaaS GTM teams selling into local-business and SMB markets, LeadAC is operational revenue intelligence — the memory layer that learns what closes in your vertical and writes the next best action into the HubSpot card your SDR already opens. Bring the data rails you already pay for (Apollo, Clay, Orbital, Openmart, Resquared); LeadAC sits one layer above and makes them compound into team memory.
+> For vertical SaaS GTM teams selling into local-business and SMB markets, Revint is operational revenue intelligence — the memory layer that learns what closes in your vertical and writes the next best action into the HubSpot card your SDR already opens. Bring the data rails you already pay for (Apollo, Clay, Orbital, Openmart, Resquared); Revint sits one layer above and makes them compound into team memory.
 
 Short version (sticker line):
 
-> Apollo finds. Clay enriches. Gong records. LeadAC remembers.
+> Apollo finds. Clay enriches. Gong records. Revint remembers.
 
 The full version (3 paragraphs), competitor reframes, and category-defense reasoning are in `POSITIONING.md` § 3-4. The keyword dataset that grounds this sentence lives in `src/content/site/keywords.ts`.
 

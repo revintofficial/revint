@@ -9,7 +9,7 @@ export const post: BlogPost = {
     "Outbound to dental practices is a different animal than plumbers. Gatekeepers, compliance-minded buyers, and a brutal intolerance for bad copy. What works, what doesn't, and why one-sentence openers beat clever ones.",
   lede: "Dentists have more money than plumbers and less patience. Your email gets two seconds before the practice manager decides.",
   publishedAt: "2026-01-03T09:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["playbook", "dentists", "local service", "niche"],
   readMinutes: 8,
   body: () => (

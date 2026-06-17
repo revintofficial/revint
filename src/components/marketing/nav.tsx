@@ -43,10 +43,10 @@ export function MarketingNav({
       }}
     >
       <div className="max-w-6xl mx-auto px-5 sm:px-6 h-14 flex items-center">
-        <Link href="/" className="flex items-center mr-8 group" aria-label="LeadAC home">
+        <Link href="/" className="flex items-center mr-8 group" aria-label="Revint home">
           <Image
             src="/logo.png"
-            alt="LeadAC"
+            alt="Revint"
             width={36}
             height={36}
             priority
@@ -76,8 +76,8 @@ export function MarketingNav({
               className="inline-flex items-center gap-1.5 pl-3.5 pr-1 py-1 rounded-full text-[12.5px] font-medium text-white"
               style={{
                 background: "rgba(255,255,255,0.06)",
-                border: "1px solid hsl(var(--leadac-h) var(--leadac-s) 68% / 0.28)",
-                boxShadow: "0 6px 18px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.25)",
+                border: "1px solid hsl(var(--revint-h) var(--revint-s) 68% / 0.28)",
+                boxShadow: "0 6px 18px hsl(var(--revint-h) var(--revint-s) 42% / 0.25)",
                 backdropFilter: "blur(14px)",
                 WebkitBackdropFilter: "blur(14px)",
               }}
@@ -87,8 +87,8 @@ export function MarketingNav({
                 className="inline-flex items-center justify-center w-6 h-6 rounded-full text-white"
                 style={{
                   background:
-                    "linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 60%), hsl(var(--leadac-h) var(--leadac-s) 42%))",
-                  boxShadow: "0 4px 10px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.45)",
+                    "linear-gradient(135deg, hsl(var(--revint-h) var(--revint-s) 60%), hsl(var(--revint-h) var(--revint-s) 42%))",
+                  boxShadow: "0 4px 10px hsl(var(--revint-h) var(--revint-s) 42% / 0.45)",
                 }}
                 aria-hidden
               >
@@ -110,7 +110,7 @@ export function MarketingNav({
                   background: "rgba(255,255,255,0.94)",
                   border: "1px solid rgba(255,255,255,0.3)",
                   boxShadow:
-                    "0 1px 0 rgba(255,255,255,0.9) inset, 0 8px 22px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.28)",
+                    "0 1px 0 rgba(255,255,255,0.9) inset, 0 8px 22px hsl(var(--revint-h) var(--revint-s) 42% / 0.28)",
                 }}
               >
                 Book a walkthrough

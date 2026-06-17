@@ -30,14 +30,14 @@ export default function GlossaryIndexPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Glossary", url: PATH },
         ])}
       />
       <JsonLd
         id="ld-coll"
         data={collectionPageSchema({
-          name: "LeadAC glossary",
+          name: "Revint glossary",
           description:
             "Vocabulary for operational intelligence, the memory layer, and closed-loop ICP refinement — the language of vertical SaaS GTM.",
           url: `${SITE.url}${PATH}`,

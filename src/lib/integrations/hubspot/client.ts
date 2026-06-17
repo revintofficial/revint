@@ -266,7 +266,7 @@ export class HubspotClient {
         properties: {
           hs_call_body: args.body,
           hs_timestamp: String(args.timestampMs ?? Date.now()),
-          hs_call_title: args.title ?? "LeadAC call",
+          hs_call_title: args.title ?? "Revint call",
           ...(args.durationMs ? { hs_call_duration: String(args.durationMs) } : {}),
         },
         associations: [

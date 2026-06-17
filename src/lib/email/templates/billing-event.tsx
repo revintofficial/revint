@@ -57,7 +57,7 @@ const copy = {
     body: {
       payment_failed: (amt: string | null) =>
         `Stripe, ${amt ? amt + " tutarındaki " : ""}son ödemeni alamadı. ` +
-        "Kartın bir sonraki denemede de reddedilirse Leadac AI aboneliğin otomatik olarak askıya alınır. Kart bilgilerini güncellemek için Billing'e git.",
+        "Kartın bir sonraki denemede de reddedilirse Revint aboneliğin otomatik olarak askıya alınır. Kart bilgilerini güncellemek için Billing'e git.",
       plan_updated: (plan: string | null) =>
         `Planın${plan ? ` ${plan} olarak` : ""} güncellendi. Yeni limitler hemen aktif — Usage sayfasından detayları görebilirsin.`,
       subscription_cancelled: () =>
@@ -102,7 +102,7 @@ const copy = {
     body: {
       payment_failed: (amt: string | null) =>
         `Stripe couldn't charge your card${amt ? ` for ${amt}` : ""}. ` +
-        "If the retry also fails we'll automatically pause your Leadac AI subscription. Open Billing to update the card.",
+        "If the retry also fails we'll automatically pause your Revint subscription. Open Billing to update the card.",
       plan_updated: (plan: string | null) =>
         `Your plan has been updated${plan ? ` to ${plan}` : ""}. The new limits are live immediately — check Usage for details.`,
       subscription_cancelled: () =>

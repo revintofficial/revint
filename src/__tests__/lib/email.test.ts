@@ -3,7 +3,7 @@
  *
  * Coverage:
  *   - Dev stub swallows sends when RESEND_API_KEY is not set (no crash, logs)
- *   - getFromAddress / getReplyToAddress fall back to leadacai.com defaults
+ *   - getFromAddress / getReplyToAddress fall back to revint.dev defaults
  *   - getAppBaseUrl prefers NEXT_PUBLIC_APP_URL, falls back to VERCEL_URL,
  *     then localhost
  *   - getDevRedirect is ignored in production
@@ -24,25 +24,25 @@ afterEach(() => {
 });
 
 describe("email/from", () => {
-  it("uses leadacai.com defaults when EMAIL_FROM / EMAIL_REPLY_TO are unset", async () => {
+  it("uses revint.dev defaults when EMAIL_FROM / EMAIL_REPLY_TO are unset", async () => {
     vi.stubEnv("EMAIL_FROM", "");
     vi.stubEnv("EMAIL_REPLY_TO", "");
     const mod = await import("@/lib/email/from");
-    expect(mod.getFromAddress()).toBe("Leadac AI <noreply@leadacai.com>");
-    expect(mod.getReplyToAddress()).toBe("hello@leadacai.com");
+    expect(mod.getFromAddress()).toBe("Revint <noreply@revint.dev>");
+    expect(mod.getReplyToAddress()).toBe("hello@revint.dev");
   });
 
   it("honors EMAIL_FROM override", async () => {
-    vi.stubEnv("EMAIL_FROM", "Staging <staging@leadacai.com>");
+    vi.stubEnv("EMAIL_FROM", "Staging <staging@revint.dev>");
     const mod = await import("@/lib/email/from");
-    expect(mod.getFromAddress()).toBe("Staging <staging@leadacai.com>");
+    expect(mod.getFromAddress()).toBe("Staging <staging@revint.dev>");
   });
 
   it("getAppBaseUrl prefers NEXT_PUBLIC_APP_URL", async () => {
-    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://leadacai.com");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://revint.dev");
     vi.stubEnv("VERCEL_URL", "preview.vercel.app");
     const mod = await import("@/lib/email/from");
-    expect(mod.getAppBaseUrl()).toBe("https://leadacai.com");
+    expect(mod.getAppBaseUrl()).toBe("https://revint.dev");
   });
 
   it("getAppBaseUrl falls back to VERCEL_URL", async () => {
@@ -54,7 +54,7 @@ describe("email/from", () => {
 
   it("getDevRedirect returns null in production even when EMAIL_DEV_REDIRECT is set", async () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("EMAIL_DEV_REDIRECT", "dev@leadacai.com");
+    vi.stubEnv("EMAIL_DEV_REDIRECT", "dev@revint.dev");
     const mod = await import("@/lib/email/from");
     expect(mod.getDevRedirect()).toBeNull();
   });
@@ -90,7 +90,7 @@ describe("email/client dev stub", () => {
     }>;
     const send = client.emails.send.bind(client.emails) as SendFn;
     const { data, error } = await send({
-      from: "Leadac AI <noreply@leadacai.com>",
+      from: "Revint <noreply@revint.dev>",
       to: ["me@example.com"],
       subject: "Test",
       html: "<p>hello</p>",
@@ -152,7 +152,7 @@ describe("email/send", () => {
   it("re-routes the recipient when EMAIL_DEV_REDIRECT is set (dev only)", async () => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("RESEND_API_KEY", "");
-    vi.stubEnv("EMAIL_DEV_REDIRECT", "me@leadacai.com");
+    vi.stubEnv("EMAIL_DEV_REDIRECT", "me@revint.dev");
     const { sendEmail } = await import("@/lib/email/send");
     const result = await sendEmail({
       to: "real-user@example.com",
@@ -175,7 +175,7 @@ describe("email/send", () => {
 describe("email templates / buildSubject helpers", () => {
   it("WelcomeEmail.buildSubject handles missing name + both locales", async () => {
     const { WelcomeEmail } = await import("@/lib/email/templates/welcome");
-    expect(WelcomeEmail.buildSubject(null, "tr")).toContain("Leadac AI");
+    expect(WelcomeEmail.buildSubject(null, "tr")).toContain("Revint");
     expect(WelcomeEmail.buildSubject("Mert Okumus", "tr")).toContain("Mert");
     expect(WelcomeEmail.buildSubject("Jane Doe", "en")).toContain("Jane");
   });

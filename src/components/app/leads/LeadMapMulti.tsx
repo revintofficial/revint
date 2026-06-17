@@ -72,9 +72,9 @@ const DEFAULT_ZOOM = 11;
 
 function pinColor(score: number | null | undefined): string {
   if (score == null) return "hsl(220 8% 70%)";
-  if (score >= 60) return "var(--leadac-success)";
-  if (score >= 35) return "var(--leadac-warning)";
-  return "var(--leadac-error)";
+  if (score >= 60) return "var(--revint-success)";
+  if (score >= 35) return "var(--revint-warning)";
+  return "var(--revint-error)";
 }
 
 function buildPinIcon(score: number | null | undefined, isSelected: boolean) {
@@ -179,7 +179,7 @@ export default function LeadMapMulti({
             onClick={() => setViewportFilter((v) => !v)}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-colors ${
               viewportFilter
-                ? "border-(--leadac-500)/40 bg-(--leadac-500)/15 text-(--leadac-200)"
+                ? "border-(--revint-500)/40 bg-(--revint-500)/15 text-(--revint-200)"
                 : "border-white/10 bg-black/60 backdrop-blur text-white/70 hover:bg-black/70"
             }`}
             title="Only show leads inside the visible area"
@@ -302,7 +302,7 @@ function ActiveLeadPanel({
         <div className="min-w-0 flex-1">
           <Link
             href={`/app/leads/${lead.id}`}
-            className="block font-semibold text-white hover:text-(--leadac-500) transition-colors text-[15px] leading-snug"
+            className="block font-semibold text-white hover:text-(--revint-500) transition-colors text-[15px] leading-snug"
           >
             {lead.businessName}
           </Link>
@@ -341,7 +341,7 @@ function ActiveLeadPanel({
         {opener ? (
           <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
             <div className="flex items-center gap-1.5 mb-1.5 text-[11px] text-white/50 uppercase tracking-wider">
-              <Sparkles className="w-3 h-3 text-(--leadac-300)" />
+              <Sparkles className="w-3 h-3 text-(--revint-300)" />
               Personalized opener
             </div>
             <p className="text-xs leading-relaxed text-white/80 whitespace-pre-wrap">

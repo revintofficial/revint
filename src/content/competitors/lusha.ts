@@ -37,9 +37,9 @@ export const lusha: CompetitorProfile = {
       url: "https://www.reddit.com/r/sales/",
     },
   ],
-  whyLeadacInstead: [
+  whyRevintInstead: [
     "Bulk postcode + niche search beats one-contact-at-a-time lookups.",
-    "Every Leadac lead ships with an audit — you know why to reach out before the first email.",
+    "Every Revint lead ships with an audit — you know why to reach out before the first email.",
     "Agency-friendly flat pricing, no credit burn.",
   ],
 };

@@ -24,7 +24,7 @@ const labelStyle: React.CSSProperties = {
 /**
  * ICP match scorer — eight heuristic questions about a prospect produce a
  * 0-100 match score with a tiered recommendation. The weights and thresholds
- * reflect Leadac AI's own agency playbook: vertical + geo density matter most;
+ * reflect Revint's own agency playbook: vertical + geo density matter most;
  * website quality gap is next; buyer role alignment third.
  */
 type Input = {
@@ -65,8 +65,8 @@ function tier(s: number): {
   if (s >= 80) {
     return {
       label: "A — Pursue aggressively",
-      color: "var(--leadac-300)",
-      copy: "This prospect fits the Leadac playbook near-perfectly. Personalised opener + audit, move to call as fast as possible.",
+      color: "var(--revint-300)",
+      copy: "This prospect fits the Revint playbook near-perfectly. Personalised opener + audit, move to call as fast as possible.",
     };
   }
   if (s >= 60) {
@@ -316,10 +316,10 @@ export default function IcpMatchScorer() {
                       }
                       style={{
                         padding: "8px 14px",
-                        background: active ? "var(--leadac-300)" : "#0b0b0d",
+                        background: active ? "var(--revint-300)" : "#0b0b0d",
                         color: active ? "#0b0b0d" : "#ededf0",
                         border: active
-                          ? "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 78%)"
+                          ? "0.5px solid hsl(var(--revint-h) var(--revint-s) 78%)"
                           : "0.5px solid rgba(255,255,255,0.12)",
                         borderRadius: 8,
                         fontSize: 13,
@@ -389,7 +389,7 @@ export default function IcpMatchScorer() {
             type="submit"
             style={{
               padding: "10px 22px",
-              background: "var(--leadac-300)",
+              background: "var(--revint-300)",
               color: "#0b0b0d",
               border: "none",
               borderRadius: 8,
@@ -402,7 +402,7 @@ export default function IcpMatchScorer() {
           </button>
         </div>
         {submitted === "ok" && (
-          <p style={{ marginTop: 12, fontSize: 13, color: "var(--leadac-300)" }}>
+          <p style={{ marginTop: 12, fontSize: 13, color: "var(--revint-300)" }}>
             Sent — check your inbox.
           </p>
         )}

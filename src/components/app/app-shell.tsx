@@ -159,7 +159,7 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
       l.href === "/app/dashboard"
         ? pathname === "/app/dashboard"
         : pathname.startsWith(l.href),
-    )?.label || "Leadac AI";
+    )?.label || "Revint";
 
   // Hide the bottom tab bar on detail screens that own the bottom (the
   // /app/leads/[id] page renders its own sticky action bar there).
@@ -169,9 +169,9 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
     <div
       className="flex h-screen overflow-hidden relative"
       style={{
-        backgroundColor: "var(--leadac-bg)",
+        backgroundColor: "var(--revint-bg)",
         backgroundImage:
-          "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 5% / 0.58) 0%, hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.72) 100%), url(/background.jpeg)",
+          "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-ns) 5% / 0.58) 0%, hsl(var(--revint-h) var(--revint-ns) 8% / 0.72) 100%), url(/background.jpeg)",
         backgroundSize: "cover, cover",
         backgroundPosition: "center, center",
         backgroundRepeat: "no-repeat, no-repeat",
@@ -203,8 +203,8 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
       >
         <button
           onClick={() => setSidebarOpen(true)}
-          className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
-          style={{ color: "var(--leadac-text-1)" }}
+          className="touch-target rounded-lg hover:bg-white/5 active:bg-white/10 focus-visible:outline-2 focus-visible:outline-(--revint-500)"
+          style={{ color: "var(--revint-text-1)" }}
           aria-label="Open workspace menu"
         >
           <Menu className="w-5 h-5" strokeWidth={2.25} />
@@ -212,7 +212,7 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
         <Link
           href="/app/dashboard"
           className="flex items-center gap-2 flex-1 min-w-0 px-2 touch-target"
-          aria-label="Leadac AI home"
+          aria-label="Revint home"
         >
           <Image
             src="/logo.png"
@@ -272,8 +272,8 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
               >
                 <Link
                   href="/app/dashboard"
-                  className="relative flex items-center justify-center w-9 h-9 rounded-xl shrink-0 focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
-                  aria-label="Leadac AI home"
+                  className="relative flex items-center justify-center w-9 h-9 rounded-xl shrink-0 focus-visible:outline-2 focus-visible:outline-(--revint-500)"
+                  aria-label="Revint home"
                 >
                   <Image
                     src="/logo.png"
@@ -286,7 +286,7 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                 </Link>
                 <div className={`flex-1 min-w-0 ${collapsed ? "md:hidden" : ""}`}>
                   <h1 className="text-[15px] font-semibold truncate text-white tracking-tight">
-                    Leadac AI
+                    Revint
                   </h1>
                   <WorkspaceSwitcher
                     current={workspace}
@@ -296,8 +296,8 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                 </div>
                 <button
                   onClick={closeSidebar}
-                  className="touch-target rounded-lg hover:bg-white/10 md:hidden focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
-                  style={{ color: "var(--leadac-text-2)" }}
+                  className="touch-target rounded-lg hover:bg-white/10 md:hidden focus-visible:outline-2 focus-visible:outline-(--revint-500)"
+                  style={{ color: "var(--revint-text-2)" }}
                   aria-label="Close navigation menu"
                 >
                   <X className="w-5 h-5" />
@@ -306,7 +306,7 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
 
               <button
                 onClick={() => setPaletteOpen(true)}
-                className={`mt-4 flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-(--leadac-500) ${
+                className={`mt-4 flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-(--revint-500) ${
                   collapsed ? "md:justify-center" : ""
                 }`}
                 style={{
@@ -318,11 +318,11 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
               >
                 <Search
                   className="w-3.5 h-3.5 shrink-0"
-                  style={{ color: "var(--leadac-text-3)" }}
+                  style={{ color: "var(--revint-text-3)" }}
                 />
                 <span
                   className={`flex-1 text-[12.5px] ${collapsed ? "md:hidden" : ""}`}
-                  style={{ color: "var(--leadac-text-3)" }}
+                  style={{ color: "var(--revint-text-3)" }}
                 >
                   Search…
                 </span>
@@ -330,7 +330,7 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                   className={`flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded ${collapsed ? "md:hidden" : ""}`}
                   style={{
                     background: "hsl(0 0% 100% / 0.05)",
-                    color: "var(--leadac-text-3)",
+                    color: "var(--revint-text-3)",
                   }}
                 >
                   <CommandIcon className="w-2.5 h-2.5" />K
@@ -346,7 +346,7 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                 <div key={group.label} className="mb-3 last:mb-0">
                   <p
                     className={`px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider ${collapsed ? "md:hidden" : ""}`}
-                    style={{ color: "var(--leadac-muted)" }}
+                    style={{ color: "var(--revint-muted)" }}
                   >
                     {group.label}
                   </p>
@@ -359,8 +359,8 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                           href={link.href}
                           aria-current={isActive ? "page" : undefined}
                           title={collapsed ? link.label : undefined}
-                          className={`group flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-(--leadac-500) ${
-                            isActive ? "leadac-sidebar-active" : ""
+                          className={`group flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-(--revint-500) ${
+                            isActive ? "revint-sidebar-active" : ""
                           } ${collapsed ? "md:justify-center md:px-2" : ""}`}
                           style={{ minHeight: "40px" }}
                         >
@@ -368,8 +368,8 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                             className="w-4 h-4 shrink-0 transition-colors"
                             style={{
                               color: isActive
-                                ? "var(--leadac-300)"
-                                : "var(--leadac-text-2)",
+                                ? "var(--revint-300)"
+                                : "var(--revint-text-2)",
                               strokeWidth: 2,
                             }}
                             aria-hidden="true"
@@ -378,8 +378,8 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
                             className={`text-[13.5px] flex-1 truncate ${collapsed ? "md:hidden" : ""}`}
                             style={{
                               color: isActive
-                                ? "var(--leadac-text-1)"
-                                : "var(--leadac-text-2)",
+                                ? "var(--revint-text-1)"
+                                : "var(--revint-text-2)",
                               fontWeight: isActive ? 600 : 450,
                             }}
                           >
@@ -408,8 +408,8 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
 
               <button
                 onClick={toggleCollapse}
-                className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs hover:bg-white/5 w-full focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
-                style={{ color: "var(--leadac-muted)" }}
+                className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs hover:bg-white/5 w-full focus-visible:outline-2 focus-visible:outline-(--revint-500)"
+                style={{ color: "var(--revint-muted)" }}
                 aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
                 title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               >
@@ -442,19 +442,19 @@ export function AppShell({ user, workspace, role, usage, children }: AppShellPro
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setNotifOpen(true)}
-                className="touch-target rounded-md text-[12px] focus-visible:outline-2 focus-visible:outline-(--leadac-500) hover:bg-white/5"
-                style={{ color: "var(--leadac-text-2)" }}
+                className="touch-target rounded-md text-[12px] focus-visible:outline-2 focus-visible:outline-(--revint-500) hover:bg-white/5"
+                style={{ color: "var(--revint-text-2)" }}
                 aria-label="Notifications"
               >
                 <Bell className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setPaletteOpen(true)}
-                className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-md text-[12px] focus-visible:outline-2 focus-visible:outline-(--leadac-500)"
+                className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-md text-[12px] focus-visible:outline-2 focus-visible:outline-(--revint-500)"
                 style={{
                   background: "hsl(0 0% 100% / 0.05)",
                   border: "0.5px solid hsl(0 0% 100% / 0.08)",
-                  color: "var(--leadac-text-2)",
+                  color: "var(--revint-text-2)",
                 }}
                 aria-label="Open command palette"
               >

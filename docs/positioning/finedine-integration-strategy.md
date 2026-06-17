@@ -1,18 +1,18 @@
-# LeadAC x FineDine Integration Strategy Paper
+# Revint x FineDine Integration Strategy Paper
 
 Status: native-first integration strategy draft  
 Date: 2026-05-29  
-Audience: LeadAC founders, product, engineering, FineDine activation stakeholders  
+Audience: Revint founders, product, engineering, FineDine activation stakeholders  
 Language: Turkish  
-Project: LeadAC Restaurant-Tech Operational Intelligence Pilot for FineDine
+Project: Revint Restaurant-Tech Operational Intelligence Pilot for FineDine
 
 ## 1. Ana karar
 
-LeadAC'in entegrasyon stratejisi "her tool'u replace etmek" olmamalı. LeadAC'in kazanacağı yer, Openmart, Orbital, Clay, HubSpot, Smartlead, Instantly, Google Places ve Apify gibi araçlardan gelen dağınık kanıtları tek bir account intelligence graph'a bağlamak, bu kanıtların hangisine güvenileceğini belirlemek ve outcome'lardan öğrenen FineDine-specific playbook üretmektir.
+Revint'in entegrasyon stratejisi "her tool'u replace etmek" olmamalı. Revint'in kazanacağı yer, Openmart, Orbital, Clay, HubSpot, Smartlead, Instantly, Google Places ve Apify gibi araçlardan gelen dağınık kanıtları tek bir account intelligence graph'a bağlamak, bu kanıtların hangisine güvenileceğini belirlemek ve outcome'lardan öğrenen FineDine-specific playbook üretmektir.
 
 Bu yüzden doğru kategori cümlesi:
 
-> LeadAC, restaurant-tech ekipleri için post-enrichment operational intelligence layer'dır: veri kaynaklarını bağlar, account context'i çözer, pitch angle seçer, aksiyon önerir ve outcome'lardan öğrenir.
+> Revint, restaurant-tech ekipleri için post-enrichment operational intelligence layer'dır: veri kaynaklarını bağlar, account context'i çözer, pitch angle seçer, aksiyon önerir ve outcome'lardan öğrenir.
 
 Entegrasyonların amacı "daha fazla row" üretmek değil, şu dört şeyi mümkün kılmaktır:
 
@@ -23,9 +23,9 @@ Entegrasyonların amacı "daha fazla row" üretmek değil, şu dört şeyi mümk
 
 FineDine başlangıcı için varsayım değişmiştir: pilot CSV/import-first başlamayacak; native entegrasyon hedefiyle başlayacaktır. CSV sadece fallback, debugging ve hızlı backfill aracı olarak tutulur. İlk FineDine launch'ının product promise'i şu olmalıdır:
 
-> Connect HubSpot, connect your sender, connect Openmart/Orbital-style sources, then LeadAC builds the FineDine account intelligence and learning loop natively.
+> Connect HubSpot, connect your sender, connect Openmart/Orbital-style sources, then Revint builds the FineDine account intelligence and learning loop natively.
 
-Bu karar LeadAC'i daha ağır bir ilk engineering scope'a sokar ama category açısından daha doğru sinyal verir. FineDine'e "bize export atın, biz analiz edelim" demek LeadAC'i research service gibi gösterir. "Stack'inize bağlanıyoruz ve outcome'lardan öğreniyoruz" demek ise operational intelligence layer iddiasını ürün olarak kanıtlar.
+Bu karar Revint'i daha ağır bir ilk engineering scope'a sokar ama category açısından daha doğru sinyal verir. FineDine'e "bize export atın, biz analiz edelim" demek Revint'i research service gibi gösterir. "Stack'inize bağlanıyoruz ve outcome'lardan öğreniyoruz" demek ise operational intelligence layer iddiasını ürün olarak kanıtlar.
 
 ## 2. FineDine ICP'sinde beklememiz gereken GTM stack
 
@@ -57,7 +57,7 @@ Muhtemel stack:
 - BD rep notları
 - bazı bölgeler için field visit / call motion
 
-LeadAC'in design center'ı bu olmalı. Çünkü burada veri var ama karar sistemi yoktur. En büyük acı, veri eksikliği değil, hangi account'un aksiyon almaya değer olduğunu ve hangi pitch'in çalıştığını bilmemektir.
+Revint'in design center'ı bu olmalı. Çünkü burada veri var ama karar sistemi yoktur. En büyük acı, veri eksikliği değil, hangi account'un aksiyon almaya değer olduğunu ve hangi pitch'in çalıştığını bilmemektir.
 
 ### Seviye C: İleri RevOps / scale-up restaurant-tech
 
@@ -71,9 +71,9 @@ Muhtemel stack:
 - dashboard/reporting
 - custom properties and webhooks
 
-Bu seviyede LeadAC "replace" değil "judgment layer" olarak satılmalıdır. Müşteri zaten araçlara para ödüyordur; LeadAC bu araçların ürettiği sinyali account prioritization ve learning loop'a çevirir.
+Bu seviyede Revint "replace" değil "judgment layer" olarak satılmalıdır. Müşteri zaten araçlara para ödüyordur; Revint bu araçların ürettiği sinyali account prioritization ve learning loop'a çevirir.
 
-## 3. Mevcut LeadAC kod gerçekliği
+## 3. Mevcut Revint kod gerçekliği
 
 Kodda halihazırda güçlü temeller var:
 
@@ -103,7 +103,7 @@ Bu yüzden FineDine MVP entegrasyon stratejisi native-first olmalı:
 
 ## 4. Entegrasyon mimarisi
 
-LeadAC stack'i dört katmandan oluşmalı:
+Revint stack'i dört katmandan oluşmalı:
 
 ### 4.1 Upstream data rails
 
@@ -117,9 +117,9 @@ Bu araçlar veri üretir:
 - Resquared: local business data, outreach workflow, social/CRM flows.
 - Apollo: contact/person/org enrichment for HQ, multi-location groups, corporate contacts.
 
-### 4.2 LeadAC intelligence core
+### 4.2 Revint intelligence core
 
-LeadAC'in sahiplenmesi gereken alan:
+Revint'in sahiplenmesi gereken alan:
 
 - identity resolution
 - source provenance
@@ -144,7 +144,7 @@ Bu araçlar aksiyonu taşır:
 
 ### 4.4 Outcome loop
 
-Bu veriler LeadAC'in moat'idir:
+Bu veriler Revint'in moat'idir:
 
 - email sent
 - reply received
@@ -159,18 +159,18 @@ Bu veriler LeadAC'in moat'idir:
 - closed-lost
 - lost reason
 
-LeadAC'in integration ihtiyacı en çok burada doğar. Çünkü Openmart veya Orbital account'u bulabilir; HubSpot deal'ı tutabilir; Smartlead email'i gönderebilir. Ama "hangi restaurant signal'i hangi FineDine pitch'iyle reply/demo/won üretti?" sorusu LeadAC'in alanıdır.
+Revint'in integration ihtiyacı en çok burada doğar. Çünkü Openmart veya Orbital account'u bulabilir; HubSpot deal'ı tutabilir; Smartlead email'i gönderebilir. Ama "hangi restaurant signal'i hangi FineDine pitch'iyle reply/demo/won üretti?" sorusu Revint'in alanıdır.
 
 ## 5. Entegrasyon öncelik matrisi
 
-| Tool | LeadAC içindeki rol | Neden gerekli? | FineDine başlangıç şekli | Fallback |
+| Tool | Revint içindeki rol | Neden gerekli? | FineDine başlangıç şekli | Fallback |
 |---|---|---|---|---|
 | HubSpot | System-of-record + outcome source | FineDine sales motion'unun merkezi olması muhtemel; deal stage, owner, meeting ve won/lost burada yaşar | OAuth app veya FineDine private app token; company/contact/deal read-write; webhook subscriptions | HubSpot import/export CSV |
 | Smartlead | Sender + campaign outcome | Cold email activation ve reply/bounce/unsubscribe eventleri | API lead push + campaign webhook receiver | CSV export/import |
 | Instantly | Sender + campaign outcome | Smartlead alternatifi; campaign membership, reply, interest/meeting status | API V2 lead push + webhook receiver | CSV export/import |
 | Openmart | Local SMB data rail | Restaurant TAM, owner/contact, tech stack ve local business fields'i hızlı üretir | API `/search`, pagination, selective contact lookup, refresh jobs | Openmart export CSV |
 | Orbital | SMB signal/data rail | Multi-location, franchise, POS, vertical SMB signals; en yakın upstream intelligence source | HubSpot-mediated native sync first; partner/API if available | Orbital export CSV |
-| Clay | GTM workflow workbench | Customer-specific enrichment denemeleri, ops automation, custom sources | LeadAC webhook in + Clay HTTP action back | CSV import/export |
+| Clay | GTM workflow workbench | Customer-specific enrichment denemeleri, ops automation, custom sources | Revint webhook in + Clay HTTP action back | CSV import/export |
 | Resquared | Local selling workflow source | Eğer müşteri kullanıyorsa local business/outreach records gelir | HubSpot-mediated sync or partner export endpoint | CSV import |
 | Google Places | Canonical local identity | Place ID, address, rating, open status, website, phone; internal discovery zaten var | native internal connector with cost-controlled field masks | none |
 | Apify | Deep local research | Google Maps/reviews/site/social/SERP derinliği; mevcut worker'lar var | actor/task templates + completion webhook/polling | manual rerun |
@@ -179,19 +179,19 @@ LeadAC'in integration ihtiyacı en çok burada doğar. Çünkü Openmart veya Or
 Native-first kararı şu öncelik sırasını doğurur:
 
 1. HubSpot + one sender + Openmart + Google Places/Apify.
-2. Orbital through HubSpot fields, çünkü Orbital zaten HubSpot bidirectional sync destekliyorsa LeadAC'in ilk günden ayrı Orbital API'ye bağımlı olması gereksizdir.
+2. Orbital through HubSpot fields, çünkü Orbital zaten HubSpot bidirectional sync destekliyorsa Revint'in ilk günden ayrı Orbital API'ye bağımlı olması gereksizdir.
 3. Clay webhook bridge, çünkü Clay teknik müşterilerde extension surface olur.
 4. Resquared/Apollo later, çünkü FineDine'in ilk learning loop'u için şart değiller.
 
 ## 5.1 Connectorless mode: FineDine bu araçları kullanmıyorsa
 
-FineDine Openmart, Orbital, Resquared veya Clay kullanmıyor olabilir. Bu durum LeadAC için blocker olmamalıdır. Ürün onboarding'de bu connector'ları opsiyonel göstermeli ve bağlı değillerse kendi native discovery/enrichment hattıyla çalışmalıdır.
+FineDine Openmart, Orbital, Resquared veya Clay kullanmıyor olabilir. Bu durum Revint için blocker olmamalıdır. Ürün onboarding'de bu connector'ları opsiyonel göstermeli ve bağlı değillerse kendi native discovery/enrichment hattıyla çalışmalıdır.
 
-Connectorless mode'da LeadAC şu kaynaklarla çalışır:
+Connectorless mode'da Revint şu kaynaklarla çalışır:
 
 - Google Places: restaurant discovery, place ID, address, phone, website, rating, review count, open status.
 - Apify: deeper reviews, website crawl, social/SERP signals, menu/booking/ordering evidence.
-- LeadAC-managed Openmart API: FineDine'in Openmart hesabı olmasa bile LeadAC kendi Openmart integration'ı üzerinden market fill veya contact enrichment çalıştırabilir.
+- Revint-managed Openmart API: FineDine'in Openmart hesabı olmasa bile Revint kendi Openmart integration'ı üzerinden market fill veya contact enrichment çalıştırabilir.
 - Website audit: menu, booking, ordering, payment, reservation, QR/PDF menu, parked/blocked/expired site signals.
 - Manual inputs: rep notes, call outcomes, field visit notes, meeting/no-show/won/lost updates.
 
@@ -204,8 +204,8 @@ Bu modda minimum onboarding:
    - service packages
 
 2. Data source:
-   - LeadAC discovery via Google Places + Apify
-   - optional LeadAC-managed Openmart API
+   - Revint discovery via Google Places + Apify
+   - optional Revint-managed Openmart API
 
 3. Activation:
    - Smartlead/Instantly native if available
@@ -221,13 +221,13 @@ Bu nedenle onboarding dependency modeli şöyle olmalı:
 
 | Connector | Required? | Bağlanmazsa ne olur? |
 |---|---:|---|
-| HubSpot | Hayır, ama güçlü önerilir | LeadAC kendi account/workflow yüzeyinde çalışır; won/lost manual girilir |
+| HubSpot | Hayır, ama güçlü önerilir | Revint kendi account/workflow yüzeyinde çalışır; won/lost manual girilir |
 | Smartlead/Instantly | Hayır, ama activation için önerilir | Gmail/Outlook veya manual call/field visit tracking kullanılır |
-| Openmart | Hayır | LeadAC Google Places + Apify ile discovery yapar; LeadAC-managed Openmart opsiyonel kullanılır |
-| Orbital | Hayır | Orbital-specific SMB signals olmaz; LeadAC website/review/Google/Apify signals ile scoring yapar |
+| Openmart | Hayır | Revint Google Places + Apify ile discovery yapar; Revint-managed Openmart opsiyonel kullanılır |
+| Orbital | Hayır | Orbital-specific SMB signals olmaz; Revint website/review/Google/Apify signals ile scoring yapar |
 | Resquared | Hayır | Resquared-sourced accounts olmaz; internal discovery veya Openmart kullanılır |
-| Clay | Hayır | Custom enrichment workflow olmaz; LeadAC native workers çalışır |
-| Google Places | Evet, internal dependency | Canonical local identity için LeadAC tarafında gerekir |
+| Clay | Hayır | Custom enrichment workflow olmaz; Revint native workers çalışır |
+| Google Places | Evet, internal dependency | Canonical local identity için Revint tarafında gerekir |
 | Apify | Güçlü önerilir | Deep review/site/social kalitesi düşer ama lightweight audit devam eder |
 
 Product implication:
@@ -235,7 +235,7 @@ Product implication:
 - Openmart/Orbital/Resquared/Clay "required setup" ekranında olmamalı.
 - Bunlar "boost coverage" veya "connect existing data source" olarak sunulmalı.
 - FineDine hiçbirini kullanmıyorsa demo/pilot yine çalışmalı.
-- LeadAC'in core value proposition connector availability'ye değil, normalized signal -> account judgment -> outcome learning loop'a dayanmalı.
+- Revint'in core value proposition connector availability'ye değil, normalized signal -> account judgment -> outcome learning loop'a dayanmalı.
 
 ## 6. Openmart entegrasyonu
 
@@ -243,11 +243,11 @@ Product implication:
 
 Openmart kendini local business API, Google Maps scraper alternatifi, owner finder, email finder ve local business enrichment kaynağı olarak konumlandırıyor. Resmi sayfasında 200M+ local business, 50+ data field, owner contact, tech stack, rating, social profiles ve search/enrichment API vurgusu yapılıyor. API tutorial'ında `/api/v1/search` endpoint'i, API key ile arama, pagination ve batch people lookup akışı anlatılıyor.
 
-Bu LeadAC için şu anlama gelir:
+Bu Revint için şu anlama gelir:
 
-- LeadAC'in büyük local business database kurmasına gerek yok.
+- Revint'in büyük local business database kurmasına gerek yok.
 - Openmart raw TAM ve contact coverage için upstream rail olabilir.
-- LeadAC, Openmart'ın verdiği account'ları FineDine fit, pitch angle ve outcome-learning tarafında işler.
+- Revint, Openmart'ın verdiği account'ları FineDine fit, pitch angle ve outcome-learning tarafında işler.
 
 ### 6.2 Neden gerekli?
 
@@ -258,7 +258,7 @@ FineDine'in sorusu "Londra'daki bütün restoranlar nerede?" değildir. O soru c
 - Bu account'a rep bugün gitmeli mi, yoksa suppress mi edilmeli?
 - Bu restoran chain/group mu, yoksa independent mı?
 
-Openmart ilk soruya veri sağlar; LeadAC kalan soruları çözer.
+Openmart ilk soruya veri sağlar; Revint kalan soruları çözer.
 
 ### 6.3 Native-first entegrasyon şekli
 
@@ -266,13 +266,13 @@ FineDine başlangıcında Openmart CSV değil API ile bağlanmalıdır. CSV sade
 
 Native flow:
 
-1. LeadAC içinde `IntegrationConnection(provider="openmart")` oluşturulur.
+1. Revint içinde `IntegrationConnection(provider="openmart")` oluşturulur.
 2. API key workspace-scoped credential olarak saklanır.
 3. FineDine market/sub-niche seçer: örnek `premium sushi restaurants in London`.
-4. LeadAC Openmart `/search` çağırır.
+4. Revint Openmart `/search` çağırır.
 5. Pagination ve rate limit state'i `IntegrationSyncState` veya `IntegrationConnection.settingsJson` içinde tutulur.
 6. Sonuçlar `ExternalRecord(provider="openmart")` olarak raw saklanır.
-7. LeadAC identity resolver domain, phone, name/address ve Google Place candidate ile `Lead`/`Account` eşleştirir.
+7. Revint identity resolver domain, phone, name/address ve Google Place candidate ile `Lead`/`Account` eşleştirir.
 8. Eksik owner/GM contact lookup sadece high-fit veya shortlisted accounts için çalışır.
 9. Openmart fields `AccountSignal` olarak confidence/freshness ile yazılır.
 10. Google Places ve website crawl, Openmart data'yı doğrulamak için kullanılır.
@@ -304,12 +304,12 @@ Openmart'tan alınacak minimum fields:
 - last updated/freshness
 - raw JSON
 
-### 6.5 LeadAC'e nasıl akar?
+### 6.5 Revint'e nasıl akar?
 
 Flow:
 
 1. User FineDine workspace'te market seçer.
-2. LeadAC Openmart API'den accounts alır.
+2. Revint Openmart API'den accounts alır.
 3. Domain, Google place id, phone ve name/address ile identity resolution yapar.
 4. `AccountSignal` içine Openmart fields source confidence ile yazılır.
 5. Google Places ile canonical place doğrulanır.
@@ -350,21 +350,21 @@ Openmart'ı "her account'a full enrichment" olarak değil, "market fill + select
 
 Orbital kendini SMB account intelligence/discovery platformu olarak konumlandırıyor. Resmi sitesinde SMB account discovery, vertical-specific signals, 200+ SMB-specific enrichment agents, CRM/GTM integrations, scoring, inbound routing ve outbound activation dili var. Dokümanlarında Salesforce, HubSpot ve Attio ile bidirectional CRM sync desteklediğini, CRM data'yı Orbital'e çekip Orbital updates'i CRM'e yazabildiğini anlatıyor.
 
-Bu LeadAC için hem fırsat hem positioning riskidir.
+Bu Revint için hem fırsat hem positioning riskidir.
 
 Fırsat:
 
 - Orbital güçlü upstream SMB signal provider olabilir.
-- FineDine Orbital kullanıyorsa LeadAC bu signal'leri okuyup outcome-learning layer'a çevirebilir.
+- FineDine Orbital kullanıyorsa Revint bu signal'leri okuyup outcome-learning layer'a çevirebilir.
 
 Risk:
 
 - "SMB Account Intelligence" dili Orbital'e çok yakın.
-- LeadAC kendini Orbital alternatifi gibi anlatırsa yanlış savaşa girer.
+- Revint kendini Orbital alternatifi gibi anlatırsa yanlış savaşa girer.
 
 Bu yüzden Orbital entegrasyonunun dili:
 
-> Orbital finds and enriches SMB accounts. LeadAC learns which Orbital-sourced signals actually convert for FineDine and turns them into next actions.
+> Orbital finds and enriches SMB accounts. Revint learns which Orbital-sourced signals actually convert for FineDine and turns them into next actions.
 
 ### 7.2 Neden gerekli?
 
@@ -383,12 +383,12 @@ Orbital için native API beklememeliyiz. Daha mantıklı üç yol:
 
 1. HubSpot-mediated sync:
    - Orbital HubSpot'a custom fields yazar.
-   - LeadAC HubSpot'tan bu fields'i okur.
+   - Revint HubSpot'tan bu fields'i okur.
    - Bu en pratik ve en az partner dependency'li yoldur.
 
 2. CSV import:
    - Orbital export alınır.
-   - LeadAC source provider `orbital` olarak import eder.
+   - Revint source provider `orbital` olarak import eder.
    - Orbital-specific fields `AccountSignal` olarak saklanır.
 
 3. Partner/API later:
@@ -414,20 +414,20 @@ Orbital'den alınacak fields:
 - custom signal values
 - CRM sync ids
 
-### 7.5 LeadAC Orbital signal'lerini nasıl kullanır?
+### 7.5 Revint Orbital signal'lerini nasıl kullanır?
 
-Orbital signal'leri direkt final score olmamalı. LeadAC onları evidence olarak almalı:
+Orbital signal'leri direkt final score olmamalı. Revint onları evidence olarak almalı:
 
 - `orbital.locations_count >= 3` + website multiple locations + Google duplicate names -> chain/group confidence yükselir.
 - `orbital.pos_detected = Toast/Square` + FineDine ordering/payment package -> POS-adjacent pitch.
 - `orbital.instagram_followers high` + premium/cafe/fine dining -> branded digital menu + campaign angle.
 - `orbital.new_location_opening` -> "opening stack" playbook.
 
-Outcome sonrası LeadAC şunu öğrenir:
+Outcome sonrası Revint şunu öğrenir:
 
 - Orbital'in hangi restaurant signals'i FineDine için reply/demo/won üretiyor?
 - Hangi Orbital signal'i false positive?
-- Orbital score ile LeadAC fit score arasındaki fark nerede?
+- Orbital score ile Revint fit score arasındaki fark nerede?
 
 ### 7.6 Orbital için stratejik sınır
 
@@ -438,13 +438,13 @@ Orbital'i homepage'de ana düşman gibi göstermemeliyiz. FineDine pilotunda Orb
 - competitor validation
 - not replacement target
 
-LeadAC'in farkı "source üretmek" değil "source'lardan öğrenmek" olmalı.
+Revint'in farkı "source üretmek" değil "source'lardan öğrenmek" olmalı.
 
 ## 8. HubSpot entegrasyonu
 
 ### 8.1 HubSpot'un rolü
 
-HubSpot, FineDine pilotunda system-of-record olmalı. LeadAC'in CRM olmaya çalışması yanlış olur. HubSpot:
+HubSpot, FineDine pilotunda system-of-record olmalı. Revint'in CRM olmaya çalışması yanlış olur. HubSpot:
 
 - company/contact/deal record'larını tutar
 - rep owner bilgisini tutar
@@ -452,7 +452,7 @@ HubSpot, FineDine pilotunda system-of-record olmalı. LeadAC'in CRM olmaya çal�
 - meetings, notes, tasks, calls gibi aktiviteleri tutar
 - won/lost outcome truth'u üretir
 
-LeadAC:
+Revint:
 
 - HubSpot kayıtlarını restaurant context ile zenginleştirir
 - account brief ve next action üretir
@@ -461,37 +461,37 @@ LeadAC:
 
 ### 8.2 Neden en kritik entegrasyon?
 
-Çünkü FineDine sales leadership'in ürünü kullanması için insight'ın rep workflow'una girmesi gerekir. Rep HubSpot'ta çalışıyorsa LeadAC dashboard'u tek başına yeterli değildir.
+Çünkü FineDine sales leadership'in ürünü kullanması için insight'ın rep workflow'una girmesi gerekir. Rep HubSpot'ta çalışıyorsa Revint dashboard'u tek başına yeterli değildir.
 
 HubSpot entegrasyonu üç fayda üretir:
 
-1. Adoption: Rep kendi CRM'inde LeadAC insight'ı görür.
-2. Outcome truth: Meeting, deal stage, won/lost LeadAC'e döner.
+1. Adoption: Rep kendi CRM'inde Revint insight'ı görür.
+2. Outcome truth: Meeting, deal stage, won/lost Revint'e döner.
 3. Manager visibility: FineDine leadership hangi account source/pitch'in pipeline ürettiğini görür.
 
 ### 8.3 HubSpot object mapping
 
 Restaurant-tech için önerilen mapping:
 
-| LeadAC object | HubSpot object | Not |
+| Revint object | HubSpot object | Not |
 |---|---|---|
 | Account/group | Company | Chain/group parent veya single-location company |
 | Location/restaurant | Company veya child Company | MVP'de location da Company olabilir; chain için parent-child association kullanılır |
 | Contact | Contact | Owner, GM, marketing, ops |
 | Sales opportunity | Deal | Demo/opportunity stage için |
 | LeadActivity | Engagement/Activity veya custom notes | Email/call/meeting outcomes |
-| Account Intelligence Brief | Company custom properties + note/link | Full brief LeadAC'te, summary HubSpot'ta |
+| Account Intelligence Brief | Company custom properties + note/link | Full brief Revint'te, summary HubSpot'ta |
 
 MVP kararı:
 
-- Independent restaurant: one LeadAC Account + one Lead/Location -> one HubSpot Company.
+- Independent restaurant: one Revint Account + one Lead/Location -> one HubSpot Company.
 - Multi-location group: parent Account -> parent HubSpot Company; locations -> child Companies veya associated Companies.
 - Contact email varsa Contact oluştur/upsert et; yoksa Company context yine yaz.
 - Deal sadece FineDine team shortlist/outreach sonrası oluşturulsun. Her imported restaurant için Deal açmak CRM'i kirletir.
 
 ### 8.4 HubSpot custom properties
 
-LeadAC HubSpot'ta ayrı property group oluşturmalı: `LeadAC Intelligence`.
+Revint HubSpot'ta ayrı property group oluşturmalı: `Revint Intelligence`.
 
 Minimum Company properties:
 
@@ -536,7 +536,7 @@ Minimum Deal properties:
 
 ### 8.5 Sync direction
 
-HubSpot -> LeadAC:
+HubSpot -> Revint:
 
 - companies
 - contacts
@@ -550,7 +550,7 @@ HubSpot -> LeadAC:
 - lost reason
 - notes/call outcomes where available
 
-LeadAC -> HubSpot:
+Revint -> HubSpot:
 
 - fit score
 - priority tier
@@ -572,11 +572,11 @@ Option A: FineDine private app token
 - En hızlı native yol.
 - FineDine HubSpot içinde private app oluşturur.
 - Required scopes minimum tutulur.
-- LeadAC token'ı workspace credential olarak saklar.
+- Revint token'ı workspace credential olarak saklar.
 - Marketplace/OAuth approval süreci beklenmez.
 - Tek design partner için uygundur.
 
-Option B: LeadAC OAuth app
+Option B: Revint OAuth app
 
 - Tekrarlanabilir SaaS onboarding için doğru nihai yol.
 - User HubSpot install flow'dan geçer.
@@ -591,14 +591,14 @@ Benim önerim:
 
 Native HubSpot launch scope:
 
-- Create/update LeadAC property group.
-- Upsert Company by LeadAC account id, Google Place ID, domain, phone, name/address.
+- Create/update Revint property group.
+- Upsert Company by Revint account id, Google Place ID, domain, phone, name/address.
 - Upsert Contact by email.
 - Associate contacts to companies.
 - Create Deal only when account is shortlisted/qualified, not every imported restaurant için.
 - Read deal stage, owner, last activity, meeting booked, closed won/lost, lost reason.
 - Subscribe to webhooks for company/contact/deal property changes where available.
-- Write LeadAC intelligence fields back to Company and Deal.
+- Write Revint intelligence fields back to Company and Deal.
 
 Fallback:
 
@@ -631,7 +631,7 @@ Do not create duplicate records silently. Every ambiguous match should become `n
 
 ### 9.1 Smartlead'in rolü
 
-Smartlead sender ve campaign outcome rail'dir. LeadAC Smartlead'in yerine geçmemeli; Smartlead'e doğru account, doğru merge variables ve doğru campaign selection göndermeli. Smartlead'den de reply/bounce/unsubscribe/message history geri almalı.
+Smartlead sender ve campaign outcome rail'dir. Revint Smartlead'in yerine geçmemeli; Smartlead'e doğru account, doğru merge variables ve doğru campaign selection göndermeli. Smartlead'den de reply/bounce/unsubscribe/message history geri almalı.
 
 Smartlead API dokümanında campaign lead add/update, lead pause/resume/unsubscribe, message history, campaign analytics ve webhook eventleri bulunuyor. Webhook guide, reply, bounce, unsubscribe ve message sent gibi campaign eventlerini HTTP POST ile gönderebildiğini anlatıyor.
 
@@ -646,9 +646,9 @@ FineDine outbound motion'unda email sender kullanılıyorsa outcome truth'un ön
 - Positive/negative reply geldi mi?
 - Hangi campaign daha iyi çalıştı?
 
-LeadAC bu olayları alamazsa learning loop iddiası zayıf kalır.
+Revint bu olayları alamazsa learning loop iddiası zayıf kalır.
 
-### 9.3 LeadAC -> Smartlead
+### 9.3 Revint -> Smartlead
 
 Gönderilecek fields:
 
@@ -679,7 +679,7 @@ Campaign selection:
 - multi-location governance campaign
 - suppress/no-send bucket
 
-### 9.4 Smartlead -> LeadAC
+### 9.4 Smartlead -> Revint
 
 Normalize edilecek events:
 
@@ -697,14 +697,14 @@ Her event şu mapping ile kaydedilmeli:
 - campaign id
 - lead id in provider
 - message id/thread id
-- LeadAC lead/account id
+- Revint lead/account id
 - raw payload
 - timestamp
 - normalized outcome
 
 ### 9.5 Smartlead native-first launch path
 
-FineDine başlangıcında Smartlead kullanılacaksa CSV ana yol olmamalı. LeadAC campaign'e lead push etmeli ve webhook eventlerini normalize etmelidir.
+FineDine başlangıcında Smartlead kullanılacaksa CSV ana yol olmamalı. Revint campaign'e lead push etmeli ve webhook eventlerini normalize etmelidir.
 
 Native launch scope:
 
@@ -722,8 +722,8 @@ Native launch scope:
 
 Implementation detail:
 
-- LeadAC should not decide deliverability settings. Smartlead owns sending infrastructure.
-- LeadAC should choose campaign and variables, not mailbox warmup or daily sending limits.
+- Revint should not decide deliverability settings. Smartlead owns sending infrastructure.
+- Revint should choose campaign and variables, not mailbox warmup or daily sending limits.
 - Duplicate lead rejection must be handled gracefully and stored as integration error.
 
 Fallback:
@@ -738,9 +738,9 @@ Fallback:
 
 Instantly de Smartlead gibi sender ve outcome rail'dir. Instantly API V2 lead create/list/update, campaign/list membership ve custom variables destekliyor. Instantly webhooks help center'da email sent, bounced, opened, clicked, reply received, unsubscribed, interested/not interested/neutral, meeting booked ve close gibi events listeleniyor.
 
-Bu, LeadAC için çok değerli çünkü Instantly bazı outcome'ları Smartlead'e göre daha doğrudan sales status olarak döndürebilir.
+Bu, Revint için çok değerli çünkü Instantly bazı outcome'ları Smartlead'e göre daha doğrudan sales status olarak döndürebilir.
 
-### 10.2 LeadAC -> Instantly
+### 10.2 Revint -> Instantly
 
 API veya CSV ile gönderilecek custom variables:
 
@@ -756,9 +756,9 @@ API veya CSV ile gönderilecek custom variables:
 - `opener`
 - `source_summary`
 
-Instantly create lead API custom variables alanını lead payload içinde saklayabildiği için LeadAC context'i campaign copy'de kullanılabilir.
+Instantly create lead API custom variables alanını lead payload içinde saklayabildiği için Revint context'i campaign copy'de kullanılabilir.
 
-### 10.3 Instantly -> LeadAC
+### 10.3 Instantly -> Revint
 
 Webhook mapping:
 
@@ -773,7 +773,7 @@ Webhook mapping:
 
 ### 10.4 Instantly native-first launch path
 
-FineDine başlangıcında Instantly seçilirse LeadAC API V2 ile lead/campaign push ve webhook receiver kurmalıdır.
+FineDine başlangıcında Instantly seçilirse Revint API V2 ile lead/campaign push ve webhook receiver kurmalıdır.
 
 Native launch scope:
 
@@ -794,8 +794,8 @@ Fallback:
 
 Important boundary:
 
-- Instantly may expose campaign/sending configuration, but LeadAC should avoid becoming a deliverability control plane.
-- LeadAC only sends the right accounts, variables and suppressions; sender remains the source of sending execution.
+- Instantly may expose campaign/sending configuration, but Revint should avoid becoming a deliverability control plane.
+- Revint only sends the right accounts, variables and suppressions; sender remains the source of sending execution.
 
 ## 11. Clay entegrasyonu
 
@@ -803,38 +803,38 @@ Important boundary:
 
 Clay generic enrichment/workflow workbench'tir. Resmi Clay docs, Clay'in geleneksel bir API olmadığını; webhooks, Make/Zapier wrapper veya Enterprise People & Company API ile programmatic kullanım sağladığını söylüyor. Clay table webhook'larıyla veri içeri alınabilir; enrichments sonrası HTTP actions ile veri dışarı gönderilebilir.
 
-Bu yüzden LeadAC Clay'i "provider" değil "customer-controlled enrichment lab" olarak görmeli.
+Bu yüzden Revint Clay'i "provider" değil "customer-controlled enrichment lab" olarak görmeli.
 
 ### 11.2 Neden gerekli?
 
-Bazı FineDine/GTM ekipleri Clay'i zaten kullanıyor olabilir. Onlar LeadAC'e şunu sorar:
+Bazı FineDine/GTM ekipleri Clay'i zaten kullanıyor olabilir. Onlar Revint'e şunu sorar:
 
 "Bunu Clay'de build edemez miyiz?"
 
 Cevap:
 
-"Clay'de veri pipeline'ı kurabilirsiniz. LeadAC ise restaurant-tech judgment, source conflict, account brief ve outcome learning loop'u hazır verir."
+"Clay'de veri pipeline'ı kurabilirsiniz. Revint ise restaurant-tech judgment, source conflict, account brief ve outcome learning loop'u hazır verir."
 
 ### 11.3 Entegrasyon akışları
 
-Flow A: Clay -> LeadAC
+Flow A: Clay -> Revint
 
 1. Clay table enriched rows üretir.
-2. HTTP action veya CSV ile LeadAC import endpoint'ine gönderir.
-3. LeadAC row'u `source_provider=clay` olarak saklar.
+2. HTTP action veya CSV ile Revint import endpoint'ine gönderir.
+3. Revint row'u `source_provider=clay` olarak saklar.
 4. Clay columns `AccountSignal` olur.
 
-Flow B: LeadAC -> Clay -> LeadAC
+Flow B: Revint -> Clay -> Revint
 
-1. LeadAC eksik field tespit eder: örnek "booking provider unknown".
-2. LeadAC Clay webhook endpoint'ine row gönderir.
+1. Revint eksik field tespit eder: örnek "booking provider unknown".
+2. Revint Clay webhook endpoint'ine row gönderir.
 3. Clay custom workflow çalışır.
-4. Clay HTTP action ile result'u LeadAC'e post eder.
-5. LeadAC signal confidence ve provenance ile kaydeder.
+4. Clay HTTP action ile result'u Revint'e post eder.
+5. Revint signal confidence ve provenance ile kaydeder.
 
 ### 11.4 Clay için sınır
 
-LeadAC Clay'e bağımlı olmamalı. Çünkü Clay customer-specific ops workbench'tir; product core logic oraya taşınırsa LeadAC'in moat'i zayıflar.
+Revint Clay'e bağımlı olmamalı. Çünkü Clay customer-specific ops workbench'tir; product core logic oraya taşınırsa Revint'in moat'i zayıflar.
 
 Clay entegrasyonu şu şekilde konumlanmalı:
 
@@ -855,15 +855,15 @@ Bu nedenle Resquared için native API varsaymak doğru değil.
 
 FineDine veya başka bir customer Resquared kullanıyorsa:
 
-- Resquared account listeleri LeadAC'e import edilir.
-- Resquared outreach engagement/outcome exportları varsa LeadAC'e outcome source olarak gelir.
-- LeadAC hangi Resquared-sourced accounts'ın convert ettiğini öğrenir.
+- Resquared account listeleri Revint'e import edilir.
+- Resquared outreach engagement/outcome exportları varsa Revint'e outcome source olarak gelir.
+- Revint hangi Resquared-sourced accounts'ın convert ettiğini öğrenir.
 
 ### 12.3 Native-first path
 
 Resquared public API net olmadığı için FineDine başlangıcında Resquared native connector launch-critical değildir. Ancak native-first prensip korunur:
 
-- Eğer Resquared HubSpot'a data yazıyorsa, LeadAC bu veriyi HubSpot custom fields üzerinden okur.
+- Eğer Resquared HubSpot'a data yazıyorsa, Revint bu veriyi HubSpot custom fields üzerinden okur.
 - Eğer Resquared partner/export endpoint sağlıyorsa provider-specific connector yazılır.
 - CSV sadece fallback olur.
 
@@ -875,11 +875,11 @@ Priority düşük kalmalıdır; Openmart + HubSpot + sender loop çalışmadan R
 
 Google Places canonical local identity source olmalı. Google Places Text Search ve Place Details API, field mask ile istenen alanların seçilmesini gerektiriyor ve bu maliyet kontrolü için önemli. Text Search query + location bias ile restaurant seti bulunabilir; Place Details unique place id ile address, phone, website, rating/reviews gibi detayları döndürür.
 
-LeadAC'te zaten Google Places discovery var. Bunu kaldırmak değil, integration graph'ın canonical identity layer'ı yapmak gerekir.
+Revint'te zaten Google Places discovery var. Bunu kaldırmak değil, integration graph'ın canonical identity layer'ı yapmak gerekir.
 
 ### 13.2 Apify'nin rolü
 
-Apify deep research ve scraping rail'dir. Apify API Actor run, dataset item fetch, webhook/schedule ve auth token akışları sunuyor. LeadAC'te Apify worker'ları zaten var.
+Apify deep research ve scraping rail'dir. Apify API Actor run, dataset item fetch, webhook/schedule ve auth token akışları sunuyor. Revint'te Apify worker'ları zaten var.
 
 FineDine için Apify şu işlerde kullanılmalı:
 
@@ -912,7 +912,7 @@ MVP'de Apollo native connector şart değil. Ancak import mapping ve future opti
 
 ## 15. Source provenance ve conflict resolution
 
-LeadAC'in entegrasyonlardan gerçek değer üretmesi için her field'ın kaynağı saklanmalı. Aksi halde sistem "hangi data'ya niye güveniyoruz?" sorusuna cevap veremez.
+Revint'in entegrasyonlardan gerçek değer üretmesi için her field'ın kaynağı saklanmalı. Aksi halde sistem "hangi data'ya niye güveniyoruz?" sorusuna cevap veremez.
 
 ### 15.1 Önerilen yeni veri modelleri
 
@@ -992,7 +992,7 @@ Example 1:
 - Website locations page says 5.
 - Google search returns 4.
 
-LeadAC output:
+Revint output:
 
 - `locationsCountEstimate=5`
 - confidence: medium
@@ -1005,7 +1005,7 @@ Example 2:
 - Website has no POS reference.
 - Reviews mention "Toast receipt".
 
-LeadAC output:
+Revint output:
 
 - POS signal: Toast
 - confidence: medium-high
@@ -1016,7 +1016,7 @@ Example 3:
 - Smartlead reply says "not interested".
 - HubSpot deal later marked meeting booked.
 
-LeadAC output:
+Revint output:
 
 - HubSpot stage overrides sender category.
 - Smartlead reply classification becomes historical signal, not final outcome.
@@ -1025,7 +1025,7 @@ LeadAC output:
 
 ### Step 0: Setup
 
-LeadAC creates FineDine workspace:
+Revint creates FineDine workspace:
 
 - niche: `RESTAURANT_TECH`
 - market: UK/London first
@@ -1042,7 +1042,7 @@ FineDine user chooses objective:
 
 > "London premium sushi and fine dining restaurants; this month 15 demos."
 
-LeadAC translates this into:
+Revint translates this into:
 
 - geography
 - sub-niches
@@ -1065,7 +1065,7 @@ Priority:
 
 ### Step 3: Identity resolution
 
-LeadAC merges by:
+Revint merges by:
 
 - Google place id
 - domain/apex domain
@@ -1084,7 +1084,7 @@ Output:
 
 ### Step 4: Enrichment decision
 
-LeadAC decides which tool to use based on missing fields:
+Revint decides which tool to use based on missing fields:
 
 - Missing place id -> Google Places
 - Missing owner/contact -> Openmart/Orbital/Apollo if high-fit
@@ -1092,7 +1092,7 @@ LeadAC decides which tool to use based on missing fields:
 - Missing booking/ordering tech -> website crawl + Clay/Orbital if available
 - Missing outcome -> HubSpot/sender sync
 
-This is important: LeadAC should not run all enrichments on all rows. It should plan enrichment based on potential value.
+This is important: Revint should not run all enrichments on all rows. It should plan enrichment based on potential value.
 
 ### Step 5: Account Intelligence Brief
 
@@ -1137,7 +1137,7 @@ If CRM-first:
 
 If field/call:
 
-- create HubSpot task or LeadAC next action.
+- create HubSpot task or Revint next action.
 
 ### Step 8: Outcome capture
 
@@ -1151,7 +1151,7 @@ Events return from:
 
 ### Step 9: Learning
 
-LeadAC updates:
+Revint updates:
 
 - LeadNextAction outcome
 - CommercialInsight performance
@@ -1184,7 +1184,7 @@ The key output after 30 days:
 - FineDine private app token path.
 - OAuth app path scaffolded in same abstraction.
 - Company/contact/deal read-write.
-- LeadAC property group and properties.
+- Revint property group and properties.
 - Owner/deal stage/lifecycle sync.
 - Webhook receiver and signature/validation handling.
 - Deal stage changes mapped to outcomes.
@@ -1247,9 +1247,9 @@ Shared sender layer:
 
 ### P6: Clay webhook bridge
 
-- LeadAC inbound enrichment webhook endpoint.
+- Revint inbound enrichment webhook endpoint.
 - Clay HTTP action result schema.
-- Optional LeadAC -> Clay row dispatch for missing fields.
+- Optional Revint -> Clay row dispatch for missing fields.
 - Source provenance as provider `clay`.
 
 ### P7: Resquared/Apollo optional
@@ -1282,8 +1282,8 @@ Recommended folder shape:
   - property setup
 
 - `src/lib/integrations/hubspot/sync.ts`
-  - LeadAC account -> HubSpot company
-  - HubSpot company/deal -> LeadAC account/opportunity
+  - Revint account -> HubSpot company
+  - HubSpot company/deal -> Revint account/opportunity
   - webhook event normalization
 
 - `src/lib/integrations/openmart/client.ts`
@@ -1346,11 +1346,11 @@ Rules:
 FineDine native launch is acceptable only if:
 
 - HubSpot connection can read/write company, contact and deal records.
-- LeadAC can create or update HubSpot custom properties under a LeadAC property group.
-- Deal stage changes in HubSpot create normalized outcomes in LeadAC.
+- Revint can create or update HubSpot custom properties under a Revint property group.
+- Deal stage changes in HubSpot create normalized outcomes in Revint.
 - One sender is fully native: Smartlead or Instantly.
-- LeadAC can push a shortlisted account to the selected sender campaign with `leadac_lead_id`.
-- Sender reply/bounce/unsubscribe events return to LeadAC without CSV.
+- Revint can push a shortlisted account to the selected sender campaign with `leadac_lead_id`.
+- Sender reply/bounce/unsubscribe events return to Revint without CSV.
 - Openmart API can source at least one FineDine market list natively.
 - Google Places validates imported/Openmart restaurants with place ID, website, phone and open status.
 - Account Intelligence Brief shows source provenance and sync status.
@@ -1380,7 +1380,7 @@ Build instead:
 
 FineDine'e anlatılacak basit hikaye:
 
-> HubSpot pipeline'ı tutuyor. Smartlead/Instantly mesajları gönderiyor. Openmart/Orbital/Clay restoran verisini getiriyor. LeadAC bu parçaları birleştirip hangi restoranın FineDine'e neden uygun olduğunu, hangi module/pitch ile gidilmesi gerektiğini ve her outcome'dan ne öğrenildiğini söylüyor.
+> HubSpot pipeline'ı tutuyor. Smartlead/Instantly mesajları gönderiyor. Openmart/Orbital/Clay restoran verisini getiriyor. Revint bu parçaları birleştirip hangi restoranın FineDine'e neden uygun olduğunu, hangi module/pitch ile gidilmesi gerektiğini ve her outcome'dan ne öğrenildiğini söylüyor.
 
 FineDine için integration promise:
 
@@ -1394,7 +1394,7 @@ FineDine için integration promise:
 1. FineDine HubSpot kullanıyor mu, yoksa başka CRM mi?
 2. Smartlead mi Instantly mi ana sender?
 3. FineDine'de mevcut restaurant listeleri hangi formatta?
-4. FineDine Openmart/Orbital/Clay kullanıyor mu, yoksa LeadAC mi kaynak getirecek?
+4. FineDine Openmart/Orbital/Clay kullanıyor mu, yoksa Revint mi kaynak getirecek?
 5. İlk pilot market kesin Londra mı?
 6. FineDine için primary module priority nedir: QR/digital menu, reservations, ordering/payments, CRM/loyalty, website?
 7. HubSpot'a Deal her shortlisted account için mi açılacak, sadece qualified/demo için mi?

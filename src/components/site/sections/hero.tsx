@@ -26,7 +26,7 @@ type HeroProps = {
   subhead: string;
   primaryCta: { href: string; label: string };
   secondaryCta?: { href: string; label: string };
-  /** Anchor number rendered above the headline, e.g. "$100K/yr Gong → $1.5K/mo LeadAC". */
+  /** Anchor number rendered above the headline, e.g. "$100K/yr Gong → $1.5K/mo Revint". */
   anchor?: {
     label: string;
     /** Verb-style note next to the data, e.g. "starts at" or "compared with". */

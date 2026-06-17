@@ -88,7 +88,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     oneSentence:
       "A one-screen brief on each account that lives inside the HubSpot contact card before the SDR dials.",
     definition:
-      "A pre-call brief is the structured summary an SDR reads in the 30 seconds before they dial — who the account is, what they're doing now, which vertical software they installed, what just changed, and the suggested opening angle. In LeadAC, the pre-call brief lives inside the HubSpot contact card as a custom-property block, so the SDR doesn't have to open another app or tab to read it. The shape is: account context (3 lines), top 3 signals (mono data cells), and one suggested opener (2 sentences).",
+      "A pre-call brief is the structured summary an SDR reads in the 30 seconds before they dial — who the account is, what they're doing now, which vertical software they installed, what just changed, and the suggested opening angle. In Revint, the pre-call brief lives inside the HubSpot contact card as a custom-property block, so the SDR doesn't have to open another app or tab to read it. The shape is: account context (3 lines), top 3 signals (mono data cells), and one suggested opener (2 sentences).",
     related: [
       "memory-layer-for-vertical-saas",
       "operational-intelligence",
@@ -133,7 +133,7 @@ export const GLOSSARY: GlossaryTerm[] = [
     oneSentence:
       "Enrichment that writes 12 fields directly into the CRM contact and company records — not a separate dashboard.",
     definition:
-      "CRM-native account enrichment is enrichment that lives inside the CRM the SDR already uses, instead of in a separate enrichment dashboard that the SDR has to remember to open. In LeadAC, enrichment writes 12 fields per account into HubSpot company properties (location_count, vertical_stack_signature, review_tone, owner_activity_score, etc.) so they show up in the same contact card the SDR opens to dial. CRM-native enrichment is what closes the gap between 'we bought an enrichment tool' and 'the SDR actually used the enrichment data.'",
+      "CRM-native account enrichment is enrichment that lives inside the CRM the SDR already uses, instead of in a separate enrichment dashboard that the SDR has to remember to open. In Revint, enrichment writes 12 fields per account into HubSpot company properties (location_count, vertical_stack_signature, review_tone, owner_activity_score, etc.) so they show up in the same contact card the SDR opens to dial. CRM-native enrichment is what closes the gap between 'we bought an enrichment tool' and 'the SDR actually used the enrichment data.'",
     related: [
       "pre-call-brief-in-hubspot",
       "memory-layer-for-vertical-saas",

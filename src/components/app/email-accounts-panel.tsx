@@ -66,10 +66,10 @@ export function EmailAccountsPanel({ accounts: initial }: { accounts: Account[] 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mail className="w-5 h-5 text-(--leadac-300)" /> Email accounts
+            <Mail className="w-5 h-5 text-(--revint-300)" /> Email accounts
           </CardTitle>
           <CardDescription>
-            Send openers directly from Leadac AI. CSV export for Smartlead/Instantly
+            Send openers directly from Revint. CSV export for Smartlead/Instantly
             stays available; this is an extra channel. Daily limit is 500 for Gmail, 30 for Outlook.
           </CardDescription>
         </CardHeader>

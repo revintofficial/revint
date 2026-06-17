@@ -26,7 +26,7 @@ export const runtime = "nodejs";
 const FOUNDER_NOTIFY_EMAIL =
   process.env.WAITLIST_NOTIFY_EMAIL?.trim() ||
   process.env.DEMO_NOTIFY_EMAIL?.trim() ||
-  "mert@leadacai.com";
+  "mert@revint.dev";
 
 const MAX_FIELD_LENGTH = 500;
 const MAX_NOTES_LENGTH = 1500;
@@ -136,9 +136,9 @@ function confirmationHtml(): string {
   return `
 <div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:560px;color:#111;line-height:1.55;">
   <p>Hi,</p>
-  <p>You're on the LeadAC waitlist. We're working with a small first cohort of agencies before opening pricing publicly. When we open a slot, this email gets the first ping.</p>
+  <p>You're on the Revint waitlist. We're working with a small first cohort of agencies before opening pricing publicly. When we open a slot, this email gets the first ping.</p>
   <p>If you want to skip ahead, reply to this email with a postcode + niche you'd want me to audit on a 15-min call. I'll run the audit before we talk.</p>
-  <p style="color:#666;font-size:13px;margin-top:24px;">— Mert · LeadAC</p>
+  <p style="color:#666;font-size:13px;margin-top:24px;">— Mert · Revint</p>
 </div>`.trim();
 }
 
@@ -146,11 +146,11 @@ function confirmationText(): string {
   return [
     "Hi,",
     "",
-    "You're on the LeadAC waitlist. We're working with a small first cohort of agencies before opening pricing publicly. When we open a slot, this email gets the first ping.",
+    "You're on the Revint waitlist. We're working with a small first cohort of agencies before opening pricing publicly. When we open a slot, this email gets the first ping.",
     "",
     "If you want to skip ahead, reply to this email with a postcode + niche you'd want me to audit on a 15-min call. I'll run the audit before we talk.",
     "",
-    "— Mert · LeadAC",
+    "— Mert · Revint",
   ].join("\n");
 }
 
@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
 
   const confirmResult = await sendEmail({
     to: cleaned.email,
-    subject: "You're on the LeadAC waitlist",
+    subject: "You're on the Revint waitlist",
     html: confirmationHtml(),
     text: confirmationText(),
     tags: [

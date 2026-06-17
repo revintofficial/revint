@@ -6,7 +6,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Not found — LeadAC",
+  title: "Not found — Revint",
   robots: { index: false, follow: false },
 };
 

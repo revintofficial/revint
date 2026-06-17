@@ -53,7 +53,7 @@ const DISPOSITIONS: DispChip[] = [
 ];
 
 function cardSurface() {
-  return "rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_8%)] p-6 md:p-7";
+  return "rounded-2xl border border-white/[0.06] bg-[hsl(var(--revint-h)_var(--revint-ns)_8%)] p-6 md:p-7";
 }
 
 function columnCaption(): string {
@@ -80,7 +80,7 @@ export function PodControlRoom() {
         >
           <p
             className="text-[10.5px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 65%)" }}
+            style={{ color: "hsl(var(--revint-h) var(--revint-s) 65%)" }}
           >
             Today&apos;s account queue
           </p>
@@ -99,8 +99,8 @@ export function PodControlRoom() {
                     className="shrink-0 rounded-md px-1.5 py-0.5 text-[10.5px] font-mono tabular-nums"
                     style={{
                       background:
-                        "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)",
-                      color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+                        "hsl(var(--revint-h) var(--revint-s) 50% / 0.10)",
+                      color: "hsl(var(--revint-h) var(--revint-s) 78%)",
                     }}
                     aria-label={`Fit score ${row.fit}`}
                   >
@@ -127,7 +127,7 @@ export function PodControlRoom() {
         >
           <p
             className="text-[10.5px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 65%)" }}
+            style={{ color: "hsl(var(--revint-h) var(--revint-s) 65%)" }}
           >
             Yesterday&apos;s reply mix
           </p>
@@ -145,8 +145,8 @@ export function PodControlRoom() {
                   className="rounded-md px-2 py-0.5 text-[12px] font-mono font-semibold tabular-nums"
                   style={{
                     background:
-                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)",
-                    color: "hsl(var(--leadac-h) var(--leadac-s) 80%)",
+                      "hsl(var(--revint-h) var(--revint-s) 50% / 0.10)",
+                    color: "hsl(var(--revint-h) var(--revint-s) 80%)",
                   }}
                   aria-label={`${chip.count} ${chip.label.toLowerCase()}`}
                 >
@@ -169,7 +169,7 @@ export function PodControlRoom() {
         >
           <p
             className="text-[10.5px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 65%)" }}
+            style={{ color: "hsl(var(--revint-h) var(--revint-s) 65%)" }}
           >
             Repeat-touch guard
           </p>

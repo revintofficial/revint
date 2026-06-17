@@ -74,7 +74,7 @@ export function DossierSourceDrawer({
             "duration-200",
           )}
           style={{
-            background: "hsl(var(--leadac-h) var(--leadac-ns) 10% / 0.98)",
+            background: "hsl(var(--revint-h) var(--revint-ns) 10% / 0.98)",
             backdropFilter: "saturate(180%) blur(30px)",
             WebkitBackdropFilter: "saturate(180%) blur(30px)",
             border: "0.5px solid hsl(0 0% 100% / 0.12)",
@@ -507,7 +507,7 @@ function ServicePackagesBody({ sources }: { sources: DossierSourcesPayload }) {
             </ul>
           )}
           {p.isPopular && (
-            <span className="inline-block text-[10.5px] px-1.5 py-0.5 rounded border border-(--leadac-500)/40 text-(--leadac-500) bg-(--leadac-500)/10">
+            <span className="inline-block text-[10.5px] px-1.5 py-0.5 rounded border border-(--revint-500)/40 text-(--revint-500) bg-(--revint-500)/10">
               Popular
             </span>
           )}
@@ -554,7 +554,7 @@ function RunBody({
                 href={run.artifactUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-(--leadac-500) hover:underline"
+                className="text-(--revint-500) hover:underline"
               >
                 {run.artifactUrl}
               </a>

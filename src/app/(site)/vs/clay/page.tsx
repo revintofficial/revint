@@ -23,9 +23,9 @@ import { SITE } from "@/lib/seo/metadata";
 
 const PATH = "/vs/clay";
 const TITLE =
-  "LeadAC vs Clay — the finished product, not the workshop.";
+  "Revint vs Clay — the finished product, not the workshop.";
 const DESCRIPTION =
-  "Clay is a programmable enrichment workshop — flexible, powerful, requires a GTM engineer. LeadAC ships the finished vertical packs Clay teams spend weeks trying to build. Connect HubSpot in an hour.";
+  "Clay is a programmable enrichment workshop — flexible, powerful, requires a GTM engineer. Revint ships the finished vertical packs Clay teams spend weeks trying to build. Connect HubSpot in an hour.";
 const PUBLISHED = "2026-05-22";
 
 export const metadata: Metadata = buildMetadata({
@@ -46,7 +46,7 @@ export default function VsClayPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Compare", url: "/vs" },
           { name: "vs Clay", url: PATH },
         ])}
@@ -66,7 +66,7 @@ export default function VsClayPage() {
       <Hero
         eyebrow="Compare · vs Clay"
         headline="Clay is a workshop. We are the finished tool."
-        subhead={`${clay.reframe} If you have a GTM engineer, keep Clay. If you don't, the LeadAC vertical pack ships the workflow you were trying to build in Clay — in an hour.`}
+        subhead={`${clay.reframe} If you have a GTM engineer, keep Clay. If you don't, the Revint vertical pack ships the workflow you were trying to build in Clay — in an hour.`}
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}
         anchor={{
@@ -94,12 +94,12 @@ export default function VsClayPage() {
           {
             value: "3 packs",
             label:
-              "LeadAC vertical packs that ship on day one — Field service, Restaurant tech, Dental.",
+              "Revint vertical packs that ship on day one — Field service, Restaurant tech, Dental.",
           },
           {
             value: "1 hour",
             label:
-              "LeadAC onboarding — HubSpot OAuth, field mapping, first 200 accounts.",
+              "Revint onboarding — HubSpot OAuth, field mapping, first 200 accounts.",
           },
         ]}
       />
@@ -107,11 +107,11 @@ export default function VsClayPage() {
       <ComparisonTable
         eyebrow="Capability matrix"
         title="The workshop vs the finished tool."
-        subtitle="Clay's primitive is freeform enrichment workflow. LeadAC's primitive is finished vertical pack. The matrix names which of the two fits which staffing model."
+        subtitle="Clay's primitive is freeform enrichment workflow. Revint's primitive is finished vertical pack. The matrix names which of the two fits which staffing model."
         columns={[
           { label: "Clay Growth", subLabel: "from $5,352/yr" },
           {
-            label: "LeadAC Team",
+            label: "Revint Team",
             isUs: true,
             subLabel: "from $18,000/yr",
           },
@@ -192,7 +192,7 @@ export default function VsClayPage() {
       <CtaBlock
         eyebrow="Run it on one vertical"
         title="The pilot is 30 days. The vertical pack is finished on day one."
-        subtitle="If LeadAC's vertical pack covers your motion, you'll know inside the first hour. If you need freeform workflow logic Clay handles, we'll say so on the call and point you back to Clay."
+        subtitle="If Revint's vertical pack covers your motion, you'll know inside the first hour. If you need freeform workflow logic Clay handles, we'll say so on the call and point you back to Clay."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}
       />

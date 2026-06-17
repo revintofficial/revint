@@ -30,7 +30,7 @@ export async function generateMetadata({
     return buildMetadata({ path: `/blog/${slug}`, title: "Not found", description: "Not found" });
   return buildMetadata({
     path: `/blog/${slug}`,
-    title: `${post.title} — LeadAC blog`,
+    title: `${post.title} — Revint blog`,
     description: post.description,
     ogType: "article",
     article: {
@@ -63,7 +63,7 @@ export default async function BlogPostPage({
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Blog", url: "/blog" },
           { name: post.title, url: `/blog/${post.slug}` },
         ])}

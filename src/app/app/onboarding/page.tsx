@@ -1,4 +1,4 @@
-ï»¿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -95,7 +95,7 @@ function PackageEditor({
           onClick={() => onChange({ ...pkg, isPopular: !pkg.isPopular })}
           title="Mark as Popular"
           aria-label={pkg.isPopular ? "Unmark as popular" : "Mark as popular"}
-          className={pkg.isPopular ? "text-(--leadac-500)" : "text-white/30 hover:text-white/60"}
+          className={pkg.isPopular ? "text-(--revint-500)" : "text-white/30 hover:text-white/60"}
         >
           <Star className="w-4 h-4" fill={pkg.isPopular ? "currentColor" : "none"} />
         </Button>
@@ -112,7 +112,7 @@ function PackageEditor({
       <Input
         value={pkg.priceLabel}
         onChange={(e) => onChange({ ...pkg, priceLabel: e.target.value })}
-        placeholder="Price (e.g. Â£500-800 or From Â£999)"
+        placeholder="Price (e.g. £500-800 or From £999)"
       />
       <div className="space-y-2">
         <p className="text-[11px] text-white/40 uppercase tracking-wide font-medium">Features</p>
@@ -160,22 +160,22 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
 
-  // Step 1 â€” Workspace name
+  // Step 1 — Workspace name
   const [workspaceName, setWorkspaceName] = useState("");
 
-  // Step 2 â€” Country
+  // Step 2 — Country
   const [country, setCountry] = useState("");
 
-  // Step 3 â€” Offer (all 11 fields)
+  // Step 3 — Offer (all 11 fields)
   const [offer, setOffer] = useState<OfferContext>(EMPTY_OFFER);
 
-  // Step 4 â€” Packages
+  // Step 4 — Packages
   const [packages, setPackages] = useState<NewPackage[]>([]);
 
-  // Step 5 â€” Team invites
+  // Step 5 — Team invites
   const [inviteEmails, setInviteEmails] = useState<string[]>([""]);
 
-  // Step 6 â€” Discovery
+  // Step 6 — Discovery
   const [niche, setNiche] = useState("");
   const [customNiche, setCustomNiche] = useState("");
   const [city, setCity] = useState("");
@@ -390,7 +390,7 @@ export default function OnboardingPage() {
             onClick: advance,
             disabled: !workspaceName.trim() || saving,
             busy: saving,
-            busyLabel: "Savingâ€¦",
+            busyLabel: "Saving…",
           },
         }
       : step === 2
@@ -400,7 +400,7 @@ export default function OnboardingPage() {
               onClick: advance,
               disabled: !country || saving,
               busy: saving,
-              busyLabel: "Savingâ€¦",
+              busyLabel: "Saving…",
             },
             secondary: { label: "Back", onClick: goBack },
           }
@@ -411,7 +411,7 @@ export default function OnboardingPage() {
                 onClick: advance,
                 disabled: saving,
                 busy: saving,
-                busyLabel: "Savingâ€¦",
+                busyLabel: "Saving…",
               },
               secondary: { label: "Back", onClick: goBack },
             }
@@ -422,7 +422,7 @@ export default function OnboardingPage() {
                   onClick: advance,
                   disabled: saving,
                   busy: saving,
-                  busyLabel: "Savingâ€¦",
+                  busyLabel: "Saving…",
                 },
                 secondary: { label: "Back", onClick: goBack },
               }
@@ -433,7 +433,7 @@ export default function OnboardingPage() {
                     onClick: advance,
                     disabled: saving,
                     busy: saving,
-                    busyLabel: "Sendingâ€¦",
+                    busyLabel: "Sending…",
                   },
                   secondary: { label: "Back", onClick: goBack },
                 }
@@ -443,7 +443,7 @@ export default function OnboardingPage() {
                     onClick: handleDiscover,
                     disabled: !effectiveNiche || !city.trim() || running,
                     busy: running,
-                    busyLabel: "Discoveringâ€¦",
+                    busyLabel: "Discovering…",
                   },
                   secondary: { label: "Back", onClick: goBack },
                 };
@@ -456,12 +456,12 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen flex flex-col md:items-center md:justify-center md:p-6">
       {/* ------------------------------------------------------------- */}
-      {/* Phone-only top bar â€” back chevron, step counter, progress bar  */}
+      {/* Phone-only top bar — back chevron, step counter, progress bar  */}
       {/* ------------------------------------------------------------- */}
       <header
         className="md:hidden sticky top-0 z-20 safe-pt"
         style={{
-          background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.92)",
+          background: "hsl(var(--revint-h) var(--revint-ns) 8% / 0.92)",
           backdropFilter: "saturate(180%) blur(24px)",
           WebkitBackdropFilter: "saturate(180%) blur(24px)",
           borderBottom: "0.5px solid hsl(0 0% 100% / 0.08)",
@@ -477,7 +477,7 @@ export default function OnboardingPage() {
               onClick={goBack}
               aria-label="Previous step"
               className="touch-target rounded-lg hover:bg-white/5 -ml-2"
-              style={{ color: "var(--leadac-text-1)" }}
+              style={{ color: "var(--revint-text-1)" }}
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -489,7 +489,7 @@ export default function OnboardingPage() {
               className="uppercase tracking-wider"
               style={{
                 fontSize: "var(--text-caption)",
-                color: "var(--leadac-muted)",
+                color: "var(--revint-muted)",
               }}
             >
               Step {step} of {TOTAL_STEPS}
@@ -498,7 +498,7 @@ export default function OnboardingPage() {
               className="font-semibold tracking-tight truncate"
               style={{
                 fontSize: "var(--text-callout)",
-                color: "var(--leadac-text-1)",
+                color: "var(--revint-text-1)",
                 letterSpacing: "-0.01em",
               }}
             >
@@ -507,7 +507,7 @@ export default function OnboardingPage() {
           </div>
           <div style={{ width: "var(--touch-target-min)" }} aria-hidden="true" />
         </div>
-        {/* Slim progress strip â€” accessible-name applied via aria-label below */}
+        {/* Slim progress strip — accessible-name applied via aria-label below */}
         <div
           role="progressbar"
           aria-valuemin={0}
@@ -522,7 +522,7 @@ export default function OnboardingPage() {
             style={{
               width: `${progressPercent}%`,
               background:
-                "linear-gradient(90deg, var(--leadac-500), var(--leadac-300))",
+                "linear-gradient(90deg, var(--revint-500), var(--revint-300))",
               transition: "width var(--motion-base) var(--motion-ease-emphasized)",
             }}
           />
@@ -536,13 +536,13 @@ export default function OnboardingPage() {
         <div className="text-center">
           <Image
             src="/logo.png"
-            alt="Leadac AI"
+            alt="Revint"
             width={56}
             height={56}
             priority
             className="w-14 h-14 object-contain mx-auto mb-4"
           />
-          <h1 className="text-2xl font-semibold text-white">Welcome to Leadac AI</h1>
+          <h1 className="text-2xl font-semibold text-white">Welcome to Revint</h1>
           <p className="text-sm text-white/50 mt-1">
             Let&apos;s set up your workspace in a few steps.
           </p>
@@ -557,9 +557,9 @@ export default function OnboardingPage() {
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
                   s.number < step
-                    ? "bg-[var(--leadac-success)] text-white"
+                    ? "bg-[var(--revint-success)] text-white"
                     : s.number === step
-                      ? "bg-(--leadac-500) text-white"
+                      ? "bg-(--revint-500) text-white"
                       : "bg-white/10 text-white/30"
                 }`}
                 aria-current={s.number === step ? "step" : undefined}
@@ -570,7 +570,7 @@ export default function OnboardingPage() {
               {s.number < TOTAL_STEPS && (
                 <div
                   className={`w-6 h-0.5 rounded-full transition-all ${
-                    s.number < step ? "bg-[var(--leadac-success)]" : "bg-white/10"
+                    s.number < step ? "bg-[var(--revint-success)]" : "bg-white/10"
                   }`}
                   aria-hidden="true"
                 />
@@ -581,7 +581,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* Step body â€” phone full-bleed, tablet+ inside Card  */}
+      {/* Step body — phone full-bleed, tablet+ inside Card  */}
       {/* ------------------------------------------------------------- */}
       <main
         id="onboarding-step-body"
@@ -599,7 +599,7 @@ export default function OnboardingPage() {
           <p
             style={{
               fontSize: "var(--text-subhead)",
-              color: "var(--leadac-text-2)",
+              color: "var(--revint-text-2)",
             }}
           >
             {stepInfo.description}
@@ -672,7 +672,7 @@ export default function OnboardingPage() {
                   {actions.primary.busy ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      {actions.primary.busyLabel ?? "Workingâ€¦"}
+                      {actions.primary.busyLabel ?? "Working…"}
                     </>
                   ) : (
                     <>
@@ -698,7 +698,7 @@ export default function OnboardingPage() {
                   onClick={skipAndComplete}
                   className="w-full text-[11.5px] text-white/30 hover:text-white/50 transition-colors"
                 >
-                  Skip â€” I&apos;ll discover leads later
+                  Skip — I&apos;ll discover leads later
                 </button>
               )}
             </CardContent>
@@ -712,7 +712,7 @@ export default function OnboardingPage() {
       <div
         className="md:hidden fixed left-0 right-0 bottom-0 z-30 safe-pb px-4 pt-3"
         style={{
-          background: "hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.95)",
+          background: "hsl(var(--revint-h) var(--revint-ns) 8% / 0.95)",
           backdropFilter: "saturate(180%) blur(24px)",
           WebkitBackdropFilter: "saturate(180%) blur(24px)",
           borderTop: "0.5px solid hsl(0 0% 100% / 0.08)",
@@ -720,7 +720,7 @@ export default function OnboardingPage() {
         }}
       >
         <Button
-          className="w-full leadac-glow-cta"
+          className="w-full revint-glow-cta"
           onClick={actions.primary.onClick}
           disabled={actions.primary.disabled}
           style={{ minHeight: "var(--touch-target-large)" }}
@@ -728,7 +728,7 @@ export default function OnboardingPage() {
           {actions.primary.busy ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              {actions.primary.busyLabel ?? "Workingâ€¦"}
+              {actions.primary.busyLabel ?? "Working…"}
             </>
           ) : (
             <>
@@ -743,7 +743,7 @@ export default function OnboardingPage() {
             type="button"
             onClick={() => setStep(step + 1)}
             className="w-full text-center mt-2 py-1 text-[12.5px]"
-            style={{ color: "var(--leadac-text-3)" }}
+            style={{ color: "var(--revint-text-3)" }}
           >
             Skip for now
           </button>
@@ -753,9 +753,9 @@ export default function OnboardingPage() {
             type="button"
             onClick={skipAndComplete}
             className="w-full text-center mt-2 py-1 text-[12.5px]"
-            style={{ color: "var(--leadac-text-3)" }}
+            style={{ color: "var(--revint-text-3)" }}
           >
-            Skip â€” I&apos;ll discover leads later
+            Skip — I&apos;ll discover leads later
           </button>
         )}
       </div>
@@ -764,7 +764,7 @@ export default function OnboardingPage() {
 }
 
 // ---------------------------------------------------------------------------
-// StepBody â€” content for each step, rendered identically on phone + tablet so
+// StepBody — content for each step, rendered identically on phone + tablet so
 // the tablet card and the phone full-bleed layout never drift.
 // ---------------------------------------------------------------------------
 
@@ -850,7 +850,7 @@ function StepBody(props: StepBodyProps) {
           </label>
           <Select value={country} onValueChange={setCountry}>
             <SelectTrigger id="onboarding-country">
-              <SelectValue placeholder="Select a countryâ€¦" />
+              <SelectValue placeholder="Select a country…" />
             </SelectTrigger>
             <SelectContent>
               {COUNTRIES.map((c) => (
@@ -874,7 +874,7 @@ function StepBody(props: StepBodyProps) {
   if (step === 3) {
     return (
       <div className="space-y-5">
-        <div className="flex items-center gap-2 text-(--leadac-300) text-sm">
+        <div className="flex items-center gap-2 text-(--revint-300) text-sm">
           <Sparkles className="w-4 h-4" />
           <span>These fields personalize every AI mockup and message.</span>
         </div>
@@ -887,7 +887,7 @@ function StepBody(props: StepBodyProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-white/50">
-          <Package className="w-4 h-4 text-(--leadac-300)" />
+          <Package className="w-4 h-4 text-(--revint-300)" />
           Add the service tiers you pitch to clients. You can edit these later.
         </div>
 
@@ -926,7 +926,7 @@ function StepBody(props: StepBodyProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-white/50">
-          <Users className="w-4 h-4 text-(--leadac-300)" />
+          <Users className="w-4 h-4 text-(--revint-300)" />
           Teammates will receive an email invite to join your workspace.
         </div>
 
@@ -995,7 +995,7 @@ function StepBody(props: StepBodyProps) {
             }}
           >
             <SelectTrigger id="onboarding-niche">
-              <SelectValue placeholder="Choose a business typeâ€¦" />
+              <SelectValue placeholder="Choose a business type…" />
             </SelectTrigger>
             <SelectContent>
               {NICHES.map((n) => (
@@ -1057,14 +1057,14 @@ function StepBody(props: StepBodyProps) {
           <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-1.5">
             {effectiveNiche && (
               <div className="flex items-center gap-2 text-sm">
-                <Search className="w-4 h-4 text-(--leadac-500)" />
+                <Search className="w-4 h-4 text-(--revint-500)" />
                 <span className="text-white/50">Looking for:</span>
                 <span className="font-medium text-white">{effectiveNiche}</span>
               </div>
             )}
             {city && (
               <div className="flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-(--leadac-500)" />
+                <MapPin className="w-4 h-4 text-(--revint-500)" />
                 <span className="text-white/50">In:</span>
                 <span className="font-medium text-white">{city}</span>
               </div>

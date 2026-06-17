@@ -32,4 +32,4 @@ Before each production deploy:
 
 ## Reporting a vulnerability
 
-Email security@leadacai.com. Do not file a public GitHub issue.
+Email security@revint.dev. Do not file a public GitHub issue.

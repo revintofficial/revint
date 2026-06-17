@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
  *
  * Used by /login and /signup inside the (site)/ route group. Reads against
  * the new --ink-* / --paper-* / --signal palette instead of the legacy
- * --leadac-* product palette so it matches the rest of the marketing site.
+ * --revint-* product palette so it matches the rest of the marketing site.
  *
  * Behaviour mirrors the legacy AuthForm in src/components/marketing/, with
  * password + magic-link tabs and Google OAuth. The legacy version stays
@@ -111,7 +111,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   const altLink = mode === "signup" ? "/login" : "/signup";
   const altLinkText =
-    mode === "signup" ? "Already have an account?" : "New to LeadAC?";
+    mode === "signup" ? "Already have an account?" : "New to Revint?";
   const altLinkCta = mode === "signup" ? "Sign in" : "Create workspace";
 
   return (

@@ -42,7 +42,7 @@ export const apollo: CompetitorProfile = {
       url: "https://www.g2.com/products/apollo-io/reviews",
     },
   ],
-  whyLeadacInstead: [
+  whyRevintInstead: [
     "You get the local list other agencies haven't hit — fresh Google Maps, not recycled contacts.",
     "Every lead ships with a website audit. Your first email references a real finding, not a persona guess.",
     "Postcode + niche specifies exactly which agencies already won't have seen these leads.",

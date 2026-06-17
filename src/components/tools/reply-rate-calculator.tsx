@@ -325,7 +325,7 @@ export default function ReplyRateCalculator() {
             color: "rgba(237,237,240,0.75)",
           }}
         >
-          We'll send a copy of this projection plus the Leadac AI
+          We'll send a copy of this projection plus the Revint
           postcode-niche playbook. No spam.
         </p>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -341,7 +341,7 @@ export default function ReplyRateCalculator() {
             type="submit"
             style={{
               padding: "10px 22px",
-              background: "var(--leadac-300)",
+              background: "var(--revint-300)",
               color: "#0b0b0d",
               border: "none",
               borderRadius: 8,
@@ -358,7 +358,7 @@ export default function ReplyRateCalculator() {
             style={{
               marginTop: 12,
               fontSize: 13,
-              color: "var(--leadac-300)",
+              color: "var(--revint-300)",
             }}
           >
             Sent — check your inbox.

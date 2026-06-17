@@ -4,7 +4,7 @@
  * Site (login-prelogin) tokens — "Operator Instrument Panel".
  *
  * The `(site)/*` route group renders against these tokens. Legacy
- * `--leadac-*` and `--cine-*` blocks below stay in place because the
+ * `--revint-*` and `--cine-*` blocks below stay in place because the
  * auth-gated product surfaces at `/app/*` still consume them.
  *
  * Re-skin rule for the marketing site:
@@ -67,87 +67,87 @@
   --cine-max: 1440px;
 
   /* -------------------------------------------------------------------
-   * Leadac theme system — single mathematical HSL scale.
+   * Revint theme system — single mathematical HSL scale.
    *
    * To re-skin the entire application, change ONLY these knobs:
-   *   --leadac-h    → primary hue  (0-360, current 218 = royal azure)
-   *   --leadac-s    → primary sat  (0-100%, default 62%)
-   *   --leadac-ns   → neutral surface sat (default 7%)
-   *   --leadac-nts  → neutral text sat    (default 10%)
+   *   --revint-h    → primary hue  (0-360, current 218 = royal azure)
+   *   --revint-s    → primary sat  (0-100%, default 62%)
+   *   --revint-ns   → neutral surface sat (default 7%)
+   *   --revint-nts  → neutral text sat    (default 10%)
    *
    * Every primary, neutral, semantic, and glow token derives from these.
    * Legacy --system-* and --vx-purple-* tokens remap to this scale, so
    * existing consumers shift automatically without code changes.
-   * Keep src/lib/colors.ts (LEADAC_HUE / LEADAC_SATURATION) in sync.
+   * Keep src/lib/colors.ts (REVINT_HUE / REVINT_SATURATION) in sync.
    * ----------------------------------------------------------------- */
-  --leadac-h: 218;
-  --leadac-s: 85%;
-  --leadac-ns: 7%;
-  --leadac-nts: 10%;
+  --revint-h: 218;
+  --revint-s: 85%;
+  --revint-ns: 7%;
+  --revint-nts: 10%;
 
-  --leadac-100: hsl(var(--leadac-h) var(--leadac-s) 88%);
-  --leadac-200: hsl(var(--leadac-h) var(--leadac-s) 78%);
-  --leadac-300: hsl(var(--leadac-h) var(--leadac-s) 68%);
-  --leadac-400: hsl(var(--leadac-h) var(--leadac-s) 58%);
-  --leadac-500: hsl(var(--leadac-h) var(--leadac-s) 50%);
-  --leadac-600: hsl(var(--leadac-h) var(--leadac-s) 42%);
-  --leadac-700: hsl(var(--leadac-h) var(--leadac-s) 34%);
-  --leadac-800: hsl(var(--leadac-h) var(--leadac-s) 26%);
-  --leadac-900: hsl(var(--leadac-h) var(--leadac-s) 18%);
+  --revint-100: hsl(var(--revint-h) var(--revint-s) 88%);
+  --revint-200: hsl(var(--revint-h) var(--revint-s) 78%);
+  --revint-300: hsl(var(--revint-h) var(--revint-s) 68%);
+  --revint-400: hsl(var(--revint-h) var(--revint-s) 58%);
+  --revint-500: hsl(var(--revint-h) var(--revint-s) 50%);
+  --revint-600: hsl(var(--revint-h) var(--revint-s) 42%);
+  --revint-700: hsl(var(--revint-h) var(--revint-s) 34%);
+  --revint-800: hsl(var(--revint-h) var(--revint-s) 26%);
+  --revint-900: hsl(var(--revint-h) var(--revint-s) 18%);
 
-  --leadac-bg:      hsl(var(--leadac-h) var(--leadac-ns) 5%);
-  --leadac-surface: hsl(var(--leadac-h) var(--leadac-ns) 8%);
-  --leadac-card:    hsl(var(--leadac-h) var(--leadac-ns) 11%);
-  --leadac-hover:   hsl(var(--leadac-h) var(--leadac-ns) 14%);
-  --leadac-border:  hsl(var(--leadac-h) var(--leadac-ns) 18%);
+  --revint-bg:      hsl(var(--revint-h) var(--revint-ns) 5%);
+  --revint-surface: hsl(var(--revint-h) var(--revint-ns) 8%);
+  --revint-card:    hsl(var(--revint-h) var(--revint-ns) 11%);
+  --revint-hover:   hsl(var(--revint-h) var(--revint-ns) 14%);
+  --revint-border:  hsl(var(--revint-h) var(--revint-ns) 18%);
 
-  --leadac-text-1: hsl(var(--leadac-h) var(--leadac-nts) 92%);
-  --leadac-text-2: hsl(var(--leadac-h) var(--leadac-nts) 70%);
-  --leadac-text-3: hsl(var(--leadac-h) var(--leadac-nts) 50%);
-  --leadac-muted:  hsl(var(--leadac-h) var(--leadac-nts) 38%);
+  --revint-text-1: hsl(var(--revint-h) var(--revint-nts) 92%);
+  --revint-text-2: hsl(var(--revint-h) var(--revint-nts) 70%);
+  --revint-text-3: hsl(var(--revint-h) var(--revint-nts) 50%);
+  --revint-muted:  hsl(var(--revint-h) var(--revint-nts) 38%);
 
-  --leadac-success: hsl(152 48% 50%);
-  --leadac-warning: hsl(38 70% 52%);
-  --leadac-error:   hsl(4 62% 54%);
-  --leadac-info:    var(--leadac-400);
+  --revint-success: hsl(152 48% 50%);
+  --revint-warning: hsl(38 70% 52%);
+  --revint-error:   hsl(4 62% 54%);
+  --revint-info:    var(--revint-400);
 
   /* Soft text variants — designed to read as a tinted category label on
-   * dark glass backgrounds (WCAG AA over --leadac-card).
+   * dark glass backgrounds (WCAG AA over --revint-card).
    * Use these instead of raw hsl() literals in JSX. */
-  --leadac-success-soft: hsl(152 28% 70%);
-  --leadac-warning-soft: hsl(38 50% 72%);
-  --leadac-error-soft:   hsl(4 42% 72%);
+  --revint-success-soft: hsl(152 28% 70%);
+  --revint-warning-soft: hsl(38 50% 72%);
+  --revint-error-soft:   hsl(4 42% 72%);
 
-  --leadac-glow-soft:   0 0 24px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.22);
-  --leadac-glow-medium: 0 0 32px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35);
-  --leadac-glow-strong: 0 8px 40px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45);
+  --revint-glow-soft:   0 0 24px hsl(var(--revint-h) var(--revint-s) 50% / 0.22);
+  --revint-glow-medium: 0 0 32px hsl(var(--revint-h) var(--revint-s) 50% / 0.35);
+  --revint-glow-strong: 0 8px 40px hsl(var(--revint-h) var(--revint-s) 50% / 0.45);
 
-  --background: var(--leadac-bg);
-  --foreground: var(--leadac-text-1);
-  --surface: var(--leadac-surface);
+  --background: var(--revint-bg);
+  --foreground: var(--revint-text-1);
+  --surface: var(--revint-surface);
 
   /* Background Levels */
-  --bg-secondary: var(--leadac-surface);
-  --bg-tertiary: var(--leadac-card);
-  --bg-elevated: var(--leadac-hover);
+  --bg-secondary: var(--revint-surface);
+  --bg-tertiary: var(--revint-card);
+  --bg-elevated: var(--revint-hover);
 
   /* iOS Dark Mode System Colors — names preserved (do not rename) but
    * every value is remapped onto the leadac scale, so a re-skin of
-   * --leadac-h shifts every `var(--system-*)` consumer in lockstep. */
-  --system-blue: var(--leadac-500);
-  --system-blue-hover: var(--leadac-400);
-  --system-green: var(--leadac-success);
-  --system-orange: var(--leadac-warning);
-  --system-red: var(--leadac-error);
-  --system-purple: var(--leadac-400);
-  --system-teal: var(--leadac-300);
-  --system-yellow: hsl(var(--leadac-h) var(--leadac-s) 64%);
+   * --revint-h shifts every `var(--system-*)` consumer in lockstep. */
+  --system-blue: var(--revint-500);
+  --system-blue-hover: var(--revint-400);
+  --system-green: var(--revint-success);
+  --system-orange: var(--revint-warning);
+  --system-red: var(--revint-error);
+  --system-purple: var(--revint-400);
+  --system-teal: var(--revint-300);
+  --system-yellow: hsl(var(--revint-h) var(--revint-s) 64%);
 
   /* Label / Text */
-  --label-primary: var(--leadac-text-1);
-  --label-secondary: hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.6);
-  --label-tertiary: hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.3);
-  --label-quaternary: hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.18);
+  --label-primary: var(--revint-text-1);
+  --label-secondary: hsl(var(--revint-h) var(--revint-nts) 92% / 0.6);
+  --label-tertiary: hsl(var(--revint-h) var(--revint-nts) 92% / 0.3);
+  --label-quaternary: hsl(var(--revint-h) var(--revint-nts) 92% / 0.18);
 
   /* Shadow tokens */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.15);
@@ -156,10 +156,10 @@
   --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3);
 
   /* Borders */
-  --border-primary: hsl(var(--leadac-h) var(--leadac-ns) 35% / 0.65);
-  --border-light: hsl(var(--leadac-h) var(--leadac-ns) 35% / 0.35);
-  --separator: hsl(var(--leadac-h) var(--leadac-ns) 35% / 0.65);
-  --separator-opaque: var(--leadac-border);
+  --border-primary: hsl(var(--revint-h) var(--revint-ns) 35% / 0.65);
+  --border-light: hsl(var(--revint-h) var(--revint-ns) 35% / 0.35);
+  --separator: hsl(var(--revint-h) var(--revint-ns) 35% / 0.65);
+  --separator-opaque: var(--revint-border);
 
   /* -------------------------------------------------------------------
    * Mobile / tablet UX tokens (see plan: leadac_mobile_ux_plan).
@@ -284,8 +284,8 @@
 }
 
 body {
-  background: var(--leadac-bg) !important;
-  color: var(--leadac-text-1);
+  background: var(--revint-bg) !important;
+  color: var(--revint-text-1);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -412,25 +412,25 @@ body {
 }
 
 /* Glass utilities - defined outside @layer for Tailwind v4 compatibility.
- * Backgrounds derive from --leadac-h/--leadac-ns so a re-skin shifts
+ * Backgrounds derive from --revint-h/--revint-ns so a re-skin shifts
  * the surface tint along with the rest of the system instead of staying
  * locked to the old iOS-dark slate. */
 .glass {
-  background: hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.72) !important;
+  background: hsl(var(--revint-h) var(--revint-ns) 11% / 0.72) !important;
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border: 0.5px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .glass-strong {
-  background: hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.85) !important;
+  background: hsl(var(--revint-h) var(--revint-ns) 11% / 0.85) !important;
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border: 0.5px solid rgba(255, 255, 255, 0.12) !important;
 }
 
 .glass-card {
-  background: hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.68) !important;
+  background: hsl(var(--revint-h) var(--revint-ns) 11% / 0.68) !important;
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   border: 0.5px solid rgba(255, 255, 255, 0.08) !important;
@@ -441,9 +441,9 @@ body {
  * sidebar wrapper, and the desktop header. They all need the same
  * deep-glass tone (one shade darker than .glass-card so floating
  * navigation reads as "above" the page content). Centralised here so
- * a re-skin of --leadac-h/--leadac-ns flows through chrome too. */
+ * a re-skin of --revint-h/--revint-ns flows through chrome too. */
 .app-chrome-glass {
-  background: hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.85);
+  background: hsl(var(--revint-h) var(--revint-ns) 8% / 0.85);
   backdrop-filter: saturate(180%) blur(30px);
   -webkit-backdrop-filter: saturate(180%) blur(30px);
   border: 0.5px solid hsl(0 0% 100% / 0.08);
@@ -458,7 +458,7 @@ body {
  * shade lighter than .app-chrome-glass and the border slightly stronger
  * to lift the panel off the backdrop. */
 .app-panel-glass {
-  background: hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.95);
+  background: hsl(var(--revint-h) var(--revint-ns) 11% / 0.95);
   backdrop-filter: saturate(180%) blur(30px);
   -webkit-backdrop-filter: saturate(180%) blur(30px);
   border: 0.5px solid hsl(0 0% 100% / 0.12);
@@ -468,14 +468,14 @@ body {
 }
 
 .glass-liquid {
-  background: hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.75) !important;
+  background: hsl(var(--revint-h) var(--revint-ns) 8% / 0.75) !important;
   backdrop-filter: saturate(180%) blur(30px);
   -webkit-backdrop-filter: saturate(180%) blur(30px);
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-    0 20px 60px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.15);
+    0 20px 60px hsl(var(--revint-h) var(--revint-s) 50% / 0.15);
 }
 
 .glass-hover {
@@ -496,7 +496,7 @@ body {
   box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-    0 24px 70px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.2);
+    0 24px 70px hsl(var(--revint-h) var(--revint-s) 50% / 0.2);
 }
 
 .text-shadow {
@@ -504,36 +504,36 @@ body {
 }
 
 .text-glow {
-  text-shadow: 0 0 10px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.3);
+  text-shadow: 0 0 10px hsl(var(--revint-h) var(--revint-s) 50% / 0.3);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, var(--leadac-400), var(--leadac-200));
+  background: linear-gradient(135deg, var(--revint-400), var(--revint-200));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 /* Helper classes — primary CTA glow, glass card, sidebar active state */
-.leadac-glow-cta {
-  box-shadow: var(--leadac-glow-medium);
+.revint-glow-cta {
+  box-shadow: var(--revint-glow-medium);
   transition: box-shadow 200ms ease;
 }
-.leadac-glow-cta:hover {
-  box-shadow: var(--leadac-glow-strong);
+.revint-glow-cta:hover {
+  box-shadow: var(--revint-glow-strong);
 }
 
-.leadac-card-glass {
-  background: hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.72);
+.revint-card-glass {
+  background: hsl(var(--revint-h) var(--revint-ns) 11% / 0.72);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border: 1px solid hsl(var(--leadac-h) var(--leadac-ns) 35% / 0.35);
+  border: 1px solid hsl(var(--revint-h) var(--revint-ns) 35% / 0.35);
 }
 
-.leadac-sidebar-active {
-  background: hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12);
-  color: var(--leadac-200);
-  box-shadow: inset 2px 0 0 var(--leadac-400);
+.revint-sidebar-active {
+  background: hsl(var(--revint-h) var(--revint-s) 50% / 0.12);
+  color: var(--revint-200);
+  box-shadow: inset 2px 0 0 var(--revint-400);
 }
 
 .gradient-border {
@@ -545,7 +545,7 @@ body {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.5), hsl(var(--leadac-h) var(--leadac-s) 68% / 0.5));
+  background: linear-gradient(135deg, hsl(var(--revint-h) var(--revint-s) 50% / 0.5), hsl(var(--revint-h) var(--revint-s) 68% / 0.5));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -590,13 +590,13 @@ body {
 @keyframes glow {
   0%, 100% {
     box-shadow:
-      0 0 20px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.3),
-      0 0 40px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.2);
+      0 0 20px hsl(var(--revint-h) var(--revint-s) 50% / 0.3),
+      0 0 40px hsl(var(--revint-h) var(--revint-s) 60% / 0.2);
   }
   50% {
     box-shadow:
-      0 0 30px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.5),
-      0 0 60px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.3);
+      0 0 30px hsl(var(--revint-h) var(--revint-s) 50% / 0.5),
+      0 0 60px hsl(var(--revint-h) var(--revint-s) 60% / 0.3);
   }
 }
 @keyframes slideUp {
@@ -668,8 +668,8 @@ button, a, .cursor-pointer {
 
 /* Link colors - placed in @layer base so Tailwind's utilities layer (text-*, etc.) wins */
 @layer base {
-  a { color: var(--leadac-300); }
-  a:hover { color: var(--leadac-200); }
+  a { color: var(--revint-300); }
+  a:hover { color: var(--revint-200); }
 }
 
 /* Recharts tooltip */
@@ -697,8 +697,8 @@ button, a, .cursor-pointer {
 .tiptap table td, .tiptap table th { border: 1px solid rgba(84, 84, 88, 0.35); padding: 0.5rem 0.75rem; min-width: 100px; vertical-align: top; position: relative; text-align: left; }
 .tiptap table th { background-color: rgba(28, 28, 30, 0.6); font-weight: 600; color: #FFFFFF; font-size: 0.875rem; }
 .tiptap table td { font-size: 0.875rem; color: rgba(235, 235, 245, 0.6); }
-.tiptap table .selectedCell { background-color: hsl(var(--leadac-h) var(--leadac-s) 50% / 0.15); }
-.tiptap table .column-resize-handle { position: absolute; right: -2px; top: 0; bottom: 0; width: 4px; background-color: var(--leadac-500); cursor: col-resize; z-index: 10; }
+.tiptap table .selectedCell { background-color: hsl(var(--revint-h) var(--revint-s) 50% / 0.15); }
+.tiptap table .column-resize-handle { position: absolute; right: -2px; top: 0; bottom: 0; width: 4px; background-color: var(--revint-500); cursor: col-resize; z-index: 10; }
 .tiptap .tableWrapper { overflow-x: auto; margin: 0.75rem 0; }
 .tiptap mark { background-color: rgba(255, 214, 10, 0.3); border-radius: 0.125rem; padding: 0.125rem 0; }
 
@@ -809,18 +809,18 @@ button, a, .cursor-pointer {
 
 :root {
   /* Voxr landing accent — values remapped to the leadac scale so the
-   * landing inherits whatever the active --leadac-h/--leadac-s is.
+   * landing inherits whatever the active --revint-h/--revint-s is.
    * Variable names are kept (--vx-purple-*) for backwards compatibility
    * with the marketing components; do not rename. */
-  --vx-purple-50:  hsl(var(--leadac-h) var(--leadac-s) 95%);
-  --vx-purple-100: var(--leadac-100);
-  --vx-purple-200: var(--leadac-100);
-  --vx-purple-300: var(--leadac-200);
-  --vx-purple-400: var(--leadac-300);
-  --vx-purple-500: var(--leadac-400);
-  --vx-purple-600: var(--leadac-500);
-  --vx-purple-700: var(--leadac-700);
-  --vx-purple-900: var(--leadac-900);
+  --vx-purple-50:  hsl(var(--revint-h) var(--revint-s) 95%);
+  --vx-purple-100: var(--revint-100);
+  --vx-purple-200: var(--revint-100);
+  --vx-purple-300: var(--revint-200);
+  --vx-purple-400: var(--revint-300);
+  --vx-purple-500: var(--revint-400);
+  --vx-purple-600: var(--revint-500);
+  --vx-purple-700: var(--revint-700);
+  --vx-purple-900: var(--revint-900);
 
   /* Light section palette */
   --vx-cream:      #FBF9F6;
@@ -874,9 +874,9 @@ button, a, .cursor-pointer {
   height: 120%;
   transform: translate(-50%, -50%);
   background:
-    radial-gradient(closest-side, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45), transparent 65%),
-    radial-gradient(closest-side at 70% 40%, hsl(var(--leadac-h) var(--leadac-s) 68% / 0.30), transparent 55%),
-    radial-gradient(closest-side at 30% 70%, hsl(var(--leadac-h) var(--leadac-s) 26% / 0.38), transparent 60%);
+    radial-gradient(closest-side, hsl(var(--revint-h) var(--revint-s) 50% / 0.45), transparent 65%),
+    radial-gradient(closest-side at 70% 40%, hsl(var(--revint-h) var(--revint-s) 68% / 0.30), transparent 55%),
+    radial-gradient(closest-side at 30% 70%, hsl(var(--revint-h) var(--revint-s) 26% / 0.38), transparent 60%);
   filter: blur(40px);
   pointer-events: none;
   z-index: 0;
@@ -890,7 +890,7 @@ button, a, .cursor-pointer {
   width: 95%;
   height: 45%;
   transform: translateX(-50%);
-  background: radial-gradient(closest-side, hsl(var(--leadac-h) var(--leadac-s) 60% / 0.38), transparent 70%);
+  background: radial-gradient(closest-side, hsl(var(--revint-h) var(--revint-s) 60% / 0.38), transparent 70%);
   filter: blur(50px);
   pointer-events: none;
   z-index: 0;
@@ -906,12 +906,12 @@ button, a, .cursor-pointer {
   background: linear-gradient(
     to right,
     transparent 0%,
-    hsl(var(--leadac-h) var(--leadac-s) 60% / 0) 20%,
-    hsl(var(--leadac-h) var(--leadac-s) 68% / 0.9) 50%,
-    hsl(var(--leadac-h) var(--leadac-s) 60% / 0) 80%,
+    hsl(var(--revint-h) var(--revint-s) 60% / 0) 20%,
+    hsl(var(--revint-h) var(--revint-s) 68% / 0.9) 50%,
+    hsl(var(--revint-h) var(--revint-s) 60% / 0) 80%,
     transparent 100%
   );
-  box-shadow: 0 0 80px 20px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.25);
+  box-shadow: 0 0 80px 20px hsl(var(--revint-h) var(--revint-s) 60% / 0.25);
   pointer-events: none;
 }
 
@@ -934,7 +934,7 @@ button, a, .cursor-pointer {
   border-radius: 24px;
   box-shadow:
     0 1px 2px rgba(22, 19, 31, 0.04),
-    0 8px 28px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.06);
+    0 8px 28px hsl(var(--revint-h) var(--revint-s) 42% / 0.06);
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
               box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -942,16 +942,16 @@ button, a, .cursor-pointer {
   transform: translateY(-3px);
   box-shadow:
     0 2px 4px rgba(22, 19, 31, 0.05),
-    0 18px 48px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.14);
+    0 18px 48px hsl(var(--revint-h) var(--revint-s) 42% / 0.14);
 }
 
 .vx-card-tinted {
   background: linear-gradient(180deg, #FFFFFF 0%, var(--vx-card-tint) 100%);
-  border: 1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.14);
+  border: 1px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.14);
   border-radius: 24px;
   box-shadow:
     0 1px 2px rgba(22, 19, 31, 0.04),
-    0 16px 40px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.10);
+    0 16px 40px hsl(var(--revint-h) var(--revint-s) 42% / 0.10);
 }
 
 /* Small pill badge used at top of each light section */
@@ -963,7 +963,7 @@ button, a, .cursor-pointer {
   border-radius: 999px;
   background: #FFFFFF;
   color: var(--vx-purple-700);
-  border: 1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.25);
+  border: 1px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.25);
   font-size: 11.5px;
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -980,12 +980,12 @@ button, a, .cursor-pointer {
   background: rgba(17, 12, 32, 0.55);
   backdrop-filter: blur(22px) saturate(160%);
   -webkit-backdrop-filter: blur(22px) saturate(160%);
-  border: 1px solid hsl(var(--leadac-h) var(--leadac-s) 68% / 0.25);
+  border: 1px solid hsl(var(--revint-h) var(--revint-s) 68% / 0.25);
   color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 8px 32px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.25);
+    0 8px 32px hsl(var(--revint-h) var(--revint-s) 42% / 0.25);
 }
 .vx-pill-glass .vx-pill-icon {
   width: 22px;
@@ -996,7 +996,7 @@ button, a, .cursor-pointer {
   justify-content: center;
   background: linear-gradient(135deg, var(--vx-purple-400), var(--vx-purple-600));
   color: white;
-  box-shadow: 0 0 0 1px hsl(var(--leadac-h) var(--leadac-s) 68% / 0.5), 0 0 12px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.6);
+  box-shadow: 0 0 0 1px hsl(var(--revint-h) var(--revint-s) 68% / 0.5), 0 0 12px hsl(var(--revint-h) var(--revint-s) 60% / 0.6);
 }
 
 /* Voxr-style "magic pill" — rounded CTA with inset circular arrow button */
@@ -1015,14 +1015,14 @@ button, a, .cursor-pointer {
   border: 1px solid rgba(15, 10, 31, 0.08);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 12px 40px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.25);
+    0 12px 40px hsl(var(--revint-h) var(--revint-s) 42% / 0.25);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .vx-magic-pill:hover {
   transform: translateY(-1px);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 18px 52px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.38);
+    0 18px 52px hsl(var(--revint-h) var(--revint-s) 42% / 0.38);
 }
 .vx-magic-pill .vx-arrow-bubble {
   width: 34px;
@@ -1035,7 +1035,7 @@ button, a, .cursor-pointer {
   color: white;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 4px 12px hsl(var(--leadac-h) var(--leadac-s) 42% / 0.5);
+    0 4px 12px hsl(var(--revint-h) var(--revint-s) 42% / 0.5);
 }
 .vx-magic-pill:hover .vx-arrow-bubble svg {
   transform: translate(1px, -1px);
@@ -1062,12 +1062,12 @@ button, a, .cursor-pointer {
 }
 .vx-pill-ghost:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: hsl(var(--leadac-h) var(--leadac-s) 68% / 0.45);
+  border-color: hsl(var(--revint-h) var(--revint-s) 68% / 0.45);
 }
 
 /* Purple text gradient for "Chasing" / "Them" style accents */
 .vx-text-gradient {
-  background: linear-gradient(135deg, var(--leadac-200) 0%, var(--leadac-400) 60%, var(--leadac-600) 100%);
+  background: linear-gradient(135deg, var(--revint-200) 0%, var(--revint-400) 60%, var(--revint-600) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1093,12 +1093,12 @@ button, a, .cursor-pointer {
 .vx-orb {
   position: absolute;
   border-radius: 999px;
-  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.9), hsl(var(--leadac-h) var(--leadac-s) 68% / 0.35) 50%, transparent 75%);
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.9), hsl(var(--revint-h) var(--revint-s) 68% / 0.35) 50%, transparent 75%);
   filter: blur(0.5px);
   opacity: 0.9;
   box-shadow:
-    0 0 24px hsl(var(--leadac-h) var(--leadac-s) 68% / 0.45),
-    inset -6px -6px 18px hsl(var(--leadac-h) var(--leadac-s) 26% / 0.6);
+    0 0 24px hsl(var(--revint-h) var(--revint-s) 68% / 0.45),
+    inset -6px -6px 18px hsl(var(--revint-h) var(--revint-s) 26% / 0.6);
 }
 
 @keyframes vx-drift {
@@ -1120,7 +1120,7 @@ button, a, .cursor-pointer {
  * (site)/* — operator instrument panel utilities + keyframes.
  *
  * Used only by the marketing site under src/app/(site)/*. Product surfaces
- * at /app/* still use the --leadac-* + --cine-* utilities above.
+ * at /app/* still use the --revint-* + --cine-* utilities above.
  * --------------------------------------------------------------------- */
 
 .site-root {

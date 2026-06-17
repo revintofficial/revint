@@ -20,7 +20,7 @@
 
 > Show the BD manager their own morning view: the queue waiting on their pod, the disposition mix from yesterday, and the repeat-call guard.
 
-**JTBD framing.** When a BD manager is reading the page to decide whether LeadAC fits their pod, they want a section that shows the manager's screen (not just the rep's screen), so they can recognize their Tuesday-morning report and forward the page to the pod with one line of context.
+**JTBD framing.** When a BD manager is reading the page to decide whether Revint fits their pod, they want a section that shows the manager's screen (not just the rep's screen), so they can recognize their Tuesday-morning report and forward the page to the pod with one line of context.
 
 ---
 
@@ -124,7 +124,7 @@ Pattern source: the bordered card grammar comes from [`how-it-thinks.tsx`](../..
 ## 6. Component pattern to reuse
 
 - Section wrapper: [`section.tsx`](../../../../src/components/marketing/v2/section.tsx). Use `variant="default"` (not `"soft"`), since IntelligenceLoop directly below uses default and we want them to read as a single rhythm beat, not striped.
-- Card grammar: [`how-it-thinks.tsx`](../../../../src/components/marketing/v2/how-it-thinks.tsx) `<article className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_8%)] p-6 md:p-7">`.
+- Card grammar: [`how-it-thinks.tsx`](../../../../src/components/marketing/v2/how-it-thinks.tsx) `<article className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--revint-h)_var(--revint-ns)_8%)] p-6 md:p-7">`.
 - Inner divide: `divide-y divide-white/[0.04]` from the same source.
 - Chip grammar: simplified [`DispositionStrip` Chip](../../../../src/components/app/lead-detail-v2/DispositionStrip.tsx) lines 291-312 — drop the `onClick`, drop the focus-ring class, keep the border / background / color tokens.
 
@@ -142,13 +142,13 @@ All token references from [`src/app/globals.css`](../../../../src/app/globals.cs
 
 | Element | Token | Notes |
 |---|---|---|
-| Background (card) | `hsl(var(--leadac-h) var(--leadac-ns) 8%)` | Same as HowItThinks card; via the inline-style pattern existing components use. |
+| Background (card) | `hsl(var(--revint-h) var(--revint-ns) 8%)` | Same as HowItThinks card; via the inline-style pattern existing components use. |
 | Border (card) | `border-white/[0.06]` | Tailwind utility, same as HowItThinks. |
 | Primary text | `text-white` | Card heading / numbers. |
 | Secondary text | `text-white/65` | Row labels, microcopy footer. |
 | Tertiary text | `text-white/45` | Column captions ("3 of 28 in your pod's queue today"). |
-| Accent | `hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)` background, `hsl(var(--leadac-h) var(--leadac-s) 72%)` foreground | Disposition chip background and text. Same recipe as the eyebrow color used across v2 sections. |
-| Success state (not used) | `--leadac-success` | Reserved; not needed because the mock does not encode pass/fail. |
+| Accent | `hsl(var(--revint-h) var(--revint-s) 50% / 0.10)` background, `hsl(var(--revint-h) var(--revint-s) 72%)` foreground | Disposition chip background and text. Same recipe as the eyebrow color used across v2 sections. |
+| Success state (not used) | `--revint-success` | Reserved; not needed because the mock does not encode pass/fail. |
 
 ---
 

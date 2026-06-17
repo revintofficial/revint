@@ -143,7 +143,7 @@ export function OfferFields({
           value={data.niche}
           onChange={(e) => handleNicheChange(e.target.value)}
           disabled={disabled}
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--leadac-500)/50"
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--revint-500)/50"
         >
           {NICHE_OPTIONS.map((n) => (
             <option key={n.value} value={n.value} disabled={!n.available}>
@@ -175,7 +175,7 @@ export function OfferFields({
                     checked={checked}
                     onChange={() => toggleSubNiche(pack.slug)}
                     disabled={disabled}
-                    className="mt-0.5 h-4 w-4 accent-(--leadac-500)"
+                    className="mt-0.5 h-4 w-4 accent-(--revint-500)"
                   />
                   <span className="leading-tight">
                     <span className="block text-white">{pack.label}</span>
@@ -214,7 +214,7 @@ export function OfferFields({
           maxLength={500}
           rows={3}
           placeholder="One-page, mobile-first website with online booking for local service businesses. Bookings in minutes, live within 14 days."
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-(--leadac-500)/50"
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-(--revint-500)/50"
         />
       </Field>
 
@@ -229,7 +229,7 @@ export function OfferFields({
           maxLength={400}
           rows={2}
           placeholder="120+ sites delivered, 14-day average launch, 4.8/5 customer rating."
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-(--leadac-500)/50"
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-(--revint-500)/50"
         />
       </Field>
 
@@ -244,7 +244,7 @@ export function OfferFields({
           maxLength={300}
           rows={2}
           placeholder="Measured your site's mobile load time — 4.8s, no booking button. Put together a 1-page draft for you."
-          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-(--leadac-500)/50"
+          className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-(--revint-500)/50"
         />
       </Field>
 
@@ -254,7 +254,7 @@ export function OfferFields({
             value={data.objective}
             onChange={(e) => update("objective")(e.target.value)}
             disabled={disabled}
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--leadac-500)/50"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--revint-500)/50"
           >
             <option value="">Select...</option>
             {OBJECTIVE_OPTIONS.map((o) => (
@@ -268,7 +268,7 @@ export function OfferFields({
             value={data.tone}
             onChange={(e) => update("tone")(e.target.value)}
             disabled={disabled}
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--leadac-500)/50"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--revint-500)/50"
           >
             <option value="">Select...</option>
             {TONE_OPTIONS.map((t) => (
@@ -282,7 +282,7 @@ export function OfferFields({
             value={data.length}
             onChange={(e) => update("length")(e.target.value)}
             disabled={disabled}
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--leadac-500)/50"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--revint-500)/50"
           >
             <option value="">Select...</option>
             {LENGTH_OPTIONS.map((l) => (
@@ -296,7 +296,7 @@ export function OfferFields({
             value={data.language}
             onChange={(e) => update("language")(e.target.value)}
             disabled={disabled}
-            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--leadac-500)/50"
+            className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-(--revint-500)/50"
           >
             {LANGUAGE_OPTIONS.map((l) => (
               <option key={l.value} value={l.value}>{l.label}</option>
@@ -322,7 +322,7 @@ export function OfferFields({
             onChange={(e) => update("conversionLink")(e.target.value)}
             disabled={disabled}
             maxLength={300}
-            placeholder="https://leadac.ai/demo"
+            placeholder="https://revint.dev/demo"
           />
         </Field>
       </div>
@@ -420,7 +420,7 @@ export function OfferForm({ canEdit }: { canEdit: boolean }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-(--leadac-300)" />
+          <Sparkles className="w-5 h-5 text-(--revint-300)" />
           My Offer
         </CardTitle>
         <CardDescription>

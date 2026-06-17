@@ -100,7 +100,7 @@ export function LeadTableView({
               <tr>
                 <td colSpan={7} className="p-8">
                   <div className="flex flex-col items-center justify-center gap-3">
-                    <Loader2 className="w-6 h-6 text-(--leadac-500) animate-spin" />
+                    <Loader2 className="w-6 h-6 text-(--revint-500) animate-spin" />
                     <p className="text-sm text-white/30">Loading...</p>
                   </div>
                   <div className="mt-6 space-y-2 max-w-3xl mx-auto">

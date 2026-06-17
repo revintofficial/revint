@@ -1,7 +1,7 @@
 # Video capture pipeline
 
 Drives a real cloud Chromium (via [Steel](https://steel.dev)) through the
-production Leadac AI app and dumps each scene as a numbered PNG sequence.
+production Revint app and dumps each scene as a numbered PNG sequence.
 Those plates feed into the Remotion project under `video/`.
 
 ## One-time setup

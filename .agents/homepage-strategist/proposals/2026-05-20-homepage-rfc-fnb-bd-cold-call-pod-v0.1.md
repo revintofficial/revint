@@ -30,7 +30,7 @@
 
 ## 1. One-line thesis
 
-For BD managers of 5 to 10 person F&B / restaurant-tech BD pods, LeadAC is the pre-call brief that lands in front of every dial, not another email automation. The homepage stops reading as "AI outbound system for local business sales" and starts reading as "the dossier in front of every BD rep before they press dial".
+For BD managers of 5 to 10 person F&B / restaurant-tech BD pods, Revint is the pre-call brief that lands in front of every dial, not another email automation. The homepage stops reading as "AI outbound system for local business sales" and starts reading as "the dossier in front of every BD rep before they press dial".
 
 ---
 
@@ -50,17 +50,17 @@ Cross-reference is from a fresh read of [`src/app/(marketing)/page.tsx`](../../.
 
 | # | Current section | Job today | Working? | Why |
 |---|---|---|---|---|
-| 1 | Hero ([hero.tsx](../../../src/components/marketing/v2/hero.tsx)) | Frame LeadAC as an AI outbound system | Partial | Headline is generic ("Your AI outbound system for local business sales"). Subhead names email-only outcomes ("outreach angles your agency can act on"). The BD pod reading this thinks it is an email tool and bounces. |
+| 1 | Hero ([hero.tsx](../../../src/components/marketing/v2/hero.tsx)) | Frame Revint as an AI outbound system | Partial | Headline is generic ("Your AI outbound system for local business sales"). Subhead names email-only outcomes ("outreach angles your agency can act on"). The BD pod reading this thinks it is an email tool and bounces. |
 | 2 | ProblemGrid ([problem-grid.tsx](../../../src/components/marketing/v2/problem-grid.tsx)) | Name five recurring failures of local outbound | Partial | Five failures are real but framed as email-stack failures (recycled lists, generic templates, no signal, no prioritization, no learning loop). The BD pod has a different top-five: 80% time on research, generic call openers, no shared call dispositions, repeat-call risk, dialer with no context. |
 | 3 | HowItThinks ([how-it-thinks.tsx](../../../src/components/marketing/v2/how-it-thinks.tsx)) | Show Detect / Reason / Execute as a loop | Yes (structurally) | The three-layer loop is the right architecture frame. The "Execute" layer's labels are email-coded ("Opener draft", "Next action: Email + call"). Retune copy only. |
 | 4 | UnderstandsGrid ([understands-grid.tsx](../../../src/components/marketing/v2/understands-grid.tsx)) | Prove vertical depth in F&B sub-niches | Yes | Five sub-niches with the right operational frames. Best section on the page for the BD persona. Keep as-is, retune the bullets to be "call-talkable" lines a rep could open with. |
 | 5 | IntelligenceLoop ([intelligence-loop.tsx](../../../src/components/marketing/v2/intelligence-loop.tsx)) | Communicate the workspace-scoped learning loop | Yes | The visual and the three proof cards still apply if we retune copy from "next campaign's reasoning" to "next morning's call list". |
 | 6 | DossierProof ([dossier-proof.tsx](../../../src/components/marketing/v2/dossier-proof.tsx)) | Show one artifact end-to-end | Partial | The Kazu Sushi dossier ends in a suggested email opener. For the BD pod, the closer is a "first 30 seconds of the call" talk track. Repurpose this section as "PreCallBrief". |
-| 7 | BuiltFor ([built-for.tsx](../../../src/components/marketing/v2/built-for.tsx)) | Tell readers who LeadAC is for | No | Lists three audiences (Local growth agencies / SDR teams / Restaurant marketing operators) and dilutes against all three. Collapse to one primary + two secondary per Orum teardown § 4. |
+| 7 | BuiltFor ([built-for.tsx](../../../src/components/marketing/v2/built-for.tsx)) | Tell readers who Revint is for | No | Lists three audiences (Local growth agencies / SDR teams / Restaurant marketing operators) and dilutes against all three. Collapse to one primary + two secondary per Orum teardown § 4. |
 | 8 | IntegrationsStrip ([integrations-strip.tsx](../../../src/components/marketing/v2/integrations-strip.tsx)) | Remove stack-compat objection | Partial | Lists senders only (Gmail, Outlook, Smartlead, Instantly, Google Maps). Misses the dialer row, so the BD-pod reader sees no answer to "does this fit our calling stack". |
 | 9 | WaitlistBlock ([waitlist-block.tsx](../../../src/components/marketing/v2/waitlist-block.tsx)) | Pre-launch email capture | Yes | Per [01-role-and-mandate.md anti-goal 5](../01-role-and-mandate.md), the waitlist stands in for pricing. No change. |
 | 10 | FaqBlock ([faq-block.tsx](../../../src/components/marketing/v2/faq-block.tsx)) | Knock down seven recurring objections | Partial | Current seven Q&As are credible but generic. Swap in three call-specific objections from BUYER-PERSONA § 5 (HubSpot already, restaurants do not reply, BD team needs in-person). |
-| 11 | FinalCta ([final-cta.tsx](../../../src/components/marketing/v2/final-cta.tsx)) | One last calm push | Partial | Headline ("Stop guessing which businesses to pitch") is generic. Pivot to the BD-pod variant: "Wire LeadAC into your BD pod's morning queue." |
+| 11 | FinalCta ([final-cta.tsx](../../../src/components/marketing/v2/final-cta.tsx)) | One last calm push | Partial | Headline ("Stop guessing which businesses to pitch") is generic. Pivot to the BD-pod variant: "Wire Revint into your BD pod's morning queue." |
 
 **Headline diagnosis.** The current homepage is structurally sound (intelligence-loop architecture, vertical depth, audit-grounded proof). It miscasts the buyer. It speaks to an agency owner running email; it should speak to a BD manager running a calling pod. Every section already has the right architecture; only copy and section order need to change, plus one new server section (PodControlRoom) that reuses existing lead-detail-v2 surfaces. No new BullMQ queue, no new Gemini call, no new Prisma table is required, per [07-decision-criteria.md Test 7 Engineering](../07-decision-criteria.md) and [05-infrastructure-primer.md § 11](../05-infrastructure-primer.md).
 
@@ -72,7 +72,7 @@ Numbered against the current order in [`src/app/(marketing)/page.tsx`](../../../
 
 | # | Proposed section | Job | Reuse existing? | Cost label |
 |---|---|---|---|---|
-| 1 | Hero | Cast LeadAC as the pre-call brief in front of every dial | Modify [hero.tsx](../../../src/components/marketing/v2/hero.tsx) | Small |
+| 1 | Hero | Cast Revint as the pre-call brief in front of every dial | Modify [hero.tsx](../../../src/components/marketing/v2/hero.tsx) | Small |
 | 2 | ProblemGrid | Recast the five recurring failures from the BD manager's view | Modify [problem-grid.tsx](../../../src/components/marketing/v2/problem-grid.tsx) | Trivial |
 | 3 | PreCallBrief (was DossierProof) | Show one Camden cafe brief ending in a first-30-seconds talk track | Modify [dossier-proof.tsx](../../../src/components/marketing/v2/dossier-proof.tsx); rename export to `PreCallBrief` | Small |
 | 4 | HowItThinks | Keep three-layer loop; retune Execute rows to "Talk track ready / Disposition slot / Next action: Call" | Modify [how-it-thinks.tsx](../../../src/components/marketing/v2/how-it-thinks.tsx) | Trivial |
@@ -83,7 +83,7 @@ Numbered against the current order in [`src/app/(marketing)/page.tsx`](../../../
 | 9 | BuiltFor | Collapse from three audiences to one primary chip plus two secondary chips | Modify [built-for.tsx](../../../src/components/marketing/v2/built-for.tsx) | Trivial |
 | 10 | WaitlistBlock | Pre-launch email capture (no change) | Reuse [waitlist-block.tsx](../../../src/components/marketing/v2/waitlist-block.tsx) | Trivial (no change) |
 | 11 | FaqBlock | Swap in three call-specific objections from BUYER-PERSONA § 5 | Modify [faq-block.tsx](../../../src/components/marketing/v2/faq-block.tsx) | Trivial |
-| 12 | FinalCta | Pivot to "Wire LeadAC into your BD pod's morning queue" | Modify [final-cta.tsx](../../../src/components/marketing/v2/final-cta.tsx) | Trivial |
+| 12 | FinalCta | Pivot to "Wire Revint into your BD pod's morning queue" | Modify [final-cta.tsx](../../../src/components/marketing/v2/final-cta.tsx) | Trivial |
 
 **Rationale per section.**
 
@@ -103,17 +103,17 @@ Per the strategist mandate ([01-role-and-mandate.md § How you talk](../01-role-
 |---|---|
 | Eyebrow / badge | `For F&B BD teams` |
 | Headline | `The pre-call brief in front of every dial.` |
-| Subhead | `Your BD pod calls 30 restaurants a morning. LeadAC drops a fresh dossier on every one before they pick up the phone. Who, why now, what to say in the first 30 seconds.` |
+| Subhead | `Your BD pod calls 30 restaurants a morning. Revint drops a fresh dossier on every one before they pick up the phone. Who, why now, what to say in the first 30 seconds.` |
 | Primary CTA label + behavior | `Start free trial` when `MARKETING_COMING_SOON === false`; renders as an inert "Launching soon" span when the flag is on (existing pattern in [hero.tsx](../../../src/components/marketing/v2/hero.tsx) lines 62-96). |
 | Secondary CTA label + behavior | `Watch a 90-second pod walkthrough` linking to `/demo` (existing `/demo` route is already wired; copy change only). |
 | Hero proof element | Keep the existing `LeadDetailBento` ([lead-detail-bento.tsx](../../../src/components/marketing/v2/lead-detail-bento.tsx)); swap the visible region of the bento to show the disposition strip and the first-30-seconds talk-track block. Pure JSX swap inside the bento; no new data fetch. |
 | Visual / motion notes | Keep the existing radial-glow background and two-column lockup. No new motion. The hero stays static + CSS-only per the [src/app/(marketing)/page.tsx file-header convention](../../../src/app/(marketing)/page.tsx) ("No interactive widgets in the hero. No scroll-stages. No hero parallax."). |
 
-**5-second test result.** Pre-registered. Not yet run because the RFC has not shipped. Pass condition recorded for the post-ship run: three target users (BD manager profile, not LeadAC team members) answer the three questions per [07-decision-criteria.md § Test 1](../07-decision-criteria.md) with "It is a calling tool" or "It is a tool that gives the rep the brief before the call" / "For a BD pod manager (5 to 10 reps) selling to restaurants" / "Watch the pod walkthrough or join the waitlist". Recorded in RFC § 12 as an open question because the test cannot run until the copy is live.
+**5-second test result.** Pre-registered. Not yet run because the RFC has not shipped. Pass condition recorded for the post-ship run: three target users (BD manager profile, not Revint team members) answer the three questions per [07-decision-criteria.md § Test 1](../07-decision-criteria.md) with "It is a calling tool" or "It is a tool that gives the rep the brief before the call" / "For a BD pod manager (5 to 10 reps) selling to restaurants" / "Watch the pod walkthrough or join the waitlist". Recorded in RFC § 12 as an open question because the test cannot run until the copy is live.
 
 **Frameworks applied:**
 
-- StoryBrand 7-part ([04-growth-frameworks-library.md § B1](../04-growth-frameworks-library.md)). The BD manager is the hero; the problem is rep time and rep openers; LeadAC is the guide; the plan is the morning brief; the CTA is the trial or the walkthrough.
+- StoryBrand 7-part ([04-growth-frameworks-library.md § B1](../04-growth-frameworks-library.md)). The BD manager is the hero; the problem is rep time and rep openers; Revint is the guide; the plan is the morning brief; the CTA is the trial or the walkthrough.
 - April Dunford positioning ([04-growth-frameworks-library.md § A1](../04-growth-frameworks-library.md)). The competitive alternative is "hire a research VA + accept generic openers"; the unique attribute is "audit-grounded dossier wired to the dial"; the segment is the BD pod. The hero defends the canonical positioning sentence at [.agents/product-marketing-context.md § Positioning sentence](../../product-marketing-context.md).
 
 **Voice-of-customer source.** Three verbatim pulls from BUYER-PERSONA § 5, recorded in [`../research/synthesis/2026-05-20-fnb-bd-pod-voc.md` § 2](../research/synthesis/2026-05-20-fnb-bd-pod-voc.md):
@@ -178,7 +178,7 @@ The other section retunes (HowItThinks, UnderstandsGrid, IntelligenceLoop, Integ
 
 ## 7. Mobile narrative
 
-On a phone, the section order stays the same. The hero collapses to single column (already handled by the `lg:grid-cols-[1.1fr_1fr]` in [hero.tsx](../../../src/components/marketing/v2/hero.tsx) line 30); the bento drops below the headline. The PreCallBrief card stays `max-w-2xl` centered (same as today). The new PodControlRoom collapses from a three-column to a stacked layout; on a phone, the queue rows stack vertically and the disposition chip strip wraps. The IntegrationsStrip split (Senders / Dialers) becomes two horizontal pill rows; on the narrowest viewports the labels "Senders" and "Dialers" sit above each pill cluster so the rows do not run together. No section gets pinned, no section gets cut. The hero's primary CTA stays above the fold on a 360 px viewport (already verified by the current hero on the live site at https://leadac.ai).
+On a phone, the section order stays the same. The hero collapses to single column (already handled by the `lg:grid-cols-[1.1fr_1fr]` in [hero.tsx](../../../src/components/marketing/v2/hero.tsx) line 30); the bento drops below the headline. The PreCallBrief card stays `max-w-2xl` centered (same as today). The new PodControlRoom collapses from a three-column to a stacked layout; on a phone, the queue rows stack vertically and the disposition chip strip wraps. The IntegrationsStrip split (Senders / Dialers) becomes two horizontal pill rows; on the narrowest viewports the labels "Senders" and "Dialers" sit above each pill cluster so the rows do not run together. No section gets pinned, no section gets cut. The hero's primary CTA stays above the fold on a 360 px viewport (already verified by the current hero on the live site at https://revint.dev).
 
 ---
 
@@ -186,7 +186,7 @@ On a phone, the section order stays the same. The hero collapses to single colum
 
 - **Motion:** zero new motion. Every retuned section is server-rendered, no Framer. The PodControlRoom uses the same static-still + CSS-only conventions as [intelligence-loop.tsx](../../../src/components/marketing/v2/intelligence-loop.tsx) (no JS, no framer). `prefers-reduced-motion` is respected by virtue of having no motion to disable.
 - **A11y:**
-  - Contrast: all copy on `bg-[hsl(var(--leadac-h)_var(--leadac-ns)_8%)]` surfaces uses `text-white`, `text-white/65`, or `text-white/55` per the existing convention. These pass 4.5:1 on the actual neutral-surface lightness values produced by `--leadac-ns: 7%` (verified by the existing [hero.tsx](../../../src/components/marketing/v2/hero.tsx) and [problem-grid.tsx](../../../src/components/marketing/v2/problem-grid.tsx) shipping today).
+  - Contrast: all copy on `bg-[hsl(var(--revint-h)_var(--revint-ns)_8%)]` surfaces uses `text-white`, `text-white/65`, or `text-white/55` per the existing convention. These pass 4.5:1 on the actual neutral-surface lightness values produced by `--revint-ns: 7%` (verified by the existing [hero.tsx](../../../src/components/marketing/v2/hero.tsx) and [problem-grid.tsx](../../../src/components/marketing/v2/problem-grid.tsx) shipping today).
   - Focus rings: the existing CTA Link components keep their focus ring behavior; no new interactive surfaces are introduced (PodControlRoom is presentational).
   - Semantic landmarks: every section keeps its `<section>` wrapper via [section.tsx](../../../src/components/marketing/v2/section.tsx); headings stay one `<h1>` (hero) + one `<h2>` per section via the Section wrapper.
   - Screen-reader narrative: a sighted scroll reads as Hero → BD-pod problems → one example brief → how it thinks → vertical depth → manager view → loop → integrations (senders + dialers) → who it is for → waitlist → FAQ → final CTA. A screen-reader linear pass produces the same arc.
@@ -197,7 +197,7 @@ On a phone, the section order stays the same. The hero collapses to single colum
 
 Edit [`src/lib/seo/metadata.ts` usage in src/app/(marketing)/page.tsx](../../../src/app/(marketing)/page.tsx) lines 29-46.
 
-- Title (under 50 chars): `Pre-call briefs for BD pods.` (28 chars; `buildMetadata` auto-appends ` | Leadac AI` per [src/lib/seo/metadata.ts](../../../src/lib/seo/metadata.ts) lines 108-110, rendering as `Pre-call briefs for BD pods. | Leadac AI`, 40 chars total).
+- Title (under 50 chars): `Pre-call briefs for BD pods.` (28 chars; `buildMetadata` auto-appends ` | Revint` per [src/lib/seo/metadata.ts](../../../src/lib/seo/metadata.ts) lines 108-110, rendering as `Pre-call briefs for BD pods. | Revint`, 40 chars total).
 - Description (155-160 chars): `The pre-call brief in front of every dial. Fresh dossier on every restaurant your BD pod will phone this morning, with the first 30 seconds ready to read.` (155 chars.)
 - Keywords (no banned terms; "agent" is banned per [.agents/product-marketing-context.md § Banned](../../product-marketing-context.md)):
   - `pre-call brief for sdr`
@@ -226,7 +226,7 @@ Pre-registered before shipping. Per [01-role-and-mandate.md § Success criteria]
 | Walkthrough requests per 1k visits | Baseline = current `/demo` route hits per 1k `/` visits on PostHog | 2x baseline at +30 days post-ship | PostHog event `cta.book_walkthrough_clicked` joined to `/demo` route hits | Iterate hero copy if walkthrough requests do not move at +14 days; do not roll back the page. |
 | Forwarder-domain share on waitlist (proxy for Test 2 in the wild) | Unknown; new measurement | At least 20% of waitlist signups come from food-tech / restaurant-tech corporate email domains (Toast.com, FineDine, Square employees, regional POS vendors) | One-time CSV pull from the waitlist table at +30 days, classified by hand | Soft signal only; informs the next RFC's persona pick, does not trigger a roll-back on its own. |
 
-**North Star alignment.** The two North Stars from [01-role-and-mandate.md § Success criteria](../01-role-and-mandate.md) are (1) a senior agency owner can describe what LeadAC does in one sentence after the hero, and (2) an SDR using the lead-detail page never loses more than two seconds wondering what to do next. This RFC moves only the first one; the lead-detail RFC ([../templates/lead-detail-rfc.md](../templates/lead-detail-rfc.md)) moves the second.
+**North Star alignment.** The two North Stars from [01-role-and-mandate.md § Success criteria](../01-role-and-mandate.md) are (1) a senior agency owner can describe what Revint does in one sentence after the hero, and (2) an SDR using the lead-detail page never loses more than two seconds wondering what to do next. This RFC moves only the first one; the lead-detail RFC ([../templates/lead-detail-rfc.md](../templates/lead-detail-rfc.md)) moves the second.
 
 **Risk if metric does not move.** Roll back the section reorder (revert §§ 3 to 6) and keep only the hero retune. The hero copy can be A/B tested in isolation; the section reorder is more expensive to reverse, so the roll-back rule above gives it the cleanest break point.
 

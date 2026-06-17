@@ -32,8 +32,8 @@ describe("M8 - scrubHeader", () => {
   });
 
   it("does not touch a normal subject", () => {
-    expect(scrubHeader("Welcome to LeadAC, Acme!")).toBe(
-      "Welcome to LeadAC, Acme!",
+    expect(scrubHeader("Welcome to Revint, Acme!")).toBe(
+      "Welcome to Revint, Acme!",
     );
   });
 

@@ -144,7 +144,7 @@ PROOF_CARDS — PROPOSED
 
 Section headline at line 68 (`"Lead intelligence that improves over time."`) stays.
 
-Section sub at line 69 (`"LeadAC learns which outreach angles perform best across niches, cities, and business types. Patterns that work get reinforced. Patterns that fail get pruned."`) stays. The word "outreach" survives the pivot because the page's intelligence loop covers both call and email; we are not narrowing to call-only here.
+Section sub at line 69 (`"Revint learns which outreach angles perform best across niches, cities, and business types. Patterns that work get reinforced. Patterns that fail get pruned."`) stays. The word "outreach" survives the pivot because the page's intelligence loop covers both call and email; we are not narrowing to call-only here.
 
 The three floating proof badges inside the SVG (lines 159-191) retune labels:
 - `reply rate +14%` → `connect rate +14%` (a "connect" is the 1st chip in the DispositionStrip)
@@ -184,7 +184,7 @@ Keep verbatim. The block earns its slot by being the calm exit; rewriting it for
 
 ---
 
-## 5. FinalCta (§ 4 row 12) — pivot to "Wire LeadAC into your BD pod's morning queue"
+## 5. FinalCta (§ 4 row 12) — pivot to "Wire Revint into your BD pod's morning queue"
 
 **Component to modify:** [`src/components/marketing/v2/final-cta.tsx`](../../../../src/components/marketing/v2/final-cta.tsx).
 
@@ -197,10 +197,10 @@ HEADLINE — CURRENT (line 24)
 "Stop guessing which businesses to pitch."
 
 HEADLINE — PROPOSED
-"Wire LeadAC into your BD pod's morning queue."
+"Wire Revint into your BD pod's morning queue."
 
 SUB — CURRENT (lines 26-30)
-"LeadAC helps agencies focus on businesses already showing intent signals. Pick a postcode, pick a niche, and the first dossier lands in your tab in five minutes."
+"Revint helps agencies focus on businesses already showing intent signals. Pick a postcode, pick a niche, and the first dossier lands in your tab in five minutes."
 
 SUB — PROPOSED
 "Pick a postcode, pick a niche, and the first 47 audited briefs land in your pod's tab in five minutes. Each one ready for the dial."

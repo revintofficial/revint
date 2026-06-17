@@ -41,7 +41,7 @@ export default function AlternativesIndexPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Alternatives", url: PATH },
         ])}
       />
@@ -92,7 +92,7 @@ export default function AlternativesIndexPage() {
       <CtaBlock
         eyebrow="Don't see your tool"
         title="Tell us which competitor you're evaluating against. We'll write an honest comparison."
-        subtitle="We publish comparison pages quarterly. If you're evaluating LeadAC against a tool we haven't covered, mention it on the demo call and we'll add it to the queue."
+        subtitle="We publish comparison pages quarterly. If you're evaluating Revint against a tool we haven't covered, mention it on the demo call and we'll add it to the queue."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/manifesto", label: "Read the manifesto" }}
       />

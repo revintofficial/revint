@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { LEADAC_HUE, LEADAC_SATURATION } from "@/lib/colors";
+import { REVINT_HUE, REVINT_SATURATION } from "@/lib/colors";
 import { SITE } from "@/lib/seo/metadata";
 
 /**
@@ -11,15 +11,15 @@ import { SITE } from "@/lib/seo/metadata";
  *
  * Note: Next's Edge `<ImageResponse>` does not resolve CSS custom
  * properties, so we pull the numeric hue/saturation straight from
- * `src/lib/colors.ts` (the JS mirror of --leadac-h / --leadac-s) and
+ * `src/lib/colors.ts` (the JS mirror of --revint-h / --revint-s) and
  * build literal HSL strings at render time.
  */
 
 export const OG_SIZE = { width: 1200, height: 630 } as const;
 export const OG_CONTENT_TYPE = "image/png" as const;
 
-const DEFAULT_ACCENT = `hsl(${LEADAC_HUE} ${LEADAC_SATURATION}% 78%)`;
-const ACCENT_DEEP = `hsl(${LEADAC_HUE} ${LEADAC_SATURATION}% 50%)`;
+const DEFAULT_ACCENT = `hsl(${REVINT_HUE} ${REVINT_SATURATION}% 78%)`;
+const ACCENT_DEEP = `hsl(${REVINT_HUE} ${REVINT_SATURATION}% 50%)`;
 
 export type OgTemplateProps = {
   title: string;
@@ -88,7 +88,7 @@ export function renderOgImage(props: OgTemplateProps) {
                 display: "flex",
               }}
             />
-            Leadac AI
+            Revint
           </div>
           {badge && (
             <div
@@ -170,7 +170,7 @@ export function renderOgImage(props: OgTemplateProps) {
             color: "rgba(255,255,255,0.4)",
           }}
         >
-          <span>leadac.ai</span>
+          <span>revint.dev</span>
           <span>{SITE.tagline}</span>
         </div>
       </div>

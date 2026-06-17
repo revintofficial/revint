@@ -3,7 +3,7 @@
  *
  * Supabase Auth sends the password/magic link to activate the account.
  * This email arrives right after and gives the invitee context: who
- * invited them, which workspace, what role, what Leadac AI does. It's
+ * invited them, which workspace, what role, what Revint does. It's
  * "branded" so the invite doesn't feel like a generic system email.
  */
 
@@ -31,11 +31,11 @@ interface TeamInviteEmailProps {
 const copy = {
   tr: {
     subject: (ws: string) => `${ws} seni takımına davet etti`,
-    preview: "Leadac AI workspace davetin hazır.",
+    preview: "Revint workspace davetin hazır.",
     eyebrow: "Davet",
     heading: (ws: string) => `${ws} seni davet etti`,
     intro: (inviter: string, role: string) =>
-      `${inviter}, Leadac AI workspace'ine seni ${role} rolüyle ekledi. ` +
+      `${inviter}, Revint workspace'ine seni ${role} rolüyle ekledi. ` +
       "Hesabını aktifleştirmek için Supabase'den ayrı bir e-posta daha gelecek — oradaki linkle giriş yap, sonra aşağıdaki butondan workspace'e düş.",
     inviterLabel: "Davet eden",
     workspaceLabel: "Workspace",
@@ -48,15 +48,15 @@ const copy = {
       MEMBER: "Üye",
     } as const,
     what:
-      "Leadac AI, yerel servis işletmeleri için lead bulan ve her biri için kişiselleştirilmiş opener + site mockup'ı üreten bir satış pipeline aracı.",
+      "Revint, yerel servis işletmeleri için lead bulan ve her biri için kişiselleştirilmiş opener + site mockup'ı üreten bir satış pipeline aracı.",
   },
   en: {
     subject: (ws: string) => `You're invited to ${ws}`,
-    preview: "Your Leadac AI workspace invite is ready.",
+    preview: "Your Revint workspace invite is ready.",
     eyebrow: "Invitation",
     heading: (ws: string) => `You're invited to ${ws}`,
     intro: (inviter: string, role: string) =>
-      `${inviter} added you to their Leadac AI workspace as ${role}. ` +
+      `${inviter} added you to their Revint workspace as ${role}. ` +
       "You'll get a separate activation email from Supabase — open that link to set a password, then use the button below to jump into the workspace.",
     inviterLabel: "Invited by",
     workspaceLabel: "Workspace",
@@ -69,7 +69,7 @@ const copy = {
       MEMBER: "Member",
     } as const,
     what:
-      "Leadac AI is a sales pipeline tool for local service businesses — it surfaces leads and generates a personalized opener + site mockup for each one.",
+      "Revint is a sales pipeline tool for local service businesses — it surfaces leads and generates a personalized opener + site mockup for each one.",
   },
 } as const;
 
@@ -201,7 +201,7 @@ export function TeamInviteEmail({
         <PrimaryButton href={`${baseUrl}/app/dashboard`} tone="accent">
           {c.ctaLabel}
         </PrimaryButton>
-        <GhostLink href="https://leadacai.com">{c.secondaryLabel} →</GhostLink>
+        <GhostLink href="https://revint.dev">{c.secondaryLabel} →</GhostLink>
       </Section>
 
       <Caption>{c.what}</Caption>

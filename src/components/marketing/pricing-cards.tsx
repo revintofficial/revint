@@ -92,7 +92,7 @@ export function PricingCards({
             className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all"
             style={{
               background: cycle === "monthly" ? "rgba(255,255,255,0.08)" : "transparent",
-              color: cycle === "monthly" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
+              color: cycle === "monthly" ? "white" : "hsl(var(--revint-h) var(--revint-nts) 92% / 0.55)",
             }}
           >
             Monthly
@@ -104,7 +104,7 @@ export function PricingCards({
             className="px-3.5 py-1.5 rounded-lg text-[12.5px] font-medium transition-all flex items-center gap-1.5"
             style={{
               background: cycle === "annual" ? "rgba(255,255,255,0.08)" : "transparent",
-              color: cycle === "annual" ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
+              color: cycle === "annual" ? "white" : "hsl(var(--revint-h) var(--revint-nts) 92% / 0.55)",
             }}
           >
             Annual
@@ -138,7 +138,7 @@ export function PricingCards({
               className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all"
               style={{
                 background: currency === c ? "rgba(255,255,255,0.08)" : "transparent",
-                color: currency === c ? "white" : "hsl(var(--leadac-h) var(--leadac-nts) 92% / 0.55)",
+                color: currency === c ? "white" : "hsl(var(--revint-h) var(--revint-nts) 92% / 0.55)",
               }}
             >
               {CURRENCY_LABEL[c]}
@@ -161,10 +161,10 @@ export function PricingCards({
               className="relative p-6 rounded-2xl flex flex-col"
               style={{
                 background:
-                  "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 11% / 0.6), hsl(var(--leadac-h) var(--leadac-ns) 8% / 0.4))",
+                  "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-ns) 11% / 0.6), hsl(var(--revint-h) var(--revint-ns) 8% / 0.4))",
                 border: "0.5px solid rgba(255,255,255,0.08)",
                 boxShadow: isHighlight
-                  ? "0 0 0 1px hsl(var(--leadac-h) var(--leadac-s) 60% / 0.4), 0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.15)"
+                  ? "0 0 0 1px hsl(var(--revint-h) var(--revint-s) 60% / 0.4), 0 8px 24px hsl(var(--revint-h) var(--revint-s) 50% / 0.15)"
                   : "none",
               }}
             >
@@ -173,7 +173,7 @@ export function PricingCards({
                   className="absolute -top-2.5 left-6 px-2 py-0.5 rounded-md text-[10.5px] font-semibold"
                   style={{
                     background:
-                      "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 36%))",
+                      "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-s) 50%), hsl(var(--revint-h) var(--revint-s) 36%))",
                     color: "white",
                   }}
                 >
@@ -212,9 +212,9 @@ export function PricingCards({
                     isHighlight
                       ? {
                           background:
-                            "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 36%))",
+                            "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-s) 50%), hsl(var(--revint-h) var(--revint-s) 36%))",
                           color: "white",
-                          border: "0.5px solid hsl(var(--leadac-h) var(--leadac-s) 45% / 0.35)",
+                          border: "0.5px solid hsl(var(--revint-h) var(--revint-s) 45% / 0.35)",
                           boxShadow: "none",
                         }
                       : id === "FREE"
@@ -240,10 +240,10 @@ export function PricingCards({
                     isHighlight
                       ? {
                           background:
-                            "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 50%), hsl(var(--leadac-h) var(--leadac-s) 36%))",
+                            "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-s) 50%), hsl(var(--revint-h) var(--revint-s) 36%))",
                           color: "white",
                           boxShadow:
-                            "0 1px 0 rgba(255,255,255,0.15) inset, 0 8px 24px hsl(var(--leadac-h) var(--leadac-s) 36% / 0.3)",
+                            "0 1px 0 rgba(255,255,255,0.15) inset, 0 8px 24px hsl(var(--revint-h) var(--revint-s) 36% / 0.3)",
                         }
                       : id === "FREE"
                       ? {
@@ -279,7 +279,7 @@ export function PricingCards({
                   <li key={f} className="flex items-start gap-2">
                     <Check
                       className="w-3.5 h-3.5 mt-0.5 shrink-0"
-                      style={{ color: isHighlight ? "var(--leadac-300)" : "hsl(152 48% 50% / 0.95)" }}
+                      style={{ color: isHighlight ? "var(--revint-300)" : "hsl(152 48% 50% / 0.95)" }}
                     />
                     <span className="text-white/75">{f}</span>
                   </li>

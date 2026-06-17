@@ -10,7 +10,7 @@
  *   - Future co-pilot chat (P1.2)
  *   - Future direct email send personalization (P1.1)
  *
- * Without this context every Leadac AI output is generic. With it, every
+ * Without this context every Revint output is generic. With it, every
  * mockup speaks in the workspace owner's voice and points to their own
  * conversion link.
  */

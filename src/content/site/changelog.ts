@@ -31,7 +31,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     date: "2026-04-30",
     kind: "integration",
     title: "Smartlead handoff goes native.",
-    body: "Eight LeadAC merge variables now available inside Smartlead sequences. Webhook bidirectional — Smartlead reply data ingests back into closed-loop ICP refinement.",
+    body: "Eight Revint merge variables now available inside Smartlead sequences. Webhook bidirectional — Smartlead reply data ingests back into closed-loop ICP refinement.",
   },
   {
     date: "2026-04-12",
@@ -74,7 +74,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2025-10-04",
     kind: "milestone",
-    title: "LeadAC founded.",
+    title: "Revint founded.",
     body: "Two of us, one Notion doc, one bet — that vertical SaaS GTM needs an operational memory layer Apollo, Clay, and Gong cannot ship inside their existing product shape.",
   },
 ];

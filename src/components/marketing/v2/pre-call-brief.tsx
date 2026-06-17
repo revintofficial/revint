@@ -58,7 +58,7 @@ export function PreCallBrief() {
         className="relative mx-auto max-w-2xl rounded-3xl border border-white/[0.07] p-7 md:p-9"
         style={{
           background:
-            "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-ns) 10%) 0%, hsl(var(--leadac-h) var(--leadac-ns) 7%) 100%)",
+            "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-ns) 10%) 0%, hsl(var(--revint-h) var(--revint-ns) 7%) 100%)",
           boxShadow:
             "0 1px 0 rgba(255,255,255,0.05) inset, 0 40px 80px -40px rgba(0,0,0,0.7)",
         }}
@@ -80,15 +80,15 @@ export function PreCallBrief() {
             className="shrink-0 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold whitespace-nowrap"
             style={{
               border:
-                "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.40)",
-              background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)",
-              color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+                "1px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.40)",
+              background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.10)",
+              color: "hsl(var(--revint-h) var(--revint-s) 78%)",
             }}
           >
             <span
               aria-hidden
               className="inline-block h-1.5 w-1.5 rounded-full"
-              style={{ background: "hsl(var(--leadac-h) var(--leadac-s) 65%)" }}
+              style={{ background: "hsl(var(--revint-h) var(--revint-s) 65%)" }}
             />
             Fit score · 84/100
           </span>
@@ -97,7 +97,7 @@ export function PreCallBrief() {
         <section className="mt-8">
           <p
             className="text-[10.5px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 65%)" }}
+            style={{ color: "hsl(var(--revint-h) var(--revint-s) 65%)" }}
           >
             Detected signals
           </p>
@@ -111,7 +111,7 @@ export function PreCallBrief() {
                   aria-hidden
                   className="mt-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full"
                   style={{
-                    background: "hsl(var(--leadac-h) var(--leadac-s) 60%)",
+                    background: "hsl(var(--revint-h) var(--revint-s) 60%)",
                   }}
                 />
                 <span className="flex-1">
@@ -122,8 +122,8 @@ export function PreCallBrief() {
                   className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider whitespace-nowrap"
                   style={{
                     background:
-                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.10)",
-                    color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+                      "hsl(var(--revint-h) var(--revint-s) 50% / 0.10)",
+                    color: "hsl(var(--revint-h) var(--revint-s) 78%)",
                   }}
                 >
                   {s.tag}
@@ -136,17 +136,17 @@ export function PreCallBrief() {
         <section className="mt-8">
           <p
             className="text-[10.5px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 65%)" }}
+            style={{ color: "hsl(var(--revint-h) var(--revint-s) 65%)" }}
           >
             Recommended angle
           </p>
           <span
             className="mt-3 inline-flex items-center rounded-full px-3 py-1 text-[12.5px] font-medium"
             style={{
-              background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12)",
-              color: "hsl(var(--leadac-h) var(--leadac-s) 80%)",
+              background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.12)",
+              color: "hsl(var(--revint-h) var(--revint-s) 80%)",
               border:
-                "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.28)",
+                "1px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.28)",
             }}
           >
             QR ordering · direct-channel margin
@@ -161,7 +161,7 @@ export function PreCallBrief() {
         <section className="mt-8">
           <p
             className="text-[10.5px] font-semibold uppercase tracking-[0.16em]"
-            style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 65%)" }}
+            style={{ color: "hsl(var(--revint-h) var(--revint-s) 65%)" }}
           >
             First 30 seconds
           </p>
@@ -169,7 +169,7 @@ export function PreCallBrief() {
             className="mt-3 pl-4 italic text-[14px] text-white/80 leading-relaxed"
             style={{
               borderLeft:
-                "2px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.45)",
+                "2px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.45)",
             }}
           >
             Sarah, this is [REP]. Saw Cucina&apos;s second location is hitting

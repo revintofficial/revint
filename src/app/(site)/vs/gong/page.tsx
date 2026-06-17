@@ -32,9 +32,9 @@ import { SITE } from "@/lib/seo/metadata";
 
 const PATH = "/vs/gong";
 const TITLE =
-  "LeadAC vs Gong — operational intelligence, not conversation intelligence.";
+  "Revint vs Gong — operational intelligence, not conversation intelligence.";
 const DESCRIPTION =
-  "Gong indexes what your team said on calls. LeadAC indexes what the account is doing in the world. Same word — memory — different substrate, different price floor, different buyer.";
+  "Gong indexes what your team said on calls. Revint indexes what the account is doing in the world. Same word — memory — different substrate, different price floor, different buyer.";
 const PUBLISHED = "2026-05-22";
 
 export const metadata: Metadata = buildMetadata({
@@ -46,7 +46,7 @@ export const metadata: Metadata = buildMetadata({
 export default function VsGongPage() {
   const gong = getCompetitor("gong");
 
-  // Only the pains that frame the Gong-vs-LeadAC discussion.
+  // Only the pains that frame the Gong-vs-Revint discussion.
   const gongPains = PAINS.filter((p) =>
     ["P-005", "P-011", "P-013"].includes(p.id),
   );
@@ -57,7 +57,7 @@ export default function VsGongPage() {
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Compare", url: "/vs" },
           { name: "vs Gong", url: PATH },
         ])}
@@ -106,12 +106,12 @@ export default function VsGongPage() {
           {
             value: "$18K/yr",
             label:
-              "LeadAC Team — 5 seats, 5,000 accounts/mo, HubSpot-native.",
+              "Revint Team — 5 seats, 5,000 accounts/mo, HubSpot-native.",
           },
           {
             value: "< 1 hr",
             label:
-              "LeadAC onboarding — OAuth flow, field map, first 200 accounts.",
+              "Revint onboarding — OAuth flow, field map, first 200 accounts.",
           },
         ]}
       />
@@ -123,7 +123,7 @@ export default function VsGongPage() {
         columns={[
           { label: "Gong Foundation", subLabel: "from $100,000/yr" },
           {
-            label: "LeadAC Team",
+            label: "Revint Team",
             isUs: true,
             subLabel: "from $18,000/yr",
           },
@@ -207,7 +207,7 @@ export default function VsGongPage() {
 
       <CtaBlock
         eyebrow="Keep Gong if you have it"
-        title="LeadAC sits next to Gong, not against it. Add the operational layer for the price of one Gong seat."
+        title="Revint sits next to Gong, not against it. Add the operational layer for the price of one Gong seat."
         subtitle="If you already pay for Gong, we don't replace it — we sit one layer below the conversation graph and feed signal context into the same CRM Gong reads from."
         primaryCta={{ href: "/demo", label: "Book a 20-min demo" }}
         secondaryCta={{ href: "/pricing", label: "See pricing" }}

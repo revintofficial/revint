@@ -8,7 +8,7 @@ export const post: BlogPost = {
     "Real reply-rate numbers from 1.2 million outbound emails across plumbers, dentists, roofers, agencies, and B2B SaaS. Broken down by list source, opener type, and day of week. What's a good number today.",
   lede: "Everyone quotes the same 1-3% reply rate number. It hasn't been true since 2023. Here are the numbers our customers and we actually see.",
   publishedAt: "2026-03-14T09:00:00Z",
-  author: AUTHORS["leadac-team"],
+  author: AUTHORS["revint-team"],
   tags: ["cold email", "benchmarks", "data"],
   readMinutes: 8,
   body: () => (
@@ -256,7 +256,7 @@ export const post: BlogPost = {
       url: "https://www.lemlist.com/blog",
     },
     {
-      label: "Leadac customer pipeline data (aggregate)",
+      label: "Revint customer pipeline data (aggregate)",
       url: "/blog/cold-email-reply-rate-benchmarks-2026",
     },
   ],

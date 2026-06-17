@@ -14,6 +14,7 @@ import {
   readGramGoldTRYCached,
   formatGramGoldTRY,
 } from "@/lib/external/gold-price";
+import { SITE, siteHost } from "@/lib/seo/metadata";
 
 /**
  * Public mockup view route. Served as raw HTML (not React) because the page
@@ -268,5 +269,5 @@ function baseShell(title: string, body: string): string {
   a{color:#a5b4fc;text-decoration:none;font-size:13px}
   a:hover{text-decoration:underline}
 </style>
-</head><body><div class="b"><h1>${title}</h1><p>${body}</p><a href="https://leadac.ai">leadac.ai</a></div></body></html>`;
+</head><body><div class="b"><h1>${title}</h1><p>${body}</p><a href="${SITE.url}">${siteHost()}</a></div></body></html>`;
 }

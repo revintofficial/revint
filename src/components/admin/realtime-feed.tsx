@@ -90,29 +90,29 @@ export function RealtimeFeed({ initial }: { initial: RealtimeRow[] }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3 text-sm">
-        <span className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-[var(--leadac-card)] border border-[var(--leadac-border)]">
+        <span className="inline-flex items-center gap-2 px-2 py-1 rounded-md bg-[var(--revint-card)] border border-[var(--revint-border)]">
           <span
             className={
               totalActive > 0
-                ? "h-2 w-2 rounded-full bg-[var(--leadac-success)] animate-pulse"
-                : "h-2 w-2 rounded-full bg-[var(--leadac-text-3)]"
+                ? "h-2 w-2 rounded-full bg-[var(--revint-success)] animate-pulse"
+                : "h-2 w-2 rounded-full bg-[var(--revint-text-3)]"
             }
           />
-          <span className="text-[var(--leadac-text-1)] tabular-nums">
+          <span className="text-[var(--revint-text-1)] tabular-nums">
             {totalActive}
           </span>
-          <span className="text-[var(--leadac-text-3)]">active now</span>
+          <span className="text-[var(--revint-text-3)]">active now</span>
         </span>
         {error && (
-          <span className="text-xs text-[var(--leadac-error)]">
+          <span className="text-xs text-[var(--revint-error)]">
             offline — retrying ({error})
           </span>
         )}
       </div>
 
-      <div className="rounded-xl border border-[var(--leadac-border)] bg-[var(--leadac-card)] overflow-hidden">
+      <div className="rounded-xl border border-[var(--revint-border)] bg-[var(--revint-card)] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-[var(--leadac-hover)]/40 text-xs uppercase tracking-wider text-[var(--leadac-text-3)]">
+          <thead className="bg-[var(--revint-hover)]/40 text-xs uppercase tracking-wider text-[var(--revint-text-3)]">
             <tr>
               <th className="text-left px-3 py-2 w-24">Last seen</th>
               <th className="text-left px-3 py-2">Visitor</th>
@@ -125,12 +125,12 @@ export function RealtimeFeed({ initial }: { initial: RealtimeRow[] }) {
               <th className="text-left px-3 py-2"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--leadac-border)]">
+          <tbody className="divide-y divide-[var(--revint-border)]">
             {rows.length === 0 && (
               <tr>
                 <td
                   colSpan={9}
-                  className="px-4 py-10 text-center text-sm text-[var(--leadac-text-3)]"
+                  className="px-4 py-10 text-center text-sm text-[var(--revint-text-3)]"
                 >
                   No active visitors. Open the marketing site in another tab
                   to see yourself appear.
@@ -146,52 +146,52 @@ export function RealtimeFeed({ initial }: { initial: RealtimeRow[] }) {
                   key={r.id}
                   className={
                     isFlash
-                      ? "bg-[var(--leadac-success)]/10 transition-colors"
-                      : "hover:bg-[var(--leadac-hover)]/40 transition-colors"
+                      ? "bg-[var(--revint-success)]/10 transition-colors"
+                      : "hover:bg-[var(--revint-hover)]/40 transition-colors"
                   }
                 >
-                  <td className="px-3 py-2 align-top text-xs text-[var(--leadac-text-3)] tabular-nums">
+                  <td className="px-3 py-2 align-top text-xs text-[var(--revint-text-3)] tabular-nums">
                     {relSec(r.lastActivityAt)} ago
                   </td>
                   <td className="px-3 py-2 align-top">
-                    <code className="text-xs text-[var(--leadac-text-2)]">
+                    <code className="text-xs text-[var(--revint-text-2)]">
                       {shortVisitorId(r.visitorId)}
                     </code>
                   </td>
-                  <td className="px-3 py-2 align-top text-[var(--leadac-text-2)]">
+                  <td className="px-3 py-2 align-top text-[var(--revint-text-2)]">
                     <span className="mr-1">{flagEmoji(r.country)}</span>
                     {formatCountry(r.country)}
                     {r.city && (
-                      <span className="text-[var(--leadac-text-3)]">
+                      <span className="text-[var(--revint-text-3)]">
                         {" · "}
                         {r.city}
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2 align-top text-[var(--leadac-text-2)]">
+                  <td className="px-3 py-2 align-top text-[var(--revint-text-2)]">
                     {r.device ?? "—"}
                     {r.browser && (
-                      <span className="text-[var(--leadac-text-3)]">
+                      <span className="text-[var(--revint-text-3)]">
                         {" · "}
                         {r.browser}
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2 align-top text-[var(--leadac-text-2)]">
+                  <td className="px-3 py-2 align-top text-[var(--revint-text-2)]">
                     {r.utmSource ?? "(direct)"}
                   </td>
                   <td className="px-3 py-2 align-top">
                     {r.currentPath ? (
-                      <code className="text-[var(--leadac-text-1)]">
+                      <code className="text-[var(--revint-text-1)]">
                         {r.currentPath}
                       </code>
                     ) : (
-                      <span className="text-[var(--leadac-text-3)]">
+                      <span className="text-[var(--revint-text-3)]">
                         (between pages)
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2 align-top text-right text-xs tabular-nums text-[var(--leadac-text-3)]">
+                  <td className="px-3 py-2 align-top text-right text-xs tabular-nums text-[var(--revint-text-3)]">
                     {relSec(r.currentPageEnteredAt)}
                   </td>
                   <td className="px-3 py-2 align-top text-right tabular-nums">
@@ -200,7 +200,7 @@ export function RealtimeFeed({ initial }: { initial: RealtimeRow[] }) {
                   <td className="px-3 py-2 align-top">
                     <Link
                       href={`/admin/sessions/${r.id}`}
-                      className="text-xs text-[var(--leadac-300)] hover:text-[var(--leadac-200)]"
+                      className="text-xs text-[var(--revint-300)] hover:text-[var(--revint-200)]"
                     >
                       Open →
                     </Link>

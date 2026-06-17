@@ -1,10 +1,10 @@
-# LeadAC x FineDine Final US Integration Paper
+# Revint x FineDine Final US Integration Paper
 
 Status: final integration strategy paper  
 Date: 2026-05-29  
 Language: Turkish  
-Audience: LeadAC founders, product, engineering, sales, FineDine activation stakeholders  
-Project: LeadAC Restaurant-Tech Operational Intelligence Pilot for FineDine, US-first
+Audience: Revint founders, product, engineering, sales, FineDine activation stakeholders  
+Project: Revint Restaurant-Tech Operational Intelligence Pilot for FineDine, US-first
 
 > Not: Bu dokuman hukuki danismanlik degildir. US outbound, privacy, telemarketing ve data-provider terms konulari launch oncesi US counsel ve vendor contract review ile dogrulanmalidir.
 
@@ -12,9 +12,9 @@ Project: LeadAC Restaurant-Tech Operational Intelligence Pilot for FineDine, US-
 
 Entegrasyonlar genel olarak uygulamanin amacina uygun konumlaniyor, ama mevcut planin revize edilmesi gereken kritik noktasi su:
 
-> LeadAC'in entegrasyon stratejisi "ne kadar cok tool baglanirsa o kadar iyi" degil, "hangi tool LeadAC'in account judgment + safe activation + outcome learning dongusunu tamamlar?" olmalidir.
+> Revint'in entegrasyon stratejisi "ne kadar cok tool baglanirsa o kadar iyi" degil, "hangi tool Revint'in account judgment + safe activation + outcome learning dongusunu tamamlar?" olmalidir.
 
-LeadAC'in FineDine icin asil urun amaci:
+Revint'in FineDine icin asil urun amaci:
 
 1. US restoran account'larini dogru tanimlamak.
 2. FineDine icin operasyonel fit ve pitch angle secmek.
@@ -39,7 +39,7 @@ Bu amaca gore final entegrasyon karari:
 
 Final category sentence:
 
-> LeadAC is the compliance-aware operational intelligence layer for US restaurant-tech GTM teams. It connects CRM, one sender, approved data rails and field workflows; turns restaurant signals into safe next actions; and learns from outcomes.
+> Revint is the compliance-aware operational intelligence layer for US restaurant-tech GTM teams. It connects CRM, one sender, approved data rails and field workflows; turns restaurant signals into safe next actions; and learns from outcomes.
 
 ## 2. Entegrasyon fit testi
 
@@ -89,7 +89,7 @@ Islev:
 - notes/tasks/calls where available
 - manager-visible context
 
-HubSpot, LeadAC'in yerine gecmesi gereken bir CRM degildir. HubSpot, LeadAC'in ogrenmesi gereken truth source'tur.
+HubSpot, Revint'in yerine gecmesi gereken bir CRM degildir. HubSpot, Revint'in ogrenmesi gereken truth source'tur.
 
 ### Layer 2: Activation rails
 
@@ -103,7 +103,7 @@ Secondary/manual activation:
 - HubSpot tasks
 - manual call and field visit workflow
 
-Sender'lar mesajlari tasir. LeadAC sender olmaya calismamalidir. LeadAC'in isi kimi, ne zaman, hangi reason/pitch ile, hangi channel'dan aktive etmenin mantikli ve safe oldugunu belirlemektir.
+Sender'lar mesajlari tasir. Revint sender olmaya calismamalidir. Revint'in isi kimi, ne zaman, hangi reason/pitch ile, hangi channel'dan aktive etmenin mantikli ve safe oldugunu belirlemektir.
 
 ### Layer 3: Storeable market and enrichment rails
 
@@ -126,9 +126,9 @@ Optional existing-stack rails:
 - Resquared export/import
 - Apollo for chain/HQ contacts
 
-### Layer 4: LeadAC intelligence core
+### Layer 4: Revint intelligence core
 
-LeadAC owns:
+Revint owns:
 
 - identity resolution
 - account/location/contact graph
@@ -145,7 +145,7 @@ LeadAC owns:
 
 ### Layer 5: Learning and reporting
 
-LeadAC learns:
+Revint learns:
 
 - which data source produced usable accounts
 - which signals correlated with human approval
@@ -163,7 +163,7 @@ MVP learning language must stay cautious: "early signal", "hypothesis", "needs m
 | P1 | HubSpot | CRM truth + outcomes | Closed-loop learning needs deal/account truth; reps/managers already live there | Launch-critical |
 | P2 | One sender | Email activation + reply/bounce/unsub | Needed for first email outcome loop | Choose Smartlead or Instantly V2 |
 | P3 | Field/call/manual workflow | Restaurant GTM reality | US restaurant-tech is not email-only; field, call, referral matter | Launch-critical as workflow, not vendor-heavy |
-| P4 | Openmart | Storeable market/data rail | Provides restaurant/contact/tech-stack market fill without LeadAC becoming a database company | Use if terms pass |
+| P4 | Openmart | Storeable market/data rail | Provides restaurant/contact/tech-stack market fill without Revint becoming a database company | Use if terms pass |
 | P5 | Google Places | Place identity and freshness verifier | Strong canonical place ID, rating/review/open status checks | Strict storage policy |
 | P6 | Apify | Selective deep research | Useful for reviews/site/social/SERP depth, but costly | High-fit only |
 | P7 | FineDine offer context | Product/pitch ontology | Without offer context, recommendations become generic | Launch-critical |
@@ -178,7 +178,7 @@ MVP learning language must stay cautious: "early signal", "hypothesis", "needs m
 
 Final position:
 
-> HubSpot is the system-of-record and outcome rail. LeadAC should enrich and learn from HubSpot, not replace it.
+> HubSpot is the system-of-record and outcome rail. Revint should enrich and learn from HubSpot, not replace it.
 
 Why it fits:
 
@@ -190,7 +190,7 @@ Launch scope:
 
 - Private app token path for design partner speed.
 - Company/contact/deal read/write.
-- LeadAC property group and standard properties.
+- Revint property group and standard properties.
 - Upsert company/contact.
 - Create deal only after shortlist/qualification, not for every restaurant.
 - Scheduled delta sync first.
@@ -327,12 +327,12 @@ Final position:
 Why it fits:
 
 - Openmart positions its local business API around 200M+ businesses, 50+ fields, emails, social profiles, owner contacts, tech stack and local business search.
-- It gives LeadAC a way to source US restaurant markets without building a local business database.
+- It gives Revint a way to source US restaurant markets without building a local business database.
 - It is more aligned with lead-generation/storage use cases than Google Places.
 
 Launch scope:
 
-- API key connection or LeadAC-managed provider account.
+- API key connection or Revint-managed provider account.
 - Search by US metro/sub-niche.
 - Store raw response only if provider terms and contract allow.
 - Selective people/contact lookup only for high-fit/shortlisted accounts.
@@ -391,7 +391,7 @@ Final position:
 
 Why it fits:
 
-- Current LeadAC code already uses Apify workers.
+- Current Revint code already uses Apify workers.
 - Apify supports actors, actor runs, datasets and webhooks.
 - Useful for deeper reviews, website crawl, social, SERP and ad-library signals.
 
@@ -429,7 +429,7 @@ Why it fits:
 
 Why not direct MVP connector:
 
-- Positioning overlap: LeadAC should not look like "another Orbital".
+- Positioning overlap: Revint should not look like "another Orbital".
 - Partner/API access may be uncertain.
 - If Orbital already syncs to HubSpot, HubSpot-mediated ingestion is enough for MVP.
 
@@ -450,7 +450,7 @@ Final verdict:
 
 Final position:
 
-> Clay is a GTM workflow extension surface, not LeadAC's core integration dependency.
+> Clay is a GTM workflow extension surface, not Revint's core integration dependency.
 
 Why it fits:
 
@@ -460,8 +460,8 @@ Why it fits:
 
 Why not core:
 
-- Clay is a workbench. LeadAC should be the packaged vertical judgment layer.
-- If LeadAC overdepends on Clay, the product looks like a Clay add-on instead of an intelligence layer.
+- Clay is a workbench. Revint should be the packaged vertical judgment layer.
+- If Revint overdepends on Clay, the product looks like a Clay add-on instead of an intelligence layer.
 
 Launch scope:
 
@@ -532,7 +532,7 @@ Final position:
 
 Why it fits:
 
-- LeadAC cannot choose a useful pitch angle without knowing FineDine's modules, packages, pricing posture, disqualifiers and strongest proof.
+- Revint cannot choose a useful pitch angle without knowing FineDine's modules, packages, pricing posture, disqualifiers and strongest proof.
 - Product context is what turns generic restaurant signals into FineDine-specific sales judgment.
 
 Launch scope:
@@ -628,20 +628,20 @@ Email:
 
 1. Check compliance eligibility.
 2. Push only shortlisted/eligible rows to selected sender.
-3. Include LeadAC IDs for attribution.
+3. Include Revint IDs for attribution.
 4. Receive sender event webhooks.
 5. Write `LeadActivity`, suppression and outcome attribution.
 
 Field/call:
 
-1. Create HubSpot task or LeadAC next action.
+1. Create HubSpot task or Revint next action.
 2. Show visit/call window and reason.
 3. Rep logs outcome.
 4. Outcome feeds learning loop.
 
 CRM:
 
-1. Write brief summary and LeadAC properties to HubSpot Company.
+1. Write brief summary and Revint properties to HubSpot Company.
 2. Create Deal only after shortlist/qualified stage.
 3. Poll/read deal stage and outcome.
 4. HubSpot outcome overrides sender category for revenue truth.
@@ -820,11 +820,11 @@ Do not build:
 
 FineDine'e anlatilacak net hikaye:
 
-> HubSpot pipeline truth'u tutuyor. Smartlead veya Instantly email aksiyonunu tasiyor. Openmart US restoran marketini dolduruyor. Google Places identity ve freshness dogruluyor. Apify yalniz gerekli hesaplarda derin kanit topluyor. Field reps yerel guveni kuruyor. LeadAC bunlarin ustunde hangi account'un FineDine icin neden uygun oldugunu, hangi aksiyonun safe ve mantikli oldugunu, hangi pitch'in denenmesi gerektigini ve her outcome'dan ne ogrenildigini soyluyor.
+> HubSpot pipeline truth'u tutuyor. Smartlead veya Instantly email aksiyonunu tasiyor. Openmart US restoran marketini dolduruyor. Google Places identity ve freshness dogruluyor. Apify yalniz gerekli hesaplarda derin kanit topluyor. Field reps yerel guveni kuruyor. Revint bunlarin ustunde hangi account'un FineDine icin neden uygun oldugunu, hangi aksiyonun safe ve mantikli oldugunu, hangi pitch'in denenmesi gerektigini ve her outcome'dan ne ogrenildigini soyluyor.
 
 Short promise:
 
-> Connect HubSpot, one sender and approved restaurant data. LeadAC turns that stack into safe account judgment and a learning loop for US restaurant-tech sales.
+> Connect HubSpot, one sender and approved restaurant data. Revint turns that stack into safe account judgment and a learning loop for US restaurant-tech sales.
 
 ## 14. Final answer to the user's question
 
@@ -836,7 +836,7 @@ Evet, entegrasyonlar uygulamanin amacina gore genel olarak mantikli konumlaniyor
 - CSV/import/export: fallback, repair and bridge layer, not product promise.
 - Autonomous activation: future, not MVP.
 
-LeadAC'in kazanacagi yer "daha cok entegrasyon" degil, "dogru entegrasyonu dogru rolde kullanip account judgment ve outcome learning'e cevirmek"tir.
+Revint'in kazanacagi yer "daha cok entegrasyon" degil, "dogru entegrasyonu dogru rolde kullanip account judgment ve outcome learning'e cevirmek"tir.
 
 ## 15. Sources
 

@@ -11,7 +11,7 @@
  * Positioning (canonical, per docs/positioning.md §1.2 + §9):
  *   H-101 (headline): "Revenue intelligence for the teams selling to local business."
  *   H-102 (subhead):  "Your CRM knows the deal. We know the business behind it."
- *   S-101 (body):     "LeadAC finds your next 200 local accounts, syncs them into
+ *   S-101 (body):     "Revint finds your next 200 local accounts, syncs them into
  *                      HubSpot, and learns from every won and lost deal..."
  *   C-101 / C-102 CTAs.
  */
@@ -29,7 +29,7 @@ export function Hero() {
         className="pointer-events-none absolute inset-x-0 -top-32 h-[520px]"
         style={{
           background:
-            "radial-gradient(60% 50% at 50% 30%, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18), transparent 70%)",
+            "radial-gradient(60% 50% at 50% 30%, hsl(var(--revint-h) var(--revint-s) 50% / 0.18), transparent 70%)",
         }}
       />
 
@@ -39,15 +39,15 @@ export function Hero() {
             <span
               className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11.5px] font-medium tracking-wide"
               style={{
-                borderColor: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.28)",
-                background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.06)",
-                color: "hsl(var(--leadac-h) var(--leadac-s) 72%)",
+                borderColor: "hsl(var(--revint-h) var(--revint-s) 50% / 0.28)",
+                background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.06)",
+                color: "hsl(var(--revint-h) var(--revint-s) 72%)",
               }}
             >
               <span
                 aria-hidden
                 className="inline-block h-1.5 w-1.5 rounded-full"
-                style={{ background: "hsl(var(--leadac-h) var(--leadac-s) 60%)" }}
+                style={{ background: "hsl(var(--revint-h) var(--revint-s) 60%)" }}
               />
               For vertical SaaS teams selling to local business
             </span>
@@ -64,7 +64,7 @@ export function Hero() {
             </p>
 
             <p className="mt-4 text-[15px] md:text-[16px] leading-relaxed text-white/65 max-w-[48ch]">
-              LeadAC finds your next 200 local accounts, syncs them into
+              Revint finds your next 200 local accounts, syncs them into
               HubSpot, and learns from every won and lost deal you log. Built
               for vertical SaaS GTM teams selling into restaurant, HVAC,
               dental, legal, and field-service businesses.
@@ -75,10 +75,10 @@ export function Hero() {
                 <span
                   className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-semibold cursor-default select-none"
                   style={{
-                    background: "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.18)",
-                    color: "hsl(var(--leadac-h) var(--leadac-s) 78%)",
+                    background: "hsl(var(--revint-h) var(--revint-s) 50% / 0.18)",
+                    color: "hsl(var(--revint-h) var(--revint-s) 78%)",
                     border:
-                      "1px solid hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35)",
+                      "1px solid hsl(var(--revint-h) var(--revint-s) 50% / 0.35)",
                   }}
                   aria-disabled="true"
                 >
@@ -87,7 +87,7 @@ export function Hero() {
                     aria-hidden
                     className="inline-block h-1.5 w-1.5 rounded-full animate-pulse motion-reduce:animate-none"
                     style={{
-                      background: "hsl(var(--leadac-h) var(--leadac-s) 70%)",
+                      background: "hsl(var(--revint-h) var(--revint-s) 70%)",
                     }}
                   />
                 </span>
@@ -97,9 +97,9 @@ export function Hero() {
                   className="group inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14px] font-semibold text-black transition-shadow"
                   style={{
                     background:
-                      "linear-gradient(180deg, hsl(var(--leadac-h) var(--leadac-s) 72%) 0%, hsl(var(--leadac-h) var(--leadac-s) 58%) 100%)",
+                      "linear-gradient(180deg, hsl(var(--revint-h) var(--revint-s) 72%) 0%, hsl(var(--revint-h) var(--revint-s) 58%) 100%)",
                     boxShadow:
-                      "0 1px 0 rgba(255,255,255,0.4) inset, 0 12px 36px hsl(var(--leadac-h) var(--leadac-s) 50% / 0.35)",
+                      "0 1px 0 rgba(255,255,255,0.4) inset, 0 12px 36px hsl(var(--revint-h) var(--revint-s) 50% / 0.35)",
                   }}
                 >
                   Book a 20-min demo
@@ -133,7 +133,7 @@ export function Hero() {
               className="pointer-events-none absolute -inset-8 -z-10 rounded-[32px]"
               style={{
                 background:
-                  "radial-gradient(60% 60% at 50% 50%, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.12), transparent 70%)",
+                  "radial-gradient(60% 60% at 50% 50%, hsl(var(--revint-h) var(--revint-s) 50% / 0.12), transparent 70%)",
               }}
             />
             <LeadDetailBento />

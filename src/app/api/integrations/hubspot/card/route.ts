@@ -3,9 +3,9 @@
  *
  * HubSpot calls this endpoint to render a card on the contact/deal
  * record. We resolve the workspace from `portalId`, find the linked
- * lead, and return the LeadAC signal: temperature, best angle, risk,
+ * lead, and return the Revint signal: temperature, best angle, risk,
  * next action, plus an "Open Lead Sheet" action that deep-links into the
- * LeadAC lead detail.
+ * Revint lead detail.
  *
  * Auth: server-to-server from HubSpot. Verified by the v1 signature
  * (`X-HubSpot-Signature` = sha256(clientSecret + method + uri + body))
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
           width: 890,
           height: 748,
           uri: leadSheetUrl(""),
-          label: "Open in LeadAC",
+          label: "Open in Revint",
         },
       });
     }

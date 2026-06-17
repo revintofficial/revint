@@ -244,8 +244,8 @@ export function WebsiteIntelligencePanel({
             could likely still open it) */}
         {audit.crawlError === "BOT_BLOCKED_4XX" && (
           <div className="px-4 sm:px-5 pb-4">
-            <div className="rounded-xl border border-(--leadac-warning)/30 bg-(--leadac-warning)/10 px-3.5 py-2.5 text-[12.5px] text-(--leadac-text-2) flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-[var(--leadac-warning)] mt-0.5 shrink-0" />
+            <div className="rounded-xl border border-(--revint-warning)/30 bg-(--revint-warning)/10 px-3.5 py-2.5 text-[12.5px] text-(--revint-text-2) flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-[var(--revint-warning)] mt-0.5 shrink-0" />
               <span>
                 Site responded with {audit.httpStatus ?? "4xx"} to our crawler.
                 A real visitor can usually still open it — open the URL manually
@@ -385,10 +385,10 @@ function HeroSection({
 
   const scoreColor =
     scorePct >= 70
-      ? "text-[var(--leadac-success)]"
+      ? "text-[var(--revint-success)]"
       : scorePct >= 40
-      ? "text-[var(--leadac-warning)]"
-      : "text-[var(--leadac-error)]";
+      ? "text-[var(--revint-warning)]"
+      : "text-[var(--revint-error)]";
 
   const scoreLabel =
     scorePct >= 70
@@ -432,7 +432,7 @@ function HeroSection({
         className="absolute inset-0 opacity-60 pointer-events-none"
         style={{
           background:
-            "radial-gradient(circle at 20% 0%, hsl(var(--leadac-h) var(--leadac-s) 50% / 0.08), transparent 55%)",
+            "radial-gradient(circle at 20% 0%, hsl(var(--revint-h) var(--revint-s) 50% / 0.08), transparent 55%)",
         }}
         aria-hidden
       />
@@ -470,7 +470,7 @@ function HeroSection({
                 href={websiteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 mt-1 text-[13px] text-(--leadac-500) hover:text-(--leadac-400) hover:underline transition-colors max-w-full"
+                className="inline-flex items-center gap-1.5 mt-1 text-[13px] text-(--revint-500) hover:text-(--revint-400) hover:underline transition-colors max-w-full"
               >
                 <span className="truncate">{cleanUrl}</span>
                 <ExternalLink className="w-3 h-3 shrink-0" />
@@ -614,11 +614,11 @@ function KpiTile({
 }) {
   const color =
     accent === "ok"
-      ? "text-[var(--leadac-success)]"
+      ? "text-[var(--revint-success)]"
       : accent === "warn"
-      ? "text-[var(--leadac-warning)]"
+      ? "text-[var(--revint-warning)]"
       : accent === "bad"
-      ? "text-[var(--leadac-error)]"
+      ? "text-[var(--revint-error)]"
       : "text-white";
   return (
     <div className="rounded-xl bg-white/4 border border-white/8 p-3 text-center">
@@ -659,7 +659,7 @@ function Section({
         {typeof Icon === "function" && Icon.length === 0 ? (
           <Icon />
         ) : (
-          <Icon className="w-3.5 h-3.5 text-(--leadac-500)" />
+          <Icon className="w-3.5 h-3.5 text-(--revint-500)" />
         )}
         {label}
       </p>
@@ -684,10 +684,10 @@ function StatusChip({
       className="flex items-start gap-2 rounded-lg border px-2.5 py-2 transition-colors"
       style={{
         borderColor: active
-          ? "color-mix(in oklab, var(--leadac-success) 25%, transparent)"
+          ? "color-mix(in oklab, var(--revint-success) 25%, transparent)"
           : "rgba(255,255,255,0.07)",
         background: active
-          ? "color-mix(in oklab, var(--leadac-success) 6%, transparent)"
+          ? "color-mix(in oklab, var(--revint-success) 6%, transparent)"
           : "rgba(255,255,255,0.02)",
       }}
       title={hint}
@@ -695,7 +695,7 @@ function StatusChip({
       <Icon
         className="w-3.5 h-3.5 mt-0.5 shrink-0"
         style={{
-          color: active ? "var(--leadac-success)" : "rgba(255,255,255,0.3)",
+          color: active ? "var(--revint-success)" : "rgba(255,255,255,0.3)",
         }}
       />
       <div className="min-w-0">
@@ -703,7 +703,7 @@ function StatusChip({
           className="text-[12px] font-medium leading-tight"
           style={{
             color: active
-              ? "color-mix(in oklab, var(--leadac-success-soft) 95%, white)"
+              ? "color-mix(in oklab, var(--revint-success-soft) 95%, white)"
               : "rgba(255,255,255,0.55)",
           }}
         >
@@ -714,7 +714,7 @@ function StatusChip({
             className="text-[10.5px] mt-0.5 leading-snug"
             style={{
               color: active
-                ? "color-mix(in oklab, var(--leadac-success-soft) 70%, transparent)"
+                ? "color-mix(in oklab, var(--revint-success-soft) 70%, transparent)"
                 : "rgba(255,255,255,0.35)",
             }}
           >
@@ -874,7 +874,7 @@ function ConversionSection({ audit }: { audit: WebsiteAudit }) {
                 href={`mailto:${e}`}
                 className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11.5px] text-white/85 hover:bg-white/10 hover:border-white/20 transition-colors"
               >
-                <Mail className="w-3 h-3 text-(--leadac-500)" />
+                <Mail className="w-3 h-3 text-(--revint-500)" />
                 <span className="truncate max-w-[180px]">{e}</span>
               </a>
             ))}
@@ -995,7 +995,7 @@ function NicheProductFitSection({
 
       <div className="rounded-lg border border-white/5 bg-white/2 px-3 py-2.5">
         <div className="flex items-start gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-(--leadac-500) mt-0.5 shrink-0" />
+          <Sparkles className="w-3.5 h-3.5 text-(--revint-500) mt-0.5 shrink-0" />
           <div className="min-w-0">
             <p className="text-[10.5px] uppercase tracking-[0.08em] text-white/40 mb-1">
               Pitch angle
@@ -1030,18 +1030,18 @@ function ModuleChip({ verdict }: { verdict: ModuleVerdict }) {
     { border: string; bg: string; iconColor: string; labelColor: string; detailColor: string }
   > = {
     detected: {
-      border: "color-mix(in oklab, var(--leadac-success) 25%, transparent)",
-      bg: "color-mix(in oklab, var(--leadac-success) 6%, transparent)",
-      iconColor: "var(--leadac-success)",
-      labelColor: "color-mix(in oklab, var(--leadac-success-soft) 95%, white)",
-      detailColor: "color-mix(in oklab, var(--leadac-success-soft) 70%, transparent)",
+      border: "color-mix(in oklab, var(--revint-success) 25%, transparent)",
+      bg: "color-mix(in oklab, var(--revint-success) 6%, transparent)",
+      iconColor: "var(--revint-success)",
+      labelColor: "color-mix(in oklab, var(--revint-success-soft) 95%, white)",
+      detailColor: "color-mix(in oklab, var(--revint-success-soft) 70%, transparent)",
     },
     weak: {
-      border: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)",
-      bg: "color-mix(in oklab, var(--leadac-warning) 5%, transparent)",
-      iconColor: "var(--leadac-warning)",
-      labelColor: "color-mix(in oklab, var(--leadac-warning-soft) 95%, white)",
-      detailColor: "color-mix(in oklab, var(--leadac-warning-soft) 70%, transparent)",
+      border: "color-mix(in oklab, var(--revint-warning) 20%, transparent)",
+      bg: "color-mix(in oklab, var(--revint-warning) 5%, transparent)",
+      iconColor: "var(--revint-warning)",
+      labelColor: "color-mix(in oklab, var(--revint-warning-soft) 95%, white)",
+      detailColor: "color-mix(in oklab, var(--revint-warning-soft) 70%, transparent)",
     },
     opportunity: {
       border: "rgba(255,255,255,0.08)",
@@ -1211,27 +1211,27 @@ function RestaurantSignalsSection({
         const t = toneOf(s);
         const borderBg =
           t === "success"
-            ? { borderColor: "color-mix(in oklab, var(--leadac-success) 25%, transparent)", background: "color-mix(in oklab, var(--leadac-success) 6%, transparent)" }
+            ? { borderColor: "color-mix(in oklab, var(--revint-success) 25%, transparent)", background: "color-mix(in oklab, var(--revint-success) 6%, transparent)" }
             : t === "error"
-            ? { borderColor: "color-mix(in oklab, var(--leadac-error) 25%, transparent)", background: "color-mix(in oklab, var(--leadac-error) 5%, transparent)" }
+            ? { borderColor: "color-mix(in oklab, var(--revint-error) 25%, transparent)", background: "color-mix(in oklab, var(--revint-error) 5%, transparent)" }
             : t === "warning"
-            ? { borderColor: "color-mix(in oklab, var(--leadac-warning) 20%, transparent)", background: "color-mix(in oklab, var(--leadac-warning) 4%, transparent)" }
+            ? { borderColor: "color-mix(in oklab, var(--revint-warning) 20%, transparent)", background: "color-mix(in oklab, var(--revint-warning) 4%, transparent)" }
             : { borderColor: "rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)" };
         const labelColor =
           t === "success"
-            ? "color-mix(in oklab, var(--leadac-success-soft) 95%, white)"
+            ? "color-mix(in oklab, var(--revint-success-soft) 95%, white)"
             : t === "error"
-            ? "color-mix(in oklab, var(--leadac-error-soft) 95%, white)"
+            ? "color-mix(in oklab, var(--revint-error-soft) 95%, white)"
             : t === "warning"
-            ? "color-mix(in oklab, var(--leadac-warning-soft) 95%, white)"
+            ? "color-mix(in oklab, var(--revint-warning-soft) 95%, white)"
             : "rgba(255,255,255,0.8)";
         const detailColor =
           t === "success"
-            ? "color-mix(in oklab, var(--leadac-success-soft) 70%, transparent)"
+            ? "color-mix(in oklab, var(--revint-success-soft) 70%, transparent)"
             : t === "error"
-            ? "color-mix(in oklab, var(--leadac-error-soft) 75%, transparent)"
+            ? "color-mix(in oklab, var(--revint-error-soft) 75%, transparent)"
             : t === "warning"
-            ? "color-mix(in oklab, var(--leadac-warning-soft) 70%, transparent)"
+            ? "color-mix(in oklab, var(--revint-warning-soft) 70%, transparent)"
             : "rgba(255,255,255,0.45)";
         const Icon = s.present
           ? CircleCheck
@@ -1242,11 +1242,11 @@ function RestaurantSignalsSection({
           : Info;
         const iconColor =
           t === "success"
-            ? "var(--leadac-success)"
+            ? "var(--revint-success)"
             : t === "error"
-            ? "var(--leadac-error)"
+            ? "var(--revint-error)"
             : t === "warning"
-            ? "var(--leadac-warning)"
+            ? "var(--revint-warning)"
             : "rgba(255,255,255,0.3)";
         return (
           <div
@@ -1388,10 +1388,10 @@ function PerformanceSection({ audit }: { audit: WebsiteAudit }) {
     loadMs == null
       ? "text-white/60"
       : loadMs < 1500
-      ? "text-[var(--leadac-success)]"
+      ? "text-[var(--revint-success)]"
       : loadMs < 3500
-      ? "text-[var(--leadac-warning)]"
-      : "text-[var(--leadac-error)]";
+      ? "text-[var(--revint-warning)]"
+      : "text-[var(--revint-error)]";
 
   return (
     <div className="space-y-3.5">
@@ -1408,19 +1408,19 @@ function PerformanceSection({ audit }: { audit: WebsiteAudit }) {
           <div
             className="rounded-lg border px-3 py-2"
             style={{
-              background: "color-mix(in oklab, var(--leadac-error) 6%, transparent)",
-              borderColor: "color-mix(in oklab, var(--leadac-error) 25%, transparent)",
+              background: "color-mix(in oklab, var(--revint-error) 6%, transparent)",
+              borderColor: "color-mix(in oklab, var(--revint-error) 25%, transparent)",
             }}
           >
             <p
               className="text-[10.5px] uppercase tracking-[0.08em]"
-              style={{ color: "color-mix(in oklab, var(--leadac-error-soft) 80%, transparent)" }}
+              style={{ color: "color-mix(in oklab, var(--revint-error-soft) 80%, transparent)" }}
             >
               Broken links
             </p>
             <p
               className="text-[15px] font-semibold"
-              style={{ color: "var(--leadac-error-soft)" }}
+              style={{ color: "var(--revint-error-soft)" }}
             >
               {audit.brokenLinksCount}
             </p>
@@ -1437,9 +1437,9 @@ function PerformanceSection({ audit }: { audit: WebsiteAudit }) {
             {audit.performanceHints.map((hint, i) => (
               <li
                 key={i}
-                className="text-[12.5px] text-[var(--leadac-warning-soft)] flex items-start gap-1.5 leading-snug"
+                className="text-[12.5px] text-[var(--revint-warning-soft)] flex items-start gap-1.5 leading-snug"
               >
-                <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--leadac-warning)]" />
+                <Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--revint-warning)]" />
                 {hint}
               </li>
             ))}
@@ -1456,9 +1456,9 @@ function PerformanceSection({ audit }: { audit: WebsiteAudit }) {
             {audit.accessibilityIssues.map((issue, i) => (
               <li
                 key={i}
-                className="text-[12.5px] text-[var(--leadac-error-soft)] flex items-start gap-1.5 leading-snug"
+                className="text-[12.5px] text-[var(--revint-error-soft)] flex items-start gap-1.5 leading-snug"
               >
-                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--leadac-error)]" />
+                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--revint-error)]" />
                 {issue}
               </li>
             ))}
@@ -1478,20 +1478,20 @@ function ContentCheckSection({ result }: { result: ContentCheckResult }) {
   > = {
     placeholder: {
       label: "Placeholder / empty site",
-      color: "text-[var(--leadac-error)]",
-      bg: "bg-[color-mix(in_oklab,var(--leadac-error)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-error)_20%,transparent)]",
+      color: "text-[var(--revint-error)]",
+      bg: "bg-[color-mix(in_oklab,var(--revint-error)_6%,transparent)] border-[color-mix(in_oklab,var(--revint-error)_20%,transparent)]",
       Icon: CircleX,
     },
     basic: {
       label: "Basic site",
-      color: "text-[var(--leadac-warning)]",
-      bg: "bg-[color-mix(in_oklab,var(--leadac-warning)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-warning)_20%,transparent)]",
+      color: "text-[var(--revint-warning)]",
+      bg: "bg-[color-mix(in_oklab,var(--revint-warning)_6%,transparent)] border-[color-mix(in_oklab,var(--revint-warning)_20%,transparent)]",
       Icon: AlertTriangle,
     },
     developed: {
       label: "Developed site",
-      color: "text-[var(--leadac-success)]",
-      bg: "bg-[color-mix(in_oklab,var(--leadac-success)_6%,transparent)] border-[color-mix(in_oklab,var(--leadac-success)_20%,transparent)]",
+      color: "text-[var(--revint-success)]",
+      bg: "bg-[color-mix(in_oklab,var(--revint-success)_6%,transparent)] border-[color-mix(in_oklab,var(--revint-success)_20%,transparent)]",
       Icon: CircleCheck,
     },
     unreachable: {
@@ -1538,9 +1538,9 @@ function ContentCheckSection({ result }: { result: ContentCheckResult }) {
       </div>
 
       {result.builderDetected && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-(--leadac-500)/6 border border-(--leadac-500)/20">
-          <Info className="w-3.5 h-3.5 text-(--leadac-500) shrink-0" />
-          <span className="text-[12.5px] text-(--leadac-200)">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-(--revint-500)/6 border border-(--revint-500)/20">
+          <Info className="w-3.5 h-3.5 text-(--revint-500) shrink-0" />
+          <span className="text-[12.5px] text-(--revint-200)">
             Built with <strong className="text-white/90">{result.builderDetected}</strong>
           </span>
         </div>
@@ -1560,10 +1560,10 @@ function ContentCheckSection({ result }: { result: ContentCheckResult }) {
                 <span
                   className={`w-1.5 h-1.5 rounded-full shrink-0 ${
                     signal.status === "good"
-                      ? "bg-[var(--leadac-success)]"
+                      ? "bg-[var(--revint-success)]"
                       : signal.status === "warning"
-                      ? "bg-[var(--leadac-warning)]"
-                      : "bg-[var(--leadac-error)]"
+                      ? "bg-[var(--revint-warning)]"
+                      : "bg-[var(--revint-error)]"
                   }`}
                 />
                 <span className="text-[12.5px] font-medium text-white/80 truncate">
@@ -1664,7 +1664,7 @@ function WebsiteSearchInlineCard({ result }: { result: WebsiteSearchResult }) {
     <Card>
       <CardContent className="py-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Search className="w-4 h-4 text-(--leadac-500)" />
+          <Search className="w-4 h-4 text-(--revint-500)" />
           <p className="text-[13px] font-medium text-white/85">
             Web search results
           </p>
@@ -1677,17 +1677,17 @@ function WebsiteSearchInlineCard({ result }: { result: WebsiteSearchResult }) {
             <div
               className="rounded-lg border px-3 py-2 flex items-center gap-2"
               style={{
-                borderColor: "color-mix(in oklab, var(--leadac-success) 20%, transparent)",
-                background: "color-mix(in oklab, var(--leadac-success) 6%, transparent)",
+                borderColor: "color-mix(in oklab, var(--revint-success) 20%, transparent)",
+                background: "color-mix(in oklab, var(--revint-success) 6%, transparent)",
               }}
             >
               <CircleCheck
                 className="w-4 h-4 shrink-0"
-                style={{ color: "var(--leadac-success)" }}
+                style={{ color: "var(--revint-success)" }}
               />
               <p
                 className="text-[12.5px]"
-                style={{ color: "color-mix(in oklab, var(--leadac-success-soft) 95%, white)" }}
+                style={{ color: "color-mix(in oklab, var(--revint-success-soft) 95%, white)" }}
               >
                 {result.websites.length} website(s) found — first match saved.
               </p>
@@ -1704,7 +1704,7 @@ function WebsiteSearchInlineCard({ result }: { result: WebsiteSearchResult }) {
                         href={w.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[12.5px] font-medium text-(--leadac-500) hover:underline break-all"
+                        className="text-[12.5px] font-medium text-(--revint-500) hover:underline break-all"
                       >
                         {w.url}
                       </a>

@@ -155,7 +155,7 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mic className="w-5 h-5 text-(--leadac-300)" />
+            <Mic className="w-5 h-5 text-(--revint-300)" />
             Voice notes
           </CardTitle>
         </CardHeader>
@@ -173,7 +173,7 @@ export function VoiceNotesPanel({ leadId }: { leadId: string }) {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <Mic className="w-5 h-5 text-(--leadac-300)" />
+            <Mic className="w-5 h-5 text-(--revint-300)" />
             Voice notes
           </CardTitle>
           <p className="text-xs text-white/30 mt-1">

@@ -44,7 +44,7 @@ export async function generateMetadata({
   if (!r) return buildMetadata({ path: `/resources/${slug}`, title: "Resource", description: "Resource" });
   return buildMetadata({
     path: `/resources/${r.slug}`,
-    title: `${r.title} — LeadAC ${r.kind}`,
+    title: `${r.title} — Revint ${r.kind}`,
     description: r.summary,
   });
 }
@@ -75,7 +75,7 @@ export default async function ResourceDetailPage({
       <JsonLd
         id="ld-bc"
         data={breadcrumbSchema([
-          { name: "LeadAC", url: "/" },
+          { name: "Revint", url: "/" },
           { name: "Resources", url: "/resources" },
           { name: resource.title, url: `/resources/${resource.slug}` },
         ])}

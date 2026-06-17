@@ -50,7 +50,7 @@ export function OneWeek() {
       id="one-week"
       eyebrow="From signature to first list"
       headline="Connect your CRM. Get a usable list inside an hour."
-      sub="We are not asking your team to migrate, learn a new app, or change their cadence. LeadAC reads what is already in your CRM and writes the enriched accounts back into the same records your team opens every morning."
+      sub="We are not asking your team to migrate, learn a new app, or change their cadence. Revint reads what is already in your CRM and writes the enriched accounts back into the same records your team opens every morning."
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {STEPS.map((step) => {
@@ -58,22 +58,22 @@ export function OneWeek() {
           return (
             <article
               key={step.number}
-              className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--leadac-h)_var(--leadac-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]"
+              className="rounded-2xl border border-white/[0.06] bg-[hsl(var(--revint-h)_var(--revint-ns)_9%)] p-6 transition-colors hover:border-white/[0.12]"
             >
               <div className="flex items-center gap-3 mb-5">
                 <span
                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.06]"
                   style={{
                     background:
-                      "hsl(var(--leadac-h) var(--leadac-s) 50% / 0.08)",
-                    color: "hsl(var(--leadac-h) var(--leadac-s) 72%)",
+                      "hsl(var(--revint-h) var(--revint-s) 50% / 0.08)",
+                    color: "hsl(var(--revint-h) var(--revint-s) 72%)",
                   }}
                 >
                   <Icon className="h-4 w-4" />
                 </span>
                 <span
                   className="text-[11px] font-mono font-semibold tracking-wider"
-                  style={{ color: "hsl(var(--leadac-h) var(--leadac-s) 70%)" }}
+                  style={{ color: "hsl(var(--revint-h) var(--revint-s) 70%)" }}
                 >
                   {step.number}
                 </span>

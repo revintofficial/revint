@@ -1,7 +1,7 @@
 /**
  * Booking detected — fires when crawl finds an embedded booking system
  * (Calendly / Cal.com / Setmore / etc.) on a lead's site. This is
- * actually *negative* signal for the core Leadac AI pitch ("modernize
+ * actually *negative* signal for the core Revint pitch ("modernize
  * your site"), so the alert tells the owner to DROP the lead from the
  * "no booking" segment rather than flagging it as hot.
  *

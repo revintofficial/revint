@@ -27,7 +27,7 @@ interface WelcomeEmailProps {
 
 const copy = {
   tr: {
-    subject: (name: string) => `${name}, Leadac AI hoş geldin`,
+    subject: (name: string) => `${name}, Revint hoş geldin`,
     preview: "Hesabın hazır. İlk lead'ini bulmaya geç.",
     eyebrow: "Hesap hazır",
     heading: (name: string) => `Hoş geldin${name ? `, ${name}` : ""}`,
@@ -41,10 +41,10 @@ const copy = {
     ctaLabel: "Pano'ya git",
     secondaryLabel: "Dokümantasyon",
     footer:
-      "Soru, feedback ya da takıldığın bir yer olursa bu maile doğrudan cevap verebilirsin — hello@leadacai.com'a düşer.",
+      "Soru, feedback ya da takıldığın bir yer olursa bu maile doğrudan cevap verebilirsin — hello@revint.dev'a düşer.",
   },
   en: {
-    subject: (name: string) => `${name}, welcome to Leadac AI`,
+    subject: (name: string) => `${name}, welcome to Revint`,
     preview: "Your account is ready. Find your first lead.",
     eyebrow: "Account ready",
     heading: (name: string) => `Welcome${name ? `, ${name}` : ""}`,
@@ -58,7 +58,7 @@ const copy = {
     ctaLabel: "Open dashboard",
     secondaryLabel: "Docs",
     footer:
-      "Questions or stuck anywhere? Reply directly to this email — it lands at hello@leadacai.com.",
+      "Questions or stuck anywhere? Reply directly to this email — it lands at hello@revint.dev.",
   },
 } as const;
 

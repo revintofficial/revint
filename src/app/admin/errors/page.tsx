@@ -41,10 +41,10 @@ export default async function AdminErrorsPage({
     <div className="space-y-6">
       <header className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--leadac-text-1)]">
+          <h1 className="text-2xl font-semibold text-[var(--revint-text-1)]">
             Errors &amp; Web Vitals
           </h1>
-          <p className="mt-1 text-sm text-[var(--leadac-text-2)]">
+          <p className="mt-1 text-sm text-[var(--revint-text-2)]">
             JS errors captured client-side plus Core Web Vitals from the
             existing beacon.
           </p>
@@ -53,31 +53,31 @@ export default async function AdminErrorsPage({
       </header>
 
       <section>
-        <h2 className="text-sm font-medium text-[var(--leadac-text-1)] mb-2">
+        <h2 className="text-sm font-medium text-[var(--revint-text-1)] mb-2">
           Web Vitals (last 30d sample)
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {vitals.map((v) => (
             <div
               key={v.metric}
-              className="rounded-xl border border-[var(--leadac-border)] bg-[var(--leadac-card)] p-4"
+              className="rounded-xl border border-[var(--revint-border)] bg-[var(--revint-card)] p-4"
             >
-              <div className="text-xs uppercase tracking-wider text-[var(--leadac-text-3)]">
+              <div className="text-xs uppercase tracking-wider text-[var(--revint-text-3)]">
                 {v.metric}
               </div>
-              <div className="mt-1 text-xl font-semibold text-[var(--leadac-text-1)] tabular-nums">
+              <div className="mt-1 text-xl font-semibold text-[var(--revint-text-1)] tabular-nums">
                 {fmtVital(v.metric, v.p75)}
               </div>
-              <div className="mt-1 text-[10px] text-[var(--leadac-text-3)] tabular-nums">
+              <div className="mt-1 text-[10px] text-[var(--revint-text-3)] tabular-nums">
                 p50 {fmtVital(v.metric, v.p50)} · p95 {fmtVital(v.metric, v.p95)}
               </div>
-              <div className="mt-2 text-[10px] text-[var(--leadac-text-3)]">
+              <div className="mt-2 text-[10px] text-[var(--revint-text-3)]">
                 {formatNumber(v.count)} samples · {formatPct(v.goodPct, 0)} good
               </div>
             </div>
           ))}
           {vitals.length === 0 && (
-            <div className="col-span-full text-sm text-[var(--leadac-text-3)]">
+            <div className="col-span-full text-sm text-[var(--revint-text-3)]">
               No vitals captured yet (Redis empty or unreachable).
             </div>
           )}
@@ -85,12 +85,12 @@ export default async function AdminErrorsPage({
       </section>
 
       <section>
-        <h2 className="text-sm font-medium text-[var(--leadac-text-1)] mb-2">
+        <h2 className="text-sm font-medium text-[var(--revint-text-1)] mb-2">
           Client errors ({formatNumber(errors.length)} unique)
         </h2>
-        <div className="rounded-xl border border-[var(--leadac-border)] bg-[var(--leadac-card)] overflow-hidden">
+        <div className="rounded-xl border border-[var(--revint-border)] bg-[var(--revint-card)] overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-[var(--leadac-hover)]/40 text-xs uppercase tracking-wider text-[var(--leadac-text-3)]">
+            <thead className="bg-[var(--revint-hover)]/40 text-xs uppercase tracking-wider text-[var(--revint-text-3)]">
               <tr>
                 <th className="text-left px-3 py-2">Message</th>
                 <th className="text-left px-3 py-2">Source</th>
@@ -100,12 +100,12 @@ export default async function AdminErrorsPage({
                 <th className="text-left px-3 py-2">Sample</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--leadac-border)]">
+            <tbody className="divide-y divide-[var(--revint-border)]">
               {errors.length === 0 && (
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-4 py-8 text-center text-sm text-[var(--leadac-text-3)]"
+                    className="px-4 py-8 text-center text-sm text-[var(--revint-text-3)]"
                   >
                     No errors captured. Either the site is bulletproof or no
                     one has visited yet.
@@ -113,11 +113,11 @@ export default async function AdminErrorsPage({
                 </tr>
               )}
               {errors.map((e, i) => (
-                <tr key={i} className="hover:bg-[var(--leadac-hover)]/40">
+                <tr key={i} className="hover:bg-[var(--revint-hover)]/40">
                   <td className="px-3 py-2 align-top">
-                    <code className="text-[var(--leadac-error)]">{e.message}</code>
+                    <code className="text-[var(--revint-error)]">{e.message}</code>
                   </td>
-                  <td className="px-3 py-2 align-top text-xs text-[var(--leadac-text-3)] max-w-[260px] truncate">
+                  <td className="px-3 py-2 align-top text-xs text-[var(--revint-text-3)] max-w-[260px] truncate">
                     {e.source ?? "—"}
                   </td>
                   <td className="px-3 py-2 align-top text-right tabular-nums">
@@ -126,13 +126,13 @@ export default async function AdminErrorsPage({
                   <td className="px-3 py-2 align-top text-right tabular-nums">
                     {formatNumber(e.sessions)}
                   </td>
-                  <td className="px-3 py-2 align-top text-xs text-[var(--leadac-text-3)]">
+                  <td className="px-3 py-2 align-top text-xs text-[var(--revint-text-3)]">
                     {relativeTime(e.lastSeen)}
                   </td>
                   <td className="px-3 py-2 align-top">
                     <Link
                       href={`/admin/sessions/${e.exampleSessionId}`}
-                      className="text-xs text-[var(--leadac-300)] hover:text-[var(--leadac-200)]"
+                      className="text-xs text-[var(--revint-300)] hover:text-[var(--revint-200)]"
                     >
                       Open session →
                     </Link>

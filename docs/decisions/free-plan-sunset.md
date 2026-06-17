@@ -9,7 +9,7 @@
 
 ## Context
 
-The web-presence overhaul (`.cursor/plans/web_presence_b2b_overhaul_cf071b64.plan.md`) reframes LeadAC as B2B-only — local lead intelligence for agency owners, not an AI tool for hype tourists. The architecture supports this audience already (multi-tenant workspaces, agency tier, ServicePackage, opener writer, sales-opportunity-scorer). The marketing site, signup flow, and FREE plan are the parts catching up.
+The web-presence overhaul (`.cursor/plans/web_presence_b2b_overhaul_cf071b64.plan.md`) reframes Revint as B2B-only — local lead intelligence for agency owners, not an AI tool for hype tourists. The architecture supports this audience already (multi-tenant workspaces, agency tier, ServicePackage, opener writer, sales-opportunity-scorer). The marketing site, signup flow, and FREE plan are the parts catching up.
 
 The FREE plan is the one piece of the surface that contradicts the new positioning loudest. It signals "free toy to play with" to the wrong audience and "tourist product" to the right audience.
 

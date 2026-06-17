@@ -34,7 +34,7 @@ import {
   type WebsiteMockupSections,
   type WebsiteMockupPromptInput,
 } from "@/lib/prompts/website-mockup-prompt";
-import { renderLeadacShowcase } from "@/lib/mockups/renderers/leadac-showcase";
+import { renderRevintShowcase } from "@/lib/mockups/renderers/leadac-showcase";
 import {
   renderKuyumcuShowcase,
   type KuyumcuVariant,
@@ -96,7 +96,7 @@ export const CURRENT_TEMPLATE_IDS: ReadonlySet<string> = new Set([
  * pass exactly the same input shape and don't have to know whether
  * the underlying renderer wants a `variant` field. The
  * `KuyumcuShowcaseRenderInput` is a strict superset of
- * `LeadacShowcaseRenderInput`, so the unified input is safe.
+ * `RevintShowcaseRenderInput`, so the unified input is safe.
  */
 export type MockupRenderInput = {
   businessName: string;
@@ -112,7 +112,7 @@ export type MockupRenderInput = {
   secondaryHex?: string | null;
   workspaceName?: string;
   branding?: WorkspaceBranding | null;
-  showLeadacCredit?: boolean;
+  showRevintCredit?: boolean;
   lang: string;
   nicheLabel?: string | null;
   nicheSlug?: string | null;
@@ -148,7 +148,7 @@ export function resolveMockupRenderer(args: {
 
   return {
     templateId: SHOWCASE_TEMPLATE_ID,
-    render: (input) => renderLeadacShowcase(input),
+    render: (input) => renderRevintShowcase(input),
   };
 }
 
