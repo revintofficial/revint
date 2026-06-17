@@ -11,8 +11,29 @@ const PUBLIC_ROUTES = new Set([
 
 const AUTH_ROUTES = new Set(["/login", "/signup"]);
 
+/**
+ * Return the cookie `domain` attribute that lets a Supabase auth cookie
+ * issued on any `*.revint.dev` host be visible to its siblings
+ * (`app.`, `admin.`, apex). Without this every subdomain would have its
+ * own isolated session and post-login redirects between hosts would
+ * dead-end in a `/login` loop.
+ *
+ * For localhost, Vercel previews, and any host outside the revint.dev
+ * zone we return `undefined` so the browser falls back to host-only
+ * cookies — those environments don't share a parent.
+ */
+function sharedCookieDomain(request: NextRequest): string | undefined {
+  const host = request.headers.get("host")?.toLowerCase().split(":")[0];
+  if (!host) return undefined;
+  if (host === "revint.dev" || host.endsWith(".revint.dev")) {
+    return ".revint.dev";
+  }
+  return undefined;
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const cookieDomain = sharedCookieDomain(request);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,9 +48,12 @@ export async function updateSession(request: NextRequest) {
             request.cookies.set(name, value)
           );
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => {
+            const merged = cookieDomain
+              ? { ...options, domain: cookieDomain }
+              : options;
+            response.cookies.set(name, value, merged);
+          });
         },
       },
     }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /**
@@ -34,6 +35,13 @@ type HeroProps = {
   };
   /** Optional right column slot — pre-call brief preview, sample card, diagram. */
   visual?: React.ReactNode;
+  /**
+   * Optional full-bleed background image for the centered layout. Rendered
+   * behind the copy with a brand-indigo scrim + a cream fade at the bottom so
+   * the hero reads as a dark band on the otherwise light page while the text
+   * stays legible. Only honored when `layout="center"`.
+   */
+  backgroundImage?: string;
   /** Posture. Defaults to "split" for backward compatibility. */
   layout?: "split" | "center";
   className?: string;
@@ -48,6 +56,7 @@ export function Hero({
   secondaryCta,
   anchor,
   visual,
+  backgroundImage,
   layout = "split",
   className,
 }: HeroProps) {
@@ -57,11 +66,34 @@ export function Hero({
     return (
       <section
         className={cn(
-          "site-section pt-28 pb-12 md:pt-40 md:pb-16 lg:pt-48",
+          "site-section relative overflow-hidden",
+          backgroundImage
+            ? "pt-0 pb-16 md:pb-24"
+            : "pt-28 pb-16 md:pt-40 md:pb-24 lg:pt-48",
           className,
         )}
       >
-        <div className="site-container">
+        {backgroundImage ? (
+          <div className="relative w-full">
+            <Image
+              src={backgroundImage}
+              alt=""
+              width={1024}
+              height={390}
+              priority
+              sizes="100vw"
+              className="h-auto w-full"
+            />
+            {/* Melt the bottom edge into the cream page below */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(to_bottom,transparent,hsl(42_46%_92%))] md:h-24" />
+          </div>
+        ) : null}
+        <div
+          className={cn(
+            "site-container",
+            backgroundImage && "pt-12 md:pt-16",
+          )}
+        >
           <div className="site-blur-up mx-auto flex max-w-3xl flex-col items-center text-center">
             {anchor ? (
               <div className="mb-7 inline-flex items-center gap-2.5 rounded-full border border-ink-3 bg-ink-1/80 px-3.5 py-1 backdrop-blur-sm">

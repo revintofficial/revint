@@ -14,21 +14,25 @@
  * --------------------------------------------------------------------- */
 
 :root {
-  /* Ink / paper / signal — single source of truth for (site)/* */
-  --ink-0: 220 10% 4%;     /* page background — near-black with cool tint */
-  --ink-1: 220 10% 7%;     /* card / surface */
-  --ink-2: 220 10% 11%;    /* elevated surface */
-  --ink-3: 220 10% 18%;    /* divider / border */
-  --ink-4: 220 10% 28%;    /* muted text on dark */
+  /* Ink / paper / signal — single source of truth for (site)/*
+   * Light theme (2026 rebrand). Logo primary = deep indigo 170C79.
+   *   EFE3CA cream        → surfaces / page bg (--ink-*)
+   *   170C79 deep indigo  → text ramp + accent (--paper-* / --signal)
+   *   56B6C6 teal         → soft accent (--signal-soft) */
+  --ink-0: 42 46% 98%;     /* page background — warm cream */
+  --ink-1: 40 52% 98%;     /* card / surface — near-white, lifts off cream */
+  --ink-2: 42 38% 89%;     /* elevated / hover / table header — deeper cream */
+  --ink-3: 244 24% 80%;    /* divider / border — light indigo-gray */
+  --ink-4: 244 16% 52%;    /* muted text / strong border on light */
 
-  --paper-0: 216 14% 96%;  /* primary text (≈ alpha 0.96) */
-  --paper-1: 216 14% 88%;  /* secondary text */
-  --paper-2: 216 14% 70%;  /* tertiary text */
-  --paper-3: 216 14% 48%;  /* muted text */
+  --paper-0: 246 55% 18%;  /* primary text — deep indigo near-black */
+  --paper-1: 246 30% 30%;  /* secondary text */
+  --paper-2: 246 18% 44%;  /* tertiary text */
+  --paper-3: 246 12% 56%;  /* muted text */
 
-  --signal: 218 85% 58%;        /* royal azure — single accent */
-  --signal-soft: 216 60% 74%;   /* soft variant for body text */
-  --signal-glow: 218 85% 58% / 0.28;
+  --signal: 246 78% 32%;        /* deep indigo (170C79) — single accent */
+  --signal-soft: 188 48% 42%;   /* teal (56B6C6) — soft accent */
+  --signal-glow: 246 78% 32% / 0.28;
 
   --site-success: 152 48% 50%;
   --site-warning: 38 70% 52%;
@@ -1192,7 +1196,7 @@ button, a, .cursor-pointer {
 /* Pulse used on the signal lamp icon — slow, optical */
 @keyframes signal-pulse {
   0%, 100% { box-shadow: 0 0 0 0 hsl(var(--signal-glow)); }
-  50%      { box-shadow: 0 0 0 8px hsl(218 85% 58% / 0); }
+  50%      { box-shadow: 0 0 0 8px hsl(246 78% 32% / 0); }
 }
 .site-signal-dot {
   width: 8px;
@@ -1223,13 +1227,13 @@ button, a, .cursor-pointer {
   gap: 10px;
   padding: 12px 20px;
   background: hsl(var(--signal));
-  color: hsl(220 10% 5%);
+  color: hsl(42 46% 96%);
   border-radius: 8px;
   font-weight: 600;
   font-size: var(--site-text-15);
   letter-spacing: -0.01em;
   transition: transform 160ms ease, box-shadow 160ms ease;
-  border: 1px solid hsl(218 70% 48%);
+  border: 1px solid hsl(246 70% 24%);
 }
 .site-btn-primary:hover {
   transform: translateY(-1px);

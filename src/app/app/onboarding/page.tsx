@@ -112,7 +112,7 @@ function PackageEditor({
       <Input
         value={pkg.priceLabel}
         onChange={(e) => onChange({ ...pkg, priceLabel: e.target.value })}
-        placeholder="Price (e.g. £500-800 or From £999)"
+        placeholder="Price (e.g. Â£500-800 or From Â£999)"
       />
       <div className="space-y-2">
         <p className="text-[11px] text-white/40 uppercase tracking-wide font-medium">Features</p>
@@ -160,22 +160,22 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
 
-  // Step 1 — Workspace name
+  // Step 1 â€” Workspace name
   const [workspaceName, setWorkspaceName] = useState("");
 
-  // Step 2 — Country
+  // Step 2 â€” Country
   const [country, setCountry] = useState("");
 
-  // Step 3 — Offer (all 11 fields)
+  // Step 3 â€” Offer (all 11 fields)
   const [offer, setOffer] = useState<OfferContext>(EMPTY_OFFER);
 
-  // Step 4 — Packages
+  // Step 4 â€” Packages
   const [packages, setPackages] = useState<NewPackage[]>([]);
 
-  // Step 5 — Team invites
+  // Step 5 â€” Team invites
   const [inviteEmails, setInviteEmails] = useState<string[]>([""]);
 
-  // Step 6 — Discovery
+  // Step 6 â€” Discovery
   const [niche, setNiche] = useState("");
   const [customNiche, setCustomNiche] = useState("");
   const [city, setCity] = useState("");
@@ -390,7 +390,7 @@ export default function OnboardingPage() {
             onClick: advance,
             disabled: !workspaceName.trim() || saving,
             busy: saving,
-            busyLabel: "Saving…",
+            busyLabel: "Savingâ€¦",
           },
         }
       : step === 2
@@ -400,7 +400,7 @@ export default function OnboardingPage() {
               onClick: advance,
               disabled: !country || saving,
               busy: saving,
-              busyLabel: "Saving…",
+              busyLabel: "Savingâ€¦",
             },
             secondary: { label: "Back", onClick: goBack },
           }
@@ -411,7 +411,7 @@ export default function OnboardingPage() {
                 onClick: advance,
                 disabled: saving,
                 busy: saving,
-                busyLabel: "Saving…",
+                busyLabel: "Savingâ€¦",
               },
               secondary: { label: "Back", onClick: goBack },
             }
@@ -422,7 +422,7 @@ export default function OnboardingPage() {
                   onClick: advance,
                   disabled: saving,
                   busy: saving,
-                  busyLabel: "Saving…",
+                  busyLabel: "Savingâ€¦",
                 },
                 secondary: { label: "Back", onClick: goBack },
               }
@@ -433,7 +433,7 @@ export default function OnboardingPage() {
                     onClick: advance,
                     disabled: saving,
                     busy: saving,
-                    busyLabel: "Sending…",
+                    busyLabel: "Sendingâ€¦",
                   },
                   secondary: { label: "Back", onClick: goBack },
                 }
@@ -443,7 +443,7 @@ export default function OnboardingPage() {
                     onClick: handleDiscover,
                     disabled: !effectiveNiche || !city.trim() || running,
                     busy: running,
-                    busyLabel: "Discovering…",
+                    busyLabel: "Discoveringâ€¦",
                   },
                   secondary: { label: "Back", onClick: goBack },
                 };
@@ -456,7 +456,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen flex flex-col md:items-center md:justify-center md:p-6">
       {/* ------------------------------------------------------------- */}
-      {/* Phone-only top bar — back chevron, step counter, progress bar  */}
+      {/* Phone-only top bar â€” back chevron, step counter, progress bar  */}
       {/* ------------------------------------------------------------- */}
       <header
         className="md:hidden sticky top-0 z-20 safe-pt"
@@ -507,7 +507,7 @@ export default function OnboardingPage() {
           </div>
           <div style={{ width: "var(--touch-target-min)" }} aria-hidden="true" />
         </div>
-        {/* Slim progress strip — accessible-name applied via aria-label below */}
+        {/* Slim progress strip â€” accessible-name applied via aria-label below */}
         <div
           role="progressbar"
           aria-valuemin={0}
@@ -581,7 +581,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* Step body — phone full-bleed, tablet+ inside Card  */}
+      {/* Step body â€” phone full-bleed, tablet+ inside Card  */}
       {/* ------------------------------------------------------------- */}
       <main
         id="onboarding-step-body"
@@ -672,7 +672,7 @@ export default function OnboardingPage() {
                   {actions.primary.busy ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      {actions.primary.busyLabel ?? "Working…"}
+                      {actions.primary.busyLabel ?? "Workingâ€¦"}
                     </>
                   ) : (
                     <>
@@ -698,7 +698,7 @@ export default function OnboardingPage() {
                   onClick={skipAndComplete}
                   className="w-full text-[11.5px] text-white/30 hover:text-white/50 transition-colors"
                 >
-                  Skip — I&apos;ll discover leads later
+                  Skip â€” I&apos;ll discover leads later
                 </button>
               )}
             </CardContent>
@@ -728,7 +728,7 @@ export default function OnboardingPage() {
           {actions.primary.busy ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              {actions.primary.busyLabel ?? "Working…"}
+              {actions.primary.busyLabel ?? "Workingâ€¦"}
             </>
           ) : (
             <>
@@ -755,7 +755,7 @@ export default function OnboardingPage() {
             className="w-full text-center mt-2 py-1 text-[12.5px]"
             style={{ color: "var(--revint-text-3)" }}
           >
-            Skip — I&apos;ll discover leads later
+            Skip â€” I&apos;ll discover leads later
           </button>
         )}
       </div>
@@ -764,7 +764,7 @@ export default function OnboardingPage() {
 }
 
 // ---------------------------------------------------------------------------
-// StepBody — content for each step, rendered identically on phone + tablet so
+// StepBody â€” content for each step, rendered identically on phone + tablet so
 // the tablet card and the phone full-bleed layout never drift.
 // ---------------------------------------------------------------------------
 
@@ -850,7 +850,7 @@ function StepBody(props: StepBodyProps) {
           </label>
           <Select value={country} onValueChange={setCountry}>
             <SelectTrigger id="onboarding-country">
-              <SelectValue placeholder="Select a country…" />
+              <SelectValue placeholder="Select a countryâ€¦" />
             </SelectTrigger>
             <SelectContent>
               {COUNTRIES.map((c) => (
@@ -995,7 +995,7 @@ function StepBody(props: StepBodyProps) {
             }}
           >
             <SelectTrigger id="onboarding-niche">
-              <SelectValue placeholder="Choose a business type…" />
+              <SelectValue placeholder="Choose a business typeâ€¦" />
             </SelectTrigger>
             <SelectContent>
               {NICHES.map((n) => (

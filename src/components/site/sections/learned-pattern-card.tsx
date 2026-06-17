@@ -47,30 +47,30 @@ export function LearnedPatternCard({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-2xl border border-paper-0/15 bg-[linear-gradient(180deg,hsl(216_14%_95%/0.96),hsl(216_14%_86%/0.94))] text-ink-0 shadow-2xl",
+        "overflow-hidden rounded-2xl border border-paper-0/15 bg-[linear-gradient(180deg,hsl(40_52%_99%/0.97),hsl(42_40%_94%/0.95))] text-paper-0 shadow-2xl",
         className,
       )}
     >
-      <div className="flex items-center justify-between border-b border-ink-0/10 px-5 py-3">
+      <div className="flex items-center justify-between border-b border-paper-0/10 px-5 py-3">
         <div className="flex items-center gap-2">
-          <Brain className="h-4 w-4 text-ink-0/70" />
-          <div className="site-mono text-[12px] uppercase tracking-wider text-ink-0/60">
+          <Brain className="h-4 w-4 text-paper-0/70" />
+          <div className="site-mono text-[12px] uppercase tracking-wider text-paper-0/60">
             Revint memory · learned pattern
           </div>
         </div>
-        <span className="site-mono rounded-full border border-ink-0/20 bg-ink-0/5 px-2.5 py-0.5 text-[11px] uppercase tracking-wider text-ink-0/70">
+        <span className="site-mono rounded-full border border-paper-0/20 bg-paper-0/5 px-2.5 py-0.5 text-[11px] uppercase tracking-wider text-paper-0/70">
           Evidence {confidence}
         </span>
       </div>
 
       <div className={cn("px-5 py-5", compact && "py-4")}>
-        <div className="text-[18px] font-medium text-ink-0">{patternId}</div>
+        <div className="text-[18px] font-medium text-paper-0">{patternId}</div>
 
         <div className="mt-3 flex flex-wrap gap-1.5">
           {signals.map((s) => (
             <span
               key={s}
-              className="inline-flex items-center rounded-full border border-ink-0/15 bg-ink-0/5 px-3 py-1 text-[12px] leading-none text-ink-0"
+              className="inline-flex items-center rounded-full border border-paper-0/15 bg-paper-0/5 px-3 py-1 text-[12px] leading-none text-paper-0"
             >
               {s}
             </span>
@@ -82,12 +82,12 @@ export function LearnedPatternCard({
             {stats.map((s) => (
               <div
                 key={s.label}
-                className="rounded-md border border-ink-0/10 bg-ink-0/3 px-3 py-2 text-center"
+                className="rounded-md border border-paper-0/10 bg-paper-0/3 px-3 py-2 text-center"
               >
-                <div className="site-mono text-[18px] text-ink-0">
+                <div className="site-mono text-[18px] text-paper-0">
                   {s.value}
                 </div>
-                <div className="mt-0.5 text-[11px] uppercase tracking-wider text-ink-0/55">
+                <div className="mt-0.5 text-[11px] uppercase tracking-wider text-paper-0/55">
                   {s.label}
                 </div>
               </div>
@@ -97,14 +97,14 @@ export function LearnedPatternCard({
 
         <div className="mt-4">
           <div className="flex items-baseline justify-between">
-            <span className="text-[12px] uppercase tracking-wider text-ink-0/55">
+            <span className="text-[12px] uppercase tracking-wider text-paper-0/55">
               Win rate (decided)
             </span>
-            <span className="site-mono text-[15px] font-medium text-ink-0">
+            <span className="site-mono text-[15px] font-medium text-paper-0">
               {winRate}%
             </span>
           </div>
-          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-ink-0/10">
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-paper-0/10">
             <div
               className="h-full rounded-full bg-signal"
               style={{ width: `${Math.max(0, Math.min(100, winRate))}%` }}
@@ -113,7 +113,7 @@ export function LearnedPatternCard({
         </div>
 
         {!compact && footnote && (
-          <p className="mt-4 text-[13px] leading-relaxed text-ink-0/70">
+          <p className="mt-4 text-[13px] leading-relaxed text-paper-0/70">
             {footnote}
           </p>
         )}

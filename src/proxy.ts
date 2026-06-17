@@ -105,11 +105,14 @@ function redirectToHost(
  *   - apex    → everything except `/app/*` and `/admin/*` (those redirect
  *               to their subdomains so old bookmarks keep working)
  *
- * `/api/*`, `/auth/*`, `/_next/*`, static assets, and `/m/*` (public
- * mockup viewer) are accepted on every host so external integrations
- * (Stripe / HubSpot / Apify webhooks, Supabase auth callbacks, cold-
- * email mockup links) keep working regardless of which subdomain they
- * were configured against during the rename window.
+ * `/api/*`, `/auth/*`, `/_next/*`, static assets, `/m/*` (public mockup
+ * viewer), `/login`, `/signup`, and `/legal/*` are accepted on every
+ * host. The first batch is required so external integrations (Stripe /
+ * HubSpot / Apify webhooks, Supabase auth callbacks, cold-email mockup
+ * links) keep working regardless of which subdomain they were configured
+ * against during the rename window. The auth/legal batch keeps session
+ * cookies bound to a single subdomain (cookies are scoped to
+ * `.revint.dev` so siblings see each other's session).
  */
 function enforceHostBoundary(
   request: NextRequest,
@@ -119,6 +122,14 @@ function enforceHostBoundary(
   const { pathname } = request.nextUrl;
 
   // Always-allowed prefixes — these MUST work on every host.
+  // Auth pages (/login, /signup, /auth/*, /legal/*) intentionally serve
+  // from whichever host the user reached them on: cookies are scoped to
+  // `.revint.dev` (see supabase/middleware.ts) so the session set on any
+  // subdomain is visible to every other one. Without this allow-listing
+  // we'd bounce app.revint.dev/login → revint.dev/login, the user would
+  // log in on the apex, then on the post-login redirect to
+  // app.revint.dev/app/dashboard the new host would see no cookie and
+  // send them back to /login → infinite loop.
   if (
     pathname.startsWith("/api/") ||
     pathname === "/api" ||
@@ -129,7 +140,10 @@ function enforceHostBoundary(
     pathname === "/sitemap.xml" ||
     pathname === "/manifest.json" ||
     pathname === "/sw.js" ||
-    pathname.startsWith("/m/")
+    pathname.startsWith("/m/") ||
+    pathname === "/login" ||
+    pathname === "/signup" ||
+    pathname.startsWith("/legal/")
   ) {
     return null;
   }

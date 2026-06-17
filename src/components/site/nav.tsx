@@ -141,9 +141,9 @@ export function SiteNav() {
             <Image
               src="/logo.png"
               alt=""
-              width={28}
-              height={28}
-              className="h-7 w-7"
+              width={100}
+              height={100}
+              className="h-11 w-11"
               priority
             />
             <span className="text-[15px] font-semibold tracking-tight text-paper-0">

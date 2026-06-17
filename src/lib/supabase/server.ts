@@ -1,9 +1,31 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+
+/**
+ * Mirror of `sharedCookieDomain` in supabase/middleware.ts. Both server
+ * actions and the middleware must agree on the cookie domain or the
+ * browser will end up with two parallel auth cookies (one host-only,
+ * one `.revint.dev`-scoped) and the session will look invalid every
+ * other request.
+ */
+async function sharedCookieDomain(): Promise<string | undefined> {
+  try {
+    const h = await headers();
+    const host = h.get("host")?.toLowerCase().split(":")[0];
+    if (!host) return undefined;
+    if (host === "revint.dev" || host.endsWith(".revint.dev")) {
+      return ".revint.dev";
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export async function createSupabaseServer() {
   const cookieStore = await cookies();
+  const cookieDomain = await sharedCookieDomain();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,9 +37,12 @@ export async function createSupabaseServer() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
+            cookiesToSet.forEach(({ name, value, options }) => {
+              const merged = cookieDomain
+                ? { ...options, domain: cookieDomain }
+                : options;
+              cookieStore.set(name, value, merged);
+            });
           } catch {
             // Server Component — Supabase will refresh from middleware instead.
           }

@@ -92,7 +92,7 @@ export function PreCallBriefCard({
         </div>
 
         {nextAction ? (
-          <div className="mt-5 rounded-md border border-signal/50 bg-[hsl(218_50%_16%/0.45)] p-4">
+          <div className="mt-5 rounded-md border border-signal/40 bg-signal/10 p-4">
             <div className="site-mono text-[12px] uppercase tracking-wider text-signal">
               Recommended next action
             </div>
@@ -106,7 +106,7 @@ export function PreCallBriefCard({
           </div>
         ) : null}
 
-        <div className="mt-5 rounded-md border border-signal/30 bg-[hsl(218_50%_16%/0.3)] p-4">
+        <div className="mt-5 rounded-md border border-signal/25 bg-signal/6 p-4">
           <div className="site-mono text-[12px] uppercase tracking-wider text-signal">
             Suggested opener
           </div>
