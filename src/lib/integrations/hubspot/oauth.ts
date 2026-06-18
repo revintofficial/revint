@@ -19,8 +19,8 @@ const TOKEN_URL = "https://api.hubapi.com/oauth/v1/token";
 /**
  * Scopes requested at connect time. `crm.objects.*` cover contacts /
  * companies / deals read+write; `crm.schemas.*` allow provisioning the
- * `leadac_*` custom properties; the webhook subscription is configured
- * in the HubSpot app settings (not a scope).
+ * canonical `revint_*` custom properties; the webhook subscription is
+ * configured in the HubSpot app settings (not a scope).
  */
 export const HUBSPOT_SCOPES = [
   "oauth",

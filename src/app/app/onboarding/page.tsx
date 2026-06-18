@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,9 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  CheckCircle2,
   Loader2,
+  Plug,
   Plus,
   Trash2,
   Globe,
@@ -49,10 +51,17 @@ const STEPS = [
   { number: 3, title: "Your Offer", description: "Tell us what you sell" },
   { number: 4, title: "Packages", description: "Define your service tiers (optional)" },
   { number: 5, title: "Team", description: "Invite your team (optional)" },
-  { number: 6, title: "First Leads", description: "Discover your first businesses" },
+  {
+    number: 6,
+    title: "Connect HubSpot",
+    description: "Sync leads + the Revint App Card into your CRM (optional)",
+  },
+  { number: 7, title: "First Leads", description: "Discover your first businesses" },
 ];
 
 const TOTAL_STEPS = STEPS.length;
+const HUBSPOT_STEP = 6;
+const DISCOVERY_STEP = 7;
 
 // ---------------------------------------------------------------------------
 // Inline Package editor for onboarding step 4
@@ -158,7 +167,16 @@ function PackageEditor({
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+  const searchParams = useSearchParams();
+  const initialStep = (() => {
+    const raw = searchParams?.get("step");
+    const parsed = raw ? Number.parseInt(raw, 10) : NaN;
+    if (Number.isFinite(parsed) && parsed >= 1 && parsed <= TOTAL_STEPS) {
+      return parsed;
+    }
+    return 1;
+  })();
+  const [step, setStep] = useState(initialStep);
 
   // Step 1 — Workspace name
   const [workspaceName, setWorkspaceName] = useState("");
@@ -175,7 +193,13 @@ export default function OnboardingPage() {
   // Step 5 — Team invites
   const [inviteEmails, setInviteEmails] = useState<string[]>([""]);
 
-  // Step 6 — Discovery
+  // Step 6 — HubSpot
+  const [hubspotConnected, setHubspotConnected] = useState(false);
+  const [hubspotPortalId, setHubspotPortalId] = useState<string | null>(null);
+  const [hubspotConfigured, setHubspotConfigured] = useState<boolean>(true);
+  const [hubspotChecking, setHubspotChecking] = useState(false);
+
+  // Step 7 — Discovery
   const [niche, setNiche] = useState("");
   const [customNiche, setCustomNiche] = useState("");
   const [city, setCity] = useState("");
@@ -184,6 +208,45 @@ export default function OnboardingPage() {
   const [running, setRunning] = useState(false);
 
   const effectiveNiche = customNiche || niche;
+
+  // After the HubSpot OAuth callback redirects back with
+  // `?step=6&hubspot_connected=1`, poll the status endpoint once to
+  // hydrate the UI then strip the query so a refresh doesn't re-toast.
+  useEffect(() => {
+    let cancelled = false;
+    const justConnected = searchParams?.get("hubspot_connected") === "1";
+    const oauthError = searchParams?.get("hubspot_error");
+    if (oauthError) {
+      toast.error(`HubSpot connection failed: ${oauthError}`);
+    }
+    setHubspotChecking(true);
+    fetch("/api/integrations/hubspot/status", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: {
+        configured?: boolean;
+        connected?: boolean;
+        connection?: { portalId?: string | null } | null;
+      }) => {
+        if (cancelled) return;
+        setHubspotConfigured(data.configured !== false);
+        setHubspotConnected(!!data.connected);
+        setHubspotPortalId(data.connection?.portalId ?? null);
+        if (justConnected && data.connected) {
+          toast.success("HubSpot connected");
+          router.replace(`/app/onboarding?step=${HUBSPOT_STEP}`);
+        }
+      })
+      .catch(() => {
+        // Best-effort — silent failure, the panel just shows
+        // "not connected" + the Connect button.
+      })
+      .finally(() => {
+        if (!cancelled) setHubspotChecking(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, router]);
 
   // ---- Step savers ----------------------------------------------------------
 
@@ -260,6 +323,12 @@ export default function OnboardingPage() {
     }
     setSaving(false);
     return true;
+  };
+
+  const connectHubspot = () => {
+    window.location.href = `/api/integrations/hubspot/connect?returnTo=${encodeURIComponent(
+      `/app/onboarding?step=${HUBSPOT_STEP}`,
+    )}`;
   };
 
   const sendInvites = async () => {
@@ -364,6 +433,9 @@ export default function OnboardingPage() {
     } else if (step === 5) {
       await sendInvites();
       setStep(6);
+    } else if (step === HUBSPOT_STEP) {
+      // HubSpot is optional — advance regardless of connection state.
+      setStep(DISCOVERY_STEP);
     }
   };
 
@@ -437,16 +509,33 @@ export default function OnboardingPage() {
                   },
                   secondary: { label: "Back", onClick: goBack },
                 }
-              : {
-                  primary: {
-                    label: "Discover Leads",
-                    onClick: handleDiscover,
-                    disabled: !effectiveNiche || !city.trim() || running,
-                    busy: running,
-                    busyLabel: "Discovering…",
-                  },
-                  secondary: { label: "Back", onClick: goBack },
-                };
+              : step === HUBSPOT_STEP
+                ? {
+                    primary: {
+                      label: hubspotConnected
+                        ? "Continue"
+                        : hubspotConfigured
+                          ? "Connect HubSpot"
+                          : "Continue",
+                      onClick: hubspotConnected || !hubspotConfigured
+                        ? advance
+                        : connectHubspot,
+                      disabled: hubspotChecking,
+                      busy: hubspotChecking,
+                      busyLabel: "Checking…",
+                    },
+                    secondary: { label: "Back", onClick: goBack },
+                  }
+                : {
+                    primary: {
+                      label: "Discover Leads",
+                      onClick: handleDiscover,
+                      disabled: !effectiveNiche || !city.trim() || running,
+                      busy: running,
+                      busyLabel: "Discovering…",
+                    },
+                    secondary: { label: "Back", onClick: goBack },
+                  };
 
   // ---- Render ---------------------------------------------------------------
 
@@ -623,6 +712,11 @@ export default function OnboardingPage() {
             city={city}
             setCity={setCity}
             effectiveNiche={effectiveNiche}
+            hubspotConfigured={hubspotConfigured}
+            hubspotConnected={hubspotConnected}
+            hubspotPortalId={hubspotPortalId}
+            hubspotChecking={hubspotChecking}
+            onConnectHubspot={connectHubspot}
           />
         </div>
 
@@ -653,6 +747,11 @@ export default function OnboardingPage() {
                 city={city}
                 setCity={setCity}
                 effectiveNiche={effectiveNiche}
+                hubspotConfigured={hubspotConfigured}
+                hubspotConnected={hubspotConnected}
+                hubspotPortalId={hubspotPortalId}
+                hubspotChecking={hubspotChecking}
+                onConnectHubspot={connectHubspot}
               />
               <div className="flex gap-2 pt-1">
                 {actions.secondary && (
@@ -676,23 +775,29 @@ export default function OnboardingPage() {
                     </>
                   ) : (
                     <>
-                      {step === 6 ? <Search className="w-4 h-4" /> : null}
+                      {step === DISCOVERY_STEP ? <Search className="w-4 h-4" /> : null}
+                      {step === HUBSPOT_STEP && !hubspotConnected && hubspotConfigured ? (
+                        <Plug className="w-4 h-4" />
+                      ) : null}
                       {actions.primary.label}
-                      {step !== 6 ? <ArrowRight className="w-4 h-4" /> : null}
+                      {step !== DISCOVERY_STEP &&
+                      !(step === HUBSPOT_STEP && !hubspotConnected && hubspotConfigured) ? (
+                        <ArrowRight className="w-4 h-4" />
+                      ) : null}
                     </>
                   )}
                 </Button>
               </div>
-              {(step === 4 || step === 5) && (
+              {(step === 4 || step === 5 || step === HUBSPOT_STEP) && (
                 <button
                   type="button"
                   onClick={() => setStep(step + 1)}
                   className="w-full text-[11.5px] text-white/30 hover:text-white/50 transition-colors"
                 >
-                  Skip for now
+                  {step === HUBSPOT_STEP ? "Skip — connect HubSpot later" : "Skip for now"}
                 </button>
               )}
-              {step === 6 && (
+              {step === DISCOVERY_STEP && (
                 <button
                   type="button"
                   onClick={skipAndComplete}
@@ -732,23 +837,29 @@ export default function OnboardingPage() {
             </>
           ) : (
             <>
-              {step === 6 ? <Search className="w-4 h-4" /> : null}
+              {step === DISCOVERY_STEP ? <Search className="w-4 h-4" /> : null}
+              {step === HUBSPOT_STEP && !hubspotConnected && hubspotConfigured ? (
+                <Plug className="w-4 h-4" />
+              ) : null}
               {actions.primary.label}
-              {step !== 6 ? <ArrowRight className="w-4 h-4" /> : null}
+              {step !== DISCOVERY_STEP &&
+              !(step === HUBSPOT_STEP && !hubspotConnected && hubspotConfigured) ? (
+                <ArrowRight className="w-4 h-4" />
+              ) : null}
             </>
           )}
         </Button>
-        {(step === 4 || step === 5) && (
+        {(step === 4 || step === 5 || step === HUBSPOT_STEP) && (
           <button
             type="button"
             onClick={() => setStep(step + 1)}
             className="w-full text-center mt-2 py-1 text-[12.5px]"
             style={{ color: "var(--revint-text-3)" }}
           >
-            Skip for now
+            {step === HUBSPOT_STEP ? "Skip — connect HubSpot later" : "Skip for now"}
           </button>
         )}
-        {step === 6 && (
+        {step === DISCOVERY_STEP && (
           <button
             type="button"
             onClick={skipAndComplete}
@@ -787,6 +898,11 @@ interface StepBodyProps {
   city: string;
   setCity: (s: string) => void;
   effectiveNiche: string;
+  hubspotConfigured: boolean;
+  hubspotConnected: boolean;
+  hubspotPortalId: string | null;
+  hubspotChecking: boolean;
+  onConnectHubspot: () => void;
 }
 
 function StepBody(props: StepBodyProps) {
@@ -809,6 +925,11 @@ function StepBody(props: StepBodyProps) {
     city,
     setCity,
     effectiveNiche,
+    hubspotConfigured,
+    hubspotConnected,
+    hubspotPortalId,
+    hubspotChecking,
+    onConnectHubspot,
   } = props;
 
   if (step === 1) {
@@ -977,7 +1098,96 @@ function StepBody(props: StepBodyProps) {
     );
   }
 
-  if (step === 6) {
+  // ---------------------------------------------------------------------
+  // Step 6 — HubSpot connect (optional, but Revint shines when connected).
+  // The OAuth callback redirects back to `/app/onboarding?step=6`, so the
+  // page hydrates the connection state on mount and shows the post-connect
+  // panel instead of the Connect button.
+  // ---------------------------------------------------------------------
+  if (step === HUBSPOT_STEP) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-start gap-2 text-(--revint-300) text-sm">
+          <Plug className="w-4 h-4 mt-0.5" />
+          <span>
+            HubSpot stays your system of record. Revint syncs leads in
+            both directions and installs an action-focused App Card on
+            every contact &amp; deal record.
+          </span>
+        </div>
+
+        {!hubspotConfigured ? (
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-[12.5px] text-(--revint-text-2) space-y-2">
+            <p className="text-(--revint-text-1) font-medium">
+              HubSpot isn&apos;t configured on this deployment yet.
+            </p>
+            <p>
+              Ask your Revint admin to set the OAuth credentials. You can
+              skip this step and come back from Settings → Integrations
+              later.
+            </p>
+          </div>
+        ) : hubspotConnected ? (
+          <div className="rounded-xl border border-(--revint-success)/30 bg-(--revint-success)/5 p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-(--revint-success)" />
+              <span className="text-[13px] font-medium text-(--revint-text-1)">
+                HubSpot connected
+              </span>
+              {hubspotPortalId && (
+                <span className="text-[12px] text-(--revint-text-3)">
+                  · Portal {hubspotPortalId}
+                </span>
+              )}
+            </div>
+            <ul className="text-[12.5px] text-(--revint-text-2) space-y-1 pl-1">
+              <li>✓ Custom <code className="text-(--revint-text-1)">revint_*</code> properties provisioned</li>
+              <li>✓ Default deal pipeline stage map seeded</li>
+              <li>✓ Inbound webhooks live — new contacts surface in Revint within 60s</li>
+            </ul>
+            <p className="text-[12px] text-(--revint-text-3)">
+              You can fine-tune the field map and re-run a one-time
+              import from Settings → Integrations at any time.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+            <div className="text-[12.5px] text-(--revint-text-2) space-y-1">
+              <p>Connecting HubSpot grants Revint:</p>
+              <ul className="pl-4 list-disc space-y-0.5 text-[12px] text-(--revint-text-3)">
+                <li>Read contacts, companies, deals, owners + their pipelines</li>
+                <li>Write only into 11 dedicated <code className="text-(--revint-text-1)">revint_*</code> custom properties (your existing fields are untouched)</li>
+                <li>Receive webhooks for new inbound leads + deal-stage changes</li>
+              </ul>
+            </div>
+            <Button
+              onClick={onConnectHubspot}
+              disabled={hubspotChecking}
+              className="w-full"
+            >
+              {hubspotChecking ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Checking connection…
+                </>
+              ) : (
+                <>
+                  <Plug className="w-4 h-4" />
+                  Connect HubSpot
+                </>
+              )}
+            </Button>
+            <p className="text-[11px] text-(--revint-text-3) text-center">
+              You&apos;ll be redirected to HubSpot to approve the scopes,
+              then bounced back here.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (step === DISCOVERY_STEP) {
     return (
       <div className="space-y-4">
         <div>

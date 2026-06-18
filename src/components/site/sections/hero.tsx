@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -87,10 +88,16 @@ export function Hero({
             {/* Melt the bottom edge into the cream page below */}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(to_bottom,transparent,hsl(42_46%_92%))] md:h-24" />
           </div>
-        ) : null}
+        ) : (
+          <div className="site-hero-bg" aria-hidden>
+            <div className="site-hero-hairline" />
+            <div className="site-hero-grid" />
+            <div className="site-hero-glow" />
+          </div>
+        )}
         <div
           className={cn(
-            "site-container",
+            "site-container relative z-10",
             backgroundImage && "pt-12 md:pt-16",
           )}
         >
@@ -122,10 +129,11 @@ export function Hero({
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
               <Link
                 href={primaryCta.href}
-                className="site-btn-primary"
+                className="site-btn-primary group"
                 data-cta={`hero-primary:${primaryCta.label}`}
               >
                 {primaryCta.label}
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
               </Link>
               {secondaryCta ? (
                 <Link
@@ -186,10 +194,11 @@ export function Hero({
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 href={primaryCta.href}
-                className="site-btn-primary"
+                className="site-btn-primary group"
                 data-cta={`hero-primary:${primaryCta.label}`}
               >
                 {primaryCta.label}
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 ease-out group-hover:translate-x-0.5" />
               </Link>
               {secondaryCta ? (
                 <Link

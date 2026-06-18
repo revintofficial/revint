@@ -28,8 +28,17 @@ export interface HubspotLeadContext {
     email?: string | null;
     phone?: string | null;
     lifecycleStage?: string | null;
+    leadStatus?: string | null;
     lastActivityDate?: string | null;
     nextActivityDate?: string | null;
+    analyticsSource?: string | null;
+    firstReferrer?: string | null;
+    /**
+     * Captured form-intent properties (if any). Each entry mirrors a
+     * HubSpot contact property whose name matches the configured intent
+     * field list. The Action Sheet renders this as a "form said" panel.
+     */
+    formIntents?: Array<{ field: string; value: string }>;
   };
   company?: {
     id: string;
@@ -51,6 +60,17 @@ export interface HubspotLeadContext {
   };
 }
 
+const FORM_INTENT_FIELDS = [
+  "intent",
+  "form_intent",
+  "inquiry_type",
+  "talep_turu",
+  "what_brings_you_here",
+  "purpose",
+  "reason_for_contact",
+  "how_can_we_help",
+];
+
 const CONTACT_PROPS = [
   "firstname",
   "lastname",
@@ -61,6 +81,9 @@ const CONTACT_PROPS = [
   "notes_last_updated",
   "notes_next_activity_date",
   "hubspot_owner_id",
+  "hs_analytics_source",
+  "hs_analytics_first_referrer",
+  ...FORM_INTENT_FIELDS,
 ];
 const COMPANY_PROPS = ["name", "domain", "city"];
 const DEAL_PROPS = ["dealname", "dealstage", "amount", "closedate", "hubspot_owner_id"];
@@ -96,6 +119,11 @@ export async function getHubspotLeadContext(
   if (lead.crmContactId) {
     try {
       const c = await client.getContact(lead.crmContactId, CONTACT_PROPS);
+      const formIntents: Array<{ field: string; value: string }> = [];
+      for (const f of FORM_INTENT_FIELDS) {
+        const v = prop(c, f);
+        if (v && v.trim()) formIntents.push({ field: f, value: v.trim() });
+      }
       ctx.contact = {
         id: c.id,
         firstName: prop(c, "firstname"),
@@ -103,8 +131,12 @@ export async function getHubspotLeadContext(
         email: prop(c, "email"),
         phone: prop(c, "phone"),
         lifecycleStage: prop(c, "lifecyclestage"),
+        leadStatus: prop(c, "hs_lead_status"),
         lastActivityDate: prop(c, "notes_last_updated"),
         nextActivityDate: prop(c, "notes_next_activity_date"),
+        analyticsSource: prop(c, "hs_analytics_source"),
+        firstReferrer: prop(c, "hs_analytics_first_referrer"),
+        formIntents: formIntents.length > 0 ? formIntents : undefined,
       };
       ownerId = prop(c, "hubspot_owner_id");
     } catch (err) {

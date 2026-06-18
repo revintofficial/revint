@@ -81,7 +81,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="mx-auto mt-12 grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mx-auto mt-12 grid max-w-5xl gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {[
               {
                 signal: "Reviews dropped",
@@ -103,15 +103,21 @@ export default function HomePage() {
                 signal: "Waitlist pressure",
                 why: "Capacity pain showing up in the reviews.",
               },
-            ].map((s) => (
+            ].map((s, i) => (
               <div
                 key={s.signal}
-                className="rounded-xl border border-paper-2/15 bg-paper-2/5 p-4 text-left"
+                className="group flex flex-col rounded-xl border border-ink-3 bg-ink-1 p-5 text-left transition duration-200 ease-out hover:-translate-y-0.5 hover:border-ink-4 hover:shadow-[0_12px_32px_-14px_hsl(246_55%_18%/0.28)]"
               >
-                <div className="text-[15px] font-medium text-paper-0">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-signal" />
+                  <span className="site-mono text-[10px] uppercase tracking-[0.14em] text-paper-3">
+                    Signal {String(i + 1).padStart(2, "0")}
+                  </span>
+                </div>
+                <div className="text-[15px] font-medium leading-snug text-paper-0">
                   {s.signal}
                 </div>
-                <div className="mt-1 text-[13px] leading-relaxed text-paper-2">
+                <div className="mt-1.5 text-[13px] leading-relaxed text-paper-2">
                   {s.why}
                 </div>
               </div>

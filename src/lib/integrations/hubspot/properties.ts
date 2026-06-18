@@ -1,36 +1,62 @@
 /**
- * FineDine v1 update — `leadac_*` HubSpot custom contact properties.
+ * Revint canonical HubSpot custom contact properties (`revint_*`).
  *
  * On connect we provision these properties in the customer's portal so
- * Phase 4 writeback can push LeadAC intelligence (temperature, best
- * angle, next action, qualification, risk, fit) onto the HubSpot contact
- * — making LeadAC's signal visible inside the CRM the customer already
- * lives in, and powering the Phase 5 CRM Card.
+ * the writeback pipeline can push Revint intelligence (temperature,
+ * recommended angle, qualification status, risk, etc.) onto the HubSpot
+ * contact — making Revint's signal visible inside the CRM the customer
+ * already lives in, and powering the App Card.
+ *
+ * The names below are a **non-negotiable** stable contract shared with
+ * `writeback.ts`, `field-map.ts`, and the App Card (`card-data` endpoint).
+ * Renaming them in a customer's portal would orphan all historical data,
+ * so they are versioned by intent: skorlama, decision/pitch, provenance.
  *
  * Provisioning is idempotent: we read existing property names first and
- * only create the missing ones. Property names are the stable contract
- * with field-map.ts + the CRM card.
+ * only create the missing ones. A customer who pre-created a property
+ * with the same name shouldn't block the rest.
  */
 import type { HubspotClient } from "./client";
 
-export const LEADAC_PROPERTY_GROUP = "leadac";
+export const REVINT_PROPERTY_GROUP = "revint";
 
-export interface LeadacPropertyDef {
+export interface RevintPropertyDef {
   name: string;
   label: string;
   type: "string" | "number" | "enumeration" | "datetime";
-  fieldType: "text" | "number" | "select" | "date";
+  fieldType: "text" | "textarea" | "number" | "select" | "date";
   options?: Array<{ label: string; value: string }>;
   description: string;
 }
 
-export const LEADAC_PROPERTIES: LeadacPropertyDef[] = [
+/**
+ * Eleven canonical properties grouped by intent:
+ *
+ *   A. Skorlama / önceliklendirme (rollup) — `revint_sales_confidence`,
+ *      `revint_lead_temperature`, `revint_today_priority`.
+ *   B. Karar / pitch sinyalleri (intelligence) — `revint_recommended_angle`,
+ *      `revint_next_best_action`, `revint_qualification_status`,
+ *      `revint_no_show_risk`, `revint_detected_sub_niche`.
+ *   C. Kanıt / provenance — `revint_evidence_summary`,
+ *      `revint_source_conflicts`, `revint_action_sheet_url`.
+ */
+export const REVINT_PROPERTIES: RevintPropertyDef[] = [
+  // --- A. Skorlama / önceliklendirme ---------------------------------------
   {
-    name: "leadac_temperature",
-    label: "LeadAC Temperature",
+    name: "revint_sales_confidence",
+    label: "Revint Sales Confidence",
+    type: "number",
+    fieldType: "number",
+    description:
+      "0-100 deterministic Revint score — close probability weighted by data quality.",
+  },
+  {
+    name: "revint_lead_temperature",
+    label: "Revint Lead Temperature",
     type: "enumeration",
     fieldType: "select",
-    description: "Hot/Warm/Cold priority computed by LeadAC.",
+    description:
+      "HOT / WARM / COLD — computed from inbound SLA, untouched hours and pain density.",
     options: [
       { label: "Hot", value: "HOT" },
       { label: "Warm", value: "WARM" },
@@ -38,95 +64,103 @@ export const LEADAC_PROPERTIES: LeadacPropertyDef[] = [
     ],
   },
   {
-    name: "leadac_recommended_angle",
-    label: "LeadAC Recommended Angle",
-    type: "string",
-    fieldType: "text",
-    description: "Best product angle to pitch (from the workspace playbook).",
-  },
-  {
-    name: "leadac_next_best_action",
-    label: "LeadAC Next Best Action",
-    type: "string",
-    fieldType: "text",
-    description: "The single next action LeadAC recommends.",
-  },
-  {
-    name: "leadac_qualification_status",
-    label: "LeadAC Qualification Status",
-    type: "string",
-    fieldType: "text",
-    description: "qualified / in_progress / info_only / not_started.",
-  },
-  {
-    name: "leadac_qualification_risk",
-    label: "LeadAC Qualification Risk",
-    type: "string",
-    fieldType: "text",
-    description: "low / medium / high qualification risk.",
-  },
-  {
-    name: "leadac_no_show_risk",
-    label: "LeadAC No-show Risk",
-    type: "string",
-    fieldType: "text",
-    description: "low / medium / high no-show risk for booked demos.",
-  },
-  {
-    name: "leadac_fit_score",
-    label: "LeadAC Fit Score",
+    name: "revint_today_priority",
+    label: "Revint Today Priority",
     type: "number",
     fieldType: "number",
-    description: "0-100 ICP fit score.",
+    description:
+      "Absolute call-order rank for the SDR's queue today (1 = call first).",
   },
+
+  // --- B. Karar / pitch sinyalleri -----------------------------------------
   {
-    name: "leadac_lead_priority",
-    label: "LeadAC Lead Priority",
-    type: "number",
-    fieldType: "number",
-    description: "0-100 rolled-up sales confidence / priority.",
-  },
-  {
-    name: "leadac_evidence_summary",
-    label: "LeadAC Evidence Summary",
+    name: "revint_recommended_angle",
+    label: "Revint Recommended Angle",
     type: "string",
     fieldType: "text",
-    description: "One-line evidence summary behind the recommendation.",
+    description:
+      "Best product angle to pitch (e.g. Order & Pay, QR Menu, Reservations).",
   },
   {
-    name: "leadac_last_analyzed_date",
-    label: "LeadAC Last Analyzed",
-    type: "datetime",
-    fieldType: "date",
-    description: "When LeadAC last analyzed this lead.",
+    name: "revint_next_best_action",
+    label: "Revint Next Best Action",
+    type: "string",
+    fieldType: "textarea",
+    description:
+      "Single next action the SDR should take (channel, timing window, hook).",
   },
   {
-    name: "leadac_next_follow_up_date",
-    label: "LeadAC Next Follow-up",
-    type: "datetime",
-    fieldType: "date",
-    description: "Recommended next follow-up date.",
-  },
-  {
-    name: "leadac_lead_sheet_url",
-    label: "LeadAC Lead Sheet",
+    name: "revint_qualification_status",
+    label: "Revint Qualification Status",
     type: "string",
     fieldType: "text",
-    description: "Deep link to the LeadAC lead sheet.",
+    description:
+      "Smart qualification roll-up — qualified / in_progress / info_only / not_started.",
+  },
+  {
+    name: "revint_no_show_risk",
+    label: "Revint No-show Risk",
+    type: "enumeration",
+    fieldType: "select",
+    description: "HIGH / MEDIUM / LOW risk that a booked demo won't happen.",
+    options: [
+      { label: "High", value: "HIGH" },
+      { label: "Medium", value: "MEDIUM" },
+      { label: "Low", value: "LOW" },
+    ],
+  },
+  {
+    name: "revint_detected_sub_niche",
+    label: "Revint Detected Sub-niche",
+    type: "string",
+    fieldType: "text",
+    description:
+      "Title-Case sub-niche slug verified by Revint (e.g. fnb-cafe-bakery, fnb-fine-dining).",
+  },
+
+  // --- C. Kanıt / provenance -----------------------------------------------
+  {
+    name: "revint_evidence_summary",
+    label: "Revint Evidence Summary",
+    type: "string",
+    fieldType: "textarea",
+    description:
+      "Combined evidence trail (Gemini + deterministic audit) that justifies the score.",
+  },
+  {
+    name: "revint_source_conflicts",
+    label: "Revint Source Conflicts",
+    type: "string",
+    fieldType: "textarea",
+    description:
+      "Disagreements between Google Places / Openmart / HubSpot (location, phone, name).",
+  },
+  {
+    name: "revint_action_sheet_url",
+    label: "Revint Action Sheet",
+    type: "string",
+    fieldType: "text",
+    description: "Deep link to the Revint Action Sheet for this lead.",
   },
 ];
 
-export const LEADAC_PROPERTY_NAMES = LEADAC_PROPERTIES.map((p) => p.name);
+export const REVINT_PROPERTY_NAMES = REVINT_PROPERTIES.map((p) => p.name);
 
 /**
- * Ensure the `leadac_*` properties exist in the portal. Returns the list
+ * Property names that carry HOT/WARM/COLD or HIGH/MEDIUM/LOW enumeration
+ * values. Enumeration writes with empty strings are rejected by HubSpot,
+ * so writeback must drop these from the payload when the value is null.
+ */
+export const REVINT_ENUM_PROPERTY_NAMES = new Set<string>(
+  REVINT_PROPERTIES.filter((p) => p.type === "enumeration").map((p) => p.name),
+);
+
+/**
+ * Ensure the `revint_*` properties exist in the portal. Returns the list
  * of newly-created property names. Best-effort: a failure to create one
- * property logs and continues (a customer who pre-created a property
- * with the same name shouldn't block the rest).
- *
- * Function name keeps the post-rename brand (`ensureRevintProperties`)
- * while the actual HubSpot property keys are still `leadac_*` because
- * renaming them in a customer's portal would orphan all historical data.
+ * property logs and continues. Includes a property-group create attempt
+ * so the fields land in a dedicated "Revint" group instead of
+ * `contactinformation`.
  */
 export async function ensureRevintProperties(
   client: HubspotClient,
@@ -143,7 +177,19 @@ export async function ensureRevintProperties(
     existing = new Set();
   }
 
-  for (const prop of LEADAC_PROPERTIES) {
+  // Best-effort group create. A 4xx because the group already exists is
+  // expected on reconnect; we ignore the result either way.
+  try {
+    await client.createContactPropertyGroup({
+      name: REVINT_PROPERTY_GROUP,
+      label: "Revint",
+      displayOrder: -1,
+    });
+  } catch {
+    // group probably exists already — ignore.
+  }
+
+  for (const prop of REVINT_PROPERTIES) {
     if (existing.has(prop.name)) {
       skipped.push(prop.name);
       continue;
@@ -154,7 +200,7 @@ export async function ensureRevintProperties(
         label: prop.label,
         type: prop.type,
         fieldType: prop.fieldType,
-        groupName: "contactinformation",
+        groupName: REVINT_PROPERTY_GROUP,
         description: prop.description,
         ...(prop.options ? { options: prop.options } : {}),
       });

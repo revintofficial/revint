@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { enqueueCrmWriteback } from "@/lib/integrations/hubspot/writeback";
+import {
+  applyCallOutcome,
+  type CallDispositionString,
+} from "@/lib/integrations/hubspot/call-task-sync";
 import type { CallDisposition } from "@/generated/prisma/client";
 
 const VALID_DISPOSITIONS: CallDisposition[] = [
@@ -133,13 +137,41 @@ export async function POST(
       isOptOut,
     });
 
-    // FineDine v1 update — push the disposition + a call engagement to
-    // HubSpot (best-effort, idempotent outbox). Never blocks the response.
+    // Push the disposition + a call engagement to HubSpot (best-effort,
+    // idempotent outbox). Never blocks the response.
     void enqueueCrmWriteback(prisma, {
       workspaceId,
       leadId: id,
       reason: "disposition",
       engagementNote: `Call logged: ${disposition}${notes ? ` — ${notes}` : ""}`,
+    }).catch(() => {});
+
+    // Faz 5 — Call/Task workflow: forward-only stage advance (Attempting
+    // / Connected / Meeting Booked / Lost), a HubSpot follow-up task for
+    // re-attempt dispositions, and ensure a Deal exists when the SDR
+    // confirms a booked meeting. Idempotent across re-fires via
+    // CrmSyncLog payloadHash.
+    void applyCallOutcome(prisma, {
+      workspaceId,
+      leadId: id,
+      disposition: disposition as CallDispositionString,
+      taskDueAt: nextActionDueAt,
+    }).catch((err) => {
+      logger.warn("api.leads.log_call.call_outcome_failed", {
+        leadId: id,
+        workspaceId,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    });
+
+    // Stage advance from applyCallOutcome only updates the local
+    // `playbookStageKey`; trigger the HubSpot deal-stage writeback so
+    // the customer's pipeline reflects the move too. The writeback is
+    // hash-idempotent so this stays a no-op for unchanged stages.
+    void enqueueCrmWriteback(prisma, {
+      workspaceId,
+      leadId: id,
+      reason: "stage",
     }).catch(() => {});
 
     return NextResponse.json({ ok: true, disposition, nextActionDueAt });

@@ -1,11 +1,11 @@
 /**
- * FineDine v1 update — HubSpot OAuth callback.
+ * HubSpot OAuth callback.
  *
  * Validates the CSRF nonce, exchanges the code for tokens, resolves the
  * portal id, upserts the `CrmConnection` (tokens encrypted at rest), and
- * provisions the `leadac_*` custom properties + a best-effort default
- * pipeline→playbook stage mapping. Redirects back to the Integrations
- * settings page with a status flag.
+ * provisions the canonical `revint_*` custom properties + a best-effort
+ * default pipeline→playbook stage mapping. Redirects back to the
+ * Integrations settings page with a status flag.
  */
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
@@ -45,7 +45,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Missing code or state" }, { status: 400 });
     }
 
-    let state: { workspaceId: string; userId: string; nonce: string };
+    let state: {
+      workspaceId: string;
+      userId: string;
+      nonce: string;
+      returnTo?: string;
+    };
     try {
       state = JSON.parse(Buffer.from(stateRaw, "base64url").toString("utf8"));
     } catch {
@@ -173,7 +178,17 @@ export async function GET(request: Request) {
       logger.error("api.hubspot.provision_error", { err });
     }
 
-    return NextResponse.redirect(`${url.origin}${SETTINGS_PATH}?hubspot_connected=1`);
+    // Re-validate state.returnTo against the same same-origin regex
+    // used at connect-time so a tampered base64 state can't redirect
+    // off-site.
+    const returnTo =
+      state.returnTo && /^\/app\/[a-z0-9_\-\/?=&]+$/i.test(state.returnTo)
+        ? state.returnTo
+        : SETTINGS_PATH;
+    const sep = returnTo.includes("?") ? "&" : "?";
+    return NextResponse.redirect(
+      `${url.origin}${returnTo}${sep}hubspot_connected=1`,
+    );
   } catch (err) {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -17,6 +17,7 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import {
@@ -78,24 +79,109 @@ async function finishEvent(
   });
 }
 
+// Property names we believe are likely to carry form intent. Most
+// HubSpot orgs use one of these — we read them all and persist the
+// non-empty subset on the lead as a NOTE activity so the brief can
+// consume them as raw signal. Scoring of intent values is a separate
+// plan (the writeback only carries this through).
+const FORM_INTENT_PROPERTIES = [
+  "intent",
+  "form_intent",
+  "inquiry_type",
+  "talep_turu",
+  "what_brings_you_here",
+  "purpose",
+  "reason_for_contact",
+  "how_can_we_help",
+];
+
+const CONTACT_INBOUND_PROPS = [
+  "firstname",
+  "lastname",
+  "company",
+  "phone",
+  "address",
+  "city",
+  "state",
+  "zip",
+  "website",
+  "hubspot_owner_id",
+  "createdate",
+  "lifecyclestage",
+  "hs_lead_status",
+  "hs_analytics_source",
+  "hs_analytics_source_data_1",
+  "hs_analytics_source_data_2",
+  "hs_analytics_first_referrer",
+  "hs_analytics_first_url",
+  "notes_last_updated",
+  "notes_next_activity_date",
+  ...FORM_INTENT_PROPERTIES,
+];
+
+interface FormIntentSnapshot {
+  field: string;
+  value: string;
+}
+
+function captureFormIntent(
+  properties: Record<string, string | null>,
+): FormIntentSnapshot[] {
+  const snapshots: FormIntentSnapshot[] = [];
+  for (const field of FORM_INTENT_PROPERTIES) {
+    const v = properties[field];
+    if (v && v.trim()) snapshots.push({ field, value: v.trim() });
+  }
+  return snapshots;
+}
+
+async function persistFormIntent(
+  workspaceId: string,
+  leadId: string,
+  source: { properties: Record<string, string | null> },
+): Promise<void> {
+  const intents = captureFormIntent(source.properties);
+  if (intents.length === 0) return;
+  try {
+    // Cast through unknown: the generated Prisma client's
+    // `InputJsonValue` constrains objects to a string-index signature,
+    // and our typed `FormIntentSnapshot[]` doesn't satisfy that. The
+    // shape is plain JSON-serialisable at runtime, the cast is purely
+    // a TypeScript escape.
+    const payload = {
+      source: "hubspot_form_intent",
+      intents,
+      analytics: {
+        source: source.properties.hs_analytics_source ?? null,
+        firstReferrer: source.properties.hs_analytics_first_referrer ?? null,
+        firstUrl: source.properties.hs_analytics_first_url ?? null,
+      },
+      lifecycle: source.properties.lifecyclestage ?? null,
+      leadStatus: source.properties.hs_lead_status ?? null,
+    } as unknown as Prisma.InputJsonValue;
+    await prisma.leadActivity.create({
+      data: {
+        workspaceId,
+        leadId,
+        kind: "NOTE",
+        payload,
+      },
+    });
+  } catch (err) {
+    logger.warn("api.hubspot.webhook.form_intent_persist_failed", {
+      workspaceId,
+      leadId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 async function handleContactCreation(
   workspaceId: string,
   objectId: number,
 ): Promise<string | null> {
   const client = await getHubspotClient(prisma, workspaceId);
-  const contact = await client.getContact(String(objectId), [
-    "firstname",
-    "lastname",
-    "company",
-    "phone",
-    "address",
-    "city",
-    "state",
-    "zip",
-    "website",
-    "hubspot_owner_id",
-    "createdate",
-  ]);
+  const contact = await client.getContact(String(objectId), CONTACT_INBOUND_PROPS);
   const p = contact.properties;
   const businessName =
     p.company ||
@@ -111,10 +197,57 @@ async function handleContactCreation(
     address: address || null,
     phone: p.phone ?? null,
     websiteUrl: p.website ?? null,
-    leadSource: "HUBSPOT_INBOUND",
+    leadSource: deriveLeadSource(p.hs_analytics_source, "HUBSPOT_INBOUND"),
     inboundReceivedAt: p.createdate ? new Date(p.createdate) : new Date(),
   });
+
+  // Form-intent + lifecycle/source snapshot — raw signal for the brief.
+  // Scoring is intentionally separate (handled by future workers).
+  await persistFormIntent(workspaceId, res.leadId, contact);
+
   return res.leadId;
+}
+
+function deriveLeadSource(
+  analyticsSource: string | null | undefined,
+  fallback: string,
+): string {
+  if (!analyticsSource) return fallback;
+  return `HUBSPOT_${analyticsSource.toUpperCase()}`;
+}
+
+async function handleContactPropertyChange(
+  workspaceId: string,
+  objectId: number,
+  propertyName: string,
+  propertyValue: string,
+): Promise<string | null> {
+  const lead = await prisma.lead.findFirst({
+    where: { workspaceId, crmContactId: String(objectId) },
+    select: { id: true },
+  });
+  if (!lead) return null;
+
+  // Lifecycle / lead-status changes don't move the playbook stage
+  // (that's `dealstage`-driven) — but they DO affect prioritisation
+  // and the brief. Persist as a NOTE so the timeline tells the story.
+  await prisma.leadActivity.create({
+    data: {
+      workspaceId,
+      leadId: lead.id,
+      kind: "NOTE",
+      payload: {
+        source: "hubspot_property_change",
+        propertyName,
+        propertyValue,
+      },
+    },
+  });
+  await prisma.lead.update({
+    where: { id: lead.id },
+    data: { crmLastSyncedAt: new Date() },
+  });
+  return lead.id;
 }
 
 async function handleCompanyCreation(
@@ -191,6 +324,7 @@ export async function POST(request: Request) {
     signature,
     timestamp,
     clientSecret: process.env.HUBSPOT_CLIENT_SECRET,
+    urlOverride: process.env.HUBSPOT_WEBHOOK_URL,
   });
   if (!verify.valid) {
     logger.warn("api.hubspot.webhook.invalid_signature", { reason: verify.reason });
@@ -235,8 +369,25 @@ export async function POST(request: Request) {
         case "contact.creation":
           leadId = await handleContactCreation(workspaceId, evt.objectId);
           break;
+        case "contact.propertyChange":
+          if (evt.propertyName && evt.propertyValue != null) {
+            leadId = await handleContactPropertyChange(
+              workspaceId,
+              evt.objectId,
+              evt.propertyName,
+              evt.propertyValue,
+            );
+          }
+          break;
         case "company.creation":
           leadId = await handleCompanyCreation(workspaceId, evt.objectId);
+          break;
+        case "deal.creation":
+          // Deal creation alone doesn't change our lead model — we only
+          // care once a stage is set. Mark SUCCESS so we don't keep
+          // re-trying an event we've intentionally chosen not to
+          // process; the corresponding deal.propertyChange (dealstage)
+          // will arrive separately if/when the rep moves the deal.
           break;
         case "deal.propertyChange":
           if (evt.propertyName === "dealstage" && evt.propertyValue) {

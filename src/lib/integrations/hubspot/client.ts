@@ -249,17 +249,47 @@ export class HubspotClient {
 
   /**
    * Log a call engagement against a contact. `disposition` is HubSpot's
-   * call outcome; `body` carries the rep note.
+   * call outcome value (HubSpot maintains its own disposition vocab —
+   * we pass the GUID through unchanged); `body` carries the rep note.
+   * The optional `dealId` association lets the call show up on the deal
+   * timeline too (associationTypeId 206 = call-to-deal).
    */
   createCall(
     args: {
       contactId: string;
       body: string;
+      disposition?: string;
       durationMs?: number;
       timestampMs?: number;
       title?: string;
+      dealId?: string | null;
     },
   ): Promise<HubspotObject> {
+    const associations: Array<{
+      to: { id: string };
+      types: Array<{ associationCategory: string; associationTypeId: number }>;
+    }> = [
+      {
+        to: { id: args.contactId },
+        types: [
+          {
+            associationCategory: "HUBSPOT_DEFINED",
+            associationTypeId: 194,
+          },
+        ],
+      },
+    ];
+    if (args.dealId) {
+      associations.push({
+        to: { id: args.dealId },
+        types: [
+          {
+            associationCategory: "HUBSPOT_DEFINED",
+            associationTypeId: 206,
+          },
+        ],
+      });
+    }
     return this.request(`/crm/v3/objects/calls`, {
       method: "POST",
       body: JSON.stringify({
@@ -267,19 +297,131 @@ export class HubspotClient {
           hs_call_body: args.body,
           hs_timestamp: String(args.timestampMs ?? Date.now()),
           hs_call_title: args.title ?? "Revint call",
+          ...(args.disposition ? { hs_call_disposition: args.disposition } : {}),
           ...(args.durationMs ? { hs_call_duration: String(args.durationMs) } : {}),
         },
-        associations: [
+        associations,
+      }),
+    });
+  }
+
+  /**
+   * Create a follow-up task engagement against a contact (and optional
+   * deal). Used by the call/task sync workflow — e.g. when an SDR logs
+   * "No Answer" we schedule a "try again tomorrow" task.
+   *
+   * `ownerId` is HubSpot's owner id (typically the SDR who owns the
+   * contact); when null the task lands unassigned.
+   * Association type ids: 204 = task-to-contact, 216 = task-to-deal.
+   */
+  createTask(
+    args: {
+      contactId: string;
+      body: string;
+      subject: string;
+      dueAtMs: number;
+      ownerId?: string | null;
+      dealId?: string | null;
+      priority?: "HIGH" | "MEDIUM" | "LOW";
+    },
+  ): Promise<HubspotObject> {
+    const associations: Array<{
+      to: { id: string };
+      types: Array<{ associationCategory: string; associationTypeId: number }>;
+    }> = [
+      {
+        to: { id: args.contactId },
+        types: [
           {
-            to: { id: args.contactId },
-            types: [
-              {
-                associationCategory: "HUBSPOT_DEFINED",
-                associationTypeId: 194,
-              },
-            ],
+            associationCategory: "HUBSPOT_DEFINED",
+            associationTypeId: 204,
           },
         ],
+      },
+    ];
+    if (args.dealId) {
+      associations.push({
+        to: { id: args.dealId },
+        types: [
+          {
+            associationCategory: "HUBSPOT_DEFINED",
+            associationTypeId: 216,
+          },
+        ],
+      });
+    }
+    return this.request(`/crm/v3/objects/tasks`, {
+      method: "POST",
+      body: JSON.stringify({
+        properties: {
+          hs_task_subject: args.subject,
+          hs_task_body: args.body,
+          hs_task_type: "CALL",
+          hs_task_status: "NOT_STARTED",
+          hs_task_priority: args.priority ?? "MEDIUM",
+          hs_timestamp: String(args.dueAtMs),
+          ...(args.ownerId ? { hubspot_owner_id: args.ownerId } : {}),
+        },
+        associations,
+      }),
+    });
+  }
+
+  /**
+   * Create a Deal with optional pipeline + stage + contact association.
+   * Used by the "Qualified" workflow: when an SDR passes the
+   * qualification checklist we ensure a deal exists in the workspace's
+   * default pipeline. The caller should pre-check for an existing
+   * deal (`crmDealId`) to avoid duplicates.
+   * Association type ids: 3 = deal-to-contact, 5 = deal-to-company.
+   */
+  createDeal(
+    args: {
+      contactId: string;
+      companyId?: string | null;
+      dealName: string;
+      pipelineId?: string;
+      stageId?: string;
+      ownerId?: string | null;
+      amount?: string | null;
+    },
+  ): Promise<HubspotObject> {
+    const associations: Array<{
+      to: { id: string };
+      types: Array<{ associationCategory: string; associationTypeId: number }>;
+    }> = [
+      {
+        to: { id: args.contactId },
+        types: [
+          {
+            associationCategory: "HUBSPOT_DEFINED",
+            associationTypeId: 3,
+          },
+        ],
+      },
+    ];
+    if (args.companyId) {
+      associations.push({
+        to: { id: args.companyId },
+        types: [
+          {
+            associationCategory: "HUBSPOT_DEFINED",
+            associationTypeId: 5,
+          },
+        ],
+      });
+    }
+    return this.request(`/crm/v3/objects/deals`, {
+      method: "POST",
+      body: JSON.stringify({
+        properties: {
+          dealname: args.dealName,
+          ...(args.pipelineId ? { pipeline: args.pipelineId } : {}),
+          ...(args.stageId ? { dealstage: args.stageId } : {}),
+          ...(args.ownerId ? { hubspot_owner_id: args.ownerId } : {}),
+          ...(args.amount ? { amount: args.amount } : {}),
+        },
+        associations,
       }),
     });
   }
@@ -292,6 +434,23 @@ export class HubspotClient {
 
   createContactProperty(def: Record<string, unknown>): Promise<unknown> {
     return this.request(`/crm/v3/properties/contacts`, {
+      method: "POST",
+      body: JSON.stringify(def),
+    });
+  }
+
+  /**
+   * Create a property group on the contacts object. Used by
+   * `ensureRevintProperties` to land all `revint_*` fields in a
+   * dedicated group instead of the catch-all `contactinformation`.
+   * Best-effort: callers should swallow 4xx (group already exists).
+   */
+  createContactPropertyGroup(def: {
+    name: string;
+    label: string;
+    displayOrder?: number;
+  }): Promise<unknown> {
+    return this.request(`/crm/v3/properties/contacts/groups`, {
       method: "POST",
       body: JSON.stringify(def),
     });

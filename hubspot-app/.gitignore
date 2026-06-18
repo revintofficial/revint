@@ -1,0 +1,11 @@
+# HubSpot CLI local artefacts
+.hubspot/
+node_modules/
+.cache/
+build/
+dist/
+
+# CLI auth (NEVER commit)
+hubspot.config.yml
+hubspot.config.yaml
+*.pem

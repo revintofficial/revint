@@ -1220,6 +1220,47 @@ button, a, .cursor-pointer {
   .site-blur-up { animation: none; }
 }
 
+/* Hero depth treatment — premium cream hero chrome (dotted grid + indigo
+ * glow + top hairline). Decorative only; sits behind hero content. */
+.site-hero-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.site-hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(hsl(246 55% 18% / 0.07) 1px, transparent 1.4px);
+  background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse 58% 50% at 50% 30%, #000, transparent 72%);
+  mask-image: radial-gradient(ellipse 58% 50% at 50% 30%, #000, transparent 72%);
+}
+.site-hero-glow {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  height: 540px;
+  width: 860px;
+  max-width: 94vw;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, hsl(246 78% 32% / 0.12), transparent);
+  filter: blur(44px);
+  border-radius: 9999px;
+}
+.site-hero-hairline {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    hsl(244 24% 80% / 0.9),
+    transparent
+  );
+}
+
 /* Primary CTA — amber signal lamp button */
 .site-btn-primary {
   display: inline-flex;

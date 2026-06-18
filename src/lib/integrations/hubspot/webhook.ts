@@ -1,12 +1,17 @@
 /**
- * FineDine v1 update — HubSpot webhook v3 signature verification.
+ * HubSpot v3 signature verification.
  *
- * HubSpot signs each webhook with `X-HubSpot-Signature-v3`, computed as
- * base64(HMAC-SHA256(clientSecret, method + uri + body + timestamp)).
- * Requests older than 5 minutes are rejected (replay protection). The
- * `uri` HubSpot signs is the full public URL it called; behind a proxy
- * that differs from `request.url`, so `HUBSPOT_WEBHOOK_URL` can override
- * it.
+ * HubSpot signs every server-to-server request (webhooks + the App Card
+ * `hubspot.fetch()` calls) with `X-HubSpot-Signature-v3`, computed as
+ *   base64(HMAC-SHA256(clientSecret, method + uri + body + timestamp))
+ * Requests older than 5 minutes are rejected (replay protection).
+ *
+ * The `uri` HubSpot signs is the **full public URL it called**. Behind a
+ * proxy (Vercel edge, Cloudflare) the URL the runtime observes may not
+ * match (different scheme, dropped trailing slash, custom host header),
+ * so callers should pass an explicit `urlOverride` from the appropriate
+ * env var — `HUBSPOT_WEBHOOK_URL` for inbound webhooks, `HUBSPOT_CARD_URL`
+ * for the App Card `card-data` endpoint.
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 
@@ -38,6 +43,12 @@ export function verifyHubspotSignatureV3(args: {
   signature: string | null;
   timestamp: string | null;
   clientSecret: string | undefined;
+  /**
+   * Optional URL the signature should be computed against. When omitted,
+   * `requestUrl` is used. Override this when running behind a proxy
+   * (`HUBSPOT_WEBHOOK_URL` / `HUBSPOT_CARD_URL`).
+   */
+  urlOverride?: string | null;
 }): VerifyResult {
   const { method, rawBody, signature, timestamp, clientSecret } = args;
   if (!clientSecret) return { valid: false, reason: "no_client_secret" };
@@ -48,7 +59,7 @@ export function verifyHubspotSignatureV3(args: {
     return { valid: false, reason: "stale_timestamp" };
   }
 
-  const uri = process.env.HUBSPOT_WEBHOOK_URL || args.requestUrl;
+  const uri = args.urlOverride || args.requestUrl;
   const sourceString = `${method}${uri}${rawBody}${timestamp}`;
   const expected = createHmac("sha256", clientSecret)
     .update(sourceString, "utf8")

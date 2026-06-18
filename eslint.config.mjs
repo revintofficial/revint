@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // HubSpot Projects artefact (separate React runtime + linter; see
+    // hubspot-app/README.md). Linted by the HubSpot CLI when uploaded.
+    "hubspot-app/**",
   ]),
   // -------------------------------------------------------------------
   // Truth Layer v1 — Contracts bus discipline (master plan §1.3).

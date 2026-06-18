@@ -1,14 +1,17 @@
 /**
- * FineDine v1 update — HubSpot writeback (Revint → HubSpot).
+ * Revint → HubSpot writeback.
  *
- * Pushes LeadAC intelligence onto the HubSpot contact via the `leadac_*`
- * custom properties, optionally logs a call/note engagement, and updates
- * the deal stage. Every attempt is recorded in `CrmSyncLog` (OUTBOUND)
- * keyed on a payload hash so re-running with the same data is a no-op
- * (idempotent). Failures are marked FAILED for the reconcile tick to
- * retry — there is no new BullMQ queue (per the workspace rule); the
- * route fires this best-effort and `reconcileCrmWriteback` sweeps
+ * Pushes Revint intelligence onto the HubSpot contact via the canonical
+ * `revint_*` custom properties, optionally logs a call/note engagement,
+ * and updates the deal stage. Every attempt is recorded in `CrmSyncLog`
+ * (OUTBOUND) keyed on a payload hash so re-running with the same data
+ * is a no-op (idempotent). Failures are marked FAILED for the reconcile
+ * tick to retry — there is no new BullMQ queue (per the workspace rule);
+ * the route fires this best-effort and `reconcileCrmWriteback` sweeps
  * failures.
+ *
+ * The property map is the single source of truth for what Revint
+ * exposes to HubSpot — see `properties.ts` for the canonical set.
  */
 import { createHash } from "node:crypto";
 
@@ -25,6 +28,7 @@ import {
   mapPlaybookStageToHubspot,
   type CrmFieldMapping,
 } from "./field-map";
+import { REVINT_ENUM_PROPERTY_NAMES } from "./properties";
 
 export type WritebackReason =
   | "qualification"
@@ -38,6 +42,8 @@ export interface EnqueueWritebackInput {
   reason: WritebackReason;
   /** Optional rep note for a disposition engagement. */
   engagementNote?: string;
+  /** HubSpot call disposition GUID (when reason = "disposition"). */
+  callDisposition?: string;
 }
 
 function hashProps(obj: Record<string, string>, reason: string): string {
@@ -48,20 +54,31 @@ function hashProps(obj: Record<string, string>, reason: string): string {
   return createHash("sha256").update(`${reason}:${stable}`).digest("hex");
 }
 
-function leadSheetUrl(leadId: string): string {
+function actionSheetUrl(leadId: string): string {
   const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   return `${base}/app/leads/${leadId}`;
 }
 
+const RISK_TO_UPPER: Record<string, string> = {
+  low: "LOW",
+  medium: "MEDIUM",
+  high: "HIGH",
+};
+
 /**
- * Build the `leadac_*` property map for a lead. Only includes properties
- * we have a value for (HubSpot rejects empty enumeration writes).
+ * Build the `revint_*` property map for a lead. Only includes
+ * properties we have a value for: HubSpot rejects empty enumeration
+ * writes, and unset string properties are best left untouched so manual
+ * edits in HubSpot aren't clobbered.
  */
 async function buildRevintProperties(
   prisma: PrismaClient,
   workspaceId: string,
   leadId: string,
-): Promise<{ properties: Record<string, string>; playbookStageKey: string | null } | null> {
+): Promise<{
+  properties: Record<string, string>;
+  playbookStageKey: string | null;
+} | null> {
   const lead = await prisma.lead.findFirst({
     where: { id: leadId, workspaceId },
     include: { qualification: true },
@@ -83,32 +100,57 @@ async function buildRevintProperties(
   });
 
   const props: Record<string, string> = {};
-  if (lead.leadTemperature) props.leadac_temperature = lead.leadTemperature;
-  if (picked?.angle.label) props.leadac_recommended_angle = picked.angle.label;
-  if (nextAction?.openingHook) props.leadac_next_best_action = nextAction.openingHook;
-  if (lead.qualification?.status) {
-    props.leadac_qualification_status = lead.qualification.status;
+
+  // --- A. Skorlama -------------------------------------------------------
+  if (typeof lead.salesConfidence === "number") {
+    props.revint_sales_confidence = String(lead.salesConfidence);
   }
-  if (lead.qualification?.qualificationRisk) {
-    props.leadac_qualification_risk = lead.qualification.qualificationRisk;
+  if (lead.leadTemperature) {
+    props.revint_lead_temperature = lead.leadTemperature;
+  }
+  // `revint_today_priority` is intentionally omitted here: it's a
+  // queue-position rank that needs a workspace-wide pass to compute
+  // (and changes throughout the day). Future: a priority worker writes
+  // it; for now we leave the field unset so manual edits stick.
+
+  // --- B. Karar / pitch sinyalleri ---------------------------------------
+  if (picked?.angle.label) {
+    props.revint_recommended_angle = picked.angle.label;
+  }
+  if (nextAction?.openingHook) {
+    props.revint_next_best_action = nextAction.openingHook;
+  }
+  if (lead.qualification?.status) {
+    props.revint_qualification_status = lead.qualification.status;
   }
   if (lead.qualification?.noShowRisk) {
-    props.leadac_no_show_risk = lead.qualification.noShowRisk;
+    const upper = RISK_TO_UPPER[lead.qualification.noShowRisk];
+    if (upper) props.revint_no_show_risk = upper;
   }
-  if (typeof lead.icpFitScore === "number") {
-    props.leadac_fit_score = String(lead.icpFitScore);
+  if (lead.subNicheSlug) {
+    props.revint_detected_sub_niche = lead.subNicheSlug;
   }
-  if (typeof lead.salesConfidence === "number") {
-    props.leadac_lead_priority = String(lead.salesConfidence);
-  }
+
+  // --- C. Kanıt / provenance --------------------------------------------
   if (picked && picked.matchedTriggers.length > 0) {
-    props.leadac_evidence_summary = `Signals: ${picked.matchedTriggers.join(", ")}`;
+    props.revint_evidence_summary = `Signals: ${picked.matchedTriggers.join(", ")}`;
   }
-  props.leadac_last_analyzed_date = String(Date.now());
-  if (lead.nextActionDueAt) {
-    props.leadac_next_follow_up_date = String(lead.nextActionDueAt.getTime());
+  // `revint_source_conflicts` is left unset until the source-conflict
+  // detector lands (separate plan); provisioning the field now keeps
+  // the App Card forward-compatible without writing empty strings.
+  props.revint_action_sheet_url = actionSheetUrl(leadId);
+
+  // Defensive: drop enum properties whose value isn't in the allowed set
+  // (HubSpot rejects out-of-vocab enum writes with a 400 that fails the
+  // whole batch). Belt-and-braces — every enum field above already uses
+  // the canonical uppercase, but a future caller might mis-pass.
+  for (const key of Object.keys(props)) {
+    if (!REVINT_ENUM_PROPERTY_NAMES.has(key)) continue;
+    const v = props[key];
+    if (!v) {
+      delete props[key];
+    }
   }
-  props.leadac_lead_sheet_url = leadSheetUrl(leadId);
 
   return { properties: props, playbookStageKey: lead.playbookStageKey };
 }
@@ -128,7 +170,14 @@ export async function enqueueCrmWriteback(
 
   const lead = await prisma.lead.findFirst({
     where: { id: leadId, workspaceId },
-    select: { crmContactId: true, crmDealId: true, playbookStageKey: true },
+    select: {
+      crmContactId: true,
+      crmDealId: true,
+      crmCompanyId: true,
+      crmOwnerId: true,
+      businessName: true,
+      playbookStageKey: true,
+    },
   });
   if (!lead || (!lead.crmContactId && !lead.crmDealId)) {
     return { status: "SKIPPED", reason: "no_crm_linkage" };
@@ -199,6 +248,8 @@ export async function enqueueCrmWriteback(
             contactId: lead.crmContactId,
             body: input.engagementNote,
             title: "Revint call disposition",
+            dealId: lead.crmDealId,
+            disposition: input.callDisposition,
           });
         } catch (err) {
           logger.warn("hubspot.writeback.engagement_failed", { leadId, err });
@@ -206,7 +257,8 @@ export async function enqueueCrmWriteback(
       }
     }
 
-    // Deal stage writeback.
+    // Deal stage writeback (stage reason carries the rolled-up playbook
+    // stage; the field-map resolves pipeline + stage ids).
     if (reason === "stage" && lead.crmDealId && built.playbookStageKey) {
       const conn = await prisma.crmConnection.findUnique({
         where: { workspaceId_provider: { workspaceId, provider: "HUBSPOT" } },

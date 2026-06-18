@@ -21,6 +21,7 @@ import {
   computeTemperature,
 } from "@/lib/playbook/resolve";
 import { enqueueCrmWriteback } from "@/lib/integrations/hubspot/writeback";
+import { ensureQualifiedDeal } from "@/lib/integrations/hubspot/call-task-sync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -148,6 +149,15 @@ export async function POST(
       leadId: id,
       reason: "qualification",
     }).catch(() => {});
+
+    // Faz 5 — when the lead crosses the qualification threshold, make
+    // sure a HubSpot Deal exists at the qualified-mapped stage. Skips
+    // safely when the lead already has `crmDealId` or no stage map.
+    if (result.qualified) {
+      void ensureQualifiedDeal(prisma, { workspaceId, leadId: id }).catch(
+        () => {},
+      );
+    }
 
     return NextResponse.json({
       ok: true,

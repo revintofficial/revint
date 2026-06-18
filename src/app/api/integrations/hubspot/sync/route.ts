@@ -29,6 +29,7 @@ import {
   HubspotNotConnectedError,
 } from "@/lib/integrations/hubspot/client";
 import { ingestHubspotLead } from "@/lib/integrations/hubspot/ingest";
+import { planMeetsMinimum } from "@/lib/agent-workers/registry";
 import { logger } from "@/lib/logger";
 import { internalError } from "@/lib/api-errors";
 
@@ -80,7 +81,26 @@ interface SyncTally {
 export async function POST() {
   const startedAt = Date.now();
   try {
-    const { workspaceId } = await requireWorkspaceAdminApi();
+    const session = await requireWorkspaceAdminApi();
+    const { workspaceId } = session;
+
+    // Bulk import burns a meaningful slice of the customer's HubSpot
+    // rate limit + costs us 1k inbound webhook-equivalent work. Gate
+    // it to paid plans (FREE is sunsetted anyway). Connect/route does
+    // the same check at OAuth start; this is the worker-side mirror
+    // so a workspace that downgrades after connecting can't keep
+    // batch-importing under the new plan.
+    if (!planMeetsMinimum(session.workspace.plan, "PRO")) {
+      return NextResponse.json(
+        {
+          error: "plan_too_low",
+          required: "PRO",
+          message: "HubSpot import requires a Solo (PRO) plan or higher.",
+        },
+        { status: 402 },
+      );
+    }
+
     const client = await getHubspotClient(prisma, workspaceId);
 
     const contacts: SyncTally = {

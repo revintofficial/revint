@@ -9,7 +9,7 @@
  *
  * The compute helpers are pure (no IO) so they can be unit-tested and
  * reused by Phase 2 ingestion (stage mapping), Phase 3 UI (badges) and
- * Phase 4 writeback (denormalized `leadac_*` properties).
+ * Phase 4 writeback (denormalized `revint_*` properties).
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
