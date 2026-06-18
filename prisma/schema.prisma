@@ -240,6 +240,13 @@ enum AgentWorkerKind {
   // runs when the lead is not already MANUAL-sourced. Drives audit /
   // opener / mockup branching downstream.
   SUBVERTICAL_CLASSIFIER
+  // WORKSPACE_CONTEXT_EXTRACTOR runs at the workspace level (leadId = null)
+  // during calibration-first onboarding. It crawls the seller's company
+  // domain + pricing page and produces an editable ICP draft + service
+  // package draft, written to WorkspaceOnboardingDraft. The user confirms
+  // those drafts before they upsert the real IdealCustomerProfile /
+  // ServicePackage rows that drive lead scoring and recommendations.
+  WORKSPACE_CONTEXT_EXTRACTOR
   // Grup B - Pitch
   WEBSITE_PLAN_GENERATOR
   WEBSITE_MOCKUP_GENERATOR
@@ -478,6 +485,14 @@ model Workspace {
   // Discovery queries globally instead of defaulting to London boroughs.
   country String? @map("country")
 
+  // Calibration inputs collected during onboarding. `name` is the internal
+  // workspace/team label; `companyName` is the seller's real company name
+  // used in Revint's insight + outreach copy. `companyDomain` is crawled to
+  // draft the ICP; `pricingPageUrl` is crawled to extract service packages.
+  companyName    String? @map("company_name")
+  companyDomain  String? @map("company_domain")
+  pricingPageUrl String? @map("pricing_page_url")
+
   // Set when the owner completes the onboarding wizard. Null means the owner
   // is still being redirected into the flow on each dashboard visit.
   onboardingCompletedAt DateTime? @map("onboarding_completed_at")
@@ -508,6 +523,8 @@ model Workspace {
   crmConnections       CrmConnection[]
   playbook             WorkspacePlaybook?
   crmSyncLogs          CrmSyncLog[]
+  // Calibration-first onboarding — AI-extracted drafts pending user confirm.
+  onboardingDraft      WorkspaceOnboardingDraft?
 
   @@map("workspaces")
 }
@@ -2040,6 +2057,13 @@ model IdealCustomerProfile {
   negativeSignals        String[] @default([]) @map("negative_signals")
   locationFit            Json     @default("{}") @map("location_fit")
   meddpiccRequiredFields String[] @default([]) @map("meddpicc_required_fields")
+  // Human-readable ICP definition the user reads and edits during onboarding.
+  // The structured weights above stay the machine-facing inputs for
+  // ICP_SCORER; `description` is the primary editing surface for the user.
+  description            String?  @db.Text
+  // Provenance of the AI-drafted ICP: source URLs, evidence snippets, and a
+  // confidence score. Empty object when the profile was authored manually.
+  sourceJson             Json     @default("{}") @map("source_json")
   // Bumps every time the row is edited; each Lead.icpVersion stamp
   // compares against this so a stale ICP-fit score doesn't mislead
   // the rep after a policy change.
@@ -2050,6 +2074,34 @@ model IdealCustomerProfile {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("ideal_customer_profiles")
+}
+
+// Calibration-first onboarding draft store. The WORKSPACE_CONTEXT_EXTRACTOR
+// worker crawls the company domain + pricing page and writes editable ICP /
+// package drafts here. AI predictions live ONLY in this table until the user
+// confirms them — confirmation is what upserts the real IdealCustomerProfile
+// / ServicePackage rows. Survives page refresh while the crawl runs.
+//
+// status values (string, not enum, to keep onboarding states flexible):
+//   PENDING   — row created, worker not started yet
+//   RUNNING   — calibration worker in flight
+//   READY     — drafts produced, awaiting user review/confirm
+//   FAILED    — crawl/extract failed; UI shows manual-entry fallback
+model WorkspaceOnboardingDraft {
+  id                 String   @id @default(cuid())
+  workspaceId        String   @unique @map("workspace_id")
+  companyContextJson Json     @default("{}") @map("company_context_json")
+  icpDraftJson       Json     @default("{}") @map("icp_draft_json")
+  packagesDraftJson  Json     @default("[]") @map("packages_draft_json")
+  status             String   @default("PENDING")
+  error              String?  @db.Text
+  lastRunId          String?  @map("last_run_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_onboarding_drafts")
 }
 
 // Source-grounded sales trigger detected on a lead. Persistent so the

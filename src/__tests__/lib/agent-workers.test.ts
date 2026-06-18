@@ -35,11 +35,11 @@ import {
 } from "@/lib/agent-workers/lead-response";
 
 describe("AI Workers - registry", () => {
-  it("has 44 workers registered (intelligence + pitch + deliverable + ops + enrichment + SDR Brain v2)", () => {
+  it("has 45 workers registered (intelligence + pitch + deliverable + ops + enrichment + SDR Brain v2 + onboarding calibration)", () => {
     // If you add or remove a worker in registry.ts, update this number.
     // The count is intentionally hardcoded so accidental drops in the
     // registry are caught by CI.
-    expect(listWorkers()).toHaveLength(44);
+    expect(listWorkers()).toHaveLength(45);
   });
 
   it("every registered worker has both EN and TR labels", () => {

@@ -30,6 +30,7 @@ const TABS: SettingsTab[] = [
   { href: "/app/settings/account", label: "Account", allowedRoles: ALL_ROLES },
   { href: "/app/settings/workspace", label: "Workspace", allowedRoles: ALL_ROLES },
   { href: "/app/settings/offer", label: "My Offer", allowedRoles: ADMIN_ROLES },
+  { href: "/app/settings/icp", label: "ICP", allowedRoles: ADMIN_ROLES },
   { href: "/app/settings/packages", label: "Packages", allowedRoles: ADMIN_ROLES },
   { href: "/app/settings/lead-pipeline", label: "Lead Pipeline", allowedRoles: ADMIN_ROLES },
   { href: "/app/settings/insight-performance", label: "Insights", allowedRoles: ADMIN_ROLES },

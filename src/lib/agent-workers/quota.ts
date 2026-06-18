@@ -131,6 +131,9 @@ const CONSERVATIVE_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   SPIN_EXTRACTOR: { FREE: 10, PRO: 100, PRO_TEAM: 500, AGENCY: UNLIMITED },
   // Closed-loop attribution is event-driven and very cheap (no Gemini).
   OUTCOME_ATTRIBUTOR: { FREE: UNLIMITED, PRO: UNLIMITED, PRO_TEAM: UNLIMITED, AGENCY: UNLIMITED },
+  // WORKSPACE_CONTEXT_EXTRACTOR runs a handful of times during onboarding /
+  // re-calibration, never per-lead. A small monthly cap is plenty.
+  WORKSPACE_CONTEXT_EXTRACTOR: { FREE: 10, PRO: 50, PRO_TEAM: 100, AGENCY: UNLIMITED },
 };
 
 /**
@@ -196,6 +199,7 @@ const LAUNCH_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   MEDDPICC_EXTRACTOR: { FREE: 20, PRO: 200, PRO_TEAM: 1000, AGENCY: UNLIMITED },
   SPIN_EXTRACTOR: { FREE: 20, PRO: 200, PRO_TEAM: 1000, AGENCY: UNLIMITED },
   OUTCOME_ATTRIBUTOR: { FREE: UNLIMITED, PRO: UNLIMITED, PRO_TEAM: UNLIMITED, AGENCY: UNLIMITED },
+  WORKSPACE_CONTEXT_EXTRACTOR: { FREE: 20, PRO: 100, PRO_TEAM: 200, AGENCY: UNLIMITED },
 };
 
 const LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = LAUNCH_POLICY

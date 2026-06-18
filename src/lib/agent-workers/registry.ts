@@ -577,6 +577,28 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
       })),
   },
 
+  // -------- Calibration-first onboarding --------
+  // Workspace-level (leadId = null) crawl + extraction worker. Runs during
+  // onboarding to draft the ICP + service packages from the seller's own
+  // domain + pricing page. Hidden from the lead-detail panel because it is
+  // not a per-lead worker.
+  WORKSPACE_CONTEXT_EXTRACTOR: {
+    kind: "WORKSPACE_CONTEXT_EXTRACTOR",
+    group: "intelligence",
+    displayName: "Workspace Context Extractor",
+    displayNameTr: "Workspace Baglam Cikarici",
+    description:
+      "Crawls the seller's company domain + pricing page during onboarding and drafts an editable ICP + service packages into the onboarding draft store for the user to confirm.",
+    descriptionTr:
+      "Onboarding sirasinda satici sirketin domain'i ve pricing sayfasini tarar; kullanicinin onaylamasi icin duzenlenebilir ICP ve paket taslagini onboarding taslak deposuna yazar.",
+    minPlan: "FREE",
+    phase1Enabled: true,
+    hiddenFromPanel: true,
+    estimatedDurationMs: 30000,
+    implModule: () =>
+      import("./workspace-context-extractor").then((m) => ({ run: m.run })),
+  },
+
   // -------- Grup F: SDR Brain v2 (Sales Cognition Engine) --------
   // T1 deterministic enrichers — no Gemini call, derived from existing
   // Lead / WebsiteAudit / ReviewAnalysis substrate. Fast (<2s) so they

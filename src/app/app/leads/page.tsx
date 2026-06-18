@@ -51,6 +51,7 @@ import { LeadTableView } from "@/components/app/leads/LeadTableView";
 import { LeadCardsGrid } from "@/components/app/leads/LeadCardsGrid";
 import { LeadActionBar } from "@/components/app/leads/LeadActionBar";
 import { LiveProcessingStrip } from "@/components/app/leads/LiveProcessingStrip";
+import { OnboardingTutorial } from "@/components/app/leads/OnboardingTutorial";
 import { MobileLeadList } from "@/components/app/leads/MobileLeadList";
 import { BottomSheet, BottomSheetFooter } from "@/components/ui/bottom-sheet";
 import {
@@ -304,6 +305,27 @@ function LeadsPageContent() {
   const [scanRunning, setScanRunning] = useState(false);
   const [analyzeRunning, setAnalyzeRunning] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // Post-onboarding contextual tutorial. Shown when the activation step
+  // routes here with ?welcome=1, dismissible + persisted so a refresh
+  // doesn't re-show it.
+  const [showTutorial, setShowTutorial] = useState(false);
+  const hubspotSkipped = searchParams?.get("hs") === "skipped";
+  useEffect(() => {
+    if (searchParams?.get("welcome") !== "1") return;
+    if (typeof window === "undefined") return;
+    if (sessionStorage.getItem("onboarding-tutorial-dismissed") === "1") return;
+    setShowTutorial(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const dismissTutorial = useCallback(() => {
+    setShowTutorial(false);
+    try {
+      sessionStorage.setItem("onboarding-tutorial-dismissed", "1");
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const fetchWatchlistIds = useCallback(async () => {
     try {
@@ -641,6 +663,15 @@ function LeadsPageContent() {
           last worker drains so brand-new scores show up without a
           manual refresh. */}
       <LiveProcessingStrip onTransitionToIdle={refetch} />
+
+      {showTutorial && (
+        <OnboardingTutorial
+          leads={leads}
+          loading={loading}
+          hubspotSkipped={hubspotSkipped}
+          onDismiss={dismissTutorial}
+        />
+      )}
 
       {/* Mobile: filter trigger row (replaces the inline LeadFiltersBar on phone).
           The full filter UI lives in a bottom sheet to keep the list above the fold. */}
