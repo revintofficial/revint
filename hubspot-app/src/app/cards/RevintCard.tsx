@@ -17,7 +17,7 @@
  *
  * Data flow:
  *   - `hubspot.extend(...)` wires this React component into the
- *     `crm.record.tab` + `crm.preview` placements.
+ *     `crm.record.tab` placement.
  *   - On mount we call `hubspot.fetch('/api/integrations/hubspot/card-data', …)`
  *     against the Revint Next.js backend. HubSpot signs the request with
  *     the v3 signature; the backend verifies it before reading any data.
@@ -365,7 +365,7 @@ function RevintCard({
 // Entry point — bind the component to HubSpot's extension runtime.
 // -------------------------------------------------------------------------
 
-hubspot.extend<"crm.record.tab" | "crm.preview">(({ context, runServerlessFunction: _runServerless }) => {
+hubspot.extend<"crm.record.tab">(({ context }) => {
   // Public app: backend lives on app.revint.dev, called via hubspot.fetch.
   // `hubspot.fetch` is provided as a global in the UI extensions runtime
   // and handles request signing automatically (HubSpot signs the request

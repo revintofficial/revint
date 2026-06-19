@@ -5,7 +5,7 @@
   "description": "Revint App Card — decision + action surface inside HubSpot CRM records.",
   "main": "RevintCard.tsx",
   "dependencies": {
-    "@hubspot/ui-extensions": "0.20.0",
+    "@hubspot/ui-extensions": "0.14.2",
     "react": "18.2.0"
   }
 }

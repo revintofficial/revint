@@ -1,40 +1,34 @@
 {
   "uid": "revint-webhooks",
   "type": "webhooks",
-  "data": {
-    "targetUrl": "https://app.revint.dev/api/webhooks/hubspot",
-    "throttling": {
-      "maxConcurrentRequests": 10,
-      "period": "SECONDLY"
+  "config": {
+    "settings": {
+      "targetUrl": "https://app.revint.dev/api/webhooks/hubspot",
+      "maxConcurrentRequests": 10
     },
-    "subscriptions": [
-      {
-        "subscriptionType": "contact.creation",
-        "active": true
-      },
-      {
-        "subscriptionType": "contact.propertyChange",
-        "propertyName": "lifecyclestage",
-        "active": true
-      },
-      {
-        "subscriptionType": "contact.propertyChange",
-        "propertyName": "hs_lead_status",
-        "active": true
-      },
-      {
-        "subscriptionType": "company.creation",
-        "active": true
-      },
-      {
-        "subscriptionType": "deal.creation",
-        "active": true
-      },
-      {
-        "subscriptionType": "deal.propertyChange",
-        "propertyName": "dealstage",
-        "active": true
-      }
-    ]
+    "subscriptions": {
+      "crmObjects": [],
+      "legacyCrmObjects": [
+        { "subscriptionType": "contact.creation", "active": true },
+        {
+          "subscriptionType": "contact.propertyChange",
+          "propertyName": "lifecyclestage",
+          "active": true
+        },
+        {
+          "subscriptionType": "contact.propertyChange",
+          "propertyName": "hs_lead_status",
+          "active": true
+        },
+        { "subscriptionType": "company.creation", "active": true },
+        { "subscriptionType": "deal.creation", "active": true },
+        {
+          "subscriptionType": "deal.propertyChange",
+          "propertyName": "dealstage",
+          "active": true
+        }
+      ],
+      "hubEvents": []
+    }
   }
 }

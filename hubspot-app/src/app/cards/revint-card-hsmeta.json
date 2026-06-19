@@ -1,0 +1,11 @@
+{
+  "uid": "revint-action-card",
+  "type": "card",
+  "config": {
+    "name": "Revint Operational Intelligence",
+    "description": "Revint's call-first action card: lead temperature, sales confidence, recommended angle, qualification risk and the next best action for this record.",
+    "location": "crm.record.tab",
+    "entrypoint": "/app/cards/RevintCard.tsx",
+    "objectTypes": ["contacts", "deals"]
+  }
+}
