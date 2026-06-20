@@ -15,11 +15,23 @@ import {
   deriveCodeChallenge,
   generateCodeVerifier,
   isHubspotConfigured,
+  signHubspotOAuthState,
 } from "@/lib/integrations/hubspot/oauth";
 import { planMeetsMinimum } from "@/lib/agent-workers/registry";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
+
+function sharedRevintCookieDomain(request: Request): string | undefined {
+  const host =
+    request.headers.get("host")?.toLowerCase().split(":")[0] ||
+    new URL(request.url).hostname.toLowerCase();
+  if (!host) return undefined;
+  if (host === "revint.dev" || host.endsWith(".revint.dev")) {
+    return ".revint.dev";
+  }
+  return undefined;
+}
 
 export async function GET(request: Request) {
   try {
@@ -64,14 +76,12 @@ export async function GET(request: Request) {
         : null;
 
     const nonce = randomBytes(16).toString("hex");
-    const state = Buffer.from(
-      JSON.stringify({
-        workspaceId: session.workspaceId,
-        userId: session.user.id,
-        nonce,
-        ...(returnTo ? { returnTo } : {}),
-      }),
-    ).toString("base64url");
+    const state = signHubspotOAuthState({
+      workspaceId: session.workspaceId,
+      userId: session.user.id,
+      nonce,
+      ...(returnTo ? { returnTo } : {}),
+    });
 
     // PKCE: keep the verifier server-side (httpOnly cookie); send only
     // the derived S256 challenge to HubSpot. The callback replays the
@@ -80,12 +90,14 @@ export async function GET(request: Request) {
     const codeChallenge = deriveCodeChallenge(codeVerifier);
 
     const res = NextResponse.redirect(buildHubspotAuthUrl(state, codeChallenge));
+    const cookieDomain = sharedRevintCookieDomain(request);
     const cookieOpts = {
       httpOnly: true,
       sameSite: "lax" as const,
       secure: process.env.NODE_ENV === "production",
       maxAge: 600,
       path: "/",
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
     };
     res.cookies.set("hubspot_oauth_state", nonce, cookieOpts);
     res.cookies.set("hubspot_pkce_verifier", codeVerifier, cookieOpts);

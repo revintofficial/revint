@@ -27,6 +27,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
+import { brandedEmailHtml, escapeEmailHtml } from "@/lib/email/inline-html";
 import { sendEmail } from "@/lib/email/send";
 import { logger } from "@/lib/logger";
 
@@ -105,46 +106,25 @@ function extractClientIp(req: NextRequest): string | null {
   return null;
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 function notifyHtml(req: CleanRequest, ip: string | null): string {
-  const rows = [
-    ["Name", req.name],
-    ["Email", req.email],
-    ["Company", req.company],
-    ["Postcode + niche to audit live", req.postcodeNiche],
-    ["Monthly outbound volume", req.monthlyVolume || "—"],
-    ["Notes", req.notes || "—"],
-    ["Source IP", ip ?? "—"],
-  ]
-    .map(
-      ([label, value]) =>
-        `<tr><td style="padding:6px 12px 6px 0;color:#888;vertical-align:top;white-space:nowrap;">${escapeHtml(
-          label as string,
-        )}</td><td style="padding:6px 0;color:#111;">${escapeHtml(
-          value as string,
-        )}</td></tr>`,
-    )
-    .join("");
-
-  return `
-<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:560px;">
-  <h2 style="font-size:18px;margin:0 0 8px;">New demo request</h2>
-  <p style="color:#666;margin:0 0 16px;font-size:14px;">
-    They asked us to audit <strong>${escapeHtml(req.postcodeNiche)}</strong>
-    live on the call. Reply directly to <a href="mailto:${escapeHtml(req.email)}">${escapeHtml(req.email)}</a>.
-  </p>
-  <table style="border-collapse:collapse;font-size:14px;">
-    ${rows}
-  </table>
-</div>`.trim();
+  return brandedEmailHtml({
+    eyebrow: "Demo request",
+    title: "New demo request",
+    preheader: "A prospect asked for a Revint demo.",
+    bodyHtml: `
+      <p style="margin:0;">
+        They asked us to audit <strong style="color:#1A1547;">${escapeEmailHtml(req.postcodeNiche)}</strong> live on the call. Reply directly to <a href="mailto:${escapeEmailHtml(req.email)}" style="color:#1F1291;text-decoration:underline;text-decoration-color:#38919F;">${escapeEmailHtml(req.email)}</a>.
+      </p>`,
+    rows: [
+      ["Name", req.name],
+      ["Email", req.email],
+      ["Company", req.company],
+      ["Postcode + niche to audit live", req.postcodeNiche],
+      ["Monthly outbound volume", req.monthlyVolume || "—"],
+      ["Notes", req.notes || "—"],
+      ["Source IP", ip ?? "—"],
+    ],
+  });
 }
 
 function notifyText(req: CleanRequest, ip: string | null): string {
@@ -164,14 +144,17 @@ function notifyText(req: CleanRequest, ip: string | null): string {
 }
 
 function confirmationHtml(req: CleanRequest): string {
-  return `
-<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:560px;color:#111;line-height:1.55;">
-  <p>Hi ${escapeHtml(req.name.split(" ")[0] || "there")},</p>
-  <p>Got it — Mert from Revint here. A 15-min walkthrough is booked into the calendar; you'll get the link in a follow-up shortly.</p>
-  <p>Before the call I'll run the audit on <strong>${escapeHtml(req.postcodeNiche)}</strong> so we can open a real audited shortlist on screen instead of a slide deck. You'll walk away with a list of audited prospects either way — no signup required.</p>
-  <p>If the timing slips or you'd like to add anything, just reply to this email.</p>
-  <p style="color:#666;font-size:13px;margin-top:24px;">— Mert · Revint</p>
-</div>`.trim();
+  return brandedEmailHtml({
+    eyebrow: "Demo request received",
+    title: "We got your demo request",
+    preheader: "We got your Revint demo request.",
+    bodyHtml: `
+      <p style="margin:0 0 14px 0;">Hi ${escapeEmailHtml(req.name.split(" ")[0] || "there")},</p>
+      <p style="margin:0 0 14px 0;">Got it — Mert from Revint here. A 15-min walkthrough is booked into the calendar; you'll get the link in a follow-up shortly.</p>
+      <p style="margin:0 0 14px 0;">Before the call I'll run the audit on <strong style="color:#1A1547;">${escapeEmailHtml(req.postcodeNiche)}</strong> so we can open a real audited shortlist on screen instead of a slide deck. You'll walk away with a list of audited prospects either way — no signup required.</p>
+      <p style="margin:0;">If the timing slips or you'd like to add anything, just reply to this email.</p>`,
+    footerHtml: "Mert - Revint",
+  });
 }
 
 function confirmationText(req: CleanRequest): string {

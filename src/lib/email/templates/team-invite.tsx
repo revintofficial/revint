@@ -113,7 +113,7 @@ export function TeamInviteEmail({
                 lineHeight: "36px",
                 textAlign: "center",
                 fontFamily: tokens.font,
-                border: `1px solid #E0E7FF`,
+                border: `1px solid ${tokens.colors.borderSoft}`,
               }}
             >
               {initial}

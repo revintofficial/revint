@@ -90,6 +90,8 @@ import {
 } from "@/lib/sdr-brain/contracts";
 import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
 import { TruthLayerError } from "@/lib/sdr-brain/error-catalog";
+import { getPlaybook, deriveLeadTemperature } from "@/lib/playbook/resolve";
+import { enqueueCrmWriteback } from "@/lib/integrations/hubspot/writeback";
 import type {
   AgentWorkerContext,
   AgentWorkerOutput,
@@ -1555,15 +1557,51 @@ export const run: AgentWorkerRun = async (
     };
   }
 
+  // Derive a deterministic lead temperature from the freshly computed
+  // sales confidence + inbound SLA so the leads list, the
+  // `revint_lead_temperature` HubSpot property and the App Card stay
+  // consistent. The qualification flow later refines this with real call
+  // signals (disposition / qualified stage) via `computeTemperature`.
+  const playbook = await getPlaybook(prisma, workspaceId);
+  const currentStage = playbook.stages.find(
+    (s) => s.key === lead.playbookStageKey,
+  );
+  const hoursSinceInbound = lead.inboundReceivedAt
+    ? (Date.now() - lead.inboundReceivedAt.getTime()) / 3_600_000
+    : null;
+  const leadTemperature = deriveLeadTemperature(playbook, {
+    hoursSinceInbound,
+    lastDisposition: lead.lastDisposition,
+    qualified: !!currentStage?.isQualified,
+    salesConfidence: brief.salesConfidence,
+  });
+
   // Phase 0/B5 — write the rollup back onto the Lead so the leads
   // list query and Today's Queue can sort/filter on a single column.
   await prisma.lead.updateMany({
     where: { id: leadId, workspaceId },
     data: {
       salesConfidence: brief.salesConfidence,
+      leadTemperature,
       intelligenceVersion: newVersion,
     },
   });
+
+  // Phase 2 — push the refreshed intelligence to HubSpot (best-effort
+  // outbox). `enqueueCrmWriteback` safely SKIPs when the workspace has no
+  // CRM connection or the lead has no contact/deal linkage, so this is a
+  // no-op for non-HubSpot workspaces and never blocks the brief.
+  void enqueueCrmWriteback(prisma, {
+    workspaceId,
+    leadId,
+    reason: "analysis",
+  }).catch((err) =>
+    logger.warn("hubspot.writeback.analysis_failed", {
+      leadId,
+      workspaceId,
+      err: err instanceof Error ? err.message : String(err),
+    }),
+  );
 
   // ----- SDR Brain v2 — reasoning + arbitration + final NBA upsert -----
   // Reads the T1 + T2 substrate from semantic memory and active

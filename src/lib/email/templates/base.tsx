@@ -3,7 +3,7 @@
  *
  * Renders a polished, cross-client layout:
  *   - Accent bar at the card top (tone-aware)
- *   - Brand header with gradient logo tile + wordmark + tagline
+ *   - Brand header with the current landing wordmark treatment
  *   - Content slot
  *   - Footer with company address, support link, social row
  *
@@ -50,14 +50,14 @@ const styles = {
   container: {
     backgroundColor: tokens.colors.surface,
     border: `1px solid ${tokens.colors.border}`,
-    borderRadius: "14px",
+    borderRadius: "18px",
     margin: "0 auto",
     maxWidth: "580px",
     overflow: "hidden" as const,
-    boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.06)",
+    boxShadow: "0 1px 2px rgba(26, 21, 71, 0.04), 0 16px 42px rgba(26, 21, 71, 0.08)",
   },
   headerSection: {
-    padding: "28px 32px 20px 32px",
+    padding: "28px 32px 18px 32px",
     borderBottom: `1px solid ${tokens.colors.borderSoft}`,
   },
   contentSection: {
@@ -65,30 +65,30 @@ const styles = {
   },
   footerSection: {
     padding: "20px 32px 28px 32px",
-    backgroundColor: "#FAFBFC",
-    borderTop: `1px solid ${tokens.colors.borderSoft}`,
+    backgroundColor: tokens.colors.ink,
+    borderTop: `1px solid ${tokens.colors.ink}`,
   },
   footerText: {
-    color: tokens.colors.textMuted,
+    color: "#FDFBF7",
     fontFamily: tokens.font,
     fontSize: "12px",
     lineHeight: "18px",
     margin: 0,
   },
   footerDim: {
-    color: tokens.colors.textFaint,
+    color: "#C1C0D8",
     fontFamily: tokens.font,
     fontSize: "11px",
     lineHeight: "16px",
     margin: "6px 0 0 0",
   },
   footerLink: {
-    color: tokens.colors.textBody,
+    color: "#FDFBF7",
     textDecoration: "underline",
     fontWeight: 500,
   },
   footerLinkMuted: {
-    color: tokens.colors.textMuted,
+    color: "#C1C0D8",
     textDecoration: "none",
     fontWeight: 500,
   },
@@ -135,7 +135,7 @@ export function BaseEmail({
             <Row>
               <td>
                 <Text style={styles.footerText}>
-                  <strong style={{ color: tokens.colors.text }}>Revint</strong>{" "}
+                  <strong style={{ color: "#FFFFFF" }}>Revint</strong>{" "}
                   · {copy.tagline}
                 </Text>
                 <Text style={styles.footerDim}>
@@ -165,12 +165,12 @@ export function BaseEmail({
 
 const footerCopy = {
   tr: {
-    tagline: "Yerel servis işletmeleri için AI destekli satış pipeline'ı",
+    tagline: "SMB pazarları için operasyonel gelir zekası",
     supportPrefix: "Destek:",
     address: "Revint · Londra, UK",
   },
   en: {
-    tagline: "AI-assisted sales pipeline for local service businesses",
+    tagline: "Operational revenue intelligence for SMB markets",
     supportPrefix: "Support:",
     address: "Revint · London, UK",
   },

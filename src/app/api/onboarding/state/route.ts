@@ -79,7 +79,7 @@ export async function GET() {
       }),
       prisma.crmConnection.findUnique({
         where: { workspaceId_provider: { workspaceId, provider: "HUBSPOT" } },
-        select: { status: true },
+        select: { status: true, propertiesProvisionedAt: true },
       }),
     ]);
 
@@ -114,6 +114,9 @@ export async function GET() {
       hubspot: {
         configured: isHubspotConfigured(),
         connected: hubspotConnected,
+        propertiesProvisionedAt: conn?.propertiesProvisionedAt
+          ? conn.propertiesProvisionedAt.toISOString()
+          : null,
       },
     });
   } catch (err) {

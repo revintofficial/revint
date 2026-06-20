@@ -147,6 +147,23 @@ export const REVINT_PROPERTIES: RevintPropertyDef[] = [
 export const REVINT_PROPERTY_NAMES = REVINT_PROPERTIES.map((p) => p.name);
 
 /**
+ * Scope the connected HubSpot token MUST carry for property provisioning
+ * to succeed. Without it, `createContactProperty` returns 403 and every
+ * property silently lands in `errors[]` — the exact failure that made the
+ * smoke test report a connection with no Revint fields. Callers should
+ * guard on this before attempting provisioning and surface a clear
+ * "reconnect with the right app" error instead of a false success.
+ */
+export const PROVISION_REQUIRED_SCOPE = "crm.schemas.contacts.write";
+
+/** Whether a token's granted scopes allow custom-property provisioning. */
+export function hasProvisionScope(
+  scopes: readonly string[] | null | undefined,
+): boolean {
+  return Array.isArray(scopes) && scopes.includes(PROVISION_REQUIRED_SCOPE);
+}
+
+/**
  * Property names that carry HOT/WARM/COLD or HIGH/MEDIUM/LOW enumeration
  * values. Enumeration writes with empty strings are rejected by HubSpot,
  * so writeback must drop these from the payload when the value is null.

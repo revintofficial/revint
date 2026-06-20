@@ -101,6 +101,14 @@ interface CardDataResponse {
   decision?: CardDecision;
 }
 
+// Revint backend origin. `hubspot.fetch` runs inside HubSpot's sandboxed
+// iframe — it has no page origin to resolve a relative path against, so the
+// URL MUST be absolute and MUST match an entry in the app manifest's
+// `permittedUrls.fetch`. A relative path here throws → the card renders
+// "Couldn't reach Revint". Keep this in sync with
+// `hubspot-app/src/app/app-hsmeta.json` → config.permittedUrls.fetch.
+const REVINT_BASE_URL = "https://app.revint.dev";
+
 // -------------------------------------------------------------------------
 // Helpers
 // -------------------------------------------------------------------------
@@ -175,7 +183,7 @@ function RevintCard({
       context.crm.objectTypeId?.toUpperCase() ??
       "CONTACT";
 
-    fetchFn("/api/integrations/hubspot/card-data", {
+    fetchFn(`${REVINT_BASE_URL}/api/integrations/hubspot/card-data`, {
       method: "POST",
       body: JSON.stringify({ objectId, objectType }),
       timeout: 10_000,

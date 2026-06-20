@@ -30,6 +30,24 @@ interface HubspotState {
   updatedAt: string;
 }
 
+/**
+ * Turn the machine-readable `CrmConnection.lastError` codes written by the
+ * OAuth callback / provision route into an actionable message. Falls back
+ * to the raw string for unknown codes.
+ */
+function formatHubspotError(raw: string): string {
+  if (raw.startsWith("missing_scope:")) {
+    return "This HubSpot connection is missing the permission Revint needs to create its custom properties (crm.schemas.contacts.write). Reconnect with the Revint app to finish setup.";
+  }
+  if (raw.startsWith("property_provision_failed:")) {
+    const names = raw.slice("property_provision_failed:".length);
+    return `Some Revint custom properties couldn't be created${
+      names ? ` (${names})` : ""
+    }. This usually means the connection is missing schema-write permission — reconnect to retry.`;
+  }
+  return raw;
+}
+
 export function IntegrationsPanel({
   configured,
   hubspot,
@@ -159,8 +177,13 @@ export function IntegrationsPanel({
                   </dd>
                 </div>
               </dl>
-              {hubspot?.status === "ERROR" && hubspot.lastError && (
-                <p className="text-[12px] text-(--revint-error)">{hubspot.lastError}</p>
+              {hubspot?.lastError && (
+                <div className="flex items-start gap-2 rounded-lg border border-(--revint-warning)/30 bg-(--revint-warning)/5 p-2.5">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-(--revint-warning)" />
+                  <p className="text-[12px] text-(--revint-text-2)">
+                    {formatHubspotError(hubspot.lastError)}
+                  </p>
+                </div>
               )}
               <div className="flex flex-wrap gap-2">
                 <Button onClick={syncNow} disabled={syncing || busy}>

@@ -82,7 +82,7 @@ export function WelcomeEmail({
 
       <Section
         style={{
-          backgroundColor: "#FAFBFC",
+          backgroundColor: tokens.colors.surfaceAlt,
           border: `1px solid ${tokens.colors.borderSoft}`,
           borderRadius: "12px",
           padding: "18px 20px 12px 20px",

@@ -73,18 +73,33 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/legal/") ||
     pathname.startsWith("/api/billing/webhook");
 
+  // When getUser() refreshes/rotates the token, the new auth cookies were
+  // written onto `response` via setAll() above. A bare NextResponse.redirect()
+  // would drop those Set-Cookie headers, so the browser keeps its old (now
+  // consumed) refresh token. The next hop then disagrees about whether the
+  // user is logged in and the request bounces /login <-> /app/dashboard until
+  // the browser aborts with ERR_TOO_MANY_REDIRECTS. Copy the cookies over so
+  // every redirect carries the refreshed session.
+  const redirectWithSession = (url: URL) => {
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => {
+      redirect.cookies.set(cookie);
+    });
+    return redirect;
+  };
+
   if (isApp && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    return redirectWithSession(url);
   }
 
   if (isAuthRoute && user) {
     const url = request.nextUrl.clone();
     url.pathname = "/app/dashboard";
     url.search = "";
-    return NextResponse.redirect(url);
+    return redirectWithSession(url);
   }
 
   void isPublic;

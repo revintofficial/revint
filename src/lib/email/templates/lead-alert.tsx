@@ -96,7 +96,7 @@ export function LeadAlertEmail({
 
       <Section
         style={{
-          backgroundColor: "#FAFBFC",
+          backgroundColor: tokens.colors.surfaceAlt,
           border: `1px solid ${tokens.colors.borderSoft}`,
           borderRadius: "12px",
           padding: "14px 18px",

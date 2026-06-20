@@ -107,6 +107,44 @@ export function computeTemperature(
   return "COLD";
 }
 
+const TEMPERATURE_RANK: Record<LeadTemperatureValue, number> = {
+  COLD: 0,
+  WARM: 1,
+  HOT: 2,
+};
+
+/**
+ * Confidence thresholds that floor the temperature derived during the
+ * analysis rollup (where there are usually no call signals yet). Kept
+ * deterministic so the leads list, the `revint_lead_temperature` HubSpot
+ * property and the App Card all agree.
+ */
+const SALES_CONFIDENCE_HOT = 75;
+const SALES_CONFIDENCE_WARM = 50;
+
+/**
+ * Derive the lead temperature at analysis time. Combines the playbook
+ * rule engine (`computeTemperature` — disposition / SLA / qualified
+ * driven) with the freshly computed `salesConfidence`, returning whichever
+ * is hotter. This seeds a sensible temperature for newly-scored leads that
+ * have no inbound SLA or disposition yet; the qualification flow later
+ * refines it with real call signals via `computeTemperature`.
+ */
+export function deriveLeadTemperature(
+  playbook: PlaybookShape,
+  signals: TemperatureSignals & { salesConfidence?: number | null },
+): LeadTemperatureValue {
+  const base = computeTemperature(playbook, signals);
+
+  let fromScore: LeadTemperatureValue = "COLD";
+  if (typeof signals.salesConfidence === "number") {
+    if (signals.salesConfidence >= SALES_CONFIDENCE_HOT) fromScore = "HOT";
+    else if (signals.salesConfidence >= SALES_CONFIDENCE_WARM) fromScore = "WARM";
+  }
+
+  return TEMPERATURE_RANK[fromScore] >= TEMPERATURE_RANK[base] ? fromScore : base;
+}
+
 export interface QualificationResult {
   qualified: boolean;
   status: string;

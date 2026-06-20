@@ -11,10 +11,16 @@
  * is opt-in).
  */
 
-import { createHash, randomBytes } from "node:crypto";
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
 
 const AUTH_URL = "https://app.hubspot.com/oauth/authorize";
 const TOKEN_URL = "https://api.hubapi.com/oauth/v1/token";
+const STATE_MAX_AGE_MS = 10 * 60 * 1000;
 
 /**
  * Scopes requested at connect time. `crm.objects.*` cover contacts /
@@ -63,6 +69,85 @@ function clientSecret(): string {
   return v;
 }
 
+function stateSecret(): string {
+  return process.env.HUBSPOT_OAUTH_STATE_SECRET || clientSecret();
+}
+
+function signStatePayload(payload: string): string {
+  return createHmac("sha256", stateSecret()).update(payload).digest("base64url");
+}
+
+/**
+ * Length-checked constant-time string compare. Exported so the callback
+ * route can compare the CSRF nonce cookie against the signed-state nonce
+ * without leaking timing, matching how the HMAC signature is verified.
+ */
+export function timingSafeEqualString(a: string, b: string): boolean {
+  const aBuf = Buffer.from(a);
+  const bBuf = Buffer.from(b);
+  return aBuf.length === bBuf.length && timingSafeEqual(aBuf, bBuf);
+}
+
+export interface HubspotOAuthState {
+  workspaceId: string;
+  userId: string;
+  nonce: string;
+  returnTo?: string;
+  issuedAt: number;
+}
+
+export function signHubspotOAuthState(
+  state: Omit<HubspotOAuthState, "issuedAt">,
+): string {
+  const payload = Buffer.from(
+    JSON.stringify({ ...state, issuedAt: Date.now() }),
+  ).toString("base64url");
+  return `${payload}.${signStatePayload(payload)}`;
+}
+
+export function verifyHubspotOAuthState(raw: string): HubspotOAuthState {
+  const [payload, signature, extra] = raw.split(".");
+  if (!payload || !signature || extra !== undefined) {
+    throw new Error("Invalid HubSpot OAuth state");
+  }
+
+  const expected = signStatePayload(payload);
+  if (!timingSafeEqualString(signature, expected)) {
+    throw new Error("Invalid HubSpot OAuth state signature");
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+  } catch {
+    throw new Error("Invalid HubSpot OAuth state payload");
+  }
+
+  const state = parsed as Partial<HubspotOAuthState>;
+  if (
+    typeof state.workspaceId !== "string" ||
+    typeof state.userId !== "string" ||
+    typeof state.nonce !== "string" ||
+    typeof state.issuedAt !== "number" ||
+    (state.returnTo !== undefined && typeof state.returnTo !== "string")
+  ) {
+    throw new Error("Malformed HubSpot OAuth state");
+  }
+
+  const now = Date.now();
+  if (state.issuedAt > now + 60_000 || now - state.issuedAt > STATE_MAX_AGE_MS) {
+    throw new Error("Expired HubSpot OAuth state");
+  }
+
+  return {
+    workspaceId: state.workspaceId,
+    userId: state.userId,
+    nonce: state.nonce,
+    returnTo: state.returnTo,
+    issuedAt: state.issuedAt,
+  };
+}
+
 /**
  * PKCE (RFC 7636). HubSpot now requires a `code_challenge` on the
  * authorization request ("PKCE is required for this authorization
@@ -80,9 +165,10 @@ export function deriveCodeChallenge(codeVerifier: string): string {
 }
 
 /**
- * Build the HubSpot consent URL. `state` is an opaque CSRF token the
- * connect route stores in a short-lived signed cookie and re-validates
- * on callback. `codeChallenge` is the S256 PKCE challenge.
+ * Build the HubSpot consent URL. `state` is the signed OAuth state;
+ * the connect route stores its nonce in a short-lived httpOnly cookie
+ * and re-validates both on callback. `codeChallenge` is the S256 PKCE
+ * challenge.
  */
 export function buildHubspotAuthUrl(
   state: string,

@@ -19,6 +19,7 @@ export type OnboardingEvent =
   | "packages_draft_edited"
   | "packages_confirmed"
   | "hubspot_connect_started"
+  | "hubspot_provisioned"
   | "hubspot_import_started"
   | "hubspot_import_completed"
   | "hubspot_skipped"

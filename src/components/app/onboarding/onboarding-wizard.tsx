@@ -72,7 +72,11 @@ interface OnboardingState {
   } | null;
   icp: ConfirmedIcp | null;
   packages: Array<{ name: string; priceLabel: string; features: string[]; isPopular: boolean; sortOrder: number }>;
-  hubspot: { configured: boolean; connected: boolean };
+  hubspot: {
+    configured: boolean;
+    connected: boolean;
+    propertiesProvisionedAt: string | null;
+  };
 }
 
 /** Raw IdealCustomerProfile shape returned by GET /api/onboarding/state. */
@@ -272,6 +276,8 @@ export function OnboardingWizard() {
                 plan={state.workspace.plan}
                 configured={state.hubspot.configured}
                 connected={state.hubspot.connected}
+                propertiesProvisionedAt={state.hubspot.propertiesProvisionedAt}
+                onProvisioned={loadState}
                 onImported={async () => {
                   await loadState();
                   goNext();

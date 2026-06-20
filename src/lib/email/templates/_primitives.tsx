@@ -12,25 +12,29 @@ import type { CSSProperties, ReactNode } from "react";
 
 export const tokens = {
   colors: {
-    ink: "#0B0F19",
-    text: "#1F2937",
-    textBody: "#334155",
-    textMuted: "#64748B",
-    textFaint: "#94A3B8",
-    bg: "#F4F5F7",
-    surface: "#FFFFFF",
-    border: "#E5E7EB",
-    borderSoft: "#EEF0F3",
-    accent: "#4F46E5",
-    accentSoft: "#EEF2FF",
-    success: "#047857",
-    successSoft: "#D1FAE5",
-    warning: "#B45309",
-    warningSoft: "#FEF3C7",
-    danger: "#B91C1C",
-    dangerSoft: "#FEE2E2",
-    gradientStart: "#6366F1",
-    gradientEnd: "#8B5CF6",
+    ink: "#1A1547",
+    text: "#1A1547",
+    textBody: "#3A3663",
+    textMuted: "#605C84",
+    textFaint: "#84819C",
+    bg: "#FCFBF8",
+    surface: "#FDFBF7",
+    surfaceAlt: "#F5F1E9",
+    border: "#C1C0D8",
+    borderSoft: "#E6E1EF",
+    accent: "#1F1291",
+    accentSoft: "#F0EEFF",
+    teal: "#38919F",
+    tealSoft: "#E7F4F6",
+    royalBlue: "#1363EC",
+    success: "#2F8F68",
+    successSoft: "#EAF8F1",
+    warning: "#9A5B00",
+    warningSoft: "#FFF4D9",
+    danger: "#B83B32",
+    dangerSoft: "#FDECEC",
+    gradientStart: "#1F1291",
+    gradientEnd: "#1363EC",
   },
   font:
     "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif",
@@ -45,32 +49,32 @@ const toneMap: Record<
 > = {
   neutral: {
     fg: tokens.colors.text,
-    bg: "#F8FAFC",
+    bg: tokens.colors.surfaceAlt,
     border: tokens.colors.borderSoft,
     strip: tokens.colors.ink,
   },
   accent: {
     fg: tokens.colors.accent,
     bg: tokens.colors.accentSoft,
-    border: "#E0E7FF",
+    border: "#DAD6F2",
     strip: tokens.colors.accent,
   },
   success: {
     fg: tokens.colors.success,
     bg: tokens.colors.successSoft,
-    border: "#BBF7D0",
+    border: "#C4ECD9",
     strip: tokens.colors.success,
   },
   warning: {
     fg: tokens.colors.warning,
     bg: tokens.colors.warningSoft,
-    border: "#FDE68A",
+    border: "#F4D38C",
     strip: tokens.colors.warning,
   },
   danger: {
     fg: tokens.colors.danger,
     bg: tokens.colors.dangerSoft,
-    border: "#FECACA",
+    border: "#F5C6C1",
     strip: tokens.colors.danger,
   },
 };
@@ -84,25 +88,17 @@ export function toneStyles(tone: Tone) {
 export function BrandMark() {
   return (
     <Row>
-      <td style={{ paddingRight: "12px", width: "44px", verticalAlign: "middle" }}>
+      <td style={{ paddingRight: "12px", width: "18px", verticalAlign: "middle" }}>
         <div
           style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "11px",
+            width: "10px",
+            height: "32px",
+            borderRadius: "999px",
             backgroundColor: tokens.colors.gradientStart,
-            backgroundImage: `linear-gradient(135deg, ${tokens.colors.gradientStart} 0%, ${tokens.colors.gradientEnd} 100%)`,
-            color: "#FFFFFF",
-            fontSize: "20px",
-            fontWeight: 700,
-            lineHeight: "40px",
-            textAlign: "center",
-            letterSpacing: "-0.02em",
-            boxShadow: "0 2px 6px rgba(79, 70, 229, 0.25)",
+            backgroundImage: `linear-gradient(180deg, ${tokens.colors.gradientStart} 0%, ${tokens.colors.royalBlue} 62%, ${tokens.colors.teal} 100%)`,
+            boxShadow: "0 6px 18px rgba(31, 18, 145, 0.18)",
           }}
-        >
-          L
-        </div>
+        />
       </td>
       <td style={{ verticalAlign: "middle" }}>
         <Text
@@ -110,10 +106,10 @@ export function BrandMark() {
             margin: 0,
             color: tokens.colors.ink,
             fontFamily: tokens.font,
-            fontSize: "17px",
-            fontWeight: 600,
+            fontSize: "19px",
+            fontWeight: 700,
             letterSpacing: "-0.01em",
-            lineHeight: "22px",
+            lineHeight: "24px",
           }}
         >
           Revint
@@ -129,7 +125,7 @@ export function BrandMark() {
             letterSpacing: "0.01em",
           }}
         >
-          Local sales, AI assisted
+          Operational revenue intelligence
         </Text>
       </td>
     </Row>
@@ -148,10 +144,10 @@ export function AccentStrip({ tone = "accent" }: { tone?: Tone }) {
         backgroundColor: strip,
         backgroundImage:
           tone === "accent"
-            ? `linear-gradient(90deg, ${tokens.colors.gradientStart} 0%, ${tokens.colors.gradientEnd} 100%)`
+            ? `linear-gradient(90deg, ${tokens.colors.gradientStart} 0%, ${tokens.colors.gradientEnd} 58%, ${tokens.colors.teal} 100%)`
             : undefined,
-        borderTopLeftRadius: "14px",
-        borderTopRightRadius: "14px",
+        borderTopLeftRadius: "18px",
+        borderTopRightRadius: "18px",
       }}
     />
   );
@@ -346,9 +342,9 @@ export function ScoreMeter({
             backgroundColor: t.strip,
             backgroundImage:
               tone === "success"
-                ? "linear-gradient(90deg, #10B981 0%, #059669 100%)"
+                ? "linear-gradient(90deg, #42BD84 0%, #2F8F68 100%)"
                 : tone === "accent"
-                  ? `linear-gradient(90deg, ${tokens.colors.gradientStart} 0%, ${tokens.colors.gradientEnd} 100%)`
+                  ? `linear-gradient(90deg, ${tokens.colors.gradientStart} 0%, ${tokens.colors.gradientEnd} 58%, ${tokens.colors.teal} 100%)`
                   : undefined,
             borderRadius: tokens.radius.pill,
           }}
@@ -425,18 +421,18 @@ export function PrimaryButton({
   const palette: Record<string, { bg: string; fg: string; shadow: string }> = {
     neutral: {
       bg: tokens.colors.ink,
-      fg: "#FFFFFF",
-      shadow: "0 1px 2px rgba(11, 15, 25, 0.08), 0 4px 10px rgba(11, 15, 25, 0.14)",
+      fg: "#FCFBF8",
+      shadow: "0 1px 2px rgba(26, 21, 71, 0.08), 0 4px 10px rgba(26, 21, 71, 0.18)",
     },
     accent: {
       bg: tokens.colors.accent,
       fg: "#FFFFFF",
-      shadow: "0 1px 2px rgba(79, 70, 229, 0.1), 0 4px 12px rgba(79, 70, 229, 0.25)",
+      shadow: "0 1px 2px rgba(31, 18, 145, 0.10), 0 4px 12px rgba(31, 18, 145, 0.28)",
     },
     danger: {
       bg: tokens.colors.danger,
       fg: "#FFFFFF",
-      shadow: "0 1px 2px rgba(185, 28, 28, 0.1), 0 4px 12px rgba(185, 28, 28, 0.25)",
+      shadow: "0 1px 2px rgba(184, 59, 50, 0.10), 0 4px 12px rgba(184, 59, 50, 0.24)",
     },
   };
   const p = palette[tone];

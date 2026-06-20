@@ -18,6 +18,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
+import { brandedEmailHtml, escapeEmailHtml } from "@/lib/email/inline-html";
 import { sendEmail } from "@/lib/email/send";
 import { logger } from "@/lib/logger";
 
@@ -81,42 +82,22 @@ function extractClientIp(req: NextRequest): string | null {
   return null;
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
 function notifyHtml(req: CleanRequest, ip: string | null): string {
-  const rows = [
-    ["Email", req.email],
-    ["Agency / company", req.company || "—"],
-    ["Notes", req.notes || "—"],
-    ["Source IP", ip ?? "—"],
-  ]
-    .map(
-      ([label, value]) =>
-        `<tr><td style="padding:6px 12px 6px 0;color:#888;vertical-align:top;white-space:nowrap;">${escapeHtml(
-          label as string,
-        )}</td><td style="padding:6px 0;color:#111;">${escapeHtml(
-          value as string,
-        )}</td></tr>`,
-    )
-    .join("");
-
-  return `
-<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:560px;">
-  <h2 style="font-size:18px;margin:0 0 8px;">New waitlist signup</h2>
-  <p style="color:#666;margin:0 0 16px;font-size:14px;">
-    Reply directly to <a href="mailto:${escapeHtml(req.email)}">${escapeHtml(req.email)}</a>.
-  </p>
-  <table style="border-collapse:collapse;font-size:14px;">
-    ${rows}
-  </table>
-</div>`.trim();
+  return brandedEmailHtml({
+    eyebrow: "Waitlist",
+    title: "New waitlist signup",
+    preheader: "A new prospect joined the Revint waitlist.",
+    bodyHtml: `
+      <p style="margin:0;">
+        Reply directly to <a href="mailto:${escapeEmailHtml(req.email)}" style="color:#1F1291;text-decoration:underline;text-decoration-color:#38919F;">${escapeEmailHtml(req.email)}</a>.
+      </p>`,
+    rows: [
+      ["Email", req.email],
+      ["Agency / company", req.company || "—"],
+      ["Notes", req.notes || "—"],
+      ["Source IP", ip ?? "—"],
+    ],
+  });
 }
 
 function notifyText(req: CleanRequest, ip: string | null): string {
@@ -133,13 +114,16 @@ function notifyText(req: CleanRequest, ip: string | null): string {
 }
 
 function confirmationHtml(): string {
-  return `
-<div style="font-family:ui-sans-serif,system-ui,sans-serif;max-width:560px;color:#111;line-height:1.55;">
-  <p>Hi,</p>
-  <p>You're on the Revint waitlist. We're working with a small first cohort of agencies before opening pricing publicly. When we open a slot, this email gets the first ping.</p>
-  <p>If you want to skip ahead, reply to this email with a postcode + niche you'd want me to audit on a 15-min call. I'll run the audit before we talk.</p>
-  <p style="color:#666;font-size:13px;margin-top:24px;">— Mert · Revint</p>
-</div>`.trim();
+  return brandedEmailHtml({
+    eyebrow: "You're on the list",
+    title: "You're on the Revint waitlist",
+    preheader: "You are on the Revint waitlist.",
+    bodyHtml: `
+      <p style="margin:0 0 14px 0;">Hi,</p>
+      <p style="margin:0 0 14px 0;">You're on the Revint waitlist. We're working with a small first cohort of agencies before opening pricing publicly. When we open a slot, this email gets the first ping.</p>
+      <p style="margin:0;">If you want to skip ahead, reply to this email with a postcode + niche you'd want me to audit on a 15-min call. I'll run the audit before we talk.</p>`,
+    footerHtml: "Mert - Revint",
+  });
 }
 
 function confirmationText(): string {
