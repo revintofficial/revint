@@ -9,3 +9,4 @@ dist/
 hubspot.config.yml
 hubspot.config.yaml
 *.pem
+.vercel

@@ -109,6 +109,14 @@ interface CardDataResponse {
 // `hubspot-app/src/app/app-hsmeta.json` → config.permittedUrls.fetch.
 const REVINT_BASE_URL = "https://app.revint.dev";
 
+function normalizeObjectType(raw: string | undefined): string {
+  const key = (raw ?? "CONTACT").trim().toUpperCase();
+  if (key === "0-1" || key === "CONTACT" || key === "CONTACTS") return "CONTACT";
+  if (key === "0-2" || key === "COMPANY" || key === "COMPANIES") return "COMPANY";
+  if (key === "0-3" || key === "DEAL" || key === "DEALS") return "DEAL";
+  return "CONTACT";
+}
+
 // -------------------------------------------------------------------------
 // Helpers
 // -------------------------------------------------------------------------
@@ -178,10 +186,9 @@ function RevintCard({
     let cancelled = false;
 
     const objectId = String(context.crm.objectId);
-    const objectType =
-      context.crm.objectType?.toUpperCase() ??
-      context.crm.objectTypeId?.toUpperCase() ??
-      "CONTACT";
+    const objectType = normalizeObjectType(
+      context.crm.objectType ?? context.crm.objectTypeId,
+    );
 
     fetchFn(`${REVINT_BASE_URL}/api/integrations/hubspot/card-data`, {
       method: "POST",
