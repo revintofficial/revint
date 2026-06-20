@@ -61,6 +61,31 @@ function actionSheetUrl(leadId: string): string {
   return `${base}/app/leads/${leadId}`;
 }
 
+/**
+ * Build every plausible public-URL representation HubSpot might have
+ * signed. On Vercel the route handler's `request.url` can surface the
+ * internal scheme/host rather than the custom domain the card actually
+ * called, which breaks the v3 HMAC. We hand the verifier the env override
+ * plus a forwarded-header reconstruction so a host/scheme drift no longer
+ * forces a 401.
+ */
+function cardUrlCandidates(request: Request): string[] {
+  const out: string[] = [];
+  if (process.env.HUBSPOT_CARD_URL) out.push(process.env.HUBSPOT_CARD_URL);
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    out.push(`${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/hubspot/card-data`);
+  }
+  try {
+    const u = new URL(request.url);
+    const fwdHost = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+    const fwdProto = request.headers.get("x-forwarded-proto") ?? "https";
+    if (fwdHost) out.push(`${fwdProto}://${fwdHost}${u.pathname}`);
+  } catch {
+    // request.url not parseable — verifier still tries it raw.
+  }
+  return out;
+}
+
 function truncate(s: string | null | undefined, max: number): string | null {
   if (!s) return null;
   if (s.length <= max) return s;
@@ -85,12 +110,15 @@ export async function POST(request: Request) {
     timestamp,
     clientSecret: process.env.HUBSPOT_CLIENT_SECRET,
     // HubSpot signs the URL it called; behind a proxy the URL we see
-    // differs, so let env override it.
-    urlOverride: process.env.HUBSPOT_CARD_URL,
+    // differs, so try the env override + forwarded-host reconstructions.
+    urlOverride: cardUrlCandidates(request),
   });
   if (!verify.valid) {
     logger.warn("api.hubspot.card_data.invalid_signature", {
       reason: verify.reason,
+      observedUrl: request.url,
+      hasClientSecret: !!process.env.HUBSPOT_CLIENT_SECRET,
+      hasCardUrlEnv: !!process.env.HUBSPOT_CARD_URL,
     });
     return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
   }

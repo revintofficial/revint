@@ -44,11 +44,14 @@ export function verifyHubspotSignatureV3(args: {
   timestamp: string | null;
   clientSecret: string | undefined;
   /**
-   * Optional URL the signature should be computed against. When omitted,
+   * Optional URL(s) the signature should be computed against. When omitted,
    * `requestUrl` is used. Override this when running behind a proxy
-   * (`HUBSPOT_WEBHOOK_URL` / `HUBSPOT_CARD_URL`).
+   * (`HUBSPOT_WEBHOOK_URL` / `HUBSPOT_CARD_URL`). Accepts an array so the
+   * caller can supply several plausible public-URL representations
+   * (env override + forwarded-host reconstruction) and have the verifier
+   * accept the request if ANY of them matches HubSpot's signed URL.
    */
-  urlOverride?: string | null;
+  urlOverride?: string | string[] | null;
 }): VerifyResult {
   const { method, rawBody, signature, timestamp, clientSecret } = args;
   if (!clientSecret) return { valid: false, reason: "no_client_secret" };
@@ -59,19 +62,38 @@ export function verifyHubspotSignatureV3(args: {
     return { valid: false, reason: "stale_timestamp" };
   }
 
-  const uri = args.urlOverride || args.requestUrl;
-  const sourceString = `${method}${uri}${rawBody}${timestamp}`;
-  const expected = createHmac("sha256", clientSecret)
-    .update(sourceString, "utf8")
-    .digest("base64");
-
-  let match = false;
-  try {
-    const a = Buffer.from(expected);
-    const b = Buffer.from(signature);
-    match = a.length === b.length && timingSafeEqual(a, b);
-  } catch {
-    match = false;
+  // HubSpot signs the full public URL it called. Behind Vercel/Cloudflare
+  // the runtime-observed URL can differ in scheme (http vs https), host
+  // (internal vs custom domain), or trailing slash, which silently breaks
+  // the HMAC. Build every plausible representation and accept if any one
+  // matches — this removes the entire URL-mismatch failure class without
+  // weakening replay/secret protection.
+  const overrides = Array.isArray(args.urlOverride)
+    ? args.urlOverride
+    : args.urlOverride
+      ? [args.urlOverride]
+      : [];
+  const candidates = new Set<string>();
+  for (const u of [...overrides, args.requestUrl]) {
+    if (!u) continue;
+    candidates.add(u);
+    candidates.add(u.endsWith("/") ? u.slice(0, -1) : `${u}/`);
+    if (u.startsWith("http://")) candidates.add(`https://${u.slice("http://".length)}`);
   }
-  return match ? { valid: true } : { valid: false, reason: "signature_mismatch" };
+
+  const sigBuf = Buffer.from(signature);
+  for (const uri of candidates) {
+    const expected = createHmac("sha256", clientSecret)
+      .update(`${method}${uri}${rawBody}${timestamp}`, "utf8")
+      .digest("base64");
+    try {
+      const a = Buffer.from(expected);
+      if (a.length === sigBuf.length && timingSafeEqual(a, sigBuf)) {
+        return { valid: true };
+      }
+    } catch {
+      // length mismatch or malformed buffer — try the next candidate.
+    }
+  }
+  return { valid: false, reason: "signature_mismatch" };
 }
