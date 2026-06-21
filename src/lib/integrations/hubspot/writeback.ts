@@ -315,7 +315,12 @@ export async function enqueueCrmWriteback(
 export async function reconcileCrmWriteback(
   prisma: PrismaClient,
   opts: { workspaceId?: string; limit?: number; maxAttempts?: number } = {},
-): Promise<{ retried: number; succeeded: number }> {
+): Promise<{
+  retried: number;
+  succeeded: number;
+  failed: number;
+  failures: Array<{ leadId: string; status: string; reason?: string }>;
+}> {
   const { limit = 50, maxAttempts = 5 } = opts;
   const rows = await prisma.crmSyncLog.findMany({
     where: {
@@ -331,6 +336,9 @@ export async function reconcileCrmWriteback(
   });
 
   let succeeded = 0;
+  let failed = 0;
+  const failures: Array<{ leadId: string; status: string; reason?: string }> =
+    [];
   for (const row of rows) {
     if (!row.leadId) continue;
     const res = await enqueueCrmWriteback(prisma, {
@@ -338,7 +346,25 @@ export async function reconcileCrmWriteback(
       leadId: row.leadId,
       reason: "analysis",
     });
-    if (res.status === "SUCCESS") succeeded += 1;
+    if (res.status === "SUCCESS" || res.status === "SKIPPED") {
+      succeeded += 1;
+    } else {
+      failed += 1;
+      const log = await prisma.crmSyncLog.findFirst({
+        where: {
+          workspaceId: row.workspaceId,
+          leadId: row.leadId,
+          direction: "OUTBOUND",
+        },
+        orderBy: { updatedAt: "desc" },
+        select: { lastError: true },
+      });
+      failures.push({
+        leadId: row.leadId,
+        status: res.status,
+        reason: res.reason ?? log?.lastError ?? undefined,
+      });
+    }
   }
-  return { retried: rows.length, succeeded };
+  return { retried: rows.length, succeeded, failed, failures };
 }

@@ -346,6 +346,7 @@ export async function POST(request: Request) {
     if (portalToWorkspace.has(key)) return portalToWorkspace.get(key)!;
     const conn = await prisma.crmConnection.findFirst({
       where: { portalId: key, provider: "HUBSPOT", status: { not: "REVOKED" } },
+      orderBy: { updatedAt: "desc" },
       select: { workspaceId: true },
     });
     const wsId = conn?.workspaceId ?? null;

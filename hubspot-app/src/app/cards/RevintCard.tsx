@@ -146,6 +146,10 @@ function formatAge(hoursSinceInbound: number | null): string | null {
 // -------------------------------------------------------------------------
 
 interface ExtensionContext {
+  // `hubspot.fetch` can't set custom headers, so the backend can't read the
+  // portal from a header — we must pass `context.portal.id` in the request
+  // body so it can resolve which workspace this portal maps to.
+  portal?: { id: number | string };
   crm: {
     objectId: number | string;
     objectTypeId?: string;
@@ -156,7 +160,11 @@ interface ExtensionContext {
 interface FetchFn {
   (
     url: string,
-    init?: { method?: string; body?: string; timeout?: number },
+    init?: {
+      method?: string;
+      body?: Record<string, unknown>;
+      timeout?: number;
+    },
   ): Promise<{ status: number; body: CardDataResponse }>;
 }
 
@@ -182,10 +190,15 @@ function RevintCard({
       context.crm.objectType?.toUpperCase() ??
       context.crm.objectTypeId?.toUpperCase() ??
       "CONTACT";
+    const portalId =
+      context.portal?.id != null ? String(context.portal.id) : undefined;
 
+    // NB: hubspot.fetch expects `body` as an OBJECT and serialises it
+    // itself — passing a pre-stringified JSON string double-encodes it and
+    // the backend then sees a string instead of `{ objectId, ... }`.
     fetchFn(`${REVINT_BASE_URL}/api/integrations/hubspot/card-data`, {
       method: "POST",
-      body: JSON.stringify({ objectId, objectType }),
+      body: { objectId, objectType, portalId },
       timeout: 10_000,
     })
       .then((res) => {
@@ -226,7 +239,7 @@ function RevintCard({
     return () => {
       cancelled = true;
     };
-  }, [context.crm.objectId, context.crm.objectType, fetchFn]);
+  }, [context.crm.objectId, context.crm.objectType, context.portal?.id, fetchFn]);
 
   if (state.kind === "loading") {
     return (

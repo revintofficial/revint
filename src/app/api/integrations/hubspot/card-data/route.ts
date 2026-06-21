@@ -42,7 +42,8 @@ import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { verifyHubspotSignatureV3 } from "@/lib/integrations/hubspot/webhook";
+import { verifyHubspotRequest } from "@/lib/integrations/hubspot/webhook";
+import { getHubspotClient } from "@/lib/integrations/hubspot/client";
 import { getPlaybook } from "@/lib/playbook/resolve";
 import { pickAngle } from "@/lib/playbook/angle";
 
@@ -55,6 +56,171 @@ export const dynamic = "force-dynamic";
 // additions.
 const MAX_EVIDENCE_CHARS = 2000;
 const MAX_HOOK_CHARS = 800;
+
+// HubSpot UI extensions send the CRM object as an `objectTypeId`
+// (e.g. "0-1" for contacts, "0-2" companies, "0-3" deals) rather than a
+// friendly string. Normalise both shapes to our canonical type so the
+// linkage lookup + association fallback target the right column.
+const HUBSPOT_OBJECT_TYPE: Record<string, "CONTACT" | "COMPANY" | "DEAL"> = {
+  "0-1": "CONTACT",
+  "0-2": "COMPANY",
+  "0-3": "DEAL",
+  CONTACT: "CONTACT",
+  COMPANY: "COMPANY",
+  DEAL: "DEAL",
+};
+
+function normalizeObjectType(raw: string): "CONTACT" | "COMPANY" | "DEAL" {
+  return HUBSPOT_OBJECT_TYPE[raw.toUpperCase()] ?? "CONTACT";
+}
+
+// A contact can be associated with several companies/deals. HubSpot marks
+// the canonical one with the "Primary" association label (typeId 1). When
+// resolving a lead we must follow the primary association first, otherwise
+// we can surface a stray secondary company (often an unscored duplicate)
+// instead of the real account.
+interface HubspotAssociation {
+  toObjectId: string | number;
+  associationTypes?: Array<{ typeId?: number; label?: string | null }>;
+}
+
+function isPrimaryAssociation(assoc: HubspotAssociation): boolean {
+  return (assoc.associationTypes ?? []).some(
+    (t) => t.typeId === 1 || (t.label ?? "").toUpperCase() === "PRIMARY",
+  );
+}
+
+function primaryFirst<T extends HubspotAssociation>(results: T[]): T[] {
+  return [...results].sort(
+    (a, b) => Number(isPrimaryAssociation(b)) - Number(isPrimaryAssociation(a)),
+  );
+}
+
+const leadCardSelect = {
+  id: true,
+  businessName: true,
+  leadTemperature: true,
+  salesConfidence: true,
+  icpFitScore: true,
+  hasWebsite: true,
+  rating: true,
+  reviewCount: true,
+  priceLevel: true,
+  accountId: true,
+  subNicheSlug: true,
+  playbookStageKey: true,
+  lastDisposition: true,
+  inboundReceivedAt: true,
+  crmLastSyncedAt: true,
+  qualification: {
+    select: {
+      status: true,
+      qualified: true,
+      qualificationRisk: true,
+      noShowRisk: true,
+    },
+  },
+  nextActions: {
+    where: { supersededAt: null },
+    orderBy: { createdAt: "desc" as const },
+    take: 1,
+    select: {
+      openingHook: true,
+      timingWindowStart: true,
+      timingWindowEnd: true,
+      actionKind: true,
+      confidence: true,
+    },
+  },
+} as const;
+
+type LeadCardRow = Awaited<
+  ReturnType<
+    typeof prisma.lead.findFirst<{ select: typeof leadCardSelect }>
+  >
+>;
+
+/**
+ * Resolve a Revint lead for the HubSpot record the card is embedded on.
+ * CONTACT records often lack a direct `crmContactId` link when the lead
+ * was ingested from a company webhook/import — fall back to HubSpot
+ * associations (contact → company/deal) and backfill `crmContactId` so
+ * future lookups + writebacks target the right record.
+ */
+async function resolveLeadForCard(args: {
+  workspaceId: string;
+  objectType: string;
+  objectId: string;
+}): Promise<LeadCardRow | null> {
+  const { workspaceId, objectType, objectId } = args;
+
+  const directWhere =
+    objectType === "DEAL"
+      ? { workspaceId, crmDealId: objectId }
+      : objectType === "COMPANY"
+        ? { workspaceId, crmCompanyId: objectId }
+        : { workspaceId, crmContactId: objectId };
+
+  const direct = await prisma.lead.findFirst({
+    where: directWhere,
+    select: leadCardSelect,
+  });
+  if (direct) return direct;
+
+  if (objectType !== "CONTACT") return null;
+
+  try {
+    const client = await getHubspotClient(prisma, workspaceId);
+
+    const companyAssocs = await client.getAssociations(
+      "contacts",
+      objectId,
+      "companies",
+    );
+    for (const assoc of primaryFirst(companyAssocs.results ?? [])) {
+      const companyId = String(assoc.toObjectId);
+      const viaCompany = await prisma.lead.findFirst({
+        where: { workspaceId, crmCompanyId: companyId },
+        select: leadCardSelect,
+      });
+      if (viaCompany) {
+        await prisma.lead.updateMany({
+          where: { id: viaCompany.id, workspaceId, crmContactId: null },
+          data: { crmContactId: objectId },
+        });
+        return viaCompany;
+      }
+    }
+
+    const dealAssocs = await client.getAssociations(
+      "contacts",
+      objectId,
+      "deals",
+    );
+    for (const assoc of primaryFirst(dealAssocs.results ?? [])) {
+      const dealId = String(assoc.toObjectId);
+      const viaDeal = await prisma.lead.findFirst({
+        where: { workspaceId, crmDealId: dealId },
+        select: leadCardSelect,
+      });
+      if (viaDeal) {
+        await prisma.lead.updateMany({
+          where: { id: viaDeal.id, workspaceId, crmContactId: null },
+          data: { crmContactId: objectId },
+        });
+        return viaDeal;
+      }
+    }
+  } catch (err) {
+    logger.warn("api.hubspot.card_data.association_lookup_failed", {
+      workspaceId,
+      objectId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  return null;
+}
 
 function actionSheetUrl(leadId: string): string {
   const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -95,6 +261,7 @@ function truncate(s: string | null | undefined, max: number): string | null {
 interface CardRequestBody {
   objectType?: string;
   objectId?: string | number;
+  portalId?: string | number;
 }
 
 export async function POST(request: Request) {
@@ -102,50 +269,82 @@ export async function POST(request: Request) {
   const signature = request.headers.get("x-hubspot-signature-v3");
   const timestamp = request.headers.get("x-hubspot-request-timestamp");
 
-  const verify = verifyHubspotSignatureV3({
+  const verify = verifyHubspotRequest({
     method: "POST",
     requestUrl: request.url,
     rawBody,
-    signature,
-    timestamp,
     clientSecret: process.env.HUBSPOT_CLIENT_SECRET,
-    // HubSpot signs the URL it called; behind a proxy the URL we see
-    // differs, so try the env override + forwarded-host reconstructions.
     urlOverride: cardUrlCandidates(request),
+    signatureV3: signature,
+    timestamp,
+    signatureV2: request.headers.get("x-hubspot-signature"),
+    signatureVersion: request.headers.get("x-hubspot-signature-version"),
   });
   if (!verify.valid) {
     logger.warn("api.hubspot.card_data.invalid_signature", {
       reason: verify.reason,
       observedUrl: request.url,
+      signatureVersion: request.headers.get("x-hubspot-signature-version"),
       hasClientSecret: !!process.env.HUBSPOT_CLIENT_SECRET,
       hasCardUrlEnv: !!process.env.HUBSPOT_CARD_URL,
+      urlCandidates: cardUrlCandidates(request),
     });
     return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
   }
 
-  // HubSpot ships the portal id in a dedicated header on hubspot.fetch.
-  // Trusted because it's covered by the v3 signature above.
-  const portalId = request.headers.get("x-hubspot-hub-id");
-  if (!portalId) {
-    return NextResponse.json({ error: "missing_portal_id" }, { status: 400 });
-  }
+  // TEMP DIAGNOSTIC — capture exactly what the real card sends so we can see
+  // why requests 400. Remove once the card is confirmed working.
+  logger.warn("api.hubspot.card_data.debug_request", {
+    rawBodyLen: rawBody.length,
+    rawBodySample: rawBody.slice(0, 300),
+    hasHubIdHeader: !!request.headers.get("x-hubspot-hub-id"),
+    contentType: request.headers.get("content-type"),
+  });
 
   let body: CardRequestBody;
   try {
     body = rawBody ? (JSON.parse(rawBody) as CardRequestBody) : {};
   } catch {
+    logger.warn("api.hubspot.card_data.reject", { at: "invalid_body" });
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   }
-  const objectType = (body.objectType ?? "CONTACT").toString().toUpperCase();
+  const objectType = normalizeObjectType((body.objectType ?? "CONTACT").toString());
   const objectId = body.objectId == null ? "" : String(body.objectId);
   if (!objectId) {
+    logger.warn("api.hubspot.card_data.reject", {
+      at: "missing_object_id",
+      keys: Object.keys(body ?? {}),
+    });
     return NextResponse.json({ error: "missing_object_id" }, { status: 400 });
+  }
+
+  // Portal id resolution. `hubspot.fetch` CANNOT set custom request headers,
+  // but HubSpot automatically appends `portalId` (and userId/userEmail/appId)
+  // as query params — and the full URL is covered by the v3 signature, so
+  // the query param is trustworthy. We accept, in order: the query param
+  // (real card), the body (card also sends it), then the x-hubspot-hub-id
+  // header (server-to-server / smoke tests).
+  const portalId =
+    new URL(request.url).searchParams.get("portalId") ??
+    (body.portalId != null ? String(body.portalId) : null) ??
+    request.headers.get("x-hubspot-hub-id");
+  if (!portalId) {
+    logger.warn("api.hubspot.card_data.reject", {
+      at: "missing_portal_id",
+      keys: Object.keys(body ?? {}),
+    });
+    return NextResponse.json({ error: "missing_portal_id" }, { status: 400 });
   }
 
   // Resolve workspace from portal — non-throwing query so an unknown
   // portal returns an empty payload (the card renders "not connected").
+  // A portal *should* map to one workspace, but during testing the same
+  // portal can end up connected to several. Resolve deterministically to the
+  // most recently updated active connection so the card never flip-flops
+  // between workspaces (and their duplicate leads) across requests.
   const conn = await prisma.crmConnection.findFirst({
     where: { portalId, provider: "HUBSPOT", status: { not: "REVOKED" } },
+    orderBy: { updatedAt: "desc" },
     select: { workspaceId: true },
   });
   if (!conn) {
@@ -156,56 +355,7 @@ export async function POST(request: Request) {
   }
   const { workspaceId } = conn;
 
-  // Find the lead via the appropriate CRM linkage column. Multi-tenant
-  // scope: `workspaceId` is the trusted source; the CRM id alone is not
-  // unique across workspaces.
-  const where =
-    objectType === "DEAL"
-      ? { workspaceId, crmDealId: objectId }
-      : objectType === "COMPANY"
-        ? { workspaceId, crmCompanyId: objectId }
-        : { workspaceId, crmContactId: objectId };
-
-  const lead = await prisma.lead.findFirst({
-    where,
-    select: {
-      id: true,
-      businessName: true,
-      leadTemperature: true,
-      salesConfidence: true,
-      icpFitScore: true,
-      hasWebsite: true,
-      rating: true,
-      reviewCount: true,
-      priceLevel: true,
-      accountId: true,
-      subNicheSlug: true,
-      playbookStageKey: true,
-      lastDisposition: true,
-      inboundReceivedAt: true,
-      crmLastSyncedAt: true,
-      qualification: {
-        select: {
-          status: true,
-          qualified: true,
-          qualificationRisk: true,
-          noShowRisk: true,
-        },
-      },
-      nextActions: {
-        where: { supersededAt: null },
-        orderBy: { createdAt: "desc" },
-        take: 1,
-        select: {
-          openingHook: true,
-          timingWindowStart: true,
-          timingWindowEnd: true,
-          actionKind: true,
-          confidence: true,
-        },
-      },
-    },
-  });
+  const lead = await resolveLeadForCard({ workspaceId, objectType, objectId });
 
   if (!lead) {
     return NextResponse.json({

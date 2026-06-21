@@ -138,7 +138,17 @@ export class HubspotClient {
     objectType: string,
     objectId: string,
     toObjectType: string,
-  ): Promise<{ results: Array<{ toObjectId: string; id?: string }> }> {
+  ): Promise<{
+    results: Array<{
+      toObjectId: string;
+      id?: string;
+      associationTypes?: Array<{
+        category?: string;
+        typeId?: number;
+        label?: string | null;
+      }>;
+    }>;
+  }> {
     return this.request(
       `/crm/v4/objects/${objectType}/${objectId}/associations/${toObjectType}`,
     );

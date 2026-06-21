@@ -30,7 +30,7 @@ export function PostHogProvider() {
     if (isDoNotTrack()) return;
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
     const host =
-      process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
+      process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "/ingest";
     if (!key) return;
     if (posthog.__loaded) return;
     posthog.init(key, {

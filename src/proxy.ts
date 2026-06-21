@@ -133,6 +133,8 @@ function enforceHostBoundary(
   if (
     pathname.startsWith("/api/") ||
     pathname === "/api" ||
+    pathname.startsWith("/ingest/") ||
+    pathname === "/ingest" ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/_next/") ||
     pathname === "/favicon.ico" ||
