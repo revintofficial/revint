@@ -30,7 +30,7 @@
     },
     "permittedUrls": {
       "fetch": ["https://app.revint.dev"],
-      "iframe": [],
+      "iframe": ["https://app.revint.dev"],
       "img": []
     },
     "support": {
