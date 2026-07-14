@@ -23,19 +23,19 @@
 import type { LeadTriggerType } from "@/generated/prisma/client";
 
 /**
- * Loose shape SDR_BRAIN passes to the detector. Each field is the
+ * Loose shape the brief passes to the detector. Each field is the
  * already-summarised T2 output (NOT the full reasoner detail) so the
  * detector stays hot-path-friendly. Fields are nullable because not
  * every workspace runs every T2 reasoner (FREE plan tier filtering).
+ *
+ * V2-cleanup — `bant`, `committee`, `insights`, and `objectionsPredicted`
+ * were removed along with the BANT_INFERRER / BUYING_COMMITTEE_MAPPER /
+ * COMMERCIAL_INSIGHT_MATCHER / OBJECTION_PREDICTOR workers. The
+ * remaining rules cover the contradictions that matter for SMB
+ * restaurant-tech sales (ICP fit vs audit gap, opportunity score vs
+ * review density, trigger-overlap inconsistencies).
  */
 export interface T2Snapshot {
-  bant: {
-    budget: number; // 0..100
-    authority: number;
-    need: number;
-    timing: number;
-    overall: number;
-  } | null;
   whyNow: {
     urgency: number; // 0..100
     headline: string;
@@ -50,13 +50,6 @@ export interface T2Snapshot {
     severity: number;
     confidence: number;
   }>;
-  insights: Array<{ id: string; appliedTriggers: LeadTriggerType[] }>;
-  committee: {
-    hasIdentifiedChampion: boolean;
-    hasIdentifiedEconomicBuyer: boolean;
-  } | null;
-  objectionsPredicted: string[];
-  competitorsMentionedCount: number;
   audit: {
     checklistScorePct: number | null;
     hasBookingSystem: boolean | null;
@@ -92,21 +85,6 @@ function le(value: number | null | undefined, threshold: number): boolean {
 
 export const CONTRADICTION_RULES: ContradictionRule[] = [
   {
-    // BANT says "they will buy soon" but no urgency trigger present.
-    code: "BANT_TIMING_VS_WHY_NOW_URGENCY",
-    detect: (s) => {
-      if (!s.bant || !s.whyNow) return null;
-      if (s.bant.timing >= 70 && s.whyNow.urgency <= 30) {
-        return {
-          fromNodeId: "bant.timing",
-          toNodeId: "whyNow.urgency",
-          reason: `BANT timing ${s.bant.timing} suggests near-term buy, but WHY_NOW urgency ${s.whyNow.urgency} shows no triggering event.`,
-        };
-      }
-      return null;
-    },
-  },
-  {
     code: "ICP_FIT_VS_AUDIT_FAIL",
     detect: (s) => {
       if (!s.scorer || s.scorer.icpFit == null || !s.audit) return null;
@@ -115,62 +93,6 @@ export const CONTRADICTION_RULES: ContradictionRule[] = [
           fromNodeId: "icp.score",
           toNodeId: "audit.checklist",
           reason: `ICP fit ${s.scorer.icpFit} but audit checklist only ${s.audit.checklistScorePct}% — either ICP is too lax or website signals are stale.`,
-        };
-      }
-      return null;
-    },
-  },
-  {
-    code: "HIRING_MARKETING_VS_NO_BUDGET_SIGNAL",
-    detect: (s) => {
-      const hiring = s.triggers.find((t) => t.type === "HIRING_MARKETING");
-      if (!hiring) return null;
-      if (s.lead.priceLevel != null && s.lead.priceLevel < 2) {
-        return {
-          fromNodeId: `trigger.${hiring.id}`,
-          toNodeId: "bant.budget",
-          reason: `HIRING_MARKETING trigger detected, but Google Places priceLevel=${s.lead.priceLevel} suggests low marketing budget.`,
-        };
-      }
-      return null;
-    },
-  },
-  {
-    code: "COMPETITOR_PRESSURE_VS_NO_OBJECTION_PREDICTED",
-    detect: (s) => {
-      if (s.competitorsMentionedCount >= 2 && s.objectionsPredicted.length === 0) {
-        return {
-          fromNodeId: "competitors.list",
-          toNodeId: "objections.predicted",
-          reason: `${s.competitorsMentionedCount} competitors mentioned in evidence but no competitor-objections predicted.`,
-        };
-      }
-      return null;
-    },
-  },
-  {
-    code: "BANT_AUTHORITY_VS_NO_CHAMPION",
-    detect: (s) => {
-      if (!s.bant || !s.committee) return null;
-      if (s.bant.authority >= 70 && !s.committee.hasIdentifiedChampion) {
-        return {
-          fromNodeId: "bant.authority",
-          toNodeId: "committee.champion",
-          reason: `BANT authority ${s.bant.authority} but no champion stakeholder identified.`,
-        };
-      }
-      return null;
-    },
-  },
-  {
-    code: "BANT_NEED_VS_NO_TRIGGERS",
-    detect: (s) => {
-      if (!s.bant) return null;
-      if (s.bant.need >= 70 && s.triggers.length === 0) {
-        return {
-          fromNodeId: "bant.need",
-          toNodeId: "triggers.list",
-          reason: `BANT need ${s.bant.need} but zero LeadTrigger evidence — need is being inferred without any source-grounded fact.`,
         };
       }
       return null;
@@ -219,36 +141,6 @@ export const CONTRADICTION_RULES: ContradictionRule[] = [
           fromNodeId: `trigger.${opening.id}`,
           toNodeId: "triggers.hiring",
           reason: `NEW_LOCATION_OPENING detected but no HIRING_OPS or HIRING_TECH evidence — usually openings come with a hiring spike.`,
-        };
-      }
-      return null;
-    },
-  },
-  {
-    code: "WHY_NOW_URGENCY_VS_NO_INSIGHT_MATCHED",
-    detect: (s) => {
-      if (!s.whyNow) return null;
-      if (s.whyNow.urgency >= 70 && s.insights.length === 0) {
-        return {
-          fromNodeId: "whyNow.urgency",
-          toNodeId: "insights.matched",
-          reason: `WHY_NOW urgency ${s.whyNow.urgency} but no commercial insight matched — opener will ship without a reframe.`,
-        };
-      }
-      return null;
-    },
-  },
-  {
-    code: "BANT_OVERALL_VS_LOW_CONFIDENCE_TRIGGERS",
-    detect: (s) => {
-      if (!s.bant || s.triggers.length === 0) return null;
-      const avgConfidence =
-        s.triggers.reduce((sum, t) => sum + t.confidence, 0) / s.triggers.length;
-      if (s.bant.overall >= 70 && avgConfidence < 0.4) {
-        return {
-          fromNodeId: "bant.overall",
-          toNodeId: "triggers.confidence",
-          reason: `BANT overall ${s.bant.overall} but supporting triggers avg confidence ${avgConfidence.toFixed(2)} — high score on shaky evidence.`,
         };
       }
       return null;

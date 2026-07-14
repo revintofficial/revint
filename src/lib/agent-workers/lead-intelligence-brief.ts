@@ -88,7 +88,12 @@ import {
   type PainPointSource,
   type WebsiteVerificationStatus,
 } from "@/lib/sdr-brain/contracts";
-import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
+import { isTruthLayerFlagEnabled, getHeadAgentMode } from "@/lib/feature-flags";
+import {
+  runHeadAgentSynthesis,
+  isFnbNiche,
+  type HeadAgentDecision,
+} from "@/lib/ai-core/agent/head-agent";
 import { TruthLayerError } from "@/lib/sdr-brain/error-catalog";
 import { getPlaybook, deriveLeadTemperature } from "@/lib/playbook/resolve";
 import { enqueueCrmWriteback } from "@/lib/integrations/hubspot/writeback";
@@ -174,10 +179,21 @@ interface BriefOutput {
   websiteClaimBlocked?: boolean;
   /**
    * `"v2"` when the new prompt + responseSchema produced this brief,
-   * `"legacy"` when the flag-off / fallback path produced it. Lets
-   * downstream telemetry split shadow-run comparisons cleanly.
+   * `"legacy"` when the flag-off / fallback path produced it,
+   * `"head-agent"` when the Claude Head Agent synthesis pass ran on top
+   * of the deterministic v2 brief (canary). Lets downstream telemetry
+   * split shadow-run comparisons cleanly.
    */
-  briefMode?: "v2" | "legacy";
+  briefMode?: "v2" | "legacy" | "head-agent";
+  /**
+   * Faz 2 — Claude Head Agent decision. Present only when the
+   * CLAUDE_HEAD_AGENT flag is on for the workspace, the niche routes to
+   * a vertical pack (F&B today), and the synthesis call succeeded. The
+   * deterministic fields above are unchanged — this is an additive
+   * account-level decision layer (primary angle, talk track, confidence,
+   * cross-source conflicts) the UI + CRM write-back consume.
+   */
+  headAgent?: HeadAgentDecision;
   generatedAt: string;
   intelligenceVersion: number;
 }
@@ -1557,6 +1573,102 @@ export const run: AgentWorkerRun = async (
     };
   }
 
+  // ----- Faz 2/4 — Claude Head Agent synthesis pass (shadow + canary) -----
+  // Runs ON TOP of the deterministic v2 brief, only when the flag is on
+  // for this workspace, Claude is configured, and the niche routes to a
+  // vertical pack (F&B today). It never throws and never mutates the
+  // deterministic scores. In "shadow" mode it runs for telemetry ONLY
+  // (no attach, no write-back); in "live" mode it attaches an additive
+  // account-level decision — but only after the deterministic QA gate
+  // passes. A QA-failed decision is logged and discarded.
+  let headAgentTokens = 0;
+  const headAgentMode = getHeadAgentMode({ workspaceId });
+  if (headAgentMode !== "off" && isFnbNiche(ctx.workspace.niche)) {
+    // Multi-location context: a lead whose account spans >1 location.
+    let isMultiLocation: boolean | null = null;
+    if (lead.accountId) {
+      const siblingCount = await prisma.lead.count({
+        where: { workspaceId, accountId: lead.accountId },
+      });
+      isMultiLocation = siblingCount > 1 ? true : null;
+    }
+
+    const headAgent = await runHeadAgentSynthesis({
+      workspaceId,
+      leadId,
+      businessName: lead.businessName,
+      niche: ctx.workspace.niche,
+      address: lead.formattedAddress,
+      substrate: {
+        hasWebsite: lead.hasWebsite,
+        websiteUrl: lead.websiteUrl,
+        rating: lead.rating,
+        reviewCount: lead.reviewCount,
+        priceLevel: lead.priceLevel ?? null,
+        isMultiLocation,
+        features,
+        audit: lead.websiteAudit
+          ? {
+              reachable: lead.websiteAudit.reachable,
+              hasBookingSystem: lead.websiteAudit.hasBookingSystem,
+              bookingProvider: lead.websiteAudit.bookingProvider,
+            }
+          : null,
+        reviewAnalysis: reviewAnalysis
+          ? {
+              painPhrases: (reviewAnalysis as unknown as Record<string, unknown>).painPhrases,
+              weaknessKpis: (reviewAnalysis as unknown as Record<string, unknown>).weaknessKpis,
+              strengthPhrases: (reviewAnalysis as unknown as Record<string, unknown>).strengthPhrases,
+            }
+          : null,
+      },
+      briefContext: {
+        headline: brief.headline,
+        talkingPoints: brief.talkingPoints,
+        confirmedPainPoints: brief.confirmedPainPoints,
+        salesConfidence: brief.salesConfidence,
+      },
+    });
+
+    if (headAgent) {
+      headAgentTokens = headAgent.usage.totalTokens;
+      const agree = headAgent.deterministicPrimary === headAgent.agentPrimary;
+      const attached = headAgentMode === "live" && headAgent.qa.passed;
+
+      // Shadow-run telemetry — emitted in BOTH shadow and live so the
+      // dashboard can compare the Claude decision against the
+      // deterministic baseline (agree rate, QA pass rate) before a tenant
+      // is flipped live, and audit attach decisions once live.
+      logger.info("[head-agent-telemetry]", {
+        event: "head_agent.synthesis",
+        leadId,
+        workspaceId,
+        mode: headAgentMode,
+        attached,
+        qaPassed: headAgent.qa.passed,
+        qaIssues: headAgent.qa.issues,
+        qaWarnings: headAgent.qa.warnings,
+        deterministicPrimary: headAgent.deterministicPrimary,
+        agentPrimary: headAgent.agentPrimary,
+        agree,
+        confidence: headAgent.decision.confidence,
+        conflicts: headAgent.decision.sourceConflicts.length,
+        recommendedPackage: headAgent.decision.recommendedPackage,
+        rounds: headAgent.rounds,
+        toolCalls: headAgent.toolCalls,
+        tokens: headAgentTokens,
+      });
+
+      // Attach ONLY when live AND QA passed. Shadow never attaches, so
+      // write-back + UI stay on the deterministic baseline while we
+      // evaluate the agent.
+      if (attached) {
+        brief.headAgent = headAgent.decision;
+        brief.briefMode = "head-agent";
+      }
+    }
+  }
+
   // Derive a deterministic lead temperature from the freshly computed
   // sales confidence + inbound SLA so the leads list, the
   // `revint_lead_temperature` HubSpot property and the App Card stay
@@ -1665,7 +1777,7 @@ export const run: AgentWorkerRun = async (
 
   return {
     output,
-    costTokens: 0,
+    costTokens: headAgentTokens,
   };
 };
 
@@ -1774,61 +1886,25 @@ async function runSdrBrainPass(args: {
   // Bucket the T2 reasoning summaries by the worker that wrote them.
   // refType keys come from `REASONING_SUMMARY_REF_TYPES` — every
   // writer + reader shares the same constant so casing cannot drift.
+  //
+  // V2-cleanup — only WHY_NOW_SYNTHESIZER survives. BANT_INFERRER,
+  // COMMERCIAL_INSIGHT_MATCHER, BUYING_COMMITTEE_MAPPER, and
+  // OBJECTION_PREDICTOR were removed (enterprise framework workers
+  // that produced empty or copy-paste output for SMB restaurants).
   const whyNow = summaryMemory.find(
     (m) => m.refType === REASONING_SUMMARY_REF_TYPES.WhyNowSynthesizer,
   );
-  const bant = summaryMemory.find(
-    (m) => m.refType === REASONING_SUMMARY_REF_TYPES.BantInferrer,
-  );
-  const insightMatch = summaryMemory.find(
-    (m) => m.refType === REASONING_SUMMARY_REF_TYPES.CommercialInsightMatcher,
-  );
-  const committee = summaryMemory.find(
-    (m) => m.refType === REASONING_SUMMARY_REF_TYPES.BuyingCommitteeMapper,
-  );
-  const objections = summaryMemory.find(
-    (m) => m.refType === REASONING_SUMMARY_REF_TYPES.ObjectionPredictor,
-  );
 
   const whyNowMeta = (whyNow?.metadata as { urgencyScore?: number; recommendedTimingDays?: number } | null) ?? null;
-  const bantMeta =
-    (bant?.metadata as {
-      totalScore?: number;
-      overall?: number;
-      timing?: number;
-      budget?: number;
-      authority?: number;
-      need?: number;
-    } | null) ?? null;
-  const insightMeta =
-    (insightMatch?.metadata as { topInsightId?: string; topInsightTitle?: string; wilson?: number } | null) ?? null;
-  const committeeMeta = (committee?.metadata as { roles?: string[]; topInfluence?: number } | null) ?? null;
-  const objectionsMeta = (objections?.metadata as { topCategories?: string[] } | null) ?? null;
 
   // Bail when we have literally nothing to reason about — the brief
   // alone is the rep-facing artifact.
-  if (
-    triggers.length === 0 &&
-    !whyNow &&
-    !bant &&
-    !insightMatch &&
-    !committee &&
-    !objections
-  ) {
+  if (triggers.length === 0 && !whyNow) {
     return null;
   }
 
   // Build the T2 snapshot in the shape the contradiction detector wants.
   const t2Snapshot: T2Snapshot = {
-    bant: bantMeta
-      ? {
-          budget: bantMeta.budget ?? 0,
-          authority: bantMeta.authority ?? 0,
-          need: bantMeta.need ?? 0,
-          timing: bantMeta.timing ?? 0,
-          overall: bantMeta.overall ?? bantMeta.totalScore ?? 0,
-        }
-      : null,
     whyNow: whyNowMeta
       ? {
           urgency: whyNowMeta.urgencyScore ?? 0,
@@ -1848,17 +1924,6 @@ async function runSdrBrainPass(args: {
       severity: t.severity,
       confidence: t.confidence,
     })),
-    insights: insightMeta?.topInsightId
-      ? [{ id: insightMeta.topInsightId, appliedTriggers: [] }]
-      : [],
-    committee: committeeMeta
-      ? {
-          hasIdentifiedChampion: (committeeMeta.roles ?? []).includes("CHAMPION"),
-          hasIdentifiedEconomicBuyer: (committeeMeta.roles ?? []).includes("DECISION_MAKER"),
-        }
-      : null,
-    objectionsPredicted: objectionsMeta?.topCategories ?? [],
-    competitorsMentionedCount: 0,
     audit: lead.websiteAudit
       ? {
           checklistScorePct: args.auditScorePct,
@@ -1878,8 +1943,9 @@ async function runSdrBrainPass(args: {
 
   // Build the reasoning graph using the actual builder API. Node ids
   // follow the conventions documented in `reasoning-graph.ts`:
-  //   trigger.<id>, audit.checklist, ev.review.<id>, bant.*, whyNow.*,
-  //   insight.<id>, committee.<role>, objections.predicted, decision.
+  //   trigger.<id>, audit.checklist, ev.review.<id>, whyNow.*, decision.
+  // (BANT, insight-match, committee, and objection-predict nodes were
+  // dropped along with their workers in the V2 cleanup.)
   const builder = new ReasoningGraphBuilder("sdr-brain-v2");
   const declaredNodeIds = new Set<string>();
   const declare = (id: string): string => {
@@ -1922,34 +1988,14 @@ async function runSdrBrainPass(args: {
   }
 
   // Inference nodes per T2 reasoner. Map each to a stable id so
-  // contradiction edges can reference them.
+  // contradiction edges can reference them. Only WHY_NOW_SYNTHESIZER
+  // survived the V2 cleanup, so this is now a single optional branch.
   const inferenceIds: string[] = [];
-  if (bant) {
-    const id = declare("bant.overall");
-    builder.addInference(id, bant.text.slice(0, 200), 0.6, 0.7);
-    inferenceIds.push(id);
-    for (const ev of evidenceIds) builder.link(ev, id, "DERIVES");
-  }
   if (whyNow) {
     const id = declare("whyNow.urgency");
     builder.addInference(id, whyNow.text.slice(0, 200), 0.7, 0.75);
     inferenceIds.push(id);
     for (const ev of evidenceIds.slice(0, 3)) builder.link(ev, id, "SUPPORTS");
-  }
-  if (insightMatch && insightMeta?.topInsightId) {
-    const id = declare(`insight.${insightMeta.topInsightId}`);
-    builder.addInference(id, insightMatch.text.slice(0, 200), 0.6, insightMeta.wilson ?? 0.6);
-    inferenceIds.push(id);
-  }
-  if (committee) {
-    const id = declare("committee.map");
-    builder.addInference(id, committee.text.slice(0, 200), 0.5, 0.7);
-    inferenceIds.push(id);
-  }
-  if (objections) {
-    const id = declare("objections.predicted");
-    builder.addInference(id, objections.text.slice(0, 200), 0.5, 0.6);
-    inferenceIds.push(id);
   }
 
   // Apply the contradiction detector results: each becomes a record
@@ -1964,11 +2010,11 @@ async function runSdrBrainPass(args: {
       fromNodeId: c.fromNodeId,
       toNodeId: c.toNodeId,
       reason: c.reason,
-      // Phase 1 default: prefer the FIRST node when it's a bant.*
-      // signal (BANT wins on conflict by convention), else BLEND so
-      // the brief still presents both sides.
-      resolution: c.fromNodeId.startsWith("bant.") ? "PREFER_FIRST" : "BLEND",
-      resolverNote: "Phase 1 deterministic policy; Gemini arbitration is Phase 2.",
+      // Default to BLEND so the brief presents both sides of the
+      // contradiction. BANT-precedence resolution was dropped with
+      // the BANT_INFERRER worker (V2 cleanup).
+      resolution: "BLEND",
+      resolverNote: "Deterministic policy; Gemini arbitration is future work.",
     };
     if (declaredNodeIds.has(c.fromNodeId) && declaredNodeIds.has(c.toNodeId)) {
       builder.addContradiction(record);
@@ -2033,13 +2079,16 @@ async function runSdrBrainPass(args: {
       timingWindowStart: new Date(),
       timingWindowEnd,
       channel,
-      primaryAngleId: insightMeta?.topInsightId ?? null,
+      // V2-cleanup — primaryAngleId nulled. The CommercialInsightMatcher
+      // worker that populated it was removed; SalesOpportunityScorer's
+      // `bestSalesAngle` is the canonical angle source going forward.
+      primaryAngleId: null,
       triggerIds: triggers.slice(0, 6).map((t) => t.id),
       openingHook: brief.openerSeed.slice(0, 800),
       whatNotToPitch: brief.confirmedMissingFeatures.slice(0, 5),
       qualificationGap: [],
       predictedObjections: brief.replyObjections.slice(0, 5),
-      recommendedFramework: insightMeta?.topInsightId ? "CHALLENGER" : "AIDA",
+      recommendedFramework: "AIDA",
       confidence: decisionConfidence,
       reasoning: brief.headline.slice(0, 4000),
       reasoningGraph: reasoningGraph as unknown as Prisma.InputJsonValue,
@@ -2047,36 +2096,12 @@ async function runSdrBrainPass(args: {
     },
   });
 
-  // Persist InsightApplication for the chosen insight (if any).
-  let insightApplied: string | null = null;
-  if (insightMeta?.topInsightId) {
-    try {
-      await prisma.insightApplication.create({
-        data: {
-          workspaceId,
-          leadId,
-          insightId: insightMeta.topInsightId,
-          surface: "NBA",
-          framework: "CHALLENGER",
-          attributedBy: "SDR_BRAIN",
-        },
-      });
-      insightApplied = insightMeta.topInsightId;
-    } catch (err) {
-      logger.warn("agent_workers.lead_intelligence_brief.insight_application_failed", {
-        leadId,
-        insightId: insightMeta.topInsightId,
-        err: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }
-
   return {
     leadActionId: created.id,
     actionKind,
     confidence: decisionConfidence,
     contradictionCount: contradictionRecords.length,
-    insightApplied,
+    insightApplied: null,
   };
 }
 

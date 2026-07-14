@@ -93,3 +93,66 @@ export function isTruthLayerFlagEnabled(
   if (env !== null) return env;
   return truthLayerDefault();
 }
+
+// =====================================================================
+// Head Agent (Claude) — FineDine "üstten bakan beyin" kill switch.
+//
+// When ON for a workspace, the LEAD_INTELLIGENCE_BRIEF worker routes
+// its final synthesis through the Claude Head Agent (briefMode =
+// "head-agent") instead of the Gemini v2 brief. The Head Agent reads
+// the same deterministic substrate and produces the FineDine decision
+// (recommended angle + module-fit + don't-pitch) on top of it.
+//
+// Defaults to OFF everywhere (it costs Anthropic tokens and needs
+// ANTHROPIC_API_KEY). Turn it on per-tenant for the FineDine canary:
+//   CLAUDE_HEAD_AGENT=on
+//   CLAUDE_HEAD_AGENT_WORKSPACES=<finedine-workspace-id>,<...>
+// The workspace allow-list wins over the global env default so we can
+// canary FineDine without flipping every tenant.
+// =====================================================================
+
+function inAllowList(raw: string | undefined, workspaceId: string): boolean {
+  if (!raw) return false;
+  const ids = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return ids.length > 0 && ids.includes(workspaceId);
+}
+
+/**
+ * Head Agent rollout mode (Faz 4 — shadow / canary ladder):
+ *   - "live"   → run the synthesis AND attach it to the brief
+ *                (briefMode = "head-agent"), write-back + UI consume it.
+ *   - "shadow" → run the synthesis for telemetry ONLY; do NOT attach,
+ *                do NOT write back. Lets us compare the Claude decision
+ *                against the deterministic baseline before flipping a
+ *                tenant live, at the cost of Anthropic tokens.
+ *   - "off"    → don't run it at all.
+ *
+ * Resolution (most specific wins): live allow-list → shadow allow-list →
+ * global CLAUDE_HEAD_AGENT (on=live) → global CLAUDE_HEAD_AGENT_SHADOW →
+ * off.
+ */
+export type HeadAgentMode = "off" | "shadow" | "live";
+
+export function getHeadAgentMode(session: FeatureFlagSession): HeadAgentMode {
+  if (inAllowList(process.env.CLAUDE_HEAD_AGENT_WORKSPACES, session.workspaceId)) {
+    return "live";
+  }
+  if (inAllowList(process.env.CLAUDE_HEAD_AGENT_SHADOW_WORKSPACES, session.workspaceId)) {
+    return "shadow";
+  }
+  const live = parseOnOff(process.env.CLAUDE_HEAD_AGENT ?? null);
+  if (live === true) return "live";
+  const shadow = parseOnOff(process.env.CLAUDE_HEAD_AGENT_SHADOW ?? null);
+  if (shadow === true) return "shadow";
+  // Explicit global "off" forces off even if a stale shadow flag lingers.
+  if (live === false) return "off";
+  return "off";
+}
+
+/** Back-compat: true only when the workspace is fully live. */
+export function isHeadAgentEnabled(session: FeatureFlagSession): boolean {
+  return getHeadAgentMode(session) === "live";
+}

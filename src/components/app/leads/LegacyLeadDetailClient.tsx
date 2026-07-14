@@ -63,6 +63,7 @@ import { AiWorkersPanel } from "@/components/app/ai-workers-panel";
 import { PlannerActions } from "@/components/app/planner-actions";
 import { WebsiteIntelligencePanel } from "@/components/app/website-intelligence-panel";
 import { LeadActionSheet } from "@/components/app/leads/LeadActionSheet";
+import AccountIntelligenceBriefCard from "@/components/app/leads/AccountIntelligenceBriefCard";
 import { LeadQualificationCard } from "@/components/app/leads/LeadQualificationCard";
 import {
   ArrowLeft,
@@ -735,6 +736,10 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
             </div>
 
             <TabsContent value="overview" className="space-y-5">
+              {/* Faz 3 — Claude Head Agent account-level decision. Renders
+                  only when the synthesis pass ran (F&B + flag on); a no-op
+                  otherwise so non-pack workspaces are unaffected. */}
+              <AccountIntelligenceBriefCard id={lead.id} />
               {/* FineDine v1 update — the "Next Best Action" (NbaCard)
                   block was removed; its WAIT_FOR_REPLY / reasoning-trace
                   output wasn't useful to reps. The call-first Action

@@ -32,6 +32,27 @@ const nextConfig = {
     ];
   },
 
+  // Per-route response headers. `/app/leads/*` is opened inside HubSpot's
+  // `openIframeModal` from the Revint App Card so the SDR sees the full
+  // Revint-branded surface without leaving HubSpot. The default deny
+  // (`frame-ancestors 'none'`) would block that — explicitly allow the
+  // HubSpot CRM origins for this route only. Every other route stays
+  // unframeable.
+  async headers() {
+    return [
+      {
+        source: "/app/leads/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value:
+              "frame-ancestors 'self' https://*.hubspot.com https://app.hubspot.com",
+          },
+        ],
+      },
+    ];
+  },
+
   async redirects() {
     return [
       {

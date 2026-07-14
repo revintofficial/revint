@@ -46,6 +46,12 @@ import { verifyHubspotRequest } from "@/lib/integrations/hubspot/webhook";
 import { getHubspotClient } from "@/lib/integrations/hubspot/client";
 import { getPlaybook } from "@/lib/playbook/resolve";
 import { pickAngle } from "@/lib/playbook/angle";
+import { resolveRecommendedPackage } from "@/lib/lead-detail/recommended-package";
+import {
+  REASON_LABELS,
+  SUPPRESS_WHEN_NO_WEBSITE,
+  normalizeWedgeKey,
+} from "@/lib/labels";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -112,6 +118,7 @@ const leadCardSelect = {
   lastDisposition: true,
   inboundReceivedAt: true,
   crmLastSyncedAt: true,
+  googleMapsUri: true,
   qualification: {
     select: {
       status: true,
@@ -130,6 +137,50 @@ const leadCardSelect = {
       timingWindowEnd: true,
       actionKind: true,
       confidence: true,
+    },
+  },
+  // At-a-glance + tech-signal + social/maps context. The audit row carries
+  // the deterministic "what does this venue have?" booleans (booking, contact
+  // form, WhatsApp), the social-profile blob, the F&B-specific rawFeaturesJson
+  // (QR menu / online reservation / delivery), and the load-time signal used
+  // for the "Slow site" chip.
+  websiteAudit: {
+    select: {
+      hasContactForm: true,
+      hasWhatsappLink: true,
+      hasBookingSystem: true,
+      socialProfiles: true,
+      rawFeaturesJson: true,
+      loadTimeMs: true,
+    },
+  },
+  // Package recommendation + "why this lead" reasoning written by the
+  // SALES_OPPORTUNITY_SCORER analyst. recommendedPackageId is free-text
+  // (resolved to a ServicePackage below, workspace-scoped). `reasonCodes`
+  // feeds the At-a-Glance chip strip alongside the audit-derived wedges.
+  salesOpportunity: {
+    select: {
+      opportunityScore: true,
+      whyGoodTarget: true,
+      likelyPainPoints: true,
+      expectedPriceBand: true,
+      recommendedPackageId: true,
+      recommendedPackageReason: true,
+      reasonCodes: true,
+    },
+  },
+  // Review Intelligence (review-analyst worker) — lead score, sentiment,
+  // weakness/strength KPIs, grounded pain/praise phrases.
+  reviewAnalysis: {
+    select: {
+      leadScore: true,
+      reviewsAnalyzedCount: true,
+      sentimentBreakdown: true,
+      weaknessKpis: true,
+      strengthKpis: true,
+      painPhrases: true,
+      strengthPhrases: true,
+      summary: true,
     },
   },
 } as const;
@@ -258,6 +309,248 @@ function truncate(s: string | null | undefined, max: number): string | null {
   return `${s.slice(0, max - 1)}…`;
 }
 
+// ---- JSON-field coercion helpers (SalesOpportunity + ReviewAnalysis carry
+// loosely-typed Json columns; coerce defensively before sending to the card).
+
+function asStringList(v: unknown, max: number): string[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+    .map((s) => s.trim())
+    .slice(0, max);
+}
+
+interface CardKpi {
+  label: string;
+  percent: number | null;
+}
+
+function asKpis(v: unknown, max: number): CardKpi[] {
+  if (!Array.isArray(v)) return [];
+  const out: CardKpi[] = [];
+  for (const item of v) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    const label = typeof row.label === "string" ? row.label.trim() : "";
+    if (!label) continue;
+    out.push({
+      label,
+      percent: typeof row.percent === "number" ? Math.round(row.percent) : null,
+    });
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+/** Read a 0..1 sentiment fraction off the Json blob and return a 0..100 %. */
+function sentimentPct(blob: unknown, key: string): number | null {
+  if (!blob || typeof blob !== "object") return null;
+  const v = (blob as Record<string, unknown>)[key];
+  if (typeof v !== "number" || Number.isNaN(v)) return null;
+  return Math.round(v * 100);
+}
+
+// ---- F&B rawFeaturesJson shape (audit-derived restaurant signals). ---------
+
+interface RestaurantFeatures {
+  hasQrMenu?: boolean;
+  hasOnlineReservation?: boolean;
+  hasDeliveryIntegration?: boolean;
+  detectedMenuTool?: string | null;
+}
+
+function asRestaurantFeatures(v: unknown): RestaurantFeatures | null {
+  if (!v || typeof v !== "object") return null;
+  return v as RestaurantFeatures;
+}
+
+/**
+ * "Restaurant tech signals" tiles (QR menu / Online reservation / Delivery
+ * integration). Mirrors the in-app `RestaurantSignalsSection` shape from
+ * `src/components/app/website-intelligence-panel.tsx` so the HubSpot card
+ * and Revint UI surface the SAME signals/copy in the SAME order.
+ *
+ * Returns `null` (not an empty array) when the audit has no
+ * `rawFeaturesJson` — that's how the card knows to omit the section
+ * entirely instead of rendering three "Not detected" tiles for a venue
+ * that was never F&B-classified.
+ */
+function buildTechSignals(features: RestaurantFeatures | null): Array<{
+  label: string;
+  present: boolean;
+  detail: string;
+  priority: "critical" | "important" | "nice_to_have";
+}> | null {
+  if (!features) return null;
+  return [
+    {
+      label: "QR menu",
+      present: !!features.hasQrMenu,
+      detail: features.detectedMenuTool
+        ? `Detected: ${features.detectedMenuTool}`
+        : features.hasQrMenu
+          ? "QR menu found on site"
+          : "Not detected — primary sales opportunity",
+      priority: "critical",
+    },
+    {
+      label: "Online reservation",
+      present: !!features.hasOnlineReservation,
+      detail: features.hasOnlineReservation
+        ? "Reservation system found"
+        : "No reservation integration",
+      priority: "important",
+    },
+    {
+      label: "Delivery integration",
+      present: !!features.hasDeliveryIntegration,
+      detail: features.hasDeliveryIntegration
+        ? "Delivery platform link found"
+        : "No delivery platform embed",
+      priority: "nice_to_have",
+    },
+  ];
+}
+
+// ---- At-a-Glance chips ------------------------------------------------------
+
+/**
+ * Server-side mirror of `AtAGlanceStrip` in
+ * `src/components/app/leads/LegacyLeadDetailClient.tsx`. The wedges (audit-
+ * derived booleans) are the high-trust source; Gemini `reasonCodes` that
+ * collide under `normalizeWedgeKey` get dropped so the chip strip never
+ * shows the same fact twice under different copy.
+ *
+ * Kept SERVER-SIDE so the HubSpot card stays render-only (no derivation
+ * in the iframe runtime) and so a single tweak to the chip rules
+ * propagates to both UI surfaces.
+ */
+function buildGlanceChips(args: {
+  audit: {
+    hasContactForm: boolean;
+    hasWhatsappLink: boolean;
+    loadTimeMs: number | null;
+  } | null;
+  features: RestaurantFeatures | null;
+  reasonCodes: unknown;
+  reviewLeadScore: number | null;
+  packageName: string | null;
+}): string[] {
+  const { audit, features, reasonCodes, reviewLeadScore, packageName } = args;
+
+  const chips: string[] = [];
+
+  // Package + review sub-score lead the strip (highest-information chips).
+  if (packageName) chips.push(`Package: ${packageName}`);
+  if (reviewLeadScore != null) {
+    chips.push(`Review sub-score ${reviewLeadScore}/100`);
+  }
+
+  // Slow site label uses the same 3.5s threshold as the in-app strip.
+  if (audit?.loadTimeMs != null && audit.loadTimeMs >= 3500) {
+    chips.push(`Slow site ~${Math.round(audit.loadTimeMs / 1000)}s`);
+  }
+
+  // Audit-derived wedges (boolean signals). Match the in-app copy verbatim
+  // so chip text stays consistent across HubSpot + Revint.
+  const wedges: string[] = [];
+  if (audit?.hasWhatsappLink === false) wedges.push("No WhatsApp");
+  if (audit?.hasContactForm === false) wedges.push("No contact form");
+  if (features?.hasQrMenu === true) wedges.push("QR menu detected");
+  for (const w of wedges) chips.push(w);
+
+  // Gemini scorer reasonCodes, mapped through REASON_LABELS and deduped
+  // against the high-trust audit wedges by normalized text.
+  const raw = Array.from(
+    new Set(
+      Array.isArray(reasonCodes)
+        ? (reasonCodes as unknown[]).filter(
+            (x): x is string => typeof x === "string" && x.trim().length > 0,
+          )
+        : [],
+    ),
+  );
+  const hasNoWebsite = raw.includes("no_website");
+  const wedgeKeys = new Set(wedges.map(normalizeWedgeKey));
+  const filtered = raw
+    .filter((code) => {
+      if (hasNoWebsite && SUPPRESS_WHEN_NO_WEBSITE.has(code)) return false;
+      const labelText = REASON_LABELS[code] ?? code.replace(/_/g, " ");
+      if (wedgeKeys.has(normalizeWedgeKey(labelText))) return false;
+      return true;
+    })
+    .slice(0, 5)
+    .map((code) => REASON_LABELS[code] ?? code.replace(/_/g, " "));
+  for (const c of filtered) chips.push(c);
+
+  // Hard cap so the card stays well under the 1MB ceiling no matter how
+  // chip-heavy a lead is.
+  return chips.slice(0, 8);
+}
+
+// ---- Social links + Maps ----------------------------------------------------
+
+/**
+ * Allowed social platforms the card surfaces. Whitelisted (not iterated
+ * over the blob) so a stray junk key in `socialProfiles` can't leak into
+ * the card UI. Order matches the mockup (instagram first → tiktok last).
+ */
+const SOCIAL_PLATFORMS = [
+  "instagram",
+  "facebook",
+  "linkedin",
+  "youtube",
+  "tiktok",
+  "twitter",
+  "whatsapp",
+  "pinterest",
+] as const;
+
+function buildSocialLinks(blob: unknown): Record<string, string> {
+  if (!blob || typeof blob !== "object") return {};
+  const out: Record<string, string> = {};
+  const obj = blob as Record<string, unknown>;
+  for (const key of SOCIAL_PLATFORMS) {
+    const v = obj[key];
+    if (typeof v === "string" && v.trim().length > 0) out[key] = v.trim();
+  }
+  return out;
+}
+
+// ---- AgentRun outputJson helpers --------------------------------------------
+
+function asJsonObject(v: unknown): Record<string, unknown> | null {
+  if (!v || typeof v !== "object") return null;
+  return v as Record<string, unknown>;
+}
+
+/**
+ * Extract a short summary from the dossier markdown for the HubSpot card.
+ * The Revint UI renders the FULL markdown; the card only needs a teaser
+ * so the SDR can decide whether to open the action sheet. Takes the first
+ * non-heading paragraph, strips markdown syntax, and caps at `max` chars.
+ */
+function extractDossierSummary(markdown: unknown, max = 280): string | null {
+  if (typeof markdown !== "string") return null;
+  const blocks = markdown.split(/\n{2,}/);
+  for (const block of blocks) {
+    const trimmed = block.trim();
+    if (!trimmed) continue;
+    if (trimmed.startsWith("#")) continue;
+    // Strip basic markdown: bold/italic, code ticks, links → label text.
+    const plain = trimmed
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/[`*_]+/g, "")
+      .replace(/^[>\-*]\s+/, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!plain) continue;
+    if (plain.length <= max) return plain;
+    return `${plain.slice(0, max - 1)}…`;
+  }
+  return null;
+}
+
 interface CardRequestBody {
   objectType?: string;
   objectId?: string | number;
@@ -291,15 +584,6 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ error: "invalid_signature" }, { status: 401 });
   }
-
-  // TEMP DIAGNOSTIC — capture exactly what the real card sends so we can see
-  // why requests 400. Remove once the card is confirmed working.
-  logger.warn("api.hubspot.card_data.debug_request", {
-    rawBodyLen: rawBody.length,
-    rawBodySample: rawBody.slice(0, 300),
-    hasHubIdHeader: !!request.headers.get("x-hubspot-hub-id"),
-    contentType: request.headers.get("content-type"),
-  });
 
   let body: CardRequestBody;
   try {
@@ -405,13 +689,113 @@ export async function POST(request: Request) {
     return null;
   })();
 
+  const opp = lead.salesOpportunity;
+  const review = lead.reviewAnalysis;
+
+  // Three workspace-scoped reads in parallel:
+  //   1. Resolve the analyst's recommended ServicePackage (free-text id
+  //      tolerates deleted/renamed packages by returning null).
+  //   2. Latest dossier markdown for the card's "AI Dossier" teaser. We
+  //      pull only `outputJson` from the most recent SUCCEEDED run, so
+  //      this is a single indexed lookup on `(workspaceId, leadId,
+  //      workerKind, status)` — comfortably inside the 15s envelope.
+  //   3. Latest brief run, used to surface the head-agent `primaryAngle`
+  //      + `talkTrack` for the "Pitch Angle" section. Falls back to the
+  //      deterministic `pickAngle` output below when the head agent
+  //      hasn't run for this lead (non-F&B, flag off, etc.).
+  const [recommendedPackage, dossierRun, briefRun] = await Promise.all([
+    resolveRecommendedPackage({
+      workspaceId,
+      recommendedPackageId: opp?.recommendedPackageId,
+      recommendedPackageReason: opp?.recommendedPackageReason,
+    }),
+    prisma.agentRun.findFirst({
+      where: {
+        workspaceId,
+        leadId: lead.id,
+        workerKind: "LEAD_DOSSIER_GENERATOR",
+        status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
+      },
+      orderBy: { finishedAt: "desc" },
+      select: { outputJson: true },
+    }),
+    prisma.agentRun.findFirst({
+      where: {
+        workspaceId,
+        leadId: lead.id,
+        workerKind: "LEAD_INTELLIGENCE_BRIEF",
+        status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
+      },
+      orderBy: { finishedAt: "desc" },
+      select: { outputJson: true },
+    }),
+  ]);
+
+  // ---- Dossier teaser ------------------------------------------------------
+  // Card stays a render-only teaser; the full markdown opens in Revint via
+  // the deep link below. Keeps the 1 MB response envelope safe even for
+  // dossiers with multi-thousand-word narratives.
+  const dossierObj = asJsonObject(dossierRun?.outputJson);
+  const dossierSummary = extractDossierSummary(dossierObj?.markdown ?? null);
+
+  // ---- Head-agent pitch (with deterministic fallback) ----------------------
+  // The mockup's "Pitch Angle" is a lead-specific sentence-style pitch,
+  // which is what the Claude head agent emits as `talkTrack`. When it
+  // hasn't run (non-F&B niche, flag off) we fall back to the most recent
+  // `LeadNextAction.openingHook` (also AI-written), and finally to the
+  // deterministic playbook `whenToPitch` so the field is never empty.
+  const briefObj = asJsonObject(briefRun?.outputJson);
+  const headAgent = asJsonObject(briefObj?.headAgent ?? null);
+  const headAgentAngle =
+    typeof headAgent?.primaryAngle === "string" && headAgent.primaryAngle.trim()
+      ? String(headAgent.primaryAngle).trim()
+      : null;
+  const headAgentTalkTrack =
+    typeof headAgent?.talkTrack === "string" && headAgent.talkTrack.trim()
+      ? String(headAgent.talkTrack).trim()
+      : null;
+
+  const pitchHeadline = headAgentAngle ?? picked?.angle.label ?? null;
+  const pitchSentence =
+    headAgentTalkTrack ??
+    nextAction?.openingHook ??
+    picked?.angle.whenToPitch ??
+    null;
+
+  // ---- At-a-Glance + tech signals + links ----------------------------------
+  const audit = lead.websiteAudit;
+  const features = asRestaurantFeatures(audit?.rawFeaturesJson ?? null);
+  const techSignals = buildTechSignals(features);
+  const glanceChips = buildGlanceChips({
+    audit: audit
+      ? {
+          hasContactForm: audit.hasContactForm,
+          hasWhatsappLink: audit.hasWhatsappLink,
+          loadTimeMs: audit.loadTimeMs ?? null,
+        }
+      : null,
+    features,
+    reasonCodes: opp?.reasonCodes ?? null,
+    reviewLeadScore: review?.leadScore ?? null,
+    packageName: recommendedPackage?.name ?? null,
+  });
+  const socialLinks = buildSocialLinks(audit?.socialProfiles ?? null);
+
+  // ---- Deep-link URLs ------------------------------------------------------
+  // The card uses these to render "See the full analysis" / "Continue
+  // dossier in Revint" / "Open Action Sheet" actions. We pre-build them
+  // here so the card never has to concatenate URLs in the iframe runtime.
+  const baseActionUrl = actionSheetUrl(lead.id);
+  const reviewsUrl = `${baseActionUrl}?tab=reviews`;
+  const dossierUrl = `${baseActionUrl}?tab=overview#dossier`;
+
   return NextResponse.json({
     found: true,
     lead: {
       id: lead.id,
       businessName: lead.businessName,
     },
-    actionSheetUrl: actionSheetUrl(lead.id),
+    actionSheetUrl: baseActionUrl,
     timing: {
       hoursSinceInbound,
       inboundReceivedAt: lead.inboundReceivedAt?.toISOString() ?? null,
@@ -450,5 +834,73 @@ export async function POST(request: Request) {
             )
           : null,
     },
+    // AI-with-fallback pitch (head-agent talkTrack → opening hook → static
+    // playbook `whenToPitch`). The card's "Pitch Angle" section reads this.
+    pitch: {
+      headline: pitchHeadline,
+      sentence: truncate(pitchSentence, MAX_HOOK_CHARS),
+    },
+    // Analyst-recommended service package (name + price + why).
+    package: recommendedPackage
+      ? {
+          name: recommendedPackage.name,
+          priceLabel: recommendedPackage.priceLabel,
+          reason: truncate(recommendedPackage.reason, MAX_HOOK_CHARS),
+          features: recommendedPackage.features.slice(0, 6),
+        }
+      : null,
+    // "Why they're a fit" + likely pain points (sales-opportunity scorer).
+    fit: {
+      opportunityScore: opp?.opportunityScore ?? null,
+      expectedPriceBand: opp?.expectedPriceBand ?? null,
+      whyGoodTarget: truncate(opp?.whyGoodTarget ?? null, MAX_EVIDENCE_CHARS),
+      painPoints: asStringList(opp?.likelyPainPoints, 5),
+    },
+    // At-a-Glance chip strip — server-derived from audit wedges +
+    // reasonCodes. See `buildGlanceChips` for the dedupe/suppression
+    // rules (kept in lockstep with the in-app strip).
+    glance: { chips: glanceChips },
+    // F&B "Restaurant Tech Signals" tiles (QR menu / Reservation / Delivery).
+    // `null` when the audit has no `rawFeaturesJson` so the card omits the
+    // whole section for non-F&B leads.
+    techSignals,
+    // Google Maps URL + social-profile links rendered as small icon row
+    // in the card header.
+    links: {
+      googleMapsUrl: lead.googleMapsUri ?? null,
+      social: socialLinks,
+    },
+    // Dossier teaser. `summary` is the first paragraph of the markdown
+    // narrative (capped at 280 chars); the full read happens in Revint.
+    dossier:
+      dossierSummary || dossierObj
+        ? {
+            summary: dossierSummary,
+            url: dossierUrl,
+          }
+        : null,
+    // Review Intelligence summary (review-analyst worker). Extended with
+    // praise phrases + a deep link to the full analysis in Revint. The
+    // verbose `summary` field is kept for backward compatibility but the
+    // new card UI surfaces only sentiment + phrases on the card body.
+    reviews: review
+      ? {
+          leadScore: review.leadScore ?? null,
+          reviewsAnalyzed: review.reviewsAnalyzedCount ?? null,
+          totalReviews: lead.reviewCount ?? null,
+          rating: lead.rating ?? null,
+          sentiment: {
+            positive: sentimentPct(review.sentimentBreakdown, "positive"),
+            neutral: sentimentPct(review.sentimentBreakdown, "neutral"),
+            negative: sentimentPct(review.sentimentBreakdown, "negative"),
+          },
+          topComplaints: asKpis(review.weaknessKpis, 3),
+          topPraise: asKpis(review.strengthKpis, 3),
+          painPhrases: asStringList(review.painPhrases, 3),
+          praisePhrases: asStringList(review.strengthPhrases, 3),
+          summary: truncate(review.summary ?? null, MAX_EVIDENCE_CHARS),
+          fullAnalysisUrl: reviewsUrl,
+        }
+      : null,
   });
 }

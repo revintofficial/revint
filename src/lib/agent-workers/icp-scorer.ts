@@ -7,9 +7,9 @@
  * so the math is unit-testable without Prisma; this worker is the
  * thin Prisma wrapper.
  *
- * Runs in T1 paralle with REVIEW_ANALYST, ACCOUNT_TIER_RANKER, etc.
- * BANT_INFERRER depends on this so its preliminary NBA can use the
- * ICP fit number.
+ * Runs in T1 parallel with REVIEW_ANALYST. The intelligence brief
+ * consumes `Lead.icpFitScore` as the canonical fit signal for its
+ * "Why They Are A Fit" narrative.
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
@@ -134,9 +134,9 @@ export const run: AgentWorkerRun = async (
   // Phase 0 hot-fix — `checklistScorePct` was hard-wired to null,
   // which made the `digitalMaturityFloor` rule in `scoreIcpFit` dead
   // code (the rule deducts up to 25 points when checklistScorePct
-  // falls below the configured floor). Match what BANT_INFERRER does:
-  // run the deterministic audit checklist against the same features
-  // blob the audit row carries, then pass the percent through.
+  // falls below the configured floor). Run the deterministic audit
+  // checklist against the same features blob the audit row carries,
+  // then pass the percent through.
   //
   // The checklist self-skips for leads with no website / no features
   // so we only feed a real number when there's signal to score.

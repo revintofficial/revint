@@ -17,6 +17,14 @@ alwaysApply: false
 
 All multi-step AI work flows through this stack. **Never add a new BullMQ queue, a new Gemini-calling endpoint, or a new per-worker DB column without first checking what AI Core already provides.**
 
+## LLM providers
+
+Gemini (`@google/generative-ai`) is the default provider for workers + the copilot router. The **Head Agent** is the one sanctioned non-Gemini path: Claude (`@anthropic-ai/sdk`) used ONLY for the final account-level synthesis/decision inside `LEAD_INTELLIGENCE_BRIEF` (`briefMode: "head-agent"`). All Anthropic access goes through `src/lib/ai-core/agent/claude.ts`; read `ANTHROPIC_API_KEY` server-side only (no top-level `env` block). Do not add Claude calls elsewhere — wrap any new LLM work as a worker, same as Gemini.
+
+Rollout ladder (`getHeadAgentMode` in `feature-flags.ts`): `off` → `shadow` (runs for `[head-agent-telemetry]` comparison only; never attaches, never writes back) → `live` (attaches the decision, but ONLY after the deterministic QA gate in `head-agent.ts` passes). The agent decides its angle from the deterministic vertical-pack shortlist (`src/lib/playbook/vertical-pack/`) — it cannot invent module fit; hallucinated/excluded modules are dropped by the QA gate. Env: `CLAUDE_HEAD_AGENT[_SHADOW]` (global on/off) + `CLAUDE_HEAD_AGENT[_SHADOW]_WORKSPACES` (per-tenant allow-list, most specific wins).
+
+Agentic tool loop (Option B): the Head Agent runs a bounded Claude tool-use loop (`runClaudeToolLoop` in `claude.ts`, max 5 rounds). It can pull more data ON DEMAND via the READ-ONLY, workspace-scoped tools in `src/lib/ai-core/agent/tools.ts` (`get_lead_basics`, `get_full_reviews`, `get_website_audit`, `get_dossier`, `get_sales_opportunity`, `get_packages` = the seller's real catalog, `get_memory`). Tools NEVER mutate / enqueue / spend external budget (no re-crawl or web-search — that needs quota wiring). Every tool query is scoped by `workspaceId`. Token usage is summed across all loop turns into the AgentRun `costTokens` meter. Add a new tool by appending to `AGENT_TOOLS`; keep it read-only + workspace-scoped.
+
 ## Module layout
 
 | File | Purpose |

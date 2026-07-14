@@ -1,11 +1,17 @@
 /**
- * SDR Brain v2 — contradiction detector unit tests.
+ * SDR Brain — contradiction detector unit tests.
  *
- * Each rule in `CONTRADICTION_RULES` gets at least one positive case
- * (rule should fire) and one negative case (rule should NOT fire). The
- * detector is the deterministic pre-pass that gates Gemini arbitration,
- * so a regression here changes downstream LeadNextAction behaviour
- * for every workspace at once.
+ * Each surviving rule in `CONTRADICTION_RULES` gets a positive case
+ * (rule should fire) and a negative case (rule should NOT fire). The
+ * detector is the deterministic pre-pass that the brief feeds into
+ * the reasoning graph, so a regression here changes downstream
+ * LeadNextAction.arbitrationRecords behaviour for every workspace.
+ *
+ * V2-cleanup — the BANT/insight-match/buying-committee/objection-
+ * predictor rules were removed along with the workers that fed them.
+ * The remaining five rules cover the contradictions that matter for
+ * SMB restaurant-tech sales (ICP-vs-audit, opportunity-vs-reviews,
+ * and trigger-overlap inconsistencies).
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -16,44 +22,21 @@ import {
 
 function baseSnapshot(): T2Snapshot {
   return {
-    bant: null,
     whyNow: null,
     scorer: null,
     triggers: [],
-    insights: [],
-    committee: null,
-    objectionsPredicted: [],
-    competitorsMentionedCount: 0,
     audit: null,
     lead: { priceLevel: null, reviewCount: null, rating: null },
   };
 }
 
 describe("CONTRADICTION_RULES inventory", () => {
-  it("declares at least 8 rules so the detector keeps real coverage", () => {
-    expect(CONTRADICTION_RULES.length).toBeGreaterThanOrEqual(8);
+  it("declares at least the surviving rule set so the detector keeps real coverage", () => {
+    expect(CONTRADICTION_RULES.length).toBeGreaterThanOrEqual(5);
   });
 
   it("emits empty array when every signal is null/empty", () => {
     expect(detectContradictions(baseSnapshot())).toEqual([]);
-  });
-});
-
-describe("BANT_TIMING_VS_WHY_NOW_URGENCY", () => {
-  it("fires when BANT timing >= 70 and whyNow urgency <= 30", () => {
-    const s = baseSnapshot();
-    s.bant = { budget: 50, authority: 50, need: 50, timing: 80, overall: 60 };
-    s.whyNow = { urgency: 20, headline: "" };
-    const out = detectContradictions(s);
-    expect(out.find((c) => c.code === "BANT_TIMING_VS_WHY_NOW_URGENCY")).toBeDefined();
-  });
-
-  it("does not fire when both signals point the same way", () => {
-    const s = baseSnapshot();
-    s.bant = { budget: 50, authority: 50, need: 50, timing: 80, overall: 60 };
-    s.whyNow = { urgency: 75, headline: "" };
-    const out = detectContradictions(s);
-    expect(out.find((c) => c.code === "BANT_TIMING_VS_WHY_NOW_URGENCY")).toBeUndefined();
   });
 });
 
@@ -75,57 +58,62 @@ describe("ICP_FIT_VS_AUDIT_FAIL", () => {
   });
 });
 
-describe("HIRING_MARKETING_VS_NO_BUDGET_SIGNAL", () => {
-  it("fires when HIRING_MARKETING trigger present but priceLevel < 2", () => {
+describe("OPPORTUNITY_SCORE_VS_LOW_REVIEWS", () => {
+  it("fires when opportunity score >= 80 but reviewCount <= 5", () => {
     const s = baseSnapshot();
-    s.triggers = [{ id: "t1", type: "HIRING_MARKETING", severity: 70, confidence: 0.8 }];
-    s.lead = { priceLevel: 1, reviewCount: 100, rating: 4.2 };
+    s.scorer = { opportunityScore: 85, icpFit: null };
+    s.lead = { priceLevel: null, reviewCount: 4, rating: 4.5 };
     const out = detectContradictions(s);
-    expect(out.find((c) => c.code === "HIRING_MARKETING_VS_NO_BUDGET_SIGNAL")).toBeDefined();
+    expect(out.find((c) => c.code === "OPPORTUNITY_SCORE_VS_LOW_REVIEWS")).toBeDefined();
   });
 
-  it("does not fire when priceLevel >= 2", () => {
+  it("does not fire when review density is healthy", () => {
     const s = baseSnapshot();
-    s.triggers = [{ id: "t1", type: "HIRING_MARKETING", severity: 70, confidence: 0.8 }];
-    s.lead = { priceLevel: 3, reviewCount: 100, rating: 4.2 };
+    s.scorer = { opportunityScore: 85, icpFit: null };
+    s.lead = { priceLevel: null, reviewCount: 120, rating: 4.5 };
     const out = detectContradictions(s);
-    expect(out.find((c) => c.code === "HIRING_MARKETING_VS_NO_BUDGET_SIGNAL")).toBeUndefined();
-  });
-});
-
-describe("BANT_AUTHORITY_VS_NO_CHAMPION", () => {
-  it("fires when BANT authority >= 70 but no champion identified", () => {
-    const s = baseSnapshot();
-    s.bant = { budget: 50, authority: 80, need: 50, timing: 50, overall: 60 };
-    s.committee = { hasIdentifiedChampion: false, hasIdentifiedEconomicBuyer: true };
-    const out = detectContradictions(s);
-    expect(out.find((c) => c.code === "BANT_AUTHORITY_VS_NO_CHAMPION")).toBeDefined();
-  });
-
-  it("does not fire when champion is identified", () => {
-    const s = baseSnapshot();
-    s.bant = { budget: 50, authority: 80, need: 50, timing: 50, overall: 60 };
-    s.committee = { hasIdentifiedChampion: true, hasIdentifiedEconomicBuyer: true };
-    const out = detectContradictions(s);
-    expect(out.find((c) => c.code === "BANT_AUTHORITY_VS_NO_CHAMPION")).toBeUndefined();
+    expect(out.find((c) => c.code === "OPPORTUNITY_SCORE_VS_LOW_REVIEWS")).toBeUndefined();
   });
 });
 
-describe("WHY_NOW_URGENCY_VS_NO_INSIGHT_MATCHED", () => {
-  it("fires when urgency >= 70 but zero matched insights", () => {
+describe("RATING_DROP_VS_BAD_SERVICE_REVIEWS_OVERLAP", () => {
+  it("fires when paired triggers disagree on severity by >= 40", () => {
     const s = baseSnapshot();
-    s.whyNow = { urgency: 75, headline: "act now" };
-    s.insights = [];
+    s.triggers = [
+      { id: "t1", type: "RATING_DROP", severity: 80, confidence: 0.8 },
+      { id: "t2", type: "BAD_SERVICE_REVIEWS", severity: 30, confidence: 0.7 },
+    ];
     const out = detectContradictions(s);
-    expect(out.find((c) => c.code === "WHY_NOW_URGENCY_VS_NO_INSIGHT_MATCHED")).toBeDefined();
+    expect(out.find((c) => c.code === "RATING_DROP_VS_BAD_SERVICE_REVIEWS_OVERLAP")).toBeDefined();
   });
 
-  it("does not fire when an insight matched", () => {
+  it("does not fire when paired triggers agree on severity", () => {
     const s = baseSnapshot();
-    s.whyNow = { urgency: 75, headline: "act now" };
-    s.insights = [{ id: "i1", appliedTriggers: [] }];
+    s.triggers = [
+      { id: "t1", type: "RATING_DROP", severity: 70, confidence: 0.8 },
+      { id: "t2", type: "BAD_SERVICE_REVIEWS", severity: 65, confidence: 0.7 },
+    ];
     const out = detectContradictions(s);
-    expect(out.find((c) => c.code === "WHY_NOW_URGENCY_VS_NO_INSIGHT_MATCHED")).toBeUndefined();
+    expect(out.find((c) => c.code === "RATING_DROP_VS_BAD_SERVICE_REVIEWS_OVERLAP")).toBeUndefined();
+  });
+});
+
+describe("NEW_LOCATION_OPENING_VS_NO_HIRING", () => {
+  it("fires when opening detected but no hiring signal", () => {
+    const s = baseSnapshot();
+    s.triggers = [{ id: "t1", type: "NEW_LOCATION_OPENING", severity: 80, confidence: 0.9 }];
+    const out = detectContradictions(s);
+    expect(out.find((c) => c.code === "NEW_LOCATION_OPENING_VS_NO_HIRING")).toBeDefined();
+  });
+
+  it("does not fire when hiring signal is also present", () => {
+    const s = baseSnapshot();
+    s.triggers = [
+      { id: "t1", type: "NEW_LOCATION_OPENING", severity: 80, confidence: 0.9 },
+      { id: "t2", type: "HIRING_OPS", severity: 60, confidence: 0.7 },
+    ];
+    const out = detectContradictions(s);
+    expect(out.find((c) => c.code === "NEW_LOCATION_OPENING_VS_NO_HIRING")).toBeUndefined();
   });
 });
 

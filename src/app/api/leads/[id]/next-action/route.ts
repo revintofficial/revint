@@ -5,16 +5,18 @@
  * what the lead-detail page's NBA card consumes:
  *
  *   {
- *     preliminary: LeadNextAction | null,    // T1 (BANT-only) prediction
- *     final:       LeadNextAction | null,    // T3 (SDR_BRAIN full DAG)
+ *     preliminary: LeadNextAction | null,    // (legacy) preliminary prediction
+ *     final:       LeadNextAction | null,    // intelligence brief output
  *     triggers:    LeadTrigger[],            // active triggers cited
  *     insight:     CommercialInsight | null, // applied insight (latest)
  *     reasoningGraph: ReasoningGraph | null, // typed unwrap of `final.reasoningGraph`
  *     arbitrationRecords: ContradictionRecord[], // typed unwrap
  *   }
  *
- * The page polls this route while `final == null` so the moment SDR_BRAIN
- * finishes the card swaps from preliminary → final without a reload.
+ * V2-cleanup — the BANT-only preliminary NBA path was removed along with
+ * the BANT_INFERRER worker. `preliminary` is left in the response shape
+ * for legacy clients but is always `null` going forward; the brief
+ * writes a single final NBA at the end of the chain.
  *
  * Multi-tenant: the inner `findFirst` is workspace-scoped via `requireUser`.
  * No data is returned for leads outside the active workspace, even if the

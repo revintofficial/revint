@@ -259,31 +259,17 @@ export const CHAINS: Partial<Record<EventKind, Chain>> = {
   ],
 
   // ---------- SDR Brain — final NBA persisted ----------
-  // Fired by LEAD_INTELLIGENCE_BRIEF after the T3 SDR_BRAIN pass
-  // upserts the final (non-preliminary) LeadNextAction. The chain
-  // refreshes downstream artifacts that consume the new NBA:
-  //   - OPENER_WRITER picks up the chosen commercial-insight reframe +
-  //     final whyGoodTarget so the opener seed matches the locked
-  //     decision instead of an earlier preliminary pass.
-  //   - OBJECTION_PREDICTOR re-runs against the final reasoning graph
-  //     + active triggers so the rep sees the predicted-objection list
-  //     aligned with the final action.
-  //
-  // Phase 0 hot-fix — until this chain existed, `planFromEvent` threw
-  // for `sdr_brain_completed` and the brief worker swallowed it via a
-  // try/catch, leaving every lead with a final NBA but no opener /
-  // objection refresh. Faz 5 (opener integration, NBA versioning)
-  // builds on top of this skeleton.
+  // Fired by LEAD_INTELLIGENCE_BRIEF after the brief upserts the final
+  // (non-preliminary) LeadNextAction. Only the opener refreshes here —
+  // the enterprise-B2B reasoners (BANT / Buying Committee /
+  // Objection Predictor / Commercial Insight Matcher / Account Tier)
+  // were removed because they produced empty or copy-paste output for
+  // SMB restaurant-tech sales (single-owner buyer, no "buying
+  // committee", no enterprise authority chain).
   sdr_brain_completed: [
     {
       stepId: "opener_refresh",
       workerKind: "OPENER_WRITER",
-      dependsOn: [],
-      optional: true,
-    },
-    {
-      stepId: "objection_refresh",
-      workerKind: "OBJECTION_PREDICTOR",
       dependsOn: [],
       optional: true,
     },
@@ -373,16 +359,16 @@ export const LEAD_PIPELINE_ALLOWED_WORKERS: ReadonlySet<AgentWorkerKind> = new S
   "APIFY_INSTAGRAM_DEEP",
   "APIFY_FACEBOOK_DEEP",
   "APIFY_REDDIT_MENTIONS",
-  // SDR Brain v2 — every brain step runs on every lead; allow them
-  // in CUSTOM pipelines too. STAKEHOLDER_DISCOVERER is omitted (Phase 2).
+  // SDR Brain v2 (post-V2-cleanup) — only the workers that produce
+  // restaurant-tech-relevant output remain. ACCOUNT_TIER_RANKER,
+  // BANT_INFERRER, COMMERCIAL_INSIGHT_MATCHER, BUYING_COMMITTEE_MAPPER,
+  // and OBJECTION_PREDICTOR were removed: SMB restaurant operators
+  // don't have multi-stakeholder buying committees or BANT-style
+  // procurement, and their outputs were either empty (>90% skip rate)
+  // or recycled copy-paste. STAKEHOLDER_DISCOVERER is omitted (Phase 2).
   "ICP_SCORER",
-  "ACCOUNT_TIER_RANKER",
-  "BANT_INFERRER",
   "TRIGGER_DETECTOR",
-  "COMMERCIAL_INSIGHT_MATCHER",
   "WHY_NOW_SYNTHESIZER",
-  "BUYING_COMMITTEE_MAPPER",
-  "OBJECTION_PREDICTOR",
 ]);
 
 /**
@@ -453,70 +439,36 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     inputs: { __sentinel: SENTINEL_STEPS.EMBED_LEAD_PROFILE },
   };
 
-  // ----- SDR Brain v2 — T1 deterministic enrichers + T2 reasoners -----
-  // Defined before the LITE branch (Phase 1) because LITE now shares
-  // the same SDR-Brain substrate as BALANCED — only the Apify-fed T2
-  // reasoners (WHY_NOW, INSIGHT_MATCH, OBJECTIONS) and the dossier
-  // remain BALANCED+ exclusives.
+  // ----- SDR Brain substrate (post-V2-cleanup) — T1/T2 reasoners ----
+  // ICP_SCORER and TRIGGER_DETECTOR are the only deterministic
+  // reasoners that survived the V2 enterprise cleanup. Both run on
+  // every lead and feed the intelligence brief + Why-Now synthesizer.
   //
-  // T1 fans out from `score` (the last "data layer" step). T1s are
-  // pure functions over Lead/Audit/Review data, so they're cheap
-  // (cost=0 Gemini) and write Lead-scoped facts (icpFitScore,
-  // account.tier, preliminary LeadNextAction). BANT also emits a
-  // preliminary NBA so the UI can render an action card within
-  // ~3-5s of lead_created.
+  // The dropped reasoners and why:
+  //   - ACCOUNT_TIER_RANKER  → 100% skip on real workspaces
+  //   - BANT_INFERRER        → enterprise procurement framework that
+  //                            doesn't fit single-owner SMB buyers
+  //   - BUYING_COMMITTEE_MAPPER → empty output, no UI consumer
+  //   - COMMERCIAL_INSIGHT_MATCHER → SalesOpportunityScorer.bestSalesAngle
+  //                                  already does this for restaurants
+  //   - OBJECTION_PREDICTOR  → recycled copy-paste objections
   const icpScorer: ChainStep = {
     stepId: "icp_scorer",
     workerKind: "ICP_SCORER",
     dependsOn: ["score"],
     optional: true,
   };
-  const accountTier: ChainStep = {
-    stepId: "account_tier",
-    workerKind: "ACCOUNT_TIER_RANKER",
-    dependsOn: ["icp_scorer"],
-    optional: true,
-  };
-  const bant: ChainStep = {
-    stepId: "bant",
-    workerKind: "BANT_INFERRER",
-    dependsOn: ["score"],
-    optional: true,
-  };
-  // BUYING_COMMITTEE_MAPPER reads Lead + Stakeholder + SemanticMemory
-  // (SOCIAL_POST / SERP_SNAPSHOT / HIRING_SIGNAL). On LITE these
-  // memory channels are usually empty, so the worker self-degrades
-  // to a single inferred role from Lead metadata. Cheap and useful
-  // even without Apify enrichment.
-  const committee: ChainStep = {
-    stepId: "committee",
-    workerKind: "BUYING_COMMITTEE_MAPPER",
-    dependsOn: ["score"],
-    optional: true,
-  };
 
-  // ----- Phase 1 LITE substrate -----
-  // The SDR-Brain v2 substrate (TRIGGER_DETECTOR, BANT_INFERRER,
-  // ICP_SCORER, BUYING_COMMITTEE_MAPPER, REVIEW_ANALYST against the
-  // already-ingested GoogleReview corpus) used to live in BALANCED
-  // only. New design-partner workspaces default to LITE preset, which
-  // meant every Glass-Coffee-style lead landed in v2 with an empty
-  // brain. Plan Faz 1: extend LITE so SDR-Brain is the substrate of
-  // every preset; LITE just skips the Apify enrichment layer.
-  //
-  // Carry-the-cost rationale: TRIGGER_DETECTOR issues at most one
-  // Gemini call (the deterministic-rule branch returns first when it
-  // finds a trigger). BUYING_COMMITTEE_MAPPER similarly. ICP_SCORER
-  // and BANT_INFERRER are pure (cost=0). REVIEW_ANALYST against the
-  // thin Places-API corpus self-skips when reviewCount < 5. Steady-
-  // state cost increase for LITE: ~0.5 extra Gemini call/lead
-  // amortised — well below the existing FREE-tier Gemini cap.
+  // ----- LITE substrate -----
+  // LITE shares ICP_SCORER + TRIGGER_DETECTOR + REVIEW_ANALYST with
+  // BALANCED but skips the Apify enrichment layer. WHY_NOW_SYNTHESIZER
+  // runs in BALANCED+ where the trigger corpus is richer.
   //
   // Every new step is `optional: true` so any failure (quota, Gemini
   // hiccup, missing input) lets the chain proceed to the brief
   // without stalling. filterByPlan still drops anything above the
   // workspace plan; nothing in the LITE substrate is gated above
-  // FREE today (see `quota.ts:117-126`).
+  // FREE today.
 
   // LITE variant of TRIGGER_DETECTOR — drops the `apify_webcrawl`
   // dependency the BALANCED variant has. Worker tolerates the
@@ -554,11 +506,8 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
       "score",
       "embed_profile",
       "icp_scorer",
-      "account_tier",
-      "bant",
       "triggers",
       "review_refresh",
-      "committee",
     ],
     optional: true,
   };
@@ -567,20 +516,16 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   // SDR-Brain substrate + intelligence-brief stack. Reviews come
   // from the Places API only (capped at 5; REVIEW_ANALYST self-skips
   // on thin corpus). Upgrading to BALANCED unlocks the Apify deep-
-  // review pull, on-create dossier, social link discovery, and the
-  // T2 reasoners (WHY_NOW, INSIGHT_MATCH, OBJECTIONS) that need a
-  // denser signal set.
+  // review pull, on-create dossier, social link discovery, and
+  // WHY_NOW_SYNTHESIZER on the denser trigger corpus.
   const lite: Chain = [
     audit,
     classifier,
     score,
     embedProfile,
     icpScorer,
-    accountTier,
-    bant,
     triggersLite,
     reviewRefreshLite,
-    committee,
     intelligenceBriefLite,
   ];
 
@@ -616,34 +561,22 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
   // fires `user_one_click_pitch` (mockup → opener) on demand.
 
   // ----- BALANCED+ T2 reasoners -----
-  // The Apify-fed variants of the T2 trigger detector + the reasoners
-  // that need denser signal density (deep reviews + web crawl + SERP).
-  // TRIGGER_DETECTOR depends on `apify_webcrawl` here so the
-  // deterministic rule pass can fire `WEB_CHANGE_DETECTED` and similar
-  // crawl-derived triggers; LITE uses the slimmer `triggersLite`
-  // variant declared above.
+  // The Apify-fed variants of the T2 trigger detector + WHY_NOW
+  // synthesizer (the only restaurant-tech-useful T2 reasoner that
+  // survived the V2 cleanup). TRIGGER_DETECTOR depends on
+  // `apify_webcrawl` here so the deterministic rule pass can fire
+  // `WEB_CHANGE_DETECTED` and similar crawl-derived triggers; LITE
+  // uses the slimmer `triggersLite` variant declared above.
   const triggers: ChainStep = {
     stepId: "triggers",
     workerKind: "TRIGGER_DETECTOR",
     dependsOn: ["score", "apify_webcrawl"],
     optional: true,
   };
-  const insightMatch: ChainStep = {
-    stepId: "insight_match",
-    workerKind: "COMMERCIAL_INSIGHT_MATCHER",
-    dependsOn: ["triggers"],
-    optional: true,
-  };
   const whyNow: ChainStep = {
     stepId: "why_now",
     workerKind: "WHY_NOW_SYNTHESIZER",
     dependsOn: ["triggers"],
-    optional: true,
-  };
-  const objections: ChainStep = {
-    stepId: "objections",
-    workerKind: "OBJECTION_PREDICTOR",
-    dependsOn: ["score"],
     optional: true,
   };
 
@@ -669,13 +602,8 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
       "embed_profile",
       "dossier",
       "icp_scorer",
-      "account_tier",
-      "bant",
       "triggers",
-      "insight_match",
       "why_now",
-      "committee",
-      "objections",
     ],
     optional: true,
   };
@@ -746,13 +674,8 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     embedProfile,
     dossier,
     icpScorer,
-    accountTier,
-    bant,
     triggers,
-    insightMatch,
     whyNow,
-    committee,
-    objections,
     intelligenceBrief,
   ];
 
@@ -807,13 +730,8 @@ export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
     embedProfile,
     dossier,
     icpScorer,
-    accountTier,
-    bant,
     triggers,
-    insightMatch,
     whyNow,
-    committee,
-    objections,
     intelligenceBrief,
     opener,
   ];

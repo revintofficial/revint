@@ -1,8 +1,10 @@
 /**
  * Truth Layer contract — `NextBestActionType`.
  *
- * Producer: T-A Decision Gates (`src/lib/sdr-brain/buying-readiness.ts`,
- * `src/lib/agent-workers/icp-scorer.ts`).
+ * Producer: T-A Decision Gates (`src/lib/agent-workers/icp-scorer.ts`
+ * for the ICP rozet cap; the BANT-authority gate that previously
+ * lived in `src/lib/sdr-brain/buying-readiness.ts` was removed in the
+ * V2 enterprise cleanup along with BANT_INFERRER).
  * Consumers: T-F NBA Hygiene, T-H Observability, lead-detail v2 UI.
  *
  * This is the AI-worker output type — distinct from the DB enum

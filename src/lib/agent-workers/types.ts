@@ -443,7 +443,7 @@ export interface AgentWorker {
    *   - `googleReviews`: pulls up to 50 most-recent `GoogleReview` rows
    *     for the lead. Used by `TRIGGER_DETECTOR` for rating-trend rules.
    *   - `account`: includes the lead's `Account` row (multi-location
-   *     intelligence). Used by `TRIGGER_DETECTOR` and `BANT_INFERRER`.
+   *     intelligence). Used by `TRIGGER_DETECTOR`.
    *
    * Add new flags only when an actual worker needs them — every extra
    * include burns a join on the hot path.

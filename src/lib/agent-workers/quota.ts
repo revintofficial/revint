@@ -51,7 +51,12 @@ export const UNLIMITED = -1;
  */
 const LAUNCH_POLICY = true;
 
-const CONSERVATIVE_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
+// V2-cleanup — `Partial<Record<...>>` so removed worker kinds
+// (ACCOUNT_TIER_RANKER, BANT_INFERRER, COMMERCIAL_INSIGHT_MATCHER,
+// BUYING_COMMITTEE_MAPPER, OBJECTION_PREDICTOR) don't need stub rows.
+// `getLimit` already returns 0 for unknown kinds via `?? 0`, which
+// `checkWorkerQuota` interprets as WORKER_DISABLED.
+const CONSERVATIVE_LIMITS: Partial<Record<AgentWorkerKind, Record<Plan, number>>> = {
   // Grup A - Intelligence run outside AgentRun in Phase 1; quotas here
   // reflect what they will be when consolidated in Phase 2.
   WEBSITE_AUDITOR: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
@@ -112,18 +117,14 @@ const CONSERVATIVE_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   APIFY_LINKEDIN_COMPANY: { FREE: 0, PRO: 0, PRO_TEAM: 50, AGENCY: UNLIMITED },
   APIFY_REDDIT_MENTIONS: { FREE: 0, PRO: 20, PRO_TEAM: 100, AGENCY: UNLIMITED },
 
-  // SDR Brain v2 — T1 deterministic enrichers run on every lead so caps
-  // mirror WEBSITE_AUDITOR. Pure-rule workers are cheap (no Gemini).
+  // SDR Brain (post-V2-cleanup) — only the workers that produce
+  // restaurant-tech-relevant output remain. ACCOUNT_TIER_RANKER,
+  // BANT_INFERRER, COMMERCIAL_INSIGHT_MATCHER, BUYING_COMMITTEE_MAPPER,
+  // OBJECTION_PREDICTOR were removed (V2 enterprise residue).
   ICP_SCORER: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
   STAKEHOLDER_DISCOVERER: { FREE: 0, PRO: 100, PRO_TEAM: 500, AGENCY: UNLIMITED },
-  ACCOUNT_TIER_RANKER: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
-  BANT_INFERRER: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
-  // T2 reasoners use one Gemini call each; cap matches OPENER_WRITER.
   TRIGGER_DETECTOR: { FREE: 30, PRO: 300, PRO_TEAM: 1500, AGENCY: UNLIMITED },
-  COMMERCIAL_INSIGHT_MATCHER: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
   WHY_NOW_SYNTHESIZER: { FREE: 30, PRO: 300, PRO_TEAM: 1500, AGENCY: UNLIMITED },
-  BUYING_COMMITTEE_MAPPER: { FREE: 20, PRO: 200, PRO_TEAM: 1000, AGENCY: UNLIMITED },
-  OBJECTION_PREDICTOR: { FREE: 30, PRO: 300, PRO_TEAM: 1500, AGENCY: UNLIMITED },
   // T5 event-driven extractors fire only on user actions (voice notes,
   // pipeline stage changes) so the cap reflects "active deals", not
   // "every lead in the workspace".
@@ -141,7 +142,7 @@ const CONSERVATIVE_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
  * graduated monthly caps so FREE can test the product. Absolute caps
  * still protect against runaway Gemini spend.
  */
-const LAUNCH_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
+const LAUNCH_LIMITS: Partial<Record<AgentWorkerKind, Record<Plan, number>>> = {
   WEBSITE_AUDITOR: { FREE: 100, PRO: 1000, PRO_TEAM: 5000, AGENCY: UNLIMITED },
   REVIEW_ANALYST: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
   SALES_OPPORTUNITY_SCORER: { FREE: 100, PRO: 1000, PRO_TEAM: 5000, AGENCY: UNLIMITED },
@@ -185,24 +186,21 @@ const LAUNCH_LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = {
   APIFY_LINKEDIN_COMPANY: { FREE: 0, PRO: 0, PRO_TEAM: 100, AGENCY: UNLIMITED },
   APIFY_REDDIT_MENTIONS: { FREE: 0, PRO: 30, PRO_TEAM: 200, AGENCY: UNLIMITED },
 
-  // SDR Brain v2 launch caps. Generous on FREE so design partners can
-  // exercise the brain end-to-end without hitting WORKER_DISABLED.
+  // SDR Brain launch caps (post-V2-cleanup). Generous on FREE so design
+  // partners can exercise the brain end-to-end without hitting
+  // WORKER_DISABLED. See CONSERVATIVE_LIMITS above for the list of
+  // removed V2-enterprise-residue workers.
   ICP_SCORER: { FREE: 100, PRO: 1000, PRO_TEAM: 5000, AGENCY: UNLIMITED },
   STAKEHOLDER_DISCOVERER: { FREE: 30, PRO: 200, PRO_TEAM: 1000, AGENCY: UNLIMITED },
-  ACCOUNT_TIER_RANKER: { FREE: 100, PRO: 1000, PRO_TEAM: 5000, AGENCY: UNLIMITED },
-  BANT_INFERRER: { FREE: 100, PRO: 1000, PRO_TEAM: 5000, AGENCY: UNLIMITED },
   TRIGGER_DETECTOR: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
-  COMMERCIAL_INSIGHT_MATCHER: { FREE: 100, PRO: 1000, PRO_TEAM: 5000, AGENCY: UNLIMITED },
   WHY_NOW_SYNTHESIZER: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
-  BUYING_COMMITTEE_MAPPER: { FREE: 30, PRO: 300, PRO_TEAM: 1500, AGENCY: UNLIMITED },
-  OBJECTION_PREDICTOR: { FREE: 50, PRO: 500, PRO_TEAM: 2000, AGENCY: UNLIMITED },
   MEDDPICC_EXTRACTOR: { FREE: 20, PRO: 200, PRO_TEAM: 1000, AGENCY: UNLIMITED },
   SPIN_EXTRACTOR: { FREE: 20, PRO: 200, PRO_TEAM: 1000, AGENCY: UNLIMITED },
   OUTCOME_ATTRIBUTOR: { FREE: UNLIMITED, PRO: UNLIMITED, PRO_TEAM: UNLIMITED, AGENCY: UNLIMITED },
   WORKSPACE_CONTEXT_EXTRACTOR: { FREE: 20, PRO: 100, PRO_TEAM: 200, AGENCY: UNLIMITED },
 };
 
-const LIMITS: Record<AgentWorkerKind, Record<Plan, number>> = LAUNCH_POLICY
+const LIMITS: Partial<Record<AgentWorkerKind, Record<Plan, number>>> = LAUNCH_POLICY
   ? LAUNCH_LIMITS
   : CONSERVATIVE_LIMITS;
 

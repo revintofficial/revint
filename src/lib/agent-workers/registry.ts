@@ -44,7 +44,12 @@ type AgentWorkerMeta = Omit<AgentWorker, "run" | "memoryWrites"> & {
   implModule?: () => Promise<WorkerModule>;
 };
 
-const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
+// V2-cleanup — `Partial<Record<...>>` so removed worker kinds
+// (ACCOUNT_TIER_RANKER, BANT_INFERRER, COMMERCIAL_INSIGHT_MATCHER,
+// BUYING_COMMITTEE_MAPPER, OBJECTION_PREDICTOR) don't need stub
+// entries. `getWorker` already returns `undefined` for unknown kinds,
+// which `assertWorkerQuota` surfaces as WORKER_DISABLED.
+const meta: Partial<Record<AgentWorkerKind, AgentWorkerMeta>> = {
   // -------- Grup A: Intelligence (migrated to AI Core registry) --------
   WEBSITE_AUDITOR: {
     kind: "WEBSITE_AUDITOR",
@@ -626,45 +631,10 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     minPlan: "FREE",
     phase1Enabled: false,
     estimatedDurationMs: 6000,
-    // Phase 2 placeholder — no implModule yet. The newly shipped
-    // BUYING_COMMITTEE_MAPPER covers the SDR Brain v2 stakeholder
-    // surface, so this entry stays hidden until we build the
-    // dedicated discovery worker that will feed it.
+    // Phase 2 placeholder — no implModule yet. Restaurant SMB pipeline
+    // assumes a single owner-buyer, so the multi-stakeholder discovery
+    // worker stays hidden until we ship a vertical that needs it.
     hiddenFromPanel: true,
-  },
-  ACCOUNT_TIER_RANKER: {
-    kind: "ACCOUNT_TIER_RANKER",
-    group: "intelligence",
-    displayName: "Account Tier Ranker",
-    displayNameTr: "Hesap Seviye Belirleyici",
-    description: "Buckets the lead's parent Account into TIER_1/TIER_2/TIER_3/TIER_4 based on locations, ICP fit, sales confidence, contact density, and sub-niche signals.",
-    descriptionTr: "Lead'in ust hesabini lokasyon sayisi, ICP uyumu, satis guveni, iletisim yogunlugu ve alt-nis sinyallerine gore TIER_1/TIER_2/TIER_3/TIER_4'e gruplar.",
-    minPlan: "FREE",
-    phase1Enabled: true,
-    estimatedDurationMs: 1500,
-    dependsOn: ["ICP_SCORER", "SALES_OPPORTUNITY_SCORER"],
-    implModule: () =>
-      import("./account-tier-ranker").then((m) => ({ run: m.run })),
-  },
-  BANT_INFERRER: {
-    kind: "BANT_INFERRER",
-    group: "intelligence",
-    displayName: "BANT Inferrer",
-    displayNameTr: "BANT Cikartici",
-    description: "Derives Budget/Authority/Need/Timing scores from existing lead signals (no Gemini call). Persists a preliminary LeadNextAction so the UI can render an NBA card within 3-5s of lead_created.",
-    descriptionTr: "Mevcut lead sinyallerinden Butce/Yetki/Ihtiyac/Zamanlama skorlarini cikarir (Gemini cagrisi yok). UI'in lead_created sonrasi 3-5s icinde NBA karti gostermesi icin on-LeadNextAction yazar.",
-    minPlan: "FREE",
-    phase1Enabled: true,
-    estimatedDurationMs: 2000,
-    // SDR-Brain v2 Phase 3 — BANT_INFERRER reads Account.locationsCount
-    // + Account.tier for the budget / authority dimensions when the
-    // BuyingReadinessInput is enriched.
-    requiredIncludes: { account: true },
-    implModule: () =>
-      import("./bant-inferrer").then((m) => ({
-        run: m.run,
-        memoryWrites: m.memoryWrites,
-      })),
   },
 
   // T2 reasoners — light Gemini call + deterministic rules.
@@ -693,23 +663,6 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
         memoryWrites: m.memoryWrites,
       })),
   },
-  COMMERCIAL_INSIGHT_MATCHER: {
-    kind: "COMMERCIAL_INSIGHT_MATCHER",
-    group: "intelligence",
-    displayName: "Commercial Insight Matcher",
-    displayNameTr: "Ticari Insight Eslestirici",
-    description: "Matches workspace CommercialInsights to the lead's niche + active triggers, ranked by Wilson lower-bound win-rate from InsightPerformance. Output feeds SDR_BRAIN's reframe choice.",
-    descriptionTr: "Workspace CommercialInsights'larini lead'in nisi + aktif tetikleyicileriyle eslestirir; InsightPerformance'dan Wilson lower-bound kazanma oraniyla siralar. Cikti SDR_BRAIN'in reframe secimini besler.",
-    minPlan: "FREE",
-    phase1Enabled: true,
-    estimatedDurationMs: 1500,
-    dependsOn: ["TRIGGER_DETECTOR"],
-    implModule: () =>
-      import("./commercial-insight-matcher").then((m) => ({
-        run: m.run,
-        memoryWrites: m.memoryWrites,
-      })),
-  },
   WHY_NOW_SYNTHESIZER: {
     kind: "WHY_NOW_SYNTHESIZER",
     group: "intelligence",
@@ -727,42 +680,6 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
         memoryWrites: m.memoryWrites,
       })),
   },
-  BUYING_COMMITTEE_MAPPER: {
-    kind: "BUYING_COMMITTEE_MAPPER",
-    group: "intelligence",
-    displayName: "Buying Committee Mapper",
-    displayNameTr: "Karar Verici Haritalayici",
-    description: "Maps stakeholders into Challenger roles (DECISION_MAKER, INFLUENCER, BLOCKER, CHAMPION, GATEKEEPER, USER) with influence + sentiment, persisted as Stakeholder rows.",
-    descriptionTr: "Paydaslari Challenger rollerine (DECISION_MAKER, INFLUENCER, BLOCKER, CHAMPION, GATEKEEPER, USER) etki + duygu durumu ile haritalar; Stakeholder satirlari olarak saklar.",
-    minPlan: "FREE",
-    phase1Enabled: true,
-    estimatedDurationMs: 8000,
-    memoryReads: [
-      { kinds: ["SOCIAL_POST", "SERP_SNAPSHOT", "HIRING_SIGNAL"], topK: 10, scope: "lead" },
-    ],
-    implModule: () =>
-      import("./buying-committee-mapper").then((m) => ({
-        run: m.run,
-        memoryWrites: m.memoryWrites,
-      })),
-  },
-  OBJECTION_PREDICTOR: {
-    kind: "OBJECTION_PREDICTOR",
-    group: "intelligence",
-    displayName: "Objection Predictor",
-    displayNameTr: "Itiraz Tahmin Edici",
-    description: "Forecasts the top 5 objections this prospect is most likely to raise (PRICE / TIMING / AUTHORITY / TRUST / COMPETITOR) with a pre-built preemptive response per objection.",
-    descriptionTr: "Bu prospect'in en olasi 5 itirazini (FIYAT / ZAMANLAMA / YETKI / GUVEN / RAKIP) tahmin eder; her itiraza onceden hazirlanmis preemptive cevap saglar.",
-    minPlan: "FREE",
-    phase1Enabled: true,
-    estimatedDurationMs: 6000,
-    implModule: () =>
-      import("./objection-predictor").then((m) => ({
-        run: m.run,
-        memoryWrites: m.memoryWrites,
-      })),
-  },
-
   // T5 event-driven extractors (voice notes / pipeline stage changes).
   MEDDPICC_EXTRACTOR: {
     kind: "MEDDPICC_EXTRACTOR",
@@ -807,8 +724,8 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
     group: "ops",
     displayName: "Outcome Attributor",
     displayNameTr: "Sonuc Eslestirici",
-    description: "Maps inbound replies, call dispositions, and pipeline stage changes back onto the LeadNextAction + CommercialInsight that produced them. Updates win-rate counters that COMMERCIAL_INSIGHT_MATCHER uses to rank reframes.",
-    descriptionTr: "Gelen cevaplari, call dispositionlarini ve pipeline asama degisikliklerini onlari ureten LeadNextAction + CommercialInsight'a baglar. COMMERCIAL_INSIGHT_MATCHER'in reframeleri siralamak icin kullandigi kazanma orani sayaclarini gunceller.",
+    description: "Maps inbound replies, call dispositions, and pipeline stage changes back onto the LeadNextAction that produced them. Updates win-rate counters that future learning layers can use to rank reframes.",
+    descriptionTr: "Gelen cevaplari, call dispositionlarini ve pipeline asama degisikliklerini onlari ureten LeadNextAction'a baglar. Gelecekteki ogrenme katmanlarinin reframeleri siralamak icin kullanacagi kazanma orani sayaclarini gunceller.",
     minPlan: "FREE",
     phase1Enabled: true,
     estimatedDurationMs: 4000,
@@ -828,9 +745,9 @@ const meta: Record<AgentWorkerKind, AgentWorkerMeta> = {
 /**
  * All workers keyed by kind. Use this as the public registry surface.
  */
-export const WORKERS: Record<AgentWorkerKind, AgentWorker> = Object.fromEntries(
-  Object.entries(meta).map(([kind, m]) => [kind, toPublicWorker(m)]),
-) as Record<AgentWorkerKind, AgentWorker>;
+export const WORKERS: Partial<Record<AgentWorkerKind, AgentWorker>> = Object.fromEntries(
+  Object.entries(meta).map(([kind, m]) => [kind, toPublicWorker(m as AgentWorkerMeta)]),
+) as Partial<Record<AgentWorkerKind, AgentWorker>>;
 
 function toPublicWorker(m: AgentWorkerMeta): AgentWorker {
   // Public registry entry never exposes `implModule` directly; callers
@@ -897,6 +814,9 @@ async function resolveModule(kind: AgentWorkerKind): Promise<WorkerModule> {
   const cached = moduleCache.get(kind);
   if (cached) return cached;
   const m = meta[kind];
+  if (!m) {
+    throw new Error(`Worker ${kind} is not registered (removed or unknown kind)`);
+  }
   if (!m.implModule) {
     throw new Error(`Worker ${kind} is not yet implemented (phase 2/3 placeholder)`);
   }

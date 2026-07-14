@@ -2,11 +2,13 @@
  * Tests for `getDefaultChain(preset, plan)` — the lead_created chain
  * resolver used by `planner.ts:resolveLeadCreatedChain`.
  *
- * Phase 1 of the SDR-Brain-v2 sentez plan extends the LITE preset
- * with the SDR-Brain substrate (TRIGGER_DETECTOR, BANT_INFERRER,
- * ICP_SCORER, BUYING_COMMITTEE_MAPPER, REVIEW_ANALYST). These tests
- * lock in the new shape so a future "let's slim down LITE" PR can't
- * silently drop the brain substrate again.
+ * Post-V2-cleanup — the SDR-Brain substrate was trimmed to the
+ * workers that produce restaurant-tech-relevant output:
+ * ICP_SCORER (T1) + TRIGGER_DETECTOR (T2) + WHY_NOW_SYNTHESIZER (T2,
+ * BALANCED+ only). The dropped enterprise-residue workers
+ * (ACCOUNT_TIER_RANKER, BANT_INFERRER, COMMERCIAL_INSIGHT_MATCHER,
+ * BUYING_COMMITTEE_MAPPER, OBJECTION_PREDICTOR) must NOT reappear in
+ * any preset.
  *
  * No DB, no network — pure structural assertions on the resolved
  * chain definition.
@@ -36,31 +38,42 @@ function stepById(chain: Chain, id: string) {
   return chain.find((s) => s.stepId === id);
 }
 
-describe("getDefaultChain — LITE preset (SDR Brain Phase 1 substrate)", () => {
+/**
+ * Workers that were removed in the V2 enterprise cleanup. None of
+ * them should appear in any preset — keep this list in sync with
+ * `LEAD_PIPELINE_ALLOWED_WORKERS` in `chains.ts`.
+ */
+const REMOVED_V2_WORKERS: AgentWorkerKind[] = [
+  "ACCOUNT_TIER_RANKER",
+  "BANT_INFERRER",
+  "COMMERCIAL_INSIGHT_MATCHER",
+  "BUYING_COMMITTEE_MAPPER",
+  "OBJECTION_PREDICTOR",
+];
+
+describe("getDefaultChain — LITE preset (post-V2-cleanup substrate)", () => {
   // FREE plan is the most representative LITE workspace — design
   // partners default here. PRO_TEAM matrix would just unlock more
   // quota; the chain composition itself does not change.
   const lite = getDefaultChainForUi("LITE", "FREE");
 
-  it("includes the SDR-Brain substrate workers", () => {
+  it("includes the surviving SDR-Brain substrate workers", () => {
     const kinds = new Set(kindsIn(lite));
     expect(kinds.has("ICP_SCORER"), "ICP_SCORER missing from LITE").toBe(true);
-    expect(kinds.has("ACCOUNT_TIER_RANKER"), "ACCOUNT_TIER_RANKER missing from LITE").toBe(true);
-    expect(kinds.has("BANT_INFERRER"), "BANT_INFERRER missing from LITE").toBe(true);
     expect(kinds.has("TRIGGER_DETECTOR"), "TRIGGER_DETECTOR missing from LITE").toBe(true);
-    expect(kinds.has("BUYING_COMMITTEE_MAPPER"), "BUYING_COMMITTEE_MAPPER missing from LITE").toBe(true);
     expect(kinds.has("REVIEW_ANALYST"), "REVIEW_ANALYST missing from LITE").toBe(true);
   });
 
-  it("does NOT include BALANCED-only T2 reasoners", () => {
+  it("does NOT include the removed V2 enterprise residue workers", () => {
     const kinds = new Set(kindsIn(lite));
-    expect(kinds.has("WHY_NOW_SYNTHESIZER")).toBe(false);
-    expect(kinds.has("COMMERCIAL_INSIGHT_MATCHER")).toBe(false);
-    expect(kinds.has("OBJECTION_PREDICTOR")).toBe(false);
+    for (const removed of REMOVED_V2_WORKERS) {
+      expect(kinds.has(removed), `${removed} should not appear in LITE (V2 residue)`).toBe(false);
+    }
   });
 
-  it("does NOT include Apify enrichment", () => {
+  it("does NOT include BALANCED-only enrichment", () => {
     const kinds = new Set(kindsIn(lite));
+    expect(kinds.has("WHY_NOW_SYNTHESIZER")).toBe(false);
     expect(kinds.has("APIFY_GMAPS_DEEP")).toBe(false);
     expect(kinds.has("APIFY_WEB_CRAWL_DEEP")).toBe(false);
     expect(kinds.has("SOCIAL_SCRAPER")).toBe(false);
@@ -84,10 +97,7 @@ describe("getDefaultChain — LITE preset (SDR Brain Phase 1 substrate)", () => 
   it("every SDR-Brain substrate step is optional (chain doesn't stall on any failure)", () => {
     const substrate: AgentWorkerKind[] = [
       "ICP_SCORER",
-      "ACCOUNT_TIER_RANKER",
-      "BANT_INFERRER",
       "TRIGGER_DETECTOR",
-      "BUYING_COMMITTEE_MAPPER",
       "REVIEW_ANALYST",
     ];
     for (const kind of substrate) {
@@ -96,22 +106,17 @@ describe("getDefaultChain — LITE preset (SDR Brain Phase 1 substrate)", () => 
     }
   });
 
-  it("intelligence_brief waits for the full LITE substrate (not just score+embed)", () => {
+  it("intelligence_brief waits for the LITE substrate", () => {
     const brief = stepById(lite, "intelligence_brief");
     expect(brief).toBeDefined();
     expect(brief!.workerKind).toBe("LEAD_INTELLIGENCE_BRIEF");
-    // Must depend on every substrate step so the T3 brain pass has
-    // the full T2 snapshot when it runs.
     expect(brief!.dependsOn).toEqual(
       expect.arrayContaining([
         "score",
         "embed_profile",
         "icp_scorer",
-        "account_tier",
-        "bant",
         "triggers",
         "review_refresh",
-        "committee",
       ]),
     );
   });
@@ -122,27 +127,37 @@ describe("getDefaultChain — LITE preset (SDR Brain Phase 1 substrate)", () => 
 
   it("every LITE worker is whitelisted in LEAD_PIPELINE_ALLOWED_WORKERS", () => {
     for (const kind of kindsIn(lite)) {
-      // The sentinel embed_profile step reuses SALES_OPPORTUNITY_SCORER
-      // as a placeholder workerKind; both must be in the allowed set.
       expect(
         LEAD_PIPELINE_ALLOWED_WORKERS.has(kind),
         `${kind} missing from LEAD_PIPELINE_ALLOWED_WORKERS`,
       ).toBe(true);
     }
   });
+
+  it("LEAD_PIPELINE_ALLOWED_WORKERS does not whitelist any removed V2 workers", () => {
+    for (const removed of REMOVED_V2_WORKERS) {
+      expect(
+        LEAD_PIPELINE_ALLOWED_WORKERS.has(removed),
+        `${removed} should not be whitelisted (V2 residue)`,
+      ).toBe(false);
+    }
+  });
 });
 
-describe("getDefaultChain — BALANCED preset unchanged by Phase 1", () => {
-  // Phase 1 must not regress BALANCED behaviour. BALANCED keeps its
-  // existing T2 reasoners, dossier, and Apify enrichment.
+describe("getDefaultChain — BALANCED preset (post-V2-cleanup)", () => {
   const balanced = getDefaultChainForUi("BALANCED", "PRO");
 
-  it("retains the BALANCED-only T2 reasoners", () => {
+  it("retains WHY_NOW_SYNTHESIZER and dossier in BALANCED", () => {
     const kinds = new Set(kindsIn(balanced));
     expect(kinds.has("WHY_NOW_SYNTHESIZER")).toBe(true);
-    expect(kinds.has("COMMERCIAL_INSIGHT_MATCHER")).toBe(true);
-    expect(kinds.has("OBJECTION_PREDICTOR")).toBe(true);
     expect(kinds.has("LEAD_DOSSIER_GENERATOR")).toBe(true);
+  });
+
+  it("does NOT include the removed V2 enterprise residue workers", () => {
+    const kinds = new Set(kindsIn(balanced));
+    for (const removed of REMOVED_V2_WORKERS) {
+      expect(kinds.has(removed), `${removed} should not appear in BALANCED (V2 residue)`).toBe(false);
+    }
   });
 
   it("BALANCED TRIGGER_DETECTOR still waits for apify_webcrawl", () => {
@@ -187,14 +202,17 @@ describe("getDefaultChain — preset matrix sanity", () => {
     }
   });
 
-  it("LITE on FREE includes SDR-Brain substrate (regression guard for design partners)", () => {
-    const liteFree = getDefaultChainForUi("LITE", "FREE");
-    const kinds = new Set(kindsIn(liteFree));
-    // Sanity: the exact set that was missing pre-Phase-1.
-    expect(kinds.has("TRIGGER_DETECTOR")).toBe(true);
-    expect(kinds.has("BANT_INFERRER")).toBe(true);
-    expect(kinds.has("ICP_SCORER")).toBe(true);
-    expect(kinds.has("BUYING_COMMITTEE_MAPPER")).toBe(true);
-    expect(kinds.has("REVIEW_ANALYST")).toBe(true);
+  it("no preset × plan combination resurrects the removed V2 workers", () => {
+    for (const preset of presets) {
+      for (const plan of plans) {
+        const kinds = new Set(kindsIn(getDefaultChainForUi(preset, plan)));
+        for (const removed of REMOVED_V2_WORKERS) {
+          expect(
+            kinds.has(removed),
+            `${preset}/${plan} resurrected ${removed}`,
+          ).toBe(false);
+        }
+      }
+    }
   });
 });

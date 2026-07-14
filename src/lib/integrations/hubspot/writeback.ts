@@ -65,6 +65,62 @@ const RISK_TO_UPPER: Record<string, string> = {
   high: "HIGH",
 };
 
+/** Minimal shape of the Head Agent decision we consume for write-back. */
+interface HeadAgentWritebackView {
+  primaryAngle: string | null;
+  confidence: number;
+  evidenceRefs: string[];
+  sourceConflicts: Array<{ claim: string; sources: string[]; note: string }>;
+}
+
+/**
+ * Read the Head Agent decision from the latest LEAD_INTELLIGENCE_BRIEF
+ * AgentRun output. Returns null when no brief exists or the synthesis
+ * pass didn't run (flag off / non-pack niche / Claude unavailable).
+ * Defensive: cached rows pre-date the `headAgent` field.
+ */
+async function readHeadAgentDecision(
+  prisma: PrismaClient,
+  workspaceId: string,
+  leadId: string,
+): Promise<HeadAgentWritebackView | null> {
+  const run = await prisma.agentRun.findFirst({
+    where: {
+      workspaceId,
+      leadId,
+      workerKind: "LEAD_INTELLIGENCE_BRIEF",
+      status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
+    },
+    orderBy: { finishedAt: "desc" },
+    select: { outputJson: true },
+  });
+  const out = run?.outputJson;
+  if (!out || typeof out !== "object") return null;
+  const ha = (out as Record<string, unknown>).headAgent;
+  if (!ha || typeof ha !== "object") return null;
+  const o = ha as Record<string, unknown>;
+  const conflicts = Array.isArray(o.sourceConflicts)
+    ? o.sourceConflicts
+        .map((c) => {
+          if (!c || typeof c !== "object") return null;
+          const r = c as Record<string, unknown>;
+          return {
+            claim: String(r.claim ?? ""),
+            sources: Array.isArray(r.sources) ? r.sources.map(String) : [],
+            note: String(r.note ?? ""),
+          };
+        })
+        .filter((c): c is { claim: string; sources: string[]; note: string } => c !== null && c.claim !== "")
+    : [];
+  return {
+    primaryAngle:
+      typeof o.primaryAngle === "string" && o.primaryAngle.trim() ? o.primaryAngle.trim() : null,
+    confidence: typeof o.confidence === "number" ? o.confidence : 0,
+    evidenceRefs: Array.isArray(o.evidenceRefs) ? o.evidenceRefs.map(String) : [],
+    sourceConflicts: conflicts,
+  };
+}
+
 /**
  * Build the `revint_*` property map for a lead. Only includes
  * properties we have a value for: HubSpot rejects empty enumeration
@@ -99,6 +155,12 @@ async function buildRevintProperties(
     select: { openingHook: true, timingWindowStart: true },
   });
 
+  // Faz 3 — read the latest Head Agent decision (if any) so the CRM
+  // surfaces the Claude-chosen angle + cross-source conflicts. Falls
+  // back cleanly to the deterministic `pickAngle` when the flag is off,
+  // the niche has no pack, or the synthesis pass didn't run.
+  const headAgent = await readHeadAgentDecision(prisma, workspaceId, leadId);
+
   const props: Record<string, string> = {};
 
   // --- A. Skorlama -------------------------------------------------------
@@ -114,7 +176,11 @@ async function buildRevintProperties(
   // it; for now we leave the field unset so manual edits stick.
 
   // --- B. Karar / pitch sinyalleri ---------------------------------------
-  if (picked?.angle.label) {
+  // Head Agent's primary angle wins when present (it synthesised the full
+  // substrate); otherwise fall back to the deterministic playbook angle.
+  if (headAgent?.primaryAngle) {
+    props.revint_recommended_angle = headAgent.primaryAngle;
+  } else if (picked?.angle.label) {
     props.revint_recommended_angle = picked.angle.label;
   }
   if (nextAction?.openingHook) {
@@ -132,12 +198,21 @@ async function buildRevintProperties(
   }
 
   // --- C. Kanıt / provenance --------------------------------------------
-  if (picked && picked.matchedTriggers.length > 0) {
+  // Prefer the Head Agent's evidence refs (it grounds against the full
+  // shortlist); otherwise the deterministic matched triggers.
+  if (headAgent && headAgent.evidenceRefs.length > 0) {
+    props.revint_evidence_summary = `Head Agent (${headAgent.confidence}%): ${headAgent.evidenceRefs.join(", ")}`;
+  } else if (picked && picked.matchedTriggers.length > 0) {
     props.revint_evidence_summary = `Signals: ${picked.matchedTriggers.join(", ")}`;
   }
-  // `revint_source_conflicts` is left unset until the source-conflict
-  // detector lands (separate plan); provisioning the field now keeps
-  // the App Card forward-compatible without writing empty strings.
+  // Source conflicts: the Head Agent flags genuine cross-source
+  // disagreements (e.g. audit says "no reservation" but reviews mention
+  // a booking). Summarise into the provisioned textarea property.
+  if (headAgent && headAgent.sourceConflicts.length > 0) {
+    props.revint_source_conflicts = headAgent.sourceConflicts
+      .map((c) => `${c.claim}${c.sources.length ? ` [${c.sources.join(" vs ")}]` : ""}${c.note ? ` — ${c.note}` : ""}`)
+      .join("\n");
+  }
   props.revint_action_sheet_url = actionSheetUrl(leadId);
 
   // Defensive: drop enum properties whose value isn't in the allowed set
