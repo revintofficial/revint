@@ -242,7 +242,7 @@ export async function executeAgentRun(
         where: { id: runId, workspaceId: run.workspaceId },
         data: {
           status: "RUNNING",
-          startedAt: run.startedAt ?? new Date(),
+          startedAt,
           inputsJson: {
             ...existingInputs,
             mode: "async-apify",
