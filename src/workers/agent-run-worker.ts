@@ -20,6 +20,7 @@ import IORedis from "ioredis";
 import { logger } from "../lib/logger";
 import { executeAgentRun } from "../lib/agent-workers/execute";
 import { isRetryable } from "../lib/agent-workers/errors";
+import { recordChainTelemetry } from "../lib/control/telemetry";
 
 type AgentRunJob =
   | { type: "agent_run"; runId: string }
@@ -353,19 +354,30 @@ export function startAgentRunWorker() {
       const { prisma: p } = await import("../lib/prisma");
       const run = await p.agentRun.findUnique({
         where: { id: runId },
-        select: { plannerSessionId: true, status: true },
       });
-      if (!run || run.status === "SUCCEEDED" || run.status === "SUCCEEDED_NO_MEMORY") return;
+      if (!run || run.status === "SUCCEEDED" || run.status === "SUCCEEDED_NO_MEMORY" || run.status === "CANCELLED") return;
 
       // Ensure the run has a definitive FAILED status with a clear message.
-      await p.agentRun.updateMany({
-        where: { id: runId, status: { notIn: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY", "CANCELLED"] } },
+      const finishedAt = new Date();
+      const errorMsg = `retries_exhausted: ${err?.message ?? "unknown"}`.slice(0, 2000);
+      const updated = await p.agentRun.updateMany({
+        where: { id: runId, workspaceId: run.workspaceId, status: { notIn: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY", "CANCELLED"] } },
         data: {
           status: "FAILED",
-          finishedAt: new Date(),
-          errorMsg: `retries_exhausted: ${err?.message ?? "unknown"}`.slice(0, 2000),
+          finishedAt,
+          errorMsg,
         },
       });
+      if (updated.count === 0) return;
+
+      try {
+        await recordChainTelemetry({ ...run, status: "FAILED", finishedAt, errorMsg });
+      } catch (telemetryErr) {
+        logger.warn("worker.ai_runs.terminal_telemetry_failed", {
+          runId,
+          err: telemetryErr instanceof Error ? telemetryErr.message : String(telemetryErr),
+        });
+      }
 
       if (run.plannerSessionId) {
         const { enqueueAdvance } = await import("../lib/ai-core/orchestrator");

@@ -42,6 +42,22 @@ import type {
   MemoryWrite,
 } from "./types";
 import type { AgentRun } from "@/generated/prisma/client";
+import { recordChainTelemetry } from "@/lib/control/telemetry";
+
+async function safeRecordChainTelemetry(
+  run: AgentRun,
+  persisted: AgentRun | undefined,
+  fallback: Partial<AgentRun>,
+): Promise<void> {
+  try {
+    await recordChainTelemetry(persisted ?? { ...run, ...fallback });
+  } catch (err) {
+    logger.warn("agent_run.telemetry.failed", {
+      runId: run.id,
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
 
 /**
  * Returns true when the deployment has a public webhook ingress
@@ -72,24 +88,30 @@ export async function executeAgentRun(
     return;
   }
 
+  let startedAt = run.startedAt;
+
   // BullMQ retry: the previous attempt marked the row FAILED before
   // rethrowing the RetryableError. Reset it to RUNNING so this attempt
   // can proceed from the beginning rather than early-returning below.
   if (run.status === "FAILED" && opts?.isRetry) {
-    await prisma.agentRun.update({
-      where: { id: runId },
-      data: { status: "RUNNING", startedAt: new Date(), finishedAt: null, errorMsg: null },
+    startedAt = new Date();
+    const restarted = await prisma.agentRun.update({
+      where: { id: runId, workspaceId: run.workspaceId },
+      data: { status: "RUNNING", startedAt, finishedAt: null, errorMsg: null },
     });
+    startedAt = restarted?.startedAt ?? startedAt;
   } else if (run.status !== "PENDING" && run.status !== "RUNNING") {
     logger.warn("agent_run.execute.not_runnable", { runId, status: run.status });
     return;
   }
 
   if (run.status === "PENDING") {
-    await prisma.agentRun.update({
-      where: { id: runId },
-      data: { status: "RUNNING", startedAt: new Date() },
+    startedAt = new Date();
+    const started = await prisma.agentRun.update({
+      where: { id: runId, workspaceId: run.workspaceId },
+      data: { status: "RUNNING", startedAt },
     });
+    startedAt = started?.startedAt ?? startedAt;
   }
 
   try {
@@ -117,16 +139,18 @@ export async function executeAgentRun(
         snapshotVersion: run.inputSubNicheVersion,
         currentVersion: ctx.lead.subNicheVersion,
       };
-      await prisma.agentRun.update({
-        where: { id: runId },
+      const finishedAt = new Date();
+      const updated = await prisma.agentRun.update({
+        where: { id: runId, workspaceId: run.workspaceId },
         data: {
           status: "SUCCEEDED",
-          finishedAt: new Date(),
+          finishedAt,
           outputJson: skipPayload as never,
           costTokens: 0,
           costUsdCents: 0,
         },
       });
+      await safeRecordChainTelemetry(run, updated, { startedAt, finishedAt, status: "SUCCEEDED", costTokens: 0, costUsdCents: 0 });
       logger.info("agent_run.execute.stale_subniche_skip", {
         runId,
         kind: run.workerKind,
@@ -183,11 +207,12 @@ export async function executeAgentRun(
         // run inline as SUCCEEDED with the skip reason recorded in
         // outputJson; downstream chains will see it the same way they
         // see any other zero-cost completion.
-        await prisma.agentRun.update({
-          where: { id: runId },
+        const finishedAt = new Date();
+        const updated = await prisma.agentRun.update({
+          where: { id: runId, workspaceId: run.workspaceId },
           data: {
             status: "SUCCEEDED",
-            finishedAt: new Date(),
+            finishedAt,
             outputJson: (startResult.output ?? {
               skipped: true,
               reason: startResult.reason,
@@ -196,6 +221,7 @@ export async function executeAgentRun(
             costUsdCents: 0,
           },
         });
+        await safeRecordChainTelemetry(run, updated, { startedAt, finishedAt, status: "SUCCEEDED", costTokens: 0, costUsdCents: 0 });
         logger.info("agent_run.execute.async_skipped", {
           runId,
           kind: run.workerKind,
@@ -213,7 +239,7 @@ export async function executeAgentRun(
       // userData.agentRunId (primary) or by AgentRun.id directly.
       const existingInputs = (run.inputsJson ?? {}) as Record<string, unknown>;
       await prisma.agentRun.update({
-        where: { id: runId },
+        where: { id: runId, workspaceId: run.workspaceId },
         data: {
           status: "RUNNING",
           startedAt: run.startedAt ?? new Date(),
@@ -283,17 +309,22 @@ export async function executeAgentRun(
 
     const finalStatus = memoryDegraded ? "SUCCEEDED_NO_MEMORY" : "SUCCEEDED";
     const errorMsg = memoryDegraded ? "embedding_unavailable_degraded" : null;
-    await prisma.agentRun.update({
-      where: { id: runId },
+    const finishedAt = new Date();
+    const updated = await prisma.agentRun.update({
+      where: { id: runId, workspaceId: run.workspaceId },
       data: {
         status: finalStatus,
-        finishedAt: new Date(),
+        finishedAt,
         outputJson: result.output as never,
         artifactUrl: result.artifactUrl ?? null,
         costTokens: result.costTokens ?? 0,
         costUsdCents: result.costUsdCents ?? 0,
         errorMsg,
       },
+    });
+    await safeRecordChainTelemetry(run, updated, {
+      startedAt, finishedAt, status: finalStatus,
+      costTokens: result.costTokens ?? 0, costUsdCents: result.costUsdCents ?? 0, errorMsg,
     });
 
     logger.info("agent_run.execute.done", {
@@ -319,7 +350,7 @@ export async function executeAgentRun(
         err: msg,
       });
       await prisma.agentRun.update({
-        where: { id: runId },
+        where: { id: runId, workspaceId: run.workspaceId },
         data: {
           status: "FAILED",
           finishedAt: new Date(),
@@ -334,14 +365,17 @@ export async function executeAgentRun(
       kind: run.workerKind,
       err: msg,
     });
-    await prisma.agentRun.update({
-      where: { id: runId },
+    const finishedAt = new Date();
+    const errorMsg = msg.slice(0, 2000);
+    const updated = await prisma.agentRun.update({
+      where: { id: runId, workspaceId: run.workspaceId },
       data: {
         status: "FAILED",
-        finishedAt: new Date(),
-        errorMsg: msg.slice(0, 2000),
+        finishedAt,
+        errorMsg,
       },
     });
+    await safeRecordChainTelemetry(run, updated, { startedAt, finishedAt, status: "FAILED", errorMsg });
     if (run.plannerSessionId) {
       await safeNotifyOrchestrator(run.plannerSessionId, runId);
     }
@@ -769,22 +803,24 @@ export async function finalizeApifyAgentRun(
   }
 
   if (payload.status !== "SUCCEEDED") {
-    await prisma.agentRun.update({
-      where: { id: runId },
+    const finishedAt = new Date();
+    const errorMsg = `apify_actor_${payload.status.toLowerCase()}: actor returned ${payload.status} after ${payload.items.length} item(s)`;
+    const updated = await prisma.agentRun.update({
+      where: { id: runId, workspaceId: run.workspaceId },
       data: {
         status: "FAILED",
-        finishedAt: new Date(),
+        finishedAt,
         costUsdCents: payload.costUsdCents,
-        errorMsg: `apify_actor_${payload.status.toLowerCase()}: actor returned ${payload.status} after ${payload.items.length} item(s)`,
+        errorMsg,
       },
     });
+    await safeRecordChainTelemetry(run, updated, { finishedAt, status: "FAILED", costUsdCents: payload.costUsdCents, errorMsg });
     if (run.plannerSessionId) {
       await safeNotifyOrchestrator(run.plannerSessionId, runId);
     }
     return;
   }
 
-  let succeeded = false;
   try {
     const finalize = await resolveWorkerFinalize(run.workerKind);
     if (!finalize) {
@@ -806,11 +842,15 @@ export async function finalizeApifyAgentRun(
       }
     }
 
-    await prisma.agentRun.update({
-      where: { id: runId },
+    const status = memoryDegraded ? "SUCCEEDED_NO_MEMORY" : "SUCCEEDED";
+    const finishedAt = new Date();
+    const costUsdCents = payload.costUsdCents || result.costUsdCents || 0;
+    const errorMsg = memoryDegraded ? "embedding_unavailable_degraded" : null;
+    const updated = await prisma.agentRun.update({
+      where: { id: runId, workspaceId: run.workspaceId },
       data: {
-        status: memoryDegraded ? "SUCCEEDED_NO_MEMORY" : "SUCCEEDED",
-        finishedAt: new Date(),
+        status,
+        finishedAt,
         outputJson: result.output as never,
         artifactUrl: result.artifactUrl ?? null,
         costTokens: result.costTokens ?? 0,
@@ -818,12 +858,13 @@ export async function finalizeApifyAgentRun(
         // over whatever the worker recomputed; the webhook payload is
         // sourced directly from `usageTotalUsd` and is the source of
         // truth for billing.
-        costUsdCents: payload.costUsdCents || result.costUsdCents || 0,
-        errorMsg: memoryDegraded ? "embedding_unavailable_degraded" : null,
+        costUsdCents,
+        errorMsg,
       },
     });
-
-    succeeded = true;
+    await safeRecordChainTelemetry(run, updated, {
+      status, finishedAt, costTokens: result.costTokens ?? 0, costUsdCents, errorMsg,
+    });
 
     logger.info("agent_run.finalize.done", {
       runId,
@@ -838,15 +879,18 @@ export async function finalizeApifyAgentRun(
       kind: run.workerKind,
       err: msg,
     });
-    await prisma.agentRun.update({
-      where: { id: runId },
+    const finishedAt = new Date();
+    const errorMsg = msg.slice(0, 2000);
+    const updated = await prisma.agentRun.update({
+      where: { id: runId, workspaceId: run.workspaceId },
       data: {
         status: "FAILED",
-        finishedAt: new Date(),
+        finishedAt,
         costUsdCents: payload.costUsdCents,
-        errorMsg: msg.slice(0, 2000),
+        errorMsg,
       },
     });
+    await safeRecordChainTelemetry(run, updated, { status: "FAILED", finishedAt, costUsdCents: payload.costUsdCents, errorMsg });
   }
 
   // Always advance the planner: success and failure both transition
@@ -857,7 +901,4 @@ export async function finalizeApifyAgentRun(
     await safeNotifyOrchestrator(run.plannerSessionId, runId);
   }
 
-  // succeeded is referenced for log clarity in case future telemetry
-  // wants to gate on the outcome at this layer.
-  void succeeded;
 }
