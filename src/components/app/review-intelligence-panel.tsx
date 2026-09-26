@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { BETA_SCOPE } from "@/lib/beta-scope";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -278,7 +279,7 @@ export function ReviewIntelligencePanel({
           </Button>
         </CardHeader>
         <CardContent className="space-y-3">
-          {showDeepReviewsBanner && (
+          {BETA_SCOPE.workerTools && showDeepReviewsBanner && (
             <div
               className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs"
               style={{
@@ -334,7 +335,7 @@ export function ReviewIntelligencePanel({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {showDeepReviewsBanner && (
+          {BETA_SCOPE.workerTools && showDeepReviewsBanner && (
             <Button
               size="sm"
               variant="outline"

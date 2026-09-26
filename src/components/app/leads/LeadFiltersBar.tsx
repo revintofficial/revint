@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { BETA_SCOPE } from "@/lib/beta-scope";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -516,20 +517,24 @@ export function LeadFiltersBar({
               label="Cards"
               border
             />
-            <ViewToggleButton
-              active={view === "map"}
-              onClick={() => setView("map")}
-              icon={<MapPin className="w-3 h-3" />}
-              label="Map"
-              border
-            />
-            <ViewToggleButton
-              active={view === "kanban"}
-              onClick={() => setView("kanban")}
-              icon={<Kanban className="w-3 h-3" />}
-              label="Kanban"
-              border
-            />
+            {BETA_SCOPE.extraLeadViews && (
+              <ViewToggleButton
+                active={view === "map"}
+                onClick={() => setView("map")}
+                icon={<MapPin className="w-3 h-3" />}
+                label="Map"
+                border
+              />
+            )}
+            {BETA_SCOPE.extraLeadViews && (
+              <ViewToggleButton
+                active={view === "kanban"}
+                onClick={() => setView("kanban")}
+                icon={<Kanban className="w-3 h-3" />}
+                label="Kanban"
+                border
+              />
+            )}
           </div>
 
           {/* Density toggle (only meaningful in table view) */}

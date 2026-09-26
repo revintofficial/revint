@@ -13,7 +13,7 @@ import {
   computeTemperature,
   type LeadTemperatureValue,
 } from "./resolve";
-import { pickAngle } from "./angle";
+import { absenceSignalsFromAudit, hasSlowServiceSignal, pickAngle } from "./angle";
 import type { PlaybookShape } from "./types";
 
 export interface ActionSheetPayload {
@@ -77,6 +77,15 @@ export async function buildActionSheet(
     include: {
       qualification: true,
       salesOpportunity: { select: { opportunityScore: true } },
+      websiteAudit: {
+        select: {
+          reachable: true,
+          hasBookingSystem: true,
+          hasEcommerce: true,
+          rawFeaturesJson: true,
+        },
+      },
+      reviewAnalysis: { select: { weaknessKpis: true } },
     },
   });
   if (!lead) return null;
@@ -112,6 +121,8 @@ export async function buildActionSheet(
     reviewCount: lead.reviewCount,
     priceLevel: lead.priceLevel,
     isMultiLocation: !!lead.accountId,
+    ...absenceSignalsFromAudit(lead.websiteAudit),
+    slowServiceReviews: hasSlowServiceSignal(lead.reviewAnalysis?.weaknessKpis),
   });
 
   return {

@@ -52,6 +52,7 @@ import { LeadCardsGrid } from "@/components/app/leads/LeadCardsGrid";
 import { LeadActionBar } from "@/components/app/leads/LeadActionBar";
 import { LiveProcessingStrip } from "@/components/app/leads/LiveProcessingStrip";
 import { OnboardingTutorial } from "@/components/app/leads/OnboardingTutorial";
+import { BETA_SCOPE } from "@/lib/beta-scope";
 import { MobileLeadList } from "@/components/app/leads/MobileLeadList";
 import { BottomSheet, BottomSheetFooter } from "@/components/ui/bottom-sheet";
 import {
@@ -604,6 +605,7 @@ function LeadsPageContent() {
         title="Leads"
         subtitle={subtitle}
         actions={
+          BETA_SCOPE.workerTools ? (
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -633,6 +635,7 @@ function LeadsPageContent() {
               Build sales brief
             </Button>
           </div>
+          ) : undefined
         }
       />
 
@@ -773,7 +776,7 @@ function LeadsPageContent() {
             onPageChange={onPageChange}
           />
         )}
-        {view === "map" && (
+        {BETA_SCOPE.extraLeadViews && view === "map" && (
           <LeadMapMulti
             leads={leads}
             loading={loading}
@@ -782,11 +785,32 @@ function LeadsPageContent() {
             onToggleSelect={toggleSelect}
           />
         )}
-        {view === "kanban" && (
+        {BETA_SCOPE.extraLeadViews && view === "kanban" && (
           <LeadKanbanLite
             leads={leads}
             loading={loading}
             onMutate={refetch}
+          />
+        )}
+        {!BETA_SCOPE.extraLeadViews && (view === "map" || view === "kanban") && (
+          <LeadTableView
+            leads={leads}
+            loading={loading}
+            pagination={pagination}
+            density={density}
+            watchlistLeadIds={watchlistLeadIds}
+            selectedIds={selectedIds}
+            contentCheckLeadId={contentCheckLeadId}
+            contentCheckLoading={contentCheckLoading}
+            websiteSearchLeadId={websiteSearchLeadId}
+            websiteSearchLoading={websiteSearchLoading}
+            onContentCheck={runContentCheck}
+            onWebsiteSearch={runWebsiteSearch}
+            onShortlist={openWatchlistDialog}
+            onCallStatusChange={handleCallStatus}
+            onToggleSelect={toggleSelect}
+            onTogglePageSelect={togglePageSelect}
+            onPageChange={onPageChange}
           />
         )}
       </div>

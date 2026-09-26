@@ -78,6 +78,49 @@ async function latestSourceTimestamp(
   return max;
 }
 
+/** Cached dossier only. Does not call the model. */
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const session = await requireUser();
+    const { id: leadId } = await params;
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, workspaceId: session.workspaceId },
+      select: { id: true },
+    });
+    if (!lead) {
+      return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+    }
+
+    const cached = await prisma.agentRun.findFirst({
+      where: {
+        workspaceId: session.workspaceId,
+        leadId,
+        workerKind: "LEAD_DOSSIER_GENERATOR",
+        status: "SUCCEEDED",
+      },
+      orderBy: { finishedAt: "desc" },
+      select: { finishedAt: true, outputJson: true },
+    });
+    const sourceTs = await latestSourceTimestamp(session.workspaceId, leadId);
+    const fresh = !!cached?.outputJson && !!cached.finishedAt && (!sourceTs || cached.finishedAt >= sourceTs);
+    const cachedOut = fresh ? (cached!.outputJson as unknown as LeadDossierWorkerOutput) : null;
+    return NextResponse.json({
+      leadId,
+      markdown: cachedOut?.markdown ?? null,
+      generatedAt: cachedOut?.generatedAt ?? null,
+      cached: fresh,
+    });
+  } catch (err) {
+    if (err instanceof UnauthorizedError) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return internalError("api.lead.explain.read_error", err);
+  }
+}
+
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },

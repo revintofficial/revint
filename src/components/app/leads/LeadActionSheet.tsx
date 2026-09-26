@@ -33,11 +33,15 @@ import {
   Phone,
   PhoneOff,
   Voicemail,
+  Ban,
+  Check,
   CheckCircle2,
   CalendarCheck,
   ChevronDown,
+  Copy,
   Flame,
   Snowflake,
+  Target,
   ThermometerSun,
   Plug,
   Clock,
@@ -186,6 +190,135 @@ function LocalTimeBadge({ timezone }: { timezone: string }) {
       <Clock className="w-3.5 h-3.5" />
       {label}
     </span>
+  );
+}
+
+/**
+ * FineDine Angle Card — "which module do I lead with, and what do I
+ * explicitly avoid". The playbook already resolves the angle server-side
+ * (`buildActionSheet` → `pickAngle`); this is the surface that turns the
+ * restaurant analysis further down the page into an actual call decision,
+ * so it sits directly under the hero.
+ */
+function AngleCard({
+  angle,
+}: {
+  angle: NonNullable<ActionSheet["recommendedAngle"]>;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const copyHook = async () => {
+    if (!angle.openingHook) return;
+    try {
+      await navigator.clipboard.writeText(angle.openingHook);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Couldn't copy the opener");
+    }
+  };
+
+  const hasAvoid = !!angle.whenNotToPitch || angle.whatNotToPitch.length > 0;
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex flex-wrap items-center gap-2 text-[14px]">
+          <Target className="w-4 h-4 text-(--revint-300)" /> Recommended angle
+          <Badge
+            style={{
+              background: "color-mix(in srgb, var(--revint-500) 18%, transparent)",
+              color: "var(--revint-200)",
+            }}
+          >
+            {angle.label}
+          </Badge>
+          {!angle.confident && (
+            <span className="text-[11.5px] font-normal text-(--revint-text-3)">
+              no strong signal yet — playbook default
+            </span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-[13px]">
+        {angle.openingHook && (
+          <div className="rounded-xl border border-(--revint-border) bg-(--revint-hover) p-3">
+            <div className="flex items-start justify-between gap-2">
+              <p className="italic leading-relaxed text-(--revint-text-1)">
+                &ldquo;{angle.openingHook}&rdquo;
+              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 shrink-0 gap-1 text-[11.5px]"
+                onClick={() => void copyHook()}
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+            </div>
+            <p className="mt-1 text-[11px] uppercase tracking-[0.06em] text-(--revint-text-3)">
+              Opening hook
+            </p>
+          </div>
+        )}
+
+        {angle.whenToPitch && (
+          <div className="flex items-start gap-2">
+            <Check
+              className="mt-0.5 w-4 h-4 shrink-0"
+              style={{ color: "var(--revint-success)" }}
+            />
+            <p className="leading-relaxed text-(--revint-text-2)">
+              <span className="font-medium text-(--revint-text-1)">Pitch when: </span>
+              {angle.whenToPitch}
+            </p>
+          </div>
+        )}
+
+        {hasAvoid && (
+          <div className="flex items-start gap-2">
+            <Ban
+              className="mt-0.5 w-4 h-4 shrink-0"
+              style={{ color: "var(--revint-error)" }}
+            />
+            <div className="leading-relaxed text-(--revint-text-2)">
+              <span className="font-medium text-(--revint-text-1)">Don&apos;t pitch: </span>
+              {angle.whenNotToPitch}
+              {angle.whatNotToPitch.length > 0 && (
+                <ul className="mt-1 space-y-0.5">
+                  {angle.whatNotToPitch.map((item) => (
+                    <li key={item} className="flex gap-2">
+                      <span
+                        className="mt-1.5 h-1 w-1 shrink-0 rounded-full"
+                        style={{ background: "var(--revint-error)" }}
+                      />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+
+        {angle.matchedTriggers.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="text-[11px] uppercase tracking-[0.06em] text-(--revint-text-3)">
+              Why
+            </span>
+            {angle.matchedTriggers.map((trigger) => (
+              <span
+                key={trigger}
+                className="inline-flex items-center rounded-full bg-(--revint-hover) px-2.5 py-0.5 text-[12px] text-(--revint-text-2)"
+              >
+                {trigger.replace(/_/g, " ")}
+              </span>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -437,6 +570,9 @@ export function LeadActionSheet({ leadId }: { leadId: string }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* FineDine Angle Card — pitch this / don't pitch this. */}
+      {sheet.recommendedAngle && <AngleCard angle={sheet.recommendedAngle} />}
 
       {/* Qualification now lives inside the analysis hero below
           (LeadQualificationCard), so the rep sees it next to the

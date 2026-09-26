@@ -1,5 +1,6 @@
 "use client";
 
+import { BETA_SCOPE } from "@/lib/beta-scope";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -126,7 +127,7 @@ export function LeadCard({
         <LeadBadgeRow lead={lead} />
 
         <div className="flex flex-wrap gap-1.5 pt-1 border-t border-white/5">
-          {lead.hasWebsite ? (
+          {BETA_SCOPE.websiteContentCheck && lead.hasWebsite ? (
             <Button
               size="sm"
               variant="ghost"
@@ -141,7 +142,7 @@ export function LeadCard({
               )}
               Check
             </Button>
-          ) : (
+          ) : !lead.hasWebsite ? (
             <Button
               size="sm"
               variant="ghost"
@@ -156,8 +157,8 @@ export function LeadCard({
               )}
               Find site
             </Button>
-          )}
-          {isWatchlisted ? (
+          ) : null}
+          {BETA_SCOPE.shortlist && (isWatchlisted ? (
             <Link href={`/app/deals?lead=${lead.id}`}>
               <Button
                 size="sm"
@@ -178,7 +179,7 @@ export function LeadCard({
               <Bookmark className="w-3 h-3" />
               Shortlist
             </Button>
-          )}
+          ))}
           {lead.phone && (
             <a href={`tel:${lead.phone}`}>
               <Button size="sm" variant="ghost" className="h-8 px-2 gap-1 text-[11px]">

@@ -1,5 +1,6 @@
 "use client";
 
+import { BETA_SCOPE } from "@/lib/beta-scope";
 import Link from "next/link";
 import { useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -111,6 +112,7 @@ export function LeadRow({
               <CircleCheck className="w-4 h-4 shrink-0 text-[hsl(152_48%_50%)]" aria-hidden />
               <Badge variant="success">Yes</Badge>
             </div>
+            {BETA_SCOPE.websiteContentCheck && (
             <button
               onClick={(e) => {
                 e.preventDefault();
@@ -126,6 +128,7 @@ export function LeadRow({
               )}
               Check
             </button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
@@ -201,7 +204,7 @@ export function LeadRow({
       {/* Actions */}
       <td className={padding}>
         <div className="flex flex-wrap gap-1">
-          {isWatchlisted ? (
+          {BETA_SCOPE.shortlist && (isWatchlisted ? (
             <Link href={`/app/deals?lead=${lead.id}`}>
               <Button
                 size="sm"
@@ -222,7 +225,7 @@ export function LeadRow({
               <Bookmark className="w-4 h-4 shrink-0" />
               Shortlist
             </Button>
-          )}
+          ))}
           {lead.salesOpportunity?.status === "NEW" && lead.phone && (
             <Button
               size="sm"

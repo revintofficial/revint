@@ -39,6 +39,32 @@ export function runAuditChecklist(
     };
   }
 
+  // Partial audits (demo seeds, interrupted crawls) omit arrays the
+  // checklist indexes. A missing list must score as "not found",
+  // not take down the lead page.
+  features = {
+    ...features,
+    schemaTypes: features.schemaTypes ?? [],
+    performanceHints: features.performanceHints ?? [],
+    accessibilityIssues: features.accessibilityIssues ?? [],
+    ctaLinks: features.ctaLinks ?? [],
+    navItems: features.navItems ?? [],
+    servicesDetected: features.servicesDetected ?? [],
+    contactEmails: features.contactEmails ?? [],
+    fontsDetected: features.fontsDetected ?? [],
+    consoleErrors: features.consoleErrors ?? [],
+    securityHeaders: {
+      hasCSP: false,
+      hasXFrameOptions: false,
+      hasXContentTypeOptions: false,
+      hasReferrerPolicy: false,
+      hasHSTS: false,
+      hasXXSSProtection: false,
+      hasPermissionsPolicy: false,
+      ...features.securityHeaders,
+    },
+  };
+
   // ===== SEO CHECKS =====
   seo.push(check("seo", "Site is reachable", boolStatus(features.reachable), "critical",
     "Site must be reachable and return 200 OK."));

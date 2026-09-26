@@ -23,7 +23,7 @@ import {
   type HubspotClient,
 } from "./client";
 import { getPlaybook } from "@/lib/playbook/resolve";
-import { pickAngle } from "@/lib/playbook/angle";
+import { absenceSignalsFromAudit, hasSlowServiceSignal, pickAngle } from "@/lib/playbook/angle";
 import {
   mapPlaybookStageToHubspot,
   type CrmFieldMapping,
@@ -137,7 +137,18 @@ async function buildRevintProperties(
 } | null> {
   const lead = await prisma.lead.findFirst({
     where: { id: leadId, workspaceId },
-    include: { qualification: true },
+    include: {
+      qualification: true,
+      websiteAudit: {
+        select: {
+          reachable: true,
+          hasBookingSystem: true,
+          hasEcommerce: true,
+          rawFeaturesJson: true,
+        },
+      },
+      reviewAnalysis: { select: { weaknessKpis: true } },
+    },
   });
   if (!lead) return null;
 
@@ -148,6 +159,8 @@ async function buildRevintProperties(
     reviewCount: lead.reviewCount,
     priceLevel: lead.priceLevel,
     isMultiLocation: !!lead.accountId,
+    ...absenceSignalsFromAudit(lead.websiteAudit),
+    slowServiceReviews: hasSlowServiceSignal(lead.reviewAnalysis?.weaknessKpis),
   });
   const nextAction = await prisma.leadNextAction.findFirst({
     where: { workspaceId, leadId, supersededAt: null },

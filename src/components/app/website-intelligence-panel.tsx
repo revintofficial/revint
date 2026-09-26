@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CircularProgress } from "@/components/ui/progress";
+import { BETA_SCOPE } from "@/lib/beta-scope";
 import { getNicheBySlug, getParentOf } from "@/lib/niches";
 import { isSocialPlatformDefaultMeta } from "@/lib/labels";
 import {
@@ -494,8 +495,9 @@ function HeroSection({
           </div>
         </div>
 
-        {/* Action buttons */}
+        {(BETA_SCOPE.workerTools || BETA_SCOPE.websiteContentCheck) && (
         <div className="mt-4 flex flex-wrap items-center gap-2 pt-4 border-t border-white/5">
+          {BETA_SCOPE.workerTools && (
           <Button
             size="sm"
             variant="outline"
@@ -505,7 +507,8 @@ function HeroSection({
             <RefreshCw className="w-3.5 h-3.5" />
             Re-scan
           </Button>
-          {websiteUrl && (
+          )}
+          {BETA_SCOPE.websiteContentCheck && websiteUrl && (
             <Button
               size="sm"
               variant="outline"
@@ -522,6 +525,7 @@ function HeroSection({
             </Button>
           )}
         </div>
+        )}
       </div>
     </div>
   );
@@ -982,7 +986,7 @@ function NicheProductFitSection({
             {detectedCount} present
           </Badge>
           <Badge variant="warning" className="text-[10px] h-5 px-1.5">
-            {opportunityCount} to pitch
+            {opportunityCount} not detected
           </Badge>
         </div>
       </div>
@@ -1001,7 +1005,8 @@ function NicheProductFitSection({
               Pitch angle
             </p>
             <p className="text-[12.5px] text-white/75 leading-relaxed">
-              {pack.pitchAngle}
+              What to say on the call is the angle card at the top of this lead.
+              The chips here only report what this website exposes.
             </p>
           </div>
         </div>
@@ -1098,7 +1103,7 @@ function classifyModule(
         detail: features.detectedMenuTool ? `Detected: ${features.detectedMenuTool}` : "QR menu found on site",
       };
     }
-    return { module: moduleLabel, status: "opportunity", detail: "No QR menu on site — primary opener" };
+    return { module: moduleLabel, status: "opportunity", detail: "No QR menu detected" };
   }
   if (label.includes("reservation") || label.includes("booking")) {
     if (features.hasOnlineReservation || features.bookingProvider) {
@@ -1171,7 +1176,7 @@ function RestaurantSignalsSection({
       present: !!features.hasQrMenu,
       detail: features.detectedMenuTool
         ? `Detected: ${features.detectedMenuTool}`
-        : "Not detected — primary sales opportunity",
+        : "Not detected on the site",
       priority: "critical" as const,
     },
     {

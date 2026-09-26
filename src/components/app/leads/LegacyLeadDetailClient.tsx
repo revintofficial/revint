@@ -43,7 +43,7 @@ import type {
   LeadDetailTab,
 } from "@/components/app/leads/dossier/source-registry";
 import { OutreachStepper } from "@/components/ui/outreach-stepper";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { SegmentedControl, type SegmentedItem } from "@/components/ui/segmented-control";
 import {
   CRAWL_LABELS,
   ANALYZE_LABELS,
@@ -65,6 +65,7 @@ import { WebsiteIntelligencePanel } from "@/components/app/website-intelligence-
 import { LeadActionSheet } from "@/components/app/leads/LeadActionSheet";
 import AccountIntelligenceBriefCard from "@/components/app/leads/AccountIntelligenceBriefCard";
 import { LeadQualificationCard } from "@/components/app/leads/LeadQualificationCard";
+import { BETA_SCOPE } from "@/lib/beta-scope";
 import {
   ArrowLeft,
   MapPin,
@@ -324,7 +325,21 @@ interface LeadDetail {
 }
 
 type TabKey = "overview" | "website" | "workers" | "reviews" | "outreach";
-const TAB_KEYS: TabKey[] = ["overview", "website", "workers", "reviews", "outreach"];
+
+/**
+ * Tabs the rep can actually reach. `workers` (internal AI operator tooling)
+ * and `outreach` (the legacy stepper, superseded by the playbook stage
+ * picker in the Action Sheet) are outside the FineDine beta scope — see
+ * `BETA_SCOPE`. Driving the hash sync, the segmented control and the tab
+ * strip off one list keeps them from drifting apart.
+ */
+const TAB_KEYS: TabKey[] = (
+  ["overview", "website", "workers", "reviews", "outreach"] as TabKey[]
+).filter(
+  (tab) =>
+    (tab !== "workers" || BETA_SCOPE.workerTools) &&
+    (tab !== "outreach" || BETA_SCOPE.outreachTab),
+);
 
 /**
  * Phase 0/B2 — "Checks Passed" comes ONLY from the canonical
@@ -408,6 +423,25 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
         }
       } finally {
         if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/leads/${id}/explain`);
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!cancelled && typeof data?.markdown === "string" && data.markdown.length > 0) {
+          setDossier(data.markdown);
+        }
+      } catch {
+        // The brief stays on the generate button if the cache read fails.
       }
     })();
     return () => {
@@ -722,16 +756,20 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
                   { value: "workers", label: "Workers", icon: BotIcon },
                   { value: "reviews", label: "Reviews", shortLabel: "Reviews", icon: Star },
                   { value: "outreach", label: "Outreach", shortLabel: "Outreach", icon: MessageSquareText },
-                ]}
+                ].filter((item) => TAB_KEYS.includes(item.value as TabKey)) as SegmentedItem<TabKey>[]}
               />
             </div>
             <div className="hidden md:block overflow-x-auto scrollbar-hide -mx-1 px-1">
               <TabsList className="w-full sm:w-auto">
                 <TabsTrigger value="overview" className="flex-1 sm:flex-initial">Overview</TabsTrigger>
                 <TabsTrigger value="website" className="flex-1 sm:flex-initial">Website</TabsTrigger>
-                <TabsTrigger value="workers" className="flex-1 sm:flex-initial">Workers</TabsTrigger>
+                {BETA_SCOPE.workerTools && (
+                  <TabsTrigger value="workers" className="flex-1 sm:flex-initial">Workers</TabsTrigger>
+                )}
                 <TabsTrigger value="reviews" className="flex-1 sm:flex-initial">Reviews</TabsTrigger>
-                <TabsTrigger value="outreach" className="flex-1 sm:flex-initial">Outreach</TabsTrigger>
+                {BETA_SCOPE.outreachTab && (
+                  <TabsTrigger value="outreach" className="flex-1 sm:flex-initial">Outreach</TabsTrigger>
+                )}
               </TabsList>
             </div>
 
@@ -755,7 +793,7 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
                 onToggle={() => setDossierCollapsed((v) => !v)}
                 onOpenSource={setDrawerTag}
               />
-              {opp && (
+              {BETA_SCOPE.servicePackages && opp && (
                 <div id="anchor-service-packages">
                   <RecommendedPackageCard
                     pkg={opp.recommendedPackage}
@@ -764,7 +802,7 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
                   />
                 </div>
               )}
-              {opp?.personalizedFirstMessage && (
+              {BETA_SCOPE.personalizedMessage && opp?.personalizedFirstMessage && (
                 <PersonalizedMessageCard
                   message={opp.personalizedFirstMessage}
                   copied={copied}
@@ -786,7 +824,7 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
                   workspaceNiche={lead.workspace?.niche ?? null}
                   nicheSlug={lead.nicheSlug}
                   subNicheSlug={lead.subNicheSlug}
-                  audit={audit}
+                  audit={audit ? overlayAuditFeatures(audit) : null}
                   auditSummary={auditSummary}
                   contentCheck={showContentCheck ? contentCheck : null}
                   contentCheckLoading={contentCheckLoading}
@@ -797,6 +835,7 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
                   onWebsiteSearch={runWebsiteSearch}
                 />
               </div>
+              {BETA_SCOPE.subNicheOverride && (
               <div id="anchor-niche-pack">
                 <SubNicheOverride
                   leadId={lead.id}
@@ -807,6 +846,7 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
                   onChange={refetchLead}
                 />
               </div>
+              )}
             </TabsContent>
 
             <TabsContent value="workers" className="space-y-5">
@@ -846,9 +886,11 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
               <div id="anchor-reviews">
                 <GoogleReviewsAccordion leadId={lead.id} />
               </div>
+              {BETA_SCOPE.voiceNotes && (
               <div id="anchor-voice-notes">
                 <VoiceNotesPanel leadId={lead.id} />
               </div>
+              )}
             </TabsContent>
 
             <TabsContent value="outreach" className="space-y-5" id="anchor-sales-opportunity">
@@ -906,6 +948,32 @@ export default function LegacyLeadDetailClient({ id }: { id: string }) {
       <MobileActionBar lead={lead} onLogged={() => { void refetchLead(); }} />
     </div>
   );
+}
+
+/** The crawler stores Open Graph / schema flags on rawFeaturesJson, not as columns. */
+function overlayAuditFeatures(
+  audit: NonNullable<LeadDetail["websiteAudit"]>,
+): NonNullable<LeadDetail["websiteAudit"]> {
+  const raw = audit.rawFeaturesJson as Record<string, unknown> | null | undefined;
+  if (!raw) return audit;
+  const bool = (key: string, fallback: boolean | undefined) =>
+    typeof raw[key] === "boolean" ? (raw[key] as boolean) : fallback;
+  return {
+    ...audit,
+    hasOpenGraph: bool("hasOpenGraph", audit.hasOpenGraph),
+    hasTwitterCards: bool("hasTwitterCards", audit.hasTwitterCards),
+    hasFavicon: bool("hasFavicon", audit.hasFavicon),
+    hasManifest: bool("hasManifest", audit.hasManifest),
+    hasServiceWorker: bool("hasServiceWorker", audit.hasServiceWorker),
+    hasGoogleAnalytics: bool("hasGoogleAnalytics", audit.hasGoogleAnalytics),
+    hasCookieConsent: bool("hasCookieConsent", audit.hasCookieConsent),
+    hasResponsiveImages: bool("hasResponsiveImages", audit.hasResponsiveImages),
+    hasFontDisplay: bool("hasFontDisplay", audit.hasFontDisplay),
+    structuredDataPresent: bool("structuredDataPresent", audit.structuredDataPresent),
+    schemaTypes: Array.isArray(raw.schemaTypes) ? (raw.schemaTypes as string[]) : audit.schemaTypes,
+    cssFramework: typeof raw.cssFramework === "string" ? raw.cssFramework : audit.cssFramework,
+    pageCount: typeof raw.pageCount === "number" ? raw.pageCount : audit.pageCount,
+  };
 }
 
 /** Narrative block shown directly under the lead title — mirrors sales-opportunity copy. */
@@ -1118,7 +1186,9 @@ function HeroBand({
 
         <HeroDirectoryBadges links={lead.discoveredLinks ?? []} />
 
-        <HeroPipelineRerunBar leadId={lead.id} onStarted={onPipelineStarted} />
+        {BETA_SCOPE.workerTools && (
+          <HeroPipelineRerunBar leadId={lead.id} onStarted={onPipelineStarted} />
+        )}
       </div>
     </div>
   );
@@ -1474,6 +1544,7 @@ function IdentityRail({
                   >
                     {lead.websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}
                   </a>
+                  {BETA_SCOPE.websiteContentCheck && (
                   <button
                     type="button"
                     onClick={onContentCheck}
@@ -1487,6 +1558,7 @@ function IdentityRail({
                       <ScanSearch className="w-3.5 h-3.5" />
                     )}
                   </button>
+                  )}
                 </div>
               ) : (
                 <button
