@@ -422,6 +422,7 @@ model User {
   memberships     WorkspaceMember[]
   assignedLeads   Lead[]            @relation("LeadAssignee")
   leadSegments    LeadSegment[]     @relation("LeadSegmentCreator")
+  platformRole    PlatformRoleAssignment?
 
   @@map("users")
 }
@@ -525,6 +526,12 @@ model Workspace {
   crmSyncLogs          CrmSyncLog[]
   // Calibration-first onboarding — AI-extracted drafts pending user confirm.
   onboardingDraft      WorkspaceOnboardingDraft?
+  calibrationVersions WorkspaceCalibrationVersion[]
+  evalDatasets        EvalDataset[]
+  evalCases           EvalCase[]
+  humanReviews        HumanReview[]
+  evalRuns            EvalRun[]
+  evalCaseResults     EvalCaseResult[]
 
   @@map("workspaces")
 }
@@ -2489,4 +2496,186 @@ model AppLog {
   @@index([level, createdAt])
   @@index([source, createdAt])
   @@map("app_log")
+}
+
+// FineDine control plane.
+enum PlatformRole {
+  VIEWER
+  REVIEWER
+  ADMIN
+}
+
+enum CalibrationStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  ACTIVE
+  SUPERSEDED
+  ROLLED_BACK
+}
+
+enum ReviewVerdict {
+  PASS
+  FAIL
+  NEEDS_REVIEW
+}
+
+enum EvalRunStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model PlatformRoleAssignment {
+  id        String       @id @default(cuid())
+  userId    String       @map("user_id") @db.Uuid
+  role      PlatformRole
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@map("platform_role_assignments")
+}
+
+model AdminAuditEvent {
+  id             String       @id @default(cuid())
+  actorUserId    String       @map("actor_user_id") @db.Uuid
+  actorRole      PlatformRole @map("actor_role")
+  workspaceId    String?      @map("workspace_id")
+  action         String
+  targetType     String       @map("target_type")
+  targetId       String       @map("target_id")
+  reason         String       @db.Text
+  beforeJson     Json?        @map("before_json")
+  afterJson      Json?        @map("after_json")
+  approvalUserId String?      @map("approval_user_id") @db.Uuid
+  outcome        String
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@index([workspaceId, createdAt])
+  @@index([targetType, targetId])
+  @@map("admin_audit_events")
+}
+
+model WorkspaceCalibrationVersion {
+  id                String            @id @default(cuid())
+  workspaceId       String            @map("workspace_id")
+  version           Int
+  status            CalibrationStatus @default(DRAFT)
+  icpJson           Json              @map("icp_json")
+  packagesJson      Json              @map("packages_json")
+  claimsJson        Json              @map("claims_json")
+  playbookJson      Json              @map("playbook_json")
+  pipelineJson      Json              @map("pipeline_json")
+  baseVersionId     String?           @map("base_version_id")
+  reason            String            @db.Text
+  createdByUserId   String            @map("created_by_user_id") @db.Uuid
+  approvedByUserId  String?           @map("approved_by_user_id") @db.Uuid
+  activatedByUserId String?           @map("activated_by_user_id") @db.Uuid
+  createdAt         DateTime          @default(now()) @map("created_at")
+  activatedAt       DateTime?         @map("activated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, version])
+  @@index([workspaceId, status])
+  @@map("workspace_calibration_versions")
+}
+
+model EvalDataset {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  name        String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  workspace Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  cases     EvalCase[]
+
+  @@unique([workspaceId, name])
+  @@map("eval_datasets")
+}
+
+model EvalCase {
+  id               String   @id @default(cuid())
+  workspaceId      String   @map("workspace_id")
+  datasetId        String   @map("dataset_id")
+  sourceLeadId     String?  @map("source_lead_id")
+  sourceRunId      String?  @map("source_run_id")
+  title            String
+  segment          String?
+  country          String?
+  language         String?
+  inputSnapshot    Json     @map("input_snapshot")
+  outputSnapshot   Json     @map("output_snapshot")
+  expectedJson     Json     @map("expected_json")
+  severity         String
+  tags             String[] @default([])
+  approvedByUserId String   @map("approved_by_user_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  dataset   EvalDataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, datasetId])
+  @@map("eval_cases")
+}
+
+model HumanReview {
+  id                   String        @id @default(cuid())
+  workspaceId          String        @map("workspace_id")
+  leadId               String?       @map("lead_id")
+  agentRunId           String?       @map("agent_run_id")
+  evalCaseId           String?       @map("eval_case_id")
+  verdict              ReviewVerdict
+  errorClass           String?       @map("error_class")
+  severity             String?
+  note                 String?       @db.Text
+  reviewerUserId       String        @map("reviewer_user_id") @db.Uuid
+  secondReviewerUserId String?       @map("second_reviewer_user_id") @db.Uuid
+  createdAt            DateTime      @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, leadId])
+  @@map("human_reviews")
+}
+
+model EvalRun {
+  id                     String        @id @default(cuid())
+  workspaceId            String        @map("workspace_id")
+  datasetId              String        @map("dataset_id")
+  label                  String
+  calibrationVersionId   String?       @map("calibration_version_id")
+  status                 EvalRunStatus @default(PENDING)
+  createdByUserId        String        @map("created_by_user_id") @db.Uuid
+  summaryJson            Json?         @map("summary_json")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  finishedAt             DateTime?     @map("finished_at")
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  results   EvalCaseResult[]
+
+  @@index([workspaceId, datasetId, createdAt])
+  @@map("eval_runs")
+}
+
+model EvalCaseResult {
+  id          String  @id @default(cuid())
+  workspaceId String  @map("workspace_id")
+  evalRunId   String  @map("eval_run_id")
+  evalCaseId  String  @map("eval_case_id")
+  passed      Boolean
+  failures    Json
+  outputJson  Json    @map("output_json")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  evalRun   EvalRun   @relation(fields: [evalRunId], references: [id], onDelete: Cascade)
+
+  @@unique([evalRunId, evalCaseId])
+  @@index([workspaceId, evalRunId])
+  @@map("eval_case_results")
 }
