@@ -5,6 +5,7 @@ import {
   rangeForPreset,
 } from "@/lib/admin/queries";
 import { RangePicker, normaliseRange } from "@/components/admin/range-picker";
+import { LogsTabs } from "@/components/admin/logs-tabs";
 import { formatNumber, formatPct, relativeTime } from "@/lib/admin/format";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +41,8 @@ export default async function AdminErrorsPage({
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between flex-wrap gap-3">
-        <div>
+        <div className="space-y-3">
+          <LogsTabs current="client" />
           <h1 className="text-2xl font-semibold text-[var(--revint-text-1)]">
             Errors &amp; Web Vitals
           </h1>

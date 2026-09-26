@@ -2471,3 +2471,22 @@ model ReasoningTrace {
   @@index([workspaceId, decisionRefType, decisionRefId])
   @@map("reasoning_traces")
 }
+
+// Platform log drain. Vercel (web) and Railway (workers) both write here
+// through src/lib/logger.ts so /admin/logs can show one stream.
+// Not workspace-owned: founder admin only, gated by ADMIN_DASHBOARD_EMAILS.
+// Rows older than 48h are deleted by the log sink (see APP_LOG_RETENTION_MS).
+model AppLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  level     String
+  event     String
+  source    String
+  message   String?  @db.Text
+  fields    Json
+
+  @@index([createdAt])
+  @@index([level, createdAt])
+  @@index([source, createdAt])
+  @@map("app_log")
+}

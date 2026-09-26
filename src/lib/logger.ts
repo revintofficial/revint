@@ -8,6 +8,8 @@
  * cookies) are redacted automatically.
  */
 
+import { enqueueAppLog } from "@/lib/log-sink";
+
 type Fields = Record<string, unknown>;
 
 const SECRET_KEY_PATTERNS = [
@@ -65,13 +67,15 @@ function redact(value: unknown, depth = 0): unknown {
 type Level = "debug" | "info" | "warn" | "error";
 
 function emit(level: Level, event: string, fields: Fields) {
+  const redacted = (redact(fields) as Record<string, unknown>) || {};
   const record = {
     level,
     event,
     ts: new Date().toISOString(),
-    ...((redact(fields) as Record<string, unknown>) || {}),
+    ...redacted,
   };
   const line = JSON.stringify(record);
+  enqueueAppLog({ level, event, fields: redacted });
   if (level === "error") {
     // eslint-disable-next-line no-console
     console.error(line);

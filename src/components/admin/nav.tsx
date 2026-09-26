@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
-  AlertTriangle,
   BarChart3,
   Filter,
   Globe2,
@@ -12,6 +11,7 @@ import {
   ListOrdered,
   Monitor,
   Radio,
+  ScrollText,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,7 @@ const NAV: Array<{ href: string; label: string; icon: React.ComponentType<{ clas
   { href: "/admin/pages", label: "Pages", icon: BarChart3 },
   { href: "/admin/funnels", label: "Funnels", icon: Filter },
   { href: "/admin/sources", label: "Sources", icon: ListOrdered },
-  { href: "/admin/errors", label: "Errors", icon: AlertTriangle },
+  { href: "/admin/logs", label: "Logs", icon: ScrollText },
 ];
 
 export function AdminNav() {

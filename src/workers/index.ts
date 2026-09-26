@@ -69,6 +69,23 @@ import { startEmailVerificationWorker } from "./email-verification-worker";
 import { startAgentRunWorker } from "./agent-run-worker";
 import { startSeoOpsWorker } from "./seo-ops-worker";
 import { logger } from "../lib/logger";
+import { flushAppLogs, installConsoleCapture, purgeExpiredAppLogs } from "../lib/log-sink";
+
+installConsoleCapture();
+
+const logPurgeTimer = setInterval(() => {
+  void purgeExpiredAppLogs();
+}, 15 * 60 * 1000);
+logPurgeTimer.unref?.();
+
+process.on("unhandledRejection", (reason) => {
+  logger.error("worker.unhandled_rejection", { err: reason });
+});
+
+process.on("uncaughtException", (err) => {
+  logger.error("worker.uncaught_exception", { err });
+  void flushAppLogs().finally(() => process.exit(1));
+});
 
 function maskRedisUrl(raw: string | undefined): string {
   if (!raw) return "<UNSET>";
@@ -126,6 +143,7 @@ if (
             "Refusing to start workers — every embed-dependent job would FAIL. " +
             "Configure GEMINI_API_KEY_1..N with a working key and redeploy.",
         );
+        await flushAppLogs();
         process.exit(1);
       }
     }
@@ -172,6 +190,7 @@ logger.info("worker.supervisor.started");
 
 async function shutdown() {
   logger.info("worker.supervisor.shutdown");
+  clearInterval(logPurgeTimer);
   await Promise.all([
     discoveryWorker.close(),
     reviewAnalysisWorker.close(),
@@ -179,6 +198,7 @@ async function shutdown() {
     agentRunWorker.close(),
     seoOpsWorker.close(),
   ]);
+  await flushAppLogs();
   process.exit(0);
 }
 
