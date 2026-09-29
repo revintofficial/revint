@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 /**
  * M21 regression - the app shipped without a top-level error.tsx
  * or not-found.tsx. Any uncaught render error in a public route
@@ -20,6 +21,16 @@ vi.mock("next/link", () => ({
     <a href={href}>{children}</a>
   ),
 }));
+
+// The boundary POSTs itself to /api/client-errors on mount. Under the
+// DOM environment that is a real request to localhost, which rejects
+// with a NetworkError after the test has already finished and shows up
+// as an unhandled rejection. Stub it so the assertions below don't
+// depend on a dev server being up.
+vi.stubGlobal(
+  "fetch",
+  vi.fn(() => Promise.resolve(new Response(null, { status: 204 }))),
+);
 
 import RootError from "@/app/error";
 import RootNotFound from "@/app/not-found";

@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 /**
  * M18 regression - same hydration mismatch as M17 but on
  * /app/leads. The previous initializer read localStorage inside

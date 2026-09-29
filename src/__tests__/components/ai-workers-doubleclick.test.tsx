@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 /**
  * H10 regression - "Run worker" + "Upgrade" buttons used to fire
  * duplicate POSTs on a rapid double click because React's `busy` state

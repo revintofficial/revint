@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 /**
  * Phase 5 — BottomSheet a11y + interaction smoke tests.
  *

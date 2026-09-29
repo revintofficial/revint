@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 /**
  * M15 regression - the signOut() handler in user-menu.tsx used to
  * call only `supabase.auth.signOut()` + `router.push("/login")`.

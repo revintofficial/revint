@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 /**
  * M17 regression - hydration mismatch on /app/todos. The previous
  * page.tsx used `useState(getSavedColumns)` with a function that

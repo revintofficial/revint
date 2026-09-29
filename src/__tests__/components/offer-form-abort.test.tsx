@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 /**
  * M19 regression - fetch effects in offer-form, dashboard, and
  * copilot-drawer used to call setState unconditionally inside the
