@@ -322,6 +322,10 @@ export type RoomOneOutput = {
 
 Brief çıktısı: `briefMode: "head-agent"`, `headAgent.recommendedPackage`, `headAgent.wedge`, `headAgent.primaryAngle`, `headAgent.talkTrack`, `headAgent.recommendedModules`, `headAgent.excludedModules`, `headAgent.confidence`, `headAgent.evidenceRefs`, `headAgent.sourceConflicts`, `missingSources: string[]`, `headAgent.roomOne: RoomOneOutput`.
 
+**Task 1'den devreden borç — bu görevde kapanır.** `SALES_OPPORTUNITY_SCORER` otomatik zincirden çıktı, yani **yeni lead'lerde `SalesOpportunity` satırı oluşmuyor.** O satırı okuyan yüzeyler var: `/api/leads`, `/api/leads/[id]`, `/api/leads/export`, `/api/integrations/hubspot/card-data`, `explain`, `lookalikes`, ve halka açık işletme sayfası. Brief zaten `Lead.salesConfidence` yazıyor, ama paket ve açı `SalesOpportunity` üzerinden okunuyor.
+
+Yapılacak: brief, head agent kararını yazarken aynı transaction içinde `SalesOpportunity` satırını da **tek yazar olarak** upsert eder — `recommendedPackage`, `bestSalesAngle` (kaçak), `leadScore` (`salesConfidence`), `reasonCodes` (Oda 1 kanıtı). İkinci bir model çağrısı yoktur; satır kararın projeksiyonudur. Test: brief koşusundan sonra `salesOpportunity.upsert` bir kez çağrılır ve `bestSalesAngle` karttaki kaçakla aynıdır. Bu kapanana kadar FineDine'a yeni lead verilmez.
+
 - [ ] **Step 1: Oda 1 testleri (model çağırmaz)**
 
 ```ts
