@@ -2,13 +2,13 @@
  * Tests for `getDefaultChain(preset, plan)` — the lead_created chain
  * resolver used by `planner.ts:resolveLeadCreatedChain`.
  *
- * Post-V2-cleanup — the SDR-Brain substrate was trimmed to the
- * workers that produce restaurant-tech-relevant output:
- * ICP_SCORER (T1) + TRIGGER_DETECTOR (T2) + WHY_NOW_SYNTHESIZER (T2,
- * BALANCED+ only). The dropped enterprise-residue workers
- * (ACCOUNT_TIER_RANKER, BANT_INFERRER, COMMERCIAL_INSIGHT_MATCHER,
- * BUYING_COMMITTEE_MAPPER, OBJECTION_PREDICTOR) must NOT reappear in
- * any preset.
+ * 2026-09-29 — the default chain is three evidence collectors plus one
+ * decision. See `docs/admin-paneli-son-karar.md` §5 (Çelişki 1) and
+ * `docs/analiz-ve-playbook.md` §3. The interpreting workers (score,
+ * dossier, ICP, why-now, trigger) no longer run automatically: the
+ * only decision lives inside LEAD_INTELLIGENCE_BRIEF's head agent.
+ * They stay in the enum and still run when an SDR clicks
+ * (`user_one_click_pitch`, `user_deep_research`).
  *
  * No DB, no network — pure structural assertions on the resolved
  * chain definition.
@@ -39,9 +39,10 @@ function stepById(chain: Chain, id: string) {
 }
 
 /**
- * Workers that were removed in the V2 enterprise cleanup. None of
- * them should appear in any preset — keep this list in sync with
- * `LEAD_PIPELINE_ALLOWED_WORKERS` in `chains.ts`.
+ * Workers that must never appear in an automatic chain. The first
+ * five are the V2 enterprise residue; the rest were retired on
+ * 2026-09-29 because they wrote a second sales narrative on top of
+ * the brief, or produced empty output on real FineDine accounts.
  */
 const REMOVED_V2_WORKERS: AgentWorkerKind[] = [
   "ACCOUNT_TIER_RANKER",
@@ -49,160 +50,111 @@ const REMOVED_V2_WORKERS: AgentWorkerKind[] = [
   "COMMERCIAL_INSIGHT_MATCHER",
   "BUYING_COMMITTEE_MAPPER",
   "OBJECTION_PREDICTOR",
+  "SALES_OPPORTUNITY_SCORER",
+  "LEAD_DOSSIER_GENERATOR",
+  "ICP_SCORER",
+  "TRIGGER_DETECTOR",
+  "WHY_NOW_SYNTHESIZER",
+  "APIFY_WEB_CRAWL_DEEP",
+  "GOOGLE_PLACES_REVIEWS",
+  "SOCIAL_SCRAPER",
+  "APIFY_SERP_RANK",
+  "EMAIL_VERIFIER",
+  "SUBVERTICAL_CLASSIFIER",
+  "OPENER_WRITER",
+  "WEBSITE_MOCKUP_GENERATOR",
 ];
 
-describe("getDefaultChain — LITE preset (post-V2-cleanup substrate)", () => {
-  // FREE plan is the most representative LITE workspace — design
-  // partners default here. PRO_TEAM matrix would just unlock more
-  // quota; the chain composition itself does not change.
-  const lite = getDefaultChainForUi("LITE", "FREE");
+describe("getDefaultChain — BALANCED is map, site, reviews, decision", () => {
+  const balanced = getDefaultChainForUi("BALANCED", "AGENCY");
 
-  it("includes the surviving SDR-Brain substrate workers", () => {
-    const kinds = new Set(kindsIn(lite));
-    expect(kinds.has("ICP_SCORER"), "ICP_SCORER missing from LITE").toBe(true);
-    expect(kinds.has("TRIGGER_DETECTOR"), "TRIGGER_DETECTOR missing from LITE").toBe(true);
-    expect(kinds.has("REVIEW_ANALYST"), "REVIEW_ANALYST missing from LITE").toBe(true);
+  it("is exactly the four-step chain in order", () => {
+    expect(stepIdsIn(balanced)).toEqual([
+      "apify_gmaps",
+      "audit",
+      "review_refresh",
+      "intelligence_brief",
+    ]);
   });
 
-  it("does NOT include the removed V2 enterprise residue workers", () => {
-    const kinds = new Set(kindsIn(lite));
-    for (const removed of REMOVED_V2_WORKERS) {
-      expect(kinds.has(removed), `${removed} should not appear in LITE (V2 residue)`).toBe(false);
-    }
-  });
-
-  it("does NOT include BALANCED-only enrichment", () => {
-    const kinds = new Set(kindsIn(lite));
-    expect(kinds.has("WHY_NOW_SYNTHESIZER")).toBe(false);
-    expect(kinds.has("APIFY_GMAPS_DEEP")).toBe(false);
-    expect(kinds.has("APIFY_WEB_CRAWL_DEEP")).toBe(false);
-    expect(kinds.has("SOCIAL_SCRAPER")).toBe(false);
-    expect(kinds.has("LEAD_DOSSIER_GENERATOR")).toBe(false);
-  });
-
-  it("LITE TRIGGER_DETECTOR step depends only on score (no apify_webcrawl)", () => {
-    const triggers = stepByKind(lite, "TRIGGER_DETECTOR");
-    expect(triggers).toBeDefined();
-    expect(triggers!.dependsOn).toEqual(["score"]);
-    expect(triggers!.optional).toBe(true);
-  });
-
-  it("LITE REVIEW_ANALYST step depends only on score (no apify_gmaps)", () => {
-    const review = stepByKind(lite, "REVIEW_ANALYST");
-    expect(review).toBeDefined();
-    expect(review!.dependsOn).toEqual(["score"]);
-    expect(review!.optional).toBe(true);
-  });
-
-  it("every SDR-Brain substrate step is optional (chain doesn't stall on any failure)", () => {
-    const substrate: AgentWorkerKind[] = [
-      "ICP_SCORER",
-      "TRIGGER_DETECTOR",
+  it("maps each step to its worker", () => {
+    expect(kindsIn(balanced)).toEqual([
+      "APIFY_GMAPS_DEEP",
+      "WEBSITE_AUDITOR",
       "REVIEW_ANALYST",
-    ];
-    for (const kind of substrate) {
-      const step = stepByKind(lite, kind);
-      expect(step?.optional, `${kind} must be optional in LITE`).toBe(true);
-    }
+      "LEAD_INTELLIGENCE_BRIEF",
+    ]);
   });
 
-  it("intelligence_brief waits for the LITE substrate", () => {
-    const brief = stepById(lite, "intelligence_brief");
+  it("the brief waits for every data step", () => {
+    const brief = stepById(balanced, "intelligence_brief");
     expect(brief).toBeDefined();
-    expect(brief!.workerKind).toBe("LEAD_INTELLIGENCE_BRIEF");
-    expect(brief!.dependsOn).toEqual(
-      expect.arrayContaining([
-        "score",
-        "embed_profile",
-        "icp_scorer",
-        "triggers",
-        "review_refresh",
-      ]),
+    expect(brief!.dependsOn.slice().sort()).toEqual(
+      ["apify_gmaps", "audit", "review_refresh"].sort(),
     );
   });
 
-  it("intelligence_brief is the last step of the LITE chain", () => {
-    expect(stepIdsIn(lite).at(-1)).toBe("intelligence_brief");
-  });
-
-  it("every LITE worker is whitelisted in LEAD_PIPELINE_ALLOWED_WORKERS", () => {
-    for (const kind of kindsIn(lite)) {
-      expect(
-        LEAD_PIPELINE_ALLOWED_WORKERS.has(kind),
-        `${kind} missing from LEAD_PIPELINE_ALLOWED_WORKERS`,
-      ).toBe(true);
-    }
-  });
-
-  it("LEAD_PIPELINE_ALLOWED_WORKERS does not whitelist any removed V2 workers", () => {
-    for (const removed of REMOVED_V2_WORKERS) {
-      expect(
-        LEAD_PIPELINE_ALLOWED_WORKERS.has(removed),
-        `${removed} should not be whitelisted (V2 residue)`,
-      ).toBe(false);
-    }
-  });
-});
-
-describe("getDefaultChain — BALANCED preset (post-V2-cleanup)", () => {
-  const balanced = getDefaultChainForUi("BALANCED", "PRO");
-
-  it("retains WHY_NOW_SYNTHESIZER and dossier in BALANCED", () => {
-    const kinds = new Set(kindsIn(balanced));
-    expect(kinds.has("WHY_NOW_SYNTHESIZER")).toBe(true);
-    expect(kinds.has("LEAD_DOSSIER_GENERATOR")).toBe(true);
-  });
-
-  it("does NOT include the removed V2 enterprise residue workers", () => {
-    const kinds = new Set(kindsIn(balanced));
-    for (const removed of REMOVED_V2_WORKERS) {
-      expect(kinds.has(removed), `${removed} should not appear in BALANCED (V2 residue)`).toBe(false);
-    }
-  });
-
-  it("BALANCED TRIGGER_DETECTOR still waits for apify_webcrawl", () => {
-    const triggers = stepByKind(balanced, "TRIGGER_DETECTOR");
-    expect(triggers).toBeDefined();
-    expect(triggers!.dependsOn.sort()).toEqual(["apify_webcrawl", "score"].sort());
-  });
-
-  it("BALANCED REVIEW_ANALYST still waits for apify_gmaps", () => {
+  it("reviews wait for the map corpus", () => {
     const review = stepByKind(balanced, "REVIEW_ANALYST");
-    expect(review).toBeDefined();
     expect(review!.dependsOn).toEqual(["apify_gmaps"]);
   });
+
+  it("every step is optional so one dead source never stalls the brief", () => {
+    for (const step of balanced) {
+      expect(step.optional, `${step.stepId} must be optional`).toBe(true);
+    }
+  });
+
+  it("AGGRESSIVE matches BALANCED", () => {
+    expect(stepIdsIn(getDefaultChainForUi("AGGRESSIVE", "AGENCY"))).toEqual(
+      stepIdsIn(balanced),
+    );
+  });
 });
 
-describe("getDefaultChain — preset matrix sanity", () => {
+describe("getDefaultChain — LITE keeps site and decision", () => {
+  const lite = getDefaultChainForUi("LITE", "FREE");
+
+  it("is audit plus the brief", () => {
+    expect(stepIdsIn(lite)).toEqual(["audit", "intelligence_brief"]);
+  });
+
+  it("does not reach for Apify", () => {
+    const kinds = new Set(kindsIn(lite));
+    expect(kinds.has("APIFY_GMAPS_DEEP")).toBe(false);
+  });
+
+  it("does not analyse reviews it has no corpus for", () => {
+    expect(new Set(kindsIn(lite)).has("REVIEW_ANALYST")).toBe(false);
+  });
+
+  it("the brief waits for the audit", () => {
+    expect(stepById(lite, "intelligence_brief")!.dependsOn).toEqual(["audit"]);
+  });
+});
+
+describe("getDefaultChain — a FREE workspace on BALANCED degrades cleanly", () => {
+  const free = getDefaultChainForUi("BALANCED", "FREE");
+
+  it("drops the plan-gated map pull but keeps the rest", () => {
+    expect(stepIdsIn(free)).toEqual(["audit", "review_refresh", "intelligence_brief"]);
+  });
+
+  it("does not leave a dangling dependency on the dropped step", () => {
+    const ids = new Set(stepIdsIn(free));
+    for (const step of free) {
+      for (const dep of step.dependsOn) {
+        expect(ids.has(dep), `${step.stepId} depends on missing ${dep}`).toBe(true);
+      }
+    }
+  });
+});
+
+describe("getDefaultChain — retired workers stay retired", () => {
   const presets: PipelinePreset[] = ["LITE", "BALANCED", "AGGRESSIVE"];
   const plans: Plan[] = ["FREE", "PRO", "PRO_TEAM", "AGENCY"];
 
-  it("every preset × plan combination produces a non-empty chain", () => {
-    for (const preset of presets) {
-      for (const plan of plans) {
-        const chain = getDefaultChainForUi(preset, plan);
-        expect(
-          chain.length,
-          `${preset}/${plan} should produce at least one step`,
-        ).toBeGreaterThan(0);
-      }
-    }
-  });
-
-  it("every preset has intelligence_brief as a step (canonical artifact)", () => {
-    for (const preset of presets) {
-      for (const plan of plans) {
-        const chain = getDefaultChainForUi(preset, plan);
-        const brief = chain.find((s) => s.workerKind === "LEAD_INTELLIGENCE_BRIEF");
-        expect(
-          brief,
-          `${preset}/${plan} chain is missing LEAD_INTELLIGENCE_BRIEF`,
-        ).toBeDefined();
-      }
-    }
-  });
-
-  it("no preset × plan combination resurrects the removed V2 workers", () => {
+  it("no preset x plan combination resurrects a retired worker", () => {
     for (const preset of presets) {
       for (const plan of plans) {
         const kinds = new Set(kindsIn(getDefaultChainForUi(preset, plan)));
@@ -212,6 +164,58 @@ describe("getDefaultChain — preset matrix sanity", () => {
             `${preset}/${plan} resurrected ${removed}`,
           ).toBe(false);
         }
+      }
+    }
+  });
+
+  it("LEAD_PIPELINE_ALLOWED_WORKERS is exactly the four chain workers", () => {
+    expect([...LEAD_PIPELINE_ALLOWED_WORKERS].sort()).toEqual(
+      [
+        "APIFY_GMAPS_DEEP",
+        "LEAD_INTELLIGENCE_BRIEF",
+        "REVIEW_ANALYST",
+        "WEBSITE_AUDITOR",
+      ].sort(),
+    );
+  });
+
+  it("every emitted worker is whitelisted", () => {
+    for (const preset of presets) {
+      for (const plan of plans) {
+        for (const kind of kindsIn(getDefaultChainForUi(preset, plan))) {
+          expect(
+            LEAD_PIPELINE_ALLOWED_WORKERS.has(kind),
+            `${kind} missing from LEAD_PIPELINE_ALLOWED_WORKERS`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+});
+
+describe("getDefaultChain — preset matrix sanity", () => {
+  const presets: PipelinePreset[] = ["LITE", "BALANCED", "AGGRESSIVE"];
+  const plans: Plan[] = ["FREE", "PRO", "PRO_TEAM", "AGENCY"];
+
+  it("every preset x plan combination produces a non-empty chain", () => {
+    for (const preset of presets) {
+      for (const plan of plans) {
+        expect(
+          getDefaultChainForUi(preset, plan).length,
+          `${preset}/${plan} should produce at least one step`,
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("every preset ends on the brief — the single rep-facing artifact", () => {
+    for (const preset of presets) {
+      for (const plan of plans) {
+        const chain = getDefaultChainForUi(preset, plan);
+        expect(
+          stepIdsIn(chain).at(-1),
+          `${preset}/${plan} does not end on intelligence_brief`,
+        ).toBe("intelligence_brief");
       }
     }
   });

@@ -343,32 +343,24 @@ export function getChain(event: EventKind): Chain | null {
  * Both workers are still implemented and dispatched by other event
  * chains; they're just blocked from the lead-onboarding pipeline.
  */
+/**
+ * The only workers a lead_created chain may contain. A CUSTOM
+ * workspace pipeline that names anything else fails validation.
+ *
+ * 2026-09-29 — narrowed to the four steps of the default chain.
+ * Everything else (score, dossier, ICP, triggers, why-now, opener,
+ * mockup, social, SERP, email, classifier, deep crawl, and the V2
+ * enterprise residue) is still a valid worker and still runs from a
+ * click chain — it is simply not something a lead pipeline may
+ * schedule automatically. Keep this set in sync with
+ * `TRACE_GROUPS` in `src/lib/control/trace-groups.ts`: the control
+ * room renders one group per entry here.
+ */
 export const LEAD_PIPELINE_ALLOWED_WORKERS: ReadonlySet<AgentWorkerKind> = new Set<AgentWorkerKind>([
-  "WEBSITE_AUDITOR",
-  "SUBVERTICAL_CLASSIFIER",
-  "REVIEW_ANALYST",
-  "SOCIAL_SCRAPER",
-  "EMAIL_VERIFIER",
-  "SALES_OPPORTUNITY_SCORER",
-  "LEAD_DOSSIER_GENERATOR",
-  "LEAD_INTELLIGENCE_BRIEF",
-  "OPENER_WRITER",
   "APIFY_GMAPS_DEEP",
-  "APIFY_SERP_RANK",
-  "APIFY_WEB_CRAWL_DEEP",
-  "APIFY_INSTAGRAM_DEEP",
-  "APIFY_FACEBOOK_DEEP",
-  "APIFY_REDDIT_MENTIONS",
-  // SDR Brain v2 (post-V2-cleanup) — only the workers that produce
-  // restaurant-tech-relevant output remain. ACCOUNT_TIER_RANKER,
-  // BANT_INFERRER, COMMERCIAL_INSIGHT_MATCHER, BUYING_COMMITTEE_MAPPER,
-  // and OBJECTION_PREDICTOR were removed: SMB restaurant operators
-  // don't have multi-stakeholder buying committees or BANT-style
-  // procurement, and their outputs were either empty (>90% skip rate)
-  // or recycled copy-paste. STAKEHOLDER_DISCOVERER is omitted (Phase 2).
-  "ICP_SCORER",
-  "TRIGGER_DETECTOR",
-  "WHY_NOW_SYNTHESIZER",
+  "WEBSITE_AUDITOR",
+  "REVIEW_ANALYST",
+  "LEAD_INTELLIGENCE_BRIEF",
 ]);
 
 /**
@@ -384,366 +376,101 @@ export const LEAD_PIPELINE_ALLOWED_WORKERS: ReadonlySet<AgentWorkerKind> = new S
  * regenerator (the saved steps are used as-is).
  */
 export function getDefaultChain(preset: PipelinePreset, plan: Plan): Chain {
-  // Audit is `optional` so a transient crawl failure (timeout, 403,
-  // robots block) doesn't hardFailure the orchestrator and starve
-  // every downstream step of its turn. The classifier, scorer, and
-  // dossier all tolerate a SKIPPED audit (they substitute null
-  // signals) — see Bug #3 in research/finedine/discovery-bugs.md
-  // and the SUBVERTICAL_CLASSIFIER buildClassifierSignals() guard.
-  const audit: ChainStep = {
-    stepId: "audit",
-    workerKind: "WEBSITE_AUDITOR",
-    dependsOn: [],
-    optional: true,
-  };
-  // FineDine deployment redesign — `GOOGLE_PLACES_REVIEWS` is no longer
-  // part of the default chain. The Places "lookup" endpoint caps at
-  // five reviews per business, which is too thin a corpus for the
-  // review-analyst (5 cherry-picked top reviews skew sentiment
-  // dramatically). Reviews now come exclusively from
-  // `APIFY_GMAPS_DEEP` (BALANCED+ presets) which pulls hundreds, and
-  // FREE / LITE workspaces simply ship without review evidence
-  // until they upgrade — explicit choice over noisy half-data.
-  // Hybrid-niche classifier (parent + child packs, e.g. fnb → fnb-bar-club).
-  // The worker self-skips for workspaces whose niche has no children.
+  // 2026-09-29 — three evidence collectors plus one decision.
   //
-  // Phase 0/B3 — now `dependsOn: ["audit"]`. Previously the classifier
-  // ran in parallel with audit; this raced with the worker's signal
-  // builder which WANTS the audit features (QR menu detection, booking
-  // widget, multi-location nav) to weight the slug correctly. The
-  // worker still tolerates a missing audit (audit is `optional` so
-  // it can be SKIPPED, which still satisfies this dependency), so a
-  // crawl failure doesn't stall classification — it just falls back
-  // to the Places-types/discovery-query rule pass.
-  const classifier: ChainStep = {
-    stepId: "classifier",
-    workerKind: "SUBVERTICAL_CLASSIFIER",
-    dependsOn: ["audit"],
-    optional: true,
-  };
-  const score: ChainStep = {
-    stepId: "score",
-    workerKind: "SALES_OPPORTUNITY_SCORER",
-    dependsOn: ["audit", "classifier"],
-  };
-  const embedProfile: ChainStep = {
-    stepId: "embed_profile",
-    workerKind: "SALES_OPPORTUNITY_SCORER" as AgentWorkerKind,
-    dependsOn: ["score"],
-    // The sentinel itself degrades on EmbeddingError (writes the row
-    // without a vector and enqueues a re-embed job). Marking the step
-    // optional is belt-and-braces: any other transient sentinel
-    // failure (DB hiccup at upsert time) doesn't hardFailure the
-    // whole planner_session and starve dossier downstream.
-    optional: true,
-    inputs: { __sentinel: SENTINEL_STEPS.EMBED_LEAD_PROFILE },
-  };
-
-  // ----- SDR Brain substrate (post-V2-cleanup) — T1/T2 reasoners ----
-  // ICP_SCORER and TRIGGER_DETECTOR are the only deterministic
-  // reasoners that survived the V2 enterprise cleanup. Both run on
-  // every lead and feed the intelligence brief + Why-Now synthesizer.
+  // Every interpreting worker (SALES_OPPORTUNITY_SCORER,
+  // LEAD_DOSSIER_GENERATOR, ICP_SCORER, TRIGGER_DETECTOR,
+  // WHY_NOW_SYNTHESIZER, OPENER_WRITER) left the automatic chain:
+  // each of them wrote a second sales narrative on top of the brief,
+  // and on real FineDine accounts the two narratives contradicted
+  // each other (a restaurant with a live booking provider was pitched
+  // "Multi-location / GROWTH" by the scorer while the brief said
+  // something else). The only decision now lives inside
+  // LEAD_INTELLIGENCE_BRIEF, in the head agent. They stay in the enum
+  // and still run when an SDR clicks (user_one_click_pitch,
+  // user_deep_research).
   //
-  // The dropped reasoners and why:
-  //   - ACCOUNT_TIER_RANKER  → 100% skip on real workspaces
-  //   - BANT_INFERRER        → enterprise procurement framework that
-  //                            doesn't fit single-owner SMB buyers
-  //   - BUYING_COMMITTEE_MAPPER → empty output, no UI consumer
-  //   - COMMERCIAL_INSIGHT_MATCHER → SalesOpportunityScorer.bestSalesAngle
-  //                                  already does this for restaurants
-  //   - OBJECTION_PREDICTOR  → recycled copy-paste objections
-  const icpScorer: ChainStep = {
-    stepId: "icp_scorer",
-    workerKind: "ICP_SCORER",
-    dependsOn: ["score"],
-    optional: true,
-  };
-
-  // ----- LITE substrate -----
-  // LITE shares ICP_SCORER + TRIGGER_DETECTOR + REVIEW_ANALYST with
-  // BALANCED but skips the Apify enrichment layer. WHY_NOW_SYNTHESIZER
-  // runs in BALANCED+ where the trigger corpus is richer.
+  // SOCIAL_SCRAPER, APIFY_SERP_RANK, EMAIL_VERIFIER and
+  // SUBVERTICAL_CLASSIFIER left for the opposite reason: they were
+  // empty or quota-blocked on almost every lead (170 of 245 social
+  // runs returned {}, 77 of 80 SERP runs and 78 of 80 email runs hit
+  // a 0/0 quota). A step that is empty on 90% of leads is noise in
+  // the trace, not evidence. The sub-niche rule now runs inside the
+  // brief.
   //
-  // Every new step is `optional: true` so any failure (quota, Gemini
-  // hiccup, missing input) lets the chain proceed to the brief
-  // without stalling. filterByPlan still drops anything above the
-  // workspace plan; nothing in the LITE substrate is gated above
-  // FREE today.
-
-  // LITE variant of TRIGGER_DETECTOR — drops the `apify_webcrawl`
-  // dependency the BALANCED variant has. Worker tolerates the
-  // resulting empty PROSPECT_KB_CHUNK memory and falls back to
-  // audit + ReviewAnalysis + Lead signals for its deterministic
-  // rule pass.
-  const triggersLite: ChainStep = {
-    stepId: "triggers",
-    workerKind: "TRIGGER_DETECTOR",
-    dependsOn: ["score"],
-    optional: true,
-  };
-  // LITE variant of REVIEW_ANALYST. BALANCED's `review_refresh`
-  // waits for `apify_gmaps` (500-review deep pull). LITE doesn't run
-  // Apify so the worker runs against whatever GoogleReview rows the
-  // intake captured (typically 0-5 from the Places lookup). It
-  // self-skips when corpus < 5 and the dependent brief still
-  // proceeds with a clean SKIPPED upstream.
-  const reviewRefreshLite: ChainStep = {
-    stepId: "review_refresh",
-    workerKind: "REVIEW_ANALYST",
-    dependsOn: ["score"],
-    optional: true,
-  };
-
-  // LITE-specific intelligence brief. Same worker as BALANCED, but
-  // `dependsOn` matches the LITE substrate (no dossier / social /
-  // apify_webcrawl / T2 reasoners). Output is the canonical 0-100
-  // sales confidence rollup plus the final NBA + reasoning graph —
-  // feeds the v2 decision-surface page identically to BALANCED.
-  const intelligenceBriefLite: ChainStep = {
-    stepId: "intelligence_brief",
-    workerKind: "LEAD_INTELLIGENCE_BRIEF",
-    dependsOn: [
-      "score",
-      "embed_profile",
-      "icp_scorer",
-      "triggers",
-      "review_refresh",
-    ],
-    optional: true,
-  };
-
-  // FREE workspaces on LITE get the audit + classifier + scorer +
-  // SDR-Brain substrate + intelligence-brief stack. Reviews come
-  // from the Places API only (capped at 5; REVIEW_ANALYST self-skips
-  // on thin corpus). Upgrading to BALANCED unlocks the Apify deep-
-  // review pull, on-create dossier, social link discovery, and
-  // WHY_NOW_SYNTHESIZER on the denser trigger corpus.
-  const lite: Chain = [
-    audit,
-    classifier,
-    score,
-    embedProfile,
-    icpScorer,
-    triggersLite,
-    reviewRefreshLite,
-    intelligenceBriefLite,
-  ];
-
-  if (preset === "LITE") {
-    return filterByPlan(lite, plan);
-  }
-
-  const social: ChainStep = {
-    stepId: "social",
-    workerKind: "SOCIAL_SCRAPER",
-    dependsOn: ["audit"],
-    optional: true,
-  };
-  // Phase 0/B3 — dossier now waits for embed_profile + social + the
-  // deep web crawl so the markdown narrative actually has the full
-  // signal set before Gemini writes it. Each upstream is optional so
-  // a SKIPPED step still unlocks dossier (no FREE-tier regression).
-  // Previously: dependsOn: ["score"] — first-pass dossier missed deep
-  // crawl context entirely because apify_webcrawl had no downstream
-  // edge in the DAG.
-  const dossier: ChainStep = {
-    stepId: "dossier",
-    workerKind: "LEAD_DOSSIER_GENERATOR",
-    dependsOn: ["score", "embed_profile", "social", "apify_webcrawl"],
-    optional: true,
-  };
-  // FineDine deployment redesign — `WEBSITE_MOCKUP_GENERATOR` is no
-  // longer in any auto chain. Mockups burn Gemini tokens and most
-  // discovered leads never see the SDR's screen, so generating a
-  // mockup for every lead at ingest was the highest-cost least-used
-  // step in the pipeline. Reps now click "Generate Mockup" on the
-  // lead detail page when they're actually about to use it, which
-  // fires `user_one_click_pitch` (mockup → opener) on demand.
-
-  // ----- BALANCED+ T2 reasoners -----
-  // The Apify-fed variants of the T2 trigger detector + WHY_NOW
-  // synthesizer (the only restaurant-tech-useful T2 reasoner that
-  // survived the V2 cleanup). TRIGGER_DETECTOR depends on
-  // `apify_webcrawl` here so the deterministic rule pass can fire
-  // `WEB_CHANGE_DETECTED` and similar crawl-derived triggers; LITE
-  // uses the slimmer `triggersLite` variant declared above.
-  const triggers: ChainStep = {
-    stepId: "triggers",
-    workerKind: "TRIGGER_DETECTOR",
-    dependsOn: ["score", "apify_webcrawl"],
-    optional: true,
-  };
-  const whyNow: ChainStep = {
-    stepId: "why_now",
-    workerKind: "WHY_NOW_SYNTHESIZER",
-    dependsOn: ["triggers"],
-    optional: true,
-  };
-
-  // Phase 0/B5 — the unified "Sales Confidence" brief. Runs at the
-  // END of the chain (after every enrichment + scoring + dossier
-  // has either finished or been SKIPPED) so it can read every
-  // upstream artifact in one pass and produce a single canonical
-  // "what should the rep say / when should they call / what is the
-  // confidence" payload. Also writes Lead.salesConfidence and bumps
-  // Lead.intelligenceVersion. Optional because a Gemini hiccup here
-  // shouldn't FAIL the session — the dossier is still useful on its own.
+  // APIFY_WEB_CRAWL_DEEP left because its only consumers were the
+  // dossier and the trigger detector, and it shared the Apify quota
+  // with the map pull that the review analyst actually needs.
   //
-  // SDR Brain v2 — `intelligence_brief` is the T3 SDR_BRAIN: it reads
-  // every T1 + T2 artifact via memory and writes the final
-  // LeadNextAction with the reasoning graph + arbitration record. The
-  // dependsOn list grows accordingly so the orchestrator schedules it
-  // after the brain substrate has been written.
-  const intelligenceBrief: ChainStep = {
-    stepId: "intelligence_brief",
-    workerKind: "LEAD_INTELLIGENCE_BRIEF",
-    dependsOn: [
-      "score",
-      "embed_profile",
-      "dossier",
-      "icp_scorer",
-      "triggers",
-      "why_now",
-    ],
-    optional: true,
-  };
+  // See docs/admin-paneli-son-karar.md (Çelişki 1) and
+  // docs/analiz-ve-playbook.md §3.
 
-  // Apify deep-review + web-crawl steps shared by BALANCED and
-  // AGGRESSIVE. Both are optional so a missing Apify token, quota
-  // exhaustion, or a FREE workspace plan (filterByPlan drops them)
-  // never stalls the sync backbone.
+  // Reviews come from the Apify deep pull only. The Places
+  // "lookup" endpoint caps at five reviews per business, which is
+  // too thin a corpus to read percentages off — a 29,744-review
+  // restaurant was being analysed from five cherry-picked entries.
   const apifyGmaps: ChainStep = {
     stepId: "apify_gmaps",
     workerKind: "APIFY_GMAPS_DEEP",
     dependsOn: [],
     optional: true,
   };
-  // After APIFY_GMAPS_DEEP imports up to 500 reviews, REVIEW_ANALYST
-  // re-runs against the deeper corpus so the scorer + dossier see
-  // the full evidence set instead of just the Places-API five.
+  // Optional so a transient crawl failure (timeout, 403, robots
+  // block) does not hardFailure the orchestrator and starve the
+  // brief of its turn. The brief tolerates a SKIPPED audit and
+  // records the gap in missingSources.
+  const audit: ChainStep = {
+    stepId: "audit",
+    workerKind: "WEBSITE_AUDITOR",
+    dependsOn: [],
+    optional: true,
+  };
+  // Runs against the deep corpus, never the Places five. Self-skips
+  // below the corpus threshold rather than writing KPI bars that a
+  // reviewer would read as a measurement.
   const reviewRefresh: ChainStep = {
     stepId: "review_refresh",
     workerKind: "REVIEW_ANALYST",
     dependsOn: ["apify_gmaps"],
     optional: true,
   };
-  // Web crawl populates PROSPECT_KB_CHUNK SemanticMemory rows that
-  // LEAD_DOSSIER_GENERATOR and OPENER_WRITER consume on their next
-  // run. Runs in parallel with the sync backbone so it never blocks
-  // the initial score; the richer KB is available from the next
-  // dossier refresh onward.
-  const apifyWebCrawl: ChainStep = {
-    stepId: "apify_webcrawl",
-    workerKind: "APIFY_WEB_CRAWL_DEEP",
-    dependsOn: [],
+  // The single rep-facing artifact. Waits for every data step so it
+  // reads one complete evidence set; optional upstreams mean a dead
+  // source produces a thinner brief, not no brief.
+  const intelligenceBrief: ChainStep = {
+    stepId: "intelligence_brief",
+    workerKind: "LEAD_INTELLIGENCE_BRIEF",
+    dependsOn: ["apify_gmaps", "audit", "review_refresh"],
     optional: true,
   };
-  // Score step that waits for the deep review refresh. filterByPlan
-  // rewires dependsOn transitively when review_refresh is dropped
-  // (FREE plan), so the scorer falls back cleanly to the audit +
-  // classifier signals without a DAG break.
-  const deepScore: ChainStep = {
-    stepId: "score",
-    workerKind: "SALES_OPPORTUNITY_SCORER",
-    dependsOn: ["audit", "review_refresh", "classifier"],
-  };
 
-  // BALANCED is the default for new workspaces. Adds social link
-  // discovery + Apify deep reviews + website KB crawl + on-create
-  // dossier so the lead detail page is rich the moment the user
-  // opens it. Apify steps are optional and plan-gated so FREE
-  // workspaces automatically get the audit-only subset.
-  //
-  // FineDine deployment redesign — `placesReviews`, the early
-  // `review` step, and `mockup` are NO LONGER in this chain. Reviews
-  // come from the Apify deep pull only (Places API caps at 5).
-  // Mockups are explicit-trigger only via /api/agent-runs/pitch-pack.
-  //
-  // Phase 0/B3 — `intelligence_brief` is the FINAL step. Its
-  // dependsOn includes dossier (which itself waits for social +
-  // apify_webcrawl + score). The whole DAG converges here so the
-  // brief is the single rep-facing canonical artifact.
-  const balanced: Chain = [
-    audit,
-    social,
-    apifyGmaps,
-    reviewRefresh,
-    apifyWebCrawl,
-    classifier,
-    deepScore,
-    embedProfile,
-    dossier,
-    icpScorer,
-    triggers,
-    whyNow,
-    intelligenceBrief,
-  ];
-
-  if (preset === "BALANCED") {
-    return filterByPlan(balanced, plan);
+  // LITE has no Apify budget, so it has no review corpus either:
+  // site plus decision. The brief records "reviews" in
+  // missingSources and lowers its own confidence accordingly.
+  if (preset === "LITE") {
+    return filterByPlan(
+      [
+        audit,
+        { ...intelligenceBrief, dependsOn: ["audit"] },
+      ],
+      plan,
+    );
   }
 
-  // AGGRESSIVE adds Apify SERP + auto pitch-pack on every ingested
-  // lead on top of the BALANCED set. Burns through Gemini and Apify
-  // budget very fast; gated to PRO+ at the UI layer. FREE workspaces
-  // still get the BALANCED set if their preset is AGGRESSIVE
-  // (filterByPlan drops the Apify steps automatically).
-  const apifySerp: ChainStep = {
-    stepId: "apify_serp",
-    workerKind: "APIFY_SERP_RANK",
-    dependsOn: ["audit"],
-    optional: true,
-  };
-  // FineDine deployment redesign — opener no longer waits on `mockup`
-  // because mockup is no longer in any auto chain. It still consumes
-  // `dossier` so the cold-email body can reuse the dossier's
-  // `bestSalesAngle` narrative + opening hook (Phase 0/B3). Reps who
-  // want the mockup link in the opener trigger the explicit
-  // `user_one_click_pitch` chain instead, which runs mockup → opener
-  // sequentially and substitutes the URL.
+  // BALANCED and AGGRESSIVE are the same chain. AGGRESSIVE used to
+  // add SERP plus an auto opener on every ingested lead; both left
+  // the automatic chain, so there is nothing left to differentiate.
+  // The preset stays in the enum because workspaces are already set
+  // to it and the UI still offers it.
   //
-  // SDR Brain v2 — opener also depends on `intelligence_brief` so the
-  // cold-email body can ground itself in the SDR_BRAIN's WHY_NOW
-  // headline + matched CommercialInsight reframe + the top predicted
-  // objection's preemptive response. The brief is `optional` so a
-  // Gemini hiccup there doesn't block the opener entirely (opener
-  // falls back to dossier-only context the same way it did pre-brain).
-  const opener: ChainStep = {
-    stepId: "opener",
-    workerKind: "OPENER_WRITER",
-    dependsOn: ["score", "dossier", "intelligence_brief"],
-    optional: true,
-  };
+  // filterByPlan drops apify_gmaps on FREE (minPlan PRO) and rewires
+  // review_refresh transitively, so a FREE workspace degrades to
+  // audit + review_refresh + brief without a DAG break.
+  const balanced: Chain = [apifyGmaps, audit, reviewRefresh, intelligenceBrief];
 
-  // AGGRESSIVE adds Apify SERP + on-create opener on top of BALANCED.
-  // Mockup and the early Places-reviews / review step are dropped for
-  // the same reasons described in the BALANCED comment.
-  const aggressive: Chain = [
-    audit,
-    social,
-    apifyGmaps,
-    apifySerp,
-    reviewRefresh,
-    apifyWebCrawl,
-    classifier,
-    deepScore,
-    embedProfile,
-    dossier,
-    icpScorer,
-    triggers,
-    whyNow,
-    intelligenceBrief,
-    opener,
-  ];
-
-  if (preset === "AGGRESSIVE") {
-    return filterByPlan(aggressive, plan);
-  }
-
-  // CUSTOM has no derived default — caller is expected to supply the
-  // saved steps from the workspace row. Returning BALANCED here is a
-  // safety net for a freshly inserted CUSTOM row that hasn't been
-  // edited yet.
+  // CUSTOM has no derived default — the caller supplies the saved
+  // steps from the workspace row. BALANCED here is a safety net for
+  // a freshly inserted CUSTOM row that has not been edited yet.
   return filterByPlan(balanced, plan);
 }
 
