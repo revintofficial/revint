@@ -2534,6 +2534,12 @@ enum ReviewLens {
   SALES
 }
 
+enum ReviewSource {
+  LENS
+  SDR
+  ADJUDICATION
+}
+
 model PlatformRoleAssignment {
   lens ReviewLens?
   id        String       @id @default(cuid())
@@ -2644,6 +2650,9 @@ model HumanReview {
   reviewerUserId       String        @map("reviewer_user_id") @db.Uuid
   secondReviewerUserId String?       @map("second_reviewer_user_id") @db.Uuid
   createdAt            DateTime      @default(now()) @map("created_at")
+  rubricVersion        String        @default("pre-2026-09-29") @map("rubric_version")
+  reviewSeconds        Int?          @map("review_seconds")
+  source               ReviewSource  @default(LENS)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 

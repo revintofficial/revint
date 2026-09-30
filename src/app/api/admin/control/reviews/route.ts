@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { NotFoundError } from "@/lib/auth";
 import { controlString, readControlBody, withControlAuth } from "@/lib/control/api";
-import { recordReview, type ErrorClass, type ReviewSeverity } from "@/lib/control/review";
+import { normalizeReviewSeconds, recordReview, type ErrorClass, type ReviewSeverity } from "@/lib/control/review";
 
 export const runtime = "nodejs";
 
@@ -22,6 +22,7 @@ export const POST = withControlAuth("REVIEWER", async (actor, request: Request) 
       errorClass: controlString(body, "errorClass") ? controlString(body, "errorClass") as ErrorClass : null,
       severity: controlString(body, "severity") ? controlString(body, "severity") as ReviewSeverity : null,
       note: controlString(body, "note"),
+      reviewSeconds: normalizeReviewSeconds(body.reviewSeconds),
       reviewerUserId: actor.userId,
       actorRole: actor.role,
     });
