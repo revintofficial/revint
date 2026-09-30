@@ -1,3 +1,4 @@
+import { countReviewQueue } from "@/lib/control/review";
 import { prisma } from "@/lib/prisma";
 
 export type ControlOverview = {
@@ -5,20 +6,28 @@ export type ControlOverview = {
   failed24h: number;
   stuckSessions: number;
   openReviews: number;
-  lastEvalPassRate: number | null;
+  lastCandidate: { passed: number; total: number; finishedAt: string } | null;
+  lastEval: { passed: number; total: number; finishedAt: string } | null;
 };
 
-function extractPassRate(summaryJson: unknown): number | null {
-  if (typeof summaryJson !== "object" || summaryJson === null || !("passRate" in summaryJson)) return null;
-  const passRate = summaryJson.passRate;
-  return typeof passRate === "number" && Number.isFinite(passRate) ? passRate : null;
+function extractLastEval(row: { summaryJson: unknown; finishedAt: Date | null } | null): ControlOverview["lastEval"] {
+  if (!row?.finishedAt) return null;
+  const summary = row.summaryJson;
+  if (typeof summary !== "object" || summary === null) return null;
+  if (!("passed" in summary) || !("total" in summary)) return null;
+  const passed = summary.passed;
+  const total = summary.total;
+  if (typeof passed !== "number" || typeof total !== "number" || !Number.isFinite(passed) || !Number.isFinite(total)) {
+    return null;
+  }
+  return { passed, total, finishedAt: row.finishedAt.toISOString() };
 }
 
 export async function getControlOverview(workspaceId: string, now = new Date()): Promise<ControlOverview> {
   const since24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const before30m = new Date(now.getTime() - 30 * 60 * 1000);
 
-  const [completed24h, failed24h, stuckSessions, openReviews, latestEval] = await Promise.all([
+  const [completed24h, failed24h, stuckSessions, openReviews, latestEval, latestCandidate] = await Promise.all([
     prisma.agentRun.count({
       where: {
         workspaceId,
@@ -32,12 +41,13 @@ export async function getControlOverview(workspaceId: string, now = new Date()):
     prisma.plannerSession.count({
       where: { workspaceId, status: { in: ["PLANNING", "EXECUTING"] }, updatedAt: { lt: before30m } },
     }),
-    prisma.humanReview.count({ where: { workspaceId, verdict: "NEEDS_REVIEW" } }),
+    countReviewQueue(workspaceId, now),
     prisma.evalRun.findFirst({
-      where: { workspaceId, status: "SUCCEEDED" },
+      where: { workspaceId, status: "SUCCEEDED", label: "taban" },
       orderBy: { createdAt: "desc" },
-      select: { summaryJson: true },
+      select: { summaryJson: true, finishedAt: true },
     }),
+    prisma.evalRun.findFirst({ where: { workspaceId, status: "SUCCEEDED", label: "aday" }, orderBy: { createdAt: "desc" }, select: { summaryJson: true, finishedAt: true } }),
   ]);
 
   return {
@@ -45,6 +55,7 @@ export async function getControlOverview(workspaceId: string, now = new Date()):
     failed24h,
     stuckSessions,
     openReviews,
-    lastEvalPassRate: extractPassRate(latestEval?.summaryJson),
+    lastEval: extractLastEval(latestEval),
+    lastCandidate: extractLastEval(latestCandidate),
   };
 }

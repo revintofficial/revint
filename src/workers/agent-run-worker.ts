@@ -23,6 +23,7 @@ import { isRetryable } from "../lib/agent-workers/errors";
 import { recordChainTelemetry } from "../lib/control/telemetry";
 
 type AgentRunJob =
+  | { type: "control_eval_replay"; evalRunId: string; workspaceId: string }
   | { type: "agent_run"; runId: string }
   | { type: "orchestrator_advance"; sessionId: string }
   // C1 fix: every `embed` job MUST carry the workspaceId of the row
@@ -56,6 +57,11 @@ async function processJob(job: Job<AgentRunJob>) {
 
   // Backward compat: jobs without a `type` field are agent_runs.
   const jobType = inferJobType(data);
+
+  if ("type" in data && data.type === "control_eval_replay") {
+    const { executeEvalReplay } = await import("../lib/control/eval-replay");
+    return executeEvalReplay(data.workspaceId, data.evalRunId);
+  }
 
   if (jobType === "agent_run") {
     const runId = "runId" in data ? data.runId : undefined;
@@ -161,6 +167,7 @@ function inferJobType(
   | "sequence_tick"
   | "sequence_step"
   | "stuck_status_reset"
+  | "control_eval_replay"
   | "unknown" {
   if ("type" in data && typeof data.type === "string") {
     return data.type as
@@ -339,6 +346,13 @@ export function startAgentRunWorker() {
     // advance to FAILED rather than stalling in EXECUTING indefinitely.
     if (!job) return;
     const data = job.data as AgentRunJob;
+    if ("type" in data && data.type === "control_eval_replay") {
+      if (job.attemptsMade >= (job.opts.attempts ?? 1) || err instanceof UnrecoverableError) {
+        const { failCandidateRun } = await import("../lib/control/eval-run");
+        await failCandidateRun(data.workspaceId, data.evalRunId, "Aday koşu altyapı hatası nedeniyle tamamlanamadı.");
+      }
+      return;
+    }
     if (inferJobType(data) !== "agent_run") return;
     const runId = "runId" in data ? data.runId : undefined;
     if (!runId) return;

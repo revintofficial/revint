@@ -80,3 +80,10 @@ amplify.yml
 /video/out
 
 tmp-artifacts/
+
+# local control-plane scratch
+.control-db-check.ts
+.control-prisma-generated/
+.control-tests.txt
+.control-typecheck.txt
+prisma/control-generate.prisma

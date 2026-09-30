@@ -22,8 +22,11 @@
  * over quota) returns `null` and the caller keeps the deterministic v2
  * brief. A Claude hiccup must never block the leads list.
  */
+import { applyApprovedClaimGate } from "@/lib/control/claim-gate";
+import { listApprovedClaims } from "@/lib/control/claims";
 import { logger } from "@/lib/logger";
 import {
+  callClaudeJson,
   runClaudeToolLoop,
   parseClaudeJson,
   getHeadAgentModel,
@@ -310,7 +313,8 @@ function asConflicts(v: unknown): HeadAgentConflict[] {
  * auto-corrected, e.g. a hallucinated module we dropped) go to
  * `warnings` and DON'T block attaching.
  */
-function validateDecision(d: HeadAgentDecision, warnings: string[]): HeadAgentQa {
+function validateDecision(d: HeadAgentDecision, warnings: string[], approvedClaimTexts: string[] = []): HeadAgentQa {
+  applyApprovedClaimGate(d, approvedClaimTexts, warnings);
   const issues: string[] = [];
   if (!d.primaryAngle || d.primaryAngle === "(no angle)") issues.push("missing_primary_angle");
   if (!d.talkTrack || d.talkTrack.trim().length < 20) issues.push("thin_talk_track");
@@ -487,7 +491,16 @@ export async function runHeadAgentSynthesis(
       generatedAt: new Date().toISOString(),
     };
 
-    const qa = validateDecision(decision, warnings);
+    let approvedClaimTexts: string[] = [];
+    try {
+      const claims = await listApprovedClaims(input.workspaceId);
+      approvedClaimTexts = claims.map((claim) => claim.text);
+    } catch (err) {
+      logger.warn("ai_core.head_agent.claims_unavailable", {
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+    const qa = validateDecision(decision, warnings, approvedClaimTexts);
 
     return {
       decision,
@@ -505,4 +518,43 @@ export async function runHeadAgentSynthesis(
     });
     return null;
   }
+}
+
+/** Offline evaluation: one decision, current prompt, no tools or database reads. */
+export async function replayHeadAgentDecision(inputSnapshot: unknown) {
+  const { object, strings } = await import("@/lib/control/decision");
+  const input = object(inputSnapshot), audit = object(input.audit), brief = object(input.briefContext);
+  const signals = deriveFnbSignals({
+    hasWebsite: typeof audit.url === "string" ? true : null,
+    websiteUrl: typeof audit.url === "string" ? audit.url : null,
+    rating: typeof input.rating === "number" ? input.rating : null,
+    reviewCount: typeof input.reviewCount === "number" ? input.reviewCount : null,
+    priceLevel: typeof input.priceLevel === "number" ? input.priceLevel : null,
+    isMultiLocation: typeof input.locationCount === "number" ? input.locationCount > 1 : null,
+    audit: audit as HeadAgentSubstrate["audit"], reviewAnalysis: object(input.reviewAnalysis),
+  });
+  const fit = computeFnbModuleFit(signals);
+  const frozenExcluded = Array.isArray(input.excludedModules) ? input.excludedModules.map(v => String(object(v).module ?? "")) : [];
+  const excluded = new Set([...fit.excludedModules.map(String), ...frozenExcluded]);
+  const shortlist = fit.fits.filter(f => !f.doNotPitch && !excluded.has(String(f.module)));
+  const response = await callClaudeJson<RawDecision>({
+    system: SYSTEM_PROMPT + "\nOFFLINE EVALUATION: tools are unavailable. Use only the frozen input below. Do not request tools. No package catalog is available, so recommendedPackage must be null. Never invent missing facts.",
+    user: JSON.stringify({ inputSnapshot: input, derivedSignals: signals, moduleFitShortlist: shortlist }),
+    label: "head_agent.control_replay", temperature: 0.2, maxTokens: 2048,
+  });
+  const raw = response.data;
+  const allowed = new Set(shortlist.map(f => String(f.module)));
+  const recommended = asRecArray(raw.recommendedModules).filter(r => allowed.has(String(r.module)));
+  const decision: HeadAgentDecision = {
+    packId: fit.packId, primaryModule: recommended[0]?.module ?? null,
+    primaryAngle: String(raw.primaryAngle ?? "").trim(), talkTrack: String(raw.talkTrack ?? "").trim(),
+    confidence: clampConfidence(raw.confidence, 0), recommendedModules: recommended,
+    excludedModules: [...excluded].map(module => ({ module, why: "Donmuş girdi veya güncel modül kuralı" })),
+    recommendedPackage: null, sourceConflicts: asConflicts(raw.sourceConflicts), reasoning: String(raw.reasoning ?? ""),
+    evidenceRefs: strings(raw.evidenceRefs).filter(ref => [...strings(input.evidenceRefs), ...shortlist.flatMap(f => f.matchedSignals)].includes(ref)),
+    model: getHeadAgentModel(), usageTokens: response.usage.totalTokens, generatedAt: new Date().toISOString(),
+  };
+  const qa = validateDecision(decision, []);
+  if (!qa.passed) throw new Error(`Replay decision invalid: ${qa.issues.join(", ")}`);
+  return { ...brief, briefMode: "head-agent", headAgent: decision };
 }

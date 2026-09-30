@@ -2528,7 +2528,14 @@ enum EvalRunStatus {
   CANCELLED
 }
 
+enum ReviewLens {
+  TECHNICAL
+  DOMAIN
+  SALES
+}
+
 model PlatformRoleAssignment {
+  lens ReviewLens?
   id        String       @id @default(cuid())
   userId    String       @map("user_id") @db.Uuid
   role      PlatformRole
@@ -2624,6 +2631,7 @@ model EvalCase {
 }
 
 model HumanReview {
+  lens ReviewLens?
   id                   String        @id @default(cuid())
   workspaceId          String        @map("workspace_id")
   leadId               String?       @map("lead_id")

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Activity,
   BarChart3,
@@ -13,6 +13,12 @@ import {
   Radio,
   ScrollText,
   Users,
+  Aperture,
+  ClipboardCheck,
+  Fingerprint,
+  ShieldCheck,
+  SlidersHorizontal,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,8 +34,21 @@ const NAV: Array<{ href: string; label: string; icon: React.ComponentType<{ clas
   { href: "/admin/logs", label: "Logs", icon: ScrollText },
 ];
 
-export function AdminNav() {
+const CONTROL_NAV: Array<{ href: string; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+  { href: "/admin/control", label: "Genel Bakış", icon: LayoutDashboard },
+  { href: "/admin/control/reviews", label: "İnceleme", icon: ClipboardCheck },
+  { href: "/admin/control/mercekler", label: "Mercekler", icon: Aperture },
+  { href: "/admin/control/trace", label: "Vaka izi", icon: Fingerprint },
+  { href: "/admin/control/golden", label: "Referans vakalar", icon: Star },
+  { href: "/admin/control/calibration", label: "Calibration", icon: SlidersHorizontal },
+  { href: "/admin/control/audit", label: "Denetim", icon: ShieldCheck },
+  { href: "/admin/control/rehber", label: "Nasıl çalışır", icon: ClipboardCheck },
+];
+
+export function AdminNav({ showMarketing = true }: { showMarketing?: boolean }) {
   const pathname = usePathname() || "";
+  const searchParams = useSearchParams();
+  const workspaceId = searchParams.get("workspaceId");
   return (
     <aside className="w-60 shrink-0 border-r border-[var(--revint-border)] bg-[var(--revint-surface)] min-h-screen sticky top-0">
       <div className="p-5 border-b border-[var(--revint-border)]">
@@ -43,8 +62,8 @@ export function AdminNav() {
           </span>
         </div>
       </div>
-      <nav className="p-3 flex flex-col gap-1">
-        {NAV.map((item) => {
+      <nav aria-label="Admin navigation" className="p-3 flex flex-col gap-1">
+        {showMarketing && NAV.map((item) => {
           const active =
             item.href === "/admin"
               ? pathname === "/admin"
@@ -65,6 +84,16 @@ export function AdminNav() {
               {item.label}
             </Link>
           );
+        })}
+        <div className="px-3 pt-4 pb-1 text-xs uppercase tracking-wider text-[var(--revint-text-3)]">Control</div>
+        {CONTROL_NAV.map((item) => {
+          const active = item.href === "/admin/control" ? pathname === item.href : pathname.startsWith(item.href);
+          const Icon = item.icon;
+          const href = workspaceId ? `${item.href}?workspaceId=${encodeURIComponent(workspaceId)}` : item.href;
+          return <Link key={item.href} href={href} aria-current={active ? "page" : undefined} className={cn(
+            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+            active ? "bg-[var(--revint-hover)] text-[var(--revint-text-1)]" : "text-[var(--revint-text-2)] hover:bg-[var(--revint-hover)] hover:text-[var(--revint-text-1)]",
+          )}><Icon className="h-4 w-4" />{item.label}</Link>;
         })}
       </nav>
     </aside>

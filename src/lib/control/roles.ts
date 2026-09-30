@@ -1,4 +1,4 @@
-import type { PlatformRole } from "@/generated/prisma/client";
+import type { PlatformRole, ReviewLens } from "@/generated/prisma/client";
 import { ForbiddenError, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -47,4 +47,10 @@ export async function requireControlRole(
     throw new ForbiddenError("Control access required");
   }
   return { userId: user.id, email: user.email, role };
+}
+
+/** A platform role does not imply a lens, including bootstrap administrators. */
+export async function resolveControlLens(userId: string): Promise<ReviewLens | null> {
+  const row = await prisma.platformRoleAssignment.findUnique({ where: { userId }, select: { lens: true } });
+  return row?.lens ?? null;
 }

@@ -18,7 +18,7 @@ import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { internalError } from "@/lib/api-errors";
-import { getAgentRunsQueue } from "@/lib/queues";
+import { tryEnqueue } from "@/lib/control/enqueue-run";
 import { getWorker } from "@/lib/agent-workers/registry";
 import { executeAgentRun } from "@/lib/agent-workers/execute";
 import {
@@ -33,57 +33,6 @@ import { AgentWorkerKind } from "@/generated/prisma/client";
 // doing so silently masks newly registered workers (e.g. Apify enrichment
 // kinds) and produces misleading "Unknown or not yet implemented" 404s.
 const VALID_KINDS = new Set<string>(Object.values(AgentWorkerKind));
-
-/**
- * Cached "Redis is down" flag. When `tryEnqueue` detects an
- * unreachable Redis (enqueue deadline blown), we stamp this timestamp
- * with the future moment at which we'll try again. Subsequent calls
- * in the cooldown window skip the enqueue attempt entirely - no new
- * ioredis reconnect loop, no new error spam. Inline execution takes
- * over immediately. 30 seconds is long enough to skip the common
- * "dev running without Redis" case and short enough that when the
- * user starts Redis it recovers within a minute.
- */
-let redisDownUntil = 0;
-const REDIS_DOWN_TTL_MS = 30_000;
-
-/**
- * Race the BullMQ enqueue against a short deadline. Returns `true` if
- * the job was successfully enqueued, `false` if Redis is unavailable
- * or the add() didn't resolve in time. ioredis with the worker config
- * (`maxRetriesPerRequest: null`) will queue commands forever on a
- * dead connection, so the deadline is the only reliable signal that
- * we should fall back to inline execution.
- */
-async function tryEnqueue(runId: string, timeoutMs = 1500): Promise<boolean> {
-  if (Date.now() < redisDownUntil) {
-    // Recent probe said Redis is unreachable - skip the attempt so
-    // we don't spin up another ioredis reconnect burst.
-    return false;
-  }
-  try {
-    const queue = getAgentRunsQueue();
-    const addPromise = queue.add(
-      `agent-run-${runId}`,
-      { runId },
-      {
-        attempts: 2,
-        backoff: { type: "exponential", delay: 5000 },
-        removeOnComplete: 500,
-        removeOnFail: 500,
-      },
-    );
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("queue_enqueue_timeout")), timeoutMs),
-    );
-    await Promise.race([addPromise, timeout]);
-    redisDownUntil = 0;
-    return true;
-  } catch {
-    redisDownUntil = Date.now() + REDIS_DOWN_TTL_MS;
-    return false;
-  }
-}
 
 export async function POST(
   request: Request,
@@ -329,3 +278,4 @@ export async function POST(
     return internalError("api.agent_run.trigger_error", err);
   }
 }
+

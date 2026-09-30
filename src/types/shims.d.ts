@@ -21,6 +21,7 @@ declare module "bullmq" {
   }
 
   export interface JobsOptions {
+    jobId?: string;
     removeOnComplete?: number | boolean;
     removeOnFail?: number | boolean;
     attempts?: number;
