@@ -64,8 +64,15 @@ import { allGeminiKeysCool, getGeminiKeyDiagnostics } from "../lib/gemini-keys";
 // of an emergency rollback.
 // import { startCrawlWorker } from "./crawl-worker";
 // import { startAnalyzeWorker } from "./analyze-worker";
-import { startReviewAnalysisWorker } from "./review-analysis-worker";
-import { startEmailVerificationWorker } from "./email-verification-worker";
+//
+// Task 2 (admin paneli son plan) — `review-analysis` and
+// `email-verification` are no longer booted either. They duplicated AI
+// Core's REVIEW_ANALYST / EMAIL_VERIFIER on `agent-runs` and raced them
+// on the same rows. Nothing enqueues into them any more:
+//   - `POST /api/reviews/[leadId]/analyze` now creates a REVIEW_ANALYST
+//     AgentRun on `agent-runs`.
+//   - `email-verification` was only fed by `crawl-worker` (unbooted above).
+// The source files stay on disk; see docs/runbooks/workers-topology.md.
 import { startAgentRunWorker } from "./agent-run-worker";
 import { startSeoOpsWorker } from "./seo-ops-worker";
 import { logger } from "../lib/logger";
@@ -151,8 +158,6 @@ if (
 }
 
 const discoveryWorker = startDiscoveryWorker();
-const reviewAnalysisWorker = startReviewAnalysisWorker();
-const emailVerificationWorker = startEmailVerificationWorker();
 const agentRunWorker = startAgentRunWorker();
 const seoOpsWorker = startSeoOpsWorker();
 
@@ -193,8 +198,6 @@ async function shutdown() {
   clearInterval(logPurgeTimer);
   await Promise.all([
     discoveryWorker.close(),
-    reviewAnalysisWorker.close(),
-    emailVerificationWorker.close(),
     agentRunWorker.close(),
     seoOpsWorker.close(),
   ]);
