@@ -5,8 +5,12 @@
  * ON DEMAND during its synthesis loop. This is the "agent can pull
  * whatever data it needs" layer: instead of pre-stuffing the whole
  * substrate into one prompt, Claude decides which slices it actually
- * needs (full reviews, website audit, dossier, the workspace's real
- * package catalog, semantic memory) and fetches them.
+ * needs (full reviews, website audit, the workspace's real package
+ * catalog, semantic memory) and fetches them.
+ *
+ * Raw evidence only: `get_dossier` and `get_sales_opportunity` were
+ * removed (playbook §3) — they fed another model's prose back in, and
+ * SalesOpportunity is now a projection of this agent's own decision.
  *
  * HARD CONSTRAINTS:
  *   - Every tool is READ-ONLY. No tool mutates state, enqueues work, or
@@ -151,54 +155,6 @@ export const AGENT_TOOLS: AgentToolDef[] = [
               socialProfiles: features.socialProfiles ?? null,
             }
           : null,
-      };
-    },
-  },
-  {
-    name: "get_dossier",
-    description:
-      "The long-form AI sales dossier markdown for this lead (synthesised narrative across every agent). Use for deeper context that isn't in the structured signals.",
-    input_schema: EMPTY_SCHEMA,
-    execute: async (ctx) => {
-      if (!(await assertLead(ctx))) return { error: "lead_not_found" };
-      const run = await prisma.agentRun.findFirst({
-        where: {
-          workspaceId: ctx.workspaceId,
-          leadId: ctx.leadId,
-          workerKind: "LEAD_DOSSIER_GENERATOR",
-          status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
-        },
-        orderBy: { finishedAt: "desc" },
-        select: { outputJson: true },
-      });
-      const out = run?.outputJson;
-      const md =
-        out && typeof out === "object" && "markdown" in (out as Record<string, unknown>)
-          ? (out as Record<string, unknown>).markdown
-          : null;
-      const text = clampText(md, 6000);
-      return text ? { markdown: text } : { error: "no_dossier" };
-    },
-  },
-  {
-    name: "get_sales_opportunity",
-    description:
-      "The scorer's sales opportunity: opportunity score, why-good-target rationale, recommended package id and reason, suggested offer. Use to align with the deterministic scorer.",
-    input_schema: EMPTY_SCHEMA,
-    execute: async (ctx) => {
-      const lead = await prisma.lead.findFirst({
-        where: { id: ctx.leadId, workspaceId: ctx.workspaceId },
-        select: { salesOpportunity: true },
-      });
-      if (!lead) return { error: "lead_not_found" };
-      const opp = lead.salesOpportunity as Record<string, unknown> | null;
-      if (!opp) return { error: "no_opportunity" };
-      return {
-        opportunityScore: opp.opportunityScore ?? null,
-        whyGoodTarget: clampText(opp.whyGoodTarget, 1500),
-        recommendedPackageId: opp.recommendedPackageId ?? null,
-        recommendedPackageReason: clampText(opp.recommendedPackageReason, 800),
-        suggestedOffer: opp.suggestedOffer ?? null,
       };
     },
   },

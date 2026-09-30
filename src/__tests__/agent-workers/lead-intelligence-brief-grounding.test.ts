@@ -30,6 +30,8 @@ import {
   runBriefV2Pipeline,
   clampSeverity,
   clampConfidence,
+  buildBriefDecision,
+  run as runBrief,
   type BriefPromptInput,
 } from "@/lib/agent-workers/lead-intelligence-brief";
 
@@ -66,6 +68,47 @@ vi.mock("@/lib/logger", () => ({
     error: vi.fn(),
     debug: vi.fn(),
   },
+}));
+
+// ---------------------------------------------------------------------
+// Head agent (Task 3) mocks — Claude, the DB and the flag are fakes so
+// the restaurant brief path runs without a model or a database.
+// ---------------------------------------------------------------------
+const ha = vi.hoisted(() => ({
+  configured: { value: false },
+  loop: vi.fn(),
+  call: vi.fn(),
+  mode: vi.fn(() => "live"),
+  db: {
+    lead: { count: vi.fn(), updateMany: vi.fn() },
+    salesOpportunity: { upsert: vi.fn() },
+    servicePackage: { findMany: vi.fn() },
+    leadTrigger: { findMany: vi.fn() },
+    semanticMemory: { findMany: vi.fn() },
+    agentRun: { findFirst: vi.fn(), findMany: vi.fn() },
+    $transaction: vi.fn(),
+  },
+}));
+
+vi.mock("@/lib/ai-core/agent/claude", () => ({
+  isAnthropicConfigured: () => ha.configured.value,
+  runClaudeToolLoop: ha.loop,
+  callClaudeJson: ha.call,
+  parseClaudeJson: (text: string) => JSON.parse(text),
+  getHeadAgentModel: () => "claude-test",
+}));
+vi.mock("@/lib/prisma", () => ({ prisma: ha.db }));
+vi.mock("@/lib/control/claims", () => ({ listApprovedClaims: vi.fn(async () => []) }));
+vi.mock("@/lib/feature-flags", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/feature-flags")>()),
+  getHeadAgentMode: ha.mode,
+}));
+vi.mock("@/lib/playbook/resolve", () => ({
+  getPlaybook: vi.fn(async () => ({ stages: [] })),
+  deriveLeadTemperature: vi.fn(() => "WARM"),
+}));
+vi.mock("@/lib/integrations/hubspot/writeback", () => ({
+  enqueueCrmWriteback: vi.fn(async () => undefined),
 }));
 
 // `gemini-keys` reads env at module load and caches a key pool — reset
@@ -721,5 +764,354 @@ describe("runBriefV2Pipeline — re-prompt path (every first pass painPoint fail
     expect(generateContentSpy).toHaveBeenCalledTimes(1);
     expect(out.painPoints).toHaveLength(1);
     expect(out.hypotheses).toHaveLength(1);
+  });
+});
+
+// =====================================================================
+// Task 3 — restaurant briefs come from the head agent
+// =====================================================================
+
+function resetHeadAgentMocks() {
+  ha.configured.value = false;
+  ha.loop.mockReset();
+  ha.call.mockReset();
+  ha.mode.mockReset();
+  ha.mode.mockReturnValue("live");
+  ha.db.lead.count.mockReset().mockResolvedValue(1);
+  ha.db.lead.updateMany.mockReset().mockResolvedValue({ count: 1 });
+  ha.db.salesOpportunity.upsert.mockReset().mockResolvedValue({});
+  ha.db.servicePackage.findMany.mockReset().mockResolvedValue([
+    { id: "pkg_starter", name: "FineDine Starter" },
+    { id: "pkg_growth", name: "FineDine Growth" },
+  ]);
+  ha.db.leadTrigger.findMany.mockReset().mockResolvedValue([]);
+  ha.db.semanticMemory.findMany.mockReset().mockResolvedValue([]);
+  ha.db.$transaction.mockReset().mockImplementation(async (ops: unknown[]) => Promise.all(ops));
+}
+
+const THEFORK_AUDIT = {
+  websiteUrl: "https://brasserie.example",
+  reachable: true,
+  hasBookingSystem: true,
+  bookingProvider: "TheFork",
+  hasPrepayment: false,
+  tableCount: 40,
+};
+
+function claudeTalk(payload: Record<string, unknown>) {
+  return {
+    finalText: JSON.stringify(payload),
+    usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+    rounds: 2,
+    toolCalls: ["get_full_reviews"],
+  };
+}
+
+describe("buildBriefDecision — plan snippets", () => {
+  beforeEach(resetHeadAgentMocks);
+
+  it("excludes reservation when a booking provider is already present", async () => {
+    const out = await buildBriefDecision({
+      niche: "RESTAURANT_TECH",
+      audit: { hasBookingSystem: true, bookingProvider: "Dishoom reservations", hasQrMenu: null, hasOnlineOrdering: null },
+      reviewCount: 29744,
+      reviewAnalysis: null,
+    });
+    expect(out.briefMode).toBe("head-agent");
+    expect(out.headAgent.excludedModules.map((m) => m.module)).toContain("reservation");
+    expect(out.headAgent.evidenceRefs.length).toBeGreaterThan(0);
+    expect(out.headAgent.recommendedModules.map((m) => m.module)).not.toContain("reservation");
+  });
+
+  it("does not pitch a website rebuild from a thin five-review sample", async () => {
+    const out = await buildBriefDecision({
+      niche: "RESTAURANT_TECH",
+      audit: { hasQrMenu: null, websiteBroken: false },
+      reviewCount: 5,
+      reviewAnalysis: null,
+    });
+    expect(out.headAgent.recommendedModules).not.toContain("website");
+    expect(out.headAgent.recommendedModules.map((m) => m.module)).not.toContain("website");
+    expect(out.missingSources).toContain("reviews");
+  });
+
+  it("writes a plain card when QA fails instead of falling back to the legacy brief", async () => {
+    const out = await buildBriefDecision({ niche: "RESTAURANT_TECH", forceQaFailure: true });
+    expect(out.briefMode).toBe("head-agent");
+    expect(out.headAgent.talkTrack).toBe("");
+    expect(out.headAgent.recommendedPackage).toBeTruthy();
+    expect(generateContentSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("buildBriefDecision — rooms 2 and 3", () => {
+  beforeEach(resetHeadAgentMocks);
+
+  it("forced QA failure on a real wedge keeps the package and three evidence refs, no model call", async () => {
+    ha.configured.value = true;
+    const out = await buildBriefDecision({
+      niche: "RESTAURANT_TECH",
+      audit: THEFORK_AUDIT,
+      reviewCount: 300,
+      rating: 4.5,
+      reviewAnalysis: {
+        reviewsAnalyzedCount: 300,
+        painPhrases: [
+          { text: "we waited 20 minutes for the bill", sellable: true },
+          { text: "no-show deposit was never asked", sellable: true },
+        ],
+      },
+      forceQaFailure: true,
+    });
+    expect(out.headAgent).toMatchObject({ recommendedPackage: "growth", wedge: "reservation", talkTrack: "" });
+    expect(out.headAgent.evidenceRefs).toHaveLength(3);
+    expect(out.headAgent.roomTwo.status).toBe("qa_failed");
+    expect(ha.loop).not.toHaveBeenCalled();
+    expect(ha.call).not.toHaveBeenCalled();
+  });
+
+  it("attaches Claude's talk only for the Room 1 package, with raw-evidence tools only", async () => {
+    ha.configured.value = true;
+    ha.loop.mockResolvedValueOnce(
+      claudeTalk({
+        package: "growth",
+        wedge: "reservation",
+        primaryAngle: "Direct booking + deposit",
+        sentences: [
+          { text: "Your bookings come through TheFork and no deposit is visible.", evidence: ["E1"] },
+          { text: "Direct booking with prepayment could cut no-shows; a 15-minute look will tell.", evidence: ["E1"] },
+        ],
+        recommendedModules: [{ module: "crm_loyalty", why: "invented" }],
+        sourceConflicts: [],
+        reasoning: "Deposit gap on marketplace bookings.",
+      }),
+    );
+    const out = await buildBriefDecision({
+      niche: "RESTAURANT_TECH",
+      workspaceId: "ws_1",
+      leadId: "lead_1",
+      audit: THEFORK_AUDIT,
+      reviewCount: 400,
+      rating: 4.4,
+      reviewAnalysis: { reviewsAnalyzedCount: 400, painPhrases: [] },
+    });
+    expect(ha.loop).toHaveBeenCalledOnce();
+    const toolNames = ha.loop.mock.calls[0][0].tools.map((t: { name: string }) => t.name);
+    expect(toolNames).not.toContain("get_dossier");
+    expect(toolNames).not.toContain("get_sales_opportunity");
+    expect(out.headAgent.roomTwo.status).toBe("attached");
+    expect(out.headAgent.talkTrack).toMatch(/TheFork/);
+    expect(out.headAgent.recommendedPackage).toBe("growth");
+    expect(out.headAgent.wedge).toBe("reservation");
+    // Invented module outside the shortlist is dropped.
+    expect(out.headAgent.recommendedModules.map((m) => m.module)).not.toContain("crm_loyalty");
+    expect(out.salesConfidence).toBe(out.headAgent.confidence);
+  });
+
+  it("QA failure (talk sells outside the wedge) gives a plain card with no second attempt", async () => {
+    ha.configured.value = true;
+    ha.loop.mockResolvedValueOnce(
+      claudeTalk({
+        package: "growth",
+        wedge: "reservation",
+        primaryAngle: "Loyalty",
+        sentences: [{ text: "Start a loyalty programme so your guests come back more often.", evidence: ["E1"] }],
+        recommendedModules: [],
+        sourceConflicts: [],
+        reasoning: "",
+      }),
+    );
+    const out = await buildBriefDecision({
+      niche: "RESTAURANT_TECH",
+      workspaceId: "ws_1",
+      leadId: "lead_1",
+      audit: THEFORK_AUDIT,
+      reviewCount: 400,
+      rating: 4.4,
+      reviewAnalysis: { reviewsAnalyzedCount: 400, painPhrases: [] },
+    });
+    expect(ha.loop).toHaveBeenCalledOnce();
+    expect(ha.call).not.toHaveBeenCalled();
+    expect(generateContentSpy).not.toHaveBeenCalled();
+    expect(out.headAgent.talkTrack).toBe("");
+    expect(out.headAgent.recommendedPackage).toBe("growth");
+    expect(out.headAgent.roomTwo.status).toBe("qa_failed");
+    expect(out.headAgent.roomTwo.qaIssues.join(" ")).toMatch(/sells_outside_wedge|not_linked_to_wedge/);
+  });
+
+  it("QA fails a Starter talk that sells prepayment and a sentence without evidence", async () => {
+    ha.configured.value = true;
+    ha.loop.mockResolvedValueOnce(
+      claudeTalk({
+        package: "starter",
+        wedge: "bill_wait",
+        primaryAngle: "Bill",
+        sentences: [
+          { text: "Guests wait for the bill at peak.", evidence: ["E1"] },
+          { text: "Add a deposit and prepayment for every table.", evidence: [] },
+        ],
+      }),
+    );
+    const out = await buildBriefDecision({
+      niche: "RESTAURANT_TECH",
+      workspaceId: "ws_1",
+      leadId: "lead_1",
+      audit: { reachable: true },
+      reviewCount: 200,
+      rating: 4.1,
+      reviewAnalysis: { reviewsAnalyzedCount: 200, painPhrases: [{ text: "waited ages for the bill", sellable: true }] },
+    });
+    expect(out.headAgent.recommendedPackage).toBe("starter");
+    expect(out.headAgent.roomTwo.qaIssues).toEqual(
+      expect.arrayContaining(["sentence_without_evidence", "sells_outside_package"]),
+    );
+    expect(out.headAgent.talkTrack).toBe("");
+  });
+
+  it("shadow mode runs Claude but keeps the card plain", async () => {
+    ha.configured.value = true;
+    ha.loop.mockResolvedValueOnce(
+      claudeTalk({
+        package: "growth",
+        wedge: "reservation",
+        primaryAngle: "Direct booking",
+        sentences: [{ text: "Bookings arrive via TheFork with no deposit visible.", evidence: ["E1"] }],
+      }),
+    );
+    const out = await buildBriefDecision(
+      { niche: "RESTAURANT_TECH", workspaceId: "ws_1", leadId: "lead_1", audit: THEFORK_AUDIT, reviewCount: 400, rating: 4.4 },
+      { mode: "shadow" },
+    );
+    expect(out.headAgent.talkTrack).toBe("");
+    expect(out.headAgent.roomTwo.status).toBe("shadow");
+    expect(out.headAgent.roomTwo.draftTalkTrack).toMatch(/TheFork/);
+  });
+
+  it("Claude failure gives a plain card, never a Gemini retry", async () => {
+    ha.configured.value = true;
+    ha.loop.mockRejectedValueOnce(new Error("timeout"));
+    const out = await buildBriefDecision({
+      niche: "RESTAURANT_TECH",
+      workspaceId: "ws_1",
+      leadId: "lead_1",
+      audit: THEFORK_AUDIT,
+      reviewCount: 400,
+      rating: 4.4,
+    });
+    expect(out.headAgent.roomTwo.status).toBe("unavailable");
+    expect(out.headAgent.talkTrack).toBe("");
+    expect(out.headAgent.recommendedPackage).toBe("growth");
+    expect(generateContentSpy).not.toHaveBeenCalled();
+  });
+
+  it("still writes a brief when every upstream step was skipped", async () => {
+    const out = await buildBriefDecision({
+      niche: "RESTAURANT_TECH",
+      audit: null,
+      reviewCount: null,
+      rating: null,
+      reviewAnalysis: { skipped: "thin_corpus", count: 4 },
+    });
+    expect(out.briefMode).toBe("head-agent");
+    expect(out.headAgent.recommendedModules).toEqual([]);
+    expect(out.salesConfidence).toBeLessThan(20);
+    expect(out.missingSources).toEqual(expect.arrayContaining(["map", "website", "reviews"]));
+  });
+
+  it("reads review phrases whether they are strings or objects with sellable", async () => {
+    const out = await buildBriefDecision({
+      niche: "RESTAURANT_TECH",
+      audit: { reachable: true },
+      reviewCount: 120,
+      rating: 4.2,
+      reviewAnalysis: { reviewsAnalyzedCount: 120, painPhrases: ["waited 25 minutes to pay the bill"] },
+    });
+    expect(out.headAgent.wedge).toBe("bill_wait");
+    expect(out.headAgent.recommendedPackage).toBe("starter");
+  });
+});
+
+describe("run — restaurant workspace", () => {
+  beforeEach(resetHeadAgentMocks);
+
+  function restaurantCtx(overrides: Record<string, unknown> = {}) {
+    const emit = vi.fn();
+    return {
+      workspaceId: "ws_1",
+      leadId: "lead_1",
+      workspace: { id: "ws_1", niche: "RESTAURANT_TECH", language: "en" },
+      emit,
+      lead: {
+        id: "lead_1",
+        businessName: "Brasserie Example",
+        formattedAddress: "1 High St, London",
+        websiteUrl: "https://brasserie.example",
+        hasWebsite: true,
+        rating: 4.4,
+        reviewCount: 420,
+        priceLevel: 2,
+        accountId: null,
+        subNicheSlug: null,
+        nicheSlug: "restaurant",
+        primaryType: "restaurant",
+        intelligenceVersion: 2,
+        dnc: false,
+        playbookStageKey: null,
+        inboundReceivedAt: null,
+        lastDisposition: null,
+        icpFitScore: null,
+        websiteAudit: {
+          url: "https://brasserie.example",
+          reachable: true,
+          hasBookingSystem: true,
+          bookingProvider: "TheFork",
+          hasEcommerce: false,
+          rawFeaturesJson: { hasQrMenu: null, hasOnlineOrdering: null },
+        },
+        reviewAnalysis: null,
+        salesOpportunity: { opportunityScore: 99 },
+        ...overrides,
+      },
+    } as unknown as Parameters<typeof runBrief>[0];
+  }
+
+  it("returns head_agent_off and writes nothing when the mode is off", async () => {
+    ha.mode.mockReturnValue("off");
+    const res = await runBrief(restaurantCtx());
+    expect(res.output).toEqual({ skipped: "head_agent_off" });
+    expect(generateContentSpy).not.toHaveBeenCalled();
+    expect(ha.db.$transaction).not.toHaveBeenCalled();
+    expect(ha.db.salesOpportunity.upsert).not.toHaveBeenCalled();
+  });
+
+  it("never calls the legacy generator and projects SalesOpportunity once, in the brief transaction", async () => {
+    const res = await runBrief(restaurantCtx());
+    const out = res.output as Record<string, unknown> & {
+      headAgent: { wedge: string; recommendedPackage: string; roomOne: { evidence: string[] } };
+      salesConfidence: number;
+    };
+    expect(generateContentSpy).not.toHaveBeenCalled();
+    expect(out.briefMode).toBe("head-agent");
+    expect(out.headAgent.wedge).toBe("reservation");
+    expect(out.headAgent.recommendedPackage).toBe("growth");
+    expect(out.missingSources).toContain("reviews");
+    // salesConfidence is the package fit score — the stale scorer row (99) is not read.
+    expect(out.salesConfidence).not.toBe(99);
+
+    expect(ha.db.$transaction).toHaveBeenCalledOnce();
+    expect(ha.db.salesOpportunity.upsert).toHaveBeenCalledOnce();
+    const upsert = ha.db.salesOpportunity.upsert.mock.calls[0][0];
+    expect(upsert.where).toMatchObject({ leadId: "lead_1", lead: { workspaceId: "ws_1" } });
+    expect(upsert.update.bestSalesAngle).toBe(out.headAgent.wedge);
+    expect(upsert.create.bestSalesAngle).toBe(out.headAgent.wedge);
+    expect(upsert.update.opportunityScore).toBe(out.salesConfidence);
+    expect(upsert.update.reasonCodes).toEqual(out.headAgent.roomOne.evidence);
+    expect(upsert.update.recommendedPackageId).toBe("pkg_growth");
+    expect(upsert.update.suggestedOffer).toBe("GROWTH");
+    expect(ha.db.servicePackage.findMany.mock.calls[0][0].where).toEqual({ workspaceId: "ws_1" });
+
+    const leadWrite = ha.db.lead.updateMany.mock.calls[0][0];
+    expect(leadWrite.where).toEqual({ id: "lead_1", workspaceId: "ws_1" });
+    expect(leadWrite.data.salesConfidence).toBe(out.salesConfidence);
   });
 });

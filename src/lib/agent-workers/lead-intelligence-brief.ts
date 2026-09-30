@@ -46,8 +46,16 @@
  *     hypotheses: Hypothesis[],            // model-inferred plausibilities
  *     whyGoodTarget: string | null,        // post-validated against websiteVerificationStatus
  *     websiteClaimBlocked: boolean,        // true when the website-claim gate stripped a sentence
- *     briefMode: "v2" | "legacy",          // pipeline that produced this brief
+ *     briefMode: "v2" | "legacy" | "head-agent", // pipeline that produced this brief
  *   }
+ *
+ * Restaurant (RESTAURANT_TECH) workspaces never reach the Gemini
+ * generators below: `runRestaurantBrief` builds the brief from the head
+ * agent decision (`buildBriefDecision`: Room 1 rules, Room 2 Claude
+ * talk, Room 3 QA), adds `headAgent` + `missingSources`, and projects
+ * the decision onto `SalesOpportunity` in the same transaction as the
+ * `Lead.salesConfidence` write. Head agent mode `off` returns
+ * `{ skipped: "head_agent_off" }`.
  *
  * Truth Layer T-D — Brief Truth-Grounding (master plan §3 T-D):
  *   - Every `painPoints[i]` is source-grounded; `source` is one of
@@ -66,7 +74,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
 import { safeParseGeminiJson } from "@/lib/gemini";
-import { listByLead as listMemoryByLead } from "@/lib/ai-core/memory";
+import { listByLead as listMemoryByLead, findRecentByKindsScoped } from "@/lib/ai-core/memory";
 import { runAuditChecklist } from "@/lib/audit-checklist";
 import { getNicheBySlug } from "@/lib/niches";
 import type { WebsiteFeatures } from "@/types";
@@ -90,10 +98,20 @@ import {
 } from "@/lib/sdr-brain/contracts";
 import { isTruthLayerFlagEnabled, getHeadAgentMode } from "@/lib/feature-flags";
 import {
-  runHeadAgentSynthesis,
+  buildBriefDecision,
   isFnbNiche,
+  normalizePainPhrases,
+  PLAN_LABELS,
+  WEDGE_LABELS,
+  type BriefDecisionInput,
+  type HeadAgentBriefDecision,
   type HeadAgentDecision,
+  type RoomOneAudit,
+  type VenueType,
 } from "@/lib/ai-core/agent/head-agent";
+
+export { buildBriefDecision };
+export type { BriefDecisionInput, HeadAgentBriefDecision };
 import { TruthLayerError } from "@/lib/sdr-brain/error-catalog";
 import { getPlaybook, deriveLeadTemperature } from "@/lib/playbook/resolve";
 import { enqueueCrmWriteback } from "@/lib/integrations/hubspot/writeback";
@@ -186,14 +204,13 @@ interface BriefOutput {
    */
   briefMode?: "v2" | "legacy" | "head-agent";
   /**
-   * Faz 2 — Claude Head Agent decision. Present only when the
-   * CLAUDE_HEAD_AGENT flag is on for the workspace, the niche routes to
-   * a vertical pack (F&B today), and the synthesis call succeeded. The
-   * deterministic fields above are unchanged — this is an additive
-   * account-level decision layer (primary angle, talk track, confidence,
-   * cross-source conflicts) the UI + CRM write-back consume.
+   * Head agent decision (restaurant workspaces). Room 1 picks the
+   * package + wedge, Room 2 (Claude) writes the talk, Room 3 QA gates
+   * it. Always present when `briefMode === "head-agent"`.
    */
   headAgent?: HeadAgentDecision;
+  /** Upstream sources the head agent could not see ("map" | "website" | "reviews"). */
+  missingSources?: string[];
   generatedAt: string;
   intelligenceVersion: number;
 }
@@ -1296,6 +1313,262 @@ export async function runBriefV2Pipeline(args: {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Restaurant brief — the head agent decision is the brief
+// ---------------------------------------------------------------------------
+
+type HydratedLead = NonNullable<AgentWorkerContext["lead"]>;
+
+function triBool(v: unknown): boolean | null {
+  return typeof v === "boolean" ? v : null;
+}
+function finiteNumber(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+function nonEmpty(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
+}
+
+/** Rule-based venue type from the niche slug / Google type / price level. */
+export function deriveVenueType(
+  parts: ReadonlyArray<string | null | undefined>,
+  priceLevel: number | null | undefined,
+): VenueType | null {
+  const blob = parts.filter(Boolean).join(" ").toLowerCase();
+  if (/fine[_ -]?dining|tasting/.test(blob)) return "fine_dining";
+  if (/food[_ -]?(hall|court)/.test(blob)) return "food_hall";
+  if (/(fast[_ -]?food|\bqsr\b|quick[_ -]?service|burger|kebab|takeaway|meal_takeaway)/.test(blob)) return "qsr";
+  if (/(cafe|café|coffee|bakery|kahve)/.test(blob)) return "cafe";
+  if (priceLevel === 4) return "fine_dining";
+  return null;
+}
+
+/**
+ * Map the lead's website audit onto Room 1's tri-state audit. Unknown
+ * stays null: `hasQrMenu` / `hasOnlineOrdering` are `boolean | null`
+ * upstream and a `null` is never read as "absent".
+ */
+export function toRoomOneAudit(lead: HydratedLead): RoomOneAudit | null {
+  const wa = lead.websiteAudit;
+  if (!wa) return lead.hasWebsite === false ? { hasWebsite: false, websiteBroken: false } : null;
+  const f = (wa.rawFeaturesJson && typeof wa.rawFeaturesJson === "object"
+    ? (wa.rawFeaturesJson as Record<string, unknown>)
+    : {}) as Record<string, unknown>;
+  const menuUrl = nonEmpty(f.menuUrl);
+  const detectedMenuTool = nonEmpty(f.detectedMenuTool);
+  return {
+    reachable: wa.reachable,
+    websiteUrl: lead.websiteUrl ?? wa.url ?? null,
+    hasWebsite: lead.hasWebsite ?? true,
+    websiteBroken: lead.hasWebsite !== false && wa.reachable === false ? true : wa.reachable === true ? false : null,
+    hasBookingSystem: triBool(wa.hasBookingSystem),
+    hasOnlineReservation: triBool(f.hasOnlineReservation),
+    bookingProvider: nonEmpty(wa.bookingProvider) ?? nonEmpty(f.bookingProvider),
+    hasPrepayment: triBool(f.hasPrepayment),
+    tableCount: finiteNumber(f.tableCount),
+    hasQrMenu: triBool(f.hasQrMenu),
+    pdfMenu: menuUrl ? /\.pdf(\?|#|$)/i.test(menuUrl) && !detectedMenuTool : null,
+    menuUrl,
+    detectedMenuTool,
+    hasOnlineOrdering: triBool(f.hasOnlineOrdering),
+    marketplaceOrdering: triBool(f.hasDeliveryIntegration),
+    deliveryPlatforms: Array.isArray(f.deliveryPlatforms)
+      ? f.deliveryPlatforms.filter((x): x is string => typeof x === "string")
+      : null,
+    languageCount: finiteNumber(f.languageCount),
+    venueType: deriveVenueType([lead.subNicheSlug, lead.nicheSlug, lead.primaryType], lead.priceLevel),
+  };
+}
+
+const PLAN_TO_OFFER: Partial<Record<string, "STARTER" | "GROWTH">> = { starter: "STARTER", growth: "GROWTH" };
+
+async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): Promise<AgentWorkerOutput> {
+  const workspaceId = ctx.workspaceId;
+  const leadId = lead.id;
+
+  const mode = getHeadAgentMode({ workspaceId });
+  if (mode === "off") {
+    logger.info("agent_workers.lead_intelligence_brief.head_agent_off", { leadId, workspaceId });
+    return { output: { skipped: "head_agent_off" }, costTokens: 0 };
+  }
+
+  let locationCount = 1;
+  if (lead.accountId) {
+    const siblings = await prisma.lead.count({ where: { workspaceId, accountId: lead.accountId } });
+    locationCount = Math.max(1, siblings);
+  }
+
+  const reviewAnalysis = lead.reviewAnalysis
+    ? {
+        reviewsAnalyzedCount: lead.reviewAnalysis.reviewsAnalyzedCount,
+        painPhrases: lead.reviewAnalysis.painPhrases,
+      }
+    : null;
+
+  const decision = await buildBriefDecision(
+    {
+      niche: ctx.workspace.niche,
+      workspaceId,
+      leadId,
+      businessName: lead.businessName,
+      address: lead.formattedAddress,
+      language: ctx.workspace.language ?? "en",
+      audit: toRoomOneAudit(lead),
+      reviewCount: lead.reviewCount,
+      rating: lead.rating,
+      priceLevel: lead.priceLevel ?? null,
+      locationCount,
+      reviewAnalysis,
+    },
+    { mode },
+  );
+  const ha = decision.headAgent;
+  const r1 = ha.roomOne;
+
+  logger.info("[head-agent-telemetry]", {
+    event: "head_agent.decision",
+    leadId,
+    workspaceId,
+    mode,
+    plan: r1.plan,
+    wedge: r1.wedge,
+    backup: r1.backup,
+    roomTwo: ha.roomTwo.status,
+    qaIssues: ha.roomTwo.qaIssues,
+    qaWarnings: ha.roomTwo.qaWarnings,
+    rounds: ha.roomTwo.rounds,
+    toolCalls: ha.roomTwo.toolCalls,
+    salesConfidence: decision.salesConfidence,
+    missingSources: decision.missingSources,
+    tokens: ha.usageTokens,
+  });
+
+  const newVersion = (lead.intelligenceVersion ?? 0) + 1;
+  const sellablePains = normalizePainPhrases(lead.reviewAnalysis?.painPhrases)
+    .filter((p) => p.sellable !== false)
+    .map((p) => p.text);
+  const brief: Omit<BriefOutput, "intelligenceVersion" | "generatedAt"> = {
+    salesConfidence: decision.salesConfidence,
+    confidenceBreakdown: { audit: 0, reviews: 0, opportunity: 0, weight: 0 },
+    headline:
+      r1.wedge === "none"
+        ? `${lead.businessName} — ${WEDGE_LABELS.none}`
+        : `${lead.businessName} — ${WEDGE_LABELS[r1.wedge]} · ${PLAN_LABELS[r1.plan]}`,
+    talkingPoints: ha.evidenceRefs,
+    openerSeed: ha.talkTrack,
+    bestTimeToCall: null,
+    dnc: lead.dnc ?? false,
+    nextAction:
+      r1.wedge === "none"
+        ? { kind: "NEEDS_RESEARCH", due: null, note: ha.reasoning }
+        : { kind: "CALL_AT_WINDOW", due: null, note: ha.primaryAngle },
+    replyObjections: [],
+    redFlags: decision.missingSources.map((s) => `missing_source:${s}`),
+    evidence: r1.evidence.map((note) => ({ source: note.startsWith("yorum:") ? "review" : "website", note })),
+    // Opener whitelist: only review phrases Room 1 actually used as evidence.
+    confirmedPainPoints: sellablePains.filter((p) => r1.evidence.some((e) => e.includes(p))).slice(0, 5),
+    confirmedMissingFeatures: [],
+    painPoints: [],
+    hypotheses: [],
+    whyGoodTarget: null,
+    websiteClaimBlocked: false,
+    briefMode: "head-agent",
+    headAgent: ha,
+    missingSources: decision.missingSources,
+  };
+
+  const playbook = await getPlaybook(prisma, workspaceId);
+  const currentStage = playbook.stages.find((s) => s.key === lead.playbookStageKey);
+  const hoursSinceInbound = lead.inboundReceivedAt
+    ? (Date.now() - lead.inboundReceivedAt.getTime()) / 3_600_000
+    : null;
+  const leadTemperature = deriveLeadTemperature(playbook, {
+    hoursSinceInbound,
+    lastDisposition: lead.lastDisposition,
+    qualified: !!currentStage?.isQualified,
+    salesConfidence: brief.salesConfidence,
+  });
+
+  // SalesOpportunity is a projection of this decision (single writer).
+  // Resolve the plan onto a real workspace package when one is named after it.
+  let recommendedPackageId: string | null = null;
+  if (r1.plan !== "none") {
+    const packages = await prisma.servicePackage.findMany({
+      where: { workspaceId },
+      select: { id: true, name: true },
+      take: 50,
+    });
+    recommendedPackageId =
+      packages.find((p) => p.name.toLowerCase().includes(r1.plan))?.id ?? null;
+  }
+  const offer = PLAN_TO_OFFER[r1.plan];
+  const projection = {
+    opportunityScore: decision.salesConfidence,
+    bestSalesAngle: r1.wedge,
+    reasonCodes: r1.evidence,
+    recommendedPackageId,
+    recommendedPackageReason: `${PLAN_LABELS[r1.plan]} · ${WEDGE_LABELS[r1.wedge]}`,
+    ...(offer ? { suggestedOffer: offer } : {}),
+  };
+
+  await prisma.$transaction([
+    prisma.lead.updateMany({
+      where: { id: leadId, workspaceId },
+      data: {
+        salesConfidence: brief.salesConfidence,
+        leadTemperature,
+        intelligenceVersion: newVersion,
+      },
+    }),
+    prisma.salesOpportunity.upsert({
+      where: { leadId, lead: { workspaceId } },
+      create: { leadId, ...projection },
+      update: projection,
+    }),
+  ]);
+
+  void enqueueCrmWriteback(prisma, { workspaceId, leadId, reason: "analysis" }).catch((err) =>
+    logger.warn("hubspot.writeback.analysis_failed", {
+      leadId,
+      workspaceId,
+      err: err instanceof Error ? err.message : String(err),
+    }),
+  );
+
+  const sdrBrainResult = await runSdrBrainPass({
+    workspaceId,
+    leadId,
+    lead,
+    brief,
+    auditScorePct: null,
+    reviewLeadScore: null,
+    opportunityScore: decision.salesConfidence,
+  });
+  if (sdrBrainResult) {
+    try {
+      await ctx.emit("sdr_brain_completed", {
+        leadActionId: sdrBrainResult.leadActionId,
+        confidence: sdrBrainResult.confidence,
+      });
+    } catch (err) {
+      logger.warn("agent_workers.lead_intelligence_brief.sdr_brain_emit_failed", {
+        leadId,
+        workspaceId,
+        leadActionId: sdrBrainResult.leadActionId,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  const output: BriefOutput & { sdrBrain?: typeof sdrBrainResult } = {
+    ...brief,
+    intelligenceVersion: newVersion,
+    generatedAt: new Date().toISOString(),
+    sdrBrain: sdrBrainResult,
+  };
+  return { output, costTokens: ha.usageTokens };
+}
+
 export const run: AgentWorkerRun = async (
   ctx: AgentWorkerContext,
 ): Promise<AgentWorkerOutput> => {
@@ -1305,6 +1578,12 @@ export const run: AgentWorkerRun = async (
   const lead = ctx.lead;
   const leadId = lead.id;
   const workspaceId = ctx.workspaceId;
+
+  // Restaurant workspaces never touch the legacy / v2 Gemini generator:
+  // the brief IS the head agent decision (playbook §3, plan Task 3).
+  if (isFnbNiche(ctx.workspace.niche)) {
+    return runRestaurantBrief(ctx, lead);
+  }
 
   // Pull the latest dossier markdown if any (for prompt context).
   const dossierRun = await prisma.agentRun.findFirst({
@@ -1573,102 +1852,6 @@ export const run: AgentWorkerRun = async (
     };
   }
 
-  // ----- Faz 2/4 — Claude Head Agent synthesis pass (shadow + canary) -----
-  // Runs ON TOP of the deterministic v2 brief, only when the flag is on
-  // for this workspace, Claude is configured, and the niche routes to a
-  // vertical pack (F&B today). It never throws and never mutates the
-  // deterministic scores. In "shadow" mode it runs for telemetry ONLY
-  // (no attach, no write-back); in "live" mode it attaches an additive
-  // account-level decision — but only after the deterministic QA gate
-  // passes. A QA-failed decision is logged and discarded.
-  let headAgentTokens = 0;
-  const headAgentMode = getHeadAgentMode({ workspaceId });
-  if (headAgentMode !== "off" && isFnbNiche(ctx.workspace.niche)) {
-    // Multi-location context: a lead whose account spans >1 location.
-    let isMultiLocation: boolean | null = null;
-    if (lead.accountId) {
-      const siblingCount = await prisma.lead.count({
-        where: { workspaceId, accountId: lead.accountId },
-      });
-      isMultiLocation = siblingCount > 1 ? true : null;
-    }
-
-    const headAgent = await runHeadAgentSynthesis({
-      workspaceId,
-      leadId,
-      businessName: lead.businessName,
-      niche: ctx.workspace.niche,
-      address: lead.formattedAddress,
-      substrate: {
-        hasWebsite: lead.hasWebsite,
-        websiteUrl: lead.websiteUrl,
-        rating: lead.rating,
-        reviewCount: lead.reviewCount,
-        priceLevel: lead.priceLevel ?? null,
-        isMultiLocation,
-        features,
-        audit: lead.websiteAudit
-          ? {
-              reachable: lead.websiteAudit.reachable,
-              hasBookingSystem: lead.websiteAudit.hasBookingSystem,
-              bookingProvider: lead.websiteAudit.bookingProvider,
-            }
-          : null,
-        reviewAnalysis: reviewAnalysis
-          ? {
-              painPhrases: (reviewAnalysis as unknown as Record<string, unknown>).painPhrases,
-              weaknessKpis: (reviewAnalysis as unknown as Record<string, unknown>).weaknessKpis,
-              strengthPhrases: (reviewAnalysis as unknown as Record<string, unknown>).strengthPhrases,
-            }
-          : null,
-      },
-      briefContext: {
-        headline: brief.headline,
-        talkingPoints: brief.talkingPoints,
-        confirmedPainPoints: brief.confirmedPainPoints,
-        salesConfidence: brief.salesConfidence,
-      },
-    });
-
-    if (headAgent) {
-      headAgentTokens = headAgent.usage.totalTokens;
-      const agree = headAgent.deterministicPrimary === headAgent.agentPrimary;
-      const attached = headAgentMode === "live" && headAgent.qa.passed;
-
-      // Shadow-run telemetry — emitted in BOTH shadow and live so the
-      // dashboard can compare the Claude decision against the
-      // deterministic baseline (agree rate, QA pass rate) before a tenant
-      // is flipped live, and audit attach decisions once live.
-      logger.info("[head-agent-telemetry]", {
-        event: "head_agent.synthesis",
-        leadId,
-        workspaceId,
-        mode: headAgentMode,
-        attached,
-        qaPassed: headAgent.qa.passed,
-        qaIssues: headAgent.qa.issues,
-        qaWarnings: headAgent.qa.warnings,
-        deterministicPrimary: headAgent.deterministicPrimary,
-        agentPrimary: headAgent.agentPrimary,
-        agree,
-        confidence: headAgent.decision.confidence,
-        conflicts: headAgent.decision.sourceConflicts.length,
-        recommendedPackage: headAgent.decision.recommendedPackage,
-        rounds: headAgent.rounds,
-        toolCalls: headAgent.toolCalls,
-        tokens: headAgentTokens,
-      });
-
-      // Attach ONLY when live AND QA passed. Shadow never attaches, so
-      // write-back + UI stay on the deterministic baseline while we
-      // evaluate the agent.
-      if (attached) {
-        brief.headAgent = headAgent.decision;
-        brief.briefMode = "head-agent";
-      }
-    }
-  }
-
   // Derive a deterministic lead temperature from the freshly computed
   // sales confidence + inbound SLA so the leads list, the
   // `revint_lead_temperature` HubSpot property and the App Card stay
@@ -1777,7 +1960,7 @@ export const run: AgentWorkerRun = async (
 
   return {
     output,
-    costTokens: headAgentTokens,
+    costTokens: 0,
   };
 };
 
@@ -1870,16 +2053,11 @@ async function runSdrBrainPass(args: {
       orderBy: [{ severity: "desc" }, { confidence: "desc" }],
       take: 12,
     }),
-    prisma.semanticMemory.findMany({
-      where: { workspaceId, leadId, kind: "REASONING_SUMMARY" },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: {
-        id: true,
-        text: true,
-        refType: true,
-        metadata: true,
-      },
+    findRecentByKindsScoped({
+      workspaceId,
+      leadId,
+      kinds: ["REASONING_SUMMARY"],
+      topK: 20,
     }),
   ]);
 
