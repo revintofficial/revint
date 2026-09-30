@@ -143,3 +143,27 @@ export class ApifyRunError extends Error {
     this.runId = runId;
   }
 }
+
+export class ApifyQuotaError extends ApifyRunError {
+  statusCode: number;
+  constructor(message: string, statusCode: number, runId?: string) {
+    super(message, `HTTP_${statusCode}`, runId);
+    this.name = "ApifyQuotaError";
+    this.statusCode = statusCode;
+  }
+}
+
+export const APIFY_MAX_CONCURRENT = 2;
+
+export async function withApifySlot<T>(fn: () => Promise<T>): Promise<T> {
+  return fn();
+}
+
+export function apifyQuotaSkipFor(
+  err: unknown,
+): { skipped: "apify_quota"; reason: "apify_quota"; statusCode: number } | null {
+  if (err instanceof ApifyQuotaError) {
+    return { skipped: "apify_quota", reason: "apify_quota", statusCode: err.statusCode };
+  }
+  return null;
+}

@@ -88,6 +88,95 @@ export class ApifyRunError extends Error {
   }
 }
 
+/**
+ * Task 2 — Apify answered with a plan / quota limit rather than a real
+ * failure. `runSync` / `runAsync` throw this for HTTP 402 and for 403
+ * with one of `APIFY_QUOTA_403_TYPES`; the executor turns it into a
+ * SUCCEEDED run with `{ skipped: "apify_quota", statusCode }` (see
+ * `apifyQuotaSkipFor`). Fifteen runs were marked FAILED this way.
+ */
+export class ApifyQuotaError extends ApifyRunError {
+  statusCode: number;
+  constructor(message: string, statusCode: number, runId?: string) {
+    super(message, `HTTP_${statusCode}`, runId);
+    this.name = "ApifyQuotaError";
+    this.statusCode = statusCode;
+  }
+}
+
+export const APIFY_QUOTA_403_TYPES = [
+  "platform-feature-disabled",
+  "actor-memory-limit-exceeded",
+  "concurrent-runs-limit-exceeded",
+] as const;
+
+export type ApifyQuotaSkip = {
+  skipped: "apify_quota";
+  reason: "apify_quota";
+  statusCode: number;
+};
+
+function isQuotaResponse(status: number, body: string): boolean {
+  if (status === 402) return true;
+  if (status !== 403) return false;
+  // Apify error body: { "error": { "type": "...", "message": "..." } }.
+  // Fall back to a substring check when the body is not JSON.
+  try {
+    const parsed = JSON.parse(body) as { error?: { type?: unknown } };
+    const type = parsed?.error?.type;
+    if (typeof type === "string") {
+      return (APIFY_QUOTA_403_TYPES as readonly string[]).includes(type);
+    }
+  } catch {
+    // not JSON
+  }
+  return APIFY_QUOTA_403_TYPES.some((t) => body.includes(t));
+}
+
+function apifyHttpError(actorId: string, verb: string, status: number, body: string): ApifyRunError {
+  const message = `Apify ${actorId} ${verb} ${status}: ${body.slice(0, 400)}`;
+  if (isQuotaResponse(status, body)) return new ApifyQuotaError(message, status);
+  return new ApifyRunError(message, `HTTP_${status}`);
+}
+
+/** `{ skipped: "apify_quota", statusCode }` for a quota error, else `null`. */
+export function apifyQuotaSkipFor(err: unknown): ApifyQuotaSkip | null {
+  if (err instanceof ApifyQuotaError) {
+    return { skipped: "apify_quota", reason: "apify_quota", statusCode: err.statusCode };
+  }
+  return null;
+}
+
+/**
+ * Task 2 — in-process Apify concurrency lock.
+ *
+ * At most `APIFY_MAX_CONCURRENT` actor calls run at once per Node
+ * process; the rest wait in FIFO order. Apify's own limit is per
+ * account, so a lead burst used to trip `concurrent-runs-limit-exceeded`
+ * / `actor-memory-limit-exceeded`. This is deliberately in-process (no
+ * Redis): one worker supervisor runs the pipeline in the beta.
+ */
+export const APIFY_MAX_CONCURRENT = 2;
+let apifyActive = 0;
+const apifyWaiters: Array<() => void> = [];
+
+export async function withApifySlot<T>(fn: () => Promise<T>): Promise<T> {
+  if (apifyActive >= APIFY_MAX_CONCURRENT) {
+    await new Promise<void>((resolve) => apifyWaiters.push(resolve));
+  } else {
+    apifyActive += 1;
+  }
+  try {
+    return await fn();
+  } finally {
+    const next = apifyWaiters.shift();
+    // Hand the slot straight to the next waiter (active count unchanged),
+    // or release it.
+    if (next) next();
+    else apifyActive -= 1;
+  }
+}
+
 export function isConfigured(): boolean {
   return !!process.env.APIFY_TOKEN;
 }
@@ -119,6 +208,15 @@ export async function runSync<T = unknown>(
   opts?: { timeoutSec?: number; memoryMbytes?: number },
 ): Promise<ApifyRunResult<T>> {
   const token = getToken();
+  return withApifySlot(() => runSyncUnlocked<T>(token, actorId, input, opts));
+}
+
+async function runSyncUnlocked<T>(
+  token: string,
+  actorId: string,
+  input: unknown,
+  opts?: { timeoutSec?: number; memoryMbytes?: number },
+): Promise<ApifyRunResult<T>> {
   const started = Date.now();
 
   // Apify's path-with-dataset endpoint resolves the actor, runs it,
@@ -140,10 +238,7 @@ export async function runSync<T = unknown>(
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new ApifyRunError(
-      `Apify ${actorId} returned ${res.status}: ${body.slice(0, 400)}`,
-      `HTTP_${res.status}`,
-    );
+    throw apifyHttpError(actorId, "returned", res.status, body);
   }
 
   const items = (await res.json()) as T[];
@@ -220,18 +315,19 @@ export async function runAsync(
   if (opts.timeoutSec) url.searchParams.set("timeout", String(opts.timeoutSec));
   url.searchParams.set("memory", String(opts.memoryMbytes ?? DEFAULT_MEMORY_MBYTES));
 
-  const res = await fetch(url.toString(), {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ ...(input as object), webhooks: [webhook] }),
-  });
+  // Only the start request holds a slot; the actor itself keeps
+  // running on Apify after we return.
+  const res = await withApifySlot(() =>
+    fetch(url.toString(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...(input as object), webhooks: [webhook] }),
+    }),
+  );
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new ApifyRunError(
-      `Apify ${actorId} start failed ${res.status}: ${body.slice(0, 400)}`,
-      `HTTP_${res.status}`,
-    );
+    throw apifyHttpError(actorId, "start failed", res.status, body);
   }
 
   const body = (await res.json()) as { data: { id: string; defaultDatasetId: string } };

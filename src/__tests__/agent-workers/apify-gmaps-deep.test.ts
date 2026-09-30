@@ -144,14 +144,36 @@ describe("APIFY_GMAPS_DEEP - common matrix", () => {
     );
   });
 
-  it("clamps runInputs.maxReviews to 500", async () => {
+  it("clamps runInputs.maxReviews to 200", async () => {
     ApifyMock.setRunSyncResponse([{ placeId: "p", reviews: [] }], 0);
     await run(makeCtx({ runInputs: { maxReviews: 9999 } }));
     expect(ApifyMock.runSync).toHaveBeenCalledWith(
       "compass/crawler-google-places",
-      expect.objectContaining({ maxReviews: 500 }),
+      expect.objectContaining({ maxReviews: 200 }),
       expect.anything(),
     );
+  });
+
+  it("pulls 80 reviews by default", async () => {
+    ApifyMock.setRunSyncResponse([{ placeId: "p", reviews: [] }], 0);
+    await run(makeCtx());
+    expect(ApifyMock.runSync).toHaveBeenCalledWith(
+      "compass/crawler-google-places",
+      expect.objectContaining({ maxReviews: 80 }),
+      expect.anything(),
+    );
+  });
+
+  it("returns an apify_quota skip instead of throwing on a quota 402", async () => {
+    ApifyMock.setRunSyncThrows(new ApifyMock.ApifyQuotaError("Apify quota", 402));
+    const result = await run(makeCtx());
+    expect(result.output).toEqual({ skipped: "apify_quota", reason: "apify_quota", statusCode: 402 });
+    expect(prismaMock.googleReview.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("still throws a non-quota Apify failure", async () => {
+    ApifyMock.setRunSyncThrows(new ApifyMock.ApifyRunError("boom", "HTTP_500"));
+    await expect(run(makeCtx())).rejects.toThrow("boom");
   });
 
   it("review dedup: deleteMany is invoked BEFORE createMany", async () => {

@@ -3,8 +3,10 @@
  *
  * Hits `compass/crawler-google-places` with the lead's
  * `businessName + formattedAddress` (or `placeId` when present) and
- * pulls up to 500 reviews (default; overridable via `runInputs.maxReviews`
- * when triggered from the UI) + emails + social links + photos + Q&A.
+ * pulls 80 reviews by default (overridable via `runInputs.maxReviews`
+ * when triggered from the UI, capped at 200) + emails + social links +
+ * photos + Q&A. 80 clears the REVIEW_ANALYST corpus floor (30) with
+ * room to spare; 200 matches the Gemini-bound review cap there.
  *
  * Writes:
  *   - REVIEW_CHUNK rows (one per review, text = review body)
@@ -14,7 +16,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
-import { isConfigured, runSync } from "@/lib/apify";
+import { apifyQuotaSkipFor, isConfigured, runSync, type ApifyRunResult } from "@/lib/apify";
 import { getAgentRunsQueue } from "@/lib/queues";
 import type {
   AgentWorkerContext,
@@ -178,12 +180,14 @@ async function maybeEnqueueWebsiteReAudit(args: {
 }
 
 const ACTOR_ID = "compass/crawler-google-places";
-const DEFAULT_MAX_REVIEWS = 500;
+// Task 2: default 80, hard cap 200 (was 500 for both).
+export const DEFAULT_MAX_REVIEWS = 80;
+export const MAX_REVIEWS_CAP = 200;
 
 function resolveMaxReviews(ctx: AgentWorkerContext): number {
   const raw = ctx.runInputs?.maxReviews;
   if (typeof raw === "number" && Number.isFinite(raw)) {
-    return Math.max(1, Math.min(DEFAULT_MAX_REVIEWS, Math.floor(raw)));
+    return Math.max(1, Math.min(MAX_REVIEWS_CAP, Math.floor(raw)));
   }
   return DEFAULT_MAX_REVIEWS;
 }
@@ -314,7 +318,19 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     scrapeContacts: true,
   };
 
-  const result = await runSync<PlaceItem>(ACTOR_ID, input, { timeoutSec: 300 });
+  let result: ApifyRunResult<PlaceItem>;
+  try {
+    result = await runSync<PlaceItem>(ACTOR_ID, input, { timeoutSec: 300 });
+  } catch (err) {
+    // Task 2: an Apify plan/quota limit is not a lead failure. Leave the
+    // existing reviews untouched and let the run end SUCCEEDED.
+    const quota = apifyQuotaSkipFor(err);
+    if (quota) {
+      logger.warn("apify.gmaps_deep.quota_skipped", { leadId: lead.id, statusCode: quota.statusCode });
+      return { output: quota, costTokens: 0, costUsdCents: 0 };
+    }
+    throw err;
+  }
 
   const place = result.items[0];
   if (!place) {
