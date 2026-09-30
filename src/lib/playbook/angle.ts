@@ -44,19 +44,29 @@ export function absenceSignalsFromAudit(
 ): { noReservationSystem?: boolean; noOnlineOrdering?: boolean } {
   if (!audit || audit.reachable !== true) return {};
   const features = (audit.rawFeaturesJson ?? null) as {
-    hasQrMenu?: boolean;
+    hasQrMenu?: boolean | null;
+    hasOnlineOrdering?: boolean | null;
     hasOnlineReservation?: boolean;
     hasDeliveryIntegration?: boolean;
     menuUrl?: string | null;
   } | null;
   const hasDigitalMenu = !!(
-    features?.hasQrMenu ||
+    features?.hasQrMenu === true ||
     features?.hasDeliveryIntegration ||
     features?.menuUrl
   );
+  // Task 2: `hasOnlineOrdering` is tri-state on audits written after the
+  // extractor change. `null` = never saw the menu, so we do not claim
+  // "no online ordering". Older audits (field absent) keep the legacy
+  // heuristic.
+  const ordering = features?.hasOnlineOrdering;
+  const noOnlineOrdering =
+    ordering === undefined
+      ? !(hasDigitalMenu || audit.hasEcommerce)
+      : ordering === false && !hasDigitalMenu;
   return {
     noReservationSystem: !(features?.hasOnlineReservation || audit.hasBookingSystem),
-    noOnlineOrdering: !(hasDigitalMenu || audit.hasEcommerce),
+    noOnlineOrdering,
   };
 }
 

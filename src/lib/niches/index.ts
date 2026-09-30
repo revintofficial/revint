@@ -1488,8 +1488,9 @@ export function rankAllChildrenAll(
       switch (child.slug) {
         case "fnb-ghost-kitchen":
           // Delivery integration but NO reservation and NO QR menu →
-          // strong ghost-kitchen signal.
-          if (a.hasDeliveryIntegration && !a.hasOnlineReservation && !a.hasQrMenu) {
+          // strong ghost-kitchen signal. `hasQrMenu` is tri-state: only
+          // an observed `false` counts as "no QR menu" (null = unseen).
+          if (a.hasDeliveryIntegration && !a.hasOnlineReservation && a.hasQrMenu === false) {
             score += 0.2;
             reasons.push({ rule: "audit_delivery_only", weight: 0.2 });
           }
@@ -1520,7 +1521,7 @@ export function rankAllChildrenAll(
           // Order-ahead / QR menu without table-service signals. We
           // can't tell apart cafe vs QSR from audit alone, so this
           // bucket lifts both — name + priceLevel will break the tie.
-          if (a.hasQrMenu && !a.hasOnlineReservation) {
+          if (a.hasQrMenu === true && !a.hasOnlineReservation) {
             score += 0.1;
             reasons.push({ rule: "audit_quick_service", weight: 0.1 });
           }

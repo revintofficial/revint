@@ -174,6 +174,66 @@ const BOOKING_KEYWORDS = [
   "calendly", "acuity", "setmore", "timely", "opentable", "resy",
 ];
 
+// Task 2 — online ordering evidence. Only an actual link counts:
+//   • a delivery marketplace hostname (Deliveroo, Uber Eats, ...), or
+//   • the venue's own order / checkout / basket link.
+// The generic `hasEcommerce` flag ("shop now", Shopify, WooCommerce)
+// does NOT fill this field — a merch shop is not food ordering.
+const ORDERING_HOST_PATTERNS = [
+  "deliveroo",
+  "ubereats",
+  "uber-eats",
+  "just-eat",
+  "justeat",
+  "doordash",
+  "grubhub",
+  "wolt.com",
+  "foodpanda",
+  "talabat",
+  "yemeksepeti",
+  "getir",
+  "trendyolyemek",
+  "flipdish",
+  "gloriafood",
+  "slerp",
+  "order.store",
+];
+const ORDERING_PATH =
+  /(^|\/)(order|order-online|online-order|online-ordering|ordering|order-now|takeaway-order|checkout|basket|cart|siparis|online-siparis)(\/|$|\?|#|\.)/i;
+const ORDERING_TEXT =
+  /\b(order (online|now|here|food|takeaway|delivery|for (delivery|collection|pickup))|online order(ing)?|checkout|sipari[sş] ver|online sipari[sş])/i;
+
+function isOrderingLink(link: { text: string; href: string }, pageUrl: string): boolean {
+  const href = link.href || "";
+  const text = link.text || "";
+  let parsed: URL | null = null;
+  try {
+    parsed = new URL(href, pageUrl);
+  } catch {
+    parsed = null;
+  }
+  if (parsed && /^https?:$/.test(parsed.protocol)) {
+    const host = parsed.hostname.toLowerCase();
+    if (ORDERING_HOST_PATTERNS.some((p) => host.includes(p))) return true;
+    if (ORDERING_PATH.test(parsed.pathname)) return true;
+  }
+  return ORDERING_TEXT.test(text);
+}
+
+// A menu link means we actually saw the menu surface, so "no QR vendor"
+// / "no ordering link" becomes a real `false` instead of `null`.
+function isMenuLink(link: { text: string; href: string }, pageUrl: string): boolean {
+  if (/(^|[^\p{L}])(menu|menus|menü|food|drinks)($|[^\p{L}])/iu.test(link.text || "")) return true;
+  try {
+    const parsed = new URL(link.href || "", pageUrl);
+    return /(^|\/)(menu|menus|menü|our-menu|food-menu|food|drinks)(\/|$|\.|\?|#|-)/i.test(
+      decodeURIComponent(parsed.pathname),
+    );
+  } catch {
+    return false;
+  }
+}
+
 const ECOMMERCE_KEYWORDS = [
   "add to cart", "add to basket", "buy now", "shop now",
   "checkout", "shopping cart", "shopify", "woocommerce",
@@ -559,7 +619,12 @@ export function extractFeatures(html: string, url: string, businessType?: string
   // LONG patterns (≥8 char vendor names) match against the full HTML;
   // SHORT patterns (≤7 chars, frequent collisions) match only inside
   // an actual <a href> hostname. See QR_MENU_*_PATTERNS for rationale.
-  let hasQrMenu = false;
+  //
+  // Task 2 — tri-state. `null` = we never saw a menu surface, so we do
+  // not know. `false` = a menu link exists and no vendor matched.
+  // `true` = a vendor matched. Writing `false` for "unseen" produced
+  // "no QR menu, sell QR" on Dishoom and seven other venues.
+  let hasQrMenu: boolean | null = null;
   let detectedMenuTool: string | null = null;
   let menuUrl: string | null = null;
 
@@ -599,6 +664,16 @@ export function extractFeatures(html: string, url: string, businessType?: string
     }
   }
 
+  const sawMenuSurface = allLinks.some((l) => isMenuLink(l, url));
+  if (hasQrMenu === null && sawMenuSurface) hasQrMenu = false;
+
+  // Same three states for online ordering: a real ordering link →
+  // true; menu surface seen but no ordering link → false; otherwise
+  // unknown (null).
+  let hasOnlineOrdering: boolean | null = null;
+  if (allLinks.some((l) => isOrderingLink(l, url))) hasOnlineOrdering = true;
+  else if (sawMenuSurface) hasOnlineOrdering = false;
+
   // Booking provider + contact emails (used for outreach + segmentation).
   // We resolve `bookingProvider` BEFORE `hasOnlineReservation` so the
   // latter can reuse the same recognised-hostname signal — Path A of the
@@ -610,6 +685,10 @@ export function extractFeatures(html: string, url: string, businessType?: string
   // P0.5 - extended social profile scraping (IG, FB, LinkedIn, TikTok, YouTube, Twitter/X, WhatsApp, Pinterest)
   const socialProfiles = extractSocialProfiles({ html, links: linksForDetection });
 
+  // Task 2 — a recognised `bookingProvider` always means online
+  // reservation (first clause below); the head agent then excludes the
+  // reservation module for this venue.
+  //
   // Round 2 §3.4 — multi-signal `hasOnlineReservation`, symmetric with
   // `hasBookingSystemFinal` below. A recognised provider hostname OR
   // (JSON-LD reservation marker AND CTA link with a booking keyword)
@@ -654,6 +733,7 @@ export function extractFeatures(html: string, url: string, businessType?: string
     bookingProvider,
     socialProfiles,
     hasQrMenu,
+    hasOnlineOrdering,
     detectedMenuTool,
     menuUrl,
     hasOnlineReservation,

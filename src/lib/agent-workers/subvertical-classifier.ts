@@ -316,7 +316,8 @@ function buildClassifierSignals(ctx: AgentWorkerContext): ClassifierLeadSignals 
       ? {
           hasOnlineReservation: features?.hasOnlineReservation === true,
           hasDeliveryIntegration: features?.hasDeliveryIntegration === true,
-          hasQrMenu: features?.hasQrMenu === true,
+          // Tri-state: keep `null` (menu never seen) distinct from `false`.
+          hasQrMenu: typeof features?.hasQrMenu === "boolean" ? features.hasQrMenu : null,
         }
       : null,
   };
@@ -364,7 +365,7 @@ LEAD SIGNALS:
 - Booking provider on website: ${signals.bookingProvider ?? "(none)"}
 - Has online reservation: ${signals.audit?.hasOnlineReservation ?? "(audit not run)"}
 - Has delivery integration: ${signals.audit?.hasDeliveryIntegration ?? "(audit not run)"}
-- Has QR menu: ${signals.audit?.hasQrMenu ?? "(audit not run)"}
+- Has QR menu: ${signals.audit ? (signals.audit.hasQrMenu ?? "unknown (no menu link seen on the site)") : "(audit not run)"}
 
 Output JSON: { "slug": "<one of the candidate slugs or null>", "confidence": <0..1>, "reasoning": "<one short sentence>" }`;
 
