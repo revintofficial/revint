@@ -10,6 +10,7 @@ import { getNicheByQuery } from "@/lib/niches";
 import { checkRateLimit, LIMITS, rateLimitResponse } from "@/lib/ratelimit";
 import { logger } from "@/lib/logger";
 import { siteHost } from "@/lib/seo/metadata";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 // Gemini plan generation can take 20-40s inline.
 export const runtime = "nodejs";
@@ -128,7 +129,7 @@ export async function POST(
               percent: number;
               examples: string[];
             }>,
-            painPhrases: lead.reviewAnalysis.painPhrases as string[],
+            painPhrases: painPhraseTexts(lead.reviewAnalysis.painPhrases),
             strengthPhrases: lead.reviewAnalysis.strengthPhrases as string[],
             switchSignals: lead.reviewAnalysis.switchSignals as Array<{
               from: string;

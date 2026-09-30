@@ -30,6 +30,7 @@ import {
   type DossierSourcesPayload,
   type LeadDetailTab,
 } from "./source-registry";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 interface DossierSourceDrawerProps {
   tag: CanonicalTag | null;
@@ -362,7 +363,7 @@ function SalesOpportunityBody({ sources }: { sources: DossierSourcesPayload }) {
 function ReviewAnalysisBody({ sources }: { sources: DossierSourcesPayload }) {
   const r = sources.reviewAnalysis;
   if (!r) return <Empty>Reviews not analysed yet.</Empty>;
-  const pains = Array.isArray(r.painPhrases) ? (r.painPhrases as string[]) : [];
+  const pains = painPhraseTexts(r.painPhrases);
   const strengths = Array.isArray(r.strengthPhrases) ? (r.strengthPhrases as string[]) : [];
   const weaknessKpis = Array.isArray(r.weaknessKpis)
     ? (r.weaknessKpis as Array<{ label: string; percent: number }>)

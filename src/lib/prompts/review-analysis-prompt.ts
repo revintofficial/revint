@@ -24,7 +24,7 @@
  *     weaknessKpis: [{ label, count, percent, examples }],
  *     strengthKpis: [{ label, count, percent, examples }],
  *     sentimentBreakdown: { positive, neutral, negative },
- *     painPhrases: string[],         // 3-5 short pain phrases
+ *     painPhrases: [{ text, sellable }], // 3-5 short pain phrases (Task 2)
  *     strengthPhrases: string[],     // 3-5 short strength phrases
  *     switchSignals: [{ from, to, reason }],
  *     leadScore: number,             // 0-100
@@ -45,6 +45,8 @@
  *     filter in `review-analyst.ts` re-derives this once it knows the
  *     true pool size, so a Gemini hallucinated percent is overwritten.
  */
+
+import type { PainPhrase } from "@/lib/review-analysis/pain-phrases";
 
 export const REVIEW_ANALYSIS_SYSTEM_CONTEXT = `You are a professional Customer Insight analyst. You read Google Maps reviews of local service businesses and produce an actionable KPI-bar summary that a sales team can act on in seconds.
 
@@ -116,7 +118,9 @@ Schema:
     { "label": "<2-4 word praise label>", "count": <integer, how many DISTINCT reviews mention this>, "percent": <0-100 share of positive reviews>, "examples": ["<verbatim quote 1>", "<verbatim quote 2>"] }
   ],
   "sentimentBreakdown": { "positive": <0-1>, "neutral": <0-1>, "negative": <0-1> },
-  "painPhrases": ["<3-5 short pain phrases, in the customer's own voice>"],
+  "painPhrases": [
+    { "text": "<short pain phrase, in the customer's own voice>", "sellable": <true|false> }
+  ],
   "strengthPhrases": ["<3-5 short praise phrases>"],
   "switchSignals": [
     { "from": "<previous competitor / solution>", "to": "<this business>", "reason": "<why they switched>" }
@@ -135,6 +139,7 @@ Rules:
 - examples must be real verbatim quotes from the supplied reviews, each under 80 characters. Do NOT paraphrase or invent.
 - sentimentBreakdown values must sum to ~1.0 (minor rounding is fine).
 - switchSignals may be an empty array — do not force a pattern that is not there.
+- painPhrases: 3-5 items. "sellable" = true ONLY when the complaint is about operations a restaurant system can fix: waiting / queues / slow service, reservations or bookings, order mistakes or lost orders, paying or getting the bill. "sellable" = false for taste, food quality, portion size, food poisoning or illness, decor, noise, and anything about specific staff members' manners.
 - leadScore: if "{our_offer}" can plausibly address the complaints we see, score higher.
 - summary stays in the output language specified at the top of the prompt.
 
@@ -194,7 +199,8 @@ export interface ReviewAnalysisOutput {
   weaknessKpis: ReviewKpi[];
   strengthKpis: ReviewKpi[];
   sentimentBreakdown: { positive: number; neutral: number; negative: number };
-  painPhrases: string[];
+  /** Task 2: `{ text, sellable }`. Legacy rows may still hold bare strings. */
+  painPhrases: PainPhrase[];
   strengthPhrases: string[];
   switchSignals: Array<{ from: string; to: string; reason: string }>;
   leadScore: number;

@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
+import { toPainPhrases } from "@/lib/review-analysis/pain-phrases";
 import { getGeminiKey } from "@/lib/gemini-keys";
 import type { GeminiAnalysis, WebsiteFeatures, AuditChecklistResult } from "@/types";
 import { WEBSITE_PLAN_SYSTEM_CONTEXT, WEBSITE_PLAN_TEMPLATE } from "./prompts/website-plan-prompt";
@@ -845,7 +846,20 @@ export async function analyzeReviewsWithGemini(input: {
             },
             required: ["positive", "neutral", "negative"],
           },
-          painPhrases: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          // Task 2: each pain phrase carries `sellable` (can a
+          // restaurant-tech product sell against it?). The worker applies
+          // a deterministic guard on top (see review-analysis/pain-phrases).
+          painPhrases: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                text: { type: SchemaType.STRING },
+                sellable: { type: SchemaType.BOOLEAN },
+              },
+              required: ["text", "sellable"],
+            },
+          },
           strengthPhrases: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
           switchSignals: {
             type: SchemaType.ARRAY,
@@ -1020,7 +1034,8 @@ export async function analyzeReviewsWithGemini(input: {
   } else if (parsed.reviewsAnalyzedCount < 20) {
     parsed.weaknessKpis = parsed.weaknessKpis.slice(0, 1);
   }
-  parsed.painPhrases = (parsed.painPhrases || []).slice(0, 5);
+  // Accepts both the object shape and legacy bare strings.
+  parsed.painPhrases = toPainPhrases(parsed.painPhrases).slice(0, 5);
   parsed.strengthPhrases = (parsed.strengthPhrases || []).slice(0, 5);
   parsed.switchSignals = (parsed.switchSignals || []).slice(0, 3);
   parsed.leadScore = Math.max(0, Math.min(100, Math.round(parsed.leadScore)));

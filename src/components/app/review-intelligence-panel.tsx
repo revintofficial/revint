@@ -28,6 +28,7 @@ import {
   Download,
   AlertTriangle,
 } from "lucide-react";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 interface KpiBar {
   label: string;
@@ -492,7 +493,7 @@ export function ReviewIntelligencePanel({
           <div>
             <p className="text-[13px] font-medium text-white/60 mb-2">Most common pain phrases</p>
             <div className="flex flex-wrap gap-1.5">
-              {analysis.painPhrases.map((p) => (
+              {painPhraseTexts(analysis.painPhrases).map((p) => (
                 <Badge key={p} variant="destructive" className="text-xs font-normal">
                   {p}
                 </Badge>

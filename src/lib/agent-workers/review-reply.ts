@@ -25,6 +25,7 @@ import type {
   AgentWorkerOutput,
   AgentWorkerRun,
 } from "./types";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 // --- Artifact shape --------------------------------------------------
 
@@ -81,7 +82,7 @@ export const run: AgentWorkerRun = async (ctx) => {
     select: { authorName: true, rating: true, text: true },
   });
 
-  const painPhrases = toStringArray(review?.painPhrases);
+  const painPhrases = painPhraseTexts(review?.painPhrases);
   const strengthPhrases = toStringArray(review?.strengthPhrases);
 
   const promptInput: ReviewReplyPromptInput = {

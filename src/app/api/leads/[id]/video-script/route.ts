@@ -15,6 +15,7 @@ import { VIDEO_SCRIPT_PROMPT } from "@/lib/prompts/video-script-prompt";
 import { assertCanUseAi, recordAiUsed, QuotaExceededError } from "@/lib/quotas";
 import { internalError } from "@/lib/api-errors";
 import { siteHost } from "@/lib/seo/metadata";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 export async function POST(
   _request: Request,
@@ -61,7 +62,7 @@ export async function POST(
     const audit = lead.websiteAudit;
 
     const topPain =
-      ((ri?.painPhrases as string[] | undefined) || [])[0]
+      painPhraseTexts(ri?.painPhrases)[0]
       ?? ((lead.salesOpportunity?.likelyPainPoints as string[] | undefined) || [])[0]
       ?? "No online booking";
 

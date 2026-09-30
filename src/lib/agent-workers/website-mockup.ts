@@ -45,6 +45,7 @@ import { generateMockupSlug } from "@/lib/mockup";
 import { getVisualIdentityForLead, getNicheBySlug } from "@/lib/niches";
 import type { NicheImagery } from "@/lib/niches/theme";
 import type { AgentWorkerOutput, AgentWorkerRun } from "./types";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 // Bumped to v2 when the renderer learned niche-aware section labels
 // (kuyumcu → "Vitrinden teslime giden yol" instead of the historical
@@ -200,9 +201,7 @@ export const run: AgentWorkerRun = async (ctx) => {
     ? (audit.servicesDetected as unknown[]).filter(isString)
     : [];
 
-  const painPhrases = Array.isArray(review?.painPhrases)
-    ? (review.painPhrases as unknown[]).filter(isString)
-    : [];
+  const painPhrases = painPhraseTexts(review?.painPhrases);
   const strengthPhrases = Array.isArray(review?.strengthPhrases)
     ? (review.strengthPhrases as unknown[]).filter(isString)
     : [];
