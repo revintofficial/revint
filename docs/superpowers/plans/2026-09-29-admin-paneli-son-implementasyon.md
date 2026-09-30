@@ -326,7 +326,7 @@ Brief çıktısı: `briefMode: "head-agent"`, `headAgent.recommendedPackage`, `h
 
 Yapılacak: brief, head agent kararını yazarken aynı transaction içinde `SalesOpportunity` satırını da **tek yazar olarak** upsert eder — `recommendedPackage`, `bestSalesAngle` (kaçak), `leadScore` (`salesConfidence`), `reasonCodes` (Oda 1 kanıtı). İkinci bir model çağrısı yoktur; satır kararın projeksiyonudur. Test: brief koşusundan sonra `salesOpportunity.upsert` bir kez çağrılır ve `bestSalesAngle` karttaki kaçakla aynıdır. Bu kapanana kadar FineDine'a yeni lead verilmez.
 
-- [ ] **Step 1: Oda 1 testleri (model çağırmaz)**
+- [x] **Step 1: Oda 1 testleri (model çağırmaz)**
 
 ```ts
 it("picks growth and the reservation wedge when a marketplace holds the bookings", () => {
@@ -361,7 +361,7 @@ it("does not open a wedge from a taste complaint", () => {
 });
 ```
 
-- [ ] **Step 2: Brief testleri**
+- [x] **Step 2: Brief testleri**
 
 ```ts
 it("excludes reservation when a booking provider is already present", async () => {
@@ -395,11 +395,11 @@ it("writes a plain card when QA fails instead of falling back to the legacy brie
 });
 ```
 
-- [ ] **Step 3: Testler kırmızı**
+- [x] **Step 3: Testler kırmızı**
 
 Run: `npx vitest run src/__tests__/ai-core/head-agent-room-one.test.ts src/__tests__/agent-workers/lead-intelligence-brief-grounding.test.ts`
 
-- [ ] **Step 4: Uygula**
+- [x] **Step 4: Uygula**
 
 `head-agent.ts` — Oda 1 saf fonksiyon, model yok:
 
@@ -417,7 +417,7 @@ QA düşerse (paket üç isimden biri değil · konuşma kaçak dışındaki bir
 
 `decision.ts`: `toDecisionCard` `headAgent.wedge` ve `headAgent.roomOne` alanlarını okur, karta iki satır ekler.
 
-- [ ] **Step 5: Testler yeşil**
+- [x] **Step 5: Testler yeşil**
 
 Run: `npx vitest run src/__tests__/ai-core src/__tests__/agent-workers src/__tests__/control`
 
