@@ -51,7 +51,11 @@ describe("getControlOverview", () => {
     });
     expect(countQueue).toHaveBeenCalledWith("ws_1", now);
     expect(runCount).toHaveBeenNthCalledWith(1, { where: {
-      workspaceId: "ws_1", status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] }, finishedAt: { gte: new Date("2026-09-25T12:00:00Z") },
+      workspaceId: "ws_1",
+      workerKind: "LEAD_INTELLIGENCE_BRIEF",
+      outputJson: { path: ["briefMode"], equals: "head-agent" },
+      status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
+      finishedAt: { gte: new Date("2026-09-25T12:00:00Z") },
     } });
     expect(runCount).toHaveBeenNthCalledWith(2, { where: {
       workspaceId: "ws_1", status: "FAILED", finishedAt: { gte: new Date("2026-09-25T12:00:00Z") },
@@ -63,6 +67,19 @@ describe("getControlOverview", () => {
       where: { workspaceId: "ws_1", status: "SUCCEEDED", label: "taban" },
       orderBy: { createdAt: "desc" },
       select: { summaryJson: true, finishedAt: true },
+    });
+  });
+
+  it("counts only head-agent briefs as completed work", async () => {
+    await getControlOverview("ws_1", new Date("2026-09-29T12:00:00Z"));
+    expect(runCount).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        workspaceId: "ws_1",
+        workerKind: "LEAD_INTELLIGENCE_BRIEF",
+        outputJson: { path: ["briefMode"], equals: "head-agent" },
+        status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
+        finishedAt: { gte: new Date("2026-09-28T12:00:00Z") },
+      }),
     });
   });
 

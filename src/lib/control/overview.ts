@@ -31,6 +31,9 @@ export async function getControlOverview(workspaceId: string, now = new Date()):
     prisma.agentRun.count({
       where: {
         workspaceId,
+        workerKind: "LEAD_INTELLIGENCE_BRIEF",
+        // Only a head-agent brief counts as a finished analysis; skipped briefs carry no briefMode.
+        outputJson: { path: ["briefMode"], equals: "head-agent" },
         status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] },
         finishedAt: { gte: since24h },
       },
