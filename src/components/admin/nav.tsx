@@ -16,6 +16,7 @@ import {
   Aperture,
   ClipboardCheck,
   Fingerprint,
+  Scale,
   ShieldCheck,
   SlidersHorizontal,
   Star,
@@ -37,10 +38,11 @@ const NAV: Array<{ href: string; label: string; icon: React.ComponentType<{ clas
 const CONTROL_NAV: Array<{ href: string; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { href: "/admin/control", label: "Genel Bakış", icon: LayoutDashboard },
   { href: "/admin/control/reviews", label: "İnceleme", icon: ClipboardCheck },
+  { href: "/admin/control/uyum", label: "Uyum", icon: Scale },
   { href: "/admin/control/mercekler", label: "Mercekler", icon: Aperture },
   { href: "/admin/control/trace", label: "Vaka izi", icon: Fingerprint },
   { href: "/admin/control/golden", label: "Referans vakalar", icon: Star },
-  { href: "/admin/control/calibration", label: "Calibration", icon: SlidersHorizontal },
+  { href: "/admin/control/calibration", label: "Yayın", icon: SlidersHorizontal },
   { href: "/admin/control/audit", label: "Denetim", icon: ShieldCheck },
   { href: "/admin/control/rehber", label: "Nasıl çalışır", icon: ClipboardCheck },
 ];
