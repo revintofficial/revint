@@ -482,7 +482,7 @@ export async function POST(request: Request) {
     }
     logger.error("api.website_check.error", { err: error });
     return NextResponse.json(
-      { error: "Website check failed", details: String(error) },
+      { error: "Website check failed", ...(process.env.NODE_ENV !== "production" ? { details: String(error) } : {}) },
       { status: 500 }
     );
   }

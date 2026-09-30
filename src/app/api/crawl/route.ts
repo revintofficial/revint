@@ -111,7 +111,7 @@ export async function POST(request: Request) {
     }
     logger.error("api.crawl.error", { err: error });
     return NextResponse.json(
-      { error: "Crawl enqueue failed", details: String(error) },
+      { error: "Crawl enqueue failed", ...(process.env.NODE_ENV !== "production" ? { details: String(error) } : {}) },
       { status: 500 },
     );
   }

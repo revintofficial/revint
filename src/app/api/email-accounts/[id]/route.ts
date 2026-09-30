@@ -7,6 +7,31 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 
+/** Public shape: never return OAuth tokens to the client. */
+const PUBLIC_SELECT = {
+  id: true,
+  workspaceId: true,
+  userId: true,
+  provider: true,
+  email: true,
+  expiresAt: true,
+  dailyLimit: true,
+  sentToday: true,
+  resetAt: true,
+  replyAttributionEnabled: true,
+  lastInboxSyncAt: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+/** Only the mailbox owner or a workspace OWNER/ADMIN may change or remove it. */
+function canManage(
+  session: { user: { id: string }; role: string },
+  account: { userId: string },
+): boolean {
+  return account.userId === session.user.id || session.role === "OWNER" || session.role === "ADMIN";
+}
+
 interface PatchBody {
   replyAttributionEnabled?: boolean;
   dailyLimit?: number;
@@ -23,10 +48,13 @@ export async function PATCH(
 
     const account = await prisma.emailAccount.findFirst({
       where: { id, workspaceId: session.workspaceId },
-      select: { id: true },
+      select: { id: true, userId: true },
     });
     if (!account) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (!canManage(session, account)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const data: PatchBody = {};
@@ -40,7 +68,11 @@ export async function PATCH(
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
 
-    const updated = await prisma.emailAccount.update({ where: { id }, data });
+    const updated = await prisma.emailAccount.update({
+      where: { id },
+      data,
+      select: PUBLIC_SELECT,
+    });
     return NextResponse.json(updated);
   } catch (err) {
     if (err instanceof UnauthorizedError) {
@@ -60,10 +92,13 @@ export async function DELETE(
     const { id } = await params;
     const account = await prisma.emailAccount.findFirst({
       where: { id, workspaceId: session.workspaceId },
-      select: { id: true },
+      select: { id: true, userId: true },
     });
     if (!account) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (!canManage(session, account)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     await prisma.emailAccount.delete({ where: { id } });
     return NextResponse.json({ ok: true });

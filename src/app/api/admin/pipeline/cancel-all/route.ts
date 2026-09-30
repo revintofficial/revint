@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser, UnauthorizedError } from "@/lib/auth";
+import { ForbiddenError, requireWorkspaceAdminApi, UnauthorizedError } from "@/lib/auth";
 import { internalError } from "@/lib/api-errors";
 import {
   removeWorkspaceJobsFromPipelineQueues,
@@ -35,7 +35,8 @@ export const dynamic = "force-dynamic";
  */
 export async function POST() {
   try {
-    const { workspaceId } = await requireUser();
+    // Destroys every in-flight run in the workspace: OWNER/ADMIN only.
+    const { workspaceId } = await requireWorkspaceAdminApi();
 
     const now = new Date();
 
@@ -92,6 +93,9 @@ export async function POST() {
   } catch (err) {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (err instanceof ForbiddenError) {
+      return NextResponse.json({ error: err.message }, { status: 403 });
     }
     return internalError("api.admin.pipeline.cancel_all.error", err);
   }

@@ -19,8 +19,9 @@
  * Auth model: this is **NOT** a customer-facing endpoint. It uses a
  * HubSpot Developer Account API key (or app-level access token) tied to
  * Revint's developer account, not a customer's OAuth connection. The
- * route is gated by Revint admin auth (`requireWorkspaceAdminApi`) so a
- * customer can never invoke it.
+ * route is gated by Revint platform-admin auth (`requireAdminEmail`, the
+ * same check as /api/admin/**). Workspace OWNER/ADMIN is NOT enough:
+ * every signed-up user owns a personal workspace.
  *
  * Body:
  *   {
@@ -31,11 +32,8 @@
  */
 import { NextResponse } from "next/server";
 
-import {
-  requireWorkspaceAdminApi,
-  UnauthorizedError,
-  ForbiddenError,
-} from "@/lib/auth";
+import { UnauthorizedError, ForbiddenError } from "@/lib/auth";
+import { requireAdminEmail } from "@/lib/admin-auth";
 import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
@@ -48,7 +46,7 @@ interface MigratePayload {
 
 export async function POST(request: Request) {
   try {
-    await requireWorkspaceAdminApi();
+    await requireAdminEmail();
 
     const devKey = process.env.HUBSPOT_DEVELOPER_API_KEY;
     if (!devKey) {
@@ -70,7 +68,9 @@ export async function POST(request: Request) {
     }
 
     if (
-      !body.appId ||
+      !Number.isInteger(body.appId) ||
+      body.appId <= 0 ||
+      typeof body.legacyCrmCardId !== "string" ||
       !body.legacyCrmCardId ||
       !Array.isArray(body.appCardIds) ||
       body.appCardIds.length === 0
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const url = `https://api.hubapi.com/crm/v3/extensions/cards-dev/${body.appId}/views/migrate?hapikey=${encodeURIComponent(devKey)}`;
+    const url = `https://api.hubapi.com/crm/v3/extensions/cards-dev/${encodeURIComponent(String(body.appId))}/views/migrate?hapikey=${encodeURIComponent(devKey)}`;
 
     const res = await fetch(url, {
       method: "POST",

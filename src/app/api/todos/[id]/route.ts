@@ -46,7 +46,7 @@ export async function PATCH(
     }
     logger.error("api.todos.update_error", { err: error });
     return NextResponse.json(
-      { error: "Failed to update todo", details: String(error) },
+      { error: "Failed to update todo", ...(process.env.NODE_ENV !== "production" ? { details: String(error) } : {}) },
       { status: 500 }
     );
   }
@@ -75,7 +75,7 @@ export async function DELETE(
     }
     logger.error("api.todos.delete_error", { err: error });
     return NextResponse.json(
-      { error: "Failed to delete todo", details: String(error) },
+      { error: "Failed to delete todo", ...(process.env.NODE_ENV !== "production" ? { details: String(error) } : {}) },
       { status: 500 }
     );
   }
