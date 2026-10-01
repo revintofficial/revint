@@ -87,3 +87,4 @@ tmp-artifacts/
 .control-tests.txt
 .control-typecheck.txt
 prisma/control-generate.prisma
+.claude/

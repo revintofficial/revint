@@ -24,6 +24,8 @@ export default defineConfig({
       "**/node_modules/**",
       "**/dist/**",
       "**/.next/**",
+      ".claude/**",
+      ".codex/**",
       "src/__tests__/**/*.integration.test.ts",
     ],
 
