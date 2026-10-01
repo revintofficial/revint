@@ -61,7 +61,8 @@ export function runAuditChecklist(
       hasHSTS: false,
       hasXXSSProtection: false,
       hasPermissionsPolicy: false,
-      ...features.securityHeaders,
+      // Typed as required, but partial audits can omit it at runtime.
+      ...((features.securityHeaders as Partial<typeof features.securityHeaders> | undefined) ?? {}),
     },
   };
 
