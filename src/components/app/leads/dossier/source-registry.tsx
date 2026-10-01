@@ -705,8 +705,8 @@ export function buildPreviewMetrics(
       case "review_analysis": {
         const r = sources.reviewAnalysis;
         if (!r) return { metrics: [{ label: "Status", value: "Not analysed yet" }], loading: false, missing: true };
-        const m: KeyMetric[] = [{ label: "Lead score", value: `${r.leadScore}/100` }];
-        m.push({ label: "Reviews used", value: String(r.reviewsAnalyzedCount) });
+        // ReviewAnalysis.leadScore is always 0 now (the brief owns the score); not shown.
+        const m: KeyMetric[] = [{ label: "Reviews used", value: String(r.reviewsAnalyzedCount) }];
         const first = painPhraseTexts(r.painPhrases)[0];
         if (first) m.push({ label: "Top pain", value: first });
         return {

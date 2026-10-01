@@ -1022,7 +1022,6 @@ function HeroFitSummary({ lead }: { lead: LeadDetail }) {
 function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
   const opp = lead.salesOpportunity;
   const audit = lead.websiteAudit;
-  const ra = lead.reviewAnalysis;
   const raw = audit?.rawFeaturesJson;
 
   const rawReasonCodes = Array.from(
@@ -1061,7 +1060,7 @@ function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
     filteredReasonCodes.length > 0 ||
     slowLabel != null ||
     wedges.length > 0 ||
-    ra != null;
+    lead.salesConfidence != null;
 
   if (!showStrip) return null;
 
@@ -1077,13 +1076,15 @@ function HeroPriorityStrip({ lead }: { lead: LeadDetail }) {
             Package: {opp.recommendedPackage.name}
           </Badge>
         )}
-        {ra != null && (
+        {/* ReviewAnalysis.leadScore is always 0 since the head-agent brief owns the
+            score; show the brief's package-fit score (Lead.salesConfidence) instead. */}
+        {lead.salesConfidence != null && (
           <Badge
             variant="outline"
             className="text-[11px] font-normal border-white/10 bg-white/5"
-            title="Sub-score from review analysis only. Sales Fit (hero score) is the rolled-up metric."
+            title="Paket uyumu puanı (brief). Yorum analizi artık puan üretmiyor."
           >
-            Review sub-score {ra.leadScore}/100
+            ICP uyumu {lead.salesConfidence}/100
           </Badge>
         )}
         {slowLabel && (

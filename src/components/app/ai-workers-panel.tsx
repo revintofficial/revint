@@ -818,7 +818,7 @@ function extractRunSummary(output: unknown): Array<{ label: string; value: strin
   if (typeof o.costUsdCents === "number") {
     push("cost", `$${(o.costUsdCents / 100).toFixed(4)}`);
   }
-  if (typeof o.leadScore === "number") push("leadScore", String(o.leadScore));
+  // leadScore is no longer a REVIEW_ANALYST output (always 0 on the row); not shown.
   if (typeof o.summary === "string") {
     push("summary", o.summary.length > 240 ? `${o.summary.slice(0, 240)}...` : o.summary);
   }

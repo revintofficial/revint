@@ -1,22 +1,14 @@
 import type { ReviewLens } from "@/generated/prisma/client";
 import { moduleLabel, type DecisionCard } from "@/lib/control/decision";
-import { formatControlDate } from "@/lib/control/labels";
-import { LENS_QUESTION, technicalSourceLines, lensDecisionRows, type SourceCrm, type SourceRun } from "@/lib/control/lens-card";
-export function DecisionCardView({ decision: d, lens = null, runs = [], crm = [] }: { decision: DecisionCard; lens?: ReviewLens | null; runs?: SourceRun[]; crm?: SourceCrm[] }) {
+import { formatControlDate, packageText, wedgeLabel } from "@/lib/control/labels";
+import { LENS_QUESTION, lensDecisionRows } from "@/lib/control/lens-card";
+export function DecisionCardView({ decision: d, lens = null }: { decision: DecisionCard; lens?: ReviewLens | null }) {
  if (lens) {
   const rows = lensDecisionRows(d, lens);
-  const sources = lens === "TECHNICAL" ? technicalSourceLines(runs, crm) : [];
   return (
    <div className="space-y-3">
     <p className="text-sm text-[var(--revint-text-2)]">{LENS_QUESTION[lens]}</p>
     <dl className="grid gap-3 sm:grid-cols-2">{rows.map((row) => <div key={row.label}><dt className="text-xs uppercase tracking-wider text-[var(--revint-text-3)]">{row.label}</dt><dd className="whitespace-pre-wrap text-sm text-[var(--revint-text-1)]">{row.value}</dd></div>)}</dl>
-    {sources.length > 0 && (
-     <ul className="space-y-2">
-      {sources.map((line, index) => (
-       <li key={`${line.group}-${index}`} className="text-sm text-[var(--revint-text-1)]"><span className="text-[var(--revint-text-3)]">{line.group}</span> · {line.value}</li>
-      ))}
-     </ul>
-    )}
    </div>
   );
  }
@@ -28,7 +20,8 @@ export function DecisionCardView({ decision: d, lens = null, runs = [], crm = []
    ["Birincil modül", d.primaryModule ? moduleLabel(d.primaryModule) : "Birincil yok"],
    ["Modüller (öncelik sırası)", d.recommendedModules.map((m,i) => `${i+1}. ${moduleLabel(m)}`).join(" · ") || "Modül yok"],
    ["Açı", d.primaryAngle ?? "Açı yok"], ["Konuşma", d.talkTrack ?? "Konuşma yok"],
-   ["Paket", d.recommendedPackage ?? "Paket yok"],
+   ["Paket", d.recommendedPackage ? packageText(d.recommendedPackage) : "Paket yok"],
+   ["Kaçak", d.wedge ? wedgeLabel(d.wedge) : "Kaçak yok"],
    ["Hariç tutulanlar", d.excludedModules.map(m => `${moduleLabel(m.module)}: ${m.why}`).join(" · ") || "Hariç yok"],
    ["İddialar", d.claimSentences.join(" · ") || "İddia yok"],
    ["Kanıt", d.evidenceRefs.join(" · ") || "Kanıt yok"],

@@ -24,6 +24,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LeadFeedback } from "@/components/app/lead-feedback";
+import { packageText, wedgeLabel } from "@/lib/control/labels";
 
 interface ModuleRec {
   module: string;
@@ -43,11 +45,13 @@ interface HeadAgentDecision {
   recommendedModules: ModuleRec[];
   excludedModules: { module: string; why: string }[];
   recommendedPackage?: string | null;
+  /** Head-agent briefs (briefMode "head-agent"): Room 1 wedge id. */
+  wedge?: string | null;
   confidence: number;
   sourceConflicts: Conflict[];
   reasoning: string;
   evidenceRefs: string[];
-  model: string;
+  model: string | null;
   usageTokens: number;
   generatedAt: string;
 }
@@ -76,6 +80,9 @@ function confidenceTone(c: number): string {
 export default function AccountIntelligenceBriefCard({ id }: { id: string }) {
   const [decision, setDecision] = useState<HeadAgentDecision | null>(null);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [headAgentMode, setHeadAgentMode] = useState(false);
+  // Only a SUCCEEDED head-agent brief run takes SDR feedback.
+  const [feedbackRunId, setFeedbackRunId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -89,6 +96,9 @@ export default function AccountIntelligenceBriefCard({ id }: { id: string }) {
         if (alive && ha && typeof ha === "object") {
           setDecision(ha);
           setGeneratedAt(typeof json?.brief?.generatedAt === "string" ? json.brief.generatedAt : null);
+          const isHeadAgent = json?.brief?.briefMode === "head-agent";
+          setHeadAgentMode(isHeadAgent);
+          setFeedbackRunId(isHeadAgent && json?.runStatus === "SUCCEEDED" && typeof json?.runId === "string" ? json.runId : null);
         }
       } catch {
         // Silent — this card is additive; a fetch failure just hides it.
@@ -114,6 +124,7 @@ export default function AccountIntelligenceBriefCard({ id }: { id: string }) {
   };
 
   return (
+    <div className="space-y-3">
     <Card className="border-(--revint-border)">
       <CardHeader className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -166,23 +177,48 @@ export default function AccountIntelligenceBriefCard({ id }: { id: string }) {
               {copied ? "Copied!" : "Copy"}
             </Button>
           </div>
-          {decision.talkTrack && (
+          {decision.talkTrack ? (
             <p className="text-[13px] leading-relaxed text-white/70">{decision.talkTrack}</p>
-          )}
+          ) : headAgentMode ? (
+            <p className="text-[12px] leading-relaxed text-white/40">Konuşma yazılmadı; paket ve kaçak kanıta dayanıyor, konuşmayı sen kur.</p>
+          ) : null}
           {decision.reasoning && (
             <p className="text-[12px] leading-relaxed text-white/40 pt-1 border-t border-white/5">
               {decision.reasoning}
             </p>
           )}
-          {decision.recommendedPackage && (
+          {headAgentMode ? (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-[11px] uppercase tracking-wide text-white/40">Paket</span>
+              <Badge variant="outline" className="text-[11px] text-(--revint-500) border-(--revint-500)/40">
+                {decision.recommendedPackage ? packageText(decision.recommendedPackage) : "Paket yok"}
+              </Badge>
+              <span className="text-[11px] uppercase tracking-wide text-white/40">Kaçak</span>
+              <Badge variant="outline" className="text-[11px] text-(--revint-500) border-(--revint-500)/40">
+                {decision.wedge ? wedgeLabel(decision.wedge) : "Kaçak yok"}
+              </Badge>
+            </div>
+          ) : decision.recommendedPackage ? (
             <div className="flex items-center gap-2 pt-1">
               <span className="text-[11px] uppercase tracking-wide text-white/40">Package</span>
               <Badge variant="outline" className="text-[11px] text-(--revint-500) border-(--revint-500)/40">
                 {decision.recommendedPackage}
               </Badge>
             </div>
-          )}
+          ) : null}
         </div>
+
+        {/* Head-agent evidence lines (Room 1): what the package and wedge stand on. */}
+        {headAgentMode && decision.evidenceRefs.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-white/40">Kanıt</p>
+            <ul className="space-y-1.5">
+              {decision.evidenceRefs.map((ref, i) => (
+                <li key={i} className="text-[12px] leading-relaxed text-white/60 break-words">{ref}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Recommended modules */}
         {decision.recommendedModules.length > 0 && (
@@ -266,13 +302,15 @@ export default function AccountIntelligenceBriefCard({ id }: { id: string }) {
 
         {/* Footer */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-[11px] text-white/30 border-t border-white/5">
-          <span>{decision.model}</span>
+          {decision.model && <span>{decision.model}</span>}
           {generatedAt && <span>· {new Date(generatedAt).toLocaleString()}</span>}
-          {decision.evidenceRefs.length > 0 && (
+          {!headAgentMode && decision.evidenceRefs.length > 0 && (
             <span className="truncate">· evidence: {decision.evidenceRefs.join(", ")}</span>
           )}
         </div>
       </CardContent>
     </Card>
+    {feedbackRunId && <LeadFeedback leadId={id} agentRunId={feedbackRunId} />}
+    </div>
   );
 }

@@ -247,6 +247,11 @@ export function packageLabel(value: string): string {
   return PACKAGE[value] ?? "Bilinmeyen paket";
 }
 
+/** Plan label for a Room 1 plan id; a legacy catalog name ("FineDine Growth") is shown as written. */
+export function packageText(value: string): string {
+  return PACKAGE[value] ?? value;
+}
+
 export function wedgeLabel(value: string): string {
   return WEDGE[value] ?? "Bilinmeyen kaçak";
 }

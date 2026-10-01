@@ -16,7 +16,6 @@ import { BETA_SCOPE } from "@/lib/beta-scope";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CircularProgress } from "@/components/ui/progress";
 import {
   Sparkles,
   TrendingDown,
@@ -332,7 +331,6 @@ export function ReviewIntelligencePanel({
             {totalReviewCount > storedReviewCount && totalReviewCount > 0
               ? ` · ${totalReviewCount - storedReviewCount} more on Google Maps`
               : ""}
-            {" "}· Lead Score {analysis.leadScore}/100
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -392,19 +390,8 @@ export function ReviewIntelligencePanel({
           </div>
         )}
 
-        <div className="flex items-center gap-4">
-          <CircularProgress value={analysis.leadScore} size={56} strokeWidth={5} />
-          <div className="flex-1">
-            <p className="text-[13px] font-medium text-white/50 mb-1">Lead Score</p>
-            <p className="text-xs text-white/40">
-              {analysis.leadScore >= 70
-                ? "Hot prospect — our solution maps directly onto their problem"
-                : analysis.leadScore >= 40
-                ? "Warm — a few pain points we can address"
-                : "Cold — our solution doesn't directly address their problem"}
-            </p>
-          </div>
-        </div>
+        {/* No lead score here: ReviewAnalysis.leadScore is always 0 now; the
+            package-fit score (ICP uyumu) comes from the head-agent brief. */}
 
         <SentimentBar breakdown={analysis.sentimentBreakdown} />
 

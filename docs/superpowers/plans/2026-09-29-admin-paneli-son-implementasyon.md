@@ -539,7 +539,7 @@ Mercek sırası: `TECHNICAL` → `map, site, reviews, decision`. `DOMAIN` → `s
 - **Kimlik:** alıntı bu işletmenin yorumudur.
 - **Tür:** konuşma öneridir, site bulgusu gözlemdir. İkisi aynı cümlede erimez.
 
-- [ ] **Step 1: Testler**
+- [x] **Step 1: Testler** _(D, `src/__tests__/control/evidence-shelf.test.ts`)_
 
 ```ts
 it("puts the percentage next to the sample size", () => {
@@ -578,11 +578,11 @@ it("orders drawers by lens", () => {
 });
 ```
 
-- [ ] **Step 2: Kırmızı**
+- [x] **Step 2: Kırmızı**
 
 Run: `npx vitest run src/__tests__/control/evidence-shelf.test.ts`
 
-- [ ] **Step 3: Uygula**
+- [x] **Step 3: Uygula** _(D, `prod/d-review-ui`)_
 
 `evidence-shelf.ts` saf fonksiyondur, Prisma görmez. Sayfa worker `outputJson` değerlerini ona verir. `reviews/page.tsx` bugün yalnızca brief koşusunu taşıyor; dört kind'in en yeni başarılı koşusunu taşıyacak hale gelir (`workspaceId` scope korunur).
 
@@ -590,7 +590,7 @@ Run: `npx vitest run src/__tests__/control/evidence-shelf.test.ts`
 
 `lens-card.ts` içindeki `technicalSourceLines` silinir. Süre ve dolar Vaka izi'nde kalır.
 
-- [ ] **Step 4: Yeşil, commit**
+- [x] **Step 4: Yeşil, commit** _(D, `prod/d-review-ui`)_
 
 ```bash
 git commit -am "feat(control): review card shows each worker claim next to its evidence"
@@ -653,7 +653,7 @@ it("gives every error class an include rule, an exclude rule, and two examples",
 });
 ```
 
-- [x] **Step 2: Kırmızı, sonra uygula** _(servis katmanı + şema + rota, C1; kart ve sayfa: D)_
+- [x] **Step 2: Kırmızı, sonra uygula** _(servis katmanı + şema + rota, C1; kart ve sayfa: D, `prod/d-review-ui` — `buildReviewView`, rubrik sürümü kartta, rubrik giriş/dışlama kuralı sınıf seçeneğinin yanında, `reviewSeconds`)_
 
 `buildReviewView` yeni bir okuma fonksiyonudur: oturum sahibinin merceği bu `agentRunId` için hüküm yazmadıysa `priorReviews` **boş** döner, yalnızca eksik mercek adları döner ("Teknik ve Alan bakmadı."). Hüküm yazıldıktan sonra diğer ikisi görünür. Bu, hem bağımsızlığı korur hem de uzlaştırma konuşmasını mümkün kılar.
 
@@ -711,7 +711,7 @@ it("rejects an unknown package or wedge in expected rules", () => {
 it("still applies the module rule when allowedModules is set", () => { /* mevcut test durur */ });
 ```
 
-- [x] **Step 2: Kırmızı, uygula** _(score.ts, labels.ts, `POST /api/admin/control/golden/preview`, C1; promote formu: D)_
+- [x] **Step 2: Kırmızı, uygula** _(score.ts, labels.ts, `POST /api/admin/control/golden/preview`, C1; promote formu: D, `prod/d-review-ui` — sunucu önizlemesi, ifade listesi, JSON yok)_
 
 `parseExpected` iki yeni alanı kapalı kümeden doğrular. `scoreOutput` kartın `recommendedPackage` ve `wedge` alanlarını okur. `expectedPackage` dolu ve kart boşsa `PACKAGE` kalır. `allowedModules` kuralı olduğu gibi durur — ikincil sinyal.
 
@@ -989,7 +989,7 @@ it("keeps SDR rows out of the agreement report", async () => {
 });
 ```
 
-- [x] **Step 2: Kırmızı, uygula** _(sdr-feedback.ts, rota, triyaj, C1; düğme ve rozet: D)_
+- [x] **Step 2: Kırmızı, uygula** _(sdr-feedback.ts, rota, triyaj, C1; düğme ve rozet: D, `prod/d-review-ui` — `lead-feedback.tsx` brief kartının altında, kuyrukta `sdrFlagLabel` rozeti)_
 
 Ürün yüzeyi (`lead-feedback.tsx`): brief kartının altında tek satır. İki düğme — **"Bu brief'i kullandım"** ve **"Kullanmadım"**. İkincisi seçilince altı seçenekli tek bir liste açılır. Not alanı opsiyoneldir ve "istersen tek cümle" yazar. Puan yok, yıldız yok, rubrik yok, kontrol paneline link yok.
 
@@ -1044,6 +1044,8 @@ Tüm suite: 149 dosya, 1179 geçen, 28 kalan (hepsi önceden kırık).
 
 Step 3'teki kanıt rafı testleri Task 5 ile birlikte yazılır; ortam
 düzeltmesi onları beklemez.
+
+_D, `prod/d-review-ui`:_ dört çekmece Satış sırasında, kendi hükmünden önce önceki hüküm yok, rubrik sürümü kartta — üçü de `review-ui.test.tsx` içinde. Test dosyası `@testing-library/jest-dom/vitest`'i kendisi de kaydeder ("Invalid Chai property" hatasına karşı).
 
 - [x] **Step 5: Commit**
 
