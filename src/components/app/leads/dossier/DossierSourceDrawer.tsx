@@ -371,7 +371,6 @@ function ReviewAnalysisBody({ sources }: { sources: DossierSourcesPayload }) {
   return (
     <>
       <Section title="Headline">
-        <Field label="Lead score" value={`${r.leadScore}/100`} />
         <Field label="Reviews analysed" value={String(r.reviewsAnalyzedCount)} />
         {r.summary && (
           <p className="text-[12.5px] text-white/75 leading-snug pt-2 italic">{r.summary}</p>
