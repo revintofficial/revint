@@ -32,6 +32,7 @@ import {
 import { assertWorkerQuota } from "./quota";
 import { RetryableError } from "./errors";
 import { EmbeddingError } from "@/lib/ai-core/embed";
+import { apifyQuotaSkipFor } from "@/lib/apify";
 import { getAppBaseUrl } from "@/lib/email/from";
 import type {
   AgentWorkerContext,
@@ -337,6 +338,36 @@ export async function executeAgentRun(
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+
+    // Task 2: an Apify plan / quota limit (402, or 403 with a quota type)
+    // is not a lead failure. Any Apify worker that lets it escape ends
+    // SUCCEEDED with `{ skipped: "apify_quota", statusCode }` so the chain
+    // advances and the admin trace shows why the step is empty.
+    const apifyQuota = apifyQuotaSkipFor(err);
+    if (apifyQuota) {
+      logger.warn("agent_run.execute.apify_quota_skipped", {
+        runId,
+        kind: run.workerKind,
+        statusCode: apifyQuota.statusCode,
+      });
+      const finishedAt = new Date();
+      const updated = await prisma.agentRun.update({
+        where: { id: runId, workspaceId: run.workspaceId },
+        data: {
+          status: "SUCCEEDED",
+          finishedAt,
+          outputJson: apifyQuota as never,
+          costTokens: 0,
+          costUsdCents: 0,
+          errorMsg: null,
+        },
+      });
+      await safeRecordChainTelemetry(run, updated, { startedAt, finishedAt, status: "SUCCEEDED", costTokens: 0, costUsdCents: 0 });
+      if (run.plannerSessionId) {
+        await safeNotifyOrchestrator(run.plannerSessionId, runId);
+      }
+      return;
+    }
 
     if (err instanceof RetryableError) {
       // Mark the run FAILED for observability, but rethrow so BullMQ can

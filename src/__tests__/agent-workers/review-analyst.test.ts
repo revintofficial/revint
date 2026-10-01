@@ -16,9 +16,9 @@
  *     ReviewAnalysisOutput, each element `{label, percent, examples}` -
  *     NOT `kpiBar` / `topComplaints` as the spec implied. Tests assert
  *     the real shape.
- *   - The worker calls `prisma.lead.findUniqueOrThrow` with the
+ *   - The worker calls `prisma.lead.findFirstOrThrow` with the
  *     googleReviews relation eagerly included; it does NOT call
- *     `prisma.googleReview.findMany`. We mock findUniqueOrThrow.
+ *     `prisma.googleReview.findMany`. We mock findFirstOrThrow.
  *   - The worker delegates the Gemini call to analyzeReviewsWithGemini
  *     (@/lib/gemini), so we mock that helper instead of the raw Gemini
  *     SDK.
@@ -37,11 +37,12 @@ vi.mock("@/lib/gemini", () => ({
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
     lead: {
-      update: vi.fn().mockResolvedValue({}),
-      findUniqueOrThrow: vi.fn(),
+      updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      findFirstOrThrow: vi.fn(),
     },
     reviewAnalysis: {
       upsert: vi.fn().mockResolvedValue({}),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
   },
 }));
@@ -68,8 +69,22 @@ function makeReview(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/**
+ * Task 2: REVIEW_ANALYST skips corpora under 30 reviews. Pad the seeded
+ * reviews with neutral 3-star filler so the pools (rating <= 2 / >= 4)
+ * and grounding behave exactly as the fixtures below intend.
+ */
+function padCorpus<T extends { googleReviews?: unknown }>(row: T): T {
+  const reviews = row.googleReviews;
+  if (!Array.isArray(reviews) || reviews.length === 0 || reviews.length >= 30) return row;
+  const filler = Array.from({ length: 30 - reviews.length }, (_, i) =>
+    makeReview({ rating: 3, text: `neutral filler visit ${i}`, authorName: `Filler${i}` }),
+  );
+  return { ...row, googleReviews: [...reviews, ...filler] };
+}
+
 function makeLeadRow(overrides: Record<string, unknown> = {}) {
-  return {
+  return padCorpus({
     id: "lead_1",
     workspaceId: "ws_1",
     businessName: "Acme HVAC",
@@ -106,7 +121,7 @@ function makeLeadRow(overrides: Record<string, unknown> = {}) {
       }),
     ],
     ...overrides,
-  };
+  });
 }
 
 function makeCtx(overrides: Partial<AgentWorkerContext> = {}): AgentWorkerContext {
@@ -143,8 +158,8 @@ function makeCtx(overrides: Partial<AgentWorkerContext> = {}): AgentWorkerContex
 
 beforeEach(() => {
   analyzeReviewsWithGeminiMock.mockReset();
-  prismaMock.lead.update.mockReset().mockResolvedValue({});
-  prismaMock.lead.findUniqueOrThrow.mockReset();
+  prismaMock.lead.updateMany.mockReset().mockResolvedValue({ count: 1 });
+  prismaMock.lead.findFirstOrThrow.mockReset();
   prismaMock.reviewAnalysis.upsert.mockReset().mockResolvedValue({});
 });
 
@@ -157,7 +172,7 @@ describe("REVIEW_ANALYST - happy path", () => {
     // verbatim so the grounding gate passes too. Each example is also
     // ≥4 tokens long (tiny-example floor) and adds ≥2 tokens of context
     // beyond the label (label-echo floor).
-    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(
+    prismaMock.lead.findFirstOrThrow.mockResolvedValue(
       makeLeadRow({
         googleReviews: [
           makeReview({
@@ -246,7 +261,8 @@ describe("REVIEW_ANALYST - happy path", () => {
     const upsertArgs = prismaMock.reviewAnalysis.upsert.mock.calls[0][0];
     expect(upsertArgs.where).toEqual({ leadId: "lead_1" });
     expect(upsertArgs.create.reviewsAnalyzedCount).toBe(8);
-    expect(upsertArgs.create.leadScore).toBe(72);
+    // Task 2: the 0-100 opportunity score is the brief's job, not this worker's.
+    expect(upsertArgs.create.leadScore).toBe(0);
     expect(upsertArgs.create.summary).toBe("Mixed but improving");
     expect(Array.isArray(upsertArgs.create.weaknessKpis)).toBe(true);
     // Round 2 §3.10/§3.11 — KPI carries `count`; `percent` is
@@ -260,20 +276,20 @@ describe("REVIEW_ANALYST - happy path", () => {
     expect(upsertArgs.create.weaknessKpis[0].examples.length).toBeGreaterThanOrEqual(2);
 
     const out = result.output as {
-      leadScore: number;
-      painPhrases: string[];
+      leadScore?: number;
+      painPhrases: Array<{ text: string; sellable: boolean | null }>;
       strengthPhrases: string[];
       summary: string;
       reviewsAnalyzedCount: number;
     };
-    expect(out.leadScore).toBe(72);
-    expect(out.painPhrases).toEqual(["slow response times"]);
+    expect(out.leadScore).toBeUndefined();
+    expect(out.painPhrases).toEqual([{ text: "slow response times", sellable: true }]);
     expect(out.strengthPhrases).toEqual(["amazing friendly techs"]);
     expect(out.reviewsAnalyzedCount).toBe(8);
   });
 
   it("transitions reviewAnalysisStatus ANALYZING -> ANALYZED on success", async () => {
-    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(makeLeadRow());
+    prismaMock.lead.findFirstOrThrow.mockResolvedValue(makeLeadRow());
     analyzeReviewsWithGeminiMock.mockResolvedValue({
       reviewsAnalyzedCount: 2,
       weaknessKpis: [],
@@ -287,7 +303,7 @@ describe("REVIEW_ANALYST - happy path", () => {
     });
 
     await run(makeCtx());
-    const statuses = prismaMock.lead.update.mock.calls.map(
+    const statuses = prismaMock.lead.updateMany.mock.calls.map(
       (c) => (c[0] as { data: { reviewAnalysisStatus: string } }).data.reviewAnalysisStatus,
     );
     expect(statuses).toEqual(["ANALYZING", "ANALYZED"]);
@@ -298,7 +314,7 @@ describe("REVIEW_ANALYST - happy path", () => {
     // ≥2 examples that are grounded in the actual review corpus. Seed
     // four low-rating reviews (two for wait_times, two for pricing)
     // whose normalized text contains the KPI example phrases.
-    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(
+    prismaMock.lead.findFirstOrThrow.mockResolvedValue(
       makeLeadRow({
         googleReviews: [
           makeReview({
@@ -372,7 +388,7 @@ describe("REVIEW_ANALYST - happy path", () => {
 
 describe("REVIEW_ANALYST - skip branches", () => {
   it("empty googleReviews: skips, marks NO_REVIEWS, does not call Gemini", async () => {
-    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(
+    prismaMock.lead.findFirstOrThrow.mockResolvedValue(
       makeLeadRow({ googleReviews: [] }),
     );
 
@@ -381,7 +397,7 @@ describe("REVIEW_ANALYST - skip branches", () => {
     expect(analyzeReviewsWithGeminiMock).not.toHaveBeenCalled();
     expect(prismaMock.reviewAnalysis.upsert).not.toHaveBeenCalled();
 
-    const statuses = prismaMock.lead.update.mock.calls.map(
+    const statuses = prismaMock.lead.updateMany.mock.calls.map(
       (c) => (c[0] as { data: { reviewAnalysisStatus: string } }).data.reviewAnalysisStatus,
     );
     expect(statuses).toEqual(["ANALYZING", "NO_REVIEWS"]);
@@ -405,7 +421,7 @@ describe("REVIEW_ANALYST - failure path", () => {
     // reviewAnalysisStatus=FAILED so the rep knows reviews didn't
     // analyze. We assert the contract here so any regression to
     // throwing breaks loud.
-    prismaMock.lead.findUniqueOrThrow.mockResolvedValue(makeLeadRow());
+    prismaMock.lead.findFirstOrThrow.mockResolvedValue(makeLeadRow());
     analyzeReviewsWithGeminiMock.mockRejectedValue(new Error("gemini 500"));
 
     const result = await run(makeCtx());
@@ -415,7 +431,7 @@ describe("REVIEW_ANALYST - failure path", () => {
     expect(out.reason).toBe("analysis_failed");
     expect(out.errorMsg).toMatch(/gemini 500/);
 
-    const statuses = prismaMock.lead.update.mock.calls.map(
+    const statuses = prismaMock.lead.updateMany.mock.calls.map(
       (c) => (c[0] as { data: { reviewAnalysisStatus: string } }).data.reviewAnalysisStatus,
     );
     expect(statuses).toEqual(["ANALYZING", "FAILED"]);

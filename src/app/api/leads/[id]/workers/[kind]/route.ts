@@ -195,7 +195,8 @@ export async function POST(
           const v = (raw as { maxReviews: unknown }).maxReviews;
           if (typeof v === "number" && Number.isFinite(v)) {
             runInputs = {
-              maxReviews: Math.max(1, Math.min(500, Math.floor(v))),
+              // Worker caps at 200 too (Task 2); keep them in step.
+              maxReviews: Math.max(1, Math.min(200, Math.floor(v))),
             };
           }
         }

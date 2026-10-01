@@ -30,7 +30,7 @@ import { CircleCheck, AlertTriangle, Target, Sparkles } from "lucide-react";
 import { getNicheBySlug, getParentOf } from "@/lib/niches";
 
 interface AuditFeatures {
-  hasQrMenu?: boolean;
+  hasQrMenu?: boolean | null;
   detectedMenuTool?: string | null;
   menuUrl?: string | null;
   hasOnlineReservation?: boolean;
@@ -226,6 +226,10 @@ function classifyModule(
         status: "detected",
         detail: features.detectedMenuTool ? `Detected: ${features.detectedMenuTool}` : "QR menu found on site",
       };
+    }
+    if (features.hasQrMenu == null) {
+      // Tri-state: no menu link seen, so "no QR menu" is not a fact.
+      return { module: moduleLabel, status: "weak", detail: "Menu not found on the site — check manually" };
     }
     return { module: moduleLabel, status: "opportunity", detail: "No QR menu on site — primary opener" };
   }

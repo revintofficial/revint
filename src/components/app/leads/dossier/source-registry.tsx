@@ -64,6 +64,7 @@ import {
 } from "lucide-react";
 import type { AgentWorkerKind, MemoryKind } from "@/generated/prisma/client";
 import type { DossierSourceSummary, KeyMetric } from "@/lib/agent-workers/dossier-summary";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 /**
  * Lead detail page tabs the dossier chip can jump to. Mirrors the
@@ -706,10 +707,8 @@ export function buildPreviewMetrics(
         if (!r) return { metrics: [{ label: "Status", value: "Not analysed yet" }], loading: false, missing: true };
         const m: KeyMetric[] = [{ label: "Lead score", value: `${r.leadScore}/100` }];
         m.push({ label: "Reviews used", value: String(r.reviewsAnalyzedCount) });
-        if (Array.isArray(r.painPhrases) && r.painPhrases.length > 0) {
-          const first = r.painPhrases[0];
-          if (typeof first === "string") m.push({ label: "Top pain", value: first });
-        }
+        const first = painPhraseTexts(r.painPhrases)[0];
+        if (first) m.push({ label: "Top pain", value: first });
         return {
           headline: typeof r.summary === "string" ? r.summary : undefined,
           metrics: m,

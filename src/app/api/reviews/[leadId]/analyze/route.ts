@@ -1,9 +1,13 @@
 /**
  * P0.1 - Review Intelligence v1: trigger endpoint.
  *
- * POST: enqueue a review-analysis job for the given lead. Returns 202 with the
- * current ReviewAnalysisStatus. Worker writes to ReviewAnalysis table; client
- * polls GET to fetch the result.
+ * POST: start a REVIEW_ANALYST AgentRun on the `agent-runs` queue for the
+ * given lead. Returns 202. The worker writes the ReviewAnalysis row (or
+ * skips a thin corpus); the client polls GET for the result.
+ *
+ * Task 2: this used to enqueue onto the legacy `review-analysis` queue,
+ * which is no longer booted. Going through AI Core keeps one writer for
+ * ReviewAnalysis (same thin-corpus gate, same `sellable` pain phrases).
  *
  * GET: fetch the latest ReviewAnalysis result (if any) for the given lead.
  */
@@ -13,15 +17,15 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { assertCanUseAi, recordAiUsed, QuotaExceededError } from "@/lib/quotas";
 import { logger } from "@/lib/logger";
-import { runReviewAnalysisJob } from "@/lib/review-analysis/run-job";
-import { tryEnqueueReviewAnalysis } from "@/lib/review-analysis/try-enqueue";
+import { tryEnqueue } from "@/lib/control/enqueue-run";
+import { executeAgentRun } from "@/lib/agent-workers/execute";
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ leadId: string }> },
 ) {
   try {
-    const { workspaceId } = await requireUser();
+    const { workspaceId, user } = await requireUser();
     const { leadId } = await params;
 
     const lead = await prisma.lead.findFirst({
@@ -47,19 +51,51 @@ export async function POST(
       );
     }
 
+    // One in-flight REVIEW_ANALYST run per lead: a second click returns
+    // the running one instead of double-billing.
+    const inflight = await prisma.agentRun.findFirst({
+      where: {
+        workspaceId,
+        leadId,
+        workerKind: "REVIEW_ANALYST",
+        status: { in: ["PENDING", "RUNNING"] },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+    if (inflight) {
+      return NextResponse.json(
+        { status: "queued", leadId, mode: "queue", runId: inflight.id },
+        { status: 202 },
+      );
+    }
+
     await assertCanUseAi(workspaceId, 1);
 
-    await prisma.lead.update({
-      where: { id: leadId },
+    await prisma.lead.updateMany({
+      where: { id: leadId, workspaceId },
       data: { reviewAnalysisStatus: "PENDING" },
     });
 
-    const enqueued = await tryEnqueueReviewAnalysis(leadId);
+    const run = await prisma.agentRun.create({
+      data: {
+        workspaceId,
+        leadId,
+        userId: user.id,
+        workerKind: "REVIEW_ANALYST",
+        status: "PENDING",
+        inputsJson: { source: "reviews_analyze_route" } as never,
+      },
+      select: { id: true },
+    });
+
+    const enqueued = await tryEnqueue(run.id);
     if (!enqueued) {
-      logger.warn("api.reviews.analyze.queue_unavailable_inline_fallback", { leadId });
-      void runReviewAnalysisJob(leadId).catch((err) => {
+      logger.warn("api.reviews.analyze.queue_unavailable_inline_fallback", { leadId, runId: run.id });
+      void executeAgentRun(run.id).catch((err) => {
         logger.error("api.reviews.analyze.inline_fallback_error", {
           leadId,
+          runId: run.id,
           err: err instanceof Error ? err.message : String(err),
         });
       });
@@ -68,7 +104,7 @@ export async function POST(
     await recordAiUsed(workspaceId, 1);
 
     return NextResponse.json(
-      { status: "queued", leadId, mode: enqueued ? "queue" : "inline" },
+      { status: "queued", leadId, mode: enqueued ? "queue" : "inline", runId: run.id },
       { status: 202 },
     );
   } catch (error) {

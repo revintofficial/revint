@@ -32,6 +32,7 @@ import type {
   AgentWorkerOutput,
   AgentWorkerRun,
 } from "./types";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 // --- Normalized artifact shape (stored in AgentRun.outputJson) -------
 
@@ -135,7 +136,7 @@ export const run: AgentWorkerRun = async (ctx) => {
   const review = lead.reviewAnalysis;
 
   const servicesDetected = toStringArray(audit?.servicesDetected);
-  const painPhrases = toStringArray(review?.painPhrases);
+  const painPhrases = painPhraseTexts(review?.painPhrases);
   const strengthPhrases = toStringArray(review?.strengthPhrases);
 
   // Truth Layer T-B — voice/chat artifacts MUST greet callers in

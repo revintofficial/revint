@@ -52,6 +52,7 @@ import {
   SUPPRESS_WHEN_NO_WEBSITE,
   normalizeWedgeKey,
 } from "@/lib/labels";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -353,7 +354,8 @@ function sentimentPct(blob: unknown, key: string): number | null {
 // ---- F&B rawFeaturesJson shape (audit-derived restaurant signals). ---------
 
 interface RestaurantFeatures {
-  hasQrMenu?: boolean;
+  /** Tri-state: null = menu never seen on the site (unknown). */
+  hasQrMenu?: boolean | null;
   hasOnlineReservation?: boolean;
   hasDeliveryIntegration?: boolean;
   detectedMenuTool?: string | null;
@@ -385,13 +387,15 @@ function buildTechSignals(features: RestaurantFeatures | null): Array<{
   return [
     {
       label: "QR menu",
-      present: !!features.hasQrMenu,
+      present: features.hasQrMenu === true,
       detail: features.detectedMenuTool
         ? `Detected: ${features.detectedMenuTool}`
-        : features.hasQrMenu
+        : features.hasQrMenu === true
           ? "QR menu found on site"
-          : "Not detected — primary sales opportunity",
-      priority: "critical",
+          : features.hasQrMenu == null
+            ? "Not checked — no menu link on the site"
+            : "Not detected — primary sales opportunity",
+      priority: features.hasQrMenu == null ? "nice_to_have" : "critical",
     },
     {
       label: "Online reservation",
@@ -896,7 +900,7 @@ export async function POST(request: Request) {
           },
           topComplaints: asKpis(review.weaknessKpis, 3),
           topPraise: asKpis(review.strengthKpis, 3),
-          painPhrases: asStringList(review.painPhrases, 3),
+          painPhrases: asStringList(painPhraseTexts(review.painPhrases), 3),
           praisePhrases: asStringList(review.strengthPhrases, 3),
           summary: truncate(review.summary ?? null, MAX_EVIDENCE_CHARS),
           fullAnalysisUrl: reviewsUrl,

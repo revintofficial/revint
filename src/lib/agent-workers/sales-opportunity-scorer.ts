@@ -26,6 +26,7 @@ import type {
   AgentWorkerRun,
   MemoryWrite,
 } from "./types";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 /**
  * Loose case-insensitive match between a lead's niche slugs and a
@@ -197,11 +198,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     const reviewContext: ReviewContextForAnalysis | null = ra
       ? {
           summary: ra.summary ?? null,
-          painPhrases: Array.isArray(ra.painPhrases)
-            ? (ra.painPhrases as unknown[]).filter(
-                (x): x is string => typeof x === "string",
-              )
-            : [],
+          painPhrases: painPhraseTexts(ra.painPhrases),
           strengthPhrases: Array.isArray(ra.strengthPhrases)
             ? (ra.strengthPhrases as unknown[]).filter(
                 (x): x is string => typeof x === "string",

@@ -208,7 +208,13 @@ export interface WebsiteFeatures {
   bookingProvider: string | null;
 
   // Restaurant niche signals (populated by extractor when patterns match)
-  hasQrMenu?: boolean;
+  /**
+   * Tri-state (Task 2): `true` vendor matched, `false` menu link seen and
+   * no vendor, `null` menu never seen (unknown). Never read `null` as "no".
+   */
+  hasQrMenu?: boolean | null;
+  /** Tri-state, same semantics as `hasQrMenu`. Not filled by `hasEcommerce`. */
+  hasOnlineOrdering?: boolean | null;
   hasOnlineReservation?: boolean;
   hasDeliveryIntegration?: boolean;
   /** e.g. "FineDine" | "MenuTiger" | "Flipdish" — first matched tool name */

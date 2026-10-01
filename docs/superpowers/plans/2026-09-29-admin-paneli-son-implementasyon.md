@@ -230,7 +230,7 @@ Bu, `plans/2026-09-28-lead-pipeline-simplify.md` Task 3 ve Task 4'ün geçerli k
 **Interfaces:**
 - Produces: `extractFeatures()` → `hasQrMenu: boolean | null`, `hasOnlineOrdering: boolean | null`. `withApifySlot(fn)` eşzamanlı en fazla 2. `shouldAnalyzeReviews(count): boolean` eşik 30. `painPhrases[].sellable: boolean`.
 
-- [ ] **Step 1: Testleri yaz**
+- [x] **Step 1: Testleri yaz**
 
 ```ts
 it("returns null QR when the page has no menu link", () => {
@@ -272,11 +272,11 @@ it("does not boot the legacy review and email queues", () => {
 });
 ```
 
-- [ ] **Step 2: Testler kırmızı**
+- [x] **Step 2: Testler kırmızı**
 
 Run: `npx vitest run src/__tests__/lib/extractor-qr-menu-and-reservation.test.ts src/__tests__/lib/apify-limiter.test.ts src/__tests__/agent-workers/review-analyst-corpus.test.ts src/__tests__/workers/supervisor-boot.test.ts`
 
-- [ ] **Step 3: Uygula**
+- [x] **Step 3: Uygula**
 
 `extractor.ts`: `let hasQrMenu: boolean | null = null`. Menü linki bulunup sağlayıcı tutmazsa `false`, tutarsa `true`. Online sipariş için aynı üç durum. `has_ecommerce = true` bu alanı doldurmaz; sipariş/sepet/Deliveroo/UberEats/kendi checkout linki gerekir. `bookingProvider` doluysa `hasOnlineReservation: true`.
 
@@ -286,11 +286,13 @@ Run: `npx vitest run src/__tests__/lib/extractor-qr-menu-and-reservation.test.ts
 
 `workers/index.ts`: `startReviewAnalysisWorker` ve `startEmailVerificationWorker` çağrıları, import'ları ve shutdown `close` satırları silinir. `crawl-worker` / `analyze-worker` yorumları kalır.
 
-- [ ] **Step 4: Testler yeşil, commit**
+- [x] **Step 4: Testler yeşil, commit**
 
 ```bash
 git commit -am "fix: distinguish unseen menu signals from absent ones, cap Apify, skip thin review samples"
 ```
+
+> **30 Eylül, icra notu (Task 2).** Kararlar: (1) `ReviewAnalysis.painPhrases` artık `{ text, sellable }[]`; eski satırlar `string[]`. Okuyan her yer `src/lib/review-analysis/pain-phrases.ts` (`painPhraseTexts` / `normalizePainPhrases`) üzerinden okur. `sellable`'ı modelin üstünde deterministik bir koruma zorlar (lezzet/zehirlenme `false`; bekleme/rezervasyon/sipariş/hesap `true`). (2) İnce korpusta eski `ReviewAnalysis` satırı silinir, lead durumu `NO_REVIEWS` olur (şema değişmez). `leadScore` sütunu NOT NULL olduğu için `0` yazılır. (3) Kota → `SUCCEEDED` dönüşümü merkezi olarak `executeAgentRun` içinde (tüm Apify worker'ları), ayrıca `gmaps-deep` içinde açıkça yapılır. (4) `POST /api/reviews/[leadId]/analyze` artık `REVIEW_ANALYST` AgentRun'ı açar; eski `review-analysis` kuyruğunu besleyen kalmadı. (5) Online sipariş `false` yalnızca menü linki görülüp sipariş linki görülmediğinde yazılır. Topoloji: `docs/runbooks/workers-topology.md`.
 
 ---
 

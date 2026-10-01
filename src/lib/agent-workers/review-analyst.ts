@@ -10,6 +10,10 @@
  * APIFY_GMAPS_DEEP imports 500+ reviews. Both runs write to the
  * same ReviewAnalysis row; idempotent.
  *
+ * Task 2: below MIN_REVIEW_CORPUS (30) reviews in our corpus the worker
+ * returns `{ skipped: "thin_corpus", count }` without calling Gemini.
+ * Pain phrases are `{ text, sellable }`. No 0-100 lead score is written.
+ *
  * Memory writes: each pain phrase becomes a REVIEW_CHUNK row so the
  * copilot and opener writer can retrieve them semantically ("leads
  * where reviewers complain about wait times" works).
@@ -29,6 +33,12 @@ import {
   type SwitchSignal,
 } from "@/lib/sdr-brain/contracts";
 import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
+import { EmbeddingError } from "@/lib/ai-core/embed";
+import {
+  normalizePainPhrases,
+  toPainPhrases,
+  type PainPhrase,
+} from "@/lib/review-analysis/pain-phrases";
 import type {
   AgentWorkerContext,
   AgentWorkerOutput,
@@ -215,18 +225,34 @@ export {
 };
 export type { EnrichedReviewKpi };
 
+/**
+ * Task 2 — minimum review corpus. Dishoom (29,744 reviews on Google)
+ * was being analysed from the 5 reviews in our corpus and the output
+ * still printed KPI bars and a lead score. Below this many reviews in
+ * our own corpus we do not call Gemini and do not write ReviewAnalysis.
+ */
+export const MIN_REVIEW_CORPUS = 30;
+
+export function shouldAnalyzeReviews(count: number): boolean {
+  return count >= MIN_REVIEW_CORPUS;
+}
+
 export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   if (!ctx.lead) throw new Error("REVIEW_ANALYST requires a lead context");
   const leadId = ctx.lead.id;
+  const workspaceId = ctx.workspaceId;
+  // Every lead read/write is tenant-scoped (multi-tenant-scope.mdc).
+  const setStatus = (reviewAnalysisStatus: "ANALYZING" | "ANALYZED" | "FAILED" | "NO_REVIEWS") =>
+    prisma.lead.updateMany({
+      where: { id: leadId, workspaceId },
+      data: { reviewAnalysisStatus },
+    });
 
-  await prisma.lead.update({
-    where: { id: leadId },
-    data: { reviewAnalysisStatus: "ANALYZING" },
-  });
+  await setStatus("ANALYZING");
 
   try {
-    const lead = await prisma.lead.findUniqueOrThrow({
-      where: { id: leadId },
+    const lead = await prisma.lead.findFirstOrThrow({
+      where: { id: leadId, workspaceId },
       include: {
         // `niche` is needed by the F&B label-whitelist gate in
         // analyzeReviewsWithGemini (Beta finding §3). Workspaces with
@@ -239,11 +265,11 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         // high-volume leads (Bianco43: 1572 reviews) that were
         // tripping the 60s outer deadline before the deadline bump.
         // 200 still gives KPI bars enough signal to be statistically
-        // stable. APIFY_GMAPS_DEEP still ingests up to 500 reviews;
-        // the trigger-detector's review-volume rule + the decision-
-        // surface badge math both still see the full 500 via
-        // `execute.ts` (workers) and the aggregator's own `take`.
-        // Only THIS Gemini-bound path is narrowed. Pair with the
+        // stable. APIFY_GMAPS_DEEP ingests 80 reviews by default, 200 at
+        // most (Task 2), so this cap now matches the ingest ceiling.
+        // Older leads may still hold up to 500 rows from before; the
+        // trigger-detector's review-volume rule sees them all via
+        // `execute.ts`. Only THIS Gemini-bound path is narrowed. Pair with the
         // registry bump to 30 000 ms estimatedDurationMs so the
         // outer deadline gets 90s of runway.
         googleReviews: { orderBy: { publishTime: "desc" }, take: 200 },
@@ -251,11 +277,36 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     });
 
     if (lead.googleReviews.length === 0) {
-      await prisma.lead.update({
-        where: { id: leadId },
-        data: { reviewAnalysisStatus: "NO_REVIEWS" },
-      });
+      await setStatus("NO_REVIEWS");
       return { output: { skipped: true, reason: "no_reviews" }, costTokens: 0 };
+    }
+
+    // Task 2 — thin corpus. No Gemini call, no ReviewAnalysis upsert.
+    // A ReviewAnalysis row left over from an earlier thin-sample run is
+    // removed so the brief and the UI stop reading its KPI bars. The
+    // lead status reuses NO_REVIEWS (no schema change): "not enough
+    // reviews to analyse" is the closest existing state.
+    const corpusCount = lead.googleReviews.length;
+    if (!shouldAnalyzeReviews(corpusCount)) {
+      await prisma.reviewAnalysis.deleteMany({
+        where: { leadId, lead: { workspaceId } },
+      });
+      await setStatus("NO_REVIEWS");
+      logger.info("agent_workers.review_analyst.thin_corpus", {
+        leadId,
+        count: corpusCount,
+        min: MIN_REVIEW_CORPUS,
+        googleReviewCount: lead.reviewCount ?? null,
+      });
+      return {
+        output: {
+          skipped: "thin_corpus",
+          reason: "thin_corpus",
+          count: corpusCount,
+          min: MIN_REVIEW_CORPUS,
+        },
+        costTokens: 0,
+      };
     }
 
     const ourOffer = lead.workspace.valueProposition
@@ -350,10 +401,6 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     //    `"negative_reviews"` preserves pre-Truth-Layer wire compat.
     // ============================================================
 
-    // Re-derive workspaceId from the lead row (per
-    // `multi-tenant-scope.mdc` worker rule) — never trust the job
-    // payload as the authoritative source.
-    const workspaceId = lead.workspaceId;
     const totalCount = Math.max(
       lead.reviewCount ?? 0,
       lead.googleReviews.length,
@@ -489,6 +536,11 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     // they don't need this dance.
     const switchSignalsJson = enrichedSwitchSignals as unknown as Prisma.InputJsonValue;
 
+    // Task 2 — pain phrases carry `sellable`. The deterministic guard in
+    // `toPainPhrases` forces taste / food poisoning to false and waiting /
+    // reservation / order errors / bill to true, whatever the model said.
+    const painPhrases: PainPhrase[] = toPainPhrases(analysis.painPhrases);
+
     await prisma.reviewAnalysis.upsert({
       where: { leadId },
       create: {
@@ -497,10 +549,12 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         weaknessKpis: enrichedWeaknessKpis,
         strengthKpis: enrichedStrengthKpis,
         sentimentBreakdown: analysis.sentimentBreakdown,
-        painPhrases: analysis.painPhrases,
+        painPhrases,
         strengthPhrases: analysis.strengthPhrases,
         switchSignals: switchSignalsJson,
-        leadScore: analysis.leadScore,
+        // Task 2: no 0-100 opportunity score from this worker; that is
+        // the brief's job. Column is NOT NULL, so write 0.
+        leadScore: 0,
         summary: analysis.summary,
       },
       update: {
@@ -508,23 +562,22 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         weaknessKpis: enrichedWeaknessKpis,
         strengthKpis: enrichedStrengthKpis,
         sentimentBreakdown: analysis.sentimentBreakdown,
-        painPhrases: analysis.painPhrases,
+        painPhrases,
         strengthPhrases: analysis.strengthPhrases,
         switchSignals: switchSignalsJson,
-        leadScore: analysis.leadScore,
+        leadScore: 0,
         summary: analysis.summary,
         analyzedAt: new Date(),
       },
     });
 
-    await prisma.lead.update({
-      where: { id: leadId },
-      data: { reviewAnalysisStatus: "ANALYZED" },
-    });
+    await setStatus("ANALYZED");
 
     logger.info("agent_workers.review_analyst.done", {
       leadId,
-      leadScore: analysis.leadScore,
+      reviews: corpusCount,
+      painPhrases: painPhrases.length,
+      sellablePainPhrases: painPhrases.filter((p) => p.sellable).length,
     });
 
     // Ground the pain/strength phrases against the source review
@@ -541,9 +594,9 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     // (The same `corpusNormalized` already drives KPI example
     // grounding above; we reuse the captured list rather than
     // recomputing it.)
-    const painsGrounded = (analysis.painPhrases as unknown[])
-      .filter((x): x is string => typeof x === "string")
-      .filter((p) => isGroundedInCorpus(p, corpusNormalized));
+    const painsGrounded = painPhrases.filter((p) =>
+      isGroundedInCorpus(p.text, corpusNormalized),
+    );
     const strengthsGrounded = (analysis.strengthPhrases as unknown[])
       .filter((x): x is string => typeof x === "string")
       .filter((p) => isGroundedInCorpus(p, corpusNormalized));
@@ -558,7 +611,6 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
 
     return {
       output: {
-        leadScore: analysis.leadScore,
         // The *grounded* arrays are what flows into memoryWrites; the
         // UI-facing ReviewAnalysis row still carries raw Gemini data.
         painPhrases: painsGrounded,
@@ -569,11 +621,21 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       costTokens: Math.ceil(JSON.stringify(analysis).length / 4),
     };
   } catch (error) {
-    await prisma.lead.update({
-      where: { id: leadId },
-      data: { reviewAnalysisStatus: "FAILED" },
-    });
     const msg = error instanceof Error ? error.message : String(error);
+    // Task 2: an embedding outage is logged and never fails the run or
+    // flips the lead to FAILED — the review analysis itself is not
+    // what broke. (Post-run memory embeds are degraded in execute.ts.)
+    if (error instanceof EmbeddingError) {
+      logger.warn("agent_workers.review_analyst.embedding_failed", {
+        leadId,
+        err: msg,
+      });
+      return {
+        output: { skipped: true, reason: "embedding_unavailable", errorMsg: msg },
+        costTokens: 0,
+      };
+    }
+    await setStatus("FAILED");
     // The no-reviews path above is preserved (early return before the
     // Gemini call). This catch handles the actual failure modes:
     // Gemini timeouts, JSON-parse failures, or upstream API errors.
@@ -608,11 +670,10 @@ export const memoryWrites = (
 ): MemoryWrite[] => {
   if (!ctx.leadId) return [];
   const o = output as {
-    skipped?: boolean;
+    skipped?: boolean | string;
     painPhrases?: unknown;
     strengthPhrases?: unknown;
     summary?: string;
-    leadScore?: number;
   };
   // Skipped runs (no reviews / Gemini failure / embedding fallback)
   // have no grounded phrases to embed; emitting empty REVIEW_CHUNK
@@ -627,21 +688,19 @@ export const memoryWrites = (
       leadId: ctx.leadId,
       refType: "review_summary",
       refId: ctx.leadId,
-      metadata: { leadScore: o.leadScore ?? null, source: "review_analyst" },
+      metadata: { source: "review_analyst" },
     });
   }
 
-  const pains = Array.isArray(o.painPhrases)
-    ? (o.painPhrases as unknown[]).filter((x): x is string => typeof x === "string")
-    : [];
+  const pains = normalizePainPhrases(o.painPhrases);
   pains.slice(0, 8).forEach((phrase, i) => {
     writes.push({
       kind: "REVIEW_CHUNK",
-      text: phrase,
+      text: phrase.text,
       leadId: ctx.leadId,
       refType: "pain_phrase",
       refId: `${ctx.leadId}:pain:${i}`,
-      metadata: { polarity: "negative", source: "review_analyst" },
+      metadata: { polarity: "negative", source: "review_analyst", sellable: phrase.sellable },
     });
   });
 

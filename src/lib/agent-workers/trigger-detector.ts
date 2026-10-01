@@ -33,6 +33,7 @@ import type {
   AgentWorkerRun,
   MemoryWrite,
 } from "./types";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -229,7 +230,7 @@ export const run: AgentWorkerRun = async (
     const ra = lead.reviewAnalysis;
     const sentiment = (ra.sentimentBreakdown as { negative?: number } | null) ?? null;
     const negativePct = sentiment?.negative ?? 0;
-    const painPhrases = Array.isArray(ra.painPhrases) ? (ra.painPhrases as string[]) : [];
+    const painPhrases = painPhraseTexts(ra.painPhrases);
     if (negativePct > 0.25 && painPhrases.length >= 3) {
       detected.push({
         type: "BAD_SERVICE_REVIEWS",

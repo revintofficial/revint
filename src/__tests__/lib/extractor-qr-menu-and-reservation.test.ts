@@ -46,7 +46,10 @@ describe("Round 2 §3.5 — QR menu detection", () => {
         <p>Our new e-menu is launching soon — stay tuned!</p>
       </body></html>`;
     const f = extractFeatures(html, PAGE_URL);
-    expect(f.hasQrMenu).toBe(false);
+    // No menu link on the page -> we never saw the menu, so the signal
+    // is unknown (null), not absent (false).
+    expect(f.hasQrMenu).not.toBe(true);
+    expect(f.hasQrMenu).toBeNull();
     expect(f.detectedMenuTool).toBe(null);
   });
 
@@ -57,14 +60,14 @@ describe("Round 2 §3.5 — QR menu detection", () => {
         <p>Visit our themenu page for details.</p>
       </body></html>`;
     const f = extractFeatures(html, PAGE_URL);
-    expect(f.hasQrMenu).toBe(false);
+    expect(f.hasQrMenu).toBeNull();
   });
 
   it("flags PlumQR only when it appears inside an actual link hostname", () => {
     // SHORT pattern — body text alone must NOT trigger.
     const bodyOnly = `
       <html><body><p>plumqr is great</p></body></html>`;
-    expect(extractFeatures(bodyOnly, PAGE_URL).hasQrMenu).toBe(false);
+    expect(extractFeatures(bodyOnly, PAGE_URL).hasQrMenu).toBeNull();
 
     const linkHtml = `
       <html><body>
@@ -147,5 +150,67 @@ describe("Round 2 §3.4 — hasOnlineReservation multi-signal", () => {
       </body></html>`;
     const f = extractFeatures(html, PAGE_URL);
     expect(f.hasOnlineReservation).toBe(false);
+  });
+});
+
+describe("Task 2 — tri-state menu and ordering signals", () => {
+  it("returns null QR when the page has no menu link", () => {
+    const f = extractFeatures("<html><body><h1>Cafe</h1></body></html>", "https://cafe.example");
+    expect(f.hasQrMenu).toBeNull();
+    expect(f.hasOnlineOrdering).toBeNull();
+  });
+
+  it("returns false QR when a menu link exists and no vendor matches", () => {
+    const html = `<a href="https://cafe.example/menu">Menu</a>`;
+    expect(extractFeatures(html, "https://cafe.example").hasQrMenu).toBe(false);
+  });
+
+  it("returns false ordering when a menu link exists and no ordering link does", () => {
+    const html = `<a href="https://cafe.example/menu">Menu</a>`;
+    expect(extractFeatures(html, "https://cafe.example").hasOnlineOrdering).toBe(false);
+  });
+
+  it("does not treat a shop link as online ordering", () => {
+    const html = `<a href="https://cafe.example/shop">Shop</a>`;
+    expect(extractFeatures(html, "https://cafe.example").hasOnlineOrdering).toBeNull();
+  });
+
+  it("does not let the generic e-commerce flag fill online ordering", () => {
+    const html = `<html><body><p>Shop now — add to cart</p><a href="https://cafe.example/shop">Shop</a></body></html>`;
+    const f = extractFeatures(html, "https://cafe.example");
+    expect(f.hasEcommerce).toBe(true);
+    expect(f.hasOnlineOrdering).toBeNull();
+  });
+
+  it("returns true ordering for a Deliveroo link", () => {
+    const html = `<a href="https://deliveroo.co.uk/menu/london/camden/cafe">Order on Deliveroo</a>`;
+    expect(extractFeatures(html, "https://cafe.example").hasOnlineOrdering).toBe(true);
+  });
+
+  it("returns true ordering for an Uber Eats link", () => {
+    const html = `<a href="https://www.ubereats.com/gb/store/cafe/abc">Delivery</a>`;
+    expect(extractFeatures(html, "https://cafe.example").hasOnlineOrdering).toBe(true);
+  });
+
+  it("returns true ordering for the venue's own order-online link", () => {
+    const html = `<a href="https://cafe.example/order-online">Order online</a>`;
+    expect(extractFeatures(html, "https://cafe.example").hasOnlineOrdering).toBe(true);
+  });
+
+  it("returns true ordering for the venue's own checkout link", () => {
+    const html = `<a href="https://cafe.example/checkout">Checkout</a>`;
+    expect(extractFeatures(html, "https://cafe.example").hasOnlineOrdering).toBe(true);
+  });
+
+  it("does not treat a body-text Deliveroo mention as online ordering", () => {
+    const html = `<html><body><p>As featured on Deliveroo's best-of list.</p></body></html>`;
+    expect(extractFeatures(html, "https://cafe.example").hasOnlineOrdering).toBeNull();
+  });
+
+  it("marks online reservation when a booking provider is detected", () => {
+    const html = `<a href="https://book.eveve.com/dishoom">Book a table</a>`;
+    const f = extractFeatures(html, "https://cafe.example");
+    expect(f.bookingProvider).not.toBeNull();
+    expect(f.hasOnlineReservation).toBe(true);
   });
 });

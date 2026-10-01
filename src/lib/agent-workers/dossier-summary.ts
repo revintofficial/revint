@@ -21,6 +21,7 @@
  * `genericSummary` which counts top-level output keys.
  */
 import type { AgentWorkerKind } from "@/generated/prisma/client";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 export interface KeyMetric {
   label: string;
@@ -116,8 +117,9 @@ const SUMMARIZERS: Partial<Record<AgentWorkerKind, Summarizer>> = {
     if (typeof o.reviewsAnalyzedCount === "number") {
       metrics.push({ label: "Reviews analysed", value: String(o.reviewsAnalyzedCount) });
     }
-    if (Array.isArray(o.painPhrases) && o.painPhrases.length > 0) {
-      metrics.push({ label: "Top pain", value: shortStr(o.painPhrases[0], 70) });
+    const topPain = painPhraseTexts(o.painPhrases)[0];
+    if (topPain) {
+      metrics.push({ label: "Top pain", value: shortStr(topPain, 70) });
     }
     if (Array.isArray(o.strengthPhrases) && o.strengthPhrases.length > 0) {
       metrics.push({ label: "Top strength", value: shortStr(o.strengthPhrases[0], 70) });

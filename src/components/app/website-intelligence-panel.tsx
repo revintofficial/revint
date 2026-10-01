@@ -145,7 +145,7 @@ export interface WebsiteAudit {
   pageCount?: number;
   contactEmails?: string[] | null;
   rawFeaturesJson?: {
-    hasQrMenu?: boolean;
+    hasQrMenu?: boolean | null;
     hasOnlineReservation?: boolean;
     hasDeliveryIntegration?: boolean;
     detectedMenuTool?: string | null;
@@ -912,7 +912,7 @@ function ConversionSection({ audit }: { audit: WebsiteAudit }) {
 /* ---------- Niche product fit ---------- */
 
 interface AuditFeaturesForFit {
-  hasQrMenu?: boolean;
+  hasQrMenu?: boolean | null;
   detectedMenuTool?: string | null;
   menuUrl?: string | null;
   hasOnlineReservation?: boolean;
@@ -1103,6 +1103,10 @@ function classifyModule(
         detail: features.detectedMenuTool ? `Detected: ${features.detectedMenuTool}` : "QR menu found on site",
       };
     }
+    if (features.hasQrMenu == null) {
+      // Tri-state: no menu link seen, so we cannot claim "no QR menu".
+      return { module: moduleLabel, status: "weak", detail: "Menu not found on the site — check manually" };
+    }
     return { module: moduleLabel, status: "opportunity", detail: "No QR menu detected" };
   }
   if (label.includes("reservation") || label.includes("booking")) {
@@ -1173,11 +1177,14 @@ function RestaurantSignalsSection({
   const signals = [
     {
       label: "QR menu",
-      present: !!features.hasQrMenu,
+      present: features.hasQrMenu === true,
       detail: features.detectedMenuTool
         ? `Detected: ${features.detectedMenuTool}`
-        : "Not detected on the site",
-      priority: "critical" as const,
+        : features.hasQrMenu == null
+          ? "Not checked — no menu link on the site"
+          : "Not detected on the site",
+      // Unknown (null) renders neutral, not as a red opportunity.
+      priority: features.hasQrMenu == null ? ("nice_to_have" as const) : ("critical" as const),
     },
     {
       label: "Online reservation",

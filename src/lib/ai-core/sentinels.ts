@@ -19,6 +19,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { upsert, upsertAndEmbed, enqueueReembed } from "./memory";
 import { EmbeddingError } from "./embed";
+import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
 
 /**
  * Embeds a compact LEAD_PROFILE summary into SemanticMemory so the
@@ -76,9 +77,7 @@ export async function embedLeadProfile(args: {
   const review = lead.reviewAnalysis;
   if (review) {
     if (review.summary) lines.push(`Review summary: ${review.summary}`);
-    const pains = Array.isArray(review.painPhrases)
-      ? (review.painPhrases as unknown[]).filter((x): x is string => typeof x === "string")
-      : [];
+    const pains = painPhraseTexts(review.painPhrases);
     if (pains.length) lines.push(`Pain phrases: ${pains.slice(0, 6).join("; ")}`);
     if (review.leadScore !== null && review.leadScore !== undefined) {
       lines.push(`Review lead score: ${review.leadScore}`);
