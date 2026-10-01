@@ -14,11 +14,10 @@ hubspot-app/
 │       ├── app-hsmeta.json                 # Public app config (auth, scopes, permittedUrls)
 │       ├── webhooks/
 │       │   └── webhooks-hsmeta.json        # Webhook subscriptions → /api/webhooks/hubspot
-│       └── extensions/
-│           └── revint-card/
-│               ├── revint-card-hsmeta.json # Card placement (CRM record tab + preview)
-│               ├── RevintCard.tsx          # React component (hubspot.extend + hubspot.fetch)
-│               └── package.json            # @hubspot/ui-extensions dependency
+│       └── cards/
+│           ├── revint-card-hsmeta.json     # Card placement (contacts, companies, deals record tab)
+│           ├── RevintCard.tsx              # React component (hubspot.extend + hubspot.fetch)
+│           └── package.json                # @hubspot/ui-extensions dependency
 ```
 
 ## Hard constraints on the App Card backend
@@ -45,9 +44,9 @@ The `card-data` endpoint MUST stay light: no heavy AI calls, no cross-tenant que
    ```
 3. Install the extension dependencies (HubSpot CLI does this implicitly on first build, but doing it once now is faster):
    ```bash
-   cd hubspot-app/src/app/extensions/revint-card
+   cd hubspot-app/src/app/cards
    npm install
-   cd ../../../..
+   cd ../../..
    ```
 4. Start the local dev server with hot reload (changes to `RevintCard.tsx` reflect inside HubSpot without a re-upload):
    ```bash
@@ -58,8 +57,11 @@ The `card-data` endpoint MUST stay light: no heavy AI calls, no cross-tenant que
 ## Deploy
 
 ```bash
+cd hubspot-app
 hs project upload
 ```
+
+Full production checklist (scopes, env vars, portal verification, rollback): `docs/runbooks/hubspot-writeback.md`.
 
 This bundles the project, validates `*-hsmeta.json` schemas against the platform version, and creates a new build in the developer account. The build then has to be **promoted** to the public app in the HubSpot Developer UI. Marketplace certification is a separate gate.
 

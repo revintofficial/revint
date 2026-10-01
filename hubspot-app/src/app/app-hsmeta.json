@@ -3,7 +3,7 @@
   "type": "app",
   "config": {
     "name": "Revint Operational Intelligence",
-    "description": "Revint is the karar/sicaklik/aksiyon (intelligence + action) layer that sits on top of HubSpot. It pulls fresh CRM signals via webhooks, runs lead analysis (sub-niche, review, audit, scorer), writes the canonical `revint_*` custom contact properties back, and surfaces a record-side App Card so the SDR can answer one question fast: 'What do I do with this lead right now?'",
+    "description": "Revint is the karar/sicaklik/aksiyon (intelligence + action) layer that sits on top of HubSpot. It pulls fresh CRM signals via webhooks, runs lead analysis (sub-niche, review, audit, scorer), writes the canonical `revint_*` custom properties back to companies and contacts, and surfaces a record-side App Card so the SDR can answer one question fast: 'What do I do with this lead right now?'",
     "distribution": "marketplace",
     "auth": {
       "type": "oauth",
