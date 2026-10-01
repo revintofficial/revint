@@ -89,7 +89,7 @@ describe("C1 - processEmbedJob tenant guard", () => {
   it("compiles and module-loads without error (smoke)", async () => {
     const { mod } = await loadProcessJob();
     expect(mod.startAgentRunWorker).toBeTypeOf("function");
-  });
+  }, 30_000); // cold import of the worker graph is slow under a full parallel run
 
   it("findScopedMemoryRow returning null prevents the embed call and the writeEmbedding call", async () => {
     findScopedMemoryRow.mockResolvedValueOnce(null);

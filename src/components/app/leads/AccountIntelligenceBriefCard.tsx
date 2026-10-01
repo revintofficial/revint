@@ -98,7 +98,7 @@ export default function AccountIntelligenceBriefCard({ id }: { id: string }) {
           setGeneratedAt(typeof json?.brief?.generatedAt === "string" ? json.brief.generatedAt : null);
           const isHeadAgent = json?.brief?.briefMode === "head-agent";
           setHeadAgentMode(isHeadAgent);
-          setFeedbackRunId(isHeadAgent && json?.runStatus === "SUCCEEDED" && typeof json?.runId === "string" ? json.runId : null);
+          setFeedbackRunId(isHeadAgent && (json?.runStatus === "SUCCEEDED" || json?.runStatus === "SUCCEEDED_NO_MEMORY") && typeof json?.runId === "string" ? json.runId : null);
         }
       } catch {
         // Silent — this card is additive; a fetch failure just hides it.

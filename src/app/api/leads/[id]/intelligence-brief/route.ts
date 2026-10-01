@@ -49,7 +49,7 @@ export async function GET(
     return NextResponse.json({
       brief: run.outputJson,
       runId: run.id,
-      // SDR feedback (POST /api/leads/[id]/feedback) only accepts SUCCEEDED runs.
+      // SDR feedback (POST /api/leads/[id]/feedback) accepts SUCCEEDED and SUCCEEDED_NO_MEMORY runs.
       runStatus: run.status,
       finishedAt: run.finishedAt,
     });

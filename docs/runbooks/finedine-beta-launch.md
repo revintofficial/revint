@@ -19,6 +19,7 @@ Mimari özet:
 - Deploy edilecek commit'te `npx tsc --noEmit -p .`, `npx vitest run`, `npm run lint` ve `npx next build` temiz geçmiş olmalı.
 - Supabase projesine `DIRECT_URL` ile bağlanabiliyor olmalısın (port 5432, pooler değil).
 - Üç inceleyici (Teknik, Alan, Satış) uygulamaya **en az bir kez kayıt olmuş** olmalı (`/signup`). Script'ler `auth.users` içinde e-postayı arar.
+- **Sızmış anahtarları yenile:** 14 Temmuz ekran kaydında Resend API anahtarı ve Supabase DB şifresi göründü (Notion). Resend'de yeni anahtar üret, eskisini iptal et; Supabase → Database → Reset password; yeni değerleri Vercel ve Railway'e yaz (`RESEND_API_KEY`, `DATABASE_URL`, `DIRECT_URL`).
 - Veritabanının yedeği: Supabase → Database → Backups'tan son otomatik yedeğin tarihini not al; migration'dan hemen önce manuel bir yedek al (`pg_dump "$DIRECT_URL" -Fc -f revint-pre-beta.dump`).
 
 ## 1. Ortam değişkenleri
@@ -43,7 +44,8 @@ E-posta: `RESEND_API_KEY`, `EMAIL_FROM`. HubSpot kullanılıyorsa `HUBSPOT_*`.
 `DATABASE_URL`, `DIRECT_URL`, `REDIS_URL` (localhost **olamaz**), `GEMINI_API_KEY` (veya havuz),
 `GOOGLE_PLACES_API_KEY`, `APIFY_TOKEN`, `APIFY_WEBHOOK_SECRET`, `ANTHROPIC_API_KEY`,
 `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NODE_ENV=production`.
-Opsiyonel: `ZEROBOUNCE_API_KEY`, `RESEND_API_KEY`, `SENTRY_DSN`, `CRM_TOKEN_ENCRYPTION_KEY`, `HUBSPOT_CLIENT_*`.
+FineDine HubSpot kullandığı için zorunlu: `CRM_TOKEN_ENCRYPTION_KEY` (Vercel'dekiyle **aynı** değer), `HUBSPOT_CLIENT_ID`, `HUBSPOT_CLIENT_SECRET` (revint-app). HubSpot writeback worker'da çalışır.
+Opsiyonel: `ZEROBOUNCE_API_KEY`, `RESEND_API_KEY`, `SENTRY_DSN`.
 
 ### Head agent bayrakları (her iki tarafta da aynı olmalı)
 Head agent worker tarafında çalışır; bayrakları yine de iki tarafta aynı tut ki web'den tetiklenen yollar (ör. eval replay) aynı modu görsün.
@@ -82,7 +84,7 @@ Mevcut üretim veritabanında 1–6 büyük ihtimalle zaten uygulanmıştır; bu
 | 6 | `add_agent_run_idempotency_key.sql` | İdempotent. |
 | 7 | `add_control_plane.sql` | **İdempotent değil** (tek transaction; zaten varsa tamamen geri alınır, zarar vermez ama hata verir). Önce kontrol et. |
 | 8 | `add_control_review_lenses.sql` | İdempotent. 7'ye bağlı. |
-| 9 | `add_review_source_rubric.sql` | Başka bir dalda hazırlanıyor. Dosya merge edildiğinde 8'den sonra uygula. Merge edilmeden bu adımı atla ve kodun bu şemayı gerektirip gerektirmediğini kontrol et. |
+| 9 | `add_review_source_rubric.sql` | **Zorunlu.** `HumanReview.source`, `rubricVersion`, `reviewSeconds` ve `ReviewSource` enum'u. İnceleme kaydı, SDR geri bildirimi ve Uyum ekranı bunlar olmadan 500 döner. Tekrar çalıştırılabilir. |
 
 7 için ön kontrol:
 
@@ -161,14 +163,14 @@ npx tsx scripts/control-assign-reviewer.ts --email <satis@...>  --role REVIEWER 
 
 Önce gölge modda en az bir lead koştur, sonra canlıya al.
 
-1. Gölge (opsiyonel, önerilir): her iki tarafta `CLAUDE_HEAD_AGENT_SHADOW_WORKSPACES=<finedine-workspace-id>` → worker + web redeploy → bir lead koştur → Vaka izi'nde head agent kararını gör, lead'e yazılmadığını doğrula.
+1. Gölge (opsiyonel, önerilir): her iki tarafta `CLAUDE_HEAD_AGENT_SHADOW_WORKSPACES=<finedine-workspace-id>` → worker + web redeploy → bir lead koştur → Vaka izi'nde head agent kararını gör. Gölgede kart düz yazılır (paket, kaçak, kanıt; konuşma boş), Claude'un taslağı yalnızca `roomTwo.draftTalkTrack` içinde durur.
 2. Canlı: her iki tarafta
    ```
    CLAUDE_HEAD_AGENT_WORKSPACES=<finedine-workspace-id>
    ```
    `CLAUDE_HEAD_AGENT` global olarak `off` kalır; izin listesi global değeri ezer, diğer müşteriler etkilenmez.
    Gölge listesinden aynı id'yi çıkar. Worker'ı ve web'i yeniden deploy et (env değişikliği ancak yeni süreçte okunur).
-3. `ANTHROPIC_API_KEY` worker'da tanımlı olmalı; değilse head agent sessizce devre dışı kalır, brief yine üretilir.
+3. `ANTHROPIC_API_KEY` worker'da tanımlı olmalı; değilse Oda 2 (Claude) çalışmaz ve kart düz yazılır: paket, kaçak ve kanıt dolu, konuşma boş.
 
 ## 7. Smoke test (tek lead, uçtan uca)
 
@@ -179,12 +181,14 @@ FineDine Beta çalışma alanında, bir inceleyici hesabıyla:
 - [ ] **Harita:** lead'de adres, puan, yorum sayısı, Google Places bilgisi dolu.
 - [ ] **Site:** web sitesi denetimi tamamlandı (WebsiteAudit), sayfada site bulguları görünüyor.
 - [ ] **Yorumlar:** yorum analizi tamamlandı (Apify koşusu + ReviewAnalysis), ağrı/güç ifadeleri görünüyor.
-- [ ] **Brief:** lead intelligence brief üretildi; head agent canlıysa kararın head agent'tan geldiği görünüyor.
+- [ ] **Brief:** `briefMode = head-agent`; kartta paket (Starter/Growth/Premium), kaçak ve kanıt satırları var. Rezervasyon sağlayıcısı olan restoranda `reservation` hariç listede.
+- [ ] **SDR geri bildirimi:** lead sayfasında "Bu brief'i kullandım / Kullanmadım" görünüyor; "Kullanmadım" + sebep kaydedilince İnceleme kuyruğunda o brief başa geçiyor ve SDR rozeti taşıyor.
+- [ ] **HubSpot:** `npx tsx scripts/hubspot-verify.ts --portal <portal>` 11 `revint_*` alanını dolu gösteriyor (bkz. `hubspot-writeback.md`).
 - [ ] Railway loglarında ilgili `worker.ai_runs.job_completed` satırları var, `job_failed` yok.
 - [ ] `/admin/control` → Genel Bakış'ta FineDine çalışma alanı seçilebiliyor.
 - [ ] `/admin/control/reviews` (**İnceleme**) kuyruğunda bu lead'in brief'i işletme adıyla görünüyor.
 - [ ] Teknik merceğindeki inceleyici bir hüküm kaydedebiliyor; kayıt `/admin/control/audit`'te görünüyor.
-- [ ] `/admin/control/trace/<leadId>` (Vaka izi) site, yorum, ICP, karar adımlarının süre ve maliyetini gösteriyor.
+- [ ] `/admin/control/trace/<leadId>` (Vaka izi) Harita · Site · Yorum · Karar adımlarının süre ve maliyetini gösteriyor.
 - [ ] Başka bir çalışma alanının kullanıcısı bu lead'i `/app/leads/<id>` ile açmaya çalışınca 404 alıyor (tenant izolasyonu).
 - [ ] `/api/health` ayrıntılı çıktıda `workerHeartbeatAgeSec` < 180.
 
@@ -192,7 +196,7 @@ FineDine Beta çalışma alanında, bir inceleyici hesabıyla:
 
 Sorunun türüne göre en hafif adımdan başla:
 
-1. **Head agent sorunlu:** her iki tarafta `CLAUDE_HEAD_AGENT_WORKSPACES` değerini boşalt (ya da id'yi `..._SHADOW_WORKSPACES`'a taşı), worker + web redeploy. Veri değişikliği gerekmez; brief'ler head agent olmadan üretilmeye devam eder.
+1. **Head agent sorunlu:** her iki tarafta `CLAUDE_HEAD_AGENT_WORKSPACES` değerini boşalt (ya da id'yi `..._SHADOW_WORKSPACES`'a taşı), worker + web redeploy. Veri değişikliği gerekmez. **Dikkat:** restoran çalışma alanlarında eski (legacy) brief'e dönüş yoktur; id'yi listeden silmek o çalışma alanında brief üretimini tamamen durdurur (`skipped: head_agent_off`). Kartı tutup sadece Claude'u susturmak için id'yi gölge listesine taşı.
 2. **Web sorunlu:** Vercel → Deployments → önceki sağlıklı deploy → "Promote to Production" (ya da `vercel rollback`).
 3. **Worker sorunlu:** Railway → Deployments → önceki deploy → "Redeploy". Kuyruktaki işler Redis'te bekler, kaybolmaz.
    Acil durumda tüm pipeline'ı durdurmak için: `POST /api/admin/pipeline/cancel-all-global` (header `x-leadac-global-pipeline-secret: $LEADAC_GLOBAL_PIPELINE_SECRET`).

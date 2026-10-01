@@ -59,7 +59,7 @@ export async function recordSdrFeedback(input: {
   if (!member) throw new ForbiddenError("Bu çalışma alanının üyesi değilsin.");
 
   const run = await prisma.agentRun.findFirst({
-    where: { id: input.agentRunId, workspaceId: input.workspaceId, leadId: input.leadId, workerKind: "LEAD_INTELLIGENCE_BRIEF", status: "SUCCEEDED" },
+    where: { id: input.agentRunId, workspaceId: input.workspaceId, leadId: input.leadId, workerKind: "LEAD_INTELLIGENCE_BRIEF", status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] } },
     select: { id: true },
   });
   if (!run) throw new NotFoundError("Brief bu lead için bulunamadı.");
