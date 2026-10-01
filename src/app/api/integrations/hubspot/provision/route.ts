@@ -29,9 +29,11 @@ import {
 } from "@/lib/integrations/hubspot/client";
 import {
   ensureRevintProperties,
-  hasProvisionScope,
-  PROVISION_REQUIRED_SCOPE,
+  missingScopeErrorCode,
+  missingWritebackScopes,
+  provisionErrorCode,
   REVINT_PROPERTY_NAMES,
+  REVINT_PROPERTY_OBJECT_TYPES,
 } from "@/lib/integrations/hubspot/properties";
 import { planMeetsMinimum } from "@/lib/agent-workers/registry";
 import { logger } from "@/lib/logger";
@@ -55,9 +57,9 @@ export async function POST() {
       );
     }
 
-    // Scope guard — provisioning custom properties needs
-    // `crm.schemas.contacts.write`. A token granted by the wrong / older
-    // app silently 403s every property create, which previously got
+    // Scope guard — provisioning + writeback need the schema/object
+    // write scopes on contacts AND companies. A token granted by the
+    // wrong / older app 403s every property create, which previously got
     // stamped as a false success. Refuse early with a clear reconnect
     // instruction instead.
     const conn = await prisma.crmConnection.findUnique({
@@ -67,21 +69,22 @@ export async function POST() {
     if (!conn || conn.status === "REVOKED") {
       throw new HubspotNotConnectedError();
     }
-    if (!hasProvisionScope(conn.scopes)) {
+    const missing = missingWritebackScopes(conn.scopes);
+    if (missing.length > 0) {
       await prisma.crmConnection.updateMany({
         where: { workspaceId, provider: "HUBSPOT" },
-        data: { lastError: `missing_scope:${PROVISION_REQUIRED_SCOPE}` },
+        data: { lastError: missingScopeErrorCode(missing) },
       });
-      logger.warn("api.hubspot.provision.missing_scope", {
-        workspaceId,
-        required: PROVISION_REQUIRED_SCOPE,
-      });
+      logger.warn("api.hubspot.provision.missing_scope", { workspaceId, missing });
       return NextResponse.json(
         {
           error: "missing_scope",
-          scope: PROVISION_REQUIRED_SCOPE,
+          scope: missing[0],
+          missingScopes: missing,
           message:
-            "HubSpot bağlantısı şema yazma izni taşımıyor. Doğru Revint app'i ile yeniden bağlanın.",
+            "HubSpot bağlantısı gerekli yazma izinlerini taşımıyor (" +
+            missing.join(", ") +
+            "). revint-app ile yeniden bağlanın.",
         },
         { status: 409 },
       );
@@ -89,26 +92,27 @@ export async function POST() {
 
     const client = await getHubspotClient(prisma, workspaceId);
     const provisioned = await ensureRevintProperties(client);
-    const hadErrors = provisioned.errors.length > 0;
+    const hadErrors = !provisioned.ok;
 
     // Only stamp `propertiesProvisionedAt` when nothing failed. A partial
     // provision leaves the prior timestamp untouched and records the
-    // failing property names so the settings UI can prompt a re-run.
+    // failure (with the HubSpot status/message) so the settings UI can
+    // prompt a fix.
     await prisma.crmConnection.updateMany({
       where: { workspaceId, provider: "HUBSPOT" },
       data: {
         ...(hadErrors ? {} : { propertiesProvisionedAt: new Date() }),
-        lastError: hadErrors
-          ? `property_provision_failed:${provisioned.errors.join(",")}`
-          : null,
+        lastError: provisionErrorCode(provisioned),
       },
     });
 
-    logger.info("api.hubspot.provision.ok", {
+    logger.info("api.hubspot.provision.done", {
       workspaceId,
+      ok: provisioned.ok,
       created: provisioned.created.length,
       skipped: provisioned.skipped.length,
       errors: provisioned.errors.length,
+      missingScope: provisioned.missingScope,
     });
 
     return NextResponse.json({
@@ -121,7 +125,9 @@ export async function POST() {
         existing: provisioned.skipped.length,
         failed: provisioned.errors.length,
         failedNames: provisioned.errors,
-        total: REVINT_PROPERTY_NAMES.length,
+        failures: provisioned.errorDetails.slice(0, 5),
+        missingScope: provisioned.missingScope,
+        total: REVINT_PROPERTY_NAMES.length * REVINT_PROPERTY_OBJECT_TYPES.length,
       },
     });
   } catch (err) {

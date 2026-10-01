@@ -16,6 +16,24 @@ import { reconcileCrmWriteback } from "@/lib/integrations/hubspot/writeback";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * GET — Vercel Cron entry point (Vercel Cron issues GET requests with
+ * `Authorization: Bearer $CRON_SECRET`). Cron-only; no session path.
+ */
+export async function GET(request: Request) {
+  try {
+    const cronSecret = process.env.CRON_SECRET;
+    const authHeader = request.headers.get("authorization");
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const result = await reconcileCrmWriteback(prisma, { limit: 100 });
+    return NextResponse.json({ ok: true, ...result });
+  } catch (err) {
+    return internalError("api.hubspot.reconcile.GET", err);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const cronSecret = process.env.CRON_SECRET;

@@ -27,7 +27,15 @@ interface HubspotState {
   defaultPipelineId: string | null;
   propertiesProvisioned: boolean;
   lastError: string | null;
+  /** Required writeback scopes the token was not granted. */
+  missingScopes?: string[];
   updatedAt: string;
+  writeback?: {
+    lastSuccessAt: string | null;
+    lastFailureAt: string | null;
+    lastFailureError: string | null;
+    failedCount: number;
+  };
 }
 
 /**
@@ -37,7 +45,10 @@ interface HubspotState {
  */
 function formatHubspotError(raw: string): string {
   if (raw.startsWith("missing_scope:")) {
-    return "This HubSpot connection is missing the permission Revint needs to create its custom properties (crm.schemas.contacts.write). Reconnect with the Revint app to finish setup.";
+    const scopes = raw.slice("missing_scope:".length).split(",").filter(Boolean);
+    return `This HubSpot connection is missing the write permission Revint needs to create and fill its revint_* properties on contacts and companies${
+      scopes.length ? ` (${scopes.join(", ")})` : ""
+    }. Nothing can be written back until you reconnect with the Revint app (revint-app) and approve all requested permissions.`;
   }
   if (raw.startsWith("property_provision_failed:")) {
     const names = raw.slice("property_provision_failed:".length);
@@ -59,11 +70,22 @@ export function IntegrationsPanel({
   const searchParams = useSearchParams();
   const [busy, setBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("hubspot_connected")) {
       toast.success("HubSpot connected");
       router.replace("/app/settings/integrations");
+    }
+    const warning = searchParams.get("hubspot_warning");
+    if (warning === "missing_scope") {
+      toast.warning(
+        "HubSpot connected, but write permission is missing — Revint can't write back yet. See details below.",
+      );
+    } else if (warning === "provision_failed") {
+      toast.warning(
+        "HubSpot connected, but some Revint properties couldn't be created. See details below.",
+      );
     }
     const err = searchParams.get("hubspot_error");
     if (err) {
@@ -106,6 +128,28 @@ export function IntegrationsPanel({
       toast.error("Import failed");
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const retryWriteback = async () => {
+    setRetrying(true);
+    try {
+      const res = await fetch("/api/integrations/hubspot/reconcile", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error("Retry failed");
+        return;
+      }
+      if ((data.failed ?? 0) > 0) {
+        toast.warning(`${data.succeeded ?? 0} resolved, ${data.failed} still failing`);
+      } else {
+        toast.success(`${data.succeeded ?? 0} write-back${data.succeeded === 1 ? "" : "s"} resolved`);
+      }
+      router.refresh();
+    } catch {
+      toast.error("Retry failed");
+    } finally {
+      setRetrying(false);
     }
   };
 
@@ -177,6 +221,36 @@ export function IntegrationsPanel({
                   </dd>
                 </div>
               </dl>
+              {!!hubspot?.missingScopes?.length && !hubspot.lastError?.startsWith("missing_scope:") && (
+                <div className="flex items-start gap-2 rounded-lg border border-(--revint-warning)/30 bg-(--revint-warning)/5 p-2.5">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-(--revint-warning)" />
+                  <p className="text-[12px] text-(--revint-text-2)">
+                    {formatHubspotError(`missing_scope:${hubspot.missingScopes.join(",")}`)}
+                  </p>
+                </div>
+              )}
+              {hubspot?.writeback && (
+                <div className="text-[12.5px] text-(--revint-text-2) space-y-1">
+                  <p>
+                    <span className="text-(--revint-text-3)">Last write-back: </span>
+                    <span className="text-(--revint-text-1)">
+                      {hubspot.writeback.lastSuccessAt
+                        ? new Date(hubspot.writeback.lastSuccessAt).toLocaleString()
+                        : "never"}
+                    </span>
+                  </p>
+                  {hubspot.writeback.failedCount > 0 && hubspot.writeback.lastFailureError && (
+                    <div className="flex items-start gap-2 rounded-lg border border-(--revint-warning)/30 bg-(--revint-warning)/5 p-2.5">
+                      <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-(--revint-warning)" />
+                      <p className="text-[12px] text-(--revint-text-2) break-words">
+                        {hubspot.writeback.failedCount} write-back
+                        {hubspot.writeback.failedCount === 1 ? "" : "s"} failed. Latest:{" "}
+                        {hubspot.writeback.lastFailureError.slice(0, 300)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
               {hubspot?.lastError && (
                 <div className="flex items-start gap-2 rounded-lg border border-(--revint-warning)/30 bg-(--revint-warning)/5 p-2.5">
                   <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-(--revint-warning)" />
@@ -195,6 +269,11 @@ export function IntegrationsPanel({
                 <Button variant="outline" onClick={connect} disabled={busy || syncing}>
                   Reconnect
                 </Button>
+                {!!hubspot?.writeback?.failedCount && (
+                  <Button variant="outline" onClick={retryWriteback} disabled={busy || syncing || retrying}>
+                    {retrying ? "Retrying…" : "Retry failed write-backs"}
+                  </Button>
+                )}
                 <Button variant="ghost" onClick={disconnect} disabled={busy || syncing}>
                   <Trash2 className="w-4 h-4 mr-1" /> Disconnect
                 </Button>

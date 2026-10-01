@@ -1,5 +1,6 @@
 /**
- * Revint canonical HubSpot custom contact properties (`revint_*`).
+ * Revint canonical HubSpot custom properties (`revint_*`), provisioned
+ * on both contacts and companies.
  *
  * On connect we provision these properties in the customer's portal so
  * the writeback pipeline can push Revint intelligence (temperature,
@@ -147,20 +148,54 @@ export const REVINT_PROPERTIES: RevintPropertyDef[] = [
 export const REVINT_PROPERTY_NAMES = REVINT_PROPERTIES.map((p) => p.name);
 
 /**
- * Scope the connected HubSpot token MUST carry for property provisioning
- * to succeed. Without it, `createContactProperty` returns 403 and every
- * property silently lands in `errors[]` — the exact failure that made the
- * smoke test report a connection with no Revint fields. Callers should
- * guard on this before attempting provisioning and surface a clear
- * "reconnect with the right app" error instead of a false success.
+ * CRM objects the 11 `revint_*` properties are provisioned on and written
+ * to. Restaurants (FineDine's accounts) arrive in HubSpot as **Companies**;
+ * contacts are the SDR's call target. Deals only get their stage moved
+ * (`dealstage`), so they don't need the custom properties.
+ */
+export const REVINT_PROPERTY_OBJECT_TYPES = ["contacts", "companies"] as const;
+export type RevintPropertyObjectType = (typeof REVINT_PROPERTY_OBJECT_TYPES)[number];
+
+/**
+ * Scope the connected HubSpot token MUST carry for contact property
+ * provisioning. Kept for backwards compatibility — new code should use
+ * `REQUIRED_WRITEBACK_SCOPES` / `missingWritebackScopes`.
  */
 export const PROVISION_REQUIRED_SCOPE = "crm.schemas.contacts.write";
 
-/** Whether a token's granted scopes allow custom-property provisioning. */
+/**
+ * Every scope the writeback pipeline needs end-to-end: create the
+ * `revint_*` property definitions on contacts + companies (schemas.*.write)
+ * and PATCH their values (objects.*.write). Without the schema-write
+ * scopes every property create 403s — the exact production failure on
+ * portal 148499892 where the connected app lacked write scope and nothing
+ * was written back.
+ */
+export const REQUIRED_WRITEBACK_SCOPES = [
+  "crm.objects.contacts.write",
+  "crm.objects.companies.write",
+  "crm.schemas.contacts.write",
+  "crm.schemas.companies.write",
+] as const;
+
+/** Required writeback scopes the token was NOT granted (empty = OK). */
+export function missingWritebackScopes(
+  scopes: readonly string[] | null | undefined,
+): string[] {
+  const granted = new Set(Array.isArray(scopes) ? scopes : []);
+  return REQUIRED_WRITEBACK_SCOPES.filter((s) => !granted.has(s));
+}
+
+/** Whether a token's granted scopes allow provisioning + writeback. */
 export function hasProvisionScope(
   scopes: readonly string[] | null | undefined,
 ): boolean {
-  return Array.isArray(scopes) && scopes.includes(PROVISION_REQUIRED_SCOPE);
+  return missingWritebackScopes(scopes).length === 0;
+}
+
+/** `CrmConnection.lastError` code for a token missing writeback scopes. */
+export function missingScopeErrorCode(missing: readonly string[]): string {
+  return `missing_scope:${missing.join(",")}`;
 }
 
 /**
@@ -172,60 +207,136 @@ export const REVINT_ENUM_PROPERTY_NAMES = new Set<string>(
   REVINT_PROPERTIES.filter((p) => p.type === "enumeration").map((p) => p.name),
 );
 
+export interface ProvisionErrorDetail {
+  objectType: RevintPropertyObjectType;
+  /** Property name, or `*group*` for the property-group create. */
+  name: string;
+  status: number | null;
+  message: string;
+}
+
+export interface ProvisionResult {
+  /** `${objectType}.${name}` entries. */
+  created: string[];
+  skipped: string[];
+  errors: string[];
+  errorDetails: ProvisionErrorDetail[];
+  /** Any HubSpot call answered 401/403 — the token lacks a scope. */
+  missingScope: boolean;
+  /** True only when every property exists on every object type. */
+  ok: boolean;
+}
+
+function httpStatus(err: unknown): number | null {
+  const s = (err as { status?: unknown } | null)?.status;
+  return typeof s === "number" ? s : null;
+}
+
+function errMessage(err: unknown): string {
+  return (err instanceof Error ? err.message : String(err)).slice(0, 500);
+}
+
 /**
- * Ensure the `revint_*` properties exist in the portal. Returns the list
- * of newly-created property names. Best-effort: a failure to create one
- * property logs and continues. Includes a property-group create attempt
- * so the fields land in a dedicated "Revint" group instead of
- * `contactinformation`.
+ * Ensure the 11 `revint_*` properties exist on contacts AND companies.
+ *
+ * Honest by construction: "already exists" (listed, or a 409 on create)
+ * counts as skipped; every other failure is returned in `errors` /
+ * `errorDetails` with the HubSpot status + message, and `missingScope`
+ * flips when HubSpot answers 401/403. Callers MUST NOT stamp
+ * `propertiesProvisionedAt` unless `ok` is true.
  */
 export async function ensureRevintProperties(
   client: HubspotClient,
-): Promise<{ created: string[]; skipped: string[]; errors: string[] }> {
+  objectTypes: readonly RevintPropertyObjectType[] = REVINT_PROPERTY_OBJECT_TYPES,
+): Promise<ProvisionResult> {
   const created: string[] = [];
   const skipped: string[] = [];
   const errors: string[] = [];
+  const errorDetails: ProvisionErrorDetail[] = [];
+  let missingScope = false;
 
-  let existing: Set<string>;
-  try {
-    const res = await client.listContactProperties();
-    existing = new Set(res.results.map((p) => p.name));
-  } catch {
-    existing = new Set();
-  }
+  const noteScope = (err: unknown) => {
+    const st = httpStatus(err);
+    if (st === 401 || st === 403) missingScope = true;
+  };
 
-  // Best-effort group create. A 4xx because the group already exists is
-  // expected on reconnect; we ignore the result either way.
-  try {
-    await client.createContactPropertyGroup({
-      name: REVINT_PROPERTY_GROUP,
-      label: "Revint",
-      displayOrder: -1,
-    });
-  } catch {
-    // group probably exists already — ignore.
-  }
-
-  for (const prop of REVINT_PROPERTIES) {
-    if (existing.has(prop.name)) {
-      skipped.push(prop.name);
-      continue;
-    }
+  for (const objectType of objectTypes) {
+    // Listing is an optimisation — if it fails we fall back to "create
+    // everything and treat 409 as existing", which is still correct.
+    let existing = new Set<string>();
     try {
-      await client.createContactProperty({
-        name: prop.name,
-        label: prop.label,
-        type: prop.type,
-        fieldType: prop.fieldType,
-        groupName: REVINT_PROPERTY_GROUP,
-        description: prop.description,
-        ...(prop.options ? { options: prop.options } : {}),
+      const res = await client.listProperties(objectType);
+      existing = new Set(res.results.map((p) => p.name));
+    } catch (err) {
+      noteScope(err);
+    }
+
+    try {
+      await client.createPropertyGroup(objectType, {
+        name: REVINT_PROPERTY_GROUP,
+        label: "Revint",
+        displayOrder: -1,
       });
-      created.push(prop.name);
-    } catch {
-      errors.push(prop.name);
+    } catch (err) {
+      // 409 = group exists (normal on reconnect). A 403 means the
+      // property creates below will fail too; they record the error.
+      noteScope(err);
+    }
+
+    for (const prop of REVINT_PROPERTIES) {
+      const key = `${objectType}.${prop.name}`;
+      if (existing.has(prop.name)) {
+        skipped.push(key);
+        continue;
+      }
+      try {
+        await client.createProperty(objectType, {
+          name: prop.name,
+          label: prop.label,
+          type: prop.type,
+          fieldType: prop.fieldType,
+          groupName: REVINT_PROPERTY_GROUP,
+          description: prop.description,
+          ...(prop.options ? { options: prop.options } : {}),
+        });
+        created.push(key);
+      } catch (err) {
+        if (httpStatus(err) === 409) {
+          skipped.push(key);
+          continue;
+        }
+        noteScope(err);
+        errors.push(key);
+        errorDetails.push({
+          objectType,
+          name: prop.name,
+          status: httpStatus(err),
+          message: errMessage(err),
+        });
+      }
     }
   }
 
-  return { created, skipped, errors };
+  return {
+    created,
+    skipped,
+    errors,
+    errorDetails,
+    missingScope,
+    ok: errors.length === 0,
+  };
+}
+
+/**
+ * `CrmConnection.lastError` code for a provision result (null when ok).
+ * Missing scope wins: that is the actionable fix ("reconnect with the
+ * revint-app"), not the individual property names.
+ */
+export function provisionErrorCode(res: ProvisionResult): string | null {
+  if (res.ok) return null;
+  if (res.missingScope) return missingScopeErrorCode(REQUIRED_WRITEBACK_SCOPES);
+  const first = res.errorDetails[0];
+  return `property_provision_failed:${res.errors.join(",")}${
+    first ? ` (${first.status ?? "?"}: ${first.message.slice(0, 200)})` : ""
+  }`;
 }

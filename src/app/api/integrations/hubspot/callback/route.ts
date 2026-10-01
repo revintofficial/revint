@@ -23,8 +23,9 @@ import { encryptSecret } from "@/lib/integrations/crypto";
 import { HubspotClient } from "@/lib/integrations/hubspot/client";
 import {
   ensureRevintProperties,
-  hasProvisionScope,
-  PROVISION_REQUIRED_SCOPE,
+  missingScopeErrorCode,
+  missingWritebackScopes,
+  provisionErrorCode,
 } from "@/lib/integrations/hubspot/properties";
 import { buildDefaultStageMapping } from "@/lib/integrations/hubspot/field-map";
 import { getPlaybook } from "@/lib/playbook/resolve";
@@ -58,11 +59,17 @@ function redirectWithHubspotFlag(
   state: HubspotOAuthState | null,
   key: "hubspot_connected" | "hubspot_error",
   value: string,
+  extra?: Record<string, string>,
 ): NextResponse {
   const returnTo = safeReturnTo(state?.returnTo);
   const sep = returnTo.includes("?") ? "&" : "?";
+  const tail = extra
+    ? Object.entries(extra)
+        .map(([k, v]) => `&${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .join("")
+    : "";
   return NextResponse.redirect(
-    `${origin}${returnTo}${sep}${key}=${encodeURIComponent(value)}`,
+    `${origin}${returnTo}${sep}${key}=${encodeURIComponent(value)}${tail}`,
   );
 }
 
@@ -245,7 +252,9 @@ export async function GET(request: Request) {
 
     // Best-effort provisioning: property creation + default stage map.
     // Failures here must not block the connection (the admin can re-run
-    // from the settings page), so we catch and log.
+    // from the settings page), so we catch and log. A setup problem is
+    // surfaced to the UI via `hubspot_warning` (lastError has details).
+    let setupWarning: "missing_scope" | "provision_failed" | null = null;
     try {
       const client = new HubspotClient(prisma, {
         id: conn.id,
@@ -256,20 +265,18 @@ export async function GET(request: Request) {
         portalId,
       });
 
-      // Scope guard — without `crm.schemas.contacts.write` every
-      // property create 403s and silently lands in `errors[]`. Don't
-      // attempt provisioning (and never stamp a false success); record
-      // the missing scope so settings can prompt a reconnect with the
-      // correct app.
-      const canProvision = hasProvisionScope(info.scopes);
-      const provisioned = canProvision
-        ? await ensureRevintProperties(client)
-        : { created: [], skipped: [], errors: [] };
+      // Scope guard — without the schema/object write scopes every
+      // property create or PATCH 403s. Don't attempt provisioning (and
+      // never stamp a false success); record exactly which scopes are
+      // missing so settings can prompt a reconnect with the revint-app.
+      const missingScopes = missingWritebackScopes(info.scopes);
+      const canProvision = missingScopes.length === 0;
+      const provisioned = canProvision ? await ensureRevintProperties(client) : null;
       if (!canProvision) {
         logger.warn("api.hubspot.provision_scope_missing", {
           workspaceId: actor.workspaceId,
           portalId,
-          required: PROVISION_REQUIRED_SCOPE,
+          missing: missingScopes,
         });
       }
 
@@ -290,12 +297,14 @@ export async function GET(request: Request) {
       // Only stamp `propertiesProvisionedAt` on a clean provision.
       // Partial / blocked provisioning records the failure so the
       // connection doesn't masquerade as fully set up.
-      const provisionOk = canProvision && provisioned.errors.length === 0;
-      const lastError = !canProvision
-        ? `missing_scope:${PROVISION_REQUIRED_SCOPE}`
-        : provisioned.errors.length > 0
-          ? `property_provision_failed:${provisioned.errors.join(",")}`
-          : null;
+      const provisionOk = !!provisioned?.ok;
+      const lastError = !provisioned
+        ? missingScopeErrorCode(missingScopes)
+        : provisionErrorCode(provisioned);
+      if (!provisioned) setupWarning = "missing_scope";
+      else if (!provisionOk) {
+        setupWarning = provisioned.missingScope ? "missing_scope" : "provision_failed";
+      }
 
       await prisma.crmConnection.update({
         where: { id: conn.id },
@@ -311,19 +320,38 @@ export async function GET(request: Request) {
         workspaceId: actor.workspaceId,
         portalId,
         canProvision,
-        propsCreated: provisioned.created.length,
-        propsSkipped: provisioned.skipped.length,
-        propsFailed: provisioned.errors.length,
+        propsCreated: provisioned?.created.length ?? 0,
+        propsSkipped: provisioned?.skipped.length ?? 0,
+        propsFailed: provisioned?.errors.length ?? 0,
+        provisionError: lastError,
       });
     } catch (err) {
       logger.error("api.hubspot.provision_error", { err });
+      setupWarning = "provision_failed";
+      // Never leave a silent "connected" with nothing provisioned.
+      await prisma.crmConnection
+        .update({
+          where: { id: conn.id },
+          data: {
+            lastError: `property_provision_failed:${
+              err instanceof Error ? err.message.slice(0, 300) : "unknown"
+            }`,
+          },
+        })
+        .catch(() => undefined);
     }
 
     // Clear the single-use OAuth cookies on the redirect response itself.
     // Mutating the `cookies()` store does not reliably attach Set-Cookie
     // to a separately-constructed NextResponse.redirect, which would let
     // the nonce/verifier survive for their full 10-minute TTL.
-    const res = redirectWithHubspotFlag(url.origin, state, "hubspot_connected", "1");
+    const res = redirectWithHubspotFlag(
+      url.origin,
+      state,
+      "hubspot_connected",
+      "1",
+      setupWarning ? { hubspot_warning: setupWarning } : undefined,
+    );
     res.cookies.set("hubspot_oauth_state", "", clearOpts);
     res.cookies.set("hubspot_pkce_verifier", "", clearOpts);
     return res;
