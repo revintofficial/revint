@@ -33,7 +33,7 @@ async function CalibrationBody({ workspaceId, tab }: { workspaceId: string; tab:
 
   return (
     <section className="space-y-4">
-      <h1 className="text-2xl font-semibold">Calibration</h1>
+      <h1 className="text-2xl font-semibold">Yayın</h1>
       <CalibrationPanel
         workspaceId={workspaceId}
         role={actor.role}

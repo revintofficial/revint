@@ -441,7 +441,7 @@ git commit -am "fix: restaurant briefs come from the head agent, and room one pi
 - Modify: `src/lib/control/overview.ts`
 - Test: `src/__tests__/control/overview.test.ts`
 
-- [ ] **Step 1: Test**
+- [x] **Step 1: Test**
 
 ```ts
 it("counts only head-agent briefs as completed work", async () => {
@@ -458,11 +458,11 @@ it("counts only head-agent briefs as completed work", async () => {
 });
 ```
 
-- [ ] **Step 2: Kırmızı, sonra uygula**
+- [x] **Step 2: Kırmızı, sonra uygula**
 
 Mevcut `status` ve `finishedAt` filtreleri durur; üstüne `workerKind` ve `outputJson` path filtresi eklenir. `skipped` brief'ler `briefMode` taşımaz, sayıma girmez.
 
-- [ ] **Step 3: Yeşil, commit**
+- [x] **Step 3: Yeşil, commit**
 
 ```bash
 git commit -am "fix: the overview counts leads that reached a head-agent brief"
@@ -770,7 +770,7 @@ P_e  = Σ_j p_j²
 κ    = (P̄ − P_e) / (1 − P_e)
 ```
 
-- [ ] **Step 1: Testler**
+- [x] **Step 1: Testler**
 
 ```ts
 it("returns 1 when every lens agrees on every item", () => {
@@ -799,7 +799,7 @@ it("warns when more than one rubric version is mixed into the report", async () 
 });
 ```
 
-- [ ] **Step 2: Kırmızı, uygula**
+- [x] **Step 2: Kırmızı, uygula**
 
 Rapor yalnızca üç merceği de tamamlanmış koşular üzerinden hesaplanır. Mercek başına **en yeni** hüküm esas alınır. `source = "SDR"` satırları rapora girmez.
 
@@ -814,7 +814,7 @@ Ekran dört blok basar:
 
 Nav: `Calibration` etiketi **Yayın** olur (rota değişmez), `Uyum` satırı İnceleme'den hemen sonra gelir.
 
-- [ ] **Step 3: Yeşil, commit**
+- [x] **Step 3: Yeşil, commit**
 
 ```bash
 git commit -am "feat(control): agreement screen with fleiss kappa, disagreements, and adjudication"
@@ -845,7 +845,7 @@ export async function getGateStatuses(workspaceId: string, now?: Date): Promise<
 
 `decidable` kuralı: `total >= 50` **ve** aralık genişliği `<= 0.25`. Altındaysa ekran oranı basar ama yanına "karar için yetersiz" yazar ve kapı `met: null` olur.
 
-- [ ] **Step 1: Testler**
+- [x] **Step 1: Testler**
 
 ```ts
 it("matches the published wilson half widths at p=0.8", () => {
@@ -873,7 +873,7 @@ it("lists the three gates with their targets", async () => {
 });
 ```
 
-- [ ] **Step 2: Kırmızı, uygula**
+- [x] **Step 2: Kırmızı, uygula**
 
 Genel Bakış üç blok basar:
 
@@ -885,7 +885,7 @@ Genel Bakış üç blok basar:
 
 Duraklat düğmesi, ayar formu, global iptal yoktur.
 
-- [ ] **Step 3: Yeşil, commit**
+- [x] **Step 3: Yeşil, commit**
 
 ```bash
 git commit -am "feat(control): the overview prints the quality gates with confidence intervals"
