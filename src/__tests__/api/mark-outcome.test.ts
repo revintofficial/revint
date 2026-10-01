@@ -156,9 +156,10 @@ describe("POST /api/leads/[id]/mark-outcome", () => {
     expect(body.status).toBe("WON");
     expect(body.sessionId).toBe("sess_reply_1");
 
-    // L5 - updateMany now scopes by both leadId AND workspaceId.
+    // L5 - updateMany scopes by leadId AND the parent lead's workspace
+    // (SalesOpportunity has no workspaceId column of its own).
     expect(mockSalesOppUpdateMany).toHaveBeenCalledWith({
-      where: { leadId: "lead_1", workspaceId: "ws_test" },
+      where: { leadId: "lead_1", lead: { workspaceId: "ws_test" } },
       data: { status: "WON" },
     });
 

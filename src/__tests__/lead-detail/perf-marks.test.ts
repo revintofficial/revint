@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 /**
  * Phase 7 (V-L) — perf-marks unit test.
  *

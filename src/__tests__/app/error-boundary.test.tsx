@@ -31,6 +31,12 @@ vi.stubGlobal(
   "fetch",
   vi.fn(() => Promise.resolve(new Response(null, { status: 204 }))),
 );
+// The boundaries actually report via navigator.sendBeacon, which
+// happy-dom implements as a real request to localhost:3000.
+Object.defineProperty(navigator, "sendBeacon", {
+  configurable: true,
+  value: vi.fn(() => true),
+});
 
 import RootError from "@/app/error";
 import RootNotFound from "@/app/not-found";

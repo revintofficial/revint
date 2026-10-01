@@ -67,9 +67,10 @@ export const POST = withAuth(async (session, req: Request, ctx: { params: Promis
   // L5 - same scope on the SalesOpportunity update so a stale id
   // can't write into another tenant's row. updateMany returns a
   // count we ignore here since the parent lookup already gated
-  // existence; the workspaceId predicate is the safety net.
+  // existence; the workspace predicate (via the parent lead, since
+  // SalesOpportunity has no workspaceId column) is the safety net.
   await prisma.salesOpportunity.updateMany({
-    where: { leadId: id },
+    where: { leadId: id, lead: { workspaceId: session.workspaceId } },
     data: { status },
   });
 

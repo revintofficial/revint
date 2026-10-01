@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 /**
  * Phase 7 — synthetic perf budget regression test.
  *

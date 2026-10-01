@@ -22,7 +22,9 @@ const TARGET_FILES = [
   "src/lib/ai-core/memory.ts",
   "src/lib/review-analysis/try-enqueue.ts",
   "src/app/api/discovery/route.ts",
-  "src/app/api/leads/[id]/workers/[kind]/route.ts",
+  // The per-worker route now enqueues through tryEnqueue() in
+  // src/lib/control/enqueue-run.ts; check the real call site.
+  "src/lib/control/enqueue-run.ts",
   "src/app/api/leads/bulk-action/route.ts",
   "src/lib/sequence-engine/tick.ts",
 ];

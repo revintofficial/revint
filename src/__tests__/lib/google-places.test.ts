@@ -132,10 +132,12 @@ describe("google-places lib", () => {
       await discoverLeads("phone repair", borough);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.textQuery).toBe("phone repair in Greenwich London");
+      // The legacy hard-coded " London" suffix was replaced by an optional
+      // country suffix; with no country the query is just "<niche> in <place>".
+      expect(body.textQuery).toBe("phone repair in Greenwich");
     });
 
-    it("uses locationBias with borough coordinates", async () => {
+    it("restricts results to a circle around the borough coordinates", async () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ places: [] }),
@@ -144,9 +146,9 @@ describe("google-places lib", () => {
       await discoverLeads("phone repair", borough, 3000);
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.locationBias.circle.center.latitude).toBe(51.4826);
-      expect(body.locationBias.circle.center.longitude).toBe(0.0077);
-      expect(body.locationBias.circle.radius).toBe(3000);
+      expect(body.locationRestriction.circle.center.latitude).toBe(51.4826);
+      expect(body.locationRestriction.circle.center.longitude).toBe(0.0077);
+      expect(body.locationRestriction.circle.radius).toBe(3000);
     });
 
     it("returns all places from single page", async () => {
