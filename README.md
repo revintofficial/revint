@@ -1,278 +1,230 @@
 # Revint
 
-**Yerel işletmelere satış yapan ekipler için satış istihbaratı katmanı.**
+**Sales intelligence for teams that sell to local businesses.**
 
-Revint her lead'i araştırır (harita, web sitesi, yorumlar) ve SDR'ın tek sorusuna kanıtlı bir cevap verir:
+Revint researches every lead (maps listing, website, customer reviews) and answers one question for the sales rep:
 
-> *Bu işletmeyi bugün neden, nasıl ve hangi paketle aramalıyım?*
+> *Why, how, and with which package should I call this business today?*
 
-Cevap tek bir satış kartıdır: paket, satışın tek konusu (kaçak), açılış konuşması ve her cümlenin dayandığı kanıt. Kart Revint'in lead sayfasında görünür ve HubSpot'a geri yazılır. Revint CRM'in yerini almaz, üstünde çalışır.
-
-İlk dikey: **restoran teknolojisi (F&B)**. İlk tasarım ortağı: **FineDine**.
+The answer is a single sales card: the recommended package, the one problem to lead with, an opening talk track, and the evidence behind every line. The card appears on the lead page in the app and is written back to the CRM. Revint sits on top of the CRM instead of replacing it.
 
 ---
 
-## İçindekiler
+## Contents
 
-- [Nasıl çalışır](#nasıl-çalışır)
-- [Kalite kontrol odası](#kalite-kontrol-odası)
-- [Mimari](#mimari)
-- [Repo haritası](#repo-haritası)
-- [Kurulum](#kurulum)
-- [Komutlar](#komutlar)
-- [Deploy](#deploy)
-- [Kurallar](#kurallar)
-- [Dokümanlar](#dokümanlar)
-- [Yol haritası](#yol-haritası)
-- [Sözlük](#sözlük)
+- [How it works](#how-it-works)
+- [Quality control room](#quality-control-room)
+- [Architecture](#architecture)
+- [Repository layout](#repository-layout)
+- [Getting started](#getting-started)
+- [Commands](#commands)
+- [Deployment](#deployment)
+- [Engineering rules](#engineering-rules)
+- [Glossary](#glossary)
 
 ---
 
-## Nasıl çalışır
+## How it works
 
-Dört worker. İlk üçü kanıt toplar, dördüncüsü karar verir.
+Four workers per lead. The first three gather evidence; the fourth makes the decision.
 
 ```mermaid
 flowchart LR
-  L[Lead<br/>Places · manuel · HubSpot] --> M[1 · Harita<br/>APIFY_GMAPS_DEEP]
-  L --> S[2 · Site<br/>WEBSITE_AUDITOR]
-  M --> Y[3 · Yorum<br/>REVIEW_ANALYST]
-  M --> H[4 · Karar<br/>LEAD_INTELLIGENCE_BRIEF]
-  S --> H
-  Y --> H
-  H --> UI[Lead sayfası]
-  H --> HS[HubSpot<br/>revint_* alanları]
-  H --> CR[Kontrol odası]
+  L[Lead] --> M[1 · Maps<br/>APIFY_GMAPS_DEEP]
+  L --> S[2 · Website<br/>WEBSITE_AUDITOR]
+  M --> R[3 · Reviews<br/>REVIEW_ANALYST]
+  M --> D[4 · Decision<br/>LEAD_INTELLIGENCE_BRIEF]
+  S --> D
+  R --> D
+  D --> UI[Lead page]
+  D --> CRM[CRM writeback]
+  D --> QC[Control room]
 ```
 
-| Adım | Ne yapar | Ne bırakır |
+| Step | What it does | Output |
 |---|---|---|
-| **Harita** | Google Maps derin tarama (Apify, aynı anda en fazla 2) | Yorum corpus'u, puan, iletişim, sosyal linkler |
-| **Site** | Playwright ile site denetimi | Rezervasyon / QR menü / online sipariş sinyalleri: `true`, `false` ya da `null` (bakılamadı) |
-| **Yorum** | Gemini ile yalnızca çıkarım, cümle yazmaz | Zayıf ve güçlü yönler, alıntılar; her acının `sellable` bayrağı. 30 yorumun altında çalışmaz |
-| **Karar** | Head agent | Tek satış kartı |
+| **Maps** | Deep scrape of the business listing (max 2 concurrent calls) | Review corpus, rating, contact details, social links |
+| **Website** | Headless-browser audit | Booking / menu / ordering signals as `true`, `false`, or `null` (not observed) |
+| **Reviews** | LLM extraction only, writes no prose | Strengths, weaknesses, quotes, each pain flagged `sellable` or not. Skipped below 30 reviews |
+| **Decision** | Head agent | One sales card |
 
-### Head agent: üç oda
+### The head agent
 
 ```mermaid
 flowchart TD
-  IN[Kanıt: harita · site · yorum] --> R1
-  R1["Oda 1 · kural, model yok<br/>kaçağı ve paketi seçer"] --> R2
-  R2["Oda 2 · Claude<br/>yalnızca konuşmayı yazar"] --> R3{"Oda 3 · QA"}
-  R3 -->|geçti| CARD[Satış kartı]
-  R3 -->|kaldı / Claude yok| FLAT[Düz kart<br/>paket + kanıt, konuşma boş]
+  IN[Evidence: maps · website · reviews] --> R1
+  R1["Room 1 · rules, no model<br/>picks the problem and the package"] --> R2
+  R2["Room 2 · LLM<br/>writes the talk track only"] --> R3{"Room 3 · QA"}
+  R3 -->|pass| CARD[Sales card]
+  R3 -->|fail / model unavailable| FLAT[Plain card<br/>package + evidence, no talk track]
 ```
 
-- **Oda 1** deterministiktir. Altı kaçaktan birini öncelik sırasıyla seçer: rezervasyon → hesap bekleme → marketplace → menü yüzeyi → çok şube → misafir tekrarı. Sonra o kaçağı çözen **en küçük** paketi seçer (Starter / Growth / Premium). Kanıt yoksa kaçak `none` olur.
-- **Oda 2** (Claude) paket ya da modül uyduramaz. Her cümlesi Oda 1'in kanıt satırlarından birine bağlıdır.
-- **Oda 3** paketi, kaçağa bağlılığı ve yasakları denetler. Kalırsa ikinci bir model denemesi açılmaz; kart düz yazılır.
-- Rezervasyon sağlayıcısı olan işletmeye rezervasyon satılmaz. Lezzet şikayeti satış açısı değildir.
+- **Room 1** is deterministic. It picks one problem by fixed priority, then the **smallest** package that solves it. No evidence means no pitch.
+- **Room 2** cannot invent packages or features; every sentence must cite a Room 1 evidence line.
+- **Room 3** checks package, focus, and banned claims. A failure produces a plain card; there is no second model attempt.
 
-Karar `SalesOpportunity` satırına da yansıtılır. CRM writeback, liste sıralaması ve export bu satırı okur.
+The decision is also projected into a `SalesOpportunity` row, which CRM writeback, list ordering, and exports read.
 
 ---
 
-## Kalite kontrol odası
+## Quality control room
 
-`/admin/control`. Analiz kalitesini insanlar ölçer, model ölçmez.
+`/admin/control`. Analysis quality is measured by people, not by a model.
 
-Üç **mercek** (Teknik · Alan · Satış) her brief'i **bağımsız** inceler: kimse kendi hükmünü yazmadan diğerlerininkini görmez. Her hüküm rubrik sürümünü ve inceleme süresini taşır.
+Three reviewer **lenses** (technical, domain, sales) review each brief **independently**: nobody sees another verdict before writing their own. Every verdict records the rubric version and time spent.
 
-| Ekran | Rota | Ne için |
+| Screen | Route | Purpose |
 |---|---|---|
-| Genel Bakış | `/admin/control` | Bugün neye bakmalı + **"FineDine'a verebilir miyiz?"** kapıları |
-| İnceleme | `/admin/control/reviews` | Dört çekmeceli kanıt rafı: solda iddia, sağda dayanak |
-| Uyum | `/admin/control/uyum` | İnceleyenler arası uyum (Fleiss kappa), anlaşmazlıklar, uzlaştırma |
-| Vaka izi | `/admin/control/trace` | Harita · Site · Yorum · Karar; süre, maliyet, hata, ham JSON |
-| Referans vakalar | `/admin/control/golden` | Regresyon seti, taban / aday karşılaştırması |
-| Yayın | `/admin/control/calibration` | ICP, paket, oyun kitabı yayını |
-| Denetim | `/admin/control/audit` | Kim ne yaptı, neden |
-| Mercekler · Rehber | `/admin/control/mercekler` · `/rehber` | Mercek ataması · nasıl çalışır |
+| Overview | `/admin/control` | What needs attention today, plus release gates |
+| Review | `/admin/control/reviews` | Evidence shelf: each claim next to its source |
+| Agreement | `/admin/control/uyum` | Inter-rater agreement (Fleiss' kappa), disagreements, adjudication |
+| Trace | `/admin/control/trace` | Per-step runs, duration, cost, errors, raw output |
+| Reference cases | `/admin/control/golden` | Regression set, baseline vs. candidate comparison |
+| Publishing | `/admin/control/calibration` | ICP, package, and playbook publishing |
+| Audit | `/admin/control/audit` | Who did what, and why |
 
-**Dürüst sayı kuralı:** oran hiçbir zaman tek başına basılmaz. Her oran `n` ve %95 Wilson aralığıyla birlikte gelir. `n < 50` ise ekran *"karar için yetersiz"* yazar.
+**Honest numbers:** a rate is never shown on its own. It always comes with `n` and a 95% Wilson interval, and below 50 samples the screen says the result is not yet decidable.
 
 ```
-%60 (12/20) · %39–%78 · karar için yetersiz
+60% (12/20) · 39–78% · not enough data to decide
 ```
 
-**İkinci kanal, SDR:** lead sayfasında *"Bu brief'i kullandım / Kullanmadım"* düğmeleri var. "Kullanmadım" altı sabit sebepten biriyle kaydedilir ve o brief iç inceleme kuyruğunun başına geçer.
+Sales reps give feedback from the lead page ("used this brief" / "didn't use it", with a fixed reason). Rejected briefs jump to the front of the review queue.
 
-### Teslim kapıları
+---
 
-| Kapı | Ölçüt |
+## Architecture
+
+| Layer | Technology |
 |---|---|
-| **A · Boru hattı** | ≥ 40 head-agent brief · brief'e ulaşma ≥ %80 |
-| **B · Ölçüm** | ≥ 30 kodlanmış iz · ≥ 50 üçlü hüküm · kappa ≥ 0.60 · medyan inceleme ≤ 2 dk · ≥ 30 referans vaka |
-| **C · Teslim** | Taban geçiş ≥ %80 (n ≥ 50, alt sınır ≥ %69) · P0 = 0 · aday koşuda regresyon yok |
+| Web | Next.js 16 (App Router, Webpack), React 19, Tailwind CSS v4, Radix UI, Framer Motion |
+| Background jobs | BullMQ + Redis, run by a separate worker process (`npm run workers`) |
+| Database & auth | PostgreSQL with pgvector, Prisma 6, Supabase Auth |
+| AI | Google Gemini (extraction, embeddings), Anthropic Claude (head agent) |
+| Data sources | Google Places, Apify, Playwright |
+| Integrations | HubSpot (OAuth + UI extension in `hubspot-app/`), Stripe, Resend |
+| Hosting | Vercel (web), Railway (workers), Supabase (database) |
 
-Gerekçe ve hükümler: [`docs/admin-paneli-son-karar.md`](docs/admin-paneli-son-karar.md).
-
----
-
-## Mimari
-
-| Katman | Teknoloji | Nerede |
-|---|---|---|
-| Web | Next.js 16.2 (App Router, Webpack), React 19, Tailwind v4, Radix, Framer Motion | Vercel |
-| Worker'lar | BullMQ supervisor (`npm run workers`) | Railway |
-| Veritabanı · auth | Postgres + pgvector, Prisma 6, Supabase Auth | Supabase |
-| Kuyruk | Redis (`REDIS_URL`) | Railway / Upstash |
-| AI | Gemini (çıkarım, embedding) · Claude (head agent, Oda 2) | — |
-| Veri | Google Places, Apify, Playwright | — |
-| Entegrasyon | HubSpot (OAuth + App Card, `hubspot-app/`), Stripe v22, Resend | — |
-
-Alan adları: `revint.dev` (site) · `app.revint.dev` (ürün) · `admin.revint.dev` (kontrol odası). Host yönlendirmesi `src/proxy.ts` içinde.
-
-**Kuyruklar:** yalnızca `agent-runs` (tüm AI işi), `discovery` ve `seo-ops` açılır. Ayrıntı: [`docs/runbooks/workers-topology.md`](docs/runbooks/workers-topology.md).
+All AI work runs on a single `agent-runs` queue. Queue layout: [`docs/runbooks/workers-topology.md`](docs/runbooks/workers-topology.md).
 
 ---
 
-## Repo haritası
+## Repository layout
 
 ```
 src/
   app/
-    (site)/ (public)/         pazarlama sitesi
-    app/                      ürün: leads, discovery, campaigns, settings…
-    admin/control/            kalite kontrol odası
-    admin/(marketing)/        site analitiği
-    api/                      route handler'lar
+    (site)/ (public)/         marketing site
+    app/                      product: leads, discovery, campaigns, settings
+    admin/control/            quality control room
+    api/                      route handlers
   lib/
-    ai-core/                  orkestratör, zincirler, hafıza, head agent
-    agent-workers/            worker modülleri (tek Gemini çağrı yeri)
-    control/                  kontrol odası servisleri (inceleme, uyum, skor, kapılar)
-    integrations/hubspot/     OAuth, writeback, alan provizyonu
-    playbook/vertical-pack/   dikey paketler (fnb)
-  workers/                    BullMQ supervisor ve worker'lar
-  generated/prisma/           üretilmiş Prisma client
+    ai-core/                  orchestrator, chains, memory, head agent
+    agent-workers/            worker modules (the only place that calls Gemini)
+    control/                  control room services (reviews, agreement, scoring, gates)
+    integrations/hubspot/     OAuth, writeback, property provisioning
+    playbook/vertical-pack/   vertical packs
+  workers/                    BullMQ supervisor and workers
+  generated/prisma/           generated Prisma client
 prisma/
-  schema.prisma               şema
-  migrations/*.sql            elle uygulanan idempotent migration'lar
-hubspot-app/                  HubSpot App Card projesi
-scripts/                      bakım script'leri (inceleyici atama, HubSpot backfill/verify…)
-docs/                         karar kağıtları, planlar, runbook'lar
+  schema.prisma               schema
+  migrations/*.sql            idempotent SQL migrations, applied manually
+hubspot-app/                  HubSpot UI extension project
+scripts/                      maintenance scripts
+docs/                         design notes and runbooks
 ```
 
 ---
 
-## Kurulum
+## Getting started
 
-**Gereksinimler:** Node 22+, Postgres (pgvector ile), Redis, ve kullanacağın servislerin anahtarları.
+**Requirements:** Node.js 22+, PostgreSQL with pgvector, Redis, and API keys for the services you use.
 
 ```bash
-npm install                     # postinstall: prisma generate + Playwright Chromium
-cp .env.example .env.local      # değerleri doldur
-npm run db:push                 # geliştirme şeması
-npm run dev                     # web  → http://localhost:3000
-npm run workers                 # worker'lar (ayrı terminal)
+npm install                     # also runs prisma generate and installs Playwright Chromium
+cp .env.example .env.local      # fill in values
+npm run db:push                 # dev schema
+npm run dev                     # web → http://localhost:3000
+npm run workers                 # workers, in a second terminal
 ```
 
-`.env.example` her değişkeni `[web]`, `[worker]` ya da `[both]` etiketiyle listeler. Production'da worker eksik değişkenle açılmayı reddeder (`src/lib/env-check.ts`).
+`.env.example` tags every variable as `[web]`, `[worker]`, or `[both]`. In production the worker refuses to start with missing required variables (`src/lib/env-check.ts`).
 
-Head agent çalışma alanı bazında açılır:
+The head agent is enabled per workspace:
 
 ```bash
-CLAUDE_HEAD_AGENT_WORKSPACES=<workspace-id>          # canlı
-CLAUDE_HEAD_AGENT_SHADOW_WORKSPACES=<workspace-id>   # gölge: kart düz, Claude taslağı ayrı saklanır
+CLAUDE_HEAD_AGENT_WORKSPACES=<workspace-id>          # live
+CLAUDE_HEAD_AGENT_SHADOW_WORKSPACES=<workspace-id>   # shadow: plain card shown, model draft stored separately
 ANTHROPIC_API_KEY=...
 ```
 
-> Restoran çalışma alanında head agent kapalıysa brief üretilmez (`skipped: head_agent_off`). Eski brief'e geri dönüş yoktur.
+> For restaurant workspaces there is no legacy fallback: with the head agent off, no brief is produced.
 
 ---
 
-## Komutlar
+## Commands
 
-| Komut | Ne yapar |
+| Command | Description |
 |---|---|
-| `npm run dev` | Geliştirme sunucusu |
-| `npm run workers` | BullMQ supervisor |
+| `npm run dev` | Development server |
+| `npm run workers` | BullMQ worker supervisor |
 | `npm run build` | `prisma generate` + `next build` |
-| `npm run test` | Vitest (unit + component; component testleri happy-dom) |
-| `npm run test:integration` | Entegrasyon testleri |
+| `npm run test` | Vitest unit and component tests |
+| `npm run test:integration` | Integration tests |
 | `npm run lint` | ESLint |
-| `npx tsc --noEmit -p .` | Tip kontrolü |
-| `npm run db:generate` | Şema değişikliğinden sonra client üret |
-| `npx tsx prisma/migrations/apply.ts <dosya>.sql` | SQL migration uygula |
-| `npx tsx scripts/control-assign-reviewer.ts` | Kontrol odasına inceleyici + mercek ata |
-| `npx tsx scripts/hubspot-verify.ts --portal <id>` | 11 `revint_*` alanının varlığını ve doluluğunu denetle |
-| `npx tsx scripts/hubspot-backfill.ts <workspace>` | Geçmiş brief'leri HubSpot'a yaz (varsayılan dry-run) |
+| `npx tsc --noEmit -p .` | Type check |
+| `npm run db:generate` | Regenerate the Prisma client after schema edits |
+| `npx tsx prisma/migrations/apply.ts <file>.sql` | Apply a SQL migration |
+| `npx tsx scripts/control-assign-reviewer.ts` | Grant a control room role and lens |
+| `npx tsx scripts/hubspot-verify.ts --portal <id>` | Check that CRM properties exist and are filled |
+| `npx tsx scripts/hubspot-backfill.ts <workspace>` | Write existing briefs to the CRM (dry run by default) |
 
 ---
 
-## Deploy
+## Deployment
 
-| Hedef | Nasıl |
+| Target | How |
 |---|---|
-| Web | Vercel, `main` push'u. Günlük cron: HubSpot reconcile (`vercel.json`) |
-| Worker | Railway, `railway.json` (`npm run workers`, tek replika) |
-| Şema | `prisma/migrations/*.sql` dosyaları sırayla, deploy'dan **önce** |
-| Sağlık | `GET /api/health`: DB + Redis; yetkili e-postalara worker heartbeat yaşı da görünür |
+| Web | Vercel, deployed from `main`. Daily cron for CRM writeback reconciliation (`vercel.json`) |
+| Workers | Railway (`railway.json`: `npm run workers`, single replica) |
+| Schema | Apply `prisma/migrations/*.sql` in order, **before** deploying code that needs them |
+| Health | `GET /api/health` checks the database and Redis |
 
-Adım adım yayın, smoke test ve geri alma: [`docs/runbooks/finedine-beta-launch.md`](docs/runbooks/finedine-beta-launch.md).
-
----
-
-## Kurallar
-
-Her değişiklik bunlara uyar. Ayrıntı `AGENTS.md` ve `.cursor/rules/*.mdc` içinde.
-
-1. Workspace verisine dokunan her Prisma sorgusu `workspaceId` ile scope'lanır (`requireUser()`).
-2. Prisma tipleri `@/generated/prisma/client` üzerinden gelir, `@prisma/client` üzerinden değil.
-3. Semantik hafıza yalnızca `src/lib/ai-core/memory.ts` üzerinden okunur ve yazılır.
-4. AI işi için yeni BullMQ kuyruğu açılmaz; `agent-runs` genişletilir.
-5. Yeni Gemini uç noktası açılmaz; çağrı `src/lib/agent-workers/` altında worker olur.
-6. Stripe webhook imzayı doğrular, `StripeEventLog` ile tekilleştirir ve `runtime = "nodejs"` kullanır. `apiVersion` verilmez.
-7. Next.js 16'da `params`, `cookies()`, `headers()` ve `searchParams` Promise'tir; hepsi `await` edilir.
-8. Admin mutasyonları `AdminAuditEvent` ekler; güncelleme ve silme rotası yoktur.
+Step-by-step release, smoke test, and rollback: [`docs/runbooks/`](docs/runbooks/).
 
 ---
 
-## Dokümanlar
+## Engineering rules
 
-| Doküman | İçerik |
+Every change follows these. Details in [`AGENTS.md`](AGENTS.md) and `.cursor/rules/*.mdc`.
+
+1. Every Prisma query on workspace data is scoped by `workspaceId` (`requireUser()`).
+2. Prisma types come from `@/generated/prisma/client`, never `@prisma/client`.
+3. Semantic memory is read and written only through `src/lib/ai-core/memory.ts`.
+4. No new BullMQ queue for AI work; extend `agent-runs`.
+5. No new Gemini-calling endpoint; wrap the call as a worker under `src/lib/agent-workers/`.
+6. The Stripe webhook verifies the signature, dedupes on `StripeEventLog`, and uses `runtime = "nodejs"`. No `apiVersion`.
+7. Next.js 16: `params`, `cookies()`, `headers()`, and `searchParams` are Promises and are always awaited.
+8. Admin mutations append an `AdminAuditEvent`; there are no update or delete routes.
+
+---
+
+## Glossary
+
+| Term | Meaning |
 |---|---|
-| [`docs/analiz-ve-playbook.md`](docs/analiz-ve-playbook.md) | Worker düzeni, head agent, kaçaklar, yasaklar, karar ağacı. **Analiz için üst otorite** |
-| [`docs/admin-paneli-son-karar.md`](docs/admin-paneli-son-karar.md) | Kontrol odasının son hali, çelişkilerin hükmü, kapılar |
-| [`docs/superpowers/plans/2026-09-29-admin-paneli-son-implementasyon.md`](docs/superpowers/plans/2026-09-29-admin-paneli-son-implementasyon.md) | Uygulama planı ve icra notları |
-| [`docs/runbooks/finedine-beta-launch.md`](docs/runbooks/finedine-beta-launch.md) | Yayın, migration sırası, smoke test, geri alma |
-| [`docs/runbooks/head-agent-live.md`](docs/runbooks/head-agent-live.md) | Head agent'ı gölgeye ve canlıya alma |
-| [`docs/runbooks/hubspot-writeback.md`](docs/runbooks/hubspot-writeback.md) | HubSpot uygulaması, izinler, backfill, doğrulama |
-| [`docs/runbooks/workers-topology.md`](docs/runbooks/workers-topology.md) | Hangi kuyruk açık, kim besliyor |
-| [`docs/positioning.md`](docs/positioning.md) | Konumlandırma, ICP, personalar |
-| [`AGENTS.md`](AGENTS.md) | Kod ajanları için hızlı bağlam |
-
-Ürün yol haritası, milestone'lar ve mimari hub'ı ekibin iç Notion çalışma alanında durur.
-
----
-
-## Yol haritası
-
-| Milestone | Tanım | Durum |
-|---|---|---|
-| **M1 · FineDine MVP canlı** | Gerçek lead'lerde kullanılabilir brief, HubSpot writeback, günlük kullanım, kalite kapısı | **Sürüyor.** Boru hattı, head agent, kontrol odası ve writeback kodda hazır; canlı kabul bekleniyor |
-| **M2 · Doğrulama** | 4–6 hafta gerçek kullanım, en az üç tam geri bildirim döngüsü, ikinci müşteriye engel yok | Planlı |
-| **M3 · Beş müşteri** | FineDine dışında beş şirket gerçek veriyle kullanıyor | Planlı |
-| **M4 · İlk doğrulanmış öğrenme** | Kazanılan/kaybedilen sonuçların sinyallere eşlenmesi, ilk kalibrasyon güncellemesi | Vizyon |
-
-Bilerek sonraya bırakılanlar: LLM-as-judge (100 insan etiketi toplanmadan açılmaz), sonuçtan katsayı öğrenen katman, otonom gönderim.
+| **Brief** | The single sales card per lead, produced by the `LEAD_INTELLIGENCE_BRIEF` run |
+| **Head agent** | The three-room decision layer that produces the brief |
+| **Room 1** | The head agent's rule layer: no model, picks the focus and the package |
+| **Wedge** | The one problem the pitch leads with |
+| **Package** | The product tier being recommended; the unit of sale, not individual modules |
+| **Lens** | A reviewer perspective: technical, domain, or sales. Not a permission |
+| **Role** | Control room permission: viewer, reviewer, or admin |
+| **Evidence shelf** | The review card layout, with each claim shown next to its source |
+| **Reference case** | A regression case (`EvalCase`, called `golden` in code) |
+| **Baseline / candidate** | Rule-scored stored output vs. a fresh decision from frozen inputs |
+| **Shadow mode** | Decisions are produced but not shown to sales reps |
 
 ---
 
-## Sözlük
-
-| Terim | Anlamı |
-|---|---|
-| **Brief** | Lead başına tek satış kartı: `LEAD_INTELLIGENCE_BRIEF` koşusunun çıktısı |
-| **Head agent** | Brief'i üreten üç odalı karar katmanı |
-| **Oda 1** | Head agent'ın kural katmanı; modeli yoktur, kaçağı ve paketi seçer |
-| **Kaçak** (`wedge`) | Satışın tek konusu. Altı tane: rezervasyon, hesap bekleme, marketplace, menü yüzeyi, çok şube, misafir tekrarı |
-| **Paket** | Starter / Growth / Premium. Satılan birim modül değil, pakettir |
-| **Mercek** | İnceleme bakış açısı: Teknik · Alan · Satış. Yetki değildir |
-| **Rol** | Kontrol odası yetkisi: VIEWER · REVIEWER · ADMIN |
-| **Kanıt rafı** | İnceleme kartının dört çekmecesi: Harita, Site, Yorum, Karar |
-| **Uyum** | İnceleyenler arası anlaşma (Fleiss kappa) |
-| **Yayın** | ICP, paket ve oyun kitabı yayın ekranı (rota: `calibration`) |
-| **Referans vaka** | Regresyon setindeki vaka (`EvalCase`; kodda `golden`) |
-| **Taban / Aday** | Saklanan çıktıyı kuralla sayan eval / donmuş girdiden yeni karar üreten eval |
-| **Gölge mod** | Yeni karar üretilir ama SDR'a gösterilmez |
+© Revint. All rights reserved. This is proprietary software; no license is granted to use, copy, or distribute it.
