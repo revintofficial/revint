@@ -177,6 +177,7 @@ async function placesFetch(
   key: string,
   fieldMask: string,
   init: { method: string; body?: string },
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- one-off script over untyped Places JSON
 ): Promise<Record<string, any> | null> {
   try {
     const res = await fetch(url, {
@@ -193,6 +194,7 @@ async function placesFetch(
       console.warn(`Places ${res.status} for ${url}`);
       return null;
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (await res.json()) as Record<string, any>;
   } catch (err) {
     console.warn(`Places request failed: ${err instanceof Error ? err.message : err}`);

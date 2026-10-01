@@ -459,6 +459,16 @@ export function AiWorkersPanel({ leadId }: Props) {
   );
 }
 
+/** Wall clock that re-renders every `intervalMs` (keeps render pure). */
+function useNow(intervalMs: number): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return now;
+}
+
 function WorkerRow({
   worker,
   running,
@@ -469,6 +479,7 @@ function WorkerRow({
   onGenerate: () => void;
 }) {
   const Icon = ICONS[worker.kind] ?? Sparkles;
+  const now = useNow(15_000);
   const name = worker.displayName;
   const desc = worker.description;
   const latest = worker.latestRun;
@@ -481,7 +492,7 @@ function WorkerRow({
   // window the UI surfaces a "Force retry" button so the user can
   // bypass the disable without waiting for the server timeout.
   const ageMs = latest && pendingStatus
-    ? Date.now() - new Date(latest.createdAt).getTime()
+    ? now - new Date(latest.createdAt).getTime()
     : 0;
   const stuck = pendingStatus && ageMs > Math.max(worker.estimatedDurationMs * 2, 60_000);
   const pending = pendingStatus && !stuck;
