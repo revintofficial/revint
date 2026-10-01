@@ -31,6 +31,13 @@ vi.stubGlobal(
   "fetch",
   vi.fn(() => Promise.resolve(new Response(null, { status: 204 }))),
 );
+// The boundaries report through navigator.sendBeacon, and happy-dom's
+// sendBeacon issues its own internal fetch (not the stub above), so it
+// is stubbed separately.
+Object.defineProperty(globalThis.navigator, "sendBeacon", {
+  configurable: true,
+  value: vi.fn(() => true),
+});
 
 import RootError from "@/app/error";
 import RootNotFound from "@/app/not-found";
