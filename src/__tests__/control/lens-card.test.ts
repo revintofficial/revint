@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
 import { toDecisionCard } from "@/lib/control/decision";
-import { lensDecisionRows, technicalSourceLines } from "@/lib/control/lens-card";
+import * as lensCard from "@/lib/control/lens-card";
+import { lensDecisionRows } from "@/lib/control/lens-card";
 
 const card = toDecisionCard({
   salesConfidence: 64,
@@ -20,16 +21,15 @@ const card = toDecisionCard({
   },
 }, { finishedAt: "2026-09-28T19:44:37.126Z", locationCount: 2 });
 
-it("shows Teknik the claim, source time, evidence, and a missing worker as Kayıt yok", () => {
+it("shows Teknik the claim, source time, and evidence; worker lines moved to the evidence shelf", () => {
   expect(lensDecisionRows(card, "TECHNICAL").map((row) => row.label)).toEqual([
     "İddialar",
     "Kaynak zamanı (brief bitişi)",
     "Kanıt",
     "Karar üretimi",
   ]);
-  const lines = technicalSourceLines([], []);
-  expect(lines.map((line) => line.group)).toEqual(["Harita", "Site", "Yorum", "Karar", "CRM"]);
-  expect(lines.every((line) => line.value === "Kayıt yok")).toBe(true);
+  // Duration and dollars stay in Vaka izi; "Kayıt yok" per worker now comes from buildShelf.
+  expect("technicalSourceLines" in lensCard).toBe(false);
 });
 
 it("shows Alan the score, module order, package, and exclusions", () => {

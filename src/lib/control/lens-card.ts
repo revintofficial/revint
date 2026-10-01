@@ -1,12 +1,11 @@
-import type { AgentWorkerKind, ReviewLens } from "@/generated/prisma/client";
+import type { ReviewLens } from "@/generated/prisma/client";
 import { moduleLabel, type DecisionCard } from "@/lib/control/decision";
-import { TRACE_GROUPS } from "@/lib/control/trace-groups";
-import { crmStatusLabel, formatControlDate, formatDuration, formatUsd, runStatusLabel } from "@/lib/control/labels";
+import { formatControlDate, packageText } from "@/lib/control/labels";
 
 export const LENS_QUESTION: Record<ReviewLens, string> = {
-  TECHNICAL: "Sistem bu kararı hangi kaynaktan, hangi maliyetle üretti?",
-  DOMAIN: "Bu hesapta modül sırası ve paket satışa uyar mı?",
-  SALES: "Bir SDR bunu görünce ne yapmalı?",
+  TECHNICAL: "Bu bulgu hangi kaynaktan, ne zaman geldi?",
+  DOMAIN: "Bu hesapta bu sıra ve bu paket uyar mı?",
+  SALES: "Bu cümleyi yarın söyler miyim?",
 };
 
 export const LENS_ERROR_CLASSES: Record<ReviewLens, readonly string[]> = {
@@ -15,25 +14,9 @@ export const LENS_ERROR_CLASSES: Record<ReviewLens, readonly string[]> = {
   SALES: ["IDENTITY_MISMATCH", "UNSUPPORTED_CLAIM", "STALE_SOURCE"],
 };
 
-// Groups come from the chain definition, not a copy of it. When a
-// worker leaves the automatic chain it must leave this surface in the
-// same commit, otherwise the control room shows a row that can never
-// fill (SALES_OPPORTUNITY_SCORER was that row until 2026-09-29).
-
-export type SourceRun = {
-  workerKind: string;
-  status: string;
-  startedAt: string | null;
-  finishedAt: string | null;
-  costUsdCents: number;
-  errorMsg: string | null;
-};
-
-export type SourceCrm = {
-  objectType: string;
-  status: string;
-  lastError: string | null;
-};
+// Worker run status, duration and cost are not on the review card any
+// more: the evidence shelf (evidence-shelf.ts) shows each worker's claim
+// next to its source, and duration / dollars stay in Vaka izi.
 
 function modeLabel(briefMode: string | null): string {
   if (briefMode === "head-agent") return "Head agent";
@@ -59,7 +42,7 @@ export function lensDecisionRows(card: DecisionCard, lens: ReviewLens): Array<{ 
       { label: "Karar güveni", value: card.confidence == null ? "Güven yok" : String(card.confidence) },
       { label: "Birincil modül", value: card.primaryModule ? moduleLabel(card.primaryModule) : "Birincil yok" },
       { label: "Modüller (öncelik sırası)", value: modules },
-      { label: "Paket", value: card.recommendedPackage ?? "Paket yok" },
+      { label: "Paket", value: card.recommendedPackage ? packageText(card.recommendedPackage) : "Paket yok" },
       { label: "Hariç tutulanlar", value: excluded },
     ];
     if (!card.hasHeadAgent) rows.push({ label: "Karar", value: "Head agent kararı yok" });
@@ -68,27 +51,9 @@ export function lensDecisionRows(card: DecisionCard, lens: ReviewLens): Array<{ 
   return [
     { label: "Konuşma", value: card.talkTrack ?? "Konuşma yok" },
     { label: "Aynı hesaptaki lokasyon", value: String(card.locationCount) },
-    { label: "Paket", value: card.recommendedPackage ?? "Paket yok" },
+    { label: "Paket", value: card.recommendedPackage ? packageText(card.recommendedPackage) : "Paket yok" },
     { label: "İddialar", value: claims },
     { label: "Açı", value: card.primaryAngle ?? "Açı yok" },
     { label: "ICP uyumu", value: card.salesConfidence == null ? "Puan yok" : String(card.salesConfidence) },
   ];
-}
-
-export function technicalSourceLines(runs: SourceRun[], crm: SourceCrm[]): Array<{ group: string; value: string }> {
-  const workers = TRACE_GROUPS.flatMap(({ label, kinds }) => {
-    const matched = runs.filter((run) => kinds.includes(run.workerKind as AgentWorkerKind));
-    if (!matched.length) return [{ group: label, value: "Kayıt yok" }];
-    return matched.map((run) => ({
-      group: label,
-      value: [runStatusLabel(run.status), formatDuration(run.startedAt, run.finishedAt), formatUsd(run.costUsdCents), run.errorMsg].filter(Boolean).join(" · "),
-    }));
-  });
-  const crmLines = crm.length
-    ? crm.map((row) => ({
-        group: "CRM",
-        value: [row.objectType, crmStatusLabel(row.status), row.lastError].filter(Boolean).join(" · "),
-      }))
-    : [{ group: "CRM", value: "Kayıt yok" }];
-  return [...workers, ...crmLines];
 }
