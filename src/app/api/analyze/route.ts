@@ -115,7 +115,7 @@ export async function POST(request: Request) {
     }
     logger.error("api.analyze.error", { err: error });
     return NextResponse.json(
-      { error: "Analysis failed", details: String(error) },
+      { error: "Analysis failed", ...(process.env.NODE_ENV !== "production" ? { details: String(error) } : {}) },
       { status: 500 },
     );
   }

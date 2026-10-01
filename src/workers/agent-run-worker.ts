@@ -21,6 +21,8 @@ import { logger } from "../lib/logger";
 import { executeAgentRun } from "../lib/agent-workers/execute";
 import { isRetryable } from "../lib/agent-workers/errors";
 import { recordChainTelemetry } from "../lib/control/telemetry";
+import { validateEnvOnBoot } from "../lib/env-check";
+import { startWorkerHeartbeat } from "./heartbeat";
 
 type AgentRunJob =
   | { type: "control_eval_replay"; evalRunId: string; workspaceId: string }
@@ -294,6 +296,8 @@ function startStuckSessionWatchdog(): StuckSessionWatchdog {
 }
 
 export function startAgentRunWorker() {
+  // Fail fast in production when required env is missing (see env-check.ts).
+  validateEnvOnBoot("worker");
   const connection = new IORedis(process.env.REDIS_URL || "redis://localhost:6379", {
     maxRetriesPerRequest: null,
   });
@@ -334,10 +338,12 @@ export function startAgentRunWorker() {
   });
 
   const watchdogHandle = startStuckSessionWatchdog();
+  const heartbeatHandle = startWorkerHeartbeat(connection);
 
   const baseClose = worker.close.bind(worker);
   worker.close = async (force?: boolean) => {
     watchdogHandle.close();
+    heartbeatHandle.close();
     return baseClose(force);
   };
 

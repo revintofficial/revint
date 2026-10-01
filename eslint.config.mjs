@@ -15,7 +15,33 @@ const eslintConfig = defineConfig([
     // HubSpot Projects artefact (separate React runtime + linter; see
     // hubspot-app/README.md). Linted by the HubSpot CLI when uploaded.
     "hubspot-app/**",
+    // Generated Prisma client (multi-MB files, not ours to lint).
+    "src/generated/**",
+    // Remotion video project: separate package with its own toolchain.
+    "video/**",
+    // Archived code kept for reference only.
+    "_archive-scripts/**",
+    "_archive-docs/**",
   ]),
+  {
+    // Same file scope as eslint-config-next, where these plugins live.
+    files: ["**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
+    rules: {
+      // Purely cosmetic: unescaped ' and " in JSX text render correctly.
+      // ~460 hits, almost all in long-form blog/marketing copy; rewriting
+      // that copy for a stylistic rule is not worth the risk.
+      "react/no-unescaped-entities": "off",
+      // React Compiler advisory. Every hit is a mount-time sync (viewport,
+      // hydration, prop -> local state) that works today; refactor these
+      // gradually rather than block CI on them.
+      "react-hooks/set-state-in-effect": "warn",
+    },
+  },
+  {
+    // CommonJS one-off scripts.
+    files: ["**/*.cjs"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
+  },
   // -------------------------------------------------------------------
   // Truth Layer v1 — Contracts bus discipline (master plan §1.3).
   //

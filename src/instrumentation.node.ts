@@ -1,7 +1,12 @@
 import { logger } from "@/lib/logger";
 import { flushAppLogs, installConsoleCapture } from "@/lib/log-sink";
+import { validateEnvOnBoot } from "@/lib/env-check";
 
 installConsoleCapture();
+// Web only warns on missing env; workers fail fast (see env-check.ts).
+if (process.env.NEXT_PHASE !== "phase-production-build") {
+  validateEnvOnBoot("web");
+}
 
 type RequestInfo = {
   path: string;

@@ -24,7 +24,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createElement, useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -330,15 +330,15 @@ export function DeepResearchProgressPanel({ leadId }: Props) {
 }
 
 function DeepStepRow({ step }: { step: PlanStep }) {
-  const Icon = stepIcon(step.status);
+  const icon = stepIcon(step.status);
   const label = WORKER_LABELS[step.workerKind] ?? step.workerKind;
   return (
     <div className="flex items-center gap-2.5 text-[12px] py-0.5">
-      <Icon
-        className={`h-3.5 w-3.5 shrink-0 ${
+      {createElement(icon, {
+        className: `h-3.5 w-3.5 shrink-0 ${
           step.status === "RUNNING" ? "animate-spin" : ""
-        } ${stepColor(step.status)}`}
-      />
+        } ${stepColor(step.status)}`,
+      })}
       <span className="text-white/75 truncate flex-1">{label}</span>
       {step.optional && step.status === "SKIPPED" && (
         <Badge variant="outline" className="text-[10px] h-4 px-1 border-white/10 text-white/40">

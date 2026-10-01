@@ -81,7 +81,7 @@ export async function POST(
     } catch (err) {
       logger.error("api.voice_notes.transcription_failed", { err });
       return NextResponse.json(
-        { error: "Transcription failed", details: String(err) },
+        { error: "Transcription failed", ...(process.env.NODE_ENV !== "production" ? { details: String(err) } : {}) },
         { status: 502 },
       );
     }

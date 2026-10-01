@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     }
     logger.error("api.todos.create_error", { err: error });
     return NextResponse.json(
-      { error: "Failed to create todo", details: String(error) },
+      { error: "Failed to create todo", ...(process.env.NODE_ENV !== "production" ? { details: String(error) } : {}) },
       { status: 500 }
     );
   }

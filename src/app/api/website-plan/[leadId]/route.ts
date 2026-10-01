@@ -209,7 +209,7 @@ export async function POST(
     }
     logger.error("api.website_plan.error", { err: error });
     return NextResponse.json(
-      { error: "Failed to generate website plan", details: String(error) },
+      { error: "Failed to generate website plan", ...(process.env.NODE_ENV !== "production" ? { details: String(error) } : {}) },
       { status: 500 }
     );
   }

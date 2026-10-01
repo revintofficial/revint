@@ -27,6 +27,8 @@ export default defineConfig({
       ".claude/**",
       ".codex/**",
       "src/__tests__/**/*.integration.test.ts",
+      // Playwright specs; run with `npx playwright test`, not vitest.
+      "tests/e2e/**",
     ],
 
   },

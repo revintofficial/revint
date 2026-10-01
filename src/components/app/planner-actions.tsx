@@ -16,7 +16,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createElement, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -242,14 +242,14 @@ export function PlannerActions({ leadId, plan, enrichmentAllowed = true }: Plann
 }
 
 function PlanStepRow({ step }: { step: PlanStep }) {
-  const Icon = stepIcon(step.status);
+  const icon = stepIcon(step.status);
   return (
     <div className="flex items-center gap-2 text-[11px]">
-      <Icon
-        className={`h-3 w-3 shrink-0 ${
+      {createElement(icon, {
+        className: `h-3 w-3 shrink-0 ${
           step.status === "RUNNING" ? "animate-spin" : ""
-        } ${stepColor(step.status)}`}
-      />
+        } ${stepColor(step.status)}`,
+      })}
       <span className="text-muted-foreground truncate">{step.workerKind}</span>
       {step.optional && step.status === "SKIPPED" && (
         <Badge variant="outline" className="text-[10px] h-4 px-1">skip</Badge>

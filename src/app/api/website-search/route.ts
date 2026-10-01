@@ -213,7 +213,7 @@ export async function POST(request: Request) {
     }
     logger.error("api.website_search.error", { err: error });
     return NextResponse.json(
-      { error: "Website search failed", details: String(error) },
+      { error: "Website search failed", ...(process.env.NODE_ENV !== "production" ? { details: String(error) } : {}) },
       { status: 500 }
     );
   }
