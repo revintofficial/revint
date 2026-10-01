@@ -52,7 +52,7 @@ type AgentRunJob =
   // `agent_run` when `runId` is present.
   | { runId: string };
 
-async function processJob(job: Job<AgentRunJob>) {
+export async function processJob(job: Job<AgentRunJob>) {
   const data = job.data;
 
   // Backward compat: jobs without a `type` field are agent_runs.
@@ -85,6 +85,13 @@ async function processJob(job: Job<AgentRunJob>) {
       }
       throw err; // RetryableError — BullMQ retries with backoff
     }
+    // Post-analysis HubSpot writeback. No-op unless this was a SUCCEEDED
+    // LEAD_INTELLIGENCE_BRIEF on a HubSpot-connected workspace; keyed on
+    // runId (retries don't duplicate) and never throws, so HubSpot can't
+    // fail the brief run.
+    const { writebackAfterBriefRun } = await import("../lib/integrations/hubspot/brief-hook");
+    const { prisma } = await import("../lib/prisma");
+    await writebackAfterBriefRun(prisma, runId);
     return { runId };
   }
 
