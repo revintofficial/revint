@@ -36,6 +36,7 @@ export async function GET(
       orderBy: { finishedAt: "desc" },
       select: {
         id: true,
+        status: true,
         outputJson: true,
         finishedAt: true,
       },
@@ -48,6 +49,8 @@ export async function GET(
     return NextResponse.json({
       brief: run.outputJson,
       runId: run.id,
+      // SDR feedback (POST /api/leads/[id]/feedback) only accepts SUCCEEDED runs.
+      runStatus: run.status,
       finishedAt: run.finishedAt,
     });
   } catch (error) {
