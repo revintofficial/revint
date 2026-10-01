@@ -619,7 +619,7 @@ export type RubricEntry = { code: ErrorClass; label: string; include: string; ex
 export const RUBRIC: Record<ReviewLens, RubricEntry[]>;
 ```
 
-- [ ] **Step 1: Testler**
+- [x] **Step 1: Testler** _(servis katmanı, C1)_
 
 ```ts
 it("hides other lens verdicts until this lens has written one", async () => {
@@ -653,7 +653,7 @@ it("gives every error class an include rule, an exclude rule, and two examples",
 });
 ```
 
-- [ ] **Step 2: Kırmızı, sonra uygula**
+- [x] **Step 2: Kırmızı, sonra uygula** _(servis katmanı + şema + rota, C1; kart ve sayfa: D)_
 
 `buildReviewView` yeni bir okuma fonksiyonudur: oturum sahibinin merceği bu `agentRunId` için hüküm yazmadıysa `priorReviews` **boş** döner, yalnızca eksik mercek adları döner ("Teknik ve Alan bakmadı."). Hüküm yazıldıktan sonra diğer ikisi görünür. Bu, hem bağımsızlığı korur hem de uzlaştırma konuşmasını mümkün kılar.
 
@@ -663,7 +663,7 @@ Süre: kart açıldığında istemci bir zaman damgası tutar, kaydederken `revi
 
 Şema değişikliği sonrası `npm run db:generate`. Mevcut satırlar için `rubricVersion` varsayılanı `"pre-2026-09-29"` olur; geriye dönük doldurma yoktur.
 
-- [ ] **Step 3: Yeşil, commit**
+- [x] **Step 3: Yeşil, commit** _(C1, `prod/c1-review-core`)_
 
 ```bash
 git commit -am "feat(control): lens verdicts are written independently and carry a rubric version"
@@ -683,7 +683,7 @@ git commit -am "feat(control): lens verdicts are written independently and carry
 
 **Interfaces:** Karar kağıdı Çelişki 3'teki `expectedJson`. Yeni kodlar `PACKAGE` ve `WEDGE`. Ekran adları "Paket yanlış" ve "Kaçak yanlış".
 
-- [ ] **Step 1: Testler**
+- [x] **Step 1: Testler** _(C1)_
 
 ```ts
 it("fails when the card sells premium to a single venue", () => {
@@ -711,13 +711,13 @@ it("rejects an unknown package or wedge in expected rules", () => {
 it("still applies the module rule when allowedModules is set", () => { /* mevcut test durur */ });
 ```
 
-- [ ] **Step 2: Kırmızı, uygula**
+- [x] **Step 2: Kırmızı, uygula** _(score.ts, labels.ts, `POST /api/admin/control/golden/preview`, C1; promote formu: D)_
 
 `parseExpected` iki yeni alanı kapalı kümeden doğrular. `scoreOutput` kartın `recommendedPackage` ve `wedge` alanlarını okur. `expectedPackage` dolu ve kart boşsa `PACKAGE` kalır. `allowedModules` kuralı olduğu gibi durur — ikincil sinyal.
 
 Promote formu altı alana çıkar: beklenen paket, beklenen kaçak, puan alt sınırı, puan üst sınırı, izinli modüller, yasak iddialar, yasak açılar. Form kaydetmeden önce donmuş `outputSnapshot` üzerinde sayımı gösterir: "Bu kurallarla donmuş çıktı geçer" veya Türkçe kalış nedeni. Bu önizleme model çağırmaz. JSON textarea yoktur.
 
-- [ ] **Step 3: Yeşil, commit**
+- [x] **Step 3: Yeşil, commit** _(C1)_
 
 ```bash
 git commit -am "feat(control): reference cases score the package and the wedge, not only the module"
@@ -959,7 +959,7 @@ Kurallar:
 
 Triyaj: `listReviewQueue` sıralaması değişir. `source = "SDR"` ve `verdict = "FAIL"` satırı olan `agentRunId`'ler listenin başına geçer ve satırda rozet durur: **"SDR kullanmadı: iddia dayanaksız."** Kuyruk tanımı değişmez, yalnızca sıra ve rozet eklenir.
 
-- [ ] **Step 1: Testler**
+- [x] **Step 1: Testler** _(C1)_
 
 ```ts
 it("refuses an unused brief without a reason", async () => {
@@ -989,13 +989,13 @@ it("keeps SDR rows out of the agreement report", async () => {
 });
 ```
 
-- [ ] **Step 2: Kırmızı, uygula**
+- [x] **Step 2: Kırmızı, uygula** _(sdr-feedback.ts, rota, triyaj, C1; düğme ve rozet: D)_
 
 Ürün yüzeyi (`lead-feedback.tsx`): brief kartının altında tek satır. İki düğme — **"Bu brief'i kullandım"** ve **"Kullanmadım"**. İkincisi seçilince altı seçenekli tek bir liste açılır. Not alanı opsiyoneldir ve "istersen tek cümle" yazar. Puan yok, yıldız yok, rubrik yok, kontrol paneline link yok.
 
 Kaydedilince satır "Teşekkürler, kaydedildi" der ve düğmeler pasifleşir. Aynı `agentRunId` için ikinci kayıt öncekinin üstüne yazmaz, yeni satır olur; en yeni satır esastır.
 
-- [ ] **Step 3: Yeşil, commit**
+- [x] **Step 3: Yeşil, commit** _(C1)_
 
 ```bash
 git commit -am "feat: SDRs mark a brief used or unused, and rejections jump the review queue"

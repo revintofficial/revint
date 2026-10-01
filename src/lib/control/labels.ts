@@ -79,7 +79,40 @@ const ERROR_CLASS: Record<string, string> = {
   SCORE_CALIBRATION: "Puan bandın dışında",
   PLAYBOOK_VIOLATION: "Oyun kitabına aykırı",
   PIPELINE_OMISSION: "Boru hattında adım eksik",
+  // SDR-only reasons (source = SDR rows); the lens form never offers them.
+  ALREADY_CUSTOMER: "Zaten müşteri",
+  OUT_OF_PROFILE: "Hedef profil değil",
 };
+
+const PACKAGE: Record<string, string> = {
+  starter: "Starter",
+  growth: "Growth",
+  premium: "Premium",
+  none: "Paket yok",
+};
+
+const WEDGE: Record<string, string> = {
+  reservation: "Rezervasyon",
+  bill_wait: "Hesap bekleme",
+  marketplace: "Pazaryeri komisyonu",
+  menu_surface: "Menü yüzeyi",
+  multi_location: "Çoklu lokasyon",
+  guest_repeat: "Tekrar gelen misafir",
+  none: "Kaçak yok",
+};
+
+export const PACKAGE_OPTIONS = (["starter", "growth", "premium", "none"] as const).map(value => ({ value, label: PACKAGE[value] }));
+export const WEDGE_OPTIONS = (["reservation", "bill_wait", "marketplace", "menu_surface", "multi_location", "guest_repeat", "none"] as const).map(value => ({ value, label: WEDGE[value] }));
+
+/** Options for the SDR "Kullanmadım" list, in SDR_REASONS order. */
+export const SDR_REASON_OPTIONS = [
+  { value: "IDENTITY_MISMATCH", label: "Yanlış işletme" },
+  { value: "STALE_SOURCE", label: "Kaynak eski" },
+  { value: "UNSUPPORTED_CLAIM", label: "İddia dayanaksız" },
+  { value: "PACKAGE_MISMATCH", label: "Paket uymuyor" },
+  { value: "ALREADY_CUSTOMER", label: "Zaten müşteri" },
+  { value: "OUT_OF_PROFILE", label: "Hedef profil değil" },
+] as const;
 
 const SEVERITY: Record<string, string> = {
   P0: "Bugün bakar",
@@ -97,6 +130,8 @@ const CALIBRATION: Record<string, string> = {
 };
 
 const FAILURE: Record<string, string> = {
+  PACKAGE: "Paket yanlış",
+  WEDGE: "Kaçak yanlış",
   ICP_BAND: "Puan bandın dışında",
   MODULE: "Modül",
   FORBIDDEN_CLAIM: "Yasak iddia",
@@ -208,7 +243,23 @@ export function formatUsd(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+export function packageLabel(value: string): string {
+  return PACKAGE[value] ?? "Bilinmeyen paket";
+}
+
+export function wedgeLabel(value: string): string {
+  return WEDGE[value] ?? "Bilinmeyen kaçak";
+}
+
+/** Queue badge for an SDR rejection, e.g. "SDR kullanmadı: iddia dayanaksız." */
+export function sdrFlagLabel(errorClass: string): string {
+  const label = ERROR_CLASS[errorClass];
+  return label ? `SDR kullanmadı: ${label.toLocaleLowerCase("tr-TR")}.` : "SDR kullanmadı.";
+}
+
 export function stayLabel(code: string): string {
+  if (code === "PACKAGE") return "Kalır, çünkü paket yanlış";
+  if (code === "WEDGE") return "Kalır, çünkü kaçak yanlış";
   if (code === "FORBIDDEN_ANGLE") return "Kalır, çünkü açı yasak";
   if (code === "FORBIDDEN_CLAIM") return "Kalır, çünkü iddia yasak";
   if (code === "ICP_BAND") return "Kalır, çünkü puan bandın dışında";
@@ -223,6 +274,8 @@ export function auditSentence(actor: string, action: string, target: string, aft
     return `${actor}, ${target} için ${kind} yeniden çalıştırdı.`;
   }
   if (action === "review.record") return `${actor}, ${target} için bir inceleme kararı yazdı.`;
+  if (action === "review.adjudicate") return `${actor}, ${target} için mercek anlaşmazlığını uzlaştırdı.`;
+  if (action === "sdr.feedback") return after.used === true ? `${actor}, ${target} için brief'i kullandığını yazdı.` : `${actor}, ${target} için brief'i kullanmadığını yazdı.`;
   if (action === "lens.assign") {
     const label = after.lens === "TECHNICAL" || after.lens === "DOMAIN" || after.lens === "SALES" ? LENS_LABELS[after.lens] : null;
     return label ? `${actor}, ${target} için ${label} merceğini atadı.` : `${actor}, ${target} için merceği kaldırdı.`;
