@@ -17,6 +17,10 @@ const eslintConfig = defineConfig([
     "hubspot-app/**",
     // Generated Prisma client (multi-MB files, not ours to lint).
     "src/generated/**",
+    // Agent worktrees and local scratch copies of the repo.
+    ".claude/**",
+    ".codex/**",
+    ".control-prisma-generated/**",
     // Remotion video project: separate package with its own toolchain.
     "video/**",
     // Archived code kept for reference only.
