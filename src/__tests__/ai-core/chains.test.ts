@@ -59,46 +59,16 @@ describe("ai-core chains - structural invariants", () => {
   });
 });
 
-describe("ai-core chains - lead_created", () => {
-  const chain = CHAINS.lead_created!;
-
-  it("has the embed_profile sentinel as its last step", () => {
-    const last = chain[chain.length - 1];
-    expect(last.inputs?.__sentinel).toBe(SENTINEL_STEPS.EMBED_LEAD_PROFILE);
-  });
-
-  it("score depends on audit and review", () => {
-    const score = chain.find((s) => s.stepId === "score");
-    expect(score).toBeDefined();
-    expect(score!.dependsOn.sort()).toEqual(["audit", "review"].sort());
-  });
-
-  it("includes APIFY_SERP_RANK as an optional step that runs after audit", () => {
-    const serp = chain.find((s) => s.stepId === "serp");
-    expect(serp).toBeDefined();
-    expect(serp!.workerKind).toBe("APIFY_SERP_RANK");
-    expect(serp!.optional).toBe(true);
-    expect(serp!.dependsOn).toEqual(["audit"]);
-  });
-
-  it("social depends on audit AND serp so SERP-harvested profiles are included", () => {
-    const social = chain.find((s) => s.stepId === "social");
-    expect(social).toBeDefined();
-    expect(social!.dependsOn.sort()).toEqual(["audit", "serp"].sort());
-  });
-
-  it("score does NOT depend on the optional serp step (free tier must still score)", () => {
-    const score = chain.find((s) => s.stepId === "score");
-    expect(score!.dependsOn).not.toContain("serp");
-  });
-});
+// lead_created is not in CHAINS: it is resolved per workspace preset by
+// getDefaultChain (map, site, reviews, decision). Its shape is covered by
+// lead-pipeline-presets.test.ts.
 
 describe("ai-core chains - inbox_reply_received", () => {
   const chain = CHAINS.inbox_reply_received!;
 
-  it("has the write_outcome sentinel as its last step", () => {
-    const last = chain[chain.length - 1];
-    expect(last.inputs?.__sentinel).toBe(SENTINEL_STEPS.WRITE_OPENER_OUTCOME);
+  it("routes write_outcome through the opener-outcome sentinel", () => {
+    const outcome = chain.find((s) => s.stepId === "write_outcome");
+    expect(outcome?.inputs?.__sentinel).toBe(SENTINEL_STEPS.WRITE_OPENER_OUTCOME);
   });
 
   it("write_outcome depends on attribute", () => {

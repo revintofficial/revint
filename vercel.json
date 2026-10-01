@@ -1,7 +1,7 @@
 {
   "buildCommand": "npx prisma generate && next build",
   "framework": "nextjs",
-  "crons": [],
+  "crons": [{ "path": "/api/integrations/hubspot/reconcile", "schedule": "0 4 * * *" }],
   "functions": {
     "src/app/api/**/route.ts": {
       "maxDuration": 60

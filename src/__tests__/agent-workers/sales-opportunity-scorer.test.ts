@@ -40,6 +40,7 @@ const { prismaMock } = vi.hoisted(() => ({
       findUniqueOrThrow: vi.fn(),
     },
     salesOpportunity: {
+      findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn().mockResolvedValue({}),
     },
     // P0.5 — scorer now also pre-loads service packages, workspace
@@ -158,6 +159,7 @@ beforeEach(() => {
   prismaMock.lead.update.mockReset().mockResolvedValue({});
   prismaMock.lead.findUniqueOrThrow.mockReset();
   prismaMock.salesOpportunity.upsert.mockReset().mockResolvedValue({});
+  prismaMock.salesOpportunity.findUnique.mockReset().mockResolvedValue(null);
   prismaMock.servicePackage.findMany.mockReset().mockResolvedValue([]);
   prismaMock.workspace.findUnique.mockReset().mockResolvedValue({ targetSubNiches: [] });
   prismaMock.sequence.findMany.mockReset().mockResolvedValue([]);
