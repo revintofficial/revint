@@ -63,14 +63,25 @@ vi.mock("@/lib/integrations/crypto", () => ({
 }));
 
 vi.mock("@/lib/integrations/hubspot/client", () => ({
-  HubspotClient: vi.fn().mockImplementation(() => ({
-    listDealPipelines: (...args: unknown[]) => mocks.listDealPipelines(...args),
-  })),
+  // A real class: vitest 4 cannot `new` an arrow-function mock, which
+  // previously threw inside the callback's provisioning try/catch and
+  // went unnoticed.
+  HubspotClient: class {
+    listDealPipelines(...args: unknown[]) {
+      return mocks.listDealPipelines(...args);
+    }
+  },
 }));
 
-vi.mock("@/lib/integrations/hubspot/properties", () => ({
-  ensureRevintProperties: (...args: unknown[]) => mocks.ensureRevintProperties(...args),
-}));
+vi.mock("@/lib/integrations/hubspot/properties", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/integrations/hubspot/properties")>(
+    "@/lib/integrations/hubspot/properties",
+  );
+  return {
+    ...actual,
+    ensureRevintProperties: (...args: unknown[]) => mocks.ensureRevintProperties(...args),
+  };
+});
 
 vi.mock("@/lib/integrations/hubspot/field-map", () => ({
   buildDefaultStageMapping: (...args: unknown[]) =>
@@ -110,6 +121,22 @@ import { GET } from "@/app/api/integrations/hubspot/callback/route";
 import { signHubspotOAuthState } from "@/lib/integrations/hubspot/oauth";
 
 const WORKSPACE_ID = "ws_hubspot_oauth";
+const FULL_SCOPES = [
+  "oauth",
+  "crm.objects.contacts.read",
+  "crm.objects.contacts.write",
+  "crm.objects.companies.write",
+  "crm.schemas.contacts.write",
+  "crm.schemas.companies.write",
+];
+const OK_PROVISION = {
+  created: [],
+  skipped: [],
+  errors: [],
+  errorDetails: [],
+  missingScope: false,
+  ok: true,
+};
 const USER_ID = "00000000-0000-0000-0000-000000000123";
 
 function signedState(returnTo = "/app/settings/integrations") {
@@ -158,14 +185,14 @@ describe("GET /api/integrations/hubspot/callback", () => {
     });
     mocks.getHubspotTokenInfo.mockResolvedValue({
       hub_id: 123456,
-      scopes: ["oauth", "crm.objects.contacts.read"],
+      scopes: FULL_SCOPES,
     });
     mocks.crmConnectionUpsert.mockResolvedValue({
       id: "crm_conn_123",
       workspaceId: WORKSPACE_ID,
       portalId: "123456",
     });
-    mocks.ensureRevintProperties.mockResolvedValue({ created: [], skipped: [] });
+    mocks.ensureRevintProperties.mockResolvedValue(OK_PROVISION);
     mocks.listDealPipelines.mockResolvedValue({ results: [] });
     mocks.crmConnectionUpdate.mockResolvedValue({});
   });
@@ -233,5 +260,52 @@ describe("GET /api/integrations/hubspot/callback", () => {
     );
     expect(mocks.exchangeHubspotCode).not.toHaveBeenCalled();
     expect(mocks.crmConnectionUpsert).not.toHaveBeenCalled();
+  });
+
+  it("stamps propertiesProvisionedAt only on a clean provision", async () => {
+    await GET(requestFor(signedState()));
+    expect(mocks.crmConnectionUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ propertiesProvisionedAt: expect.any(Date), lastError: null }),
+      }),
+    );
+  });
+
+  it("refuses to provision on a token without write scopes and records which are missing", async () => {
+    mocks.getHubspotTokenInfo.mockResolvedValue({
+      hub_id: 148499892,
+      scopes: ["oauth", "crm.objects.contacts.read", "crm.objects.contacts.write"],
+    });
+
+    const res = await GET(requestFor(signedState()));
+
+    expect(mocks.ensureRevintProperties).not.toHaveBeenCalled();
+    const update = mocks.crmConnectionUpdate.mock.calls[0][0] as { data: Record<string, unknown> };
+    expect(update.data.propertiesProvisionedAt).toBeUndefined();
+    expect(update.data.lastError).toContain("missing_scope:");
+    expect(update.data.lastError).toContain("crm.schemas.companies.write");
+    expect(res.headers.get("location")).toBe(
+      "https://revint.dev/app/settings/integrations?hubspot_connected=1&hubspot_warning=missing_scope",
+    );
+  });
+
+  it("records a failed provision instead of a false success", async () => {
+    mocks.ensureRevintProperties.mockResolvedValue({
+      created: [],
+      skipped: [],
+      errors: ["companies.revint_sales_confidence"],
+      errorDetails: [
+        { objectType: "companies", name: "revint_sales_confidence", status: 400, message: "bad" },
+      ],
+      missingScope: false,
+      ok: false,
+    });
+
+    const res = await GET(requestFor(signedState()));
+
+    const update = mocks.crmConnectionUpdate.mock.calls[0][0] as { data: Record<string, unknown> };
+    expect(update.data.propertiesProvisionedAt).toBeUndefined();
+    expect(update.data.lastError).toContain("property_provision_failed:companies.revint_sales_confidence");
+    expect(res.headers.get("location")).toContain("hubspot_warning=provision_failed");
   });
 });

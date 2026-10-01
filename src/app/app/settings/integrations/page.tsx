@@ -7,6 +7,7 @@
 import { requireWorkspaceAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isHubspotConfigured } from "@/lib/integrations/hubspot/oauth";
+import { missingWritebackScopes } from "@/lib/integrations/hubspot/properties";
 import { IntegrationsPanel } from "@/components/app/integrations-panel";
 
 export default async function IntegrationsSettingsPage() {
@@ -27,6 +28,26 @@ export default async function IntegrationsSettingsPage() {
     },
   });
 
+  // Writeback health — the last outbound sync outcome, so a HubSpot
+  // failure after analysis is visible here instead of silently lost.
+  const [lastSuccess, lastFailure, failedCount] = conn
+    ? await Promise.all([
+        prisma.crmSyncLog.findFirst({
+          where: { workspaceId: session.workspaceId, direction: "OUTBOUND", status: "SUCCESS" },
+          orderBy: { updatedAt: "desc" },
+          select: { updatedAt: true },
+        }),
+        prisma.crmSyncLog.findFirst({
+          where: { workspaceId: session.workspaceId, direction: "OUTBOUND", status: "FAILED" },
+          orderBy: { updatedAt: "desc" },
+          select: { updatedAt: true, lastError: true },
+        }),
+        prisma.crmSyncLog.count({
+          where: { workspaceId: session.workspaceId, direction: "OUTBOUND", status: "FAILED" },
+        }),
+      ])
+    : ([null, null, 0] as const);
+
   return (
     <IntegrationsPanel
       configured={isHubspotConfigured()}
@@ -39,7 +60,14 @@ export default async function IntegrationsSettingsPage() {
               defaultPipelineId: conn.defaultPipelineId,
               propertiesProvisioned: !!conn.propertiesProvisionedAt,
               lastError: conn.lastError,
+              missingScopes: missingWritebackScopes(conn.scopes),
               updatedAt: conn.updatedAt.toISOString(),
+              writeback: {
+                lastSuccessAt: lastSuccess?.updatedAt.toISOString() ?? null,
+                lastFailureAt: lastFailure?.updatedAt.toISOString() ?? null,
+                lastFailureError: lastFailure?.lastError ?? null,
+                failedCount,
+              },
             }
           : null
       }

@@ -33,6 +33,9 @@ interface ConnectionRow {
   portalId: string | null;
 }
 
+/** CRM object types Revint provisions / reads custom properties on. */
+export type HubspotPropertyObjectType = "contacts" | "companies" | "deals";
+
 export interface HubspotObject {
   id: string;
   properties: Record<string, string | null>;
@@ -210,6 +213,16 @@ export class HubspotClient {
     properties: Record<string, string>,
   ): Promise<HubspotObject> {
     return this.request(`/crm/v3/objects/contacts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ properties }),
+    });
+  }
+
+  updateCompany(
+    id: string,
+    properties: Record<string, string>,
+  ): Promise<HubspotObject> {
+    return this.request(`/crm/v3/objects/companies/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ properties }),
     });
@@ -438,32 +451,53 @@ export class HubspotClient {
 
   // ---- Property schema (provisioning) -----------------------------------
 
-  listContactProperties(): Promise<{ results: Array<{ name: string }> }> {
-    return this.request(`/crm/v3/properties/contacts`);
+  /** List property definitions for a CRM object type (contacts, companies, ...). */
+  listProperties(
+    objectType: HubspotPropertyObjectType,
+  ): Promise<{ results: Array<{ name: string }> }> {
+    return this.request(`/crm/v3/properties/${objectType}`);
   }
 
-  createContactProperty(def: Record<string, unknown>): Promise<unknown> {
-    return this.request(`/crm/v3/properties/contacts`, {
+  createProperty(
+    objectType: HubspotPropertyObjectType,
+    def: Record<string, unknown>,
+  ): Promise<unknown> {
+    return this.request(`/crm/v3/properties/${objectType}`, {
       method: "POST",
       body: JSON.stringify(def),
     });
   }
 
   /**
-   * Create a property group on the contacts object. Used by
+   * Create a property group on an object type. Used by
    * `ensureRevintProperties` to land all `revint_*` fields in a
-   * dedicated group instead of the catch-all `contactinformation`.
-   * Best-effort: callers should swallow 4xx (group already exists).
+   * dedicated "Revint" group. A 409 (group exists) is expected on
+   * reconnect; callers decide what to do with other errors.
    */
+  createPropertyGroup(
+    objectType: HubspotPropertyObjectType,
+    def: { name: string; label: string; displayOrder?: number },
+  ): Promise<unknown> {
+    return this.request(`/crm/v3/properties/${objectType}/groups`, {
+      method: "POST",
+      body: JSON.stringify(def),
+    });
+  }
+
+  listContactProperties(): Promise<{ results: Array<{ name: string }> }> {
+    return this.listProperties("contacts");
+  }
+
+  createContactProperty(def: Record<string, unknown>): Promise<unknown> {
+    return this.createProperty("contacts", def);
+  }
+
   createContactPropertyGroup(def: {
     name: string;
     label: string;
     displayOrder?: number;
   }): Promise<unknown> {
-    return this.request(`/crm/v3/properties/contacts/groups`, {
-      method: "POST",
-      body: JSON.stringify(def),
-    });
+    return this.createPropertyGroup("contacts", def);
   }
 
   /** Pipelines + stages for the deals object (field-map seeding). */
