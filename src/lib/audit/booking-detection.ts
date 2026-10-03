@@ -33,6 +33,7 @@ export const BOOKING_PROVIDERS = [
   "Dojo",
   "ResDiary",
   "Quandoo",
+  "DesignMyNight",
   "Tock",
   "TableCheck",
   "Eat App",
@@ -157,22 +158,31 @@ const RULES: ProviderRule[] = [
       "quandoo.sg",
       "quandoo.fi",
     ],
-    htmlPatterns: ["quandoo.com/widget"],
+    // Widget loader: booking-widget.quandoo.com/index.js (vendor docs).
+    htmlPatterns: ["booking-widget.quandoo.com", "quandoo.com/widget"],
+  },
+  {
+    provider: "DesignMyNight",
+    // Collins / DesignMyNight bookings: designmynight.com/book?venue_id=…, the
+    // widgets.designmynight.com/bookings(-partner).min.js loader and its
+    // dmn-booking-form attribute. Event listings (/london/whats-on/...) do not count.
+    hostnames: ["designmynight.com/book", "bookings.designmynight.com"],
+    htmlPatterns: ["widgets.designmynight.com/bookings", "dmn-booking-form"],
   },
   {
     provider: "Tock",
     hostnames: ["exploretock.com"],
-    htmlPatterns: ["exploretock.com/"],
+    htmlPatterns: ["exploretock.com/tock.js", "tock_widget_container"],
   },
   {
     provider: "TableCheck",
     hostnames: ["tablecheck.com"],
-    htmlPatterns: ["tablecheck.com/"],
+    htmlPatterns: ["tablecheck.com/en/shops/", "tablecheck.com/shops/"],
   },
   {
     provider: "Eat App",
     hostnames: ["eatapp.co"],
-    htmlPatterns: ["eatapp.co/"],
+    htmlPatterns: ["eatapp.co/reserve"],
   },
   {
     provider: "Formitable",

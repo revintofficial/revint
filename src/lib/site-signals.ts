@@ -106,8 +106,31 @@ export function detectLanguageCount(homeUrl: string, html: string): SignalFact<n
   });
   if (hreflang.size > 0) return { value: hreflang.size, url: homeUrl, quote: `hreflang: ${[...hreflang].join(", ")}` };
 
+  // Translation plugins name their languages in markup or settings
+  // (WPML wpml-ls-item-xx, Polylang lang-item-xx, GTranslate settings,
+  // Google Website Translator includedLanguages).
+  const plugin = new Set<string>();
+  let pluginName: string | null = null;
+  $('[class*="wpml-ls-item-"], li[class*="lang-item-"]').each((_, el) => {
+    for (const m of ($(el).attr("class") ?? "").matchAll(/\b(?:wpml-ls-item|lang-item)-([a-z]{2})(?:-[a-z]+)?\b/g)) {
+      plugin.add(m[1]);
+      pluginName ??= /wpml/.test($(el).attr("class") ?? "") ? "WPML" : "Polylang";
+    }
+  });
+  const gt = /gtranslateSettings\s*=\s*\{[\s\S]{0,400}?["']?languages["']?\s*:\s*\[([^\]]+)\]/.exec(html);
+  const gte = /includedLanguages\s*:\s*["']([a-z,\s-]+)["']/i.exec(html);
+  for (const [m, name] of [[gt, "GTranslate"], [gte, "Google Website Translator"]] as const) {
+    if (!m) continue;
+    for (const c of m[1].split(",")) {
+      const code = c.replace(/["'\s]/g, "").toLowerCase().split("-")[0];
+      if (/^[a-z]{2}$/.test(code)) plugin.add(code);
+    }
+    pluginName ??= name;
+  }
+  if (plugin.size >= 2) return { value: plugin.size, url: homeUrl, quote: `${pluginName}: ${[...plugin].join(", ")}` };
+
   const home = new URL(homeUrl);
-  const pageLang = ($("html").attr("lang") ?? "").toLowerCase().split(/[-_]/)[0] || null;
+  const pageLang =($("html").attr("lang") ?? "").toLowerCase().split(/[-_]/)[0] || null;
   const codes = new Set<string>();
   const labels: string[] = [];
   let pointsElsewhere = false;

@@ -68,6 +68,17 @@ describe("booking providers seen on lead sites", () => {
     expect(detectBookingProvider({ html: "", links: [{ href: "https://app.squareup.com/gift/X/order" }] })).toBeNull();
   });
 
+  it("knows documented widget loaders (Quandoo, DesignMyNight/Collins, Tock) and not DMN event pages", () => {
+    const script = (src: string) => `<script src="${src}"></script>`;
+    expect(detectBookingProvider({ html: script("https://booking-widget.quandoo.com/index.js"), links: [] })).toBe("Quandoo");
+    expect(detectBookingProvider({ html: script("//widgets.designmynight.com/bookings-partner.min.js"), links: [] })).toBe("DesignMyNight");
+    expect(detectBookingProvider({ html: script("https://www.exploretock.com/tock.js"), links: [] })).toBe("Tock");
+    // Pizza Pilgrims links a DesignMyNight *event* listing; that is not its table booking.
+    const pp = fixture("pizzapilgrims-soho.html");
+    expect(extractFeatures(pp.html, pp.url).bookingProvider).toBe("SevenRooms");
+    expect(detectBookingProvider({ html: "", links: [{ href: "https://www.designmynight.com/london/whats-on/daytime/dough-it-yourself-pizza-masterclass" }] })).toBeNull();
+  });
+
   it("reads 'no booking link' as unknown when the menu lives on another of the venue's domains", () => {
     const f = homeFacts("matiz-home.html");
     expect(f.bookingProvider).toBeNull();
@@ -194,6 +205,16 @@ describe("languages", () => {
   it("counts the Ritz-Carlton hreflang set, ignoring x-default", () => {
     const { url, html } = fixture("ritzcarlton-istanbul-dining.html");
     expect(detectLanguageCount(url, html)!.value).toBe(5);
+  });
+
+  it("reads translation-plugin markup (WPML, Polylang, GTranslate) per the vendors' documented markers", () => {
+    const url = "https://cafe.example/";
+    const wpml = `<html lang="en"><div class="wpml-ls"><ul><li class="wpml-ls-item wpml-ls-item-en wpml-ls-current-language"><a href="/">EN</a></li><li class="wpml-ls-item wpml-ls-item-tr"><a href="/tr/">TR</a></li><li class="wpml-ls-item wpml-ls-item-de"><a href="/de/">DE</a></li></ul></div></html>`;
+    expect(detectLanguageCount(url, wpml)).toMatchObject({ value: 3, quote: "WPML: en, tr, de" });
+    const pll = `<html lang="en"><ul><li class="lang-item lang-item-2 lang-item-en current-lang"><a href="/">English</a></li><li class="lang-item lang-item-5 lang-item-fr"><a href="/fr/">Français</a></li></ul></html>`;
+    expect(detectLanguageCount(url, pll)!.value).toBe(2);
+    const gt = `<html lang="en"><div class="gtranslate_wrapper"></div><script>window.gtranslateSettings = {"default_language":"en","languages":["en","fr","de","it"],"wrapper_selector":".gtranslate_wrapper"}</script><script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js"></script></html>`;
+    expect(detectLanguageCount(url, gt)).toMatchObject({ value: 4, quote: "GTranslate: en, fr, de, it" });
   });
 
   it("says 1 for a declared single-language page with no switcher, and null with a translate widget", () => {
