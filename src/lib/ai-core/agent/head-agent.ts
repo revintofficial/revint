@@ -167,6 +167,8 @@ export interface RoomOneAudit {
   operator?: OperatorKind | null;
   /** The fact behind `operator`, shown on the card. */
   operatorEvidence?: string | null;
+  /** The site hints at more venues ("Our Locations") but nobody counted them: a question, not a fact. */
+  locationHint?: string | null;
 }
 
 export interface RoomOnePainPhrase {
@@ -974,6 +976,9 @@ export function openQuestionsFor(
   if ((wedge === "bill_wait" || wedge === "menu_surface") && audit.languageCount == null) q.push("Menü kaç dilde?");
   if (wedge === "menu_surface") q.push("Menüde kaç ürün var? (100 üstü Growth)");
   if (locationCount >= 2 && audit.centralPurchasing == null) q.push("Satın alma kararı şubede mi, merkezde mi?");
+  if (locationCount <= 1 && audit.locationHint?.trim()) {
+    q.push(`Sitede başka şube izi var (${audit.locationHint.trim()}); kaç şubeniz var, karar kimde?`);
+  }
   return q;
 }
 

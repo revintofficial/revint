@@ -33,8 +33,10 @@ export interface OperatorInput {
   siteLocations?: number | null;
   /** Where the site audit saw those locations (URL), for the evidence line. */
   siteLocationsUrl?: string | null;
-  /** Site audit hint that the page belongs to a hotel (quote or URL). */
+  /** Site audit hint that the page belongs to a hotel (URL and operator). */
   siteHotelHint?: string | null;
+  /** A weaker multi-site cue from the site ("Our Locations", "Part of the X Group"), no count. */
+  siteLocationHint?: string | null;
 }
 
 export interface OperatorResult {
@@ -42,6 +44,12 @@ export interface OperatorResult {
   evidence: string | null;
   /** Best known number of venues under the same owner (at least 1). */
   locationCount: number;
+  /**
+   * The site hints at more venues but nobody counted them. Not proof of
+   * a group: the card asks instead of assuming. Only set when the count
+   * is still one.
+   */
+  locationHint?: string;
 }
 
 const HOTEL_TYPES =
@@ -279,6 +287,12 @@ function brandLeads(name: string, brands: readonly string[]): string | null {
 }
 
 export function detectOperator(input: OperatorInput): OperatorResult {
+  const result = decideOperator(input);
+  const hint = input.siteLocationHint?.trim();
+  return hint && result.operator === "single" ? { ...result, locationHint: hint } : result;
+}
+
+function decideOperator(input: OperatorInput): OperatorResult {
   const name = norm(input.businessName);
   const address = norm(input.address);
   const host = ownSiteHost(input.websiteUrl);
@@ -294,7 +308,7 @@ export function detectOperator(input: OperatorInput): OperatorResult {
     return { operator: "hotel_fnb", evidence: `harita — Google tipi: ${input.primaryType.trim()}`, locationCount };
   }
   if (input.siteHotelHint?.trim()) {
-    return { operator: "hotel_fnb", evidence: `site — ${input.siteHotelHint.trim()}`, locationCount };
+    return { operator: "hotel_fnb", evidence: input.siteHotelHint.trim(), locationCount };
   }
   const hostBrand = host ? brandIn(host.replace(/[.-]/g, " "), HOTEL_BRANDS) ?? brandIn(host, HOTEL_BRANDS) : null;
   if (host && (hostBrand || HOTEL_HOSTS.test(host) || /(hotel|resort)/.test(host))) {

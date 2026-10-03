@@ -111,6 +111,7 @@ import {
 } from "@/lib/ai-core/agent/head-agent";
 import { buildRoomOneAudit } from "@/lib/ai-core/agent/room-one-audit";
 import { detectOperator, ownSiteHost, type OperatorResult } from "@/lib/ai-core/agent/operator";
+import type { SiteFacts } from "@/lib/site-facts";
 import { parseMapFacts, type MapFacts } from "@/lib/agent-workers/apify/map-facts";
 
 export { buildBriefDecision };
@@ -1372,8 +1373,13 @@ export function toRoomOneAudit(
   });
   // "single" on an otherwise empty audit adds nothing; a hotel or chain
   // verdict must reach Room 1 even when no site or map fact was read.
-  if (!operator || (!audit && operator.operator === "single")) return audit;
-  return { ...(audit ?? {}), operator: operator.operator, operatorEvidence: operator.evidence };
+  if (!operator || (!audit && operator.operator === "single" && !operator.locationHint)) return audit;
+  return {
+    ...(audit ?? {}),
+    operator: operator.operator,
+    operatorEvidence: operator.evidence,
+    locationHint: operator.locationHint ?? null,
+  };
 }
 
 /**
@@ -1390,8 +1396,17 @@ export async function loadOperatorSignals(
     primaryType: string | null;
     websiteUrl: string | null;
     accountId: string | null;
+    websiteAudit?: { rawFeaturesJson: unknown } | null;
   },
 ): Promise<OperatorResult> {
+  // What the venue's own site says about itself (site audit, with URL and quote).
+  const raw = lead.websiteAudit?.rawFeaturesJson;
+  const siteFacts = (
+    raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as { siteFacts?: Partial<SiteFacts> | null }).siteFacts : null
+  ) ?? null;
+  const siteLocations = siteFacts?.locationCount ?? null;
+  const hotel = siteFacts?.hotelOperator ?? null;
+  const hints = siteFacts?.locationHints ?? null;
   const accountLocations = lead.accountId
     ? await prisma.lead.count({ where: { workspaceId, accountId: lead.accountId } })
     : 0;
@@ -1414,6 +1429,11 @@ export async function loadOperatorSignals(
     websiteUrl: lead.websiteUrl,
     accountLocations,
     sameSiteLocations,
+    siteLocations: typeof siteLocations?.value === "number" ? siteLocations.value : null,
+    siteLocationsUrl: siteLocations?.url ?? null,
+    siteHotelHint: hotel?.value ? `${hotel.url} — otel: ${hotel.value}` : null,
+    siteLocationHint:
+      Array.isArray(hints?.value) && hints.value.length > 0 ? `${hints.url} — "${hints.value[0]}"` : null,
   });
 }
 

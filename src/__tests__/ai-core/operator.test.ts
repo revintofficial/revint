@@ -104,6 +104,20 @@ describe("detectOperator — chains and groups", () => {
     expect(r).toMatchObject({ operator: "small_group", locationCount: 4, evidence: "https://trattoriay.com/locations — sitede 4 lokasyon" });
   });
 
+  it("keeps a multi-site hint without a count as a question, not as a group", () => {
+    const r = detectOperator({ businessName: "Lokanta Z", siteLocationHint: 'https://lokantaz.com — "Our Locations"' });
+    expect(r).toEqual({ operator: "single", evidence: null, locationCount: 1, locationHint: 'https://lokantaz.com — "Our Locations"' });
+    // Once somebody counted, the hint adds nothing.
+    const counted = detectOperator({ businessName: "Lokanta Z", siteLocations: 3, siteLocationHint: 'https://lokantaz.com — "Our Locations"' });
+    expect(counted.operator).toBe("small_group");
+    expect(counted.locationHint).toBeUndefined();
+  });
+
+  it("shows the site audit's hotel finding as the evidence", () => {
+    const r = detectOperator({ businessName: "The Roof", siteHotelHint: "https://venue.example/dining — otel: The Ritz-Carlton (Marriott)" });
+    expect(r).toMatchObject({ operator: "hotel_fnb", evidence: "https://venue.example/dining — otel: The Ritz-Carlton (Marriott)" });
+  });
+
   it("a venue with nothing else known is single, with one location and no evidence", () => {
     expect(detectOperator({ businessName: "Lokanta Z" })).toEqual({ operator: "single", evidence: null, locationCount: 1 });
   });
