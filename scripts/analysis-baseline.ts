@@ -11,7 +11,7 @@
 import "dotenv/config";
 
 import { prisma } from "@/lib/prisma";
-import { toRoomOneAudit } from "@/lib/agent-workers/lead-intelligence-brief";
+import { loadMapFacts, toRoomOneAudit } from "@/lib/agent-workers/lead-intelligence-brief";
 import { buildRevintProperties } from "@/lib/integrations/hubspot/writeback";
 import {
   CHAIN_WORKERS,
@@ -54,12 +54,13 @@ async function main() {
     const brief = runs.LEAD_INTELLIGENCE_BRIEF;
     const briefSucceeded = brief && (brief.status === "SUCCEEDED" || brief.status === "SUCCEEDED_NO_MEMORY");
     const built = await buildRevintProperties(prisma, workspaceId, lead.id, briefSucceeded ? { briefRunId: brief.id } : {});
+    const map = await loadMapFacts(workspaceId, lead.id);
     rows.push(
       summarizeLead({
         leadId: lead.id,
         businessName: lead.businessName,
         runs,
-        roomOneAudit: toRoomOneAudit(lead as never) as Record<string, unknown> | null,
+        roomOneAudit: toRoomOneAudit(lead as never, map.facts) as Record<string, unknown> | null,
         reviewTexts: lead.googleReviews.map((r) => r.text ?? ""),
         nextActionCreatedAt: nextAction?.createdAt ?? null,
         hubspotProps: built?.properties ?? null,

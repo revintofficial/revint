@@ -109,6 +109,8 @@ import {
   type RoomOneAudit,
   type VenueType,
 } from "@/lib/ai-core/agent/head-agent";
+import { buildRoomOneAudit } from "@/lib/ai-core/agent/room-one-audit";
+import { parseMapFacts, type MapFacts } from "@/lib/agent-workers/apify/map-facts";
 
 export { buildBriefDecision };
 export type { BriefDecisionInput, HeadAgentBriefDecision };
@@ -1322,12 +1324,6 @@ type HydratedLead = NonNullable<AgentWorkerContext["lead"]>;
 function triBool(v: unknown): boolean | null {
   return typeof v === "boolean" ? v : null;
 }
-function finiteNumber(v: unknown): number | null {
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
-function nonEmpty(v: unknown): string | null {
-  return typeof v === "string" && v.trim() ? v.trim() : null;
-}
 
 /** Rule-based venue type from the niche slug / Google type / price level. */
 export function deriveVenueType(
@@ -1348,36 +1344,45 @@ export function deriveVenueType(
  * stays null: `hasQrMenu` / `hasOnlineOrdering` are `boolean | null`
  * upstream and a `null` is never read as "absent".
  */
-export function toRoomOneAudit(lead: HydratedLead): RoomOneAudit | null {
+export function toRoomOneAudit(lead: HydratedLead, mapFacts: MapFacts | null = null): RoomOneAudit | null {
   const wa = lead.websiteAudit;
-  if (!wa) return lead.hasWebsite === false ? { hasWebsite: false, websiteBroken: false } : null;
-  const f = (wa.rawFeaturesJson && typeof wa.rawFeaturesJson === "object"
-    ? (wa.rawFeaturesJson as Record<string, unknown>)
-    : {}) as Record<string, unknown>;
-  const menuUrl = nonEmpty(f.menuUrl);
-  const detectedMenuTool = nonEmpty(f.detectedMenuTool);
-  return {
-    reachable: wa.reachable,
-    websiteUrl: lead.websiteUrl ?? wa.url ?? null,
-    hasWebsite: lead.hasWebsite ?? true,
-    websiteBroken: lead.hasWebsite !== false && wa.reachable === false ? true : wa.reachable === true ? false : null,
-    hasBookingSystem: triBool(wa.hasBookingSystem),
-    hasOnlineReservation: triBool(f.hasOnlineReservation),
-    bookingProvider: nonEmpty(wa.bookingProvider) ?? nonEmpty(f.bookingProvider),
-    hasPrepayment: triBool(f.hasPrepayment),
-    tableCount: finiteNumber(f.tableCount),
-    hasQrMenu: triBool(f.hasQrMenu),
-    pdfMenu: menuUrl ? /\.pdf(\?|#|$)/i.test(menuUrl) && !detectedMenuTool : null,
-    menuUrl,
-    detectedMenuTool,
-    hasOnlineOrdering: triBool(f.hasOnlineOrdering),
-    marketplaceOrdering: triBool(f.hasDeliveryIntegration),
-    deliveryPlatforms: Array.isArray(f.deliveryPlatforms)
-      ? f.deliveryPlatforms.filter((x): x is string => typeof x === "string")
+  return buildRoomOneAudit({
+    hasWebsite: lead.hasWebsite ?? null,
+    websiteUrl: lead.websiteUrl ?? null,
+    audit: wa
+      ? {
+          reachable: wa.reachable,
+          url: wa.url,
+          hasBookingSystem: triBool(wa.hasBookingSystem),
+          bookingProvider: wa.bookingProvider,
+          rawFeaturesJson: wa.rawFeaturesJson,
+        }
       : null,
-    languageCount: finiteNumber(f.languageCount),
+    mapFacts,
     venueType: deriveVenueType([lead.subNicheSlug, lead.nicheSlug, lead.primaryType], lead.priceLevel),
-  };
+  });
+}
+
+/** 30 days: older than this the site may have changed under the audit. */
+const AUDIT_STALE_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Map facts from the lead's latest successful Google Maps run. */
+export async function loadMapFacts(
+  workspaceId: string,
+  leadId: string,
+): Promise<{ facts: MapFacts | null; skipped: boolean }> {
+  const run = await prisma.agentRun.findFirst({
+    where: { workspaceId, leadId, workerKind: "APIFY_GMAPS_DEEP", status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] } },
+    orderBy: { finishedAt: "desc" },
+    select: { outputJson: true },
+  });
+  const out =
+    run?.outputJson && typeof run.outputJson === "object" && !Array.isArray(run.outputJson)
+      ? (run.outputJson as Record<string, unknown>)
+      : null;
+  if (!out) return { facts: null, skipped: false };
+  if (out.skipped) return { facts: null, skipped: true };
+  return { facts: parseMapFacts(out.mapFacts), skipped: false };
 }
 
 const PLAN_TO_OFFER: Partial<Record<string, "STARTER" | "GROWTH">> = { starter: "STARTER", growth: "GROWTH" };
@@ -1398,6 +1403,13 @@ async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): 
     locationCount = Math.max(1, siblings);
   }
 
+  const map = await loadMapFacts(workspaceId, leadId);
+  const skippedSources: string[] = [];
+  // A quota-skipped map pull is a missing source, not a clean bill.
+  if (map.skipped) skippedSources.push("map");
+  const auditAt = lead.websiteAudit?.crawlAttemptedAt ?? null;
+  if (auditAt && Date.now() - auditAt.getTime() > AUDIT_STALE_MS) skippedSources.push("website_stale");
+
   const reviewAnalysis = lead.reviewAnalysis
     ? {
         reviewsAnalyzedCount: lead.reviewAnalysis.reviewsAnalyzedCount,
@@ -1413,7 +1425,8 @@ async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): 
       businessName: lead.businessName,
       address: lead.formattedAddress,
       language: ctx.workspace.language ?? "en",
-      audit: toRoomOneAudit(lead),
+      audit: toRoomOneAudit(lead, map.facts),
+      skippedSources,
       reviewCount: lead.reviewCount,
       rating: lead.rating,
       priceLevel: lead.priceLevel ?? null,
@@ -1445,8 +1458,8 @@ async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): 
 
   const newVersion = (lead.intelligenceVersion ?? 0) + 1;
   const sellablePains = normalizePainPhrases(lead.reviewAnalysis?.painPhrases)
-    .filter((p) => p.sellable !== false)
-    .map((p) => p.text);
+    .filter((p) => p.sellable !== false && p.mentions !== 0)
+    .map((p) => p.quote ?? p.text);
   const brief: Omit<BriefOutput, "intelligenceVersion" | "generatedAt"> = {
     salesConfidence: decision.salesConfidence,
     confidenceBreakdown: { audit: 0, reviews: 0, opportunity: 0, weight: 0 },
@@ -1464,7 +1477,7 @@ async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): 
         : { kind: "CALL_AT_WINDOW", due: null, note: ha.primaryAngle },
     replyObjections: [],
     redFlags: decision.missingSources.map((s) => `missing_source:${s}`),
-    evidence: r1.evidence.map((note) => ({ source: note.startsWith("yorum:") ? "review" : "website", note })),
+    evidence: r1.evidence.map((note) => ({ source: note.startsWith("yorum") ? "review" : "website", note })),
     // Opener whitelist: only review phrases Room 1 actually used as evidence.
     confirmedPainPoints: sellablePains.filter((p) => r1.evidence.some((e) => e.includes(p))).slice(0, 5),
     confirmedMissingFeatures: [],

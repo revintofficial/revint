@@ -17,7 +17,7 @@ vi.mock("@/lib/ai-core/agent/claude", () => ({
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 
-import { roomOne, evaluateRoomOne, packageFitScore } from "@/lib/ai-core/agent/head-agent";
+import { roomOne, evaluateRoomOne, packageFitScore, openQuestionsFor } from "@/lib/ai-core/agent/head-agent";
 
 describe("roomOne — plan snippets", () => {
   it("picks growth and the reservation wedge when a marketplace holds the bookings", () => {
@@ -65,12 +65,15 @@ describe("roomOne — rules", () => {
   it("treats a phrase without `sellable` as sellable (pre-sellable analyst rows)", () => {
     const out = roomOne({
       audit: {},
-      reviews: { count: 120, painPhrases: [{ text: "waited 20 minutes for the bill" }] },
+      reviews: {
+        count: 120,
+        painPhrases: [{ text: "waited 20 minutes for the bill", category: "bill", mentions: 2, quote: "waited 20 minutes for the bill" }],
+      },
       locationCount: 1,
     });
     expect(out.wedge).toBe("bill_wait");
     expect(out.plan).toBe("starter");
-    expect(out.evidence[0]).toContain("waited 20 minutes for the bill");
+    expect(out.evidence[0]).toBe('yorum (2/120): "waited 20 minutes for the bill"');
   });
 
   it("ignores review evidence below the 30-review corpus", () => {
@@ -85,7 +88,10 @@ describe("roomOne — rules", () => {
   it("bill wait moves to growth above 20 tables", () => {
     const out = roomOne({
       audit: { tableCount: 40 },
-      reviews: { count: 200, painPhrases: [{ text: "card machine never came", sellable: true }] },
+      reviews: {
+        count: 200,
+        painPhrases: [{ text: "card machine never came", sellable: true, category: "bill", mentions: 2, quote: "card machine never came" }],
+      },
       locationCount: 1,
     });
     expect(out).toMatchObject({ wedge: "bill_wait", plan: "growth" });
@@ -94,7 +100,12 @@ describe("roomOne — rules", () => {
   it("reservation beats bill wait; bill wait becomes the backup (example card)", () => {
     const out = roomOne({
       audit: { websiteUrl: "https://brasserie.example", bookingProvider: "TheFork", hasPrepayment: false, tableCount: 40 },
-      reviews: { count: 300, painPhrases: [{ text: "we waited 20 minutes for the bill", sellable: true }] },
+      reviews: {
+        count: 300,
+        painPhrases: [
+          { text: "we waited 20 minutes for the bill", sellable: true, category: "bill", mentions: 2, quote: "we waited 20 minutes for the bill" },
+        ],
+      },
       locationCount: 1,
     });
     expect(out.wedge).toBe("reservation");
@@ -191,5 +202,58 @@ describe("roomOne — rules", () => {
     expect(packageFitScore(none, ["reviews"])).toBeLessThan(20);
     expect(packageFitScore(strong, [])).toBeGreaterThanOrEqual(70);
     expect(packageFitScore(strong, ["reviews"])).toBeLessThan(packageFitScore(strong, []));
+  });
+});
+
+describe("roomOne — verified review evidence", () => {
+  const audit = { reachable: true };
+
+  it("treats one unverified legacy phrase as a single medium signal", () => {
+    const out = roomOne({ audit, reviews: { count: 80, painPhrases: [{ text: "waited ages for the bill" }] }, locationCount: 1 });
+    expect(out.wedge).toBe("none");
+  });
+
+  it("makes a strong bill signal from two reviews and prints the count with the real quote", () => {
+    const out = roomOne({
+      audit,
+      reviews: { count: 80, painPhrases: [{ text: "slow to bring the bill", category: "bill", mentions: 3, quote: "we waited 25 minutes for the bill" }] },
+      locationCount: 1,
+    });
+    expect(out.wedge).toBe("bill_wait");
+    expect(out.evidence[0]).toBe('yorum (3/80): "we waited 25 minutes for the bill"');
+  });
+
+  it("drops a phrase whose quotes were found in no review", () => {
+    const out = roomOne({
+      audit,
+      reviews: { count: 80, painPhrases: [{ text: "slow to bring the bill", category: "bill", mentions: 0 }, { text: "bill took ages", category: "bill", mentions: 0 }] },
+      locationCount: 1,
+    });
+    expect(out.wedge).toBe("none");
+  });
+
+  it("follows the analyst category, not a keyword in the summary", () => {
+    const out = roomOne({
+      audit,
+      reviews: { count: 80, painPhrases: [{ text: "not worth what you pay", category: "other", mentions: 4, quote: "not worth what you pay for the portion" }] },
+      locationCount: 1,
+    });
+    expect(out.wedge).toBe("none");
+  });
+});
+
+describe("openQuestionsFor", () => {
+  it("asks only for the unknown inputs that matter to the chosen wedge", () => {
+    expect(openQuestionsFor({ hasPrepayment: null }, "reservation", 1)).toEqual([
+      "Rezervasyonda depozito veya kart garantisi alıyorlar mı?",
+    ]);
+    expect(openQuestionsFor({ tableCount: null, languageCount: null }, "bill_wait", 1)).toEqual([
+      "Kaç masa var? (20 üstü Growth)",
+      "Menü kaç dilde?",
+    ]);
+    expect(openQuestionsFor({ hasPrepayment: true, centralPurchasing: null }, "reservation", 3)).toEqual([
+      "Satın alma kararı şubede mi, merkezde mi?",
+    ]);
+    expect(openQuestionsFor({}, "none", 1)).toEqual([]);
   });
 });

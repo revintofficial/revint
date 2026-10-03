@@ -959,7 +959,10 @@ describe("buildBriefDecision — rooms 2 and 3", () => {
       audit: { reachable: true },
       reviewCount: 200,
       rating: 4.1,
-      reviewAnalysis: { reviewsAnalyzedCount: 200, painPhrases: [{ text: "waited ages for the bill", sellable: true }] },
+      reviewAnalysis: {
+        reviewsAnalyzedCount: 200,
+        painPhrases: [{ text: "waited ages for the bill", sellable: true, category: "bill", mentions: 2, quotes: ["waited ages for the bill"] }],
+      },
     });
     expect(out.headAgent.recommendedPackage).toBe("starter");
     expect(out.headAgent.roomTwo.qaIssues).toEqual(
@@ -1024,7 +1027,11 @@ describe("buildBriefDecision — rooms 2 and 3", () => {
       audit: { reachable: true },
       reviewCount: 120,
       rating: 4.2,
-      reviewAnalysis: { reviewsAnalyzedCount: 120, painPhrases: ["waited 25 minutes to pay the bill"] },
+      // Legacy rows carry no verified count, so each phrase is one medium signal: two make the wedge.
+      reviewAnalysis: {
+        reviewsAnalyzedCount: 120,
+        painPhrases: ["waited 25 minutes to pay the bill", { text: "card machine never came", sellable: true }],
+      },
     });
     expect(out.headAgent.wedge).toBe("bill_wait");
     expect(out.headAgent.recommendedPackage).toBe("starter");

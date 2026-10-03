@@ -114,6 +114,12 @@ export interface RoomOnePainPhrase {
   text: string;
   /** Missing = true (backwards compat with pre-`sellable` analyst rows). */
   sellable?: boolean;
+  /** Analyst category. Missing on rows written before the category existed. */
+  category?: string | null;
+  /** Distinct reviews with a verified quote. Missing on older rows; 0 = not evidence. */
+  mentions?: number | null;
+  /** First verified verbatim quote. */
+  quote?: string | null;
 }
 
 export interface RoomOneInput {
@@ -165,23 +171,39 @@ function siteRef(audit: RoomOneAudit, fact: string): string {
   return `${audit.websiteUrl?.trim() || "site"} — ${fact}`;
 }
 
-function reviewRef(text: string): string {
-  return `yorum: "${text.trim()}"`;
+function reviewRef(p: RoomOnePainPhrase, corpus: number | null): string {
+  const body = (p.quote ?? p.text).trim();
+  return typeof p.mentions === "number" && corpus ? `yorum (${p.mentions}/${corpus}): "${body}"` : `yorum: "${body}"`;
+}
+
+/** Category when the analyst gave one; keyword match only for older rows. */
+function isAbout(p: RoomOnePainPhrase, key: keyof typeof PHRASE): boolean {
+  return p.category ? p.category === key : PHRASE[key].test(p.text);
+}
+
+/** Two verified reviews make a review signal strong; one, or an unverified row, is medium. */
+function reviewStrength(p: RoomOnePainPhrase): Strength {
+  return typeof p.mentions === "number" && p.mentions >= 2 ? "strong" : "medium";
 }
 
 function isWalkIn(v: VenueType | null | undefined): boolean {
   return v === "cafe" || v === "qsr" || v === "food_hall";
 }
 
-function usablePhrases(reviews: RoomOneInput["reviews"]): string[] {
+function usablePhrases(reviews: RoomOneInput["reviews"]): RoomOnePainPhrase[] {
   const count = reviews?.count;
   if (typeof count === "number" && count < REVIEW_CORPUS_MIN) return [];
-  return (reviews?.painPhrases ?? [])
-    .filter((p) => p && typeof p.text === "string" && p.text.trim() && p.sellable !== false)
-    .map((p) => p.text.trim());
+  return (reviews?.painPhrases ?? []).filter(
+    (p) => p && typeof p.text === "string" && p.text.trim() && p.sellable !== false && p.mentions !== 0,
+  );
 }
 
-function collectSignals(audit: RoomOneAudit, phrases: string[], locationCount: number): WedgeSignal[] {
+function collectSignals(
+  audit: RoomOneAudit,
+  phrases: RoomOnePainPhrase[],
+  locationCount: number,
+  corpus: number | null,
+): WedgeSignal[] {
   const out: WedgeSignal[] = [];
   const walkIn = isWalkIn(audit.venueType);
 
@@ -204,13 +226,13 @@ function collectSignals(audit: RoomOneAudit, phrases: string[], locationCount: n
       out.push({ wedge: "reservation", strength: "medium", evidence: siteRef(audit, "sitede online rezervasyon yok") });
     }
     for (const p of phrases) {
-      if (PHRASE.reservation.test(p)) out.push({ wedge: "reservation", strength: "medium", evidence: reviewRef(p) });
+      if (isAbout(p, "reservation")) out.push({ wedge: "reservation", strength: "medium", evidence: reviewRef(p, corpus) });
     }
   }
 
   // 2. Bill wait — reviews about the bill / card machine / split bill. Food delay is not this bucket.
   for (const p of phrases) {
-    if (PHRASE.bill.test(p)) out.push({ wedge: "bill_wait", strength: "strong", evidence: reviewRef(p) });
+    if (isAbout(p, "bill")) out.push({ wedge: "bill_wait", strength: reviewStrength(p), evidence: reviewRef(p, corpus) });
   }
 
   // 3. Marketplace — only Deliveroo / Uber Eats / Just Eat, no direct ordering.
@@ -229,7 +251,7 @@ function collectSignals(audit: RoomOneAudit, phrases: string[], locationCount: n
     }
   }
   for (const p of phrases) {
-    if (PHRASE.delivery.test(p)) out.push({ wedge: "marketplace", strength: "medium", evidence: reviewRef(p) });
+    if (isAbout(p, "delivery")) out.push({ wedge: "marketplace", strength: "medium", evidence: reviewRef(p, corpus) });
   }
 
   // 4. Menu surface — single venue only (multi-branch is its own wedge).
@@ -245,7 +267,7 @@ function collectSignals(audit: RoomOneAudit, phrases: string[], locationCount: n
       out.push({ wedge: "menu_surface", strength: "medium", evidence: siteRef(audit, "dijital / QR menü yok") });
     }
     for (const p of phrases) {
-      if (PHRASE.menu.test(p)) out.push({ wedge: "menu_surface", strength: "medium", evidence: reviewRef(p) });
+      if (isAbout(p, "menu")) out.push({ wedge: "menu_surface", strength: "medium", evidence: reviewRef(p, corpus) });
     }
   }
 
@@ -256,7 +278,7 @@ function collectSignals(audit: RoomOneAudit, phrases: string[], locationCount: n
 
   // 6. Guest repeat — never on review volume alone.
   for (const p of phrases) {
-    if (PHRASE.repeat.test(p)) out.push({ wedge: "guest_repeat", strength: "medium", evidence: reviewRef(p) });
+    if (isAbout(p, "repeat")) out.push({ wedge: "guest_repeat", strength: "medium", evidence: reviewRef(p, corpus) });
   }
   if (audit.venueType === "cafe") {
     out.push({ wedge: "guest_repeat", strength: "medium", evidence: siteRef(audit, "mekân tipi: mahalle kafesi") });
@@ -271,10 +293,10 @@ function qualifies(signals: WedgeSignal[]): boolean {
   return strong >= 1 || medium >= 2;
 }
 
-function planFor(wedge: ActiveWedge, audit: RoomOneAudit, phrases: string[], locationCount: number): HeadAgentPlan {
+function planFor(wedge: ActiveWedge, audit: RoomOneAudit, phrases: RoomOnePainPhrase[], locationCount: number): HeadAgentPlan {
   const multiLanguage =
     (typeof audit.languageCount === "number" && audit.languageCount > 1) ||
-    phrases.some((p) => PHRASE.language.test(p));
+    phrases.some((p) => isAbout(p, "language"));
   let plan: HeadAgentPlan;
   switch (wedge) {
     case "reservation":
@@ -368,7 +390,8 @@ export function evaluateRoomOne(input: RoomOneInput): RoomOneEvaluation {
     };
   }
 
-  const signals = collectSignals(audit, phrases, locationCount);
+  const corpus = typeof input.reviews?.count === "number" ? input.reviews.count : null;
+  const signals = collectSignals(audit, phrases, locationCount, corpus);
   const byWedge = new Map<ActiveWedge, WedgeSignal[]>();
   for (const s of signals) byWedge.set(s.wedge, [...(byWedge.get(s.wedge) ?? []), s]);
   const qualifying = WEDGE_PRIORITY.filter((w) => qualifies(byWedge.get(w) ?? []));
@@ -484,6 +507,8 @@ export interface HeadAgentDecision {
   confidence: number;
   evidenceRefs: string[];
   sourceConflicts: HeadAgentConflict[];
+  /** Unknown rule inputs the rep should ask about. */
+  openQuestions?: string[];
   reasoning: string;
   roomOne: RoomOneOutput;
   roomTwo: HeadAgentRoomTwo;
@@ -552,7 +577,14 @@ export function normalizePainPhrases(v: unknown): RoomOnePainPhrase[] {
     if (!o) continue;
     const text = [o.text, o.phrase, o.label, o.quote].find((t) => typeof t === "string" && t.trim());
     if (typeof text !== "string") continue;
-    out.push(typeof o.sellable === "boolean" ? { text: text.trim(), sellable: o.sellable } : { text: text.trim() });
+    const quotes = Array.isArray(o.quotes) ? o.quotes.filter((q): q is string => typeof q === "string" && q.trim() !== "") : [];
+    out.push({
+      text: text.trim(),
+      ...(typeof o.sellable === "boolean" ? { sellable: o.sellable } : {}),
+      ...(typeof o.category === "string" ? { category: o.category } : {}),
+      ...(typeof o.mentions === "number" ? { mentions: o.mentions } : {}),
+      ...(quotes[0] ? { quote: quotes[0].trim() } : {}),
+    });
   }
   return out;
 }
@@ -578,7 +610,7 @@ function toFnbSignals(input: BriefDecisionInput, audit: RoomOneAudit, phrases: R
   const menuUrl = audit.menuUrl ?? null;
   const pdfMenu =
     audit.pdfMenu ?? (menuUrl != null ? /\.pdf(\?|#|$)/i.test(menuUrl) && !audit.detectedMenuTool : null);
-  const language = phrases.some((p) => p.sellable !== false && PHRASE.language.test(p.text));
+  const language = phrases.some((p) => p.sellable !== false && p.mentions !== 0 && isAbout(p, "language"));
   return {
     hasWebsite: audit.hasWebsite ?? (audit.websiteUrl ? true : null),
     websiteBroken: audit.websiteBroken ?? null,
@@ -624,6 +656,22 @@ export const PLAN_LABELS: Record<HeadAgentPlan, string> = {
   premium: "Premium",
   none: "Paket yok",
 };
+
+/**
+ * Rule inputs nobody could see, phrased for the first minute of the
+ * call. Only the ones that would change this card's package or stop it.
+ */
+export function openQuestionsFor(audit: RoomOneAudit, wedge: HeadAgentWedge, locationCount: number): string[] {
+  if (wedge === "none") return [];
+  const q: string[] = [];
+  if (wedge === "reservation" && audit.hasPrepayment == null) {
+    q.push("Rezervasyonda depozito veya kart garantisi alıyorlar mı?");
+  }
+  if (wedge === "bill_wait" && audit.tableCount == null) q.push("Kaç masa var? (20 üstü Growth)");
+  if ((wedge === "bill_wait" || wedge === "menu_surface") && audit.languageCount == null) q.push("Menü kaç dilde?");
+  if (locationCount >= 2 && audit.centralPurchasing == null) q.push("Satın alma kararı şubede mi, merkezde mi?");
+  return q;
+}
 
 /**
  * Package fit score (0-100). Deterministic; replaces the old blend of
@@ -907,6 +955,7 @@ export async function buildBriefDecision(
     confidence: fitScore,
     evidenceRefs: evidenceRefs.slice(0, 3),
     sourceConflicts: [],
+    openQuestions: openQuestionsFor(audit, r1.wedge, input.locationCount ?? 1),
     reasoning: plainReasoning,
     roomOne: r1,
     roomTwo: { status: "skipped", qaIssues: [], qaWarnings: [], rounds: 0, toolCalls: [], draftTalkTrack: null },
