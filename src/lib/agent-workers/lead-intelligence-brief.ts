@@ -110,6 +110,7 @@ import {
   type VenueType,
 } from "@/lib/ai-core/agent/head-agent";
 import { buildRoomOneAudit } from "@/lib/ai-core/agent/room-one-audit";
+import { detectOperator, ownSiteHost, type OperatorResult } from "@/lib/ai-core/agent/operator";
 import { parseMapFacts, type MapFacts } from "@/lib/agent-workers/apify/map-facts";
 
 export { buildBriefDecision };
@@ -1344,9 +1345,13 @@ export function deriveVenueType(
  * stays null: `hasQrMenu` / `hasOnlineOrdering` are `boolean | null`
  * upstream and a `null` is never read as "absent".
  */
-export function toRoomOneAudit(lead: HydratedLead, mapFacts: MapFacts | null = null): RoomOneAudit | null {
+export function toRoomOneAudit(
+  lead: HydratedLead,
+  mapFacts: MapFacts | null = null,
+  operator: OperatorResult | null = null,
+): RoomOneAudit | null {
   const wa = lead.websiteAudit;
-  return buildRoomOneAudit({
+  const audit = buildRoomOneAudit({
     hasWebsite: lead.hasWebsite ?? null,
     websiteUrl: lead.websiteUrl ?? null,
     audit: wa
@@ -1360,6 +1365,51 @@ export function toRoomOneAudit(lead: HydratedLead, mapFacts: MapFacts | null = n
       : null,
     mapFacts,
     venueType: deriveVenueType([lead.subNicheSlug, lead.nicheSlug, lead.primaryType], lead.priceLevel),
+  });
+  // "single" on an otherwise empty audit adds nothing; a hotel or chain
+  // verdict must reach Room 1 even when no site or map fact was read.
+  if (!operator || (!audit && operator.operator === "single")) return audit;
+  return { ...(audit ?? {}), operator: operator.operator, operatorEvidence: operator.evidence };
+}
+
+/**
+ * Who runs the venue, from facts already on hand: the Google type, the
+ * name and address, the website host, and how many leads in THIS
+ * workspace share the account or the site. No external call.
+ */
+export async function loadOperatorSignals(
+  workspaceId: string,
+  lead: {
+    id: string;
+    businessName: string;
+    formattedAddress: string | null;
+    primaryType: string | null;
+    websiteUrl: string | null;
+    accountId: string | null;
+  },
+): Promise<OperatorResult> {
+  const accountLocations = lead.accountId
+    ? await prisma.lead.count({ where: { workspaceId, accountId: lead.accountId } })
+    : 0;
+  const host = ownSiteHost(lead.websiteUrl);
+  // Distinct addresses, not rows: two Google listings of one venue are one location.
+  const sameSite = host
+    ? await prisma.lead.findMany({
+        where: { workspaceId, websiteUrl: { contains: host, mode: "insensitive" } },
+        select: { formattedAddress: true },
+        take: 50,
+      })
+    : [];
+  const sameSiteLocations = new Set(
+    sameSite.map((l) => l.formattedAddress.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim()).filter(Boolean),
+  ).size;
+  return detectOperator({
+    businessName: lead.businessName,
+    address: lead.formattedAddress,
+    primaryType: lead.primaryType,
+    websiteUrl: lead.websiteUrl,
+    accountLocations,
+    sameSiteLocations,
   });
 }
 
@@ -1397,11 +1447,10 @@ async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): 
     return { output: { skipped: "head_agent_off" }, costTokens: 0 };
   }
 
-  let locationCount = 1;
-  if (lead.accountId) {
-    const siblings = await prisma.lead.count({ where: { workspaceId, accountId: lead.accountId } });
-    locationCount = Math.max(1, siblings);
-  }
+  // Hotel restaurant, chain branch, small group or single venue; also
+  // the best known number of venues under the same owner.
+  const operator = await loadOperatorSignals(workspaceId, lead);
+  const locationCount = operator.locationCount;
 
   const map = await loadMapFacts(workspaceId, leadId);
   const skippedSources: string[] = [];
@@ -1427,7 +1476,7 @@ async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): 
       businessName: lead.businessName,
       address: lead.formattedAddress,
       language: ctx.workspace.language ?? "en",
-      audit: toRoomOneAudit(lead, map.facts),
+      audit: toRoomOneAudit(lead, map.facts, operator),
       skippedSources,
       reviewCount: lead.reviewCount,
       rating: lead.rating,

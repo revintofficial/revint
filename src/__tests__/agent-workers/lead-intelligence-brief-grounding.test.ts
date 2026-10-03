@@ -80,7 +80,7 @@ const ha = vi.hoisted(() => ({
   call: vi.fn(),
   mode: vi.fn(() => "live"),
   db: {
-    lead: { count: vi.fn(), updateMany: vi.fn() },
+    lead: { count: vi.fn(), updateMany: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
     salesOpportunity: { upsert: vi.fn() },
     servicePackage: { findMany: vi.fn() },
     leadTrigger: { findMany: vi.fn() },
@@ -779,6 +779,7 @@ function resetHeadAgentMocks() {
   ha.mode.mockReturnValue("live");
   ha.db.lead.count.mockReset().mockResolvedValue(1);
   ha.db.lead.updateMany.mockReset().mockResolvedValue({ count: 1 });
+  ha.db.lead.findMany.mockReset().mockResolvedValue([]);
   ha.db.salesOpportunity.upsert.mockReset().mockResolvedValue({});
   ha.db.servicePackage.findMany.mockReset().mockResolvedValue([
     { id: "pkg_starter", name: "FineDine Starter" },
@@ -961,7 +962,7 @@ describe("buildBriefDecision — rooms 2 and 3", () => {
       rating: 4.1,
       reviewAnalysis: {
         reviewsAnalyzedCount: 200,
-        painPhrases: [{ text: "waited ages for the bill", sellable: true, category: "bill", mentions: 2, quotes: ["waited ages for the bill"] }],
+        painPhrases: [{ text: "waited ages for the bill", sellable: true, category: "bill", mentions: 6, complaintReviews: 40, recentMentions: 3, quotes: ["waited ages for the bill"] }],
       },
     });
     expect(out.headAgent.recommendedPackage).toBe("starter");
@@ -1027,10 +1028,14 @@ describe("buildBriefDecision — rooms 2 and 3", () => {
       audit: { reachable: true },
       reviewCount: 120,
       rating: 4.2,
-      // Legacy rows carry no verified count, so each phrase is one medium signal: two make the wedge.
+      // A legacy string row is one medium signal for its category; a counted
+      // object row from another bill-wait category is the second.
       reviewAnalysis: {
         reviewsAnalyzedCount: 120,
-        painPhrases: ["waited 25 minutes to pay the bill", { text: "card machine never came", sellable: true }],
+        painPhrases: [
+          "waited 25 minutes to pay the bill",
+          { text: "nobody took our order", sellable: true, category: "order_wait", mentions: 3, quotes: ["nobody came to take our order"] },
+        ],
       },
     });
     expect(out.headAgent.wedge).toBe("bill_wait");

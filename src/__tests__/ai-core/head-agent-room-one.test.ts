@@ -67,13 +67,15 @@ describe("roomOne — rules", () => {
       audit: {},
       reviews: {
         count: 120,
-        painPhrases: [{ text: "waited 20 minutes for the bill", category: "bill", mentions: 2, quote: "waited 20 minutes for the bill" }],
+        painPhrases: [
+          { text: "waited 20 minutes for the bill", category: "bill", mentions: 6, complaintReviews: 40, recentMentions: 2, quote: "waited 20 minutes for the bill" },
+        ],
       },
       locationCount: 1,
     });
     expect(out.wedge).toBe("bill_wait");
     expect(out.plan).toBe("starter");
-    expect(out.evidence[0]).toBe('yorum (2/120): "waited 20 minutes for the bill"');
+    expect(out.evidence[0]).toBe('yorum (6/40 şikayetli yorum, %15, son 12 ay: 2): "waited 20 minutes for the bill"');
   });
 
   it("ignores review evidence below the 30-review corpus", () => {
@@ -90,7 +92,7 @@ describe("roomOne — rules", () => {
       audit: { tableCount: 40 },
       reviews: {
         count: 200,
-        painPhrases: [{ text: "card machine never came", sellable: true, category: "bill", mentions: 2, quote: "card machine never came" }],
+        painPhrases: [{ text: "card machine never came", sellable: true, category: "bill", mentions: 6, quote: "card machine never came" }],
       },
       locationCount: 1,
     });
@@ -103,7 +105,7 @@ describe("roomOne — rules", () => {
       reviews: {
         count: 300,
         painPhrases: [
-          { text: "we waited 20 minutes for the bill", sellable: true, category: "bill", mentions: 2, quote: "we waited 20 minutes for the bill" },
+          { text: "we waited 20 minutes for the bill", sellable: true, category: "bill", mentions: 6, quote: "we waited 20 minutes for the bill" },
         ],
       },
       locationCount: 1,
@@ -200,7 +202,7 @@ describe("roomOne — rules", () => {
     const none = evaluateRoomOne({ audit: {}, reviews: { count: 0, painPhrases: [] }, locationCount: 1 });
     const strong = evaluateRoomOne({ audit: { bookingProvider: "TheFork" }, reviews: { count: 0, painPhrases: [] }, locationCount: 1 });
     expect(packageFitScore(none, ["reviews"])).toBeLessThan(20);
-    expect(packageFitScore(strong, [])).toBeGreaterThanOrEqual(70);
+    expect(packageFitScore(strong, [])).toBe(65);
     expect(packageFitScore(strong, ["reviews"])).toBeLessThan(packageFitScore(strong, []));
   });
 });
@@ -213,14 +215,14 @@ describe("roomOne — verified review evidence", () => {
     expect(out.wedge).toBe("none");
   });
 
-  it("makes a strong bill signal from two reviews and prints the count with the real quote", () => {
+  it("makes a strong bill signal from five reviews and prints the count with the real quote", () => {
     const out = roomOne({
       audit,
-      reviews: { count: 80, painPhrases: [{ text: "slow to bring the bill", category: "bill", mentions: 3, quote: "we waited 25 minutes for the bill" }] },
+      reviews: { count: 80, painPhrases: [{ text: "slow to bring the bill", category: "bill", mentions: 5, quote: "we waited 25 minutes for the bill" }] },
       locationCount: 1,
     });
     expect(out.wedge).toBe("bill_wait");
-    expect(out.evidence[0]).toBe('yorum (3/80): "we waited 25 minutes for the bill"');
+    expect(out.evidence[0]).toBe('yorum (5/80): "we waited 25 minutes for the bill"');
   });
 
   it("drops a phrase whose quotes were found in no review", () => {
@@ -254,6 +256,242 @@ describe("openQuestionsFor", () => {
     expect(openQuestionsFor({ hasPrepayment: true, centralPurchasing: null }, "reservation", 3)).toEqual([
       "Satın alma kararı şubede mi, merkezde mi?",
     ]);
-    expect(openQuestionsFor({}, "none", 1)).toEqual([]);
+    // No wedge: the two discovery questions, unless Room 1 stopped the call.
+    expect(openQuestionsFor({}, "none", 1)).toEqual([
+      "Rezervasyonları nasıl alıyorsunuz: telefon, bir platform, kendi siteniz?",
+      "Misafir menüyü nasıl görüyor: basılı, PDF, QR?",
+    ]);
+    expect(openQuestionsFor({ operator: "hotel_fnb" }, "none", 1)).toEqual([]);
+  });
+});
+
+describe("roomOne — frequency thresholds", () => {
+  const audit = { reachable: true };
+  const bill = (extra: Record<string, unknown>) => ({
+    text: "slow to bring the bill",
+    category: "bill",
+    quote: "we waited 25 minutes for the bill",
+    ...extra,
+  });
+
+  it("two reviews are one medium signal: alone they open nothing", () => {
+    const ev = evaluateRoomOne({ audit, reviews: { count: 200, painPhrases: [bill({ mentions: 2, complaintReviews: 30 })] }, locationCount: 1 });
+    expect(ev.output.wedge).toBe("none");
+  });
+
+  it("a single review is an anecdote, not a signal", () => {
+    const out = roomOne({
+      audit: { hasQrMenu: false },
+      reviews: { count: 200, painPhrases: [{ text: "menu is out of date", category: "menu", mentions: 1, quote: "the menu online is out of date" }] },
+      locationCount: 1,
+    });
+    expect(out.wedge).toBe("none");
+  });
+
+  it("five reviews below 10% of the complaint reviews stay medium", () => {
+    const out = roomOne({ audit, reviews: { count: 200, painPhrases: [bill({ mentions: 5, complaintReviews: 80, recentMentions: 3 })] }, locationCount: 1 });
+    expect(out.wedge).toBe("none");
+  });
+
+  it("an old complaint is not a strong signal: none of the reviews is from the last 12 months", () => {
+    const out = roomOne({ audit, reviews: { count: 200, painPhrases: [bill({ mentions: 8, complaintReviews: 40, recentMentions: 0 })] }, locationCount: 1 });
+    expect(out.wedge).toBe("none");
+  });
+
+  it("frequent, recent and a real share of the complaints: strong, tier B", () => {
+    const out = roomOne({ audit, reviews: { count: 200, painPhrases: [bill({ mentions: 8, complaintReviews: 40, recentMentions: 3 })] }, locationCount: 1 });
+    expect(out).toMatchObject({ wedge: "bill_wait", tier: "B" });
+    expect(out.evidence[0]).toBe('yorum (8/40 şikayetli yorum, %20, son 12 ay: 3): "we waited 25 minutes for the bill"');
+  });
+
+  it("waiting to order and waiting for the bill are two medium signals on the same wedge", () => {
+    const out = roomOne({
+      audit,
+      reviews: {
+        count: 200,
+        painPhrases: [
+          bill({ mentions: 3, complaintReviews: 60 }),
+          { text: "nobody took our order", category: "order_wait", mentions: 2, complaintReviews: 60, quote: "nobody came to take our order for 20 minutes" },
+        ],
+      },
+      locationCount: 1,
+    });
+    expect(out).toMatchObject({ wedge: "bill_wait", tier: "C" });
+  });
+
+  it("order errors never make a strong signal on their own", () => {
+    const out = roomOne({
+      audit,
+      reviews: { count: 200, painPhrases: [{ text: "wrong dishes", category: "order_error", mentions: 12, complaintReviews: 40, recentMentions: 6, quote: "they brought the wrong dish twice" }] },
+      locationCount: 1,
+    });
+    expect(out.wedge).toBe("none");
+  });
+
+  it("price, food quality, staff, ambiance and kitchen wait never open a wedge, however frequent", () => {
+    for (const category of ["price", "food_quality", "staff", "ambiance", "wait", "other"]) {
+      const out = roomOne({
+        audit: { hasQrMenu: false },
+        reviews: { count: 200, painPhrases: [{ text: "complaint", category, mentions: 30, complaintReviews: 60, recentMentions: 10, quote: "a long complaint about it" }] },
+        locationCount: 1,
+      });
+      expect(out.wedge).toBe("none");
+    }
+  });
+
+  it("legacy rows: a price sentence that mentions the bill is not a bill-wait signal", () => {
+    const out = roomOne({
+      audit,
+      reviews: { count: 120, painPhrases: [{ text: "the bill that followed was astronomically high" }, { text: "we overpaid, the bill was too expensive" }] },
+      locationCount: 1,
+    });
+    expect(out.wedge).toBe("none");
+  });
+
+  it("legacy rows: 'pay' and 'split' alone no longer mean the bill", () => {
+    const out = roomOne({
+      audit,
+      reviews: { count: 120, painPhrases: [{ text: "not worth what you pay" }, { text: "we split a dessert" }] },
+      locationCount: 1,
+    });
+    expect(out.wedge).toBe("none");
+  });
+});
+
+describe("roomOne — strength first, playbook order second", () => {
+  const strongBill = { text: "slow bill", category: "bill", mentions: 30, complaintReviews: 90, recentMentions: 12, quote: "we waited half an hour for the bill" };
+  const mediumBooking = { text: "booking ignored", category: "reservation", mentions: 2, complaintReviews: 90, quote: "our booking was not in the system" };
+
+  it("two weak reservation hints do not beat thirty bill complaints (C vs B)", () => {
+    const out = roomOne({
+      audit: { websiteUrl: "https://x.example", reachable: true, hasBookingSystem: false },
+      reviews: { count: 200, painPhrases: [mediumBooking, strongBill] },
+      locationCount: 1,
+    });
+    expect(out).toMatchObject({ wedge: "bill_wait", tier: "B", backup: "reservation" });
+  });
+
+  it("at the same tier the playbook order decides: reservation before bill wait (B vs B)", () => {
+    const out = roomOne({
+      audit: { bookingProvider: "OpenTable" },
+      reviews: { count: 200, painPhrases: [strongBill] },
+      locationCount: 1,
+    });
+    expect(out).toMatchObject({ wedge: "reservation", tier: "B", backup: "bill_wait" });
+  });
+
+  it("a strong signal confirmed by a second source is tier A and wins (A vs B)", () => {
+    const out = roomOne({
+      audit: { bookingProvider: "OpenTable" },
+      reviews: { count: 200, painPhrases: [mediumBooking, strongBill] },
+      locationCount: 1,
+    });
+    expect(out).toMatchObject({ wedge: "reservation", tier: "A", backup: "bill_wait" });
+  });
+
+  it("a better-supported lower-priority wedge wins: marketplace A over reservation B", () => {
+    const out = roomOne({
+      audit: { bookingProvider: "OpenTable", deliveryPlatforms: ["Deliveroo"], hasOnlineOrdering: false },
+      reviews: {
+        count: 200,
+        painPhrases: [{ text: "late delivery", category: "delivery", mentions: 4, complaintReviews: 90, quote: "the delivery arrived an hour late" }],
+      },
+      locationCount: 1,
+    });
+    expect(out).toMatchObject({ wedge: "marketplace", tier: "A", backup: "reservation" });
+  });
+
+  it("the fit score follows the tier and drops 10 per missing source", () => {
+    const a = evaluateRoomOne({ audit: { bookingProvider: "OpenTable" }, reviews: { count: 200, painPhrases: [mediumBooking] }, locationCount: 1 });
+    const b = evaluateRoomOne({ audit: { bookingProvider: "OpenTable" }, reviews: { count: 0, painPhrases: [] }, locationCount: 1 });
+    const c = evaluateRoomOne({ audit: { hasBookingSystem: false, reachable: true }, reviews: { count: 200, painPhrases: [mediumBooking] }, locationCount: 1 });
+    expect([a.output.tier, b.output.tier, c.output.tier]).toEqual(["A", "B", "C"]);
+    expect(packageFitScore(a, [])).toBe(80);
+    expect(packageFitScore(b, [])).toBe(65);
+    expect(packageFitScore(c, [])).toBe(50);
+    expect(packageFitScore(a, ["map", "reviews"])).toBe(60);
+  });
+});
+
+describe("roomOne — operator, plan assumption and discovery", () => {
+  it("a hotel restaurant is no call, with the reason and no discovery questions", () => {
+    const ev = evaluateRoomOne({
+      audit: { bookingProvider: "OpenTable", operator: "hotel_fnb", operatorEvidence: "kempinski.com — otel alan adı" },
+      reviews: { count: 0, painPhrases: [] },
+      locationCount: 1,
+    });
+    expect(ev.output).toMatchObject({ wedge: "none", plan: "none", evidence: [] });
+    expect(ev.blocked).toBe(true);
+    expect(ev.blockReason).toMatch(/Otel F&B/);
+    expect(ev.blockReason).toContain("kempinski.com");
+    expect(ev.discoveryQuestions).toEqual([]);
+    expect(ev.output.bans.join(" ")).toMatch(/Otel restoranına/);
+    expect(packageFitScore(ev, [])).toBe(0);
+  });
+
+  it("a chain branch is no call: the head office decides", () => {
+    const ev = evaluateRoomOne({
+      audit: { bookingProvider: "OpenTable", operator: "chain", operatorEvidence: 'ad: "Gaucho Piccadilly" — bilinen zincir' },
+      reviews: { count: 0, painPhrases: [] },
+      locationCount: 12,
+    });
+    expect(ev.blocked).toBe(true);
+    expect(ev.blockReason).toMatch(/Zincir şubesi/);
+  });
+
+  it("an owner-run small group is the Premium prospect and shows its proof", () => {
+    const out = roomOne({
+      audit: { operator: "small_group", operatorEvidence: "brand.example — aynı alan adında 3 şube" },
+      reviews: { count: 0, painPhrases: [] },
+      locationCount: 3,
+    });
+    expect(out).toMatchObject({ wedge: "multi_location", plan: "premium" });
+    expect(out.evidence[0]).toBe("brand.example — aynı alan adında 3 şube");
+  });
+
+  const billReviews = {
+    count: 200,
+    painPhrases: [{ text: "slow bill", category: "bill", mentions: 9, complaintReviews: 40, recentMentions: 4, quote: "we waited ages for the bill" }],
+  };
+
+  it("with no table count the plan is a stated assumption from size proxies", () => {
+    const small = roomOne({ audit: {}, reviews: billReviews, locationCount: 1, size: { reviewCount: 240, priceLevel: 2 } });
+    expect(small.plan).toBe("starter");
+    expect(small.planAssumption).toMatch(/masa sayısı bilinmiyor/);
+    const large = roomOne({ audit: {}, reviews: billReviews, locationCount: 1, size: { reviewCount: 3200, priceLevel: 2 } });
+    expect(large.plan).toBe("growth");
+    expect(large.planAssumption).toMatch(/20 masanın üstünü/);
+    const pricey = roomOne({ audit: {}, reviews: billReviews, locationCount: 1, size: { reviewCount: 150, priceLevel: 3 } });
+    expect(pricey.plan).toBe("growth");
+  });
+
+  it("a seen table count or several languages is a fact, not an assumption", () => {
+    expect(roomOne({ audit: { tableCount: 12 }, reviews: billReviews, locationCount: 1 }).planAssumption).toBeNull();
+    const langs = roomOne({ audit: { languageCount: 3 }, reviews: billReviews, locationCount: 1 });
+    expect(langs).toMatchObject({ plan: "growth", planAssumption: null });
+  });
+
+  it("a menu wedge with unknown language count says it assumed one language", () => {
+    const out = roomOne({ audit: { pdfMenu: true }, reviews: { count: 0, painPhrases: [] }, locationCount: 1 });
+    expect(out.plan).toBe("starter");
+    expect(out.planAssumption).toMatch(/tek dil varsayıldı/);
+  });
+
+  it("no wedge still gives the rep two fixed questions from what the audit saw", () => {
+    const ev = evaluateRoomOne({
+      audit: { reachable: true, hasBookingSystem: false, hasOnlineReservation: false, deliveryPlatforms: ["Deliveroo"], hasOnlineOrdering: true, hasQrMenu: true },
+      reviews: { count: 0, painPhrases: [] },
+      locationCount: 1,
+    });
+    expect(ev.output.wedge).toBe("none");
+    expect(ev.discoveryQuestions).toEqual([
+      "Online rezervasyon almıyorsunuz; telefonla yönetmek ne kadar vaktinizi alıyor?",
+      "Yoğun saatte en çok hangi adım yavaşlıyor: sipariş almak mı, hesabı kapatmak mı?",
+    ]);
+  });
+
+  it("a walk-in venue is never asked about reservations", () => {
+    const ev = evaluateRoomOne({ audit: { venueType: "qsr", hasQrMenu: true, hasOnlineOrdering: true }, reviews: { count: 0, painPhrases: [] }, locationCount: 1 });
+    expect(ev.discoveryQuestions.join(" ")).not.toMatch(/[Rr]ezervasyon/);
   });
 });
