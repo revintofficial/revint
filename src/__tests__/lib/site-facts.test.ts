@@ -36,6 +36,40 @@ describe("pickSubpages", () => {
   });
 });
 
+describe("pickSubpages PDFs", () => {
+  it("never targets a PDF, even when its text or path looks like a booking page", () => {
+    const pick = pickSubpages(`<a href="/book.pdf">Book a table</a>`, HOME);
+    expect(pick.targets).toEqual([]);
+    expect(pick.hasBookingLink).toBe(true);
+    expect(pick.menuPdfUrl).toBeNull();
+  });
+
+  it("records a menu PDF as the menu document, not a target", () => {
+    const pick = pickSubpages(`<a href="/menu.pdf">Menu</a>`, HOME);
+    expect(pick.menuPdfUrl).toBe("https://padella.co/menu.pdf");
+    expect(pick.targets).toEqual([]);
+  });
+});
+
+describe("mergeSiteFacts regexes", () => {
+  const run = (kind: "reservation" | "menu", text: string) => {
+    const html = `<body><p>${text}</p></body>`;
+    const url = `https://padella.co/${kind}`;
+    return mergeSiteFacts({ url: HOME, html: "<body></body>" }, [{ kind, url, html }], pickSubpages("<body></body>", HOME));
+  };
+
+  it("does not read 'no deposit' or a cancellation fee as prepayment", () => {
+    expect(run("reservation", "No deposit required for tables under 6").hasPrepayment).toBeNull();
+    expect(run("reservation", "A cancellation fee applies").hasPrepayment).toBeNull();
+    expect(run("reservation", "A deposit of £10 per person is required").hasPrepayment).toMatchObject({ value: true });
+  });
+
+  it("does not read a 3-course set lunch as a tasting menu", () => {
+    expect(run("menu", "3-course set lunch £25").tastingMenu).toBeNull();
+    expect(run("menu", "Our 7-course tasting menu").tastingMenu).toMatchObject({ value: true });
+  });
+});
+
 describe("mergeSiteFacts", () => {
   const pick = pickSubpages(homeHtml, HOME);
 

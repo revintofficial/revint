@@ -1,6 +1,6 @@
 import { chromium, type Browser, type Page } from "playwright";
 import { extractFeatures } from "./extractor";
-import { mergeSiteFacts, pickSubpages, type SiteFacts, type VisitedPage } from "./site-facts";
+import { bare, mergeSiteFacts, pickSubpages, type SiteFacts, type VisitedPage } from "./site-facts";
 import { assertSafeFetchUrl } from "./url-guard";
 import { detectSocialMediaPlatform } from "./audit/social-url-gate";
 import type { CrawlError, SecurityHeadersResult, WebsiteFeatures } from "@/types";
@@ -155,6 +155,19 @@ async function collectSiteFacts(page: Page, homeUrl: string, homeHtml: string): 
     try {
       const res = await page.goto(target.url, { waitUntil: "domcontentloaded", timeout: SUBPAGE_TIMEOUT_MS });
       if (!res || res.status() >= 400) {
+        pages.push({ ...target, html: null });
+        continue;
+      }
+      // The same-host check in pickSubpages ran on the pre-redirect URL;
+      // a redirect to another host is not the venue's page.
+      let landedHost: string;
+      try {
+        landedHost = bare(new URL(res.url()).hostname);
+      } catch {
+        pages.push({ ...target, html: null });
+        continue;
+      }
+      if (landedHost !== bare(new URL(homeUrl).hostname)) {
         pages.push({ ...target, html: null });
         continue;
       }

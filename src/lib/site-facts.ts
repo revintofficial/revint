@@ -51,8 +51,8 @@ const MENU_PATH = /(^|\/)(menu|menus|our-menu|food-menu)(\/|$|\.|-)/i;
 const ORDER_TEXT = /\border (online|now)\b/i;
 const ORDER_PATH = /(^|\/)(order|order-online|online-order|ordering|order-now)(\/|$|\.)/i;
 const PREPAY =
-  /(deposit|card details (are |will be )?(required|needed|taken)|credit card (is )?required|pre-?pay(ment)?|cancellation (fee|charge)|no[- ]show (fee|charge)|kapora|ön ödeme)/i;
-const TASTING = /(tasting menu|d[ée]gustation|chef'?s table|\b\d{1,2}[- ]course\b|tadım menüsü)/i;
+  /((?<!\bno[- ])(?<!\bwithout )deposit|card details (are |will be )?(required|needed|taken)|credit card (is )?required|pre-?pay(ment)?|kapora|ön ödeme)/i;
+const TASTING = /(tasting menu|d[ée]gustation|omakase|chef'?s table|\b(?:[5-9]|1\d|2\d)[- ]course\b|tadım menüsü)/i;
 
 interface Link {
   text: string;
@@ -75,7 +75,7 @@ function linksOf(html: string, pageUrl: string): Link[] {
   return out;
 }
 
-function bare(host: string): string {
+export function bare(host: string): string {
   return host.toLowerCase().replace(/^www\./, "");
 }
 function pathOf(url: URL): string {
@@ -108,8 +108,9 @@ export function pickSubpages(homeHtml: string, homeUrl: string): SubpagePick {
     const isOrder = ORDER_TEXT.test(l.text) || ORDER_PATH.test(path);
     if (isRes) hasBookingLink = true;
     if (bare(l.url.hostname) !== bare(home.hostname)) continue;
-    if (isMenu && /\.pdf$/i.test(path)) {
-      menuPdfUrl ??= l.url.href;
+    if (/\.pdf$/i.test(path)) {
+      // A PDF is never a page to open; keep it only as the menu document.
+      if (isMenu) menuPdfUrl ??= l.url.href;
       continue;
     }
     if (l.url.pathname === home.pathname && !l.url.search) continue; // the homepage itself
