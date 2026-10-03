@@ -8,6 +8,7 @@
  *   npx tsx scripts/room-one-simulation.ts --all                     # every workspace
  *   npx tsx scripts/room-one-simulation.ts --all --relabel           # re-label stored reviews in memory
  *   npx tsx scripts/room-one-simulation.ts --all --relabel --max 10  # …at most 10 leads
+ *   npx tsx scripts/room-one-simulation.ts --all --recrawl           # re-read every venue site now, in memory
  *
  * Nothing is written to the database. Every query is scoped to one
  * workspace. `--relabel` calls the review analyst's model on the stored
@@ -23,6 +24,8 @@ import "dotenv/config";
 
 import { prisma } from "@/lib/prisma";
 import { analyzeReviewsWithGemini } from "@/lib/gemini";
+import { closeBrowser, crawlWebsite } from "@/lib/crawler";
+import { ownSiteHost } from "@/lib/ai-core/agent/operator";
 import { loadMapFacts, toRoomOneAudit, loadOperatorSignals } from "@/lib/agent-workers/lead-intelligence-brief";
 import { evaluateRoomOne, normalizePainPhrases, REVIEW_CORPUS_MIN } from "@/lib/ai-core/agent/head-agent";
 import { toPainPhrases } from "@/lib/review-analysis/pain-phrases";
@@ -57,6 +60,7 @@ async function main() {
   const key = args.includes("--all") ? "--all" : args.find((a) => !a.startsWith("--") && !flagValues.has(a));
   if (!key) throw new Error('usage: room-one-simulation.ts <workspaceId | "workspace name" | --all> [--json] [--relabel [--max N]]');
   const relabel = args.includes("--relabel");
+  const recrawl = args.includes("--recrawl");
   const maxRelabel = maxAt >= 0 ? Math.max(1, Number(args[maxAt + 1]) || 1) : Number.POSITIVE_INFINITY;
 
   // "--all": every workspace, each queried under its own workspaceId.
@@ -90,10 +94,42 @@ async function main() {
   let assumed = 0;
   let relabelled = 0;
   let relabelFailed = 0;
+  let recrawled = 0;
+  let recrawlFailed = 0;
+  let unreachable = 0;
+  const crawled = new Map<string, Awaited<ReturnType<typeof crawlWebsite>>>();
 
   for (const lead of restaurants) {
     const workspaceId = lead.workspaceId;
     const map = await loadMapFacts(workspaceId, lead.id);
+
+    // --recrawl: read the venue's site now, with the current crawler, and
+    // use that in place of the stored audit. In memory only.
+    if (recrawl && ownSiteHost(lead.websiteUrl)) {
+      let features = crawled.get(lead.websiteUrl!);
+      if (!features) {
+        try {
+          features = await crawlWebsite(lead.websiteUrl!, lead.primaryType ?? undefined);
+          crawled.set(lead.websiteUrl!, features);
+        } catch (err) {
+          recrawlFailed += 1;
+          console.error(`recrawl failed for ${lead.businessName}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+      if (features) {
+        recrawled += 1;
+        if (!features.reachable) unreachable += 1;
+        (lead as { websiteAudit: unknown }).websiteAudit = {
+          reachable: features.reachable,
+          url: lead.websiteUrl,
+          hasBookingSystem: features.hasBookingSystem,
+          bookingProvider: features.bookingProvider ?? null,
+          rawFeaturesJson: JSON.parse(JSON.stringify(features)),
+          crawlAttemptedAt: new Date(),
+        };
+      }
+    }
+
     const operator = await loadOperatorSignals(workspaceId, lead);
     const audit = toRoomOneAudit(lead as never, map.facts, operator);
 
@@ -162,6 +198,13 @@ async function main() {
       lead: lead.businessName,
       corpus,
       relabelled: labelInfo !== null,
+      site: lead.websiteUrl ?? null,
+      bookingProvider: audit?.bookingProvider ?? null,
+      deliveryPlatforms: audit?.deliveryPlatforms ?? null,
+      marketplaceSource: audit?.marketplaceSource ?? null,
+      hasQrMenu: audit?.hasQrMenu ?? null,
+      pdfMenu: audit?.pdfMenu ?? null,
+      hasOnlineOrdering: audit?.hasOnlineOrdering ?? null,
       labels: labelInfo,
       operator: audit?.operator ?? null,
       operatorEvidence: audit?.operatorEvidence ?? null,
@@ -198,6 +241,7 @@ async function main() {
         `Keşif sorulu "yok" kartı: ${withQuestions}/${none - blocked}`,
         `Paket varsayımla: ${assumed}`,
         relabel ? `Yeniden etiketlenen: ${relabelled} (hata: ${relabelFailed})` : null,
+        recrawl ? `Yeniden taranan site: ${recrawled} (ulaşılamayan: ${unreachable}, hata: ${recrawlFailed})` : null,
       ]
         .filter(Boolean)
         .join(" · "),
@@ -224,4 +268,7 @@ main()
     console.error(err);
     process.exitCode = 1;
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await closeBrowser().catch(() => undefined);
+    await prisma.$disconnect();
+  });

@@ -207,14 +207,14 @@ export interface RoomOneInput {
  * deliberately absent.
  */
 const MARKETPLACE_BOOKING =
-  /(thefork|the fork|lafourchette|opentable|open table|quandoo|\bresy\b|designmynight|bookatable|google reserve|\btock\b|reztoran|rezlinka)/i;
+  /(thefork|the fork|lafourchette|opentable|open table|quandoo|\bresy\b|designmynight|bookatable|google reserve|\btock\b|reztoran|rezlinka|yelp reservations)/i;
 
 /**
  * Reservation software the venue runs itself. It already has deposits
  * and a guest CRM: reservations are not the way in.
  */
 const SAAS_BOOKING =
-  /(sevenrooms|seven rooms|resdiary|res diary|\bcollins\b|tablein|\bresos\b|tablecheck|eat ?app|\bzonal\b|tableplus|dish\.co|formitable|superb)/i;
+  /(sevenrooms|seven rooms|resdiary|res diary|\bcollins\b|tablein|\bresos\b|tablecheck|eat ?app|\bzonal\b|tableplus|dish\.co|formitable|superb|\bdojo\b|eveve)/i;
 
 /**
  * Keyword fallback for rows written before the analyst assigned a
