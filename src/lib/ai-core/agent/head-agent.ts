@@ -787,12 +787,39 @@ interface QaResult {
   reasoning: string;
 }
 
+/** Plan limits from SYSTEM_PROMPT; Room 2 may state these without review evidence. */
+const PLAN_NUMBERS = new Set(["10", "20", "50", "250"]);
+
+const NAMED_ENTITY =
+  /\b(?:the ?fork|open ?table|quandoo|resy|designmynight|sevenrooms|resdiary|tock|deliveroo|uber ?eats|just ?eat|doordash|wolt|yemeksepeti|getir)\b/gi;
+
+/**
+ * Numbers and provider / platform names in a sentence that its cited
+ * evidence does not contain. Room 2 can read raw reviews and the audit
+ * through tools; a fact it found there but did not cite is not on the card.
+ */
+export function unsupportedTokens(sentence: string, evidenceText: string): string[] {
+  const hay = evidenceText.toLowerCase();
+  const squashed = hay.replace(/\s+/g, "");
+  const text = sentence.replace(/\bE\d+\b/g, " ");
+  const out: string[] = [];
+  for (const n of text.match(/\d+(?:[.,]\d+)?/g) ?? []) {
+    if (!PLAN_NUMBERS.has(n) && !hay.includes(n)) out.push(n);
+  }
+  for (const name of text.match(NAMED_ENTITY) ?? []) {
+    if (!squashed.includes(name.toLowerCase().replace(/\s+/g, ""))) out.push(name);
+  }
+  return [...new Set(out)];
+}
+
 function roomThreeQa(args: {
   raw: RawTalk;
   ev: RoomOneEvaluation;
   evidenceIds: Map<string, string>;
   shortlist: HeadAgentModuleRec[];
   approvedClaimTexts: string[];
+  /** Facts given to Room 2 outside the evidence list (rating, review count). */
+  allowedFacts: string[];
 }): QaResult {
   const { raw, ev, evidenceIds, shortlist } = args;
   const plan = ev.output.plan;
@@ -817,6 +844,14 @@ function roomThreeQa(args: {
     : [];
   if (sentences.length === 0) issues.push("no_talk_track");
   if (sentences.some((s) => !s.evidence.some((id) => evidenceIds.has(id)))) issues.push("sentence_without_evidence");
+  for (const s of sentences) {
+    const cited = s.evidence.map((id) => evidenceIds.get(id) ?? "").join(" ");
+    const bad = unsupportedTokens(s.text, `${cited} ${args.allowedFacts.join(" ")}`);
+    if (bad.length > 0) {
+      issues.push(`unsupported_fact:${bad[0]}`);
+      break;
+    }
+  }
 
   // Claim gate first (drops unapproved % / upsell claims), then judge what is left.
   const carrier = {
@@ -1058,7 +1093,14 @@ export async function buildBriefDecision(
       });
     }
   }
-  const qa = roomThreeQa({ raw, ev, evidenceIds, shortlist, approvedClaimTexts });
+  const qa = roomThreeQa({
+    raw,
+    ev,
+    evidenceIds,
+    shortlist,
+    approvedClaimTexts,
+    allowedFacts: [input.rating, input.reviewCount].filter((v) => v != null).map(String),
+  });
   const base = { qaIssues: qa.issues, qaWarnings: qa.warnings, rounds, toolCalls };
 
   if (!qa.passed) {

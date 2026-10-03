@@ -879,7 +879,7 @@ describe("buildBriefDecision — rooms 2 and 3", () => {
         primaryAngle: "Direct booking + deposit",
         sentences: [
           { text: "Your bookings come through TheFork and no deposit is visible.", evidence: ["E1"] },
-          { text: "Direct booking with prepayment could cut no-shows; a 15-minute look will tell.", evidence: ["E1"] },
+          { text: "Direct booking with prepayment could cut no-shows; a quick look will tell.", evidence: ["E1"] },
         ],
         recommendedModules: [{ module: "crm_loyalty", why: "invented" }],
         sourceConflicts: [],
