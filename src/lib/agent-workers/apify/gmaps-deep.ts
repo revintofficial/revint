@@ -18,6 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { apifyQuotaSkipFor, isConfigured, runSync, type ApifyRunResult } from "@/lib/apify";
 import { getAgentRunsQueue } from "@/lib/queues";
+import { countryCodeFromAddress, extractMapFacts } from "./map-facts";
 import type {
   AgentWorkerContext,
   AgentWorkerOutput,
@@ -226,6 +227,14 @@ interface PlaceItem {
   youtubes?: string[];
   tiktoks?: string[];
   twitters?: string[];
+  // Read by `extractMapFacts`; typed loosely because the actor has
+  // changed these shapes before.
+  reserveTableUrl?: unknown;
+  tableReservationLinks?: unknown;
+  orderBy?: unknown;
+  menu?: unknown;
+  additionalInfo?: unknown;
+  price?: unknown;
 }
 
 /**
@@ -301,7 +310,9 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     maxCrawledPlacesPerSearch: 1,
     maxReviews,
     language: ctx.workspace.language ?? "en",
-    countryCode: "gb",
+    // Only matters for the name + address search fallback. Derived from
+    // the lead's own address; omitted when unknown.
+    countryCode: countryCodeFromAddress(lead.formattedAddress),
     scrapeReviewerName: true,
     scrapeReviewerId: false,
     scrapeReviewUrl: false,
@@ -470,6 +481,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   return {
     output: {
       placeId: place.placeId,
+      mapFacts: extractMapFacts(place),
       reviewsCount: reviews.length,
       emailsFound: place.emails?.length ?? 0,
       socialsFound: Object.keys(socials).length,
