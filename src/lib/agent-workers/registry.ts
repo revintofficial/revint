@@ -83,7 +83,10 @@ const meta: Partial<Record<AgentWorkerKind, AgentWorkerMeta>> = {
     // window. Pair this with the sample reduction in
     // `review-analyst.ts` (220 → 200) so the per-call cost falls
     // even as the safety budget rises.
-    estimatedDurationMs: 30000,
+    // 2026-10-03 — bumped 30s → 40s (120s outer budget). The analyst now
+    // also returns one label per complaint per review; on real 200-review
+    // corpora 3 of 19 calls ran past the old 75s model timeout.
+    estimatedDurationMs: 40000,
     dependsOn: ["GOOGLE_PLACES_REVIEWS"],
     implModule: () => import("./review-analyst").then((m) => ({ run: m.run, memoryWrites: m.memoryWrites })),
   },

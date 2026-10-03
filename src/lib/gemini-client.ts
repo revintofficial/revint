@@ -97,7 +97,9 @@ export const WORKER_TIMEOUTS: Record<string, number> = {
   REVIEW_REPLY_AGENT: 60_000,
   LEAD_RESPONSE_AGENT: 60_000,
   VIDEO_SCRIPT_WRITER: 75_000,
-  REVIEW_ANALYST: 75_000,
+  // Per-review labels added output; measured on 200-review corpora (2026-10-03).
+  // Stays under the 120s outer budget (3 × estimatedDurationMs in the registry).
+  REVIEW_ANALYST: 110_000,
   WEBSITE_PLAN_GENERATOR: 90_000,
   SALES_OPPORTUNITY_SCORER: 45_000,
   LEAD_DOSSIER: 60_000,
