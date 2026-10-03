@@ -235,6 +235,8 @@ interface PlaceItem {
   menu?: unknown;
   additionalInfo?: unknown;
   price?: unknown;
+  restaurantData?: unknown;
+  bookingLinks?: unknown;
 }
 
 /**

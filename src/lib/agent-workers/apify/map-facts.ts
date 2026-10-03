@@ -44,9 +44,23 @@ export function extractMapFacts(place: unknown): MapFacts {
   const p = rec(place) ?? {};
 
   const reservationLinks = links(p.tableReservationLinks, ["url"]);
+  for (const b of links(p.bookingLinks, ["url"])) {
+    if (!reservationLinks.some((l) => l.url === b.url)) reservationLinks.push(b);
+  }
   const reserveUrl = httpUrl(p.reserveTableUrl);
-  if (reserveUrl && !reservationLinks.some((l) => l.url === reserveUrl)) {
-    reservationLinks.unshift({ name: null, url: reserveUrl });
+  // The provider name (Resy, OpenTable) lives in restaurantData; the link
+  // names are often just the venue's own host.
+  const provider = rec(rec(p.restaurantData)?.tableReservationProvider);
+  const providerName =
+    typeof provider?.name === "string" && provider.name.trim() ? provider.name.trim() : null;
+  const providerUrl = httpUrl(provider?.reserveTableUrl) ?? reserveUrl;
+  if (providerUrl) {
+    const existing = reservationLinks.find((l) => l.url === providerUrl);
+    if (existing) {
+      if (existing.name === null) existing.name = providerName;
+    } else {
+      reservationLinks.unshift({ name: providerName, url: providerUrl });
+    }
   }
 
   const orderLinks = links(p.orderBy, ["orderUrl", "url"]);
@@ -66,8 +80,12 @@ export function extractMapFacts(place: unknown): MapFacts {
       for (const [label, val] of Object.entries(rec(item) ?? {})) {
         if (typeof val !== "boolean") continue;
         if (/service options/i.test(group) && val) serviceOptions.push(label);
-        if (/accepts reservations|reservations required/i.test(label) && acceptsReservations !== true) {
+        // "Reservations required: false" means walk-ins are fine, not that
+        // bookings are refused, so it can only ever confirm `true`.
+        if (/accepts reservations/i.test(label) && acceptsReservations !== true) {
           acceptsReservations = val;
+        } else if (/reservations required/i.test(label) && val) {
+          acceptsReservations = true;
         }
       }
     }

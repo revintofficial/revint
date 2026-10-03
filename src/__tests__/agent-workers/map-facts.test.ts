@@ -47,6 +47,24 @@ describe("extractMapFacts", () => {
     expect(extractMapFacts({ orderBy: "nope", additionalInfo: [1, 2], tableReservationLinks: [null, { url: 5 }] })).toEqual(empty);
   });
 
+  it("never turns 'Reservations required: false' into a refusal", () => {
+    expect(extractMapFacts({ additionalInfo: { Planning: [{ "Reservations required": false }] } }).acceptsReservations).toBeNull();
+    expect(extractMapFacts({ additionalInfo: { Planning: [{ "Reservations required": true }] } }).acceptsReservations).toBe(true);
+  });
+
+  it("puts the reservation provider first and merges booking links without duplicates", () => {
+    const facts = extractMapFacts({
+      restaurantData: { tableReservationProvider: { name: "Resy", reserveTableUrl: "https://resy.com/x" } },
+      reserveTableUrl: "https://resy.com/x",
+      tableReservationLinks: [{ name: "carminesnyc.com", url: "https://carminesnyc.com/book" }],
+      bookingLinks: [{ name: "x", url: "https://booking.example/x" }],
+    });
+    expect(facts.reservationLinks[0]).toEqual({ name: "Resy", url: "https://resy.com/x" });
+    expect(facts.reservationLinks).toHaveLength(3);
+    const urls = facts.reservationLinks.map((l) => l.url);
+    expect(new Set(urls).size).toBe(3);
+  });
+
   it("round-trips through stored JSON", () => {
     const facts = extractMapFacts({ menu: "https://x.co/menu" });
     expect(parseMapFacts(JSON.parse(JSON.stringify(facts)))).toEqual(facts);
