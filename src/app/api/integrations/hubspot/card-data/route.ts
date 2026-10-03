@@ -46,6 +46,8 @@ import { verifyHubspotRequest } from "@/lib/integrations/hubspot/webhook";
 import { getHubspotClient } from "@/lib/integrations/hubspot/client";
 import { getPlaybook } from "@/lib/playbook/resolve";
 import { pickAngle } from "@/lib/playbook/angle";
+import { parseHeadAgentOutput } from "@/lib/integrations/hubspot/writeback";
+import { headAgentCardDecision } from "@/lib/integrations/hubspot/head-agent-card";
 import { resolveRecommendedPackage } from "@/lib/lead-detail/recommended-package";
 import {
   REASON_LABELS,
@@ -750,6 +752,7 @@ export async function POST(request: Request) {
   // deterministic playbook `whenToPitch` so the field is never empty.
   const briefObj = asJsonObject(briefRun?.outputJson);
   const headAgent = asJsonObject(briefObj?.headAgent ?? null);
+  const haDecision = headAgentCardDecision(parseHeadAgentOutput(briefRun?.outputJson));
   const headAgentAngle =
     typeof headAgent?.primaryAngle === "string" && headAgent.primaryAngle.trim()
       ? String(headAgent.primaryAngle).trim()
@@ -762,9 +765,7 @@ export async function POST(request: Request) {
   const pitchHeadline = headAgentAngle ?? picked?.angle.label ?? null;
   const pitchSentence =
     headAgentTalkTrack ??
-    nextAction?.openingHook ??
-    picked?.angle.whenToPitch ??
-    null;
+    (haDecision ? null : (nextAction?.openingHook ?? picked?.angle.whenToPitch ?? null));
 
   // ---- At-a-Glance + tech signals + links ----------------------------------
   const audit = lead.websiteAudit;
@@ -820,24 +821,36 @@ export async function POST(request: Request) {
       // lowercase (low/medium/high) so map here.
       noShowRisk: lead.qualification?.noShowRisk?.toUpperCase() ?? null,
     },
-    decision: {
-      recommendedAngle: picked?.angle.label ?? null,
-      recommendedAngleKey: picked?.angle.key ?? null,
-      pitchThis: picked?.angle.whenToPitch ?? null,
-      whatNotToPitch: picked?.angle.whenNotToPitch ?? null,
-      nextBestAction: truncate(nextAction?.openingHook ?? null, MAX_HOOK_CHARS),
-      nextBestActionConfidence: nextAction?.confidence ?? null,
-      timingWindowStart: nextAction?.timingWindowStart?.toISOString() ?? null,
-      timingWindowEnd: nextAction?.timingWindowEnd?.toISOString() ?? null,
-      channel: nextAction?.actionKind ?? null,
-      evidenceSummary:
-        picked && picked.matchedTriggers.length > 0
-          ? truncate(
-              `Signals: ${picked.matchedTriggers.join(", ")}`,
-              MAX_EVIDENCE_CHARS,
-            )
-          : null,
-    },
+    decision: haDecision
+      ? {
+          recommendedAngle: haDecision.recommendedAngle,
+          recommendedAngleKey: haDecision.recommendedAngleKey,
+          pitchThis: truncate(haDecision.pitchThis, MAX_HOOK_CHARS),
+          whatNotToPitch: truncate(haDecision.whatNotToPitch, MAX_EVIDENCE_CHARS),
+          nextBestAction: truncate(haDecision.nextBestAction, MAX_HOOK_CHARS),
+          nextBestActionConfidence: null,
+          timingWindowStart: null,
+          timingWindowEnd: null,
+          channel: null,
+          evidenceSummary: truncate(haDecision.evidenceSummary, MAX_EVIDENCE_CHARS),
+          openQuestions: truncate(haDecision.openQuestions, MAX_EVIDENCE_CHARS),
+        }
+      : {
+          recommendedAngle: picked?.angle.label ?? null,
+          recommendedAngleKey: picked?.angle.key ?? null,
+          pitchThis: picked?.angle.whenToPitch ?? null,
+          whatNotToPitch: picked?.angle.whenNotToPitch ?? null,
+          nextBestAction: truncate(nextAction?.openingHook ?? null, MAX_HOOK_CHARS),
+          nextBestActionConfidence: nextAction?.confidence ?? null,
+          timingWindowStart: nextAction?.timingWindowStart?.toISOString() ?? null,
+          timingWindowEnd: nextAction?.timingWindowEnd?.toISOString() ?? null,
+          channel: nextAction?.actionKind ?? null,
+          evidenceSummary:
+            picked && picked.matchedTriggers.length > 0
+              ? truncate(`Signals: ${picked.matchedTriggers.join(", ")}`, MAX_EVIDENCE_CHARS)
+              : null,
+          openQuestions: null,
+        },
     // AI-with-fallback pitch (head-agent talkTrack → opening hook → static
     // playbook `whenToPitch`). The card's "Pitch Angle" section reads this.
     pitch: {
@@ -856,9 +869,9 @@ export async function POST(request: Request) {
     // "Why they're a fit" + likely pain points (sales-opportunity scorer).
     fit: {
       opportunityScore: opp?.opportunityScore ?? null,
-      expectedPriceBand: opp?.expectedPriceBand ?? null,
-      whyGoodTarget: truncate(opp?.whyGoodTarget ?? null, MAX_EVIDENCE_CHARS),
-      painPoints: asStringList(opp?.likelyPainPoints, 5),
+      expectedPriceBand: haDecision ? null : (opp?.expectedPriceBand ?? null),
+      whyGoodTarget: haDecision ? null : truncate(opp?.whyGoodTarget ?? null, MAX_EVIDENCE_CHARS),
+      painPoints: haDecision ? [] : asStringList(opp?.likelyPainPoints, 5),
     },
     // At-a-Glance chip strip — server-derived from audit wedges +
     // reasonCodes. See `buildGlanceChips` for the dedupe/suppression
@@ -877,7 +890,7 @@ export async function POST(request: Request) {
     // Dossier teaser. `summary` is the first paragraph of the markdown
     // narrative (capped at 280 chars); the full read happens in Revint.
     dossier:
-      dossierSummary || dossierObj
+      !haDecision && (dossierSummary || dossierObj)
         ? {
             summary: dossierSummary,
             url: dossierUrl,
@@ -889,7 +902,7 @@ export async function POST(request: Request) {
     // new card UI surfaces only sentiment + phrases on the card body.
     reviews: review
       ? {
-          leadScore: review.leadScore ?? null,
+          leadScore: null,
           reviewsAnalyzed: review.reviewsAnalyzedCount ?? null,
           totalReviews: lead.reviewCount ?? null,
           rating: lead.rating ?? null,
