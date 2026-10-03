@@ -60,7 +60,7 @@ const meta: Partial<Record<AgentWorkerKind, AgentWorkerMeta>> = {
     descriptionTr: "Playwright ile lead'in sitesini tarar; randevu, mobil, hiz, schema ve guvenlik sinyallerini kaydeder.",
     minPlan: "FREE",
     phase1Enabled: true,
-    estimatedDurationMs: 15000,
+    estimatedDurationMs: 30000,
     implModule: () =>
       import("./website-auditor").then((m) => ({
         run: m.run,
