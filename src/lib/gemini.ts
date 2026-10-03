@@ -856,8 +856,14 @@ export async function analyzeReviewsWithGemini(input: {
               properties: {
                 text: { type: SchemaType.STRING },
                 sellable: { type: SchemaType.BOOLEAN },
+                category: {
+                  type: SchemaType.STRING,
+                  format: "enum",
+                  enum: ["bill", "reservation", "delivery", "menu", "repeat", "language", "wait", "other"],
+                },
+                quotes: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
               },
-              required: ["text", "sellable"],
+              required: ["text", "sellable", "category", "quotes"],
             },
           },
           strengthPhrases: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },

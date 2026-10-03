@@ -33,6 +33,7 @@ import {
   type SwitchSignal,
 } from "@/lib/sdr-brain/contracts";
 import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
+import { verifyPainQuotes } from "@/lib/review-analysis/quote-verify";
 import { EmbeddingError } from "@/lib/ai-core/embed";
 import {
   normalizePainPhrases,
@@ -539,7 +540,13 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     // Task 2 — pain phrases carry `sellable`. The deterministic guard in
     // `toPainPhrases` forces taste / food poisoning to false and waiting /
     // reservation / order errors / bill to true, whatever the model said.
-    const painPhrases: PainPhrase[] = toPainPhrases(analysis.painPhrases);
+    // Quotes are checked against the stored review text; `mentions` is the
+    // number of distinct reviews that carry one. A phrase with no verified
+    // quote stays in the row for the UI but is not evidence (Room 1 drops it).
+    const painPhrases: PainPhrase[] = verifyPainQuotes(
+      toPainPhrases(analysis.painPhrases),
+      lead.googleReviews.map((r) => r.text),
+    );
 
     await prisma.reviewAnalysis.upsert({
       where: { leadId },
@@ -578,6 +585,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       reviews: corpusCount,
       painPhrases: painPhrases.length,
       sellablePainPhrases: painPhrases.filter((p) => p.sellable).length,
+      verifiedPainPhrases: painPhrases.filter((p) => (p.mentions ?? 0) > 0).length,
     });
 
     // Ground the pain/strength phrases against the source review

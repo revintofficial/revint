@@ -119,7 +119,7 @@ Schema:
   ],
   "sentimentBreakdown": { "positive": <0-1>, "neutral": <0-1>, "negative": <0-1> },
   "painPhrases": [
-    { "text": "<short pain phrase, in the customer's own voice>", "sellable": <true|false> }
+    { "text": "<short pain phrase, in the customer's own voice>", "sellable": <true|false>, "category": "<bill|reservation|delivery|menu|repeat|language|wait|other>", "quotes": ["<verbatim fragment copied from one review>"] }
   ],
   "strengthPhrases": ["<3-5 short praise phrases>"],
   "switchSignals": [
@@ -140,6 +140,8 @@ Rules:
 - sentimentBreakdown values must sum to ~1.0 (minor rounding is fine).
 - switchSignals may be an empty array — do not force a pattern that is not there.
 - painPhrases: 3-5 items. "sellable" = true ONLY when the complaint is about operations a restaurant system can fix: waiting / queues / slow service, reservations or bookings, order mistakes or lost orders, paying or getting the bill. "sellable" = false for taste, food quality, portion size, food poisoning or illness, decor, noise, and anything about specific staff members' manners.
+- painPhrases.category: "bill" = waiting for / paying / splitting the bill or the card machine; "reservation" = booking, no-shows, deposits, a lost reservation; "delivery" = delivery or takeaway orders and delivery apps; "menu" = the menu itself is hard to read, out of date, missing allergens or only a PDF; "repeat" = regulars, coming back often; "language" = language barrier, tourists, translation; "wait" = waiting for a table or for food; "other" = everything else. A complaint that only mentions price or value is "other", never "bill".
+- painPhrases.quotes: 1-5 fragments, each COPIED CHARACTER FOR CHARACTER from a different numbered review above, 4 to 25 words long. Do not fix typos, do not translate, do not merge two reviews. If no review says it in its own words, return an empty array.
 - leadScore: if "{our_offer}" can plausibly address the complaints we see, score higher.
 - summary stays in the output language specified at the top of the prompt.
 

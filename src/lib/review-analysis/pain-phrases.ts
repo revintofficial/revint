@@ -12,7 +12,19 @@
  * reservations, order errors and the bill are.
  */
 
-export type PainPhrase = { text: string; sellable: boolean };
+/** Closed set the analyst assigns; Room 1 maps these onto wedges. */
+export const PAIN_CATEGORIES = ["bill", "reservation", "delivery", "menu", "repeat", "language", "wait", "other"] as const;
+export type PainCategory = (typeof PAIN_CATEGORIES)[number];
+
+export type PainPhrase = {
+  text: string;
+  sellable: boolean;
+  category?: PainCategory;
+  /** Verbatim review fragments. After `verifyPainQuotes`: only the ones found in a real review. */
+  quotes?: string[];
+  /** Distinct reviews containing a verified quote. Set by `verifyPainQuotes`. */
+  mentions?: number;
+};
 
 /** Read-side shape: legacy string rows have unknown sellability. */
 export type StoredPainPhrase = { text: string; sellable: boolean | null };
@@ -47,16 +59,24 @@ export function toPainPhrases(raw: unknown): PainPhrase[] {
   for (const item of raw) {
     let text = "";
     let modelSellable = false;
+    let category: PainCategory | undefined;
+    let quotes: string[] = [];
     if (typeof item === "string") {
       text = item;
     } else if (item && typeof item === "object") {
       const o = item as Record<string, unknown>;
       text = typeof o.text === "string" ? o.text : typeof o.phrase === "string" ? o.phrase : "";
       modelSellable = o.sellable === true;
+      if (typeof o.category === "string" && (PAIN_CATEGORIES as readonly string[]).includes(o.category)) {
+        category = o.category as PainCategory;
+      }
+      if (Array.isArray(o.quotes)) {
+        quotes = o.quotes.filter((q): q is string => typeof q === "string" && q.trim() !== "").slice(0, 5);
+      }
     }
     text = text.trim();
     if (!text) continue;
-    out.push({ text, sellable: isSellablePainText(text, modelSellable) });
+    out.push({ text, sellable: isSellablePainText(text, modelSellable), ...(category ? { category } : {}), quotes });
   }
   return out;
 }

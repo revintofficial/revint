@@ -171,9 +171,9 @@ describe("REVIEW_ANALYST full corpus", () => {
     expect(upsert.create.leadScore).toBe(0);
     expect(upsert.update.leadScore).toBe(0);
     expect(upsert.create.painPhrases).toEqual([
-      { text: "waited forty minutes for a table", sellable: true },
-      { text: "the food was bland", sellable: false },
-      { text: "got our order wrong twice", sellable: true },
+      { text: "waited forty minutes for a table", sellable: true, quotes: [], mentions: 0 },
+      { text: "the food was bland", sellable: false, quotes: [], mentions: 0 },
+      { text: "got our order wrong twice", sellable: true, quotes: [], mentions: 0 },
     ]);
 
     const o = out.output as { leadScore?: number; painPhrases: Array<{ text: string; sellable: boolean }> };
