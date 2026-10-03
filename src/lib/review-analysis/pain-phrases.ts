@@ -12,9 +12,39 @@
  * reservations, order errors and the bill are.
  */
 
-/** Closed set the analyst assigns; Room 1 maps these onto wedges. */
-export const PAIN_CATEGORIES = ["bill", "reservation", "delivery", "menu", "repeat", "language", "wait", "other"] as const;
+/**
+ * Closed set the analyst assigns; Room 1 maps these onto wedges
+ * (`CATEGORY_WEDGE` in head-agent.ts). The split that matters: what a
+ * guest-facing ordering / payment / booking product fixes (`bill`,
+ * `order_wait`, `order_error`, `reservation`, `delivery`, `menu`) versus
+ * what it does not (`wait` = kitchen or table wait, `price`,
+ * `food_quality`, `staff`, `ambiance`).
+ */
+export const PAIN_CATEGORIES = [
+  "bill",
+  "order_wait",
+  "order_error",
+  "reservation",
+  "delivery",
+  "menu",
+  "repeat",
+  "language",
+  "wait",
+  "price",
+  "food_quality",
+  "staff",
+  "ambiance",
+  "other",
+] as const;
 export type PainCategory = (typeof PAIN_CATEGORIES)[number];
+
+/** Never a sales angle, whatever the model said about `sellable`. */
+export const UNSELLABLE_CATEGORIES: ReadonlySet<PainCategory> = new Set<PainCategory>([
+  "price",
+  "food_quality",
+  "staff",
+  "ambiance",
+]);
 
 export type PainPhrase = {
   text: string;
@@ -22,9 +52,42 @@ export type PainPhrase = {
   category?: PainCategory;
   /** Verbatim review fragments. After `verifyPainQuotes`: only the ones found in a real review. */
   quotes?: string[];
-  /** Distinct reviews containing a verified quote. Set by `verifyPainQuotes`. */
+  /** Distinct reviews carrying this complaint (verified quotes or verified per-review labels). */
   mentions?: number;
+  /** Of those, how many were written in the last 12 months. Missing = dates unknown. */
+  recentMentions?: number;
+  /** Distinct reviews with any verified complaint: the denominator for `mentions`. */
+  complaintReviews?: number;
 };
+
+/** One complaint the model found in one numbered review. Counting is done in code. */
+export type ReviewLabel = { i: number; category: PainCategory; quote: string };
+
+const PRICE_WORDS =
+  /(\bexpensive\b|overpriced|\bpric(e|es|ey|ed|ing)\b|\bcost(s|ly)?\b|astronomical|rip[- ]?off|value for money|not worth|worth what|overcharg|too much money|\btax(es)?\b|service charge|pahal[ıi]|fiyat|kaz[ıi]k|fazla öde)/i;
+const BILL_PROCESS =
+  /(\bwait|\btook\b|\bages\b|forever|\bminutes?\b|\bmins?\b|\bchas(e|ed|ing)\b|ask(ed)? (for|twice|three|several)|never (came|arrived|brought)|card (machine|reader)|\bsplit|bekle|dakika|kart makines|hesab[ıi] (iste|böl)|gelmedi)/i;
+const ORDER_ERROR =
+  /(add(ed|ing)?\b.{0,30}\b(to|on) (my|our|the) bill|wrong (item|dish|order|food)|charged (us |me )?for .{0,40}(didn'?t|never|not) (order|have|get|receive)|yanl[ıi]ş (sipariş|ürün)|hesaba .{0,20}ekle)/i;
+
+/**
+ * Deterministic guard over the model's category. A "bill" complaint
+ * that is really about the amount ("the bill was astronomically high",
+ * "paying by card adds tax") is `price`; items put on the bill that
+ * were never ordered are `order_error`. Waiting for the bill, the card
+ * machine and splitting stay `bill`.
+ */
+export function guardPainCategory(
+  category: PainCategory | undefined,
+  text: string,
+  quotes: readonly string[] = [],
+): PainCategory | undefined {
+  if (category !== "bill") return category;
+  const blob = [text, ...quotes].join(" ");
+  if (ORDER_ERROR.test(blob)) return "order_error";
+  if (PRICE_WORDS.test(blob) && !BILL_PROCESS.test(blob)) return "price";
+  return category;
+}
 
 /** Read-side shape: legacy string rows have unknown sellability. */
 export type StoredPainPhrase = { text: string; sellable: boolean | null };
@@ -36,7 +99,7 @@ const NOT_SELLABLE =
 
 // Operational pains a restaurant-tech product addresses.
 const SELLABLE =
-  /\b(wait\w*|queue\w*|slow|took (ages|forever|so long|too long)|reserv\w*|booking\w*|booked|table|order\w*|wrong (dish|item|food)|forgot|bill|check|pay\w*|charged|overcharg\w*|card machine|service charge|rezervasyon\w*|sipari\w*|hesab?\w*|bekle\w*|s[ıi]ra)\b/i;
+  /\b(wait\w*|queue\w*|slow|took (ages|forever|so long|too long)|reserv\w*|booking\w*|booked|table|order\w*|wrong (dish|item|food)|forgot|bill|check|card machine|rezervasyon\w*|sipari\w*|hesab?\w*|bekle\w*|s[ıi]ra)\b/i;
 
 /**
  * Deterministic guard over the model's `sellable` flag. Taste /
@@ -76,7 +139,28 @@ export function toPainPhrases(raw: unknown): PainPhrase[] {
     }
     text = text.trim();
     if (!text) continue;
-    out.push({ text, sellable: isSellablePainText(text, modelSellable), ...(category ? { category } : {}), quotes });
+    category = guardPainCategory(category, text, quotes);
+    const sellable = category && UNSELLABLE_CATEGORIES.has(category) ? false : isSellablePainText(text, modelSellable);
+    out.push({ text, sellable, ...(category ? { category } : {}), quotes });
+  }
+  return out;
+}
+
+const MAX_REVIEW_LABELS = 600;
+
+/** Coerce the model's per-review labels; anything malformed is dropped. */
+export function toReviewLabels(raw: unknown): ReviewLabel[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ReviewLabel[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const i = typeof o.i === "number" ? Math.floor(o.i) : Number.NaN;
+    const quote = typeof o.quote === "string" ? o.quote.trim() : "";
+    if (!Number.isFinite(i) || i < 1 || !quote) continue;
+    if (typeof o.category !== "string" || !(PAIN_CATEGORIES as readonly string[]).includes(o.category)) continue;
+    out.push({ i, category: o.category as PainCategory, quote });
+    if (out.length >= MAX_REVIEW_LABELS) break;
   }
   return out;
 }

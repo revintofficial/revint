@@ -33,7 +33,7 @@ import {
   type SwitchSignal,
 } from "@/lib/sdr-brain/contracts";
 import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
-import { verifyPainQuotes } from "@/lib/review-analysis/quote-verify";
+import { countReviewLabels, mergeLabelCounts, verifyPainQuotes } from "@/lib/review-analysis/quote-verify";
 import { EmbeddingError } from "@/lib/ai-core/embed";
 import {
   normalizePainPhrases,
@@ -543,9 +543,15 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
     // Quotes are checked against the stored review text; `mentions` is the
     // number of distinct reviews that carry one. A phrase with no verified
     // quote stays in the row for the UI but is not evidence (Room 1 drops it).
-    const painPhrases: PainPhrase[] = verifyPainQuotes(
-      toPainPhrases(analysis.painPhrases),
-      lead.googleReviews.map((r) => r.text),
+    // The per-review labels are counted here, not by the model: one
+    // review counts once per category, only when its quote is found in
+    // the stored text. The counts (and how many are from the last 12
+    // months) ride on the phrases so Room 1 can weigh frequency.
+    const reviewRefs = lead.googleReviews.map((r) => ({ text: r.text, publishTime: r.publishTime }));
+    const labelCounts = countReviewLabels(analysis.reviewLabels ?? [], reviewRefs);
+    const painPhrases: PainPhrase[] = mergeLabelCounts(
+      verifyPainQuotes(toPainPhrases(analysis.painPhrases), reviewRefs),
+      labelCounts,
     );
 
     await prisma.reviewAnalysis.upsert({
@@ -586,6 +592,11 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       painPhrases: painPhrases.length,
       sellablePainPhrases: painPhrases.filter((p) => p.sellable).length,
       verifiedPainPhrases: painPhrases.filter((p) => (p.mentions ?? 0) > 0).length,
+      reviewLabels: analysis.reviewLabels?.length ?? 0,
+      complaintReviews: labelCounts.complaintReviews,
+      categoryMentions: Object.fromEntries(
+        Object.entries(labelCounts.byCategory).map(([k, v]) => [k, v.mentions]),
+      ),
     });
 
     // Ground the pain/strength phrases against the source review
