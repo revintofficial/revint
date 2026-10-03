@@ -32,7 +32,7 @@ export async function writebackAfterBriefRun(
   try {
     const run = await prisma.agentRun.findUnique({
       where: { id: runId },
-      select: { id: true, workspaceId: true, leadId: true, workerKind: true, status: true },
+      select: { id: true, workspaceId: true, leadId: true, workerKind: true, status: true, outputJson: true },
     });
     if (!run) return { status: "NOT_APPLICABLE", reason: "run_not_found" };
     if (run.workerKind !== "LEAD_INTELLIGENCE_BRIEF") {
@@ -42,6 +42,13 @@ export async function writebackAfterBriefRun(
       return { status: "NOT_APPLICABLE", reason: `run_${String(run.status).toLowerCase()}` };
     }
     if (!run.leadId) return { status: "NOT_APPLICABLE", reason: "no_lead" };
+
+    // A brief that skipped itself (head agent off) has no decision. Writing
+    // back would push the old scorer / playbook angle as if it were fresh.
+    const out = run.outputJson;
+    if (out && typeof out === "object" && !Array.isArray(out) && (out as Record<string, unknown>).skipped) {
+      return { status: "NOT_APPLICABLE", reason: "brief_skipped" };
+    }
 
     const conn = await prisma.crmConnection.findUnique({
       where: { workspaceId_provider: { workspaceId: run.workspaceId, provider: "HUBSPOT" } },

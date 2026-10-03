@@ -31,7 +31,7 @@ export interface RevintPropertyDef {
 }
 
 /**
- * Eleven canonical properties grouped by intent:
+ * Fourteen canonical properties grouped by intent:
  *
  *   A. Skorlama / önceliklendirme (rollup) — `revint_sales_confidence`,
  *      `revint_lead_temperature`, `revint_today_priority`.
@@ -39,7 +39,8 @@ export interface RevintPropertyDef {
  *      `revint_next_best_action`, `revint_qualification_status`,
  *      `revint_no_show_risk`, `revint_detected_sub_niche`.
  *   C. Kanıt / provenance — `revint_evidence_summary`,
- *      `revint_source_conflicts`, `revint_action_sheet_url`.
+ *      `revint_source_conflicts`, `revint_do_not_pitch`,
+ *      `revint_open_questions`, `revint_analyzed_at`, `revint_action_sheet_url`.
  */
 export const REVINT_PROPERTIES: RevintPropertyDef[] = [
   // --- A. Skorlama / önceliklendirme ---------------------------------------
@@ -135,6 +136,27 @@ export const REVINT_PROPERTIES: RevintPropertyDef[] = [
     fieldType: "textarea",
     description:
       "Disagreements between Google Places / Openmart / HubSpot (location, phone, name).",
+  },
+  {
+    name: "revint_do_not_pitch",
+    label: "Revint Do Not Pitch",
+    type: "string",
+    fieldType: "textarea",
+    description: "What the rep must not sell or say on this account, with the reason (existing tools, playbook bans).",
+  },
+  {
+    name: "revint_open_questions",
+    label: "Revint Open Questions",
+    type: "string",
+    fieldType: "textarea",
+    description: "Facts the analysis could not see. Ask these on the call before pitching.",
+  },
+  {
+    name: "revint_analyzed_at",
+    label: "Revint Analyzed At",
+    type: "datetime",
+    fieldType: "date",
+    description: "When this account was last analysed by Revint.",
   },
   {
     name: "revint_action_sheet_url",

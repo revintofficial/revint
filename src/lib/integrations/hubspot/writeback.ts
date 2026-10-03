@@ -152,6 +152,15 @@ export interface HeadAgentWritebackView {
   confidence: number | null;
   evidenceRefs: string[];
   sourceConflicts: Array<{ claim: string; sources: string[]; note: string }>;
+  /** Room 1 bans: sentences the rep must not say. */
+  bans: string[];
+  excludedModules: Array<{ module: string; why: string }>;
+  /** Unknown rule inputs phrased as questions for the call. */
+  openQuestions: string[];
+  missingSources: string[];
+  /** "attached" = Claude's talk passed QA; anything else is a plain card. */
+  roomTwoStatus: string | null;
+  generatedAt: string | null;
 }
 
 /** Defensive parser for a LEAD_INTELLIGENCE_BRIEF `outputJson`. */
@@ -186,6 +195,19 @@ export function parseHeadAgentOutput(out: unknown): HeadAgentWritebackView | nul
         })
         .filter(Boolean)
     : [];
+  const strList = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim() !== "") : [];
+  const roomOne = h.roomOne && typeof h.roomOne === "object" ? (h.roomOne as Record<string, unknown>) : {};
+  const roomTwo = h.roomTwo && typeof h.roomTwo === "object" ? (h.roomTwo as Record<string, unknown>) : {};
+  const excludedModules = Array.isArray(h.excludedModules)
+    ? h.excludedModules
+        .map((m) => {
+          if (!m || typeof m !== "object") return null;
+          const r = m as Record<string, unknown>;
+          return { module: String(r.module ?? ""), why: String(r.why ?? "") };
+        })
+        .filter((m): m is { module: string; why: string } => m !== null && m.module !== "")
+    : [];
   return {
     briefMode: str(o.briefMode),
     primaryAngle: str(h.primaryAngle),
@@ -195,6 +217,12 @@ export function parseHeadAgentOutput(out: unknown): HeadAgentWritebackView | nul
     confidence: typeof h.confidence === "number" ? h.confidence : null,
     evidenceRefs,
     sourceConflicts: conflicts,
+    bans: strList(roomOne.bans),
+    excludedModules,
+    openQuestions: strList(h.openQuestions),
+    missingSources: strList(o.missingSources),
+    roomTwoStatus: str(roomTwo.status),
+    generatedAt: str(h.generatedAt),
   };
 }
 
@@ -325,18 +353,28 @@ export async function buildRevintProperties(
   //   3. SalesOpportunity projection: recommendedPackageReason
   //      ("Growth · Rezervasyon"), else bestSalesAngle wedge id → label;
   //   4. deterministic playbook angle.
+  // A head-agent brief is the only decision for this lead. The old scorer,
+  // the playbook angle and an older LeadNextAction are a different narrative.
+  const ha = headAgent?.briefMode === "head-agent" ? headAgent : null;
   const pkg = packageLabel(headAgent?.recommendedPackage);
   const wedgeFromAgent = wedgeLabel(headAgent?.wedge);
   const angle =
     headAgent?.primaryAngle ??
     (wedgeFromAgent ? (pkg ? `${wedgeFromAgent} — Package: ${pkg}` : wedgeFromAgent) : null) ??
-    str(opportunity?.recommendedPackageReason) ??
-    wedgeLabel(opportunity?.bestSalesAngle) ??
-    picked?.angle.label ??
-    null;
+    (ha
+      ? null
+      : (str(opportunity?.recommendedPackageReason) ??
+        wedgeLabel(opportunity?.bestSalesAngle) ??
+        picked?.angle.label ??
+        null));
   if (angle) props.revint_recommended_angle = clip(angle);
-  const nba = str(nextAction?.openingHook) ?? headAgent?.talkTrack ?? null;
-  if (nba) props.revint_next_best_action = clip(nba);
+  if (ha) {
+    // "" clears a talk left by an earlier run when this card is plain.
+    props.revint_next_best_action = clip(ha.talkTrack ?? "");
+  } else {
+    const nba = str(nextAction?.openingHook) ?? headAgent?.talkTrack ?? null;
+    if (nba) props.revint_next_best_action = clip(nba);
+  }
   props.revint_qualification_status = lead.qualification?.status ?? "not_started";
   if (lead.qualification?.noShowRisk) {
     const upper = RISK_TO_UPPER[String(lead.qualification.noShowRisk).toLowerCase()];
@@ -352,6 +390,7 @@ export async function buildRevintProperties(
       `Head Agent${headAgent.confidence !== null ? ` (${headAgent.confidence}%)` : ""}`,
       pkg ? `Package: ${pkg}` : null,
       wedgeFromAgent ? `Wedge: ${wedgeFromAgent}` : null,
+      headAgent.roomTwoStatus ? `Card: ${headAgent.roomTwoStatus === "attached" ? "talk passed QA" : `plain (${headAgent.roomTwoStatus})`}` : null,
     ]
       .filter(Boolean)
       .join(" · ");
@@ -373,6 +412,16 @@ export async function buildRevintProperties(
         : "No cross-source conflicts detected",
     );
   }
+  if (ha) {
+    const bullets = (lines: string[]) => lines.map((l) => `- ${l}`).join("\n");
+    props.revint_do_not_pitch = clip(
+      bullets([...ha.bans, ...ha.excludedModules.map((m) => `${m.module}: ${m.why}`)]),
+    );
+    props.revint_open_questions = clip(
+      bullets([...ha.openQuestions, ...ha.missingSources.map((s) => `Eksik kaynak: ${s}`)]),
+    );
+    if (ha.generatedAt) props.revint_analyzed_at = ha.generatedAt;
+  }
   props.revint_action_sheet_url = actionSheetUrl(leadId);
 
   // HubSpot rejects empty enum writes with a 400 that fails the whole
@@ -390,6 +439,28 @@ export async function buildRevintProperties(
       crmDealId: lead.crmDealId,
     },
   };
+}
+
+const NEW_PROPERTY_NAMES = ["revint_do_not_pitch", "revint_open_questions", "revint_analyzed_at"] as const;
+
+/**
+ * HubSpot fails the whole PATCH with a 400 when one property does not
+ * exist. A portal that has not re-provisioned still gets the original
+ * eleven: drop the new three and try once more.
+ */
+async function patchWithFallback<T>(
+  patch: (props: Record<string, string>) => Promise<T>,
+  props: Record<string, string>,
+): Promise<T> {
+  try {
+    return await patch(props);
+  } catch (err) {
+    if (!/does not exist|PROPERTY_DOESNT_EXIST/i.test(errText(err))) throw err;
+    const slim = { ...props };
+    for (const k of NEW_PROPERTY_NAMES) delete slim[k];
+    logger.warn("hubspot.writeback.unprovisioned_properties", { dropped: NEW_PROPERTY_NAMES });
+    return patch(slim);
+  }
 }
 
 function isPrimaryAssociation(a: {
@@ -532,7 +603,7 @@ export async function enqueueCrmWriteback(
   // Company first: it's where FineDine's restaurants live.
   if (companyId) {
     try {
-      const res = await client.updateCompany(companyId, built.properties);
+      const res = await patchWithFallback((p) => client.updateCompany(companyId, p), built.properties);
       externalId = res?.id ?? companyId;
       targets.push(`company:${companyId}`);
     } catch (err) {
@@ -542,7 +613,7 @@ export async function enqueueCrmWriteback(
 
   if (crmContactId) {
     try {
-      const res = await client.updateContact(crmContactId, built.properties);
+      const res = await patchWithFallback((p) => client.updateContact(crmContactId, p), built.properties);
       externalId = externalId ?? res?.id ?? crmContactId;
       targets.push(`contact:${crmContactId}`);
 

@@ -1,5 +1,5 @@
 /**
- * End-to-end HubSpot writeback check: which of the 11 `revint_*`
+ * End-to-end HubSpot writeback check: which of the 14 `revint_*`
  * properties exist in the portal (contacts + companies) and which are
  * filled on a given Company / Contact. Read-only.
  *
@@ -92,8 +92,8 @@ async function main() {
   let bad = false;
   for (const obj of report) {
     console.log(
-      `\n${obj.objectType}${obj.recordId ? ` #${obj.recordId}` : ""}: ${obj.existsCount}/11 defined` +
-        (obj.recordId ? `, ${obj.filledCount}/11 filled` : ""),
+      `\n${obj.objectType}${obj.recordId ? ` #${obj.recordId}` : ""}: ${obj.existsCount}/14 defined` +
+        (obj.recordId ? `, ${obj.filledCount}/14 filled` : ""),
     );
     if (obj.definitionsError) console.log(`  definitions error: ${obj.definitionsError}`);
     if (obj.recordError) console.log(`  record error: ${obj.recordError}`);
@@ -101,7 +101,7 @@ async function main() {
       const val = obj.recordId ? ` ${p.filled ? `= ${(p.value ?? "").slice(0, 80)}` : "(empty)"}` : "";
       console.log(`  ${p.exists ? "✓" : "✗"} ${p.name}${val}`);
     }
-    if (obj.existsCount < 11 || obj.definitionsError) bad = true;
+    if (obj.existsCount < 14 || obj.definitionsError) bad = true;
     if (obj.recordId && (obj.filledCount === 0 || obj.recordError)) bad = true;
   }
   if (bad) process.exitCode = 1;

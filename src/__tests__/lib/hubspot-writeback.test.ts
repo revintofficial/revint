@@ -230,7 +230,8 @@ describe("buildRevintProperties", () => {
     const built = await buildRevintProperties(prisma as never, WS, LEAD);
     expect(built!.properties.revint_recommended_angle).toBe("Arama yok");
     expect(built!.properties.revint_evidence_summary).not.toContain("Package");
-    expect(built!.properties.revint_next_best_action).toBeUndefined();
+    // A plain head-agent card clears any talk left by an earlier run.
+    expect(built!.properties.revint_next_best_action).toBe("");
   });
 
   it("scopes the SalesOpportunity read through the lead's workspace", async () => {
@@ -240,9 +241,67 @@ describe("buildRevintProperties", () => {
       expect.objectContaining({ where: { leadId: LEAD, lead: { workspaceId: WS } } }),
     );
   });
+
+  const FULL_HEAD_AGENT = {
+    ...HEAD_AGENT_OUTPUT,
+    missingSources: ["reviews"],
+    headAgent: {
+      ...HEAD_AGENT_OUTPUT.headAgent,
+      generatedAt: "2026-10-02T10:00:00.000Z",
+      roomOne: { bans: ["Tek şubeye Premium önerme."] },
+      roomTwo: { status: "attached" },
+      excludedModules: [{ module: "reservation", why: "Rezervasyon sağlayıcısı zaten var (OpenTable)." }],
+      openQuestions: ["Kaç masa var? (20 üstü Growth)"],
+    },
+  };
+
+  it("writes the do-not-pitch list, the open questions and the analysis time", async () => {
+    const prisma = makePrisma({ briefOutput: FULL_HEAD_AGENT });
+    const p = (await buildRevintProperties(prisma as never, WS, LEAD, { briefRunId: "run_brief" }))!.properties;
+    expect(p.revint_do_not_pitch).toBe(
+      "- Tek şubeye Premium önerme.\n- reservation: Rezervasyon sağlayıcısı zaten var (OpenTable).",
+    );
+    expect(p.revint_open_questions).toBe("- Kaç masa var? (20 üstü Growth)\n- Eksik kaynak: reviews");
+    expect(p.revint_analyzed_at).toBe("2026-10-02T10:00:00.000Z");
+  });
+
+  it("uses the head-agent talk even when an older next action exists", async () => {
+    const prisma = makePrisma({ briefOutput: FULL_HEAD_AGENT });
+    prisma.leadNextAction.findFirst = vi.fn(async () => ({ openingHook: "stale Gemini hook", timingWindowStart: null }));
+    const p = (await buildRevintProperties(prisma as never, WS, LEAD, { briefRunId: "run_brief" }))!.properties;
+    expect(p.revint_next_best_action).toContain("40-minute Friday wait");
+  });
+
+  it("clears the talk and ignores the old scorer when the card is plain", async () => {
+    const plain = { ...FULL_HEAD_AGENT, headAgent: { ...FULL_HEAD_AGENT.headAgent, talkTrack: "", primaryAngle: "Arama yok", wedge: "none" } };
+    const prisma = makePrisma({
+      briefOutput: plain,
+      salesOpportunity: { bestSalesAngle: "multi_location", recommendedPackageReason: "Growth · Multi-location" },
+    });
+    const p = (await buildRevintProperties(prisma as never, WS, LEAD, { briefRunId: "run_brief" }))!.properties;
+    expect(p.revint_next_best_action).toBe("");
+    expect(p.revint_recommended_angle).toBe("Arama yok");
+  });
 });
 
 describe("enqueueCrmWriteback", () => {
+  it("retries without the new properties when the portal has not provisioned them", async () => {
+    const prisma = makePrisma({ briefOutput: HEAD_AGENT_OUTPUT });
+    mocks.client.updateCompany
+      .mockRejectedValueOnce(new Error('400 Property "revint_do_not_pitch" does not exist'))
+      .mockResolvedValueOnce({ id: "company_9", properties: {} });
+    const res = await enqueueCrmWriteback(prisma as never, {
+      workspaceId: WS,
+      leadId: LEAD,
+      reason: "analysis",
+      briefRunId: "run_brief",
+    });
+    expect(res.status).toBe("SUCCESS");
+    const second = mocks.client.updateCompany.mock.calls[1][1] as Record<string, string>;
+    expect(second.revint_do_not_pitch).toBeUndefined();
+    expect(second.revint_recommended_angle).toBe("Hesap bekleme → Growth");
+  });
+
   it("writes all properties to the Company for a company-only lead", async () => {
     const prisma = makePrisma({ briefOutput: HEAD_AGENT_OUTPUT });
     const res = await enqueueCrmWriteback(prisma as never, {
