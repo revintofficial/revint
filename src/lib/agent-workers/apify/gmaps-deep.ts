@@ -311,6 +311,10 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       : [`${lead.businessName} ${lead.formattedAddress}`],
     maxCrawledPlacesPerSearch: 1,
     maxReviews,
+    // Newest first. The default ("most relevant") over-samples old, long
+    // reviews, and Room 1 only trusts a complaint that is still current
+    // (two reviews from the last 12 months for a strong signal).
+    reviewsSort: "newest",
     language: ctx.workspace.language ?? "en",
     // Only matters for the name + address search fallback. Derived from
     // the lead's own address; omitted when unknown.

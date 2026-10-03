@@ -56,8 +56,11 @@ export function buildRoomOneAudit(src: RoomOneAuditSource): RoomOneAudit | null 
       bookingProvider: mapProvider,
       hasBookingSystem: mapProvider ? true : null,
       hasOnlineReservation: mapProvider ? true : null,
+      acceptsReservations: map.acceptsReservations,
       deliveryPlatforms: mapPlatforms.length > 0 ? mapPlatforms : null,
       marketplaceOrdering: mapPlatforms.length > 0 ? true : null,
+      // Google adds third-party order links to a profile by itself.
+      marketplaceSource: mapPlatforms.length > 0 ? "map" : null,
       hasOnlineOrdering: mapOwnOrdering ? true : null,
       menuUrl: map.menuUrl,
       pdfMenu: map.menuUrl ? isPdf(map.menuUrl) : null,
@@ -73,7 +76,8 @@ export function buildRoomOneAudit(src: RoomOneAuditSource): RoomOneAudit | null 
   const sawBooking = wa.hasBookingSystem === true || f.hasOnlineReservation === true || provider !== null;
   const bookingChecked = sf?.bookingChecked === true;
 
-  const platforms = [...new Set([...(sf?.deliveryPlatforms?.value ?? []), ...mapPlatforms])];
+  const sitePlatforms = sf?.deliveryPlatforms?.value ?? [];
+  const platforms = [...new Set([...sitePlatforms, ...mapPlatforms])];
   const ownOrdering = sf?.directOrdering != null || mapOwnOrdering;
   const orderingChecked = sf != null && (sf.menuPageSeen || sf.orderPageSeen);
 
@@ -89,6 +93,7 @@ export function buildRoomOneAudit(src: RoomOneAuditSource): RoomOneAudit | null 
     hasBookingSystem: sawBooking ? true : bookingChecked ? false : null,
     hasOnlineReservation: sawBooking ? true : bookingChecked ? false : null,
     bookingProvider: provider,
+    acceptsReservations: map?.acceptsReservations ?? null,
     hasPrepayment: sf?.hasPrepayment ? true : null,
     tableCount: finiteNumber(f.tableCount),
     hasQrMenu: hasQr ? true : sf?.menuPageSeen ? false : null,
@@ -98,6 +103,8 @@ export function buildRoomOneAudit(src: RoomOneAuditSource): RoomOneAudit | null 
     hasOnlineOrdering: ownOrdering ? true : orderingChecked ? false : null,
     marketplaceOrdering: platforms.length > 0 ? true : null,
     deliveryPlatforms: platforms.length > 0 ? platforms : null,
+    // Seen on the venue's own site, or only on the Google profile (not evidence of dependence).
+    marketplaceSource: sitePlatforms.length > 0 ? "site" : mapPlatforms.length > 0 ? "map" : null,
     languageCount: sf?.languageCount?.value ?? finiteNumber(f.languageCount),
     tastingMenu: sf?.tastingMenu ? true : null,
     venueType: src.venueType,

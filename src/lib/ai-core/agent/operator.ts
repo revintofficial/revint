@@ -1,8 +1,11 @@
 /**
  * Who runs the venue: an owner (`single`), an owner-run small group
- * (`small_group`, 2–5 venues: the best Premium prospect), a centrally
- * run chain (`chain`) or a hotel's restaurant (`hotel_fnb`). The last
- * two do not buy at the branch, so Room 1 stops the call.
+ * (`small_group`, 2–5 venues: the best Premium prospect), a larger
+ * group whose buyer sits above the branch (`group_hq`, 6–9 venues), a
+ * centrally run chain (`chain`, 10+ venues or a known brand) or a
+ * hotel's restaurant (`hotel_fnb`). The last two do not buy at the
+ * branch, so Room 1 stops the call. Thresholds and seed lists:
+ * docs/research/2026-10-03-playbook-research.md, Q6.
  *
  * Pure: every input is a public fact someone already collected (Google
  * type, address, website host, how many of our own leads share the
@@ -11,8 +14,10 @@
  */
 import type { OperatorKind } from "./head-agent";
 
-/** From this many locations a brand is treated as centrally run. */
-export const CHAIN_MIN_LOCATIONS = 6;
+/** From this many locations a brand is treated as centrally run (the trade's 1–9 / 10+ split). */
+export const CHAIN_MIN_LOCATIONS = 10;
+/** From this many the buyer is the owner or operations, not a branch manager. */
+export const GROUP_HQ_MIN_LOCATIONS = 6;
 
 export interface OperatorInput {
   businessName?: string | null;
@@ -97,7 +102,15 @@ const HOTEL_BRANDS = [
   "the berkeley",
   "çırağan",
   "ciragan",
+  "minor hotels",
+  "minorhotels",
+  "anantara",
+  "elite world",
+  "eliteworldhotels",
 ];
+
+/** Hotel group domains whose brand is an ordinary word in a venue name ("Divan", "Peninsula"). */
+const HOTEL_HOSTS = /(^|\.)(divan\.com\.tr|peninsula\.com|dedeman\.com|all\.accor\.com)$/i;
 
 /**
  * Brands known to buy centrally. A short, high-precision list for the
@@ -178,7 +191,25 @@ const KNOWN_CHAINS = [
   "usta dönerci",
   "komagene",
   "çiğköftem",
+  "rosa's thai",
+  "bill's",
+  "byron burger",
+  "gourmet burger kitchen",
+  "gbk",
+  "pret",
+  "cookshop",
+  "pidem",
+  "kasap döner",
+  "dürümle",
+  "pasta il forno",
+  "saray muhallebicisi",
+  "özsüt",
+  "ozsut",
+  "gloria jean",
 ];
+
+/** Chain names that are ordinary words elsewhere: matched only for venues in Türkiye. */
+const KNOWN_CHAINS_TR = ["midpoint", "develi", "leon"];
 
 /** Hosts that many unrelated venues share: never proof of a common owner. */
 const SHARED_HOSTS =
@@ -266,7 +297,7 @@ export function detectOperator(input: OperatorInput): OperatorResult {
     return { operator: "hotel_fnb", evidence: `site — ${input.siteHotelHint.trim()}`, locationCount };
   }
   const hostBrand = host ? brandIn(host.replace(/[.-]/g, " "), HOTEL_BRANDS) ?? brandIn(host, HOTEL_BRANDS) : null;
-  if (host && (hostBrand || /(hotel|resort)/.test(host))) {
+  if (host && (hostBrand || HOTEL_HOSTS.test(host) || /(hotel|resort)/.test(host))) {
     return { operator: "hotel_fnb", evidence: `${host} — otel alan adı`, locationCount };
   }
   const nameBrand = brandIn(name, HOTEL_BRANDS);
@@ -284,10 +315,13 @@ export function detectOperator(input: OperatorInput): OperatorResult {
   }
 
   // Chain: a brand known to buy centrally, or enough locations to be one.
-  const chain = brandLeads(name, KNOWN_CHAINS);
+  const inTurkiye = /(türkiye|turkiye|turkey)\s*$/.test(address);
+  const chain = brandLeads(name, KNOWN_CHAINS) ?? (inTurkiye ? brandLeads(name, KNOWN_CHAINS_TR) : null);
   if (chain) return { operator: "chain", evidence: `ad: "${input.businessName?.trim()}" — bilinen zincir`, locationCount };
   if (locationCount >= CHAIN_MIN_LOCATIONS) return { operator: "chain", evidence: counts[0].why, locationCount };
 
+  // 6–9 venues: still owner-run, but the buyer sits above the branch.
+  if (locationCount >= GROUP_HQ_MIN_LOCATIONS) return { operator: "group_hq", evidence: counts[0].why, locationCount };
   if (locationCount >= 2) return { operator: "small_group", evidence: counts[0].why, locationCount };
   return { operator: "single", evidence: null, locationCount: 1 };
 }

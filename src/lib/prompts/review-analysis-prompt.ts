@@ -147,12 +147,13 @@ Rules:
   - "bill" = WAITING for the bill, chasing staff to pay, the card machine, splitting the bill. Only the act of paying. The AMOUNT of the bill is "price".
   - "order_wait" = nobody came to take the order, waiting to order, could not get a waiter's attention, had to go to the bar to order.
   - "order_error" = wrong item served, forgotten order, items on the bill that were never ordered.
-  - "reservation" = booking, no-shows, deposits, a lost or ignored reservation, could not book online or by phone.
+  - "reservation" = booking, no-shows, deposits, a lost or ignored reservation, phone not answered, could not book online.
   - "delivery" = delivery or takeaway orders and delivery apps.
   - "menu" = the menu itself: hard to read, out of date, prices differ from the menu, missing allergens, no translation, only a PDF.
   - "repeat" = regulars, coming back often, loyalty.
   - "language" = language barrier, tourists, translation.
-  - "wait" = waiting for a table (queue) or for food to arrive after ordering (kitchen speed).
+  - "table_wait" = queued at the door or waited for a table, including "we had a booking and still waited".
+  - "kitchen_wait" = food or drinks slow to arrive AFTER ordering (kitchen or bar speed).
   - "price" = expensive, poor value, portion size for the money, service charge, taxes, overcharging.
   - "food_quality" = taste, temperature, freshness, hygiene of the food, illness.
   - "staff" = rude, inattentive or unfriendly staff (manners, not speed).

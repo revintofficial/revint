@@ -92,7 +92,7 @@ describe("roomOne — rules", () => {
       audit: { tableCount: 40 },
       reviews: {
         count: 200,
-        painPhrases: [{ text: "card machine never came", sellable: true, category: "bill", mentions: 6, quote: "card machine never came" }],
+        painPhrases: [{ text: "card machine never came", sellable: true, category: "bill", mentions: 6, recentMentions: 3, quote: "card machine never came" }],
       },
       locationCount: 1,
     });
@@ -105,7 +105,7 @@ describe("roomOne — rules", () => {
       reviews: {
         count: 300,
         painPhrases: [
-          { text: "we waited 20 minutes for the bill", sellable: true, category: "bill", mentions: 6, quote: "we waited 20 minutes for the bill" },
+          { text: "we waited 20 minutes for the bill", sellable: true, category: "bill", mentions: 6, recentMentions: 3, quote: "we waited 20 minutes for the bill" },
         ],
       },
       locationCount: 1,
@@ -203,7 +203,10 @@ describe("roomOne — rules", () => {
     const strong = evaluateRoomOne({ audit: { bookingProvider: "TheFork" }, reviews: { count: 0, painPhrases: [] }, locationCount: 1 });
     expect(packageFitScore(none, ["reviews"])).toBeLessThan(20);
     expect(packageFitScore(strong, [])).toBe(65);
-    expect(packageFitScore(strong, ["reviews"])).toBeLessThan(packageFitScore(strong, []));
+    // A reservation card read off the site loses points for a missing site, not for thin reviews.
+    expect(packageFitScore(strong, ["website"])).toBe(55);
+    expect(packageFitScore(strong, ["reviews"])).toBe(65);
+    expect(packageFitScore(strong, ["map", "website", "website_stale", "reviews"])).toBe(35);
   });
 });
 
@@ -218,7 +221,7 @@ describe("roomOne — verified review evidence", () => {
   it("makes a strong bill signal from five reviews and prints the count with the real quote", () => {
     const out = roomOne({
       audit,
-      reviews: { count: 80, painPhrases: [{ text: "slow to bring the bill", category: "bill", mentions: 5, quote: "we waited 25 minutes for the bill" }] },
+      reviews: { count: 80, painPhrases: [{ text: "slow to bring the bill", category: "bill", mentions: 5, recentMentions: 2, quote: "we waited 25 minutes for the bill" }] },
       locationCount: 1,
     });
     expect(out.wedge).toBe("bill_wait");
@@ -250,9 +253,10 @@ describe("openQuestionsFor", () => {
       "Rezervasyonda depozito veya kart garantisi alıyorlar mı?",
     ]);
     expect(openQuestionsFor({ tableCount: null, languageCount: null }, "bill_wait", 1)).toEqual([
-      "Kaç masa var? (20 üstü Growth)",
+      "Kaç masa var, ayda kaç sipariş? (20 masa veya 1.000 sipariş üstü Growth)",
       "Menü kaç dilde?",
     ]);
+    expect(openQuestionsFor({ languageCount: 2 }, "menu_surface", 1)).toEqual(["Menüde kaç ürün var? (100 üstü Growth)"]);
     expect(openQuestionsFor({ hasPrepayment: true, centralPurchasing: null }, "reservation", 3)).toEqual([
       "Satın alma kararı şubede mi, merkezde mi?",
     ]);
@@ -329,7 +333,7 @@ describe("roomOne — frequency thresholds", () => {
   });
 
   it("price, food quality, staff, ambiance and kitchen wait never open a wedge, however frequent", () => {
-    for (const category of ["price", "food_quality", "staff", "ambiance", "wait", "other"]) {
+    for (const category of ["price", "food_quality", "staff", "ambiance", "kitchen_wait", "other"]) {
       const out = roomOne({
         audit: { hasQrMenu: false },
         reviews: { count: 200, painPhrases: [{ text: "complaint", category, mentions: 30, complaintReviews: 60, recentMentions: 10, quote: "a long complaint about it" }] },
@@ -457,10 +461,12 @@ describe("roomOne — operator, plan assumption and discovery", () => {
   it("with no table count the plan is a stated assumption from size proxies", () => {
     const small = roomOne({ audit: {}, reviews: billReviews, locationCount: 1, size: { reviewCount: 240, priceLevel: 2 } });
     expect(small.plan).toBe("starter");
-    expect(small.planAssumption).toMatch(/masa sayısı bilinmiyor/);
+    expect(small.planAssumption).toBe(
+      "Paket varsayımı: Starter. Masa ve sipariş sayısı görülmedi (240 yorum, fiyat seviyesi 2); 20 masanın ve ayda 1.000 siparişin altı varsayıldı. İlk soruda doğrula.",
+    );
     const large = roomOne({ audit: {}, reviews: billReviews, locationCount: 1, size: { reviewCount: 3200, priceLevel: 2 } });
     expect(large.plan).toBe("growth");
-    expect(large.planAssumption).toMatch(/20 masanın üstünü/);
+    expect(large.planAssumption).toMatch(/Growth\. Masa ve sipariş sayısı görülmedi \(3200 yorum, fiyat seviyesi 2\); 20 masanın veya ayda 1\.000 siparişin üstü/);
     const pricey = roomOne({ audit: {}, reviews: billReviews, locationCount: 1, size: { reviewCount: 150, priceLevel: 3 } });
     expect(pricey.plan).toBe("growth");
   });
@@ -474,7 +480,131 @@ describe("roomOne — operator, plan assumption and discovery", () => {
   it("a menu wedge with unknown language count says it assumed one language", () => {
     const out = roomOne({ audit: { pdfMenu: true }, reviews: { count: 0, painPhrases: [] }, locationCount: 1 });
     expect(out.plan).toBe("starter");
-    expect(out.planAssumption).toMatch(/tek dil varsayıldı/);
+    expect(out.planAssumption).toMatch(/tek dil ve 100 ürünün altı varsayıldı/);
+  });
+
+  it("one venue gets Premium only on a seen table count above Growth's 50", () => {
+    const big = roomOne({ audit: { tableCount: 70 }, reviews: billReviews, locationCount: 1 });
+    expect(big).toMatchObject({ wedge: "bill_wait", plan: "premium", planAssumption: null });
+    expect(big.bans.join(" ")).not.toMatch(/Tek şubeye Premium/);
+    // A size proxy never lifts the plan past Growth.
+    const proxy = roomOne({ audit: {}, reviews: billReviews, locationCount: 1, size: { reviewCount: 9000, priceLevel: 4 } });
+    expect(proxy.plan).toBe("growth");
+  });
+
+  it("a group of 6-9 venues still gets a card, addressed above the branch", () => {
+    const out = roomOne({
+      audit: { operator: "group_hq", operatorEvidence: "brand.example — aynı alan adında 7 şube" },
+      reviews: { count: 0, painPhrases: [] },
+      locationCount: 7,
+    });
+    expect(out).toMatchObject({ wedge: "multi_location", plan: "premium" });
+    expect(out.bans.join(" ")).toMatch(/işletme sahibini veya operasyon müdürünü ara/);
+    expect(out.bans.join(" ")).toMatch(/fiyat şube başınadır/);
+  });
+});
+
+describe("roomOne — rules from the playbook research", () => {
+  const strongBooking = { text: "booking lost", category: "reservation", mentions: 9, complaintReviews: 40, recentMentions: 4, quote: "they had no record of our booking" };
+
+  it("unknown review dates never make a strong signal", () => {
+    const out = roomOne({
+      audit: {},
+      reviews: { count: 200, painPhrases: [{ text: "slow bill", category: "bill", mentions: 12, complaintReviews: 40, quote: "we waited ages for the bill" }] },
+      locationCount: 1,
+    });
+    expect(out.wedge).toBe("none");
+  });
+
+  it("one recent review out of many is not enough for strong; two are", () => {
+    const phrase = (recentMentions: number) => ({ text: "slow bill", category: "bill", mentions: 12, complaintReviews: 40, recentMentions, recent24Mentions: 5, quote: "we waited ages for the bill" });
+    expect(roomOne({ audit: {}, reviews: { count: 200, painPhrases: [phrase(1)] }, locationCount: 1 }).wedge).toBe("none");
+    expect(roomOne({ audit: {}, reviews: { count: 200, painPhrases: [phrase(2)] }, locationCount: 1 }).wedge).toBe("bill_wait");
+  });
+
+  it("a theme nobody mentioned in the last 24 months is no signal, not even medium", () => {
+    const out = roomOne({
+      audit: { reachable: true, hasBookingSystem: false },
+      reviews: { count: 200, painPhrases: [{ text: "booking lost", category: "reservation", mentions: 6, complaintReviews: 40, recentMentions: 0, recent24Mentions: 0, quote: "they had no record of our booking" }] },
+      locationCount: 1,
+    });
+    expect(out.wedge).toBe("none");
+  });
+
+  it("queuing for a table is a medium reservation signal, never strong", () => {
+    const queue = { text: "queue despite booking", category: "table_wait", mentions: 20, complaintReviews: 40, recentMentions: 9, quote: "we had a booking and still waited 40 minutes for the table" };
+    expect(roomOne({ audit: {}, reviews: { count: 200, painPhrases: [queue] }, locationCount: 1 }).wedge).toBe("none");
+    const withSite = roomOne({ audit: { reachable: true, hasBookingSystem: false }, reviews: { count: 200, painPhrases: [queue] }, locationCount: 1 });
+    expect(withSite).toMatchObject({ wedge: "reservation", tier: "C" });
+  });
+
+  it("slow food is the kitchen's problem: it opens nothing", () => {
+    const out = roomOne({
+      audit: { hasQrMenu: false },
+      reviews: { count: 200, painPhrases: [{ text: "slow food", category: "kitchen_wait", mentions: 30, complaintReviews: 60, recentMentions: 12, quote: "the mains took over an hour to arrive" }] },
+      locationCount: 1,
+    });
+    expect(out.wedge).toBe("none");
+  });
+
+  it("a venue running its own reservation software is not sold reservations", () => {
+    const out = roomOne({ audit: { bookingProvider: "SevenRooms" }, reviews: { count: 200, painPhrases: [strongBooking] }, locationCount: 1 });
+    expect(out.wedge).toBe("none");
+    expect(out.bans.join(" ")).toMatch(/SevenRooms bir rezervasyon yazılımı/);
+  });
+
+  it("a review site is not a booking provider", () => {
+    for (const provider of ["Tripadvisor", "Yelp", "Zomato"]) {
+      expect(roomOne({ audit: { bookingProvider: provider }, reviews: { count: 0, painPhrases: [] }, locationCount: 1 }).wedge).toBe("none");
+    }
+    expect(roomOne({ audit: { bookingProvider: "Reztoran" }, reviews: { count: 0, painPhrases: [] }, locationCount: 1 }).wedge).toBe("reservation");
+  });
+
+  it("a venue that tells Google it takes no reservations is walk-in", () => {
+    const out = roomOne({
+      audit: { reachable: true, hasBookingSystem: false, acceptsReservations: false },
+      reviews: { count: 200, painPhrases: [strongBooking] },
+      locationCount: 1,
+    });
+    expect(out.wedge).toBe("none");
+  });
+
+  it("a pub is walk-in unless it links a booking provider", () => {
+    const pub = roomOne({ audit: { venueType: "bar", reachable: true, hasBookingSystem: false }, reviews: { count: 200, painPhrases: [strongBooking] }, locationCount: 1 });
+    expect(pub.wedge).toBe("none");
+    const gastropub = roomOne({ audit: { venueType: "bar", bookingProvider: "OpenTable" }, reviews: { count: 0, painPhrases: [] }, locationCount: 1 });
+    expect(gastropub.wedge).toBe("reservation");
+  });
+
+  it("delivery platforms seen only on the Google profile are not evidence", () => {
+    const mapOnly = roomOne({
+      audit: { deliveryPlatforms: ["Deliveroo", "Uber Eats"], marketplaceSource: "map", hasOnlineOrdering: false },
+      reviews: { count: 0, painPhrases: [] },
+      locationCount: 1,
+    });
+    expect(mapOnly.wedge).toBe("none");
+    const onSite = roomOne({
+      audit: { deliveryPlatforms: ["Deliveroo", "Uber Eats"], marketplaceSource: "site", hasOnlineOrdering: false },
+      reviews: { count: 0, painPhrases: [] },
+      locationCount: 1,
+    });
+    expect(onSite).toMatchObject({ wedge: "marketplace", plan: "starter" });
+    expect(onSite.bans.join(" ")).toMatch(/Pazar yerini bırakın deme/);
+  });
+
+  it("every card bans the promises FineDine does not publish", () => {
+    const bans = roomOne({ audit: {}, reviews: { count: 0, painPhrases: [] }, locationCount: 1 }).bans.join(" ");
+    expect(bans).toMatch(/entegrasyon vaat etme/);
+    expect(bans).toMatch(/Sadakat programı vaat etme/);
+  });
+
+  it("several venues come before the menu in the playbook order", () => {
+    const out = roomOne({
+      audit: { bookingProvider: "OpenTable", operator: "small_group" },
+      reviews: { count: 0, painPhrases: [] },
+      locationCount: 3,
+    });
+    expect(out).toMatchObject({ wedge: "reservation", backup: "multi_location" });
   });
 
   it("no wedge still gives the rep two fixed questions from what the audit saw", () => {

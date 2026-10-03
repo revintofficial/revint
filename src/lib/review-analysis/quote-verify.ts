@@ -18,8 +18,11 @@ import {
 
 const MIN_QUOTE_WORDS = 3;
 const MAX_QUOTES_PER_PHRASE = 5;
-/** "Recent" = written in the last 12 months. */
-export const RECENT_WINDOW_MS = 365 * 24 * 60 * 60 * 1000;
+const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+/** "Recent" = written in the last 12 months. A strong signal needs recent reviews. */
+export const RECENT_WINDOW_MS = YEAR_MS;
+/** A theme nobody mentioned in the last 24 months is no signal at all. */
+export const STALE_WINDOW_MS = 2 * YEAR_MS;
 
 export interface ReviewRef {
   text: string | null;
@@ -31,6 +34,8 @@ export interface CategoryCount {
   mentions: number;
   /** Of those, written in the last 12 months. `null` = no review carries a date. */
   recentMentions: number | null;
+  /** Of those, written in the last 24 months. `null` = no review carries a date. */
+  recent24Mentions: number | null;
   /** Verified quotes, newest review first. */
   quotes: string[];
 }
@@ -51,16 +56,27 @@ function timeOf(ref: ReviewRef): number | null {
   return Number.isFinite(t) ? t : null;
 }
 
-function recentCount(indexes: Iterable<number>, refs: ReviewRef[], now: Date): number | null {
+/** How many of the reviews fall inside the window; `null` when none of them carries a date. */
+function countWithin(indexes: Iterable<number>, refs: ReviewRef[], now: Date, windowMs: number): number | null {
   let dated = false;
-  let recent = 0;
+  let inside = 0;
   for (const i of indexes) {
     const t = timeOf(refs[i]);
     if (t === null) continue;
     dated = true;
-    if (now.getTime() - t <= RECENT_WINDOW_MS) recent += 1;
+    if (now.getTime() - t <= windowMs) inside += 1;
   }
-  return dated ? recent : null;
+  return dated ? inside : null;
+}
+
+function recency(indexes: Iterable<number>, refs: ReviewRef[], now: Date): { recentMentions?: number; recent24Mentions?: number } {
+  const list = [...indexes];
+  const last12 = countWithin(list, refs, now, RECENT_WINDOW_MS);
+  const last24 = countWithin(list, refs, now, STALE_WINDOW_MS);
+  return {
+    ...(last12 !== null ? { recentMentions: last12 } : {}),
+    ...(last24 !== null ? { recent24Mentions: last24 } : {}),
+  };
 }
 
 /**
@@ -97,7 +113,8 @@ export function countReviewLabels(
     const indexes = [...seen.keys()].sort((a, b) => a - b);
     out.byCategory[category] = {
       mentions: indexes.length,
-      recentMentions: recentCount(indexes, refs, now),
+      recentMentions: countWithin(indexes, refs, now, RECENT_WINDOW_MS),
+      recent24Mentions: countWithin(indexes, refs, now, STALE_WINDOW_MS),
       quotes: indexes.map((i) => seen.get(i)!),
     };
   }
@@ -122,8 +139,7 @@ export function verifyPainQuotes(
       found.add(at);
       kept.push(quote.trim());
     }
-    const recent = recentCount(found, refs, now);
-    return { ...p, quotes: kept, mentions: found.size, ...(recent !== null ? { recentMentions: recent } : {}) };
+    return { ...p, quotes: kept, mentions: found.size, ...recency(found, refs, now) };
   });
 }
 
@@ -137,30 +153,32 @@ export function verifyPainQuotes(
 export function mergeLabelCounts(phrases: PainPhrase[], counts: LabelCounts): PainPhrase[] {
   if (counts.complaintReviews === 0) return phrases;
   const covered = new Set<PainCategory>();
+  const dates = (c: CategoryCount, p?: PainPhrase) => ({
+    ...(c.recentMentions !== null ? { recentMentions: Math.max(p?.recentMentions ?? 0, c.recentMentions) } : {}),
+    ...(c.recent24Mentions !== null ? { recent24Mentions: Math.max(p?.recent24Mentions ?? 0, c.recent24Mentions) } : {}),
+  });
   const out = phrases.map((p) => {
     const c = p.category ? counts.byCategory[p.category] : undefined;
     if (!p.category || !c) return { ...p, complaintReviews: counts.complaintReviews };
     covered.add(p.category);
-    const own = p.mentions ?? 0;
     const quotes = [...new Set([...(p.quotes ?? []), ...c.quotes])].slice(0, MAX_QUOTES_PER_PHRASE);
     return {
       ...p,
       quotes,
-      mentions: Math.max(own, c.mentions),
-      ...(c.recentMentions !== null ? { recentMentions: Math.max(p.recentMentions ?? 0, c.recentMentions) } : {}),
+      mentions: Math.max(p.mentions ?? 0, c.mentions),
+      ...dates(c, p),
       complaintReviews: counts.complaintReviews,
     };
   });
   for (const [category, c] of Object.entries(counts.byCategory) as Array<[PainCategory, CategoryCount]>) {
     if (covered.has(category) || c.mentions < 2 || UNSELLABLE_CATEGORIES.has(category)) continue;
-    if (category === "other" || category === "wait") continue;
     out.push({
       text: c.quotes[0],
       sellable: true,
       category,
       quotes: c.quotes.slice(0, MAX_QUOTES_PER_PHRASE),
       mentions: c.mentions,
-      ...(c.recentMentions !== null ? { recentMentions: c.recentMentions } : {}),
+      ...dates(c),
       complaintReviews: counts.complaintReviews,
     });
   }

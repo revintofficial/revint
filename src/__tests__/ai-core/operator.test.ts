@@ -66,11 +66,27 @@ describe("detectOperator — chains and groups", () => {
   it("leaves a namesake alone when the brand is not at the start", () => {
     expect(detectOperator({ businessName: "El Gaucho Steakhouse" }).operator).toBe("single");
     expect(detectOperator({ businessName: "Madonna Pizza" }).operator).toBe("single");
+    expect(detectOperator({ businessName: "Pretty Good Cafe" }).operator).toBe("single");
   });
 
-  it("counts locations: 2-5 is a small group, 6 or more a chain", () => {
+  it("matches a chain name that is an ordinary word only in Türkiye", () => {
+    const london = detectOperator({ businessName: "Midpoint Restaurant", address: "12 High St, London N1 9AB, UK" });
+    expect(london.operator).toBe("single");
+    const istanbul = detectOperator({ businessName: "Midpoint Nişantaşı", address: "Teşvikiye Cd. 12, 34365 Şişli/İstanbul, Türkiye" });
+    expect(istanbul.operator).toBe("chain");
+  });
+
+  it("reads hotel group domains whose brand is an ordinary word", () => {
+    expect(detectOperator({ businessName: "Lobby Brasserie", websiteUrl: "https://www.divan.com.tr/istanbul/restoranlar" }).operator).toBe("hotel_fnb");
+    expect(detectOperator({ businessName: "Divan Lokantası" }).operator).toBe("single");
+  });
+
+  it("counts locations: 2-5 is a small group, 6-9 a group with a head office, 10 or more a chain", () => {
     const group = detectOperator({ businessName: "Brasserie X", websiteUrl: "https://brasseriex.co.uk", sameSiteLocations: 3 });
     expect(group).toMatchObject({ operator: "small_group", locationCount: 3, evidence: "brasseriex.co.uk — aynı alan adında 3 şube" });
+    expect(detectOperator({ businessName: "Brasserie X", accountLocations: 6 }).operator).toBe("group_hq");
+    expect(detectOperator({ businessName: "Brasserie X", accountLocations: 9 }).operator).toBe("group_hq");
+    expect(CHAIN_MIN_LOCATIONS).toBe(10);
     const chain = detectOperator({ businessName: "Brasserie X", accountLocations: CHAIN_MIN_LOCATIONS });
     expect(chain).toMatchObject({ operator: "chain", locationCount: CHAIN_MIN_LOCATIONS });
     expect(chain.evidence).toBe(`harita — aynı hesapta ${CHAIN_MIN_LOCATIONS} şube`);

@@ -1335,8 +1335,12 @@ export function deriveVenueType(
   if (/fine[_ -]?dining|tasting/.test(blob)) return "fine_dining";
   if (/food[_ -]?(hall|court)/.test(blob)) return "food_hall";
   if (/(fast[_ -]?food|\bqsr\b|quick[_ -]?service|burger|kebab|takeaway|meal_takeaway)/.test(blob)) return "qsr";
+  // Counter-service formats: nobody books a table (Google place types).
+  if (/(ice[_ -]?cream|dessert|sandwich|juice|bagel|donut|doughnut)/.test(blob)) return "qsr";
   if (/(cafe|café|coffee|bakery|kahve)/.test(blob)) return "cafe";
   if (priceLevel === 4) return "fine_dining";
+  // A pub or bar is walk-in unless it links a booking provider (Room 1 checks that).
+  if (blob.split(/[^a-z]+/).some((t) => t === "pub" || t === "bar")) return "bar";
   return null;
 }
 

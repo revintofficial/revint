@@ -16,20 +16,23 @@
  * Closed set the analyst assigns; Room 1 maps these onto wedges
  * (`CATEGORY_WEDGE` in head-agent.ts). The split that matters: what a
  * guest-facing ordering / payment / booking product fixes (`bill`,
- * `order_wait`, `order_error`, `reservation`, `delivery`, `menu`) versus
- * what it does not (`wait` = kitchen or table wait, `price`,
- * `food_quality`, `staff`, `ambiance`).
+ * `order_wait`, `order_error`, `reservation`, `table_wait`, `delivery`,
+ * `menu`) versus what it does not (`kitchen_wait`, `price`,
+ * `food_quality`, `staff`, `ambiance`). Waiting is two categories on
+ * purpose: a queue for a table is a booking problem, slow food is the
+ * kitchen's (docs/research/2026-10-03-playbook-research.md, Q2).
  */
 export const PAIN_CATEGORIES = [
   "bill",
   "order_wait",
   "order_error",
   "reservation",
+  "table_wait",
   "delivery",
   "menu",
   "repeat",
   "language",
-  "wait",
+  "kitchen_wait",
   "price",
   "food_quality",
   "staff",
@@ -40,10 +43,12 @@ export type PainCategory = (typeof PAIN_CATEGORIES)[number];
 
 /** Never a sales angle, whatever the model said about `sellable`. */
 export const UNSELLABLE_CATEGORIES: ReadonlySet<PainCategory> = new Set<PainCategory>([
+  "kitchen_wait",
   "price",
   "food_quality",
   "staff",
   "ambiance",
+  "other",
 ]);
 
 export type PainPhrase = {
@@ -56,6 +61,8 @@ export type PainPhrase = {
   mentions?: number;
   /** Of those, how many were written in the last 12 months. Missing = dates unknown. */
   recentMentions?: number;
+  /** Of those, how many were written in the last 24 months. Missing = dates unknown. */
+  recent24Mentions?: number;
   /** Distinct reviews with any verified complaint: the denominator for `mentions`. */
   complaintReviews?: number;
 };
