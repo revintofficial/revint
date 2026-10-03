@@ -1121,4 +1121,20 @@ describe("run — restaurant workspace", () => {
     expect(leadWrite.where).toEqual({ id: "lead_1", workspaceId: "ws_1" });
     expect(leadWrite.data.salesConfidence).toBe(out.salesConfidence);
   });
+
+  it("still counts the uncrawled website as missing when only map facts built the audit", async () => {
+    ha.db.agentRun.findFirst.mockResolvedValueOnce({
+      outputJson: {
+        mapFacts: {
+          reservationLinks: [{ name: "OpenTable", url: "https://www.opentable.co.uk/r/x" }],
+          orderLinks: [],
+          deliveryPlatforms: [],
+        },
+      },
+    });
+    const res = await runBrief(restaurantCtx({ websiteAudit: null }));
+    const out = res.output as Record<string, unknown> & { missingSources: string[]; redFlags: string[] };
+    expect(out.missingSources.filter((s) => s === "website")).toHaveLength(1);
+    expect(out.redFlags).toContain("missing_source:website");
+  });
 });

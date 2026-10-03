@@ -111,4 +111,30 @@ describe("buildRoomOneAudit", () => {
     expect(buildRoomOneAudit(src({ audit: null }))).toBeNull();
     expect(buildRoomOneAudit(src({ audit: null, hasWebsite: false }))).toMatchObject({ hasWebsite: false, websiteBroken: false });
   });
+
+  it("builds a map-only audit when the site was never crawled but Google has facts", () => {
+    const a = buildRoomOneAudit(
+      src({
+        audit: null,
+        hasWebsite: true,
+        mapFacts: {
+          reservationLinks: [{ name: "OpenTable", url: "https://www.opentable.co.uk/r/x" }],
+          orderLinks: [],
+          deliveryPlatforms: ["Deliveroo"],
+          menuUrl: null,
+          acceptsReservations: null,
+          serviceOptions: [],
+          price: null,
+        },
+      }),
+    );
+    expect(a).not.toBeNull();
+    expect(a).toMatchObject({
+      bookingProvider: "OpenTable",
+      hasBookingSystem: true,
+      deliveryPlatforms: ["Deliveroo"],
+      marketplaceOrdering: true,
+    });
+    expect(a!.reachable ?? null).toBeNull();
+  });
 });

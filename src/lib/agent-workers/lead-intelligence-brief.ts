@@ -1407,6 +1407,8 @@ async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): 
   const skippedSources: string[] = [];
   // A quota-skipped map pull is a missing source, not a clean bill.
   if (map.skipped) skippedSources.push("map");
+  // A map-only audit is not a crawled site.
+  if (!lead.websiteAudit && lead.hasWebsite !== false) skippedSources.push("website");
   const auditAt = lead.websiteAudit?.crawlAttemptedAt ?? null;
   if (auditAt && Date.now() - auditAt.getTime() > AUDIT_STALE_MS) skippedSources.push("website_stale");
 
