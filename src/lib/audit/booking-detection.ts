@@ -9,6 +9,13 @@
  * highest-conviction segment for the "modernize their site" pitch. Confidently
  * detecting Calendly / Setmore / etc. prevents false-positive outreach to
  * prospects who already solved the problem.
+ *
+ * Website-audit eval (2026-10, 40 real restaurant sites): SevenRooms, Dojo,
+ * ResDiary and Quandoo were the most common providers we could not name;
+ * BentoBox sites preconnect to `widgets.resy.com` whatever they book with,
+ * a Square gift-card link read as "Square Appointments", and a hotel's
+ * Booking.com link read as a table provider. Hence: host matching on real
+ * link hosts (not substrings), resource hints ignored, no lodging OTA.
  */
 
 export const BOOKING_PROVIDERS = [
@@ -22,11 +29,20 @@ export const BOOKING_PROVIDERS = [
   "Timely",
   "OpenTable",
   "Resy",
+  "SevenRooms",
+  "Dojo",
+  "ResDiary",
+  "Quandoo",
+  "DesignMyNight",
+  "Tock",
+  "TableCheck",
+  "Eat App",
+  "Formitable",
+  "Yelp Reservations",
   "Vagaro",
   "Mindbody",
   "Fresha",
   "Treatwell",
-  "Booking.com",
   "Eveve",
   "Tablein",
   "TheFork",
@@ -36,24 +52,30 @@ export type BookingProvider = (typeof BOOKING_PROVIDERS)[number];
 
 interface ProviderRule {
   provider: BookingProvider;
+  /**
+   * Link targets. A bare host (`resy.com`) matches that host and its
+   * subdomains; an entry with a path (`squareup.com/appointments`) also
+   * requires the URL path to start with that path.
+   */
   hostnames: string[];
+  /** Substrings of the HTML (script / iframe src, widget markers). */
   htmlPatterns: string[];
 }
 
 const RULES: ProviderRule[] = [
   {
     provider: "Calendly",
-    hostnames: ["calendly.com", "assets.calendly.com"],
+    hostnames: ["calendly.com"],
     htmlPatterns: ["calendly-badge-widget", "calendly.initpopupwidget"],
   },
   {
     provider: "Cal.com",
-    hostnames: ["cal.com", "app.cal.com"],
+    hostnames: ["cal.com"],
     htmlPatterns: ["cal-namespace", "data-cal-link"],
   },
   {
     provider: "Setmore",
-    hostnames: ["setmore.com", "my.setmore.com", "booking-page.setmore.com"],
+    hostnames: ["setmore.com"],
     htmlPatterns: ["setmore-button", "setmore_iframe"],
   },
   {
@@ -68,28 +90,109 @@ const RULES: ProviderRule[] = [
   },
   {
     provider: "Square Appointments",
-    hostnames: ["squareup.com", "square.site"],
+    // `squareup.com` alone also carries gift cards and online stores.
+    hostnames: ["squareup.com/appointments", "book.squareup.com", "app.squareup.com/appointments"],
     htmlPatterns: ["squareup.com/appointments", "data-square-appointments"],
   },
   {
     provider: "Acuity",
-    hostnames: ["acuityscheduling.com", "app.acuityscheduling.com"],
+    hostnames: ["acuityscheduling.com"],
     htmlPatterns: ["acuityscheduling.com/schedule", "embed.acuityscheduling.com"],
   },
   {
     provider: "Timely",
-    hostnames: ["gettimely.com", "book.gettimely.com"],
+    hostnames: ["gettimely.com"],
     htmlPatterns: ["gettimely.com/book"],
   },
   {
     provider: "OpenTable",
-    hostnames: ["opentable.com", "opentable.co.uk"],
-    htmlPatterns: ["opentable.com/widget", "ot-dtp-picker"],
+    hostnames: [
+      "opentable.com",
+      "opentable.co.uk",
+      "opentable.ie",
+      "opentable.de",
+      "opentable.es",
+      "opentable.it",
+      "opentable.nl",
+      "opentable.com.au",
+      "opentable.ca",
+      "opentable.jp",
+      "opentable.com.mx",
+    ],
+    htmlPatterns: ["opentable.com/widget", "opentable.co.uk/widget", "ot-dtp-picker", "ot-widget-container"],
   },
   {
     provider: "Resy",
     hostnames: ["resy.com"],
     htmlPatterns: ["resy_button_widget", "widgets.resy.com"],
+  },
+  {
+    provider: "SevenRooms",
+    hostnames: ["sevenrooms.com"],
+    htmlPatterns: ["sevenrooms.com/widget", "sevenrooms.com/reservations", "sevenrooms.com/explore"],
+  },
+  {
+    provider: "Dojo",
+    // Dojo Bookings. `app.walkup.co/create_booking` has the same booking path;
+    // Padella labels its Walkup queue link "the Dojo App".
+    hostnames: ["web.dojo.app/create_booking", "dojo.app/create_booking", "app.walkup.co/create_booking"],
+    htmlPatterns: ["web.dojo.app/create_booking"],
+  },
+  {
+    provider: "ResDiary",
+    hostnames: ["resdiary.com"],
+    htmlPatterns: ["booking.resdiary.com", "resdiary.com/widget"],
+  },
+  {
+    provider: "Quandoo",
+    hostnames: [
+      "quandoo.com",
+      "quandoo.co.uk",
+      "quandoo.de",
+      "quandoo.at",
+      "quandoo.ch",
+      "quandoo.it",
+      "quandoo.nl",
+      "quandoo.com.tr",
+      "quandoo.com.au",
+      "quandoo.sg",
+      "quandoo.fi",
+    ],
+    // Widget loader: booking-widget.quandoo.com/index.js (vendor docs).
+    htmlPatterns: ["booking-widget.quandoo.com", "quandoo.com/widget"],
+  },
+  {
+    provider: "DesignMyNight",
+    // Collins / DesignMyNight bookings: designmynight.com/book?venue_id=…, the
+    // widgets.designmynight.com/bookings(-partner).min.js loader and its
+    // dmn-booking-form attribute. Event listings (/london/whats-on/...) do not count.
+    hostnames: ["designmynight.com/book", "bookings.designmynight.com"],
+    htmlPatterns: ["widgets.designmynight.com/bookings", "dmn-booking-form"],
+  },
+  {
+    provider: "Tock",
+    hostnames: ["exploretock.com"],
+    htmlPatterns: ["exploretock.com/tock.js", "tock_widget_container"],
+  },
+  {
+    provider: "TableCheck",
+    hostnames: ["tablecheck.com"],
+    htmlPatterns: ["tablecheck.com/en/shops/", "tablecheck.com/shops/"],
+  },
+  {
+    provider: "Eat App",
+    hostnames: ["eatapp.co"],
+    htmlPatterns: ["eatapp.co/reserve"],
+  },
+  {
+    provider: "Formitable",
+    hostnames: ["formitable.com"],
+    htmlPatterns: ["widget.formitable.com", "ft-widget"],
+  },
+  {
+    provider: "Yelp Reservations",
+    hostnames: ["yelp.com/reservations"],
+    htmlPatterns: ["yelp.com/reservations"],
   },
   {
     provider: "Vagaro",
@@ -98,7 +201,7 @@ const RULES: ProviderRule[] = [
   },
   {
     provider: "Mindbody",
-    hostnames: ["mindbodyonline.com", "clients.mindbodyonline.com"],
+    hostnames: ["mindbodyonline.com"],
     htmlPatterns: ["healcode", "mindbody-widget"],
   },
   {
@@ -112,11 +215,6 @@ const RULES: ProviderRule[] = [
     htmlPatterns: ["treatwell.com/widget"],
   },
   {
-    provider: "Booking.com",
-    hostnames: ["booking.com"],
-    htmlPatterns: ["booking.com/searchresults", "bookingcom-widget"],
-  },
-  {
     provider: "Eveve",
     hostnames: ["eveve.com"],
     htmlPatterns: ["eveve.com/install"],
@@ -128,7 +226,7 @@ const RULES: ProviderRule[] = [
   },
   {
     provider: "TheFork",
-    hostnames: ["thefork.com", "thefork.co.uk", "thefork.fr"],
+    hostnames: ["thefork.com", "thefork.co.uk", "thefork.fr", "thefork.it", "thefork.es", "lafourchette.com"],
     htmlPatterns: ["thefork.com/widget", "tf-widget"],
   },
 ];
@@ -138,28 +236,62 @@ export interface BookingDetectionInput {
   links: { href: string }[];
 }
 
-export function detectBookingProvider(
-  input: BookingDetectionInput
-): BookingProvider | null {
-  const lowerHtml = input.html.toLowerCase();
+/** A provider's legal / privacy pages are cookie-banner noise, not a booking link. */
+const LEGAL_PATH = /\/(legal|privacy|privacy-policy|terms|terms-of-service|terms-and-conditions|cookies?|cookie-policy)(\/|$|-)/i;
 
-  for (const rule of RULES) {
-    if (rule.htmlPatterns.some((p) => lowerHtml.includes(p.toLowerCase()))) {
-      return rule.provider;
-    }
+/**
+ * Resource hints name hosts a site *might* talk to (BentoBox preconnects to
+ * `widgets.resy.com` on every venue). Only loaded resources and links count.
+ */
+function withoutResourceHints(html: string): string {
+  return html.replace(/<link\b[^>]*\brel=["']?(?:preconnect|dns-prefetch|prefetch|preload)["']?[^>]*>/gi, "");
+}
 
-    const matchInLinks = input.links.some((link) => {
-      const href = (link.href || "").toLowerCase();
-      return rule.hostnames.some((h) => href.includes(h));
-    });
+function hostMatches(url: URL, entry: string): boolean {
+  const slash = entry.indexOf("/");
+  const host = (slash === -1 ? entry : entry.slice(0, slash)).toLowerCase();
+  const path = slash === -1 ? "" : entry.slice(slash).toLowerCase();
+  const h = url.hostname.toLowerCase();
+  if (h !== host && !h.endsWith(`.${host}`)) return false;
+  return path === "" || url.pathname.toLowerCase().startsWith(path);
+}
 
-    if (matchInLinks) {
-      return rule.provider;
+/** The provider whose link or widget the page carries, with the evidence. */
+export function detectBookingProviderEvidence(
+  input: BookingDetectionInput,
+): { provider: BookingProvider; evidence: string } | null {
+  const lowerHtml = withoutResourceHints(input.html).toLowerCase();
+  const urls: URL[] = [];
+  const legal: URL[] = [];
+  for (const link of input.links) {
+    try {
+      const u = new URL(link.href || "");
+      if (/^https?:$/.test(u.protocol)) (LEGAL_PATH.test(u.pathname) ? legal : urls).push(u);
+    } catch {
+      // relative or malformed: cannot be a third-party provider
     }
   }
 
+  for (const rule of RULES) {
+    const link = urls.find((u) => rule.hostnames.some((h) => hostMatches(u, h)));
+    if (link) return { provider: rule.provider, evidence: link.href };
+    const pattern = rule.htmlPatterns.find((p) => lowerHtml.includes(p.toLowerCase()));
+    if (pattern) return { provider: rule.provider, evidence: pattern };
+  }
+  // Last resort: an embedded widget's own terms link ("you agree to the
+  // OpenTable terms") or a cookie banner naming the provider's cookies.
+  // Both mean the provider's code runs on the page.
+  for (const rule of RULES) {
+    const link = legal.find((u) => rule.hostnames.some((h) => hostMatches(u, h)));
+    if (link) return { provider: rule.provider, evidence: link.href };
+  }
   return null;
 }
+
+export function detectBookingProvider(input: BookingDetectionInput): BookingProvider | null {
+  return detectBookingProviderEvidence(input)?.provider ?? null;
+}
+
 
 /**
  * Lightweight email scraper. Pulls mailto: hrefs and conservative text-pattern

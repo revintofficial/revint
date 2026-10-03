@@ -132,6 +132,9 @@ function classifyError(message: string): CrawlError {
   return "UNKNOWN";
 }
 
+export const CRAWLER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
+
 const NAV_TIMEOUT_MS = 25_000;
 const RETRY_DELAY_MS = 4_000;
 
@@ -168,7 +171,9 @@ async function collectSiteFacts(page: Page, homeUrl: string, homeHtml: string): 
         continue;
       }
       if (landedHost !== bare(new URL(homeUrl).hostname)) {
-        pages.push({ ...target, html: null });
+        // Not the venue's page, but the landing host (a menu or booking
+        // vendor) is evidence; mergeSiteFacts reads it from `landedUrl`.
+        pages.push({ ...target, html: null, landedUrl: res.url() });
         continue;
       }
       await page.waitForTimeout(800);
@@ -242,9 +247,10 @@ async function crawlOnce(url: string, businessType?: string | null): Promise<Web
   try {
     page = await browser.newPage({
       // Modern desktop UA. Many WAFs reject the default Playwright UA;
-      // a real Chrome 120 string slips past most of them.
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      // a current Chrome string slips past most of them. Keep it current:
+      // in the 2026-10 eval a WordPress host 403'd Chrome/120 but served
+      // Chrome/140 (rivergardenscafe.co.uk).
+      userAgent: CRAWLER_USER_AGENT,
       viewport: { width: 1280, height: 720 },
       // Bot-protection bypass: accept downloads false, do not honour
       // CSP that blocks our injected scripts (we don't inject any but

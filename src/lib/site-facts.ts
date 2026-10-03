@@ -6,7 +6,18 @@
  */
 import * as cheerio from "cheerio";
 import { extractFeatures } from "@/lib/extractor";
+import { detectBookingProviderEvidence } from "@/lib/audit/booking-detection";
 import { deliveryPlatformFor, isDirectOrderingHost } from "@/lib/delivery-platforms";
+import { menuVendorFor, orderingVendorFor } from "@/lib/restaurant-vendors";
+import {
+  detectDeclaredLanguage,
+  detectHotelOperator,
+  detectLanguageCount,
+  detectLocations,
+  siteKey,
+  visibleText,
+  type SignalPage,
+} from "@/lib/site-signals";
 
 export type SubpageKind = "menu" | "reservation" | "order";
 export interface SubpageTarget {
@@ -14,14 +25,26 @@ export interface SubpageTarget {
   url: string;
 }
 export interface VisitedPage extends SubpageTarget {
-  /** `null` = the page could not be opened. */
+  /** `null` = the page could not be opened (or left the venue's site). */
   html: string | null;
+  /**
+   * Where the navigation ended when it left the venue's site (e.g. /menu
+   * redirecting to a digital-menu vendor). The vendor host is evidence
+   * even though the page itself is not the venue's.
+   */
+  landedUrl?: string | null;
 }
 export interface SubpagePick {
   targets: SubpageTarget[];
   menuPdfUrl: string | null;
   /** The homepage links to a booking surface (own page or external). */
   hasBookingLink: boolean;
+  /**
+   * The menu lives on another of the venue's own domains (not a vendor,
+   * marketplace or PDF): the guest surfaces were not on this site, so
+   * "no booking link here" says nothing about booking.
+   */
+  offsiteMenuUrl?: string | null;
 }
 export interface SiteFact<T> {
   value: T;
@@ -42,17 +65,38 @@ export interface SiteFacts {
   directOrdering: SiteFact<true> | null;
   qrMenuTool: SiteFact<string> | null;
   menuPdfUrl: string | null;
+  /**
+   * Distinct venues the site shows (JSON-LD addresses, location pages,
+   * postcodes, "N restaurants" claims). Only set at 2+; absent = not seen,
+   * not "single venue". Optional for rows written before 2026-10.
+   */
+  locationCount?: SiteFact<number> | null;
+  /** Weaker multi-site cues: "Our Locations" nav, "Part of the X Group". */
+  locationHints?: SiteFact<string[]> | null;
+  /** Hotel operator/brand when the restaurant sits in a hotel ("Four Seasons", "independent hotel"). */
+  hotelOperator?: SiteFact<string> | null;
+  /**
+   * `<html lang>` of the homepage when no second language was found.
+   * Context only: it is not a language count (that stays `null`).
+   */
+  declaredLanguage?: SiteFact<string> | null;
 }
 
 const RES_TEXT = /\b(reserv\w*|book(ing|ings)?|book a table|rezervasyon)\b/i;
 const RES_PATH = /(^|\/)(reserv[\w-]*|book[\w-]*|rezervasyon)(\/|$|\.)/i;
 const MENU_TEXT = /(^|[^\p{L}])(menu|menus|menü)($|[^\p{L}])/iu;
 const MENU_PATH = /(^|\/)(menu|menus|our-menu|food-menu)(\/|$|\.|-)/i;
+const MENU_FILE = /(menu|menü|food|drinks|brunch|lunch|dinner|carta)/i;
+const NOT_MENU_FILE =
+  /(allergen|kcal|calorie|nutrition|privacy|policy|terms|gender|pay-?gap|report|statement|slavery|sustainab|welfare|careers|cv|tipping)/i;
 const ORDER_TEXT = /\border (online|now)\b/i;
 const ORDER_PATH = /(^|\/)(order|order-online|online-order|ordering|order-now)(\/|$|\.)/i;
+/** Food-ordering CTA wording on a link that leaves the site for an ordering vendor. */
+const ORDER_CTA =
+  /(\b(order (online|now|here|ahead|food|delivery|takeaway|for collection)|click\s*(&|and)\s*collect|place an order|online sipari[sş]|sipari[sş] ver)\b|^(collection|takeaway|delivery (&|and) collection)$)/i;
 const PREPAY =
-  /((?<!\bno[- ])(?<!\bwithout )deposit|card details (are |will be )?(required|needed|taken)|credit card (is )?required|pre-?pay(ment)?|kapora|ön ödeme)/i;
-const TASTING = /(tasting menu|d[ée]gustation|omakase|chef'?s table|\b(?:[5-9]|1\d|2\d)[- ]course\b|tadım menüsü)/i;
+  /((?<!\bno[- ])(?<!\bwithout (a )?)(?<!\bsafe )(?<!\bsecurity )deposit(?!\s+box)|(credit|debit)( or (credit|debit))? card details (are |will be )?(required|needed|taken|held)|card details (to|in order to) secure|(credit|debit) card (details )?(is |are )?required|pre-?pay(ment)?|prepaid booking|kapora|ön ödeme)/i;
+const TASTING = /(tasting menu|d[ée]gustation|omakase|chef'?s table (menu|experience)|\b(?:[5-9]|1\d|2\d)[- ]course\b|tadım menüsü)/i;
 
 interface Link {
   text: string;
@@ -67,7 +111,8 @@ function linksOf(html: string, pageUrl: string): Link[] {
     if (!href || href.startsWith("#") || /^(mailto|tel|javascript):/i.test(href)) return;
     try {
       const url = new URL(href, pageUrl);
-      if (/^https?:$/.test(url.protocol)) out.push({ text: $(el).text().replace(/\s+/g, " ").trim(), url });
+      const text = $(el).text().replace(/\s+/g, " ").trim() || ($(el).attr("aria-label") ?? "").trim();
+      if (/^https?:$/.test(url.protocol)) out.push({ text, url });
     } catch {
       // malformed href: not a link we can follow
     }
@@ -85,13 +130,22 @@ function pathOf(url: URL): string {
     return url.pathname;
   }
 }
-function bodyText(html: string): string {
-  return cheerio.load(html)("body").text().replace(/\s+/g, " ").trim();
-}
 function snippet(text: string, re: RegExp): string | null {
   const m = re.exec(text);
   if (!m) return null;
   return text.slice(Math.max(0, m.index - 80), m.index + m[0].length + 80).trim();
+}
+/** Same venue site: same host, or a subdomain of the same registrable domain (delivery.dishoom.com). */
+function sameSite(a: string, b: string): boolean {
+  return siteKey(a) === siteKey(b);
+}
+/** A PDF whose link text or file name says it is a menu (not allergens or policies). */
+function menuPdf(l: Link): boolean {
+  const path = pathOf(l.url);
+  if (!/\.pdf$/i.test(path)) return false;
+  const file = path.split("/").pop() ?? "";
+  if (NOT_MENU_FILE.test(l.text) || NOT_MENU_FILE.test(file)) return false;
+  return MENU_TEXT.test(l.text) || MENU_FILE.test(file);
 }
 
 /** Choose at most one same-host page per kind from the homepage links. */
@@ -100,6 +154,7 @@ export function pickSubpages(homeHtml: string, homeUrl: string): SubpagePick {
   const byKind = new Map<SubpageKind, string>();
   let menuPdfUrl: string | null = null;
   let hasBookingLink = false;
+  let offsiteMenuUrl: string | null = null;
 
   for (const l of linksOf(homeHtml, homeUrl)) {
     const path = pathOf(l.url);
@@ -107,10 +162,19 @@ export function pickSubpages(homeHtml: string, homeUrl: string): SubpagePick {
     const isMenu = MENU_TEXT.test(l.text) || MENU_PATH.test(path);
     const isOrder = ORDER_TEXT.test(l.text) || ORDER_PATH.test(path);
     if (isRes) hasBookingLink = true;
-    if (bare(l.url.hostname) !== bare(home.hostname)) continue;
+    // A menu PDF may sit on a CDN host (Wix usrfiles, DatoCMS, Zyro assets).
     if (/\.pdf$/i.test(path)) {
-      // A PDF is never a page to open; keep it only as the menu document.
-      if (isMenu) menuPdfUrl ??= l.url.href;
+      if (menuPdf(l)) menuPdfUrl ??= l.url.href;
+      continue;
+    }
+    if (bare(l.url.hostname) !== bare(home.hostname)) {
+      const foreign = !sameSite(l.url.hostname, home.hostname);
+      const known =
+        menuVendorFor(l.url.hostname) !== null ||
+        orderingVendorFor(l.url.hostname) !== null ||
+        deliveryPlatformFor(l.url.hostname) !== null ||
+        detectBookingProviderEvidence({ html: "", links: [{ href: l.url.href }] }) !== null;
+      if (foreign && !known && MENU_TEXT.test(l.text) && !/allergen/i.test(l.text)) offsiteMenuUrl ??= l.url.href;
       continue;
     }
     if (l.url.pathname === home.pathname && !l.url.search) continue; // the homepage itself
@@ -123,6 +187,7 @@ export function pickSubpages(homeHtml: string, homeUrl: string): SubpagePick {
     targets: order.filter((k) => byKind.has(k)).map((k) => ({ kind: k, url: byKind.get(k)! })),
     menuPdfUrl,
     hasBookingLink,
+    offsiteMenuUrl,
   };
 }
 
@@ -144,28 +209,68 @@ export function mergeSiteFacts(
   let tastingMenu: SiteFact<true> | null = null;
   let directOrdering: SiteFact<true> | null = null;
   let qrMenuTool: SiteFact<string> | null = null;
+  let menuPdfUrl = pick.menuPdfUrl;
   const platforms: string[] = [];
   let platformsUrl: string | null = null;
+  let platformsQuote: string | null = null;
+
+  // A subpage that redirected off the site still tells us which vendor runs it.
+  for (const p of pages) {
+    if (p.html !== null || !p.landedUrl) continue;
+    let landed: URL;
+    try {
+      landed = new URL(p.landedUrl);
+    } catch {
+      continue;
+    }
+    const quote = `${p.url} redirects to ${landed.href}`;
+    const menuVendor = menuVendorFor(landed.hostname);
+    if (menuVendor && !qrMenuTool) qrMenuTool = { value: menuVendor, url: p.url, quote };
+    const booking = detectBookingProviderEvidence({ html: "", links: [{ href: landed.href }] });
+    if (booking && !bookingProvider) bookingProvider = { value: booking.provider, url: p.url, quote };
+    const platform = deliveryPlatformFor(landed.hostname);
+    if (platform && !platforms.includes(platform)) {
+      platforms.push(platform);
+      platformsUrl ??= p.url;
+      platformsQuote ??= quote;
+    } else if (!platform && p.kind === "order" && isDirectOrderingHost(landed.hostname) && !directOrdering) {
+      directOrdering = { value: true, url: p.url, quote };
+    }
+  }
 
   for (const p of all) {
     const f = extractFeatures(p.html, p.url);
-    if (!bookingProvider && f.bookingProvider) bookingProvider = { value: f.bookingProvider, url: p.url, quote: null };
-    if (!qrMenuTool && f.detectedMenuTool) qrMenuTool = { value: f.detectedMenuTool, url: p.url, quote: null };
+    const links = linksOf(p.html, p.url);
+    if (!bookingProvider && f.bookingProvider) {
+      const ev = detectBookingProviderEvidence({ html: p.html, links: links.map((l) => ({ href: l.url.href })) });
+      bookingProvider = { value: f.bookingProvider, url: p.url, quote: ev?.evidence ?? null };
+    }
+    if (!qrMenuTool && f.detectedMenuTool) qrMenuTool = { value: f.detectedMenuTool, url: p.url, quote: f.menuUrl ?? null };
 
-    for (const l of linksOf(p.html, p.url)) {
+    for (const l of links) {
       const platform = deliveryPlatformFor(l.url.hostname);
       if (platform) {
         if (!platforms.includes(platform)) platforms.push(platform);
         platformsUrl ??= p.url;
+        platformsQuote ??= l.url.href;
         continue;
       }
+      if (!qrMenuTool) {
+        const vendor = menuVendorFor(l.url.hostname);
+        if (vendor) qrMenuTool = { value: vendor, url: p.url, quote: `${l.text || "link"} -> ${l.url.href}` };
+      }
+      if (p.kind === "home" || p.kind === "menu") {
+        if (menuPdf(l)) menuPdfUrl ??= l.url.href;
+      }
+      const ownSite = sameSite(l.url.hostname, homeHost);
       const ownOrder =
         isDirectOrderingHost(l.url.hostname) ||
-        (bare(l.url.hostname) === homeHost && (ORDER_PATH.test(pathOf(l.url)) || ORDER_TEXT.test(l.text)));
-      if (!directOrdering && ownOrder) directOrdering = { value: true, url: p.url, quote: l.text || l.url.href };
+        (orderingVendorFor(l.url.hostname) === null && !ownSite && ORDER_CTA.test(l.text) && !/gift|voucher|shop|merch|wine/i.test(l.text + l.url.hostname)) ||
+        (ownSite && (ORDER_PATH.test(pathOf(l.url)) || ORDER_TEXT.test(l.text) || (bare(l.url.hostname) !== homeHost && ORDER_CTA.test(l.text))));
+      if (!directOrdering && ownOrder) directOrdering = { value: true, url: p.url, quote: `${l.text || "link"} -> ${l.url.href}` };
     }
 
-    const text = bodyText(p.html);
+    const text = visibleText(p.html);
     if (!hasPrepayment && (p.kind === "reservation" || p.kind === "home")) {
       const quote = snippet(text, PREPAY);
       if (quote) hasPrepayment = { value: true, url: p.url, quote };
@@ -176,26 +281,29 @@ export function mergeSiteFacts(
     }
   }
 
-  const langs = new Set<string>();
-  const $home = cheerio.load(home.html);
-  $home('link[rel="alternate"][hreflang]')
-    .each((_, el) => {
-      const code = ($home(el).attr("hreflang") ?? "").toLowerCase().split("-")[0];
-      if (code && code !== "x") langs.add(code);
-    });
+  const signalPages: SignalPage[] = all.map((p) => ({ url: p.url, html: p.html, kind: p.kind }));
+  const locations = detectLocations(signalPages);
+  const languageCount = detectLanguageCount(home.url, home.html);
 
   return {
     pagesVisited: pages.map((p) => ({ kind: p.kind, url: p.url, ok: p.html !== null })),
-    bookingChecked: !pick.hasBookingLink || opened.some((p) => p.kind === "reservation"),
+    bookingChecked:
+      bookingProvider !== null ||
+      opened.some((p) => p.kind === "reservation") ||
+      (!pick.hasBookingLink && !pick.offsiteMenuUrl),
     menuPageSeen: opened.some((p) => p.kind === "menu"),
     orderPageSeen: opened.some((p) => p.kind === "order"),
     bookingProvider,
     hasPrepayment,
     tastingMenu,
-    languageCount: langs.size > 0 ? { value: langs.size, url: home.url, quote: [...langs].join(", ") } : null,
-    deliveryPlatforms: platforms.length > 0 ? { value: platforms, url: platformsUrl ?? home.url, quote: null } : null,
+    languageCount,
+    deliveryPlatforms: platforms.length > 0 ? { value: platforms, url: platformsUrl ?? home.url, quote: platformsQuote } : null,
     directOrdering,
     qrMenuTool,
-    menuPdfUrl: pick.menuPdfUrl,
+    menuPdfUrl,
+    locationCount: locations.locationCount,
+    locationHints: locations.locationHints,
+    hotelOperator: detectHotelOperator(signalPages),
+    declaredLanguage: languageCount ? null : detectDeclaredLanguage(home.url, home.html),
   };
 }
