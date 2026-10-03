@@ -232,6 +232,9 @@ export interface WebsiteFeatures {
     whatsapp: string | null;
     pinterest: string | null;
   };
+
+  /** Facts read from the menu / reservation / order pages (site-facts.ts). */
+  siteFacts?: import("@/lib/site-facts").SiteFacts;
 }
 
 export interface SecurityHeadersResult {

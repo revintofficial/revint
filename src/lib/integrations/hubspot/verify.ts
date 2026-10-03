@@ -37,7 +37,7 @@ function errText(err: unknown): string {
 }
 
 /**
- * For each object type: which of the 11 `revint_*` definitions exist in
+ * For each object type: which of the 14 `revint_*` definitions exist in
  * the portal, and (when a record id is passed) which are filled on it.
  */
 export async function verifyRevintProperties(

@@ -1,5 +1,6 @@
 import { chromium, type Browser, type Page } from "playwright";
 import { extractFeatures } from "./extractor";
+import { bare, mergeSiteFacts, pickSubpages, type SiteFacts, type VisitedPage } from "./site-facts";
 import { assertSafeFetchUrl } from "./url-guard";
 import { detectSocialMediaPlatform } from "./audit/social-url-gate";
 import type { CrawlError, SecurityHeadersResult, WebsiteFeatures } from "@/types";
@@ -131,8 +132,58 @@ function classifyError(message: string): CrawlError {
   return "UNKNOWN";
 }
 
+export const CRAWLER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
+
 const NAV_TIMEOUT_MS = 25_000;
 const RETRY_DELAY_MS = 4_000;
+
+const SUBPAGE_TIMEOUT_MS = 8_000;
+const SUBPAGE_BUDGET_MS = 20_000;
+
+/**
+ * Open the menu / reservation / order pages linked from the homepage.
+ * Best-effort: a page that fails stays "not seen". Navigations go through
+ * the same route guard as the homepage (set up by the caller).
+ */
+async function collectSiteFacts(page: Page, homeUrl: string, homeHtml: string): Promise<SiteFacts> {
+  const pick = pickSubpages(homeHtml, homeUrl);
+  const pages: VisitedPage[] = [];
+  const deadline = Date.now() + SUBPAGE_BUDGET_MS;
+  for (const target of pick.targets) {
+    if (Date.now() >= deadline) {
+      pages.push({ ...target, html: null });
+      continue;
+    }
+    try {
+      const res = await page.goto(target.url, { waitUntil: "domcontentloaded", timeout: SUBPAGE_TIMEOUT_MS });
+      if (!res || res.status() >= 400) {
+        pages.push({ ...target, html: null });
+        continue;
+      }
+      // The same-host check in pickSubpages ran on the pre-redirect URL;
+      // a redirect to another host is not the venue's page.
+      let landedHost: string;
+      try {
+        landedHost = bare(new URL(res.url()).hostname);
+      } catch {
+        pages.push({ ...target, html: null });
+        continue;
+      }
+      if (landedHost !== bare(new URL(homeUrl).hostname)) {
+        // Not the venue's page, but the landing host (a menu or booking
+        // vendor) is evidence; mergeSiteFacts reads it from `landedUrl`.
+        pages.push({ ...target, html: null, landedUrl: res.url() });
+        continue;
+      }
+      await page.waitForTimeout(800);
+      pages.push({ ...target, html: await page.content() });
+    } catch {
+      pages.push({ ...target, html: null });
+    }
+  }
+  return mergeSiteFacts({ url: homeUrl, html: homeHtml }, pages, pick);
+}
 
 export async function crawlWebsite(
   url: string,
@@ -196,9 +247,10 @@ async function crawlOnce(url: string, businessType?: string | null): Promise<Web
   try {
     page = await browser.newPage({
       // Modern desktop UA. Many WAFs reject the default Playwright UA;
-      // a real Chrome 120 string slips past most of them.
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      // a current Chrome string slips past most of them. Keep it current:
+      // in the 2026-10 eval a WordPress host 403'd Chrome/120 but served
+      // Chrome/140 (rivergardenscafe.co.uk).
+      userAgent: CRAWLER_USER_AGENT,
       viewport: { width: 1280, height: 720 },
       // Bot-protection bypass: accept downloads false, do not honour
       // CSP that blocks our injected scripts (we don't inject any but
@@ -373,6 +425,15 @@ async function crawlOnce(url: string, businessType?: string | null): Promise<Web
     const hasViewportMeta = /<meta[^>]+name=["']viewport["']/i.test(mobileHtml) ||
       mobileHtml.includes("width=device");
     features.mobileFriendlyGuess = hasViewportMeta;
+
+    if (features.reachable) {
+      try {
+        features.siteFacts = await collectSiteFacts(page, finalUrl, html);
+      } catch (err) {
+        // The homepage audit stands on its own; subpages are extra evidence.
+        console.error(`Subpage crawl failed for ${url}:`, err instanceof Error ? err.message : String(err));
+      }
+    }
 
     return features;
   } catch (error) {

@@ -109,6 +109,10 @@ import {
   type RoomOneAudit,
   type VenueType,
 } from "@/lib/ai-core/agent/head-agent";
+import { buildRoomOneAudit } from "@/lib/ai-core/agent/room-one-audit";
+import { detectOperator, ownSiteHost, type OperatorResult } from "@/lib/ai-core/agent/operator";
+import type { SiteFacts } from "@/lib/site-facts";
+import { parseMapFacts, type MapFacts } from "@/lib/agent-workers/apify/map-facts";
 
 export { buildBriefDecision };
 export type { BriefDecisionInput, HeadAgentBriefDecision };
@@ -1322,12 +1326,6 @@ type HydratedLead = NonNullable<AgentWorkerContext["lead"]>;
 function triBool(v: unknown): boolean | null {
   return typeof v === "boolean" ? v : null;
 }
-function finiteNumber(v: unknown): number | null {
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
-function nonEmpty(v: unknown): string | null {
-  return typeof v === "string" && v.trim() ? v.trim() : null;
-}
 
 /** Rule-based venue type from the niche slug / Google type / price level. */
 export function deriveVenueType(
@@ -1338,8 +1336,12 @@ export function deriveVenueType(
   if (/fine[_ -]?dining|tasting/.test(blob)) return "fine_dining";
   if (/food[_ -]?(hall|court)/.test(blob)) return "food_hall";
   if (/(fast[_ -]?food|\bqsr\b|quick[_ -]?service|burger|kebab|takeaway|meal_takeaway)/.test(blob)) return "qsr";
+  // Counter-service formats: nobody books a table (Google place types).
+  if (/(ice[_ -]?cream|dessert|sandwich|juice|bagel|donut|doughnut)/.test(blob)) return "qsr";
   if (/(cafe|café|coffee|bakery|kahve)/.test(blob)) return "cafe";
   if (priceLevel === 4) return "fine_dining";
+  // A pub or bar is walk-in unless it links a booking provider (Room 1 checks that).
+  if (blob.split(/[^a-z]+/).some((t) => t === "pub" || t === "bar")) return "bar";
   return null;
 }
 
@@ -1348,36 +1350,113 @@ export function deriveVenueType(
  * stays null: `hasQrMenu` / `hasOnlineOrdering` are `boolean | null`
  * upstream and a `null` is never read as "absent".
  */
-export function toRoomOneAudit(lead: HydratedLead): RoomOneAudit | null {
+export function toRoomOneAudit(
+  lead: HydratedLead,
+  mapFacts: MapFacts | null = null,
+  operator: OperatorResult | null = null,
+): RoomOneAudit | null {
   const wa = lead.websiteAudit;
-  if (!wa) return lead.hasWebsite === false ? { hasWebsite: false, websiteBroken: false } : null;
-  const f = (wa.rawFeaturesJson && typeof wa.rawFeaturesJson === "object"
-    ? (wa.rawFeaturesJson as Record<string, unknown>)
-    : {}) as Record<string, unknown>;
-  const menuUrl = nonEmpty(f.menuUrl);
-  const detectedMenuTool = nonEmpty(f.detectedMenuTool);
-  return {
-    reachable: wa.reachable,
-    websiteUrl: lead.websiteUrl ?? wa.url ?? null,
-    hasWebsite: lead.hasWebsite ?? true,
-    websiteBroken: lead.hasWebsite !== false && wa.reachable === false ? true : wa.reachable === true ? false : null,
-    hasBookingSystem: triBool(wa.hasBookingSystem),
-    hasOnlineReservation: triBool(f.hasOnlineReservation),
-    bookingProvider: nonEmpty(wa.bookingProvider) ?? nonEmpty(f.bookingProvider),
-    hasPrepayment: triBool(f.hasPrepayment),
-    tableCount: finiteNumber(f.tableCount),
-    hasQrMenu: triBool(f.hasQrMenu),
-    pdfMenu: menuUrl ? /\.pdf(\?|#|$)/i.test(menuUrl) && !detectedMenuTool : null,
-    menuUrl,
-    detectedMenuTool,
-    hasOnlineOrdering: triBool(f.hasOnlineOrdering),
-    marketplaceOrdering: triBool(f.hasDeliveryIntegration),
-    deliveryPlatforms: Array.isArray(f.deliveryPlatforms)
-      ? f.deliveryPlatforms.filter((x): x is string => typeof x === "string")
+  const audit = buildRoomOneAudit({
+    hasWebsite: lead.hasWebsite ?? null,
+    websiteUrl: lead.websiteUrl ?? null,
+    audit: wa
+      ? {
+          reachable: wa.reachable,
+          url: wa.url,
+          hasBookingSystem: triBool(wa.hasBookingSystem),
+          bookingProvider: wa.bookingProvider,
+          rawFeaturesJson: wa.rawFeaturesJson,
+        }
       : null,
-    languageCount: finiteNumber(f.languageCount),
+    mapFacts,
     venueType: deriveVenueType([lead.subNicheSlug, lead.nicheSlug, lead.primaryType], lead.priceLevel),
+  });
+  // "single" on an otherwise empty audit adds nothing; a hotel or chain
+  // verdict must reach Room 1 even when no site or map fact was read.
+  if (!operator || (!audit && operator.operator === "single" && !operator.locationHint)) return audit;
+  return {
+    ...(audit ?? {}),
+    operator: operator.operator,
+    operatorEvidence: operator.evidence,
+    locationHint: operator.locationHint ?? null,
   };
+}
+
+/**
+ * Who runs the venue, from facts already on hand: the Google type, the
+ * name and address, the website host, and how many leads in THIS
+ * workspace share the account or the site. No external call.
+ */
+export async function loadOperatorSignals(
+  workspaceId: string,
+  lead: {
+    id: string;
+    businessName: string;
+    formattedAddress: string | null;
+    primaryType: string | null;
+    websiteUrl: string | null;
+    accountId: string | null;
+    websiteAudit?: { rawFeaturesJson: unknown } | null;
+  },
+): Promise<OperatorResult> {
+  // What the venue's own site says about itself (site audit, with URL and quote).
+  const raw = lead.websiteAudit?.rawFeaturesJson;
+  const siteFacts = (
+    raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as { siteFacts?: Partial<SiteFacts> | null }).siteFacts : null
+  ) ?? null;
+  const siteLocations = siteFacts?.locationCount ?? null;
+  const hotel = siteFacts?.hotelOperator ?? null;
+  const hints = siteFacts?.locationHints ?? null;
+  const accountLocations = lead.accountId
+    ? await prisma.lead.count({ where: { workspaceId, accountId: lead.accountId } })
+    : 0;
+  const host = ownSiteHost(lead.websiteUrl);
+  // Distinct addresses, not rows: two Google listings of one venue are one location.
+  const sameSite = host
+    ? await prisma.lead.findMany({
+        where: { workspaceId, websiteUrl: { contains: host, mode: "insensitive" } },
+        select: { formattedAddress: true },
+        take: 50,
+      })
+    : [];
+  const sameSiteLocations = new Set(
+    sameSite.map((l) => l.formattedAddress.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim()).filter(Boolean),
+  ).size;
+  return detectOperator({
+    businessName: lead.businessName,
+    address: lead.formattedAddress,
+    primaryType: lead.primaryType,
+    websiteUrl: lead.websiteUrl,
+    accountLocations,
+    sameSiteLocations,
+    siteLocations: typeof siteLocations?.value === "number" ? siteLocations.value : null,
+    siteLocationsUrl: siteLocations?.url ?? null,
+    siteHotelHint: hotel?.value ? `${hotel.url} — otel: ${hotel.value}` : null,
+    siteLocationHint:
+      Array.isArray(hints?.value) && hints.value.length > 0 ? `${hints.url} — "${hints.value[0]}"` : null,
+  });
+}
+
+/** 30 days: older than this the site may have changed under the audit. */
+const AUDIT_STALE_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Map facts from the lead's latest successful Google Maps run. */
+export async function loadMapFacts(
+  workspaceId: string,
+  leadId: string,
+): Promise<{ facts: MapFacts | null; skipped: boolean }> {
+  const run = await prisma.agentRun.findFirst({
+    where: { workspaceId, leadId, workerKind: "APIFY_GMAPS_DEEP", status: { in: ["SUCCEEDED", "SUCCEEDED_NO_MEMORY"] } },
+    orderBy: { finishedAt: "desc" },
+    select: { outputJson: true },
+  });
+  const out =
+    run?.outputJson && typeof run.outputJson === "object" && !Array.isArray(run.outputJson)
+      ? (run.outputJson as Record<string, unknown>)
+      : null;
+  if (!out) return { facts: null, skipped: false };
+  if (out.skipped) return { facts: null, skipped: true };
+  return { facts: parseMapFacts(out.mapFacts), skipped: false };
 }
 
 const PLAN_TO_OFFER: Partial<Record<string, "STARTER" | "GROWTH">> = { starter: "STARTER", growth: "GROWTH" };
@@ -1392,11 +1471,19 @@ async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): 
     return { output: { skipped: "head_agent_off" }, costTokens: 0 };
   }
 
-  let locationCount = 1;
-  if (lead.accountId) {
-    const siblings = await prisma.lead.count({ where: { workspaceId, accountId: lead.accountId } });
-    locationCount = Math.max(1, siblings);
-  }
+  // Hotel restaurant, chain branch, small group or single venue; also
+  // the best known number of venues under the same owner.
+  const operator = await loadOperatorSignals(workspaceId, lead);
+  const locationCount = operator.locationCount;
+
+  const map = await loadMapFacts(workspaceId, leadId);
+  const skippedSources: string[] = [];
+  // A quota-skipped map pull is a missing source, not a clean bill.
+  if (map.skipped) skippedSources.push("map");
+  // A map-only audit is not a crawled site.
+  if (!lead.websiteAudit && lead.hasWebsite !== false) skippedSources.push("website");
+  const auditAt = lead.websiteAudit?.crawlAttemptedAt ?? null;
+  if (auditAt && Date.now() - auditAt.getTime() > AUDIT_STALE_MS) skippedSources.push("website_stale");
 
   const reviewAnalysis = lead.reviewAnalysis
     ? {
@@ -1413,7 +1500,8 @@ async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): 
       businessName: lead.businessName,
       address: lead.formattedAddress,
       language: ctx.workspace.language ?? "en",
-      audit: toRoomOneAudit(lead),
+      audit: toRoomOneAudit(lead, map.facts, operator),
+      skippedSources,
       reviewCount: lead.reviewCount,
       rating: lead.rating,
       priceLevel: lead.priceLevel ?? null,
@@ -1445,8 +1533,8 @@ async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): 
 
   const newVersion = (lead.intelligenceVersion ?? 0) + 1;
   const sellablePains = normalizePainPhrases(lead.reviewAnalysis?.painPhrases)
-    .filter((p) => p.sellable !== false)
-    .map((p) => p.text);
+    .filter((p) => p.sellable !== false && p.mentions !== 0)
+    .map((p) => p.quote ?? p.text);
   const brief: Omit<BriefOutput, "intelligenceVersion" | "generatedAt"> = {
     salesConfidence: decision.salesConfidence,
     confidenceBreakdown: { audit: 0, reviews: 0, opportunity: 0, weight: 0 },
@@ -1464,7 +1552,7 @@ async function runRestaurantBrief(ctx: AgentWorkerContext, lead: HydratedLead): 
         : { kind: "CALL_AT_WINDOW", due: null, note: ha.primaryAngle },
     replyObjections: [],
     redFlags: decision.missingSources.map((s) => `missing_source:${s}`),
-    evidence: r1.evidence.map((note) => ({ source: note.startsWith("yorum:") ? "review" : "website", note })),
+    evidence: r1.evidence.map((note) => ({ source: note.startsWith("yorum") ? "review" : "website", note })),
     // Opener whitelist: only review phrases Room 1 actually used as evidence.
     confirmedPainPoints: sellablePains.filter((p) => r1.evidence.some((e) => e.includes(p))).slice(0, 5),
     confirmedMissingFeatures: [],

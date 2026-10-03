@@ -37,6 +37,13 @@ beforeEach(() => {
 });
 
 describe("writebackAfterBriefRun", () => {
+  it("does not write back a brief that skipped itself", async () => {
+    const prisma = prismaWith({ ...BRIEF, outputJson: { skipped: "head_agent_off" } });
+    const res = await writebackAfterBriefRun(prisma as never, "run_1");
+    expect(res).toEqual({ status: "NOT_APPLICABLE", reason: "brief_skipped" });
+    expect(mocks.enqueue).not.toHaveBeenCalled();
+  });
+
   it("writes back a succeeded brief with the run id + workspace from the row", async () => {
     const prisma = prismaWith(BRIEF);
     const res = await writebackAfterBriefRun(prisma as never, "run_1");

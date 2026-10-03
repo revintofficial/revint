@@ -17,7 +17,7 @@ beforeEach(() => {
 });
 
 describe("verifyRevintProperties", () => {
-  it("reports which of the 11 properties exist and are filled per object", async () => {
+  it("reports which of the 14 properties exist and are filled per object", async () => {
     const client = {
       listProperties: vi.fn(async (o: string) => ({
         results: o === "companies" ? REVINT_PROPERTY_NAMES.map((name) => ({ name })) : [],
@@ -31,7 +31,7 @@ describe("verifyRevintProperties", () => {
     const res = await verifyRevintProperties(client as never, { companies: "c1" });
     const companies = res.find((r) => r.objectType === "companies")!;
     const contacts = res.find((r) => r.objectType === "contacts")!;
-    expect(companies.existsCount).toBe(11);
+    expect(companies.existsCount).toBe(14);
     expect(companies.filledCount).toBe(2);
     expect(companies.properties.find((p) => p.name === "revint_lead_temperature")!.filled).toBe(false);
     expect(contacts.existsCount).toBe(0);

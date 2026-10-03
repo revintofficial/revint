@@ -33,6 +33,8 @@ const QR_MENU_LONG_PATTERNS: { pattern: string; label: string }[] = [
   { pattern: "glorifood", label: "Gloriafood" },
   { pattern: "flipdish", label: "Flipdish" },
   { pattern: "digitalmenu", label: "Digital Menu" },
+  // Turkish digital-menu vendor; Eva Bosphorus' /menu redirects to menuzade.com.tr.
+  { pattern: "menuzade.com", label: "Menuzade" },
 ];
 
 const QR_MENU_SHORT_PATTERNS: { pattern: string; label: string }[] = [
@@ -197,6 +199,13 @@ const ORDERING_HOST_PATTERNS = [
   "gloriafood",
   "slerp",
   "order.store",
+  // White-label ordering seen on lead sites (see restaurant-vendors.ts).
+  "orderswift",
+  "storekit",
+  "vmos.io",
+  "toasttab",
+  "sun-d.io",
+  "eats.sng.link",
 ];
 const ORDERING_PATH =
   /(^|\/)(order|order-online|online-order|online-ordering|ordering|order-now|takeaway-order|checkout|basket|cart|siparis|online-siparis)(\/|$|\?|#|\.)/i;

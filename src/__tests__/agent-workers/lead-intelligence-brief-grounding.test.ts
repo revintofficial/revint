@@ -80,7 +80,7 @@ const ha = vi.hoisted(() => ({
   call: vi.fn(),
   mode: vi.fn(() => "live"),
   db: {
-    lead: { count: vi.fn(), updateMany: vi.fn() },
+    lead: { count: vi.fn(), updateMany: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
     salesOpportunity: { upsert: vi.fn() },
     servicePackage: { findMany: vi.fn() },
     leadTrigger: { findMany: vi.fn() },
@@ -779,6 +779,7 @@ function resetHeadAgentMocks() {
   ha.mode.mockReturnValue("live");
   ha.db.lead.count.mockReset().mockResolvedValue(1);
   ha.db.lead.updateMany.mockReset().mockResolvedValue({ count: 1 });
+  ha.db.lead.findMany.mockReset().mockResolvedValue([]);
   ha.db.salesOpportunity.upsert.mockReset().mockResolvedValue({});
   ha.db.servicePackage.findMany.mockReset().mockResolvedValue([
     { id: "pkg_starter", name: "FineDine Starter" },
@@ -879,7 +880,7 @@ describe("buildBriefDecision — rooms 2 and 3", () => {
         primaryAngle: "Direct booking + deposit",
         sentences: [
           { text: "Your bookings come through TheFork and no deposit is visible.", evidence: ["E1"] },
-          { text: "Direct booking with prepayment could cut no-shows; a 15-minute look will tell.", evidence: ["E1"] },
+          { text: "Direct booking with prepayment could cut no-shows; a quick look will tell.", evidence: ["E1"] },
         ],
         recommendedModules: [{ module: "crm_loyalty", why: "invented" }],
         sourceConflicts: [],
@@ -959,7 +960,10 @@ describe("buildBriefDecision — rooms 2 and 3", () => {
       audit: { reachable: true },
       reviewCount: 200,
       rating: 4.1,
-      reviewAnalysis: { reviewsAnalyzedCount: 200, painPhrases: [{ text: "waited ages for the bill", sellable: true }] },
+      reviewAnalysis: {
+        reviewsAnalyzedCount: 200,
+        painPhrases: [{ text: "waited ages for the bill", sellable: true, category: "bill", mentions: 6, complaintReviews: 40, recentMentions: 3, quotes: ["waited ages for the bill"] }],
+      },
     });
     expect(out.headAgent.recommendedPackage).toBe("starter");
     expect(out.headAgent.roomTwo.qaIssues).toEqual(
@@ -1024,7 +1028,15 @@ describe("buildBriefDecision — rooms 2 and 3", () => {
       audit: { reachable: true },
       reviewCount: 120,
       rating: 4.2,
-      reviewAnalysis: { reviewsAnalyzedCount: 120, painPhrases: ["waited 25 minutes to pay the bill"] },
+      // A legacy string row is one medium signal for its category; a counted
+      // object row from another bill-wait category is the second.
+      reviewAnalysis: {
+        reviewsAnalyzedCount: 120,
+        painPhrases: [
+          "waited 25 minutes to pay the bill",
+          { text: "nobody took our order", sellable: true, category: "order_wait", mentions: 3, quotes: ["nobody came to take our order"] },
+        ],
+      },
     });
     expect(out.headAgent.wedge).toBe("bill_wait");
     expect(out.headAgent.recommendedPackage).toBe("starter");
@@ -1113,5 +1125,21 @@ describe("run — restaurant workspace", () => {
     const leadWrite = ha.db.lead.updateMany.mock.calls[0][0];
     expect(leadWrite.where).toEqual({ id: "lead_1", workspaceId: "ws_1" });
     expect(leadWrite.data.salesConfidence).toBe(out.salesConfidence);
+  });
+
+  it("still counts the uncrawled website as missing when only map facts built the audit", async () => {
+    ha.db.agentRun.findFirst.mockResolvedValueOnce({
+      outputJson: {
+        mapFacts: {
+          reservationLinks: [{ name: "OpenTable", url: "https://www.opentable.co.uk/r/x" }],
+          orderLinks: [],
+          deliveryPlatforms: [],
+        },
+      },
+    });
+    const res = await runBrief(restaurantCtx({ websiteAudit: null }));
+    const out = res.output as Record<string, unknown> & { missingSources: string[]; redFlags: string[] };
+    expect(out.missingSources.filter((s) => s === "website")).toHaveLength(1);
+    expect(out.redFlags).toContain("missing_source:website");
   });
 });

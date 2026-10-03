@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { generateWithTimeout, WORKER_TIMEOUTS } from "@/lib/gemini-client";
-import { toPainPhrases } from "@/lib/review-analysis/pain-phrases";
+import { PAIN_CATEGORIES, toPainPhrases, toReviewLabels } from "@/lib/review-analysis/pain-phrases";
 import { getGeminiKey } from "@/lib/gemini-keys";
 import type { GeminiAnalysis, WebsiteFeatures, AuditChecklistResult } from "@/types";
 import { WEBSITE_PLAN_SYSTEM_CONTEXT, WEBSITE_PLAN_TEMPLATE } from "./prompts/website-plan-prompt";
@@ -856,8 +856,28 @@ export async function analyzeReviewsWithGemini(input: {
               properties: {
                 text: { type: SchemaType.STRING },
                 sellable: { type: SchemaType.BOOLEAN },
+                category: {
+                  type: SchemaType.STRING,
+                  format: "enum",
+                  enum: [...PAIN_CATEGORIES],
+                },
+                quotes: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
               },
-              required: ["text", "sellable"],
+              required: ["text", "sellable", "category", "quotes"],
+            },
+          },
+          // One entry per complaint per numbered review. The model only
+          // labels; `countReviewLabels` verifies each quote and counts.
+          reviewLabels: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                i: { type: SchemaType.INTEGER },
+                category: { type: SchemaType.STRING, format: "enum", enum: [...PAIN_CATEGORIES] },
+                quote: { type: SchemaType.STRING },
+              },
+              required: ["i", "category", "quote"],
             },
           },
           strengthPhrases: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
@@ -882,6 +902,7 @@ export async function analyzeReviewsWithGemini(input: {
           "strengthKpis",
           "sentimentBreakdown",
           "painPhrases",
+          "reviewLabels",
           "strengthPhrases",
           "switchSignals",
           "leadScore",
@@ -1036,6 +1057,7 @@ export async function analyzeReviewsWithGemini(input: {
   }
   // Accepts both the object shape and legacy bare strings.
   parsed.painPhrases = toPainPhrases(parsed.painPhrases).slice(0, 5);
+  parsed.reviewLabels = toReviewLabels(parsed.reviewLabels);
   parsed.strengthPhrases = (parsed.strengthPhrases || []).slice(0, 5);
   parsed.switchSignals = (parsed.switchSignals || []).slice(0, 3);
   parsed.leadScore = Math.max(0, Math.min(100, Math.round(parsed.leadScore)));

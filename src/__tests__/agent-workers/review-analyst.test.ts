@@ -283,7 +283,7 @@ describe("REVIEW_ANALYST - happy path", () => {
       reviewsAnalyzedCount: number;
     };
     expect(out.leadScore).toBeUndefined();
-    expect(out.painPhrases).toEqual([{ text: "slow response times", sellable: true }]);
+    expect(out.painPhrases).toEqual([{ text: "slow response times", sellable: true, quotes: [], mentions: 0 }]);
     expect(out.strengthPhrases).toEqual(["amazing friendly techs"]);
     expect(out.reviewsAnalyzedCount).toBe(8);
   });

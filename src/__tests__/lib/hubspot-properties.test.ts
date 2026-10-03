@@ -1,5 +1,5 @@
 /**
- * `ensureRevintProperties` must be honest: it provisions the 11
+ * `ensureRevintProperties` must be honest: it provisions the 14
  * `revint_*` properties on BOTH contacts and companies (restaurants
  * arrive in HubSpot as Companies), treats "already exists" as success,
  * and surfaces every real failure — especially a missing schema-write
@@ -36,8 +36,8 @@ function fakeClient(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 describe("REVINT property contract", () => {
-  it("has exactly 11 canonical properties", () => {
-    expect(REVINT_PROPERTY_NAMES).toHaveLength(11);
+  it("has exactly 14 canonical properties", () => {
+    expect(REVINT_PROPERTY_NAMES).toHaveLength(14);
     expect(REVINT_PROPERTY_NAMES.every((n) => n.startsWith("revint_"))).toBe(true);
   });
 
@@ -68,16 +68,16 @@ describe("missingWritebackScopes", () => {
 });
 
 describe("ensureRevintProperties", () => {
-  it("creates all 11 properties on contacts and companies in a clean portal", async () => {
+  it("creates all 14 properties on contacts and companies in a clean portal", async () => {
     const client = fakeClient();
     const res = await ensureRevintProperties(client);
-    expect(client.createProperty).toHaveBeenCalledTimes(22);
+    expect(client.createProperty).toHaveBeenCalledTimes(28);
     expect(client.createProperty).toHaveBeenCalledWith(
       "companies",
       expect.objectContaining({ name: "revint_recommended_angle", groupName: "revint" }),
     );
     expect(res.ok).toBe(true);
-    expect(res.created).toHaveLength(22);
+    expect(res.created).toHaveLength(28);
     expect(res.errors).toEqual([]);
     expect(res.missingScope).toBe(false);
   });
@@ -95,7 +95,7 @@ describe("ensureRevintProperties", () => {
     });
     const res = await ensureRevintProperties(client);
     expect(res.ok).toBe(true);
-    expect(res.skipped).toHaveLength(22);
+    expect(res.skipped).toHaveLength(28);
     expect(res.errors).toEqual([]);
   });
 
@@ -124,7 +124,7 @@ describe("ensureRevintProperties", () => {
     });
     const res = await ensureRevintProperties(client);
     expect(res.ok).toBe(false);
-    expect(res.skipped).toHaveLength(20);
+    expect(res.skipped).toHaveLength(26);
     expect(res.errors).toEqual([
       "contacts.revint_action_sheet_url",
       "companies.revint_action_sheet_url",

@@ -1,6 +1,6 @@
 # Runbook — HubSpot write-back (FineDine beta)
 
-Amaç: bir lead'in analizi (`LEAD_INTELLIGENCE_BRIEF`) başarıyla bittiğinde Revint'in 11 `revint_*` alanını HubSpot'taki **Company** (restoran) ve varsa **Contact** kaydına yazması, App Card'ın company/contact/deal kayıtlarında görünmesi.
+Amaç: bir lead'in analizi (`LEAD_INTELLIGENCE_BRIEF`) başarıyla bittiğinde Revint'in 14 `revint_*` alanını HubSpot'taki **Company** (restoran) ve varsa **Contact** kaydına yazması, App Card'ın company/contact/deal kayıtlarında görünmesi.
 
 Portal 148499892'deki üretim testinde hiçbir şey yazılmamıştı. Kök nedenler ve düzeltmeler bu dalda (`prod/f-hubspot`) — özet en altta.
 
@@ -27,7 +27,7 @@ agent-runs kuyruğu (BullMQ)
 - Başarısız yazımlar: Ayarlar → Entegrasyonlar'da "Retry failed write-backs" butonu, ya da cron (`GET /api/integrations/hubspot/reconcile`, `Authorization: Bearer $CRON_SECRET`).
 - Not: Redis yokken API'nin "inline fallback" ile çalıştırdığı brief'ler (dev ortamı) worker hook'undan geçmez; bunlar için backfill script'i kullanılır.
 
-### 11 alan ve kaynakları
+### 14 alan ve kaynakları
 
 | Alan | Kaynak |
 |---|---|
@@ -35,12 +35,15 @@ agent-runs kuyruğu (BullMQ)
 | `revint_lead_temperature` | `Lead.leadTemperature` (HOT/WARM/COLD) |
 | `revint_today_priority` | Workspace içinde salesConfidence sırası (yazım anındaki anlık görüntü, 1 = en yüksek) |
 | `revint_recommended_angle` | `headAgent.primaryAngle` ("<wedge> → <plan>") → wedge etiketi + paket → `SalesOpportunity.recommendedPackageReason` / `bestSalesAngle` → playbook açısı |
-| `revint_next_best_action` | `LeadNextAction.openingHook` → `headAgent.talkTrack` |
+| `revint_next_best_action` | head agent brief'inde yalnızca `headAgent.talkTrack`, düz kartta boş (eski brief şeklinde: `LeadNextAction.openingHook` → `headAgent.talkTrack`) |
 | `revint_qualification_status` | `LeadQualification.status`, yoksa `not_started` |
 | `revint_no_show_risk` | `LeadQualification.noShowRisk` (yalnızca varsa) |
 | `revint_detected_sub_niche` | `Lead.subNicheSlug` (yalnızca varsa) |
 | `revint_evidence_summary` | Head agent güveni + paket + wedge + evidenceRefs; yoksa deterministik sinyaller |
 | `revint_source_conflicts` | Head agent sourceConflicts; head agent çalıştıysa ve çelişki yoksa "No cross-source conflicts detected" |
+| `revint_do_not_pitch` | Oda 1 yasakları (`roomOne.bans`) + hariç tutulan modüller (`excludedModules`) |
+| `revint_open_questions` | Bilinmeyen kural girdileri (`openQuestions`) + eksik kaynaklar (`missingSources`) |
+| `revint_analyzed_at` | `headAgent.generatedAt` |
 | `revint_action_sheet_url` | `${NEXT_PUBLIC_APP_URL}/app/leads/<leadId>` |
 
 `no_show_risk` ve `detected_sub_niche` veri yoksa boş kalır — bu beklenen durumdur.
@@ -105,14 +108,14 @@ Reconcile cron'u (önerilen): `vercel.json` → `"crons": [{ "path": "/api/integ
    ```
    Developer UI → Projects → revint-app → son build'i **Deploy** et. Kart artık `contacts`, `companies`, `deals` kayıtlarında (`revint-card-hsmeta.json` → `objectTypes`).
 4. Legacy CRM kartı hâlâ kuruluysa: App Card yeni build'de doğrulandıktan sonra `POST /api/integrations/hubspot/migrate-card` (`{ appId, legacyCrmCardId, appCardIds }`, `HUBSPOT_DEVELOPER_API_KEY` gerekli). Marketplace'te listeliyse önce `hs-release-app-cards` feature flag'ini sil. Legacy kartlar 31 Ekim 2026'da tamamen kapanıyor.
-5. **Portalda yeniden bağlan**: FineDine admini Revint → Ayarlar → Entegrasyonlar → **Reconnect** → tüm izinleri onayla. Panelde "Custom properties: Provisioned" ve uyarı olmaması gerekir. Gerekirse onboarding'deki "provision" adımı ya da `POST /api/integrations/hubspot/provision` tekrar çalıştırılabilir (contacts + companies için 22 tanım).
+5. **Portalda yeniden bağlan**: FineDine admini Revint → Ayarlar → Entegrasyonlar → **Reconnect** → tüm izinleri onayla. Panelde "Custom properties: Provisioned" ve uyarı olmaması gerekir. Gerekirse onboarding'deki "provision" adımı ya da `POST /api/integrations/hubspot/provision` tekrar çalıştırılabilir (contacts + companies için 28 tanım). Yeni üç alan (`revint_do_not_pitch`, `revint_open_questions`, `revint_analyzed_at`) için `POST /api/integrations/hubspot/provision` çalıştır.
 
 ---
 
 ## 5. Portal 148499892 üzerinde doğrulama
 
 ```bash
-# 1) Bağlantı, scope ve 11 tanım (contacts + companies)
+# 1) Bağlantı, scope ve 14 tanım (contacts + companies)
 npx tsx scripts/hubspot-verify.ts --portal 148499892
 
 # 2) Belirli bir restoran (Company) için dolu alanlar
@@ -122,7 +125,7 @@ npx tsx scripts/hubspot-verify.ts --portal 148499892 --company <hubspotCompanyId
 npx tsx scripts/hubspot-verify.ts --portal 148499892 --lead <leadId>
 ```
 
-Beklenen: `scopes: OK`, her iki nesnede `11/11 defined`, company'de en az 8-9 alan dolu (`no_show_risk`, `detected_sub_niche` boş olabilir). Eksik tanım veya hiç dolu alan yoksa script `exit 1` döner.
+Beklenen: `scopes: OK`, her iki nesnede `14/14 defined`, company'de en az 8-9 alan dolu (`no_show_risk`, `detected_sub_niche` boş olabilir). Eksik tanım veya hiç dolu alan yoksa script `exit 1` döner.
 
 Uçtan uca test:
 1. Portalda company'si olan bir lead için Revint'te analizi tekrar çalıştır.

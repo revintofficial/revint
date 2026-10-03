@@ -31,6 +31,7 @@ import {
 import { AGENT_TOOLS, executeAgentTool } from "./tools";
 import { computeFnbModuleFit, type FnbSignals } from "@/lib/playbook/fnb-module-fit";
 import type { FineDineModule } from "@/lib/playbook/vertical-pack";
+import { guardPainCategory } from "@/lib/review-analysis/pain-phrases";
 
 /** Niche slugs that route to the F&B pack. */
 const FNB_NICHES = new Set(["RESTAURANT_TECH", "restaurant", "restaurants", "fnb", "food_beverage"]);
@@ -55,6 +56,27 @@ export type HeadAgentWedge =
   | "none";
 type ActiveWedge = Exclude<HeadAgentWedge, "none">;
 
+/** A = a strong signal confirmed by a second source, B = a strong signal, C = two medium signals. */
+export type RoomOneTier = "A" | "B" | "C";
+
+/**
+ * Who runs the venue. `hotel_fnb` and `chain` (10+ sites) buy centrally:
+ * the branch is not the buyer, no call. `group_hq` (6–9 sites) is still
+ * owner-run, but the call goes to the owner or operations, not a branch.
+ */
+export type OperatorKind = "single" | "small_group" | "group_hq" | "chain" | "hotel_fnb";
+
+/**
+ * FineDine's plan limits as published on its pricing page (read
+ * 2026-10-03, docs/research/2026-10-03-playbook-research.md, Q1).
+ * Prices are per venue: a plan is never shared between branches.
+ */
+export const PLAN_LIMITS = {
+  starter: { languages: 1, tables: 20, ordersPerMonth: 1000, reservationsPerMonth: 50, prepayment: false, menuItems: 100, crmGuests: 10, multiLocationDisplay: false },
+  growth: { languages: Infinity, tables: 50, ordersPerMonth: 1500, reservationsPerMonth: 250, prepayment: true, menuItems: Infinity, crmGuests: Infinity, multiLocationDisplay: false },
+  premium: { languages: Infinity, tables: Infinity, ordersPerMonth: Infinity, reservationsPerMonth: Infinity, prepayment: true, menuItems: Infinity, crmGuests: Infinity, multiLocationDisplay: true },
+} as const;
+
 export type RoomOneOutput = {
   plan: HeadAgentPlan;
   wedge: HeadAgentWedge;
@@ -64,22 +86,47 @@ export type RoomOneOutput = {
   bans: string[];
   /** Second qualifying wedge with independent evidence, else null. */
   backup: string | null;
+  /** How well the chosen wedge is supported. Missing on decisions made before tiers existed. */
+  tier?: RoomOneTier | null;
+  /** Set when the plan rests on a size guess, not on a fact someone saw. */
+  planAssumption?: string | null;
 };
 
-/** Priority order: the top qualifying wedge wins, the next becomes backup. */
+/**
+ * Playbook order. It only breaks ties: the best-supported wedge wins
+ * (tier A over B over C), and among wedges of the same tier the first
+ * one in this list. The next one becomes the backup. The order follows
+ * how easily the rep can put a number on the pain in the first call:
+ * no-shows, time to pay, commission, then the softer ones.
+ */
 export const WEDGE_PRIORITY: readonly ActiveWedge[] = [
   "reservation",
   "bill_wait",
   "marketplace",
-  "menu_surface",
   "multi_location",
+  "menu_surface",
   "guest_repeat",
 ];
 
 /** Below this many reviews the corpus is not evidence (review-analyst skips it too). */
 export const REVIEW_CORPUS_MIN = 30;
+/** A review theme is a strong signal from this many distinct reviews… */
+export const REVIEW_STRONG_MIN = 5;
+/** …that are at least this share of all reviews carrying a complaint… */
+export const REVIEW_STRONG_SHARE = 0.1;
+/** …with at least this many of them from the last 12 months. Unknown dates never make a strong signal. */
+export const REVIEW_STRONG_RECENT = 2;
+/** Two reviews make a medium signal (none in the last 24 months: no signal); one is an anecdote. */
+export const REVIEW_MEDIUM_MIN = 2;
+/**
+ * With no table or order count, a venue this reviewed or this expensive
+ * is assumed to be past Starter's 20 tables / 1,000 orders a month
+ * (about 33 orders a day). A weak proxy: the card says it is a guess.
+ */
+export const LARGE_VENUE_REVIEWS = 500;
+export const LARGE_VENUE_PRICE_LEVEL = 3;
 
-export type VenueType = "fine_dining" | "full_service" | "cafe" | "qsr" | "food_hall";
+export type VenueType = "fine_dining" | "full_service" | "cafe" | "qsr" | "food_hall" | "bar";
 
 /**
  * Tri-state audit facts. `true` = seen, `false` = explicitly absent,
@@ -93,6 +140,8 @@ export interface RoomOneAudit {
   hasBookingSystem?: boolean | null;
   hasOnlineReservation?: boolean | null;
   bookingProvider?: string | null;
+  /** Google's "accepts reservations" attribute. `false` = a walk-in venue by its own statement. */
+  acceptsReservations?: boolean | null;
   hasPrepayment?: boolean | null;
   tableCount?: number | null;
   hasQrMenu?: boolean | null;
@@ -103,47 +152,113 @@ export interface RoomOneAudit {
   /** Site links to a delivery marketplace (Deliveroo, Uber Eats, Just Eat…). */
   marketplaceOrdering?: boolean | null;
   deliveryPlatforms?: string[] | null;
+  /**
+   * Where the delivery platforms were seen. "map" = only on the Google
+   * profile, where Google adds third-party order links by itself: not
+   * evidence that the venue depends on them. Missing = the site.
+   */
+  marketplaceSource?: "site" | "map" | null;
   languageCount?: number | null;
   venueType?: VenueType | null;
   tastingMenu?: boolean | null;
   /** Branch of a chain that buys centrally — hard ban, no call. */
   centralPurchasing?: boolean | null;
+  /** Who runs the venue (`detectOperator`). `hotel_fnb` and `chain` stop the call. */
+  operator?: OperatorKind | null;
+  /** The fact behind `operator`, shown on the card. */
+  operatorEvidence?: string | null;
+  /** The site hints at more venues ("Our Locations") but nobody counted them: a question, not a fact. */
+  locationHint?: string | null;
 }
 
 export interface RoomOnePainPhrase {
   text: string;
   /** Missing = true (backwards compat with pre-`sellable` analyst rows). */
   sellable?: boolean;
+  /** Analyst category. Missing on rows written before the category existed. */
+  category?: string | null;
+  /** Distinct reviews with a verified quote. Missing on older rows; 0 = not evidence. */
+  mentions?: number | null;
+  /** Of those, written in the last 12 months. Missing = dates unknown. */
+  recentMentions?: number | null;
+  /** Of those, written in the last 24 months. Missing = dates unknown. */
+  recent24Mentions?: number | null;
+  /** Distinct reviews with any verified complaint: the denominator for `mentions`. */
+  complaintReviews?: number | null;
+  /** First verified verbatim quote. */
+  quote?: string | null;
 }
 
 export interface RoomOneInput {
   audit?: RoomOneAudit | null;
   reviews?: { count?: number | null; painPhrases?: RoomOnePainPhrase[] | null } | null;
   locationCount?: number | null;
+  /** Public size proxies, used for the plan only when the table count is unknown. */
+  size?: { reviewCount?: number | null; priceLevel?: number | null } | null;
 }
 
 // ===========================================================================
 // Room 1 — rules
 // ===========================================================================
 
+/**
+ * Booking marketplaces: they own the guest and charge per cover. Review
+ * sites (Yelp, Tripadvisor, Zomato) are not booking providers and are
+ * deliberately absent.
+ */
 const MARKETPLACE_BOOKING =
-  /(thefork|the fork|lafourchette|opentable|open table|quandoo|resy|designmynight|bookatable|yelp|tripadvisor|zomato|google reserve|tock)/i;
+  /(thefork|the fork|lafourchette|opentable|open table|quandoo|\bresy\b|designmynight|bookatable|google reserve|\btock\b|reztoran|rezlinka|yelp reservations)/i;
 
+/**
+ * Reservation software the venue runs itself. It already has deposits
+ * and a guest CRM: reservations are not the way in.
+ */
+const SAAS_BOOKING =
+  /(sevenrooms|seven rooms|resdiary|res diary|\bcollins\b|tablein|\bresos\b|tablecheck|eat ?app|\bzonal\b|tableplus|dish\.co|formitable|superb|\bdojo\b|eveve)/i;
+
+/**
+ * Keyword fallback for rows written before the analyst assigned a
+ * category. `bill` is deliberately narrow: "pay", "payment", "split"
+ * and "ödeme" on their own say nothing about waiting for the bill.
+ */
 const PHRASE = {
-  bill: /(\bbill\b|\bthe check\b|\bcheque\b|\bpay(ing|ment)?\b|card (machine|reader)|\bsplit\b|hesab|hesap|adisyon|kart makines|ödeme)/i,
+  bill: /(\bbill\b|\bthe check\b|\bcheque\b|card (machine|reader)|hesab|hesap|adisyon|kart makines)/i,
   reservation: /(reserv|booking|\bbook(ed)?\b|no[- ]?show|deposit|rezerv|kapora|depozito|yer ayırt)/i,
   delivery: /(deliver|deliveroo|uber ?eats|just ?eat|takeaway|take-away|yemeksepeti|\bgetir\b|trendyol|paket servis|kurye)/i,
   menu: /(\bmenu|menü|allergen|alerjen|\bpdf\b)/i,
   repeat: /(\bregulars?\b|every week|come back|coming back|\bloyal|müdavim|her hafta|yine geli|tekrar gel)/i,
   language: /(english|language|translat|tourist|ingilizce|\bdil\b|turist|çeviri)/i,
 };
+type PhraseKey = keyof typeof PHRASE;
+const LEGACY_KEYS: readonly PhraseKey[] = ["bill", "reservation", "delivery", "menu", "repeat"];
 
 type Strength = "strong" | "medium";
+type SignalSource = "site" | "map" | "review";
 interface WedgeSignal {
   wedge: ActiveWedge;
   strength: Strength;
+  /** Where the fact was read. Two different sources on one wedge make tier A. */
+  source: SignalSource;
   evidence: string;
 }
+
+/**
+ * Review categories that can open a wedge, and how far. Everything not
+ * listed here (kitchen wait, price, food quality, staff, ambiance,
+ * other) never opens one. `cap` = this category alone is never a
+ * strong signal.
+ */
+const CATEGORY_WEDGE: Record<string, { wedge: ActiveWedge; cap?: Strength }> = {
+  reservation: { wedge: "reservation" },
+  // Queued for a table, even with a booking: a booking problem, but a weaker one.
+  table_wait: { wedge: "reservation", cap: "medium" },
+  bill: { wedge: "bill_wait" },
+  order_wait: { wedge: "bill_wait" },
+  order_error: { wedge: "bill_wait", cap: "medium" },
+  delivery: { wedge: "marketplace", cap: "medium" },
+  menu: { wedge: "menu_surface" },
+  repeat: { wedge: "guest_repeat", cap: "medium" },
+};
 
 interface BanRule {
   text: string;
@@ -159,39 +274,101 @@ export interface RoomOneEvaluation {
   wedgeSignals: WedgeSignal[];
   banRules: BanRule[];
   blocked: boolean;
+  /** Why the call is stopped (hotel F&B, chain branch, central purchasing). */
+  blockReason: string | null;
+  /** Wedge "none" only: two fixed questions the rep can open with. Never model-written. */
+  discoveryQuestions: string[];
 }
 
 function siteRef(audit: RoomOneAudit, fact: string): string {
   return `${audit.websiteUrl?.trim() || "site"} — ${fact}`;
 }
 
-function reviewRef(text: string): string {
-  return `yorum: "${text.trim()}"`;
+function reviewRef(p: RoomOnePainPhrase, corpus: number | null): string {
+  const body = (p.quote ?? p.text).trim();
+  if (typeof p.mentions !== "number") return `yorum: "${body}"`;
+  if (typeof p.complaintReviews === "number" && p.complaintReviews > 0) {
+    const share = Math.round((p.mentions / p.complaintReviews) * 100);
+    const recent = typeof p.recentMentions === "number" ? `, son 12 ay: ${p.recentMentions}` : "";
+    return `yorum (${p.mentions}/${p.complaintReviews} şikayetli yorum, %${share}${recent}): "${body}"`;
+  }
+  return corpus ? `yorum (${p.mentions}/${corpus}): "${body}"` : `yorum: "${body}"`;
 }
 
-function isWalkIn(v: VenueType | null | undefined): boolean {
-  return v === "cafe" || v === "qsr" || v === "food_hall";
+/** Category when the analyst gave one; keyword match only for older rows. */
+function isAbout(p: RoomOnePainPhrase, key: PhraseKey): boolean {
+  return p.category ? p.category === key : PHRASE[key].test(p.text);
 }
 
-function usablePhrases(reviews: RoomOneInput["reviews"]): string[] {
+/** The analyst's category, or for older rows the first keyword bucket that matches. */
+function categoryOf(p: RoomOnePainPhrase): string | null {
+  if (p.category) return p.category;
+  for (const key of LEGACY_KEYS) {
+    if (!PHRASE[key].test(p.text)) continue;
+    // "the bill was astronomically high" is a price complaint, not a wait.
+    return key === "bill" ? (guardPainCategory("bill", p.text) ?? null) : key;
+  }
+  return null;
+}
+
+/**
+ * How much one review theme weighs. Strong needs frequency (count and
+ * share of complaint reviews) and recency (two reviews from the last 12
+ * months; unknown dates are never strong). Two reviews are a medium
+ * signal unless all of them are older than 24 months; a single review
+ * is an anecdote and returns `null`. A row from before quotes were
+ * verified has no count: one medium at most.
+ */
+function reviewStrength(p: RoomOnePainPhrase, corpus: number | null): Strength | null {
+  if (typeof p.mentions !== "number") return "medium";
+  if (p.mentions < REVIEW_MEDIUM_MIN) return null;
+  if (typeof p.recent24Mentions === "number" && p.recent24Mentions === 0) return null;
+  const denominator = typeof p.complaintReviews === "number" && p.complaintReviews > 0 ? p.complaintReviews : null;
+  const shareOk = denominator === null || p.mentions / denominator >= REVIEW_STRONG_SHARE;
+  const recentOk = typeof p.recentMentions === "number" && p.recentMentions >= REVIEW_STRONG_RECENT;
+  const corpusOk = corpus === null || corpus >= REVIEW_CORPUS_MIN;
+  return p.mentions >= REVIEW_STRONG_MIN && shareOk && recentOk && corpusOk ? "strong" : "medium";
+}
+
+/**
+ * Venues that fill by walking in: no reservation pitch. A bar or pub is
+ * walk-in unless it links a booking provider (a gastropub); a venue
+ * that tells Google it takes no reservations is walk-in by its own word.
+ */
+function isWalkIn(audit: RoomOneAudit): boolean {
+  const v = audit.venueType;
+  if (v === "cafe" || v === "qsr" || v === "food_hall") return true;
+  if (v === "bar" && !audit.bookingProvider?.trim()) return true;
+  return audit.acceptsReservations === false && !audit.bookingProvider?.trim();
+}
+
+function usablePhrases(reviews: RoomOneInput["reviews"]): RoomOnePainPhrase[] {
   const count = reviews?.count;
   if (typeof count === "number" && count < REVIEW_CORPUS_MIN) return [];
-  return (reviews?.painPhrases ?? [])
-    .filter((p) => p && typeof p.text === "string" && p.text.trim() && p.sellable !== false)
-    .map((p) => p.text.trim());
+  return (reviews?.painPhrases ?? []).filter(
+    (p) => p && typeof p.text === "string" && p.text.trim() && p.sellable !== false && p.mentions !== 0,
+  );
 }
 
-function collectSignals(audit: RoomOneAudit, phrases: string[], locationCount: number): WedgeSignal[] {
+function collectSignals(
+  audit: RoomOneAudit,
+  phrases: RoomOnePainPhrase[],
+  locationCount: number,
+  corpus: number | null,
+): WedgeSignal[] {
   const out: WedgeSignal[] = [];
-  const walkIn = isWalkIn(audit.venueType);
+  const provider = audit.bookingProvider?.trim() || null;
+  // No reservation pitch to a walk-in venue, or to one that already runs
+  // its own reservation software (SevenRooms, ResDiary…).
+  const walkIn = isWalkIn(audit) || (provider !== null && SAAS_BOOKING.test(provider));
 
   // 1. Reservation — marketplace booking without a deposit, or no online booking.
   if (!walkIn) {
-    const provider = audit.bookingProvider?.trim() || null;
     if (provider && MARKETPLACE_BOOKING.test(provider) && audit.hasPrepayment !== true) {
       out.push({
         wedge: "reservation",
         strength: "strong",
+        source: "site",
         evidence: siteRef(audit, `rezervasyon ${provider} üzerinden, depozito görünmüyor`),
       });
     }
@@ -201,35 +378,33 @@ function collectSignals(audit: RoomOneAudit, phrases: string[], locationCount: n
       audit.hasOnlineReservation !== true &&
       audit.reachable !== false
     ) {
-      out.push({ wedge: "reservation", strength: "medium", evidence: siteRef(audit, "sitede online rezervasyon yok") });
+      out.push({
+        wedge: "reservation",
+        strength: "medium",
+        source: "site",
+        evidence: siteRef(audit, "sitede online rezervasyon yok"),
+      });
     }
-    for (const p of phrases) {
-      if (PHRASE.reservation.test(p)) out.push({ wedge: "reservation", strength: "medium", evidence: reviewRef(p) });
-    }
-  }
-
-  // 2. Bill wait — reviews about the bill / card machine / split bill. Food delay is not this bucket.
-  for (const p of phrases) {
-    if (PHRASE.bill.test(p)) out.push({ wedge: "bill_wait", strength: "strong", evidence: reviewRef(p) });
   }
 
   // 3. Marketplace — only Deliveroo / Uber Eats / Just Eat, no direct ordering.
+  // Platforms seen only on the Google profile do not count: Google adds
+  // third-party order links by itself.
   const platforms = (audit.deliveryPlatforms ?? []).filter((s) => typeof s === "string" && s.trim());
-  const hasMarketplace = platforms.length > 0 || audit.marketplaceOrdering === true;
+  const hasMarketplace =
+    audit.marketplaceSource !== "map" && (platforms.length > 0 || audit.marketplaceOrdering === true);
   if (hasMarketplace) {
     const label = platforms.length > 0 ? platforms.join(", ") : "pazar yeri";
     if (audit.hasOnlineOrdering === false) {
       out.push({
         wedge: "marketplace",
         strength: "strong",
+        source: "site",
         evidence: siteRef(audit, `sipariş yalnız ${label} üzerinden, doğrudan sipariş yok`),
       });
     } else if (audit.hasOnlineOrdering == null) {
-      out.push({ wedge: "marketplace", strength: "medium", evidence: siteRef(audit, `sipariş linki ${label}`) });
+      out.push({ wedge: "marketplace", strength: "medium", source: "site", evidence: siteRef(audit, `sipariş linki ${label}`) });
     }
-  }
-  for (const p of phrases) {
-    if (PHRASE.delivery.test(p)) out.push({ wedge: "marketplace", strength: "medium", evidence: reviewRef(p) });
   }
 
   // 4. Menu surface — single venue only (multi-branch is its own wedge).
@@ -238,66 +413,142 @@ function collectSignals(audit: RoomOneAudit, phrases: string[], locationCount: n
       out.push({
         wedge: "menu_surface",
         strength: "strong",
+        source: "site",
         evidence: audit.menuUrl?.trim() ? `${audit.menuUrl.trim()} — menü PDF` : siteRef(audit, "menü PDF"),
       });
     }
     if (audit.hasQrMenu === false) {
-      out.push({ wedge: "menu_surface", strength: "medium", evidence: siteRef(audit, "dijital / QR menü yok") });
-    }
-    for (const p of phrases) {
-      if (PHRASE.menu.test(p)) out.push({ wedge: "menu_surface", strength: "medium", evidence: reviewRef(p) });
+      out.push({ wedge: "menu_surface", strength: "medium", source: "site", evidence: siteRef(audit, "dijital / QR menü yok") });
     }
   }
 
-  // 5. Multi location — two or more venues on the same account.
+  // 5. Multi location — two or more venues under one owner.
   if (locationCount >= 2) {
-    out.push({ wedge: "multi_location", strength: "strong", evidence: `harita — aynı hesapta ${locationCount} şube` });
+    out.push({
+      wedge: "multi_location",
+      strength: "strong",
+      source: "map",
+      evidence: audit.operatorEvidence?.trim() || `harita — aynı hesapta ${locationCount} şube`,
+    });
   }
 
   // 6. Guest repeat — never on review volume alone.
-  for (const p of phrases) {
-    if (PHRASE.repeat.test(p)) out.push({ wedge: "guest_repeat", strength: "medium", evidence: reviewRef(p) });
-  }
   if (audit.venueType === "cafe") {
-    out.push({ wedge: "guest_repeat", strength: "medium", evidence: siteRef(audit, "mekân tipi: mahalle kafesi") });
+    out.push({ wedge: "guest_repeat", strength: "medium", source: "site", evidence: siteRef(audit, "mekân tipi: mahalle kafesi") });
+  }
+
+  // Reviews — one signal per category (2. bill wait lives here: the bill,
+  // the card machine, nobody taking the order; kitchen delay is not this
+  // bucket). The phrase with the most verified reviews speaks for its category.
+  const byCategory = new Map<string, RoomOnePainPhrase>();
+  for (const p of phrases) {
+    const category = categoryOf(p);
+    if (!category || !CATEGORY_WEDGE[category]) continue;
+    const seen = byCategory.get(category);
+    if (!seen || (p.mentions ?? 0) > (seen.mentions ?? 0)) byCategory.set(category, p);
+  }
+  for (const [category, p] of byCategory) {
+    const rule = CATEGORY_WEDGE[category];
+    if (rule.wedge === "reservation" && walkIn) continue;
+    if (rule.wedge === "menu_surface" && locationCount > 1) continue;
+    const strength = reviewStrength(p, corpus);
+    if (!strength) continue;
+    out.push({
+      wedge: rule.wedge,
+      strength: rule.cap === "medium" ? "medium" : strength,
+      source: "review",
+      evidence: reviewRef(p, corpus),
+    });
   }
 
   return out;
 }
 
-function qualifies(signals: WedgeSignal[]): boolean {
-  const strong = signals.filter((s) => s.strength === "strong").length;
-  const medium = signals.filter((s) => s.strength === "medium").length;
-  return strong >= 1 || medium >= 2;
+const TIER_RANK: Record<RoomOneTier, number> = { A: 0, B: 1, C: 2 };
+
+/** A = strong + a second source agrees, B = strong, C = two medium, null = not enough. */
+function tierOf(signals: WedgeSignal[]): RoomOneTier | null {
+  const strong = signals.some((s) => s.strength === "strong");
+  if (strong) return new Set(signals.map((s) => s.source)).size >= 2 ? "A" : "B";
+  return signals.filter((s) => s.strength === "medium").length >= 2 ? "C" : null;
 }
 
-function planFor(wedge: ActiveWedge, audit: RoomOneAudit, phrases: string[], locationCount: number): HeadAgentPlan {
+function planFor(
+  wedge: ActiveWedge,
+  audit: RoomOneAudit,
+  phrases: RoomOnePainPhrase[],
+  locationCount: number,
+  size: RoomOneInput["size"],
+): { plan: HeadAgentPlan; assumption: string | null } {
+  const languagesKnown = typeof audit.languageCount === "number";
   const multiLanguage =
-    (typeof audit.languageCount === "number" && audit.languageCount > 1) ||
-    phrases.some((p) => PHRASE.language.test(p));
+    (languagesKnown && (audit.languageCount as number) > 1) || phrases.some((p) => isAbout(p, "language"));
   let plan: HeadAgentPlan;
+  let assumption: string | null = null;
   switch (wedge) {
     case "reservation":
       plan = "growth"; // prepayment is not in Starter; 50/month does not carry a full room
       break;
     case "bill_wait":
-      plan = (typeof audit.tableCount === "number" && audit.tableCount > 20) || multiLanguage ? "growth" : "starter";
+      if (typeof audit.tableCount === "number") {
+        // A seen table count is a fact: Starter up to 20, Growth up to 50, Premium beyond.
+        plan =
+          audit.tableCount > PLAN_LIMITS.growth.tables
+            ? "premium"
+            : audit.tableCount > PLAN_LIMITS.starter.tables || multiLanguage
+              ? "growth"
+              : "starter";
+      } else if (multiLanguage) {
+        plan = "growth"; // a feature gate, not a guess: Starter has one language
+      } else {
+        // Nobody publishes a table or order count. Review volume and price
+        // level stand in for size; a proxy never lifts the plan to Premium.
+        const reviews = size?.reviewCount ?? null;
+        const price = size?.priceLevel ?? null;
+        const large =
+          (typeof reviews === "number" && reviews >= LARGE_VENUE_REVIEWS) ||
+          (typeof price === "number" && price >= LARGE_VENUE_PRICE_LEVEL);
+        plan = large ? "growth" : "starter";
+        const seen = [
+          typeof reviews === "number" ? `${reviews} yorum` : null,
+          typeof price === "number" ? `fiyat seviyesi ${price}` : null,
+        ].filter(Boolean);
+        assumption = `Paket varsayımı: ${plan === "growth" ? "Growth" : "Starter"}. Masa ve sipariş sayısı görülmedi${seen.length > 0 ? ` (${seen.join(", ")})` : ""}; ${large ? "20 masanın veya ayda 1.000 siparişin üstü" : "20 masanın ve ayda 1.000 siparişin altı"} varsayıldı. İlk soruda doğrula.`;
+      }
       break;
     case "marketplace":
       plan = "starter";
       break;
     case "menu_surface":
-      plan = multiLanguage ? "growth" : "starter"; // Starter has one language
+      plan = multiLanguage ? "growth" : "starter"; // Starter has one language and 100 menu items
+      if (!multiLanguage && !languagesKnown) {
+        assumption = "Paket varsayımı: Starter. Menü dili ve ürün sayısı görülmedi; tek dil ve 100 ürünün altı varsayıldı. İlk soruda doğrula.";
+      }
       break;
     case "multi_location":
-      plan = "premium"; // multi-location storefront is Premium only
+      plan = "premium"; // the multi-location storefront (Multi-Location Display) is Premium only
       break;
     case "guest_repeat":
       plan = "growth"; // Starter keeps the last 10 guests only
       break;
   }
-  if (plan === "premium" && locationCount <= 1) plan = "growth";
-  return plan;
+  // Premium for one venue only on a seen table count above Growth's limit.
+  if (plan === "premium" && locationCount <= 1 && !needsPremiumAlone(audit)) plan = "growth";
+  return { plan, assumption };
+}
+
+/** A single venue outgrows Growth only on a table count somebody saw. */
+function needsPremiumAlone(audit: RoomOneAudit): boolean {
+  return typeof audit.tableCount === "number" && audit.tableCount > PLAN_LIMITS.growth.tables;
+}
+
+/** Why Room 1 refuses the call outright, or null. */
+function blockReasonFor(audit: RoomOneAudit): string | null {
+  const proof = audit.operatorEvidence?.trim() ? ` (${audit.operatorEvidence.trim()})` : "";
+  if (audit.operator === "hotel_fnb") return `Otel F&B'si: satın alma otel yönetiminde${proof}.`;
+  if (audit.operator === "chain") return `Zincir şubesi: karar genel merkezde${proof}.`;
+  if (audit.centralPurchasing === true) return "Merkezden satın alan zincir şubesi.";
+  return null;
 }
 
 function buildBans(audit: RoomOneAudit, locationCount: number, wedge: HeadAgentWedge): BanRule[] {
@@ -321,11 +572,26 @@ function buildBans(audit: RoomOneAudit, locationCount: number, wedge: HeadAgentW
       pattern: /(self[- ]?order|order (from|at) (the|their|your) table|guests? (can )?order|misafir\w* sipariş|kendi sipariş)/i,
     });
   }
-  if (isWalkIn(audit.venueType)) {
+  if (isWalkIn(audit)) {
     bans.push({ text: "Yürüyerek dolan kafe, QSR veya food hall'a rezervasyon satma.", pattern: /(reserv|booking|rezerv)/i });
   }
-  if (locationCount <= 1) {
+  if (locationCount <= 1 && !needsPremiumAlone(audit)) {
     bans.push({ text: "Tek şubeye Premium önerme.", pattern: /\bpremium\b/i });
+  }
+  // What FineDine does not publish, the rep does not promise (pricing and integrations pages, 2026-10-03).
+  bans.push({
+    text: "Deliveroo, Uber Eats, Yemeksepeti gibi pazar yerleriyle entegrasyon vaat etme.",
+    pattern: /(integrat\w*|entegr\w*)[^.]{0,30}(deliveroo|uber ?eats|just ?eat|yemeksepeti|getir|trendyol)/i,
+  });
+  bans.push({
+    text: "Sadakat programı vaat etme; promosyon kodu ve misafir CRM'i de.",
+    pattern: /(loyalty (program\w*|scheme|card)|sadakat program\w*)/i,
+  });
+  if (locationCount >= 2) {
+    bans.push({
+      text: "Tek abonelik tüm şubeleri kapsar deme; fiyat şube başınadır.",
+      pattern: /(one|single|tek) (plan|subscription|abonelik)[^.]{0,30}(all|every|tüm) (branches|locations|venues|şube)/i,
+    });
   }
   if (audit.websiteBroken !== true) {
     bans.push({
@@ -340,14 +606,54 @@ function buildBans(audit: RoomOneAudit, locationCount: number, wedge: HeadAgentW
       pattern: /((another|second|new|replace\w*)[^.]{0,30}(booking|reservation) (system|tool|platform))|((bir|yeni|başka)[^.]{0,20}rezervasyon sistemi)/i,
     });
     bans.push({ text: `Rakip kurulu diye eleme; "${provider} tarafında neyi bırakırsınız?" diye sor.`, pattern: null });
+    if (SAAS_BOOKING.test(provider)) {
+      bans.push({ text: `${provider} bir rezervasyon yazılımı: depozito ve misafir kaydı zaten var; rezervasyon satma.`, pattern: null });
+    }
   }
   if (wedge === "marketplace") {
     bans.push({ text: "Paket servis yerine masa başı sipariş satma.", pattern: /(at the table|table[- ]side|masa ?başı|masada sipariş)/i });
+    bans.push({
+      text: "Pazar yerini bırakın deme; yanına komisyonsuz kendi kanalını öner.",
+      pattern: /(leave|quit|drop|bırak\w*)[^.]{0,20}(deliveroo|uber|just eat|yemeksepeti|getir|trendyol)/i,
+    });
+  }
+  if (audit.operator === "group_hq") {
+    bans.push({ text: "Muhatap şube müdürü değil: işletme sahibini veya operasyon müdürünü ara.", pattern: null });
   }
   if (audit.centralPurchasing === true) {
     bans.push({ text: "Merkezden satın alan zincirin şube müdürüne paket önerme.", pattern: null });
   }
+  if (audit.operator === "hotel_fnb") {
+    bans.push({ text: "Otel restoranına paket önerme; satın alma otel yönetiminde.", pattern: null });
+  }
+  if (audit.operator === "chain") {
+    bans.push({ text: "Zincir şubesinin müdürüne paket önerme; genel merkezi ara.", pattern: null });
+  }
   return bans;
+}
+
+/**
+ * Wedge "none" is not an empty card: two questions the rep can open
+ * with, picked by rule from what the audit could not see or saw
+ * missing. A fixed list, so nothing here is invented.
+ */
+export function discoveryQuestionsFor(audit: RoomOneAudit): string[] {
+  const q: string[] = [];
+  const platforms = (audit.deliveryPlatforms ?? []).filter((s) => typeof s === "string" && s.trim());
+  if (!isWalkIn(audit) && !audit.bookingProvider?.trim() && audit.hasOnlineReservation !== true) {
+    q.push(
+      audit.hasOnlineReservation === false || audit.hasBookingSystem === false
+        ? "Online rezervasyon almıyorsunuz; telefonla yönetmek ne kadar vaktinizi alıyor?"
+        : "Rezervasyonları nasıl alıyorsunuz: telefon, bir platform, kendi siteniz?",
+    );
+  }
+  if (platforms.length > 0 && audit.hasOnlineOrdering !== true) {
+    q.push(`Paket siparişin ne kadarı ${platforms.join(", ")} üzerinden geliyor, komisyon ne kadar tutuyor?`);
+  }
+  if (audit.hasQrMenu !== true) q.push("Misafir menüyü nasıl görüyor: basılı, PDF, QR?");
+  if (audit.hasOnlineOrdering == null && platforms.length === 0) q.push("Masada sipariş ve ödemeyi nasıl alıyorsunuz?");
+  q.push("Yoğun saatte en çok hangi adım yavaşlıyor: sipariş almak mı, hesabı kapatmak mı?");
+  return q.slice(0, 2);
 }
 
 /** Room 1 with its internals (signals + ban patterns) for scoring and QA. */
@@ -357,34 +663,44 @@ export function evaluateRoomOne(input: RoomOneInput): RoomOneEvaluation {
     typeof input.locationCount === "number" && input.locationCount > 0 ? Math.floor(input.locationCount) : 1;
   const phrases = usablePhrases(input.reviews);
 
-  // Hard ban that stops the call entirely.
-  if (audit.centralPurchasing === true) {
-    const banRules = buildBans(audit, locationCount, "none");
+  const noCall = (wedge: HeadAgentWedge, blockReason: string | null): RoomOneEvaluation => {
+    const banRules = buildBans(audit, locationCount, wedge);
     return {
-      output: { plan: "none", wedge: "none", evidence: [], bans: banRules.map((b) => b.text), backup: null },
+      output: {
+        plan: "none",
+        wedge: "none",
+        evidence: [],
+        bans: banRules.map((b) => b.text),
+        backup: null,
+        tier: null,
+        planAssumption: null,
+      },
       wedgeSignals: [],
       banRules,
-      blocked: true,
+      blocked: blockReason !== null,
+      blockReason,
+      discoveryQuestions: blockReason === null ? discoveryQuestionsFor(audit) : [],
     };
-  }
+  };
 
-  const signals = collectSignals(audit, phrases, locationCount);
+  // Hard bans that stop the call entirely: the branch does not buy.
+  const blockReason = blockReasonFor(audit);
+  if (blockReason) return noCall("none", blockReason);
+
+  const corpus = typeof input.reviews?.count === "number" ? input.reviews.count : null;
+  const signals = collectSignals(audit, phrases, locationCount, corpus);
   const byWedge = new Map<ActiveWedge, WedgeSignal[]>();
   for (const s of signals) byWedge.set(s.wedge, [...(byWedge.get(s.wedge) ?? []), s]);
-  const qualifying = WEDGE_PRIORITY.filter((w) => qualifies(byWedge.get(w) ?? []));
+
+  // Strength first, playbook order second.
+  const qualifying = WEDGE_PRIORITY.map((wedge, order) => ({ wedge, order, tier: tierOf(byWedge.get(wedge) ?? []) }))
+    .filter((c): c is { wedge: ActiveWedge; order: number; tier: RoomOneTier } => c.tier !== null)
+    .sort((a, b) => TIER_RANK[a.tier] - TIER_RANK[b.tier] || a.order - b.order);
 
   const primary = qualifying[0] ?? null;
-  if (!primary) {
-    const banRules = buildBans(audit, locationCount, "none");
-    return {
-      output: { plan: "none", wedge: "none", evidence: [], bans: banRules.map((b) => b.text), backup: null },
-      wedgeSignals: [],
-      banRules,
-      blocked: false,
-    };
-  }
+  if (!primary) return noCall("none", null);
 
-  const primarySignals = [...(byWedge.get(primary) ?? [])].sort((a, b) =>
+  const primarySignals = [...(byWedge.get(primary.wedge) ?? [])].sort((a, b) =>
     a.strength === b.strength ? 0 : a.strength === "strong" ? -1 : 1,
   );
   const primaryEvidence = new Set(primarySignals.map((s) => s.evidence));
@@ -392,36 +708,35 @@ export function evaluateRoomOne(input: RoomOneInput): RoomOneEvaluation {
   // Backup: next qualifying wedge with at least one piece of evidence of its own.
   let backup: ActiveWedge | null = null;
   const backupEvidence: string[] = [];
-  for (const w of qualifying.slice(1)) {
-    const own = (byWedge.get(w) ?? []).map((s) => s.evidence).filter((e) => !primaryEvidence.has(e));
+  for (const c of qualifying.slice(1)) {
+    const own = (byWedge.get(c.wedge) ?? []).map((s) => s.evidence).filter((e) => !primaryEvidence.has(e));
     if (own.length > 0) {
-      backup = w;
+      backup = c.wedge;
       backupEvidence.push(...own);
       break;
     }
   }
 
   const evidence = [...new Set([...primarySignals.map((s) => s.evidence), ...backupEvidence])];
-  const banRules = buildBans(audit, locationCount, primary);
-  if (evidence.length === 0) {
-    return {
-      output: { plan: "none", wedge: "none", evidence: [], bans: banRules.map((b) => b.text), backup: null },
-      wedgeSignals: [],
-      banRules,
-      blocked: false,
-    };
-  }
+  if (evidence.length === 0) return noCall(primary.wedge, null);
+
+  const banRules = buildBans(audit, locationCount, primary.wedge);
+  const { plan, assumption } = planFor(primary.wedge, audit, phrases, locationCount, input.size);
   return {
     output: {
-      plan: planFor(primary, audit, phrases, locationCount),
-      wedge: primary,
+      plan,
+      wedge: primary.wedge,
       evidence,
       bans: banRules.map((b) => b.text),
       backup,
+      tier: primary.tier,
+      planAssumption: assumption,
     },
     wedgeSignals: primarySignals,
     banRules,
     blocked: false,
+    blockReason: null,
+    discoveryQuestions: [],
   };
 }
 
@@ -484,6 +799,8 @@ export interface HeadAgentDecision {
   confidence: number;
   evidenceRefs: string[];
   sourceConflicts: HeadAgentConflict[];
+  /** Unknown rule inputs the rep should ask about. */
+  openQuestions?: string[];
   reasoning: string;
   roomOne: RoomOneOutput;
   roomTwo: HeadAgentRoomTwo;
@@ -552,7 +869,17 @@ export function normalizePainPhrases(v: unknown): RoomOnePainPhrase[] {
     if (!o) continue;
     const text = [o.text, o.phrase, o.label, o.quote].find((t) => typeof t === "string" && t.trim());
     if (typeof text !== "string") continue;
-    out.push(typeof o.sellable === "boolean" ? { text: text.trim(), sellable: o.sellable } : { text: text.trim() });
+    const quotes = Array.isArray(o.quotes) ? o.quotes.filter((q): q is string => typeof q === "string" && q.trim() !== "") : [];
+    out.push({
+      text: text.trim(),
+      ...(typeof o.sellable === "boolean" ? { sellable: o.sellable } : {}),
+      ...(typeof o.category === "string" ? { category: o.category } : {}),
+      ...(typeof o.mentions === "number" ? { mentions: o.mentions } : {}),
+      ...(typeof o.recentMentions === "number" ? { recentMentions: o.recentMentions } : {}),
+      ...(typeof o.recent24Mentions === "number" ? { recent24Mentions: o.recent24Mentions } : {}),
+      ...(typeof o.complaintReviews === "number" ? { complaintReviews: o.complaintReviews } : {}),
+      ...(quotes[0] ? { quote: quotes[0].trim() } : {}),
+    });
   }
   return out;
 }
@@ -578,7 +905,7 @@ function toFnbSignals(input: BriefDecisionInput, audit: RoomOneAudit, phrases: R
   const menuUrl = audit.menuUrl ?? null;
   const pdfMenu =
     audit.pdfMenu ?? (menuUrl != null ? /\.pdf(\?|#|$)/i.test(menuUrl) && !audit.detectedMenuTool : null);
-  const language = phrases.some((p) => p.sellable !== false && PHRASE.language.test(p.text));
+  const language = phrases.some((p) => p.sellable !== false && p.mentions !== 0 && isAbout(p, "language"));
   return {
     hasWebsite: audit.hasWebsite ?? (audit.websiteUrl ? true : null),
     websiteBroken: audit.websiteBroken ?? null,
@@ -626,16 +953,71 @@ export const PLAN_LABELS: Record<HeadAgentPlan, string> = {
 };
 
 /**
+ * Rule inputs nobody could see, phrased for the first minute of the
+ * call. Only the ones that would change this card's package or stop it.
+ * With no wedge the card carries the two discovery questions instead,
+ * unless Room 1 stopped the call (hotel, chain): then there is no call
+ * to open.
+ */
+export function openQuestionsFor(
+  audit: RoomOneAudit,
+  wedge: HeadAgentWedge,
+  locationCount: number,
+  opts: { blocked?: boolean } = {},
+): string[] {
+  if (wedge === "none") return opts.blocked || blockReasonFor(audit) ? [] : discoveryQuestionsFor(audit);
+  const q: string[] = [];
+  if (wedge === "reservation" && audit.hasPrepayment == null) {
+    q.push("Rezervasyonda depozito veya kart garantisi alıyorlar mı?");
+  }
+  if (wedge === "bill_wait" && audit.tableCount == null) {
+    q.push("Kaç masa var, ayda kaç sipariş? (20 masa veya 1.000 sipariş üstü Growth)");
+  }
+  if ((wedge === "bill_wait" || wedge === "menu_surface") && audit.languageCount == null) q.push("Menü kaç dilde?");
+  if (wedge === "menu_surface") q.push("Menüde kaç ürün var? (100 üstü Growth)");
+  if (locationCount >= 2 && audit.centralPurchasing == null) q.push("Satın alma kararı şubede mi, merkezde mi?");
+  if (locationCount <= 1 && audit.locationHint?.trim()) {
+    q.push(`Sitede başka şube izi var (${audit.locationHint.trim()}); kaç şubeniz var, karar kimde?`);
+  }
+  return q;
+}
+
+/**
  * Package fit score (0-100). Deterministic; replaces the old blend of
  * audit %, review leadScore and scorer score for restaurant briefs.
+ * The score is the evidence tier of the chosen wedge (A 80, B 65,
+ * C 50), minus 10 for every source the decision could not see.
  */
+const TIER_SCORE: Record<RoomOneTier, number> = { A: 80, B: 65, C: 50 };
+
+/**
+ * The sources a wedge is decided from. A missing source lowers the
+ * score only when the chosen wedge could have been seen there: a
+ * reservation card read off the site loses nothing for thin reviews.
+ * The numbers are ranks, not probabilities; they are to be recalibrated
+ * on call outcomes.
+ */
+const WEDGE_SOURCES: Record<ActiveWedge, readonly SignalSource[]> = {
+  reservation: ["site", "map"],
+  bill_wait: ["review"],
+  marketplace: ["site", "map"],
+  multi_location: ["map"],
+  menu_surface: ["site"],
+  guest_repeat: ["review"],
+};
+const MISSING_AS_SOURCE: Record<string, SignalSource> = {
+  map: "map",
+  website: "site",
+  website_stale: "site",
+  reviews: "review",
+};
+
 export function packageFitScore(ev: RoomOneEvaluation, missingSources: string[]): number {
-  const missingPenalty = 10 * missingSources.length;
-  if (ev.output.wedge === "none") return ev.blocked ? 0 : Math.max(0, 15 - missingPenalty / 2);
-  const strong = ev.wedgeSignals.some((s) => s.strength === "strong");
-  const extra = Math.max(0, ev.wedgeSignals.length - 1);
-  const score = 55 + (strong ? 15 : 0) + 5 * Math.min(extra, 3) + (ev.output.backup ? 5 : 0) - missingPenalty;
-  return Math.max(20, Math.min(95, Math.round(score)));
+  if (ev.output.wedge === "none") return ev.blocked ? 0 : Math.max(0, 15 - 5 * missingSources.length);
+  const relevant = new Set<SignalSource>([...WEDGE_SOURCES[ev.output.wedge], ...ev.wedgeSignals.map((s) => s.source)]);
+  const penalty = 10 * missingSources.filter((s) => relevant.has(MISSING_AS_SOURCE[s] ?? "site")).length;
+  const tier = ev.output.tier ?? (ev.wedgeSignals.some((s) => s.strength === "strong") ? "B" : "C");
+  return Math.max(30, Math.min(95, TIER_SCORE[tier] - penalty));
 }
 
 // ===========================================================================
@@ -643,9 +1025,10 @@ export function packageFitScore(ev: RoomOneEvaluation, missingSources: string[])
 // ===========================================================================
 
 const SYSTEM_PROMPT = `You are the Head Sales Strategist for FineDine, a restaurant platform sold as three plans:
-- Starter: menu, QR, website, 1 language, Order & Pay up to 20 tables, 50 reservations/month by e-mail (NO prepayment), CRM keeps the last 10 guests, no custom domain.
-- Growth: everything in Starter plus multiple languages, 50 tables, 250 reservations with PREPAYMENT, unlimited guest CRM with segments, custom domain.
-- Premium: unlimited, prepayment, MULTI-LOCATION storefront, success manager. Only for groups with 2+ venues.
+- Starter: menu (up to 100 items), QR, website, 1 language, Order & Pay up to 20 tables and 1,000 orders/month, 50 reservations/month by e-mail (NO prepayment), CRM keeps the last 10 guests, no custom domain.
+- Growth: everything in Starter plus multiple languages, unlimited menu items, 50 tables and 1,500 orders/month, 250 reservations with PREPAYMENT, unlimited guest CRM with segments, custom domain.
+- Premium: unlimited tables, orders and reservations, prepayment, MULTI-LOCATION storefront, success manager. For groups with 2+ venues, or one venue above 50 tables.
+Every plan is priced PER VENUE: one subscription never covers several branches. FineDine publishes no integration with delivery marketplaces (Deliveroo, Uber Eats, Yemeksepeti…) and no loyalty programme: never promise either.
 
 The PACKAGE and the WEDGE are already decided by deterministic rules (Room 1). You do not choose them and you must not change them.
 Your only job: write the 2-3 sentence talk track the rep opens with, for THIS package and THIS wedge.
@@ -739,12 +1122,39 @@ interface QaResult {
   reasoning: string;
 }
 
+/** Plan limits from SYSTEM_PROMPT; Room 2 may state these without review evidence. */
+const PLAN_NUMBERS = new Set(["10", "20", "50", "100", "250", "1000", "1,000", "1.000", "1500", "1,500", "1.500"]);
+
+const NAMED_ENTITY =
+  /\b(?:the ?fork|open ?table|quandoo|resy|designmynight|sevenrooms|resdiary|tock|deliveroo|uber ?eats|just ?eat|doordash|wolt|yemeksepeti|getir)\b/gi;
+
+/**
+ * Numbers and provider / platform names in a sentence that its cited
+ * evidence does not contain. Room 2 can read raw reviews and the audit
+ * through tools; a fact it found there but did not cite is not on the card.
+ */
+export function unsupportedTokens(sentence: string, evidenceText: string): string[] {
+  const hay = evidenceText.toLowerCase();
+  const squashed = hay.replace(/\s+/g, "");
+  const text = sentence.replace(/\bE\d+\b/g, " ");
+  const out: string[] = [];
+  for (const n of text.match(/\d+(?:[.,]\d+)?/g) ?? []) {
+    if (!PLAN_NUMBERS.has(n) && !hay.includes(n)) out.push(n);
+  }
+  for (const name of text.match(NAMED_ENTITY) ?? []) {
+    if (!squashed.includes(name.toLowerCase().replace(/\s+/g, ""))) out.push(name);
+  }
+  return [...new Set(out)];
+}
+
 function roomThreeQa(args: {
   raw: RawTalk;
   ev: RoomOneEvaluation;
   evidenceIds: Map<string, string>;
   shortlist: HeadAgentModuleRec[];
   approvedClaimTexts: string[];
+  /** Facts given to Room 2 outside the evidence list (rating, review count). */
+  allowedFacts: string[];
 }): QaResult {
   const { raw, ev, evidenceIds, shortlist } = args;
   const plan = ev.output.plan;
@@ -769,6 +1179,14 @@ function roomThreeQa(args: {
     : [];
   if (sentences.length === 0) issues.push("no_talk_track");
   if (sentences.some((s) => !s.evidence.some((id) => evidenceIds.has(id)))) issues.push("sentence_without_evidence");
+  for (const s of sentences) {
+    const cited = s.evidence.map((id) => evidenceIds.get(id) ?? "").join(" ");
+    const bad = unsupportedTokens(s.text, `${cited} ${args.allowedFacts.join(" ")}`);
+    if (bad.length > 0) {
+      issues.push(`unsupported_fact:${bad[0]}`);
+      break;
+    }
+  }
 
   // Claim gate first (drops unapproved % / upsell claims), then judge what is left.
   const carrier = {
@@ -859,6 +1277,7 @@ export async function buildBriefDecision(
       painPhrases: reviews.phrases,
     },
     locationCount: input.locationCount ?? 1,
+    size: { reviewCount: input.reviewCount ?? null, priceLevel: input.priceLevel ?? null },
   });
   const r1 = ev.output;
   const fitScore = packageFitScore(ev, missingSources);
@@ -888,12 +1307,14 @@ export async function buildBriefDecision(
   const evidenceRefs = [...new Set([...r1.evidence, ...observations])];
 
   const plainAngle = r1.wedge === "none" ? WEDGE_LABELS.none : `${WEDGE_LABELS[r1.wedge]} → ${PLAN_LABELS[r1.plan]}`;
-  const plainReasoning =
-    r1.wedge === "none"
+  const tierNote = r1.tier ? ` Kanıt kademesi ${r1.tier}.` : "";
+  const plainReasoning = ev.blocked
+    ? `Oda 1: arama yok. ${ev.blockReason ?? ""}`.trim()
+    : r1.wedge === "none"
       ? missingSources.length > 0
         ? `Oda 1: güçlü sinyal veya iki orta sinyal yok. Eksik kaynak: ${missingSources.join(", ")}.`
         : "Oda 1: güçlü sinyal veya iki orta sinyal yok."
-      : `Oda 1: ${WEDGE_LABELS[r1.wedge]} kaçağı, en küçük paket ${PLAN_LABELS[r1.plan]}.${r1.backup ? ` Yedek: ${WEDGE_LABELS[r1.backup as HeadAgentWedge] ?? r1.backup}.` : ""}`;
+      : `Oda 1: ${WEDGE_LABELS[r1.wedge]} kaçağı, en küçük paket ${PLAN_LABELS[r1.plan]}.${tierNote}${r1.backup ? ` Yedek: ${WEDGE_LABELS[r1.backup as HeadAgentWedge] ?? r1.backup}.` : ""}${r1.planAssumption ? ` ${r1.planAssumption}` : ""}`;
 
   const decision: HeadAgentDecision = {
     packId: fit.packId,
@@ -907,6 +1328,7 @@ export async function buildBriefDecision(
     confidence: fitScore,
     evidenceRefs: evidenceRefs.slice(0, 3),
     sourceConflicts: [],
+    openQuestions: openQuestionsFor(audit, r1.wedge, input.locationCount ?? 1, { blocked: ev.blocked }),
     reasoning: plainReasoning,
     roomOne: r1,
     roomTwo: { status: "skipped", qaIssues: [], qaWarnings: [], rounds: 0, toolCalls: [], draftTalkTrack: null },
@@ -1009,7 +1431,14 @@ export async function buildBriefDecision(
       });
     }
   }
-  const qa = roomThreeQa({ raw, ev, evidenceIds, shortlist, approvedClaimTexts });
+  const qa = roomThreeQa({
+    raw,
+    ev,
+    evidenceIds,
+    shortlist,
+    approvedClaimTexts,
+    allowedFacts: [input.rating, input.reviewCount].filter((v) => v != null).map(String),
+  });
   const base = { qaIssues: qa.issues, qaWarnings: qa.warnings, rounds, toolCalls };
 
   if (!qa.passed) {
@@ -1072,6 +1501,10 @@ export function snapshotToDecisionInput(inputSnapshot: unknown): BriefDecisionIn
         venueType: (str(a.venueType) as VenueType | null) ?? null,
         tastingMenu: triBool(a.tastingMenu),
         centralPurchasing: triBool(a.centralPurchasing),
+        acceptsReservations: triBool(a.acceptsReservations),
+        marketplaceSource: a.marketplaceSource === "map" || a.marketplaceSource === "site" ? a.marketplaceSource : null,
+        operator: (["single", "small_group", "group_hq", "chain", "hotel_fnb"] as const).find((k) => k === a.operator) ?? null,
+        operatorEvidence: str(a.operatorEvidence),
       }
     : null;
   const frozenExcluded = Array.isArray(input.excludedModules)

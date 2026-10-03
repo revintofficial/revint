@@ -46,7 +46,7 @@
  *     true pool size, so a Gemini hallucinated percent is overwritten.
  */
 
-import type { PainPhrase } from "@/lib/review-analysis/pain-phrases";
+import type { PainPhrase, ReviewLabel } from "@/lib/review-analysis/pain-phrases";
 
 export const REVIEW_ANALYSIS_SYSTEM_CONTEXT = `You are a professional Customer Insight analyst. You read Google Maps reviews of local service businesses and produce an actionable KPI-bar summary that a sales team can act on in seconds.
 
@@ -119,7 +119,10 @@ Schema:
   ],
   "sentimentBreakdown": { "positive": <0-1>, "neutral": <0-1>, "negative": <0-1> },
   "painPhrases": [
-    { "text": "<short pain phrase, in the customer's own voice>", "sellable": <true|false> }
+    { "text": "<short pain phrase, in the customer's own voice>", "sellable": <true|false>, "category": "<one CATEGORY from the list below>", "quotes": ["<verbatim fragment copied from one review>"] }
+  ],
+  "reviewLabels": [
+    { "i": <the number of the review, as printed above>, "category": "<one CATEGORY from the list below>", "quote": "<verbatim fragment copied from review i>" }
   ],
   "strengthPhrases": ["<3-5 short praise phrases>"],
   "switchSignals": [
@@ -140,6 +143,24 @@ Rules:
 - sentimentBreakdown values must sum to ~1.0 (minor rounding is fine).
 - switchSignals may be an empty array — do not force a pattern that is not there.
 - painPhrases: 3-5 items. "sellable" = true ONLY when the complaint is about operations a restaurant system can fix: waiting / queues / slow service, reservations or bookings, order mistakes or lost orders, paying or getting the bill. "sellable" = false for taste, food quality, portion size, food poisoning or illness, decor, noise, and anything about specific staff members' manners.
+- CATEGORY (used by painPhrases.category and reviewLabels.category), exactly one of:
+  - "bill" = WAITING for the bill, chasing staff to pay, the card machine, splitting the bill. Only the act of paying. The AMOUNT of the bill is "price".
+  - "order_wait" = nobody came to take the order, waiting to order, could not get a waiter's attention, had to go to the bar to order.
+  - "order_error" = wrong item served, forgotten order, items on the bill that were never ordered.
+  - "reservation" = booking, no-shows, deposits, a lost or ignored reservation, phone not answered, could not book online.
+  - "delivery" = delivery or takeaway orders and delivery apps.
+  - "menu" = the menu itself: hard to read, out of date, prices differ from the menu, missing allergens, no translation, only a PDF.
+  - "repeat" = regulars, coming back often, loyalty.
+  - "language" = language barrier, tourists, translation.
+  - "table_wait" = queued at the door or waited for a table, including "we had a booking and still waited".
+  - "kitchen_wait" = food or drinks slow to arrive AFTER ordering (kitchen or bar speed).
+  - "price" = expensive, poor value, portion size for the money, service charge, taxes, overcharging.
+  - "food_quality" = taste, temperature, freshness, hygiene of the food, illness.
+  - "staff" = rude, inattentive or unfriendly staff (manners, not speed).
+  - "ambiance" = noise, decor, cleanliness of the room or toilets, seating comfort.
+  - "other" = everything else.
+- reviewLabels: go through EVERY numbered review above, one by one. For each review that contains a complaint, emit one entry per distinct complaint CATEGORY in it (at most 2 entries per review): "i" = that review's number, "quote" = 4 to 15 words COPIED CHARACTER FOR CHARACTER from that review (the shortest fragment that states the complaint). A review with no complaint gets no entry, whatever its star rating; a 4- or 5-star review that mentions a complaint DOES get an entry. Do not skip a review because the same complaint was already seen in another one: the counting is done by code from this list, so every occurrence matters. Do not write counts or summaries here.
+- painPhrases.quotes: 1-5 fragments, each COPIED CHARACTER FOR CHARACTER from a different numbered review above, 4 to 25 words long. Do not fix typos, do not translate, do not merge two reviews. If no review says it in its own words, return an empty array.
 - leadScore: if "{our_offer}" can plausibly address the complaints we see, score higher.
 - summary stays in the output language specified at the top of the prompt.
 
@@ -201,6 +222,8 @@ export interface ReviewAnalysisOutput {
   sentimentBreakdown: { positive: number; neutral: number; negative: number };
   /** Task 2: `{ text, sellable }`. Legacy rows may still hold bare strings. */
   painPhrases: PainPhrase[];
+  /** One entry per complaint per review; counted in code (`countReviewLabels`). */
+  reviewLabels?: ReviewLabel[];
   strengthPhrases: string[];
   switchSignals: Array<{ from: string; to: string; reason: string }>;
   leadScore: number;
