@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 import { detectBookingProvider } from "@/lib/audit/booking-detection";
 import { extractFeatures } from "@/lib/extractor";
 import { mergeSiteFacts, pickSubpages, type VisitedPage } from "@/lib/site-facts";
-import { detectHotelOperator, detectLanguageCount, detectLocations, visibleText } from "@/lib/site-signals";
+import { detectDeclaredLanguage, detectHotelOperator, detectLanguageCount, detectLocations, visibleText } from "@/lib/site-signals";
 
 function fixture(name: string): { url: string; html: string } {
   const html = readFileSync(path.join(__dirname, "../fixtures/sites", name), "utf8");
@@ -217,11 +217,16 @@ describe("languages", () => {
     expect(detectLanguageCount(url, gt)).toMatchObject({ value: 4, quote: "GTranslate: en, fr, de, it" });
   });
 
-  it("says 1 for a declared single-language page with no switcher, and null with a translate widget", () => {
+  it("never claims a single language: Padella's lone <html lang> stays an unknown count plus a declared language", () => {
     const { url, html } = fixture("padella-soho.html");
-    expect(detectLanguageCount(url, html)).toMatchObject({ value: 1 });
-    expect(detectLanguageCount(url, `<html lang="en"><script src="https://cdn.weglot.com/weglot.min.js"></script></html>`)).toBeNull();
-    expect(detectLanguageCount(url, `<html><body>no lang</body></html>`)).toBeNull();
+    expect(detectLanguageCount(url, html)).toBeNull();
+    expect(detectDeclaredLanguage(url, html)).toMatchObject({ value: "en", quote: '<html lang="en-GB">' });
+    const f = homeFacts("padella-soho.html");
+    expect(f.languageCount).toBeNull();
+    expect(f.declaredLanguage).toMatchObject({ value: "en" });
+    const weglot = `<html lang="en"><script src="https://cdn.weglot.com/weglot.min.js"></script></html>`;
+    expect(detectDeclaredLanguage(url, weglot)!.quote).toContain("translate widget present");
+    expect(homeFacts("gallada-istanbul.html").declaredLanguage).toBeNull();
   });
 });
 

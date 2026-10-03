@@ -151,11 +151,24 @@ export function detectLanguageCount(homeUrl: string, html: string): SignalFact<n
     const value = Math.max(codes.size, pointsElsewhere ? 2 : 1);
     if (value >= 2) return { value, url: homeUrl, quote: `language switcher: ${labels.slice(0, 6).join("; ")}` };
   }
-  if (TRANSLATE_WIDGET.test(html)) return null; // a widget switches languages client-side: count unknown
-  if (pageLang && CODES.has(pageLang)) {
-    return { value: 1, url: homeUrl, quote: `<html lang="${$("html").attr("lang")}">; no hreflang, no language switcher` };
-  }
+  // No hreflang, plugin or switcher: the count stays unknown. A single
+  // <html lang> is not "one language" (a JS switcher, a translated PDF or a
+  // multilingual QR menu would not show here), and Room 1 reads
+  // languageCount as the menu's language count.
   return null;
+}
+
+/**
+ * The language the homepage declares (`<html lang>`), when no other
+ * language version was found. Context for the integrator, not a count.
+ */
+export function detectDeclaredLanguage(homeUrl: string, html: string): SignalFact<string> | null {
+  const $ = cheerio.load(html);
+  const raw = ($("html").attr("lang") ?? "").trim();
+  const code = raw.toLowerCase().split(/[-_]/)[0];
+  if (!code || !/^[a-z]{2,3}$/.test(code)) return null;
+  const widget = TRANSLATE_WIDGET.test(html);
+  return { value: code, url: homeUrl, quote: `<html lang="${raw}">${widget ? "; translate widget present" : ""}` };
 }
 
 // ---------------------------------------------------------------- locations

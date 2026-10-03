@@ -10,6 +10,7 @@ import { detectBookingProviderEvidence } from "@/lib/audit/booking-detection";
 import { deliveryPlatformFor, isDirectOrderingHost } from "@/lib/delivery-platforms";
 import { menuVendorFor, orderingVendorFor } from "@/lib/restaurant-vendors";
 import {
+  detectDeclaredLanguage,
   detectHotelOperator,
   detectLanguageCount,
   detectLocations,
@@ -74,6 +75,11 @@ export interface SiteFacts {
   locationHints?: SiteFact<string[]> | null;
   /** Hotel operator/brand when the restaurant sits in a hotel ("Four Seasons", "independent hotel"). */
   hotelOperator?: SiteFact<string> | null;
+  /**
+   * `<html lang>` of the homepage when no second language was found.
+   * Context only: it is not a language count (that stays `null`).
+   */
+  declaredLanguage?: SiteFact<string> | null;
 }
 
 const RES_TEXT = /\b(reserv\w*|book(ing|ings)?|book a table|rezervasyon)\b/i;
@@ -277,6 +283,7 @@ export function mergeSiteFacts(
 
   const signalPages: SignalPage[] = all.map((p) => ({ url: p.url, html: p.html, kind: p.kind }));
   const locations = detectLocations(signalPages);
+  const languageCount = detectLanguageCount(home.url, home.html);
 
   return {
     pagesVisited: pages.map((p) => ({ kind: p.kind, url: p.url, ok: p.html !== null })),
@@ -289,7 +296,7 @@ export function mergeSiteFacts(
     bookingProvider,
     hasPrepayment,
     tastingMenu,
-    languageCount: detectLanguageCount(home.url, home.html),
+    languageCount,
     deliveryPlatforms: platforms.length > 0 ? { value: platforms, url: platformsUrl ?? home.url, quote: platformsQuote } : null,
     directOrdering,
     qrMenuTool,
@@ -297,5 +304,6 @@ export function mergeSiteFacts(
     locationCount: locations.locationCount,
     locationHints: locations.locationHints,
     hotelOperator: detectHotelOperator(signalPages),
+    declaredLanguage: languageCount ? null : detectDeclaredLanguage(home.url, home.html),
   };
 }
