@@ -1,7 +1,7 @@
 // src/lib/site-capture/opener.ts
 /**
  * Opens pages for the capture in one browser context per site. Every
- * navigation goes through the SSRF guard. A page that answers 401 / 403 /
+ * navigation is checked against the SSRF guard (see below). A page that answers 401 / 403 /
  * 429 is retried with a mobile identity, then with a plain HTTP fetch;
  * after that it is "blocked" (no proxy).
  *
@@ -11,11 +11,16 @@
  *   to what is left; the HTTP fallback runs under the same deadline.
  * - After the abort signal fires, in-flight and later `open` calls end
  *   promptly: closing the contexts rejects every pending Playwright call.
- * - Navigations (top frame, sub-frames, every redirect hop) pass
- *   `assertSafeFetchUrl` in the context's route handler; HTTP fetches go
- *   through `safeFetchFollow`, which checks every hop.
+ * - SSRF: the context's route handler runs `assertSafeFetchUrl` on the
+ *   first URL of each navigation (top frame and sub-frames). Playwright
+ *   does not call route handlers for redirect hops, so after `page.goto`
+ *   the landed URL and every hop of the redirect chain are checked too
+ *   (`checkNavigationChain`); a failure returns "unsafe_url" with no HTML.
+ *   By then the browser may already have sent a request to an internal
+ *   address: the response is discarded, never read. HTTP fetches go
+ *   through `safeFetchFollow`, which checks every hop before requesting it.
  */
-import type { Browser, BrowserContext, Page } from "playwright";
+import type { Browser, BrowserContext, Page, Response } from "playwright";
 import { CRAWLER_USER_AGENT } from "@/lib/crawler";
 import { safeFetchFollow } from "@/lib/safe-fetch";
 import { assertSafeFetchUrl } from "@/lib/url-guard";
@@ -70,6 +75,36 @@ function race<T>(p: Promise<T>, ms: number, signal?: AbortSignal): Promise<T | t
   });
 }
 
+/** Every URL a navigation's response passed through, oldest last (the response's own request first). */
+export function redirectChainUrls(res: Pick<Response, "request"> | null): string[] {
+  const urls: string[] = [];
+  let req = res?.request() ?? null;
+  // A redirect chain is short; the cap only guards against a cyclic structure.
+  for (let i = 0; req && i < 50; i++) {
+    urls.push(req.url());
+    req = req.redirectedFrom();
+  }
+  return urls;
+}
+
+/**
+ * True when the landed URL and every redirect hop pass `guard` (which throws
+ * on an unsafe URL). Each distinct URL is checked once.
+ */
+export async function checkNavigationChain(
+  landedUrl: string,
+  hops: string[],
+  guard: (url: string) => Promise<unknown>,
+): Promise<boolean> {
+  const urls = [...new Set([landedUrl, ...hops])];
+  try {
+    await Promise.all(urls.map((u) => guard(u)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function newContext(browser: Browser, mobile: boolean): Promise<BrowserContext> {
   const context = await browser.newContext({
     userAgent: mobile ? MOBILE_USER_AGENT : CRAWLER_USER_AGENT,
@@ -113,6 +148,13 @@ async function openOnce(context: BrowserContext, url: string, timeoutMs: number,
     // Leave ~5 s of the page budget for load, cookie banner, scroll and settle.
     const gotoTimeout = timeoutMs > 8_000 ? timeoutMs - 5_000 : timeoutMs;
     const res = await page.goto(url, { waitUntil: "domcontentloaded", timeout: gotoTimeout });
+    // The route handler only saw the first URL; check where the navigation went before reading anything.
+    const safe = await race(
+      checkNavigationChain(page.url(), redirectChainUrls(res), assertSafeFetchUrl),
+      Math.max(left(), 1_000),
+    );
+    if (safe === DEADLINE) return failure(url, "timeout");
+    if (!safe) return failure(url, "unsafe_url");
     const status = res?.status() ?? null;
     if (status !== null && status >= 400) {
       return failure(page.url(), BLOCKED_STATUS.has(status) ? "blocked" : "http_error", status);
