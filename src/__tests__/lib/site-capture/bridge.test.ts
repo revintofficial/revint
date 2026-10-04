@@ -165,6 +165,78 @@ describe("bridgeSiteFacts: prepayment and its scope", () => {
   });
 });
 
+describe("bridgeSiteFacts: prepayment sentence rule", () => {
+  const VENDOR = "https://web.dojo.app/create_booking/vendor/abc";
+  const on = (type: "reservation" | "faq" | "external", text: string) =>
+    bridgeSiteFacts(
+      baseFacts(),
+      cap([pg(type, type === "faq" ? "/faq" : "/book", type === "external" ? { finalUrl: VENDOR, text } : { text })]),
+    ).hasPrepayment;
+
+  const negated = [
+    "There is no late cancellation fee.",
+    "We do not charge a cancellation fee.",
+    "We don't charge cancellation fees for any booking.",
+    "Cancellation fees do not apply.",
+    "Deposits are not required.",
+    "No deposit or card details are required.",
+  ];
+  for (const text of negated) {
+    for (const type of ["reservation", "faq"] as const) {
+      it(`a negated statement stays unknown (${type}): ${text}`, () => {
+        expect(on(type, text)).toBeNull();
+      });
+    }
+  }
+
+  const thresholds = [
+    "Tables of eight or more require a deposit.",
+    "Bookings of 8 and above require a deposit.",
+    "Tables of 5 or more require a deposit.",
+    "Tables larger than 6 require a deposit.",
+  ];
+  for (const text of thresholds) {
+    for (const type of ["reservation", "faq"] as const) {
+      it(`a party-size threshold scopes the deposit (${type}): ${text}`, () => {
+        expect(on(type, text)?.scope).toBe("group_or_event");
+      });
+    }
+  }
+
+  it.each(["reservation", "faq"] as const)("a seasonal deposit is scoped (%s)", (type) => {
+    expect(on(type, "A deposit is required for all Christmas bookings.")?.scope).toBe("group_or_event");
+  });
+
+  it.each(["reservation", "faq"] as const)("card details at a voucher checkout are not a deposit (%s)", (type) => {
+    expect(on(type, "Gift vouchers: card details are required at checkout.")).toBeNull();
+  });
+
+  it.each(["reservation", "faq"] as const)("a company name 'Group' is not a group restriction (%s)", (type) => {
+    expect(on(type, "Part of the Hawksmoor Group. A deposit of £10 per person is required to confirm your booking.")?.scope).toBe("general");
+  });
+
+  it.each(["reservation", "faq"] as const)("a negation in another sentence does not cancel the deposit (%s)", (type) => {
+    expect(on(type, "We cannot take bookings by phone. A deposit of £10 per person is required to confirm your booking.")?.scope).toBe("general");
+  });
+
+  it("a question answered 'yes' for every booking is general", () => {
+    expect(on("reservation", "Do you take a deposit? Yes, £10 per person for every booking.")?.scope).toBe("general");
+  });
+
+  it("a question answered 'only for groups' is scoped", () => {
+    expect(on("reservation", "Do you take a deposit? Only for groups of 8 or more.")?.scope).toBe("group_or_event");
+  });
+
+  it("'no-show' is not a negation on a booking vendor's page", () => {
+    expect(on("external", "A no-show fee of £10 per person applies.")).toMatchObject({ value: true, scope: "general" });
+  });
+
+  it("an FAQ deposit without booking wording stays unknown; on the reservation page it is general", () => {
+    expect(on("faq", "A deposit is required.")).toBeNull();
+    expect(on("reservation", "A deposit is required.")?.scope).toBe("general");
+  });
+});
+
 describe("bridgeSiteFacts: menu, ordering, PDFs", () => {
   it("reads a tasting menu from a menu PDF and names the source", () => {
     const facts = bridgeSiteFacts(
@@ -173,6 +245,11 @@ describe("bridgeSiteFacts: menu, ordering, PDFs", () => {
     );
     expect(facts.tastingMenu).toMatchObject({ value: true, source: "pdf", url: "https://bistro.test/files/menu.pdf" });
     expect(facts.menuPdfUrl).toBe("https://bistro.test/files/menu.pdf");
+  });
+
+  it("does not take a non-menu PDF as the menu PDF", () => {
+    const facts = bridgeSiteFacts(baseFacts(), cap([pg("other", "/files/allergens.pdf", { source: "pdf", text: "Allergen guide" })]));
+    expect(facts.menuPdfUrl).toBeNull();
   });
 
   it("ignores a PDF that has no text layer", () => {

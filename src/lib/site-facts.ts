@@ -53,8 +53,11 @@ export interface SiteFact<T> {
   /** Where a bridged fact was read. Absent on facts read by mergeSiteFacts (always a page). */
   source?: "page" | "network" | "pdf";
   /**
-   * "group_or_event": stated only for groups or private events (a group-booking,
-   * events or FAQ page), not for an ordinary booking. Absent = general.
+   * "group_or_event": stated only for groups, private events or a seasonal /
+   * special occasion (a group threshold, private hire, Christmas, an events
+   * page), not for an ordinary booking. "general": an unrestricted, un-negated
+   * statement about bookings (on an FAQ page only when it mentions bookings).
+   * Absent = general.
    */
   scope?: "general" | "group_or_event";
 }
