@@ -228,6 +228,24 @@ describe("captureSite", () => {
     expect(missingFromLedger(opened, result.ledger)).toEqual([]);
   });
 
+  // Final fix A1: spreading a huge sitemap into push threw RangeError.
+  it("completes on a sitemap of 150,000 short URLs and collects at most 10,000", async () => {
+    const sitemap = `<urlset>${Array.from({ length: 150_000 }, (_, i) => `<url><loc>${HOME}d${i}</loc></url>`).join("")}</urlset>`;
+    const files = ["a", "b", "c"].map((n) => `${HOME}sitemap-${n}.xml`);
+    const { result } = await run(
+      "",
+      {},
+      {
+        fetchText: async (url) => {
+          if (url.endsWith("/robots.txt")) return files.map((f) => `Sitemap: ${f}`).join("\n");
+          return files.includes(url) ? sitemap : null;
+        },
+      },
+    );
+    expect(result.sitemapUrlCount).toBeLessThanOrEqual(10_000);
+    expect(result.sitemapUrlCount).toBeGreaterThan(0);
+  });
+
   it("downloads menu PDFs linked from the homepage, five at most", async () => {
     const links = [
       ...Array.from({ length: 7 }, (_, i) => `<a href="/files/menu-${i}.pdf">Menu ${i}</a>`),

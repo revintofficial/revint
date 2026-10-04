@@ -54,6 +54,39 @@ describe("parseRobots / isDisallowed", () => {
   it("treats an empty Disallow as allow-all", () => {
     expect(isDisallowed("/menu", parseRobots("User-agent: *\nDisallow:"))).toBe(false);
   });
+
+  // Final fix A1: a hostile robots.txt must not be able to freeze the worker.
+  it("matches a many-star rule against a long path in linear time", () => {
+    const hostile = parseRobots("User-agent: *\nDisallow: /*a*a*a*a*a*a*a*b");
+    const path = `/${"a".repeat(2000)}`;
+    const t0 = performance.now();
+    expect(isDisallowed(path, hostile)).toBe(false);
+    expect(performance.now() - t0).toBeLessThan(100);
+    expect(isDisallowed(`${path}b`, hostile)).toBe(true);
+  });
+
+  it("keeps the wildcard and anchor semantics of the linear matcher", () => {
+    const r = parseRobots("User-agent: *\nDisallow: /a*b*c$\nDisallow: /x*\nDisallow: /exact$");
+    expect(isDisallowed("/a-b-c", r)).toBe(true);
+    expect(isDisallowed("/abc", r)).toBe(true);
+    expect(isDisallowed("/a-b-c-d", r)).toBe(false);
+    expect(isDisallowed("/a-c-b", r)).toBe(false);
+    expect(isDisallowed("/xyz", r)).toBe(true);
+    expect(isDisallowed("/exact", r)).toBe(true);
+    expect(isDisallowed("/exact/more", r)).toBe(false);
+  });
+
+  it("keeps at most 500 rules per list, 20 sitemaps, and ignores a rule over 512 characters", () => {
+    const lines = ["User-agent: *"];
+    for (let i = 0; i < 10_000; i++) lines.push(`Disallow: /d-${i}`, `Allow: /a-${i}`);
+    for (let i = 0; i < 50; i++) lines.push(`Sitemap: https://bistro.test/s-${i}.xml`);
+    const r = parseRobots(lines.join("\n"));
+    expect(r.disallow.length).toBeLessThanOrEqual(500);
+    expect(r.allow.length).toBeLessThanOrEqual(500);
+    expect(r.sitemaps.length).toBeLessThanOrEqual(20);
+    const long = parseRobots(`User-agent: *\nDisallow: /${"x".repeat(599)}\nDisallow: /ok`);
+    expect(long.disallow).toEqual(["/ok"]);
+  });
 });
 
 describe("parseSitemap", () => {
@@ -69,6 +102,24 @@ describe("parseSitemap", () => {
   it("returns nested sitemaps from an index", () => {
     const xml = `<sitemapindex><sitemap><loc>https://bistro.test/pages.xml</loc></sitemap></sitemapindex>`;
     expect(parseSitemap(xml)).toEqual({ urls: [], sitemaps: ["https://bistro.test/pages.xml"] });
+  });
+
+  // Final fix A1: an unclosed <loc> followed by whitespace was quadratic.
+  it("returns quickly on an unclosed <loc> followed by 200,000 spaces", () => {
+    const xml = `<urlset><url><loc>${" ".repeat(200_000)}`;
+    const t0 = performance.now();
+    expect(parseSitemap(xml)).toEqual({ urls: [], sitemaps: [] });
+    expect(performance.now() - t0).toBeLessThan(100);
+  });
+
+  it("keeps at most 5,000 entries per file", () => {
+    const xml = `<urlset>${Array.from({ length: 20_000 }, (_, i) => `<url><loc>https://bistro.test/p-${i}</loc></url>`).join("")}</urlset>`;
+    expect(parseSitemap(xml).urls).toHaveLength(5_000);
+  });
+
+  it("skips a malformed entry and still reads the next one", () => {
+    const xml = `<urlset><url><loc>https://bistro.test/a b</loc></url><url><loc><b>x</b></loc></url><url><loc>https://bistro.test/ok</loc></url></urlset>`;
+    expect(parseSitemap(xml).urls).toEqual(["https://bistro.test/ok"]);
   });
 });
 

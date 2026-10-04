@@ -15,7 +15,12 @@ export interface RobotsRules {
 }
 export const EMPTY_ROBOTS: RobotsRules = { sitemaps: [], disallow: [], allow: [] };
 
-/** Rules of the `User-agent: *` group, plus every `Sitemap:` line. */
+/** A hostile robots.txt can be megabytes of rules; these bound the work per check. */
+export const MAX_ROBOTS_RULES = 500;
+export const MAX_ROBOTS_RULE_LENGTH = 512;
+export const MAX_ROBOTS_SITEMAPS = 20;
+
+/** Rules of the `User-agent: *` group, plus every `Sitemap:` line (capped, see above). */
 export function parseRobots(txt: string): RobotsRules {
   const rules: RobotsRules = { sitemaps: [], disallow: [], allow: [] };
   let applies = false;
@@ -27,7 +32,7 @@ export function parseRobots(txt: string): RobotsRules {
     const key = m[1].toLowerCase();
     const value = m[2].trim();
     if (key === "sitemap") {
-      if (value) rules.sitemaps.push(value);
+      if (value && rules.sitemaps.length < MAX_ROBOTS_SITEMAPS) rules.sitemaps.push(value);
       continue;
     }
     if (key === "user-agent") {
@@ -37,31 +42,84 @@ export function parseRobots(txt: string): RobotsRules {
       continue;
     }
     inAgentBlock = false;
-    if (!applies || !value) continue;
-    if (key === "disallow") rules.disallow.push(value);
-    else if (key === "allow") rules.allow.push(value);
+    if (!applies || !value || value.length > MAX_ROBOTS_RULE_LENGTH) continue;
+    const list = key === "disallow" ? rules.disallow : key === "allow" ? rules.allow : null;
+    if (list && list.length < MAX_ROBOTS_RULES) list.push(value);
   }
   return rules;
 }
 
-function ruleRegex(rule: string): RegExp {
+/**
+ * Robots rule match without a regex: `*` matches any run of characters, a
+ * trailing `$` anchors the end, otherwise the rule is a prefix. Segments are
+ * found left to right with `indexOf` (leftmost placement is always safe for
+ * wildcards), so the work is linear in the path length per segment and a
+ * hostile rule cannot make it backtrack.
+ */
+function ruleMatches(rule: string, path: string): boolean {
   const anchored = rule.endsWith("$");
-  const body = (anchored ? rule.slice(0, -1) : rule).replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
-  return new RegExp(`^${body}${anchored ? "$" : ""}`);
+  const parts = (anchored ? rule.slice(0, -1) : rule).split("*");
+  if (!path.startsWith(parts[0])) return false;
+  if (parts.length === 1) return !anchored || path.length === parts[0].length;
+  let pos = parts[0].length;
+  for (let i = 1; i < parts.length - 1; i++) {
+    const at = path.indexOf(parts[i], pos);
+    if (at === -1) return false;
+    pos = at + parts[i].length;
+  }
+  const last = parts[parts.length - 1];
+  if (anchored) return path.length - last.length >= pos && path.endsWith(last);
+  return path.indexOf(last, pos) !== -1;
 }
 
 /** Longest matching rule wins; a tie goes to Allow. */
 export function isDisallowed(pathAndQuery: string, rules: RobotsRules): boolean {
   const longest = (list: string[]) =>
-    list.reduce((best, r) => (r.length > best && ruleRegex(r).test(pathAndQuery) ? r.length : best), -1);
+    list.reduce((best, r) => (r.length > best && ruleMatches(r, pathAndQuery) ? r.length : best), -1);
   const d = longest(rules.disallow);
   return d >= 0 && d > longest(rules.allow);
 }
 
+export const MAX_SITEMAP_ENTRIES = 5_000;
+const MAX_LOC_LENGTH = 2_048;
+const CDATA_OPEN = "<![CDATA[";
+
+/**
+ * `<loc>` values of a sitemap, at most `MAX_SITEMAP_ENTRIES`. A scan, not a
+ * regex with optional whitespace groups: every step moves past the next `<`,
+ * so the work is linear in the file size whatever the file contains.
+ */
 export function parseSitemap(xml: string): { urls: string[]; sitemaps: string[] } {
-  const locs = [...xml.matchAll(/<loc>\s*(?:<!\[CDATA\[)?\s*([^<\]\s]+)\s*(?:\]\]>)?\s*<\/loc>/gi)].map((m) =>
-    m[1].replace(/&amp;/g, "&"),
-  );
+  const locs: string[] = [];
+  const open = /<loc>/gi;
+  // The next "]]>" at or after the scan position; -2 = not looked up yet, -1 = none left.
+  let cdataEnd = -2;
+  while (locs.length < MAX_SITEMAP_ENTRIES && open.exec(xml) !== null) {
+    const start = open.lastIndex;
+    let lt = xml.indexOf("<", start);
+    if (lt === -1) break;
+    let value: string | null = null;
+    if (lt - start <= MAX_LOC_LENGTH && xml.startsWith(CDATA_OPEN, lt)) {
+      if (cdataEnd !== -1 && cdataEnd < lt) cdataEnd = xml.indexOf("]]>", lt);
+      const bodyStart = lt + CDATA_OPEN.length;
+      if (cdataEnd !== -1 && cdataEnd - bodyStart <= MAX_LOC_LENGTH && xml.slice(start, lt).trim() === "") {
+        const close = xml.indexOf("<", cdataEnd + 3);
+        if (close !== -1 && close - cdataEnd <= MAX_LOC_LENGTH && xml.slice(cdataEnd + 3, close).trim() === "") {
+          value = xml.slice(bodyStart, cdataEnd).trim();
+          lt = close;
+        }
+      }
+    } else if (lt - start <= MAX_LOC_LENGTH) {
+      value = xml.slice(start, lt).trim();
+    }
+    if (value !== null && xml.slice(lt, lt + 6).toLowerCase() === "</loc>") {
+      open.lastIndex = lt + 6;
+      if (value && !/[\s<\]]/.test(value)) locs.push(value.replace(/&amp;/g, "&"));
+    } else {
+      // Not a well-formed entry: resume the search at the `<` that ended it.
+      open.lastIndex = Math.max(lt, start);
+    }
+  }
   return /<sitemapindex[\s>]/i.test(xml) ? { urls: [], sitemaps: locs } : { urls: locs, sitemaps: [] };
 }
 

@@ -68,6 +68,8 @@ export interface CaptureInput {
 /** Location and hotel signals read raw HTML (JSON-LD, address markup). */
 const KEEP_HTML_TYPES = new Set<PageType>(["locations", "contact", "about"]);
 const MAX_KEPT_HTML = 8;
+/** Sitemap addresses collected over all files of one capture. */
+const MAX_SITEMAP_URLS = 10_000;
 /** Below this length two pages can share their text without being the same page. */
 const MIN_DUPLICATE_TEXT = 200;
 
@@ -193,8 +195,15 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
       const xml = await input.fetchText(files[i]).catch(() => null);
       if (!xml) continue;
       const parsed = parseSitemap(xml);
-      urls.push(...parsed.urls);
-      files.push(...parsed.sitemaps);
+      // A loop, not `push(...)`: spreading a huge array overflows the call stack.
+      for (const u of parsed.urls) {
+        if (urls.length >= MAX_SITEMAP_URLS) break;
+        urls.push(u);
+      }
+      for (const s of parsed.sitemaps) {
+        if (files.length >= limits.maxSitemapFiles) break;
+        files.push(s);
+      }
     }
     sitemapUrlCount = urls.length;
     frontier.add(sitemapCandidates(urls, home));
