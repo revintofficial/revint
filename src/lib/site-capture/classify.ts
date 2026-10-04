@@ -50,6 +50,19 @@ const FAQ_PATH = /(^|\/)(faqs?|frequently-asked[\w-]*|help|sss|sikca-sorulan[\w-
 const FAQ_TEXT = word("faqs?|frequently asked( questions)?|sıkça sorulan\\p{L}*( sorular)?|sss");
 const LOC_PATH =
   /(^|\/)(locations?|restaurants|our-restaurants|find-us|find-a-restaurant|store-locator|branches|venues|subeler|subelerimiz|restoranlar)(\/|$|\.)/i;
+/** A path segment that names several venues (not a singular "location", "find-us" or "contact"). */
+const VENUE_LIST_SEGMENT =
+  /^(locations|restaurants|our-restaurants|find-a-restaurant|store-locator|branches|venues|subeler|subelerimiz|restoranlar)$/i;
+
+/** A page whose path lists venues: the only kind the deep path reads location and hotel signals from. */
+export function isVenueListUrl(href: string): boolean {
+  try {
+    return pathOf(new URL(href)).split("/").some((s) => VENUE_LIST_SEGMENT.test(s));
+  } catch {
+    return false;
+  }
+}
+
 const LOC_TEXT = word("locations?|our restaurants|find us|find a restaurant|branches|venues|şubeler\\p{L}*|restoranlarımız");
 const CONTACT_PATH = /(^|\/)(contact|contact-us|get-in-touch|iletisim|bize-ulasin)(\/|$|\.)/i;
 const CONTACT_TEXT = word("contact( us)?|get in touch|[iİ]letişim|bize ulaşın");

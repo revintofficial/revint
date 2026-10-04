@@ -552,6 +552,30 @@ describe("bridgeSiteFacts: menu, ordering, PDFs", () => {
   });
 });
 
+// Final fix C4: location and hotel signals come only from pages that list venues.
+describe("bridgeSiteFacts: location signals", () => {
+  const ADDRESSES = "<html><body><p>12 Soho St, London W1D 3QF</p><p>4 Camden Rd, London NW1 9LS</p><p>9 Mare St, London E8 4RP</p></body></html>";
+  const HOTEL = `<html><body><a href="https://www.fourseasons.com/istanbul/">Four Seasons Istanbul</a></body></html>`;
+  // As in production, the homepage's HTML is kept too.
+  const at = (type: PageType, path: string, html: string) =>
+    bridgeSiteFacts(baseFacts(), { ...cap([]), pages: [pg("home", "/", { html: EMPTY_HOME }), pg(type, path, { html })] });
+
+  it("reads a venue count from a page that lists the venues", () => {
+    expect(at("locations", "/locations/", ADDRESSES).locationCount).toMatchObject({ value: 3 });
+    expect(at("locations", "/our-restaurants", ADDRESSES).locationCount).toMatchObject({ value: 3 });
+  });
+
+  it.each([
+    ["locations", "/location/"],
+    ["locations", "/find-us"],
+    ["contact", "/contact"],
+    ["about", "/about"],
+  ] as const)("does not read venue counts or a hotel from a %s page at %s", (type, path) => {
+    expect(at(type, path, ADDRESSES).locationCount ?? null).toBeNull();
+    expect(at(type, path, HOTEL).hotelOperator ?? null).toBeNull();
+  });
+});
+
 describe("coverageOf", () => {
   it("summarises the ledger and lists what was not read, failures first", () => {
     const capture = cap(

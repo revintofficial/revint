@@ -24,7 +24,7 @@ import {
   type VisitedPage,
 } from "@/lib/site-facts";
 import { detectHotelOperator, detectLocations, type SignalPage } from "@/lib/site-signals";
-import { isDrinksOnlyPdf } from "./classify";
+import { isDrinksOnlyPdf, isVenueListUrl } from "./classify";
 import { summarizeLedger } from "./ledger";
 import type { CapturedPage, PageType, SiteCaptureResult, SiteCoverage } from "./types";
 import { urlKey } from "./url";
@@ -350,11 +350,13 @@ export function bridgeSiteFacts(base: SiteFacts, capture: SiteCaptureResult): Si
   out.deliveryPlatforms ??= bridgeDelivery(pages);
   out.menuPdfUrl ??= bridgeMenuPdf(pages);
 
-  // Location and hotel signals read raw HTML; it is kept for these page types only.
+  // Location and hotel signals come only from pages that list venues (/locations/, /restaurants/, ...);
+  // a singular /location/ page describes the area, a contact or about page one address. The homepage
+  // is mergeSiteFacts' job.
   const signalPages: SignalPage[] = pages
-    .filter((p) => p.html !== null && (p.type === "home" || p.type === "locations" || p.type === "contact" || p.type === "about"))
+    .filter((p) => p.html !== null && p.type === "locations" && isVenueListUrl(p.finalUrl))
     .map((p) => ({ url: p.finalUrl, html: p.html as string, kind: p.type }));
-  if (signalPages.length > 1) {
+  if (signalPages.length > 0) {
     if (!out.locationCount || !out.locationHints) {
       const loc = detectLocations(signalPages);
       out.locationCount ??= loc.locationCount;

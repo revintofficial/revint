@@ -6,7 +6,7 @@
  */
 import { menuPdf } from "@/lib/site-facts";
 import { siteKey } from "@/lib/site-signals";
-import { classifyUrl, isDrinksOnlyPdf, isKnownVendorUrl } from "./classify";
+import { classifyUrl, isDrinksOnlyPdf, isKnownVendorUrl, isVenueListUrl } from "./classify";
 import {
   EMPTY_ROBOTS,
   Frontier,
@@ -20,7 +20,7 @@ import {
 import type { PdfTextResult } from "./documents";
 import { CoverageLedger } from "./ledger";
 import { MAX_TEXT_CHARS, reducePage } from "./reduce";
-import type { Candidate, CapturedPage, LedgerEntry, LedgerReason, PageOpener, PageType, SiteCaptureResult } from "./types";
+import type { Candidate, CapturedPage, LedgerEntry, LedgerReason, PageOpener, SiteCaptureResult } from "./types";
 import { urlKey } from "./url";
 
 export interface CaptureLimits {
@@ -65,8 +65,6 @@ export interface CaptureInput {
   limits?: Partial<CaptureLimits>;
 }
 
-/** Location and hotel signals read raw HTML (JSON-LD, address markup). */
-const KEEP_HTML_TYPES = new Set<PageType>(["locations", "contact", "about"]);
 const MAX_KEPT_HTML = 8;
 /** Sitemap addresses collected over all files of one capture. */
 const MAX_SITEMAP_URLS = 10_000;
@@ -283,7 +281,9 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
     seenFinal.add(finalKey);
     seenText.add(textKey(reduced.text));
 
-    const keep = (c.pinned === true || KEEP_HTML_TYPES.has(type)) && state.keptHtml < MAX_KEPT_HTML;
+    // Raw HTML is kept for the pinned pages (mergeSiteFacts) and the venue lists (location and hotel signals).
+    const keepHtml = c.pinned === true || (type === "locations" && isVenueListUrl(opened.finalUrl));
+    const keep = keepHtml && state.keptHtml < MAX_KEPT_HTML;
     if (keep) state.keptHtml++;
     const page: CapturedPage = {
       ...reduced,
