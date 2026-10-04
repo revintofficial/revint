@@ -4,7 +4,7 @@
  * hand-built ground truth (truth.json). Facts are read through
  * `buildRoomOneAudit`, i.e. exactly what Room 1 sees.
  *
- *   npx tsx scripts/website-audit-eval/score.ts <results.json> <truth.json> [--rows]
+ *   npx tsx scripts/website-audit-eval/score.ts <results.json> <truth.json> [--rows] [--compare before.json]
  *
  * Per field: correct (asserted and right), wrong (asserted and wrong,
  * including a `false` where the truth is present), unknown (null).
@@ -70,6 +70,10 @@ function scoreSite(r: Record<string, unknown>, t: Truth): Record<string, Verdict
   else v.bookingProvider = "unknown";
 
   v.prepayment = tri(audit.hasPrepayment, t.prepayment);
+  // Any scope: Room 1 only asserts a general deposit, but a deposit that is
+  // found with its group scope and evidence still counts as found.
+  const anyPrepayment = sf != null && sf.hasPrepayment != null;
+  v.prepaymentAny = t.prepayment === null ? "na" : !anyPrepayment ? "unknown" : t.prepayment ? "correct" : "wrong";
 
   if (t.qrMenuTool === null) v.qrMenuTool = "na";
   else if (audit.detectedMenuTool) v.qrMenuTool = t.qrMenuTool !== "none" && norm(audit.detectedMenuTool) === norm(t.qrMenuTool) ? "correct" : "wrong";
@@ -113,6 +117,7 @@ function main() {
     "reachable",
     "bookingProvider",
     "prepayment",
+    "prepaymentAny",
     "qrMenuTool",
     "pdfMenu",
     "directOrdering",
@@ -133,7 +138,7 @@ function main() {
       const x = v[f] ?? "na";
       totals[f][x]++;
       if (x === "unknown") {
-        const tv = (t as unknown as Record<string, unknown>)[f === "directOrdering" ? "directOrdering" : f];
+        const tv = (t as unknown as Record<string, unknown>)[f === "prepaymentAny" ? "prepayment" : f];
         const positive = tv === true || (typeof tv === "string" && tv !== "none") || (Array.isArray(tv) && tv.length > 0) || (typeof tv === "number" && tv > 1);
         if (positive) totals[f].missed++;
       }
@@ -150,6 +155,39 @@ function main() {
     console.log(`\n| site | ${fields.join(" | ")} |`);
     console.log(`|---|${fields.map(() => "---").join("|")}|`);
     for (const r of rows) console.log(r);
+  }
+
+  const times = Object.values(results)
+    .map((r) => r.ms)
+    .filter((x): x is number => typeof x === "number")
+    .sort((a, b) => a - b);
+  if (times.length > 0) {
+    const at = (q: number) => times[Math.min(times.length - 1, Math.floor(q * times.length))];
+    console.log(`\ntime per site: median ${Math.round(at(0.5) / 1000)} s, p95 ${Math.round(at(0.95) / 1000)} s (n=${times.length})`);
+  }
+
+  // --compare <before.json>: what got worse. Exit code 1 when anything did.
+  const compareAt = process.argv.indexOf("--compare");
+  if (compareAt > 0) {
+    const before = JSON.parse(readFileSync(process.argv[compareAt + 1], "utf8")) as Record<string, Record<string, unknown>>;
+    const regressions: string[] = [];
+    const newWrong: string[] = [];
+    let missedBefore = 0;
+    let missedAfter = 0;
+    for (const [id, t] of Object.entries(truth)) {
+      if (!results[id] || !before[id]) continue;
+      const a = scoreSite(before[id], t);
+      const b = scoreSite(results[id], t);
+      for (const f of fields) {
+        if (a[f] === "correct" && b[f] !== "correct") regressions.push(`${id}.${f}: correct -> ${b[f] ?? "na"}`);
+        if (a[f] !== "wrong" && b[f] === "wrong") newWrong.push(`${id}.${f}: ${a[f] ?? "na"} -> wrong`);
+        if (a[f] === "unknown") missedBefore++;
+        if (b[f] === "unknown") missedAfter++;
+      }
+    }
+    console.log(`\ncompare: ${regressions.length} regression(s), ${newWrong.length} new wrong answer(s), unknown cells ${missedBefore} -> ${missedAfter}`);
+    for (const line of [...regressions, ...newWrong]) console.log(`  ${line}`);
+    if (regressions.length > 0 || newWrong.length > 0) process.exitCode = 1;
   }
 }
 
