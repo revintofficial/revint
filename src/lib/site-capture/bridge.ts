@@ -4,6 +4,10 @@
  * it reads today; the bridge then fills only what is still `null` from the
  * other captured pages, third-party requests and menu PDFs. It never
  * replaces an answer and never turns "not read" into "read and absent".
+ * The one exception is the deposit: the deep path always re-judges
+ * `hasPrepayment` with the sentence-level rule (homepage and pinned pages
+ * included), whatever mergeSiteFacts said; the shallow path (crawlWebsite)
+ * keeps mergeSiteFacts' own answer.
  */
 import { detectBookingProviderEvidence } from "@/lib/audit/booking-detection";
 import { deliveryPlatformFor, isDirectOrderingHost } from "@/lib/delivery-platforms";
@@ -86,6 +90,10 @@ function qualifiedBooking(context: string): boolean {
 }
 /** An FAQ statement is about bookings only when it says so. */
 const BOOKING_WORDING = /\b(book(s|ed|ing|ings)?|reserv(e|ed|ation|ations)|tables?|rezervasyon\w*|masa\w*)\b/i;
+/** A hotel's room-booking terms ("first night", "check-in", "Hotel may request prepayment") are not a table deposit. */
+const ROOM_CONTEXT = /\b(rooms?|stays?|nights?|check-?in|check-?out|accommodation|suites?|guest rooms?|hotels?)\b/i;
+/** Longer than this is a blob (an i18n string table, a JSON dump), not a statement. */
+const MAX_DEPOSIT_SENTENCE = 400;
 const QUOTE_MAX = 240;
 
 /**
@@ -201,12 +209,13 @@ function classifyPrepaymentHit(
   i: number,
 ): { scope: "general" | "group_or_event"; quote: string } | { scope: "negated_restricted" } | null {
   const sentence = sentences[i];
+  if (sentence.length > MAX_DEPOSIT_SENTENCE) return null;
   if (!PREPAY.test(sentence) && !CARD_GUARANTEE.test(sentence)) return null;
   const question = sentence.endsWith("?");
   // A question is answered by the sentence after it ("Do I need a deposit? No.").
-  // Negation, commerce and the FAQ booking-wording check read only this context.
+  // Negation, commerce, room and the FAQ / homepage booking-wording checks read only this context.
   const context = sentences.slice(i, question ? i + 2 : i + 1).join(" ");
-  if (COMMERCE.test(context)) return null;
+  if (COMMERCE.test(context) || ROOM_CONTEXT.test(context)) return null;
   const negated = NEGATION.test(context);
   // A restriction is often stated in the next sentence ("… is required. This applies to
   // parties of 8 or more."); after a question, in the two sentences that answer it.
@@ -219,7 +228,8 @@ function classifyPrepaymentHit(
     RESTRICTION_MARKER.test(scopeContext) ||
     qualifiedBooking(scopeContext);
   if (negated) return restricted ? { scope: "negated_restricted" } : null;
-  if (!restricted && type === "faq" && !BOOKING_WORDING.test(context)) return null;
+  // The homepage is read like an FAQ page: a general claim needs booking wording.
+  if (!restricted && (type === "faq" || type === "home") && !BOOKING_WORDING.test(context)) return null;
   return { scope: restricted ? "group_or_event" : "general", quote: (restricted ? scopeContext : context).slice(0, QUOTE_MAX).trim() };
 }
 
@@ -230,10 +240,11 @@ function classifyPrepaymentHit(
  * ("Card details are requested for groups over four. A no-show fee ... applies."
  * in either order). A negated statement that names a restriction keeps the page from
  * being general. Across pages the first general page wins, else the first scoped one.
+ * Page order: reservation, booking vendor, homepage, FAQ, events.
  */
 function bridgePrepayment(pages: CapturedPage[]): SiteFact<true> | null {
   let scoped: SiteFact<true> | null = null;
-  for (const p of ofTypes(pages, ["reservation", "external", "faq", "events"])) {
+  for (const p of ofTypes(pages, ["reservation", "external", "home", "faq", "events"])) {
     if (p.source === "pdf") continue;
     if (p.type === "external" && !isBookingVendorPage(p)) continue;
     const sentences = sentencesOf(p.text);
@@ -321,13 +332,16 @@ function bridgeMenuPdf(pages: CapturedPage[]): string | null {
   return null;
 }
 
-/** Fills only what is still `null`. Language facts and the "page seen" flags are left alone. */
+/**
+ * Fills only what is still `null`, except the deposit, which the sentence rule
+ * always decides. Language facts and the "page seen" flags are left alone.
+ */
 export function bridgeSiteFacts(base: SiteFacts, capture: SiteCaptureResult): SiteFacts {
   const pages = capture.pages;
   const out: SiteFacts = { ...base, coverage: coverageOf(capture) };
 
   out.bookingProvider ??= bridgeBooking(pages);
-  out.hasPrepayment ??= bridgePrepayment(pages);
+  out.hasPrepayment = bridgePrepayment(pages);
   out.tastingMenu ??= bridgeTasting(pages);
   out.qrMenuTool ??= bridgeMenuVendor(pages);
   out.directOrdering ??= bridgeDirectOrdering(pages);

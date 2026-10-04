@@ -396,6 +396,97 @@ describe("bridgeSiteFacts: prepayment sentence rule", () => {
   });
 });
 
+// Final fix C1: in the deep path the deposit is always decided by the sentence rule.
+describe("bridgeSiteFacts: the sentence rule decides the deposit", () => {
+  const GENERAL_FROM_MERGE = { value: true as const, url: HOME, quote: "deposit and fees will vary" };
+  const withHome = (homeText: string, pages: CapturedPage[] = []): SiteCaptureResult => ({
+    ...cap(pages),
+    pages: [pg("home", "/", { text: homeText }), ...pages],
+  });
+
+  it("replaces a general deposit from mergeSiteFacts with null when no captured page supports it", () => {
+    const facts = bridgeSiteFacts({ ...baseFacts(), hasPrepayment: GENERAL_FROM_MERGE }, cap([pg("menu", "/menu", { text: "Starters" })]));
+    expect(facts.hasPrepayment).toBeNull();
+  });
+
+  it("replaces a general deposit from mergeSiteFacts with the scoped one the rule finds", () => {
+    const facts = bridgeSiteFacts(
+      { ...baseFacts(), hasPrepayment: GENERAL_FROM_MERGE },
+      cap([pg("reservation", "/book", { text: "Groups of 8 or more require a deposit." })]),
+    );
+    expect(facts.hasPrepayment).toMatchObject({ value: true, scope: "group_or_event", url: "https://bistro.test/book" });
+  });
+
+  it("15grams: a deposit for bookings of 7+ is scoped", () => {
+    const facts = bridgeSiteFacts(
+      { ...baseFacts(), hasPrepayment: GENERAL_FROM_MERGE },
+      cap([
+        pg("reservation", "https://15grams.co.uk/15grams-book-table", {
+          text: "For bookings of 7+: we require at lest 5 days notice for cancellation, deposit and fees will vary We're flexible, but appreciate timely communication.",
+        }),
+      ]),
+    );
+    expect(facts.hasPrepayment?.scope).toBe("group_or_event");
+  });
+
+  it("Avlu: an i18n string table on the homepage is not a statement", () => {
+    const blob =
+      `{"Oops! Something went wrong":"Oops! Something went wrong","Add Ons":"Add Ons","Credit Card Required":"Credit Card Required",` +
+      `"Book a table":"Book a table","Your booking":"Your booking","Reservation details":"Reservation details",` +
+      `"Select a date":"Select a date","Select a time":"Select a time","Number of guests":"Number of guests",` +
+      `"We apologize for the inconvenience, but it seems like the booking could not be completed":"We apologize for the inconvenience, but it seems like the booking could not be completed"}`;
+    expect(blob.length).toBeGreaterThan(400);
+    const facts = bridgeSiteFacts({ ...baseFacts(), hasPrepayment: GENERAL_FROM_MERGE }, withHome(blob));
+    expect(facts.hasPrepayment).toBeNull();
+  });
+
+  it("Peninsula: a hotel's room prepayment is not a table deposit", () => {
+    const facts = bridgeSiteFacts(
+      { ...baseFacts(), hasPrepayment: GENERAL_FROM_MERGE },
+      cap([
+        pg("reservation", "https://bistro.test/special-offers/rooms/stay-longer", {
+          text: "Limited in-room wireless internet access Terms and Conditions: Hotel may request prepayment at the time of booking. Hotel reserves the rights to cancel the reservation.",
+        }),
+      ]),
+    );
+    // An absent scope reads as general, so only null or an explicit group scope pass.
+    expect(facts.hasPrepayment === null || facts.hasPrepayment.scope === "group_or_event").toBe(true);
+  });
+
+  it("a first-night deposit on a reservation page is a room deposit", () => {
+    const facts = bridgeSiteFacts(
+      baseFacts(),
+      cap([pg("reservation", "/rooms/book-now", { text: "A deposit of the first night is required to confirm your booking." })]),
+    );
+    expect(facts.hasPrepayment).toBeNull();
+  });
+
+  it("reads a general deposit on the homepage when it talks about bookings", () => {
+    const facts = bridgeSiteFacts(baseFacts(), withHome("A deposit of £10 per person is required to confirm your booking."));
+    expect(facts.hasPrepayment).toMatchObject({ value: true, scope: "general", url: HOME });
+  });
+
+  it("a homepage deposit without booking wording stays unknown", () => {
+    expect(bridgeSiteFacts(baseFacts(), withHome("A deposit is required.")).hasPrepayment).toBeNull();
+  });
+
+  it("a sentence longer than 400 characters is skipped", () => {
+    const long = `A deposit of £10 per person is required to confirm your booking ${"and more words ".repeat(30)}.`;
+    expect(long.length).toBeGreaterThan(400);
+    expect(bridgeSiteFacts(baseFacts(), cap([pg("reservation", "/book", { text: long })])).hasPrepayment).toBeNull();
+  });
+
+  it("prefers the reservation and vendor pages over the homepage", () => {
+    const facts = bridgeSiteFacts(
+      baseFacts(),
+      withHome("A deposit of £10 per person is required to confirm your booking.", [
+        pg("reservation", "/book", { text: "A deposit of £20 per person is required to confirm your booking." }),
+      ]),
+    );
+    expect(facts.hasPrepayment).toMatchObject({ scope: "general", url: "https://bistro.test/book" });
+  });
+});
+
 describe("bridgeSiteFacts: menu, ordering, PDFs", () => {
   it("reads a tasting menu from a menu PDF and names the source", () => {
     const facts = bridgeSiteFacts(
