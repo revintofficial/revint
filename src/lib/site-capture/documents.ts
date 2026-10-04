@@ -26,8 +26,13 @@ export interface PdfDeps {
 export async function extractPdfText(bytes: Uint8Array): Promise<{ text: string; pageCount: number }> {
   const { extractText, getDocumentProxy } = await import("unpdf");
   const pdf = await getDocumentProxy(bytes);
-  const { totalPages, text } = await extractText(pdf, { mergePages: true });
-  return { text, pageCount: totalPages };
+  try {
+    const { totalPages, text } = await extractText(pdf, { mergePages: true });
+    return { text, pageCount: totalPages };
+  } finally {
+    // The worker process is long-lived: release the parsed document.
+    await pdf.destroy().catch(() => {});
+  }
 }
 
 function looksLikePdf(bytes: Uint8Array): boolean {
