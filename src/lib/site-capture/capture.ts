@@ -20,7 +20,7 @@ import {
 import type { PdfTextResult } from "./documents";
 import { CoverageLedger } from "./ledger";
 import { MAX_TEXT_CHARS, reducePage } from "./reduce";
-import type { Candidate, CapturedPage, LedgerEntry, PageOpener, PageType, SiteCaptureResult } from "./types";
+import type { Candidate, CapturedPage, LedgerEntry, LedgerReason, PageOpener, PageType, SiteCaptureResult } from "./types";
 import { urlKey } from "./url";
 
 export interface CaptureLimits {
@@ -70,6 +70,8 @@ const KEEP_HTML_TYPES = new Set<PageType>(["locations", "contact", "about"]);
 const MAX_KEPT_HTML = 8;
 /** Sitemap addresses collected over all files of one capture. */
 const MAX_SITEMAP_URLS = 10_000;
+/** This many refused navigations in a row and the site is treated as blocking the crawler. */
+const REFUSED_STREAK_LIMIT = 8;
 /** Below this length two pages can share their text without being the same page. */
 const MIN_DUPLICATE_TEXT = 200;
 
@@ -109,7 +111,21 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
   // A fragment or a tracking parameter does not make a different PDF.
   const pdfKeys = new Set<string>();
   // An object, not `let`s: the values are assigned inside closures.
-  const state = { stop: null as "budget" | "aborted" | null, keptHtml: 0, attempts: 0, inFlight: 0 };
+  // `stop` ends everything (time, abort); `halt` only ends page opening (attempt cap, a site refusing the crawler).
+  const state = {
+    stop: null as "budget" | "aborted" | null,
+    halt: null as "limit_total" | "blocked" | null,
+    refusedStreak: 0,
+    keptHtml: 0,
+    attempts: 0,
+    inFlight: 0,
+  };
+
+  /** Consecutive navigations ending in `blocked` or `timeout` trip the breaker; anything else resets it. */
+  const noteNavigation = (reason: LedgerReason | null): void => {
+    state.refusedStreak = reason === "blocked" || reason === "timeout" ? state.refusedStreak + 1 : 0;
+    if (state.refusedStreak >= REFUSED_STREAK_LIMIT) state.halt ??= "blocked";
+  };
 
   const stopped = (): boolean => {
     if (state.stop) return true;
@@ -222,15 +238,13 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
     const opened = await input.opener.open(c.url, { timeoutMs, signal: input.signal });
     if (opened.error || opened.html === null || (opened.status !== null && opened.status >= 400)) {
       const blocked = opened.status === 401 || opened.status === 403 || opened.status === 429;
-      record(c, {
-        outcome: "failed",
-        reason: opened.error ?? (blocked ? "blocked" : "http_error"),
-        finalUrl: opened.finalUrl,
-        httpStatus: opened.status,
-      });
+      const reason = opened.error ?? (blocked ? "blocked" : "http_error");
+      noteNavigation(reason);
+      record(c, { outcome: "failed", reason, finalUrl: opened.finalUrl, httpStatus: opened.status });
       frontier.refund(c);
       return;
     }
+    noteNavigation(null);
 
     let landed: URL;
     try {
@@ -288,7 +302,11 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
 
   const worker = async (): Promise<void> => {
     for (;;) {
-      if (stopped() || state.attempts >= limits.maxAttempts) return;
+      if (stopped() || state.halt) return;
+      if (state.attempts >= limits.maxAttempts) {
+        state.halt = "limit_total";
+        return;
+      }
       const c = frontier.next();
       if (!c) {
         // Another worker may still be reading a page whose links refill the queue.
@@ -300,6 +318,7 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
       try {
         await visit(c);
       } catch {
+        noteNavigation("nav_error");
         record(c, { outcome: "failed", reason: "nav_error" });
         frontier.refund(c);
       } finally {
@@ -346,8 +365,13 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
 
   stopped();
   const leftovers = frontier.rest();
-  for (const { candidate, reason } of leftovers) record(candidate, { outcome: "skipped", reason: state.stop ?? reason });
-  const cutShort = state.stop !== null || leftovers.some((l) => l.reason === "budget");
+  // A leftover over a type or total cap keeps that reason; only "not reached in time" takes the stop reason.
+  const stopReason = state.halt ?? state.stop ?? "budget";
+  for (const { candidate, reason } of leftovers) {
+    record(candidate, { outcome: "skipped", reason: reason === "budget" ? stopReason : reason });
+  }
+  // The attempt cap alone is not "cut short": only if it left pages that were never tried.
+  const cutShort = state.stop !== null || state.halt === "blocked" || leftovers.some((l) => l.reason === "budget");
 
   return {
     rootUrl: input.homeUrl,

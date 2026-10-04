@@ -127,6 +127,49 @@ describe("captureSite", () => {
     expect(result.ledger.filter((e) => e.outcome === "skipped").every((e) => e.reason === "aborted")).toBe(true);
   });
 
+  // Final fix B1: running out of attempts is not running out of time.
+  it("names the attempt cap, not the time budget, when it runs out of navigations", async () => {
+    const links = Array.from({ length: 100 }, (_, i) => `<a href="/menu-${i}">Menu ${i}</a>`).join("");
+    const { result, opened } = await run(links, {});
+    expect(opened).toHaveLength(80);
+    expect(result.status).toBe("partial");
+    const left = result.ledger.filter((e) => e.outcome === "skipped");
+    expect(left.length).toBeGreaterThan(0);
+    expect(left.some((e) => e.reason === "budget")).toBe(false);
+    expect(left.every((e) => e.reason === "limit_total")).toBe(true);
+    expect(missingFromLedger(opened, result.ledger)).toEqual([]);
+  });
+
+  it("stops opening pages after eight navigations in a row are refused", async () => {
+    const links = Array.from({ length: 30 }, (_, i) => `<a href="/menu-${i}">Menu ${i}</a>`).join("");
+    const { result, opened } = await run(
+      links,
+      {},
+      { limits: { concurrency: 3 } },
+      { fallback: () => ({ status: 403, error: "blocked" }) },
+    );
+    expect(opened.length).toBeLessThanOrEqual(8 + 3);
+    expect(result.status).toBe("partial");
+    const left = result.ledger.filter((e) => e.outcome === "skipped");
+    expect(left.length).toBeGreaterThan(0);
+    expect(left.every((e) => e.reason === "blocked")).toBe(true);
+  });
+
+  it("counts timeouts towards the refusal streak", async () => {
+    const links = Array.from({ length: 30 }, (_, i) => `<a href="/menu-${i}">Menu ${i}</a>`).join("");
+    const { opened } = await run(links, {}, {}, { fallback: () => ({ error: "timeout" }) });
+    expect(opened).toHaveLength(8);
+  });
+
+  it("does not trip the breaker when a success interrupts the refusals", async () => {
+    const links = Array.from({ length: 15 }, (_, i) => `<a href="/menu-${i}">Menu ${i}</a>`).join("");
+    const { result, opened } = await run(links, { "/menu-7": html("The menu") }, {}, {
+      fallback: (url) => (new URL(url).pathname.startsWith("/menu-") ? { status: 403, error: "blocked" } : null),
+    });
+    for (let i = 0; i < 15; i++) expect(paths(opened)).toContain(`/menu-${i}`);
+    expect(result.ledger.some((e) => e.outcome === "skipped" && e.reason === "blocked")).toBe(false);
+  });
+
   // Review Focus 1: a single-page app answers every path with the homepage.
   it("records a page identical to the homepage as a duplicate, not as a typed page", async () => {
     const { result } = await run(LONG, {}, {}, { fallback: () => html(LONG) });
