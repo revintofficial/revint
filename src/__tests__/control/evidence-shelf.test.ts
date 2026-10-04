@@ -220,12 +220,37 @@ describe("site drawer: capture coverage", () => {
     });
     const row = rows.find((r) => r.claim.text.startsWith("Kapsam"))!;
     expect(row.support.text).toContain("/group-feasts (süre yetmedi)");
-    expect(row.conflict).toBe("Yakalama süre bütçesinde bitmedi; okunmayan sayfalar var.");
+    expect(row.conflict).toBe("Yakalama yarıda kaldı; okunmayan sayfalar var.");
   });
 
   it("says so when every discovered page was read", () => {
     const rows = siteRows({ coverage: { status: "complete", opened: 5, skipped: 0, failed: 0, durationMs: 9_000, notOpened: [] } });
     expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.support.text).toBe("Keşfedilen her sayfa okundu");
+  });
+
+  it("never says every page was read when pages were skipped without a listed reason", () => {
+    const rows = siteRows({ coverage: { status: "complete", opened: 9, skipped: 6, failed: 0, durationMs: 20_000, notOpened: [] } });
+    const row = rows.find((r) => r.claim.text.startsWith("Kapsam"))!;
+    expect(row.support.text).toBe("Atlananlar: tür sınırı ya da yinelenen sayfa");
+    expect(row.support.muted).toBeUndefined();
+  });
+
+  it("lists the first four unread pages and counts the rest", () => {
+    const notOpened = ["a", "b", "c", "d", "e", "f"].map((p) => ({ url: `https://dishoom.com/${p}`, type: "other", reason: "timeout" }));
+    const rows = siteRows({ coverage: { status: "complete", opened: 3, skipped: 0, failed: 6, durationMs: 40_000, notOpened } });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.support.text).toBe(
+      "Okunamayan: /a (zaman aşımı) · /b (zaman aşımı) · /c (zaman aşımı) · /d (zaman aşımı) · +2 diğer",
+    );
+  });
+
+  it("flags a failed capture", () => {
+    const rows = siteRows({ coverage: { status: "failed", opened: 0, skipped: 0, failed: 1, durationMs: 5_000, notOpened: [{ url: "https://dishoom.com/", type: "home", reason: "nav_error" }] } });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.conflict).toBe("Yakalama başarısız; sayfalar okunamadı.");
+  });
+
+  it("flags a blocked capture", () => {
+    const rows = siteRows({ coverage: { status: "blocked", opened: 0, skipped: 0, failed: 1, durationMs: 5_000, notOpened: [{ url: "https://dishoom.com/", type: "home", reason: "blocked" }] } });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.conflict).toBe("Site botu engelledi; sayfalar okunamadı.");
   });
 
   it("states a group-only deposit as group-only, with its source", () => {

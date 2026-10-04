@@ -364,13 +364,20 @@ function siteDrawer(input: ShelfInput): { drawer: Drawer; state: SiteState } {
   }
   if (audit?.coverage) {
     const c = audit.coverage;
-    const unread = c.notOpened.slice(0, 4).map(n => `${pathLabel(n.url)} (${coverageReasonText(n.reason)})`).join(" · ");
-    const conflict = c.status === "partial" ? "Yakalama süre bütçesinde bitmedi; okunmayan sayfalar var."
+    const shown = c.notOpened.slice(0, 4).map(n => `${pathLabel(n.url)} (${coverageReasonText(n.reason)})`);
+    const hidden = c.notOpened.length - shown.length;
+    const unread = [...shown, ...(hidden > 0 ? [`+${hidden} diğer`] : [])].join(" · ");
+    const conflict = c.status === "partial" ? "Yakalama yarıda kaldı; okunmayan sayfalar var."
       : c.status === "blocked" ? "Site botu engelledi; sayfalar okunamadı."
+      : c.status === "failed" ? "Yakalama başarısız; sayfalar okunamadı."
       : null;
+    // Entries skipped for limit_type / duplicate are counted in `skipped` but left out of `notOpened`.
+    const support = unread ? cell(`Okunamayan: ${unread}`)
+      : c.skipped + c.failed === 0 ? cell("Keşfedilen her sayfa okundu", true)
+      : cell("Atlananlar: tür sınırı ya da yinelenen sayfa");
     rows.push(row(
       cell(`Kapsam: ${c.opened} sayfa açıldı · ${c.skipped} atlandı · ${c.failed} açılamadı`),
-      cell(unread ? `Okunamayan: ${unread}` : "Keşfedilen her sayfa okundu", !unread),
+      support,
       conflict,
     ));
   }
