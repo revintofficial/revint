@@ -3,11 +3,12 @@ import { extractFeatures } from "./extractor";
 import { bare, mergeSiteFacts, pickSubpages, type SiteFacts, type VisitedPage } from "./site-facts";
 import { assertSafeFetchUrl } from "./url-guard";
 import { detectSocialMediaPlatform } from "./audit/social-url-gate";
+import { recordThirdPartyRequests } from "./site-capture/requests";
 import type { CrawlError, SecurityHeadersResult, WebsiteFeatures } from "@/types";
 
 let browserInstance: Browser | null = null;
 
-async function getBrowser(): Promise<Browser> {
+export async function getBrowser(): Promise<Browser> {
   if (!browserInstance || !browserInstance.isConnected()) {
     browserInstance = await chromium.launch({
       headless: true,
@@ -185,9 +186,50 @@ async function collectSiteFacts(page: Page, homeUrl: string, homeHtml: string): 
   return mergeSiteFacts({ url: homeUrl, html: homeHtml }, pages, pick);
 }
 
+/** The rendered homepage, handed to the deep capture so it is not opened twice. */
+export interface HomeSnapshot {
+  finalUrl: string;
+  html: string;
+  thirdPartyRequests: string[];
+}
+
+interface CrawlOptions {
+  /** Open the menu / reservation / order pages and merge their facts (today's behaviour). */
+  subpages: boolean;
+  /** Called with the rendered homepage when it is reachable. */
+  onHome?: (home: HomeSnapshot) => void;
+}
+
 export async function crawlWebsite(
   url: string,
   businessType?: string | null,
+): Promise<WebsiteFeatures> {
+  return crawlGuarded(url, businessType, { subpages: true });
+}
+
+/**
+ * Homepage audit only: same guards and retry as crawlWebsite, but the
+ * subpages are left to the deep capture (src/lib/site-capture/deep.ts).
+ * `home` is null when the homepage was not reachable.
+ */
+export async function crawlHomepage(
+  url: string,
+  businessType?: string | null,
+): Promise<{ features: WebsiteFeatures; home: HomeSnapshot | null }> {
+  const holder: { home: HomeSnapshot | null } = { home: null };
+  const features = await crawlGuarded(url, businessType, {
+    subpages: false,
+    onHome: (h) => {
+      holder.home = h;
+    },
+  });
+  return { features, home: features.reachable ? holder.home : null };
+}
+
+async function crawlGuarded(
+  url: string,
+  businessType: string | null | undefined,
+  opts: CrawlOptions,
 ): Promise<WebsiteFeatures> {
   // Beta finding §1: gate social-media-only URLs BEFORE the SSRF check.
   // When a lead has no real website, the discovery worker stores the
@@ -222,7 +264,7 @@ export async function crawlWebsite(
     return createUnreachableResult(url, "BLOCKED_BY_GUARD", null, detail);
   }
 
-  let last: WebsiteFeatures = await crawlOnce(url, businessType);
+  let last: WebsiteFeatures = await crawlOnce(url, businessType, opts);
   const transient: CrawlError[] = ["TIMEOUT", "PLAYWRIGHT_CRASH"];
   if (
     !last.reachable &&
@@ -230,12 +272,12 @@ export async function crawlWebsite(
     transient.includes(last.crawlError)
   ) {
     await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
-    last = await crawlOnce(url, businessType);
+    last = await crawlOnce(url, businessType, opts);
   }
   return last;
 }
 
-async function crawlOnce(url: string, businessType?: string | null): Promise<WebsiteFeatures> {
+async function crawlOnce(url: string, businessType: string | null | undefined, opts: CrawlOptions): Promise<WebsiteFeatures> {
   const browser = await getBrowser();
   let page: Page | null = null;
   // Set by the route interceptor when a redirect hop is rejected; the
@@ -260,6 +302,7 @@ async function crawlOnce(url: string, businessType?: string | null): Promise<Web
       ignoreHTTPSErrors: true,
       locale: "en-US",
     });
+    const homeRequests = opts.onHome ? recordThirdPartyRequests(page, url) : null;
 
     // C2 - SSRF redirect-chain guard. Validate every navigation hop
     // (initial nav + each 30x follow) against the same private-
@@ -427,11 +470,14 @@ async function crawlOnce(url: string, businessType?: string | null): Promise<Web
     features.mobileFriendlyGuess = hasViewportMeta;
 
     if (features.reachable) {
-      try {
-        features.siteFacts = await collectSiteFacts(page, finalUrl, html);
-      } catch (err) {
-        // The homepage audit stands on its own; subpages are extra evidence.
-        console.error(`Subpage crawl failed for ${url}:`, err instanceof Error ? err.message : String(err));
+      opts.onHome?.({ finalUrl, html, thirdPartyRequests: homeRequests ? homeRequests() : [] });
+      if (opts.subpages) {
+        try {
+          features.siteFacts = await collectSiteFacts(page, finalUrl, html);
+        } catch (err) {
+          // The homepage audit stands on its own; subpages are extra evidence.
+          console.error(`Subpage crawl failed for ${url}:`, err instanceof Error ? err.message : String(err));
+        }
       }
     }
 
