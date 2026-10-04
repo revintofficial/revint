@@ -22,7 +22,7 @@
  *     hasWebsite=false and a websiteUrl would still be crawled (odd
  *     but that's the code). We only test the websiteUrl branch.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AgentWorkerContext } from "@/lib/agent-workers/types";
 import type { WebsiteFeatures } from "@/types";
 
@@ -154,6 +154,8 @@ function makeCtx(overrides: Partial<AgentWorkerContext> = {}): AgentWorkerContex
 }
 
 beforeEach(() => {
+  // This file pins the shallow path; the deep path has its own test file.
+  process.env.SITE_CAPTURE_DEEP = "0";
   crawlWebsiteMock.mockReset();
   prismaMock.lead.update.mockReset().mockResolvedValue({});
   prismaMock.websiteAudit.upsert.mockReset().mockResolvedValue({});
@@ -287,4 +289,8 @@ describe("WEBSITE_AUDITOR - failure path", () => {
     const out = result.output as { reachable: boolean };
     expect(out.reachable).toBe(false);
   });
+});
+
+afterAll(() => {
+  delete process.env.SITE_CAPTURE_DEEP;
 });

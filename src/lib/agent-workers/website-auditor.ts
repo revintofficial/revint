@@ -10,17 +10,34 @@
  * ingestion via the discovery pipeline. This wrapper is idempotent
  * with that path - both converge on `prisma.websiteAudit.upsert` so
  * running it twice is safe.
+ *
+ * Deep capture: when a capture slot is free the audit goes through
+ * `crawlWebsiteDeep` (src/lib/site-capture) and stores a SiteCapture row;
+ * with no slot the run is deferred (DeferError) or, on the inline path or
+ * after thirty minutes of waiting, finishes with the shallow `crawlWebsite`.
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { crawlWebsite } from "@/lib/crawler";
 import { isTruthLayerFlagEnabled } from "@/lib/feature-flags";
 import { countryIsoFromAddress } from "@/lib/locale/lead-locale";
+import { detectSocialMediaPlatform } from "@/lib/audit/social-url-gate";
+import { saveSiteCapture } from "@/lib/site-capture/store";
+import {
+  deepCaptureEnabled,
+  deferDelayMs,
+  MAX_DEFER_WAIT_MS,
+  tryAcquireCaptureSlot,
+} from "@/lib/site-capture/slots";
+import type { SiteCaptureResult } from "@/lib/site-capture/types";
+import type { WebsiteFeatures } from "@/types";
 import type {
   WebsiteVerificationResult,
   WebsiteVerificationStatus,
 } from "@/lib/sdr-brain/contracts";
+import { DeferError } from "./errors";
 import type {
+  AgentWorkerContext,
   AgentWorkerOutput,
   AgentWorkerRun,
   MemoryWrite,
@@ -117,6 +134,39 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   if (!ctx.lead) throw new Error("WEBSITE_AUDITOR requires a lead context");
   const lead = ctx.lead;
 
+  // The deep capture needs one of this process's capture slots. Decide
+  // before any write, so a deferred run leaves no trace behind (no
+  // CRAWLING status, no verification spend).
+  const wantsDeep =
+    typeof lead.websiteUrl === "string" &&
+    lead.websiteUrl.length > 0 &&
+    deepCaptureEnabled() &&
+    !detectSocialMediaPlatform(lead.websiteUrl);
+  let releaseSlot: (() => void) | null = null;
+  if (wantsDeep) {
+    releaseSlot = tryAcquireCaptureSlot();
+    if (!releaseSlot) {
+      const waitedMs = ctx.queuedAt ? Date.now() - ctx.queuedAt.getTime() : 0;
+      if (ctx.canDefer && waitedMs < MAX_DEFER_WAIT_MS) {
+        throw new DeferError(deferDelayMs(ctx.deferCount ?? 0));
+      }
+      // Inline execution, or the run has waited long enough: finish with
+      // today's shallow audit so the chain moves on.
+      logger.warn("agent_workers.website_auditor.deep_skipped_capacity", { leadId: lead.id, waitedMs });
+    }
+  }
+
+  try {
+    return await runAudit(ctx, releaseSlot !== null);
+  } finally {
+    releaseSlot?.();
+  }
+};
+
+async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWorkerOutput> {
+  if (!ctx.lead) throw new Error("WEBSITE_AUDITOR requires a lead context");
+  const lead = ctx.lead;
+
   // Truth Layer v1 / T-E — multi-source verification BEFORE the
   // legacy single-URL audit branch. Two cost-control gates:
   //   - Flag OFF → skip orchestrator entirely; the auditor falls
@@ -166,7 +216,22 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   });
 
   try {
-    const features = await crawlWebsite(lead.websiteUrl, lead.primaryType ?? undefined);
+    let features: WebsiteFeatures;
+    let capture: SiteCaptureResult | null = null;
+    if (deep) {
+      // Lazy: the deep path pulls in the capture modules only when it runs.
+      const { crawlWebsiteDeep } = await import("@/lib/site-capture/deep");
+      const crawled = await crawlWebsiteDeep(lead.websiteUrl, lead.primaryType ?? undefined, { signal: ctx.signal });
+      features = crawled.features;
+      capture = crawled.capture;
+    } else {
+      features = await crawlWebsite(lead.websiteUrl, lead.primaryType ?? undefined);
+    }
+    if (ctx.signal?.aborted) {
+      // The executor's outer deadline fired and a retry owns this lead now.
+      // Writing a late result (or a late FAILED status) would race it.
+      return { output: { skipped: true, reason: "deadline_aborted" }, costTokens: 0 };
+    }
     const featuresWithExtras = features as typeof features & {
       contactEmails?: string[];
       socialProfiles?: Record<string, string | null>;
@@ -274,6 +339,18 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       update: baseFields,
     });
 
+    if (capture) {
+      try {
+        await saveSiteCapture({ workspaceId: lead.workspaceId, leadId: lead.id, capture });
+      } catch (err) {
+        // The audit row is the result; the capture record is supporting evidence.
+        logger.warn("agent_workers.website_auditor.capture_save_failed", {
+          leadId: lead.id,
+          err: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
     await prisma.lead.update({
       where: { id: lead.id },
       data: {
@@ -301,11 +378,15 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
         servicesDetected: features.servicesDetected,
         contactEmails,
         socialProfiles,
+        ...(features.siteFacts?.coverage ? { coverage: features.siteFacts.coverage } : {}),
         ...(verification ? { websiteVerification: verification } : {}),
       },
       costTokens: 0,
     };
   } catch (error) {
+    if (ctx.signal?.aborted) {
+      return { output: { skipped: true, reason: "deadline_aborted" }, costTokens: 0 };
+    }
     await prisma.lead.update({
       where: { id: lead.id },
       data: { crawlStatus: "FAILED" },
@@ -342,7 +423,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       costTokens: 0,
     };
   }
-};
+}
 
 /**
  * Test-only entry to the multi-source verification side-effect
