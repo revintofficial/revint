@@ -243,14 +243,15 @@ export default async function GuidePage({ searchParams }: { searchParams: Promis
           <P>Örnek: site okuyan worker güncellendi ve artık rezervasyon sistemini daha iyi bulması bekleniyor. Bunu veritabanına bakmadan şöyle görürsün:</P>
           <Steps items={[
             "Sol menüden Deneme'yi aç.",
-            "Üstten denemek istediğin worker'ı seç. Site için \"Site · Site denetimi\".",
+            "Üstteki dört karttan denemek istediğin adımı seç. Site için \"Site\" kartı.",
             "Listeden birkaç işletme işaretle. Bir denemede en fazla 10 tane.",
             "\"Neyi deniyorsun?\" kutusuna bir cümle yaz. Bu cümle Denetim kaydına geçer.",
             "Çalıştır düğmesine bas. Sayfa beş saniyede bir kendini yeniler; beklemen yeterli.",
-            "Koşu bitince her işletmenin altında bir tablo açılır: Alan, Önce, Sonra.",
+            "Koşu bitince işletmenin kartında \"Bu koşu ne buldu?\" başlığı altında bulgular görünür.",
           ]} />
-          <P><B>Tabloyu okumak:</B> her satır değişen tek bir bilgidir. &quot;Önce&quot; sütunu eski koşunun bulduğu, &quot;Sonra&quot; sütunu yeni koşunun bulduğu değerdir. &quot;—&quot; o bilginin o koşuda hiç olmadığını gösterir. Hiçbir şey değişmediyse tablo yerine &quot;hiçbir alan değişmedi&quot; yazar.</P>
-          <P>Değişikliğin doğru olup olmadığını anlamak için &quot;Vaka izi&quot; bağlantısına ya da işletmenin sitesine bak: yeni değer gerçeği mi söylüyor?</P>
+          <P><B>Kartı okumak:</B> her kutu tek bir bilgidir, örneğin &quot;Rezervasyon sistemi: Var&quot;. Önceki koşuya göre değişen kutular renkli çerçeveyle en üstte durur ve &quot;Değişti&quot; yazar; altındaki &quot;Önce:&quot; satırı eski değeri gösterir. Kartın başındaki cümle kaç bilginin değiştiğini söyler.</P>
+          <P>İşletme adının yanındaki etiket sonucu özetler: <B>Tamamlandı</B>, <B>Çalışmadan durdu</B> (sebebi ilk kutuda yazar), <B>Düştü</B> (hata cümlesi kartta yazar), <B>Çalışıyor</B> ya da <B>Hiç çalışmadı</B>. Yalnızca değişenleri görmek için listenin üstündeki &quot;Değişenler&quot; süzgecine bas.</P>
+          <P>Değişikliğin doğru olup olmadığını anlamak için karttaki site bağlantısını aç: yeni değer gerçeği mi söylüyor? Kartın en altındaki &quot;Sistemde şu an kayıtlı olan&quot; bölümü, bu işletmenin İnceleme&apos;de nasıl görüneceğini gösterir.</P>
           <Note>Deneme eski sonucu silmez; her çalıştırma yeni bir kayıt açar. Başlatmak Yönetici yetkisi ister. Karar worker&apos;ını denemek yapay zekâyı çalıştırır, yani para harcar.</Note>
         </Section>
 
