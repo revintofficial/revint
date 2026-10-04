@@ -29,6 +29,8 @@ type QueueRow = {
   primaryModule: string | null;
   missingLenses: ReviewLens[];
   sdrFlag?: string | null;
+  /** true when the viewer's own lens has not judged this brief yet. */
+  mine?: boolean;
 };
 
 export type ReviewSelection = {
@@ -77,28 +79,42 @@ export function ReviewInbox({
   }
 
   const missingAll = selected ? allMissingLenses(selected.view) : [];
+  const mine = queue.filter(row => row.mine);
+  const waiting = queue.filter(row => !row.mine);
+  const groups = lens
+    ? [
+        { title: `Senin sıran · ${LENS_LABELS[lens]} (${mine.length})`, empty: "Merceğinle bakılacak brief kalmadı.", rows: mine },
+        { title: `Diğer mercekler bekleniyor (${waiting.length})`, empty: null, rows: waiting },
+      ]
+    : [{ title: `Bekleyen brief (${queue.length})`, empty: null, rows: queue }];
 
   return (
     <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
       <aside className="space-y-2">
-        {queue.map((row) => {
-          const active = row.leadId === selectedLeadId;
-          return (
-            <button
-              key={row.leadId}
-              type="button"
-              onClick={() => router.push(`/admin/control/reviews?${query}&lead=${row.leadId}`)}
-              className={`block w-full rounded-xl border px-3 py-3 text-left ${active ? "border-[var(--revint-500)] bg-[var(--revint-hover)]" : "border-[var(--revint-border)] bg-[var(--revint-card)]"}`}
-            >
-              <span className="block text-sm font-medium text-[var(--revint-text-1)]">{row.businessName || "İsimsiz işletme"}</span>
-              {row.sdrFlag && (
-                <span className="mt-1 inline-block rounded-md border border-[var(--revint-warning)] px-1.5 py-0.5 text-xs text-[var(--revint-warning)]">{sdrFlagLabel(row.sdrFlag)}</span>
-              )}
-              <span className="mt-1 block text-xs text-[var(--revint-text-2)]">ICP {row.salesConfidence ?? "puan yok"} · {row.primaryModule ? moduleLabel(row.primaryModule) : "Birincil yok"}</span>
-              <span className="mt-1 block text-xs text-[var(--revint-text-3)]">{LENSES.filter(l => !row.missingLenses.includes(l)).map(l => `${LENS_LABELS[l]} baktı.`).join(" ")} Beklenen: {row.missingLenses.map(l => LENS_LABELS[l]).join(", ")}</span>
-            </button>
-          );
-        })}
+        {groups.map(group => (group.rows.length > 0 || group.empty) && (
+          <div key={group.title} className="space-y-2">
+            <h2 className="text-xs uppercase tracking-wider text-[var(--revint-text-3)]">{group.title}</h2>
+            {group.rows.length === 0 && group.empty && <p className="text-sm text-[var(--revint-text-2)]">{group.empty}</p>}
+            {group.rows.map((row) => {
+              const active = row.leadId === selectedLeadId;
+              return (
+                <button
+                  key={row.leadId}
+                  type="button"
+                  onClick={() => router.push(`/admin/control/reviews?${query}&lead=${row.leadId}`)}
+                  className={`block w-full rounded-xl border px-3 py-3 text-left ${active ? "border-[var(--revint-500)] bg-[var(--revint-hover)]" : "border-[var(--revint-border)] bg-[var(--revint-card)]"}`}
+                >
+                  <span className="block text-sm font-medium text-[var(--revint-text-1)]">{row.businessName || "İsimsiz işletme"}</span>
+                  {row.sdrFlag && (
+                    <span className="mt-1 inline-block rounded-md border border-[var(--revint-warning)] px-1.5 py-0.5 text-xs text-[var(--revint-warning)]">{sdrFlagLabel(row.sdrFlag)}</span>
+                  )}
+                  <span className="mt-1 block text-xs text-[var(--revint-text-2)]">ICP {row.salesConfidence ?? "puan yok"} · {row.primaryModule ? moduleLabel(row.primaryModule) : "Birincil yok"}</span>
+                  <span className="mt-1 block text-xs text-[var(--revint-text-3)]">{LENSES.filter(l => !row.missingLenses.includes(l)).map(l => `${LENS_LABELS[l]} baktı.`).join(" ")} Beklenen: {row.missingLenses.map(l => LENS_LABELS[l]).join(", ")}</span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </aside>
       {selected && (
         <section className="flex min-h-[70vh] flex-col rounded-xl border border-[var(--revint-border)] bg-[var(--revint-card)]">
@@ -126,6 +142,7 @@ export function ReviewInbox({
             agentRunId={selected.agentRunId}
             canReview={canReview}
             ownReview={selected.view.ownReview}
+            nextLeadId={selected.nextLeadId}
           />
         </section>
       )}
@@ -204,6 +221,7 @@ function ReviewForm({
   agentRunId,
   canReview,
   ownReview,
+  nextLeadId,
 }: {
   workspaceId: string;
   leadId: string;
@@ -211,6 +229,8 @@ function ReviewForm({
   canReview: boolean;
   lens: ReviewLens | null;
   ownReview: ReviewViewRow | null;
+  /** Next brief waiting on the viewer's lens; saving moves there. */
+  nextLeadId: string | null;
 }) {
   const router = useRouter();
   // Card open time; reviewSeconds = save time − this. The server keeps 1–1800 s, else null.
@@ -258,7 +278,7 @@ function ReviewForm({
         return;
       }
       const query = `workspaceId=${encodeURIComponent(workspaceId)}`;
-      router.push(`/admin/control/reviews?${query}&lead=${leadId}`);
+      router.push(`/admin/control/reviews?${query}&lead=${nextLeadId ?? leadId}`);
       router.refresh();
     } finally {
       setPending(false);
@@ -316,7 +336,7 @@ function ReviewForm({
         <textarea value={note} disabled={!canReview} onChange={(event) => setNote(event.target.value)} rows={2} className="mt-1 w-full rounded-lg border border-[var(--revint-border)] bg-[var(--revint-card)] px-3 py-2 text-sm text-[var(--revint-text-1)] disabled:opacity-60" />
       </label>
       <button type="button" disabled={Boolean(disabledReason) || pending} onClick={save} className="rounded-lg bg-[var(--revint-500)] px-3 py-2 text-sm text-white disabled:opacity-50">
-        Kararı kaydet
+        {nextLeadId ? "Kaydet ve sıradakine geç" : "Kararı kaydet"}
       </button>
       {disabledReason && <p className="text-sm text-[var(--revint-text-2)]">{disabledReason}</p>}
       {message && <p className="text-sm text-[var(--revint-text-1)]">{message}</p>}

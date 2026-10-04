@@ -1,7 +1,7 @@
 import { ControlFrame } from "@/components/admin/control-frame";
 import { ReviewInbox } from "@/components/admin/control-review-panel";
 import { requireControlRole, roleAtLeast, resolveControlLens } from "@/lib/control/roles";
-import { buildReviewView, listReviewQueue } from "@/lib/control/review";
+import { buildReviewView, listRecentBriefs } from "@/lib/control/review";
 import { toDecisionCard } from "@/lib/control/decision";
 import { buildShelf, shelfAuditFromRow, type ShelfRun } from "@/lib/control/evidence-shelf";
 import { prisma } from "@/lib/prisma";
@@ -25,10 +25,11 @@ export default async function ReviewsPage({
 /**
  * Everything the card needs for one lead, workspace scoped: the lead strip,
  * the latest successful run of each shelf worker, and the audit / review
- * analysis rows behind those runs. The brief is the latest SUCCEEDED brief
- * (the only status a verdict can be written against).
+ * analysis rows behind those runs. The brief is the one the queue lists for
+ * this lead (newest with a decision); outside the 14-day window it falls back
+ * to the latest SUCCEEDED brief (the only status a verdict can be written against).
  */
-async function loadCard(workspaceId: string, leadId: string) {
+async function loadCard(workspaceId: string, leadId: string, briefRunId: string | null) {
   const lead = await prisma.lead.findFirst({
     where: { id: leadId, workspaceId },
     select: { id: true, businessName: true, formattedAddress: true, rating: true, reviewCount: true, websiteUrl: true, googleMapsUri: true, accountId: true },
@@ -43,7 +44,7 @@ async function loadCard(workspaceId: string, leadId: string) {
       select: { id: true, workerKind: true, status: true, finishedAt: true, outputJson: true, errorMsg: true },
     }),
     prisma.agentRun.findFirst({
-      where: { workspaceId, leadId, workerKind: "LEAD_INTELLIGENCE_BRIEF", status: "SUCCEEDED" },
+      where: { workspaceId, leadId, workerKind: "LEAD_INTELLIGENCE_BRIEF", status: "SUCCEEDED", ...(briefRunId ? { id: briefRunId } : {}) },
       orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       select: { id: true, workerKind: true, status: true, finishedAt: true, outputJson: true, errorMsg: true },
     }),
@@ -61,11 +62,17 @@ async function loadCard(workspaceId: string, leadId: string) {
 
 async function ReviewsBody({ workspaceId, leadId }: { workspaceId: string; leadId?: string }) {
   const actor = await requireControlRole("VIEWER");
-  const [queue, lens] = await Promise.all([listReviewQueue(workspaceId), resolveControlLens(actor.userId)]);
+  const [recent, lens] = await Promise.all([listRecentBriefs(workspaceId), resolveControlLens(actor.userId)]);
+  // The viewer's own turn comes first: briefs their lens has not judged, then the ones waiting on other lenses.
+  const open = recent.filter(row => row.missingLenses.length > 0).map(row => ({ ...row, mine: lens !== null && row.missingLenses.includes(lens) }));
+  const queue = [...open.filter(row => row.mine), ...open.filter(row => !row.mine)];
   const selectedId = leadId || queue[0]?.leadId || null;
-  const selectedIndex = queue.findIndex(row => row.leadId === selectedId);
-  const nextLeadId = selectedIndex >= 0 ? queue[selectedIndex + 1]?.leadId ?? null : null;
-  const data = selectedId ? await loadCard(workspaceId, selectedId) : null;
+  const mine = queue.filter(row => row.mine);
+  const mineIndex = mine.findIndex(row => row.leadId === selectedId);
+  // After saving, the reviewer moves to the next brief still waiting on their lens.
+  const nextLeadId = (mineIndex >= 0 ? mine[mineIndex + 1] ?? mine.find(row => row.leadId !== selectedId) : mine[0])?.leadId ?? null;
+  const briefRunId = recent.find(row => row.leadId === selectedId)?.agentRunId ?? null;
+  const data = selectedId ? await loadCard(workspaceId, selectedId, briefRunId) : null;
   const brief = data?.brief ?? null;
   const view = brief ? await buildReviewView({ workspaceId, agentRunId: brief.id, lens }) : null;
 

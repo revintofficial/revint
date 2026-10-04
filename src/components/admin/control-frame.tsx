@@ -1,7 +1,7 @@
 import { ControlIntro } from "@/components/admin/control-intro";
 import { ControlStrip, WorkspacePicker, type WorkspaceOption } from "@/components/admin/control-workspace";
 import { ForbiddenError, UnauthorizedError } from "@/lib/auth";
-import { getControlWorkspace, listControlWorkspaces } from "@/lib/control/read";
+import { getControlWorkspace, listControlWorkspaces, listControlWorkspacesWithActivity } from "@/lib/control/read";
 import { requireControlRole } from "@/lib/control/roles";
 
 export async function ControlFrame({
@@ -18,8 +18,8 @@ export async function ControlFrame({
     if (error instanceof UnauthorizedError || error instanceof ForbiddenError) return null;
     throw error;
   }
+  if (!workspaceId) return <><ControlIntro /><WorkspacePicker workspaces={await listControlWorkspacesWithActivity()} /></>;
   const workspaces = await listControlWorkspaces();
-  if (!workspaceId) return <><ControlIntro /><WorkspacePicker workspaces={workspaces} /></>;
 
   const known = workspaces.find((workspace) => workspace.id === workspaceId);
   const workspace: WorkspaceOption | null = known ?? await getControlWorkspace(workspaceId);

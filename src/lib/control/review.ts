@@ -31,12 +31,25 @@ export function sdrFlagFor(rows: SdrRowLike[]): string | null {
  return latest && latest.verdict === "FAIL" ? latest.errorClass ?? "UNSPECIFIED" : null;
 }
 
+/** A brief that stopped before deciding (e.g. `skipped: "head_agent_off"`) has nothing to review. */
+export function isSkippedBrief(output: unknown): boolean {
+ if (typeof output !== "object" || output === null) return false;
+ const o = output as Record<string, unknown>;
+ return Boolean(o.skipped) && typeof o.briefMode !== "string";
+}
+
 export async function listRecentBriefs(workspaceId: string, now = new Date()): Promise<ReviewQueueRow[]> {
- const runs = await prisma.agentRun.findMany({
+ const found = await prisma.agentRun.findMany({
    where: { workspaceId, workerKind: "LEAD_INTELLIGENCE_BRIEF", status: "SUCCEEDED", leadId: { not: null }, finishedAt: { gte: new Date(now.getTime() - FORTNIGHT_MS) } },
    orderBy: [{ finishedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-   distinct: ["leadId"],
    select: { id: true, leadId: true, outputJson: true, finishedAt: true, lead: { select: { businessName: true } } },
+ });
+ // Newest brief per lead that carries a decision; a skipped brief never hides an older real one.
+ const seen = new Set<string>();
+ const runs = found.filter(run => {
+   if (!run.leadId || seen.has(run.leadId) || isSkippedBrief(run.outputJson)) return false;
+   seen.add(run.leadId);
+   return true;
  });
  if (!runs.length) return [];
  const reviews = await prisma.humanReview.findMany({

@@ -34,7 +34,7 @@ it("keeps two lenses, ignores legacy rows, removes three, and queries only succe
  const rows = ["TECHNICAL", "DOMAIN", null].map(lens => ({ lens, agentRunId: "run", createdAt: new Date() }));
  m.reviews.mockResolvedValue(rows);
  expect(await listReviewQueue("ws", new Date("2026-09-28"))).toMatchObject([{ businessName: "Burger House", missingLenses: ["SALES"] }]);
- expect(m.runs).toHaveBeenCalledWith(expect.objectContaining({ where: { workspaceId: "ws", workerKind: "LEAD_INTELLIGENCE_BRIEF", status: "SUCCEEDED", leadId: { not: null }, finishedAt: { gte: new Date("2026-09-14") } }, distinct: ["leadId"] }));
+ expect(m.runs).toHaveBeenCalledWith(expect.objectContaining({ where: { workspaceId: "ws", workerKind: "LEAD_INTELLIGENCE_BRIEF", status: "SUCCEEDED", leadId: { not: null }, finishedAt: { gte: new Date("2026-09-14") } } }));
  m.reviews.mockResolvedValue([...rows, { lens: "SALES", agentRunId: "run", createdAt: new Date() }]);
  expect(await listReviewQueue("ws")).toEqual([]);
 });

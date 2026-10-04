@@ -1,9 +1,10 @@
-import { requireControlRole } from "@/lib/control/roles";
+import { requireControlRole, resolveControlLens } from "@/lib/control/roles";
 import Link from "next/link";
 import { ControlFrame } from "@/components/admin/control-frame";
 import { formatControlDate } from "@/lib/control/labels";
 import { gateAnswer, getControlOverview, getGateStatuses, type GateGroup, type GateStatus } from "@/lib/control/overview";
 import { formatRate } from "@/lib/control/stats";
+import { flowHeadline, getFlowStages, type FlowStage } from "@/lib/control/flow";
 
 export default async function ControlOverviewPage({
   searchParams,
@@ -25,13 +26,23 @@ const GROUP_TITLES: Record<GateGroup, { title: string; caption: string }> = {
 };
 
 async function OverviewBody({ workspaceId }: { workspaceId: string }) {
-  await requireControlRole("VIEWER");
+  const actor = await requireControlRole("VIEWER");
   const now = new Date();
-  const [data, gates] = await Promise.all([getControlOverview(workspaceId, now), getGateStatuses(workspaceId, now)]);
+  const lens = await resolveControlLens(actor.userId);
+  const [data, gates, stages] = await Promise.all([getControlOverview(workspaceId, now), getGateStatuses(workspaceId, now), getFlowStages(workspaceId, lens, now)]);
   const query = `workspaceId=${encodeURIComponent(workspaceId)}`;
   return (
     <section className="space-y-8">
       <h1 className="text-2xl font-semibold">Genel Bakış</h1>
+
+      <section className="space-y-3" aria-labelledby="flow">
+        <h2 id="flow" className="text-lg font-semibold">Akış</h2>
+        <p className="text-sm text-[var(--revint-text-1)]">{flowHeadline(stages)}</p>
+        <ol className="grid gap-3 md:grid-cols-5">
+          {stages.map((stage) => <StageCard key={stage.key} stage={stage} query={query} />)}
+        </ol>
+        <p className="text-xs text-[var(--revint-text-3)]">Her adım bir öncekinin çıktısını okur. Kilitli bir adımın ekranı boş görünür; sebebi kartında yazar.</p>
+      </section>
 
       <section className="space-y-3" aria-labelledby="today">
         <h2 id="today" className="text-lg font-semibold">Bugün</h2>
@@ -98,6 +109,31 @@ function headline(failed: number, stuck: number): string {
   if (failed > 0 && stuck > 0) return `Son 24 saatte ${failed} analiz düştü, ${stuck} oturum 30 dakikadır ilerlemiyor.`;
   if (failed > 0) return `Son 24 saatte ${failed} analiz düştü.`;
   return `${stuck} oturum 30 dakikadır ilerlemiyor.`;
+}
+
+const STAGE_STATE: Record<FlowStage["state"], { text: string; className: string }> = {
+  done: { text: "Tamam", className: "text-[var(--revint-success)]" },
+  next: { text: "Sıradaki adım", className: "font-semibold text-[var(--revint-500)]" },
+  open: { text: "Bekliyor", className: "text-[var(--revint-text-2)]" },
+  locked: { text: "Kilitli", className: "text-[var(--revint-text-3)]" },
+};
+
+function StageCard({ stage, query }: { stage: FlowStage; query: string }) {
+  const state = STAGE_STATE[stage.state];
+  const locked = stage.state === "locked";
+  return (
+    <li className={`flex flex-col rounded-xl border p-4 ${stage.state === "next" ? "border-[var(--revint-500)] bg-[var(--revint-hover)]" : "border-[var(--revint-border)] bg-[var(--revint-card)]"} ${locked ? "opacity-70" : ""}`}>
+      <span className="text-xs uppercase tracking-wider text-[var(--revint-text-3)]">{stage.title}</span>
+      <strong className="mt-2 block break-words text-base text-[var(--revint-text-1)]">{stage.count}</strong>
+      <span className={`mt-1 text-xs ${state.className}`}>{state.text}</span>
+      <p className="mt-2 flex-1 text-xs text-[var(--revint-text-2)]">{stage.detail}</p>
+      {!locked && (
+        <Link href={`/admin/control${stage.path}?${query}`} className="mt-3 text-sm text-[var(--revint-500)]">
+          {stage.action}
+        </Link>
+      )}
+    </li>
+  );
 }
 
 function GateRow({ gate }: { gate: GateStatus }) {

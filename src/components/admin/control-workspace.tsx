@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { roleLabel } from "@/lib/control/labels";
 
-export type WorkspaceOption = { id: string; name: string; slug: string };
+export type WorkspaceOption = { id: string; name: string; slug: string; /** Leads with a brief in the last 14 days (picker only). */ recentBriefs?: number };
 
 const RECENT_KEY = "revint.control.recentWorkspaces";
 
@@ -45,9 +45,11 @@ export function WorkspacePicker({ workspaces }: { workspaces: WorkspaceOption[] 
     .map((id) => workspaces.find((workspace) => workspace.id === id))
     .filter((workspace): workspace is WorkspaceOption => Boolean(workspace));
   const needle = query.trim().toLowerCase();
+  // Without a search every workspace is listed (active ones first, as the server sorted them).
   const matches = needle
-    ? workspaces.filter((workspace) => workspace.name.toLowerCase().includes(needle) || workspace.slug.toLowerCase().includes(needle)).slice(0, 8)
-    : [];
+    ? workspaces.filter((workspace) => workspace.name.toLowerCase().includes(needle) || workspace.slug.toLowerCase().includes(needle))
+    : workspaces;
+  const active = workspaces.filter((workspace) => (workspace.recentBriefs ?? 0) > 0).length;
 
   return (
     <section className="mx-auto max-w-xl space-y-5">
@@ -69,6 +71,13 @@ export function WorkspacePicker({ workspaces }: { workspaces: WorkspaceOption[] 
         <span className="text-sm text-[var(--revint-text-2)]">Ad veya slug ara</span>
         <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full rounded-lg border border-[var(--revint-border)] bg-[var(--revint-surface)] px-3 py-2 text-sm text-[var(--revint-text-1)]" />
       </label>
+      {!needle && workspaces.length > 0 && (
+        <p className="text-xs text-[var(--revint-text-3)]">
+          {active > 0
+            ? `${workspaces.length} çalışma alanından ${active} tanesinde son 14 günde brief var; onlar üstte.`
+            : "Son 14 günde hiçbir çalışma alanında brief üretilmedi."}
+        </p>
+      )}
       {needle && matches.length === 0 && <p className="text-sm text-[var(--revint-text-2)]">Bu ada uyan çalışma alanı yok.</p>}
       {matches.length > 0 && (
         <ul className="space-y-2">
@@ -76,7 +85,9 @@ export function WorkspacePicker({ workspaces }: { workspaces: WorkspaceOption[] 
             <li key={workspace.id}>
               <button type="button" onClick={() => choose(workspace.id)} className="w-full rounded-xl border border-[var(--revint-border)] bg-[var(--revint-card)] px-4 py-3 text-left hover:bg-[var(--revint-hover)]">
                 <span className="block text-sm font-medium">{workspace.name}</span>
-                <span className="block text-xs text-[var(--revint-text-3)]">{workspace.slug}</span>
+                <span className="block text-xs text-[var(--revint-text-3)]">
+                  {workspace.slug} · {(workspace.recentBriefs ?? 0) > 0 ? `son 14 günde ${workspace.recentBriefs} lead'de brief` : "son 14 günde brief yok"}
+                </span>
               </button>
             </li>
           ))}
