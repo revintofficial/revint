@@ -45,6 +45,11 @@ Site dışına tek adım: bilinen rezervasyon, sipariş veya menü sağlayıcıs
 - Site başına en fazla 40 sayfa (ana sayfa dahil) ve 150 sn yakalama bütçesi; sayfa başına 15 sn. Bunlar tavandır, hedef değil.
 - Tür başına sınır: rezervasyon 4, dış sağlayıcı 5, menü 6, sipariş 3, etkinlik/grup 3, SSS 3, şubeler 6, iletişim 2, hakkında 2, diğer 3. Aday kalmayınca yakalama biter (erken durma budur); tipik sitede 8–12 sayfa açılır.
 - Site haritasından en fazla 150 aday alınır (öncelik sırasıyla); fazlası deftere girmez, sayısı kayda yazılır.
+- Site başına en fazla 300 aday adres alınır; fazlası deftere girmez, sayısı kayda ve kapsam özetine yazılır. Defter kuralı buna göre okunur: aday olarak alınan her adresin tam bir sonucu olur.
+- En fazla 80 gezinme denemesi; art arda 8 deneme engel ya da zaman aşımıyla biterse yakalama durur ve kalan adresler deftere `blocked` nedeniyle yazılır.
+- `robots.txt` ve site haritası ayrıştırması doğrusal zamanda çalışır; kural sayısı (500), kural uzunluğu (512 karakter) ve dosya başına adres sayısı (5.000) sınırlıdır. Düşmanca bir dosya worker sürecini donduramaz.
+- Yalnızca içki listesi olan PDF (şarap, kokteyl, bar) menü PDF'i sayılmaz ve indirilmez.
+- Mağaza, blog, kariyer gibi bölümler (ilk yol parçası ya da alt alan adı) aday olmaz.
 - Aynı siteye en fazla 3 eşzamanlı sayfa.
 - Süreç başına en fazla 2 eşzamanlı site taraması (`SITE_CAPTURE_MAX_CONCURRENT`).
 - En fazla 5 PDF, PDF başına 15 MB.
@@ -58,7 +63,7 @@ Yakalama uzun sürer; `agent-runs` kuyruğunun 10 slotunu ve 3 dakikalık bekçi
 - **Dış sınır.** Worker kaydına isteğe bağlı `deadlineMs` eklenir. `WEBSITE_AUDITOR` için 300 sn (ana sayfa denetimi ≤ 60 sn + yakalama 150 sn + PDF ve yazma payı). Diğer worker'ların sınırı değişmez. Slot beklemesi bu sürenin içinde değildir.
 - **İptal.** Dış sınır dolunca yürütücü bir iptal sinyali gönderir; yakalama tarayıcı bağlamını kapatır ve slotu bırakır. Sınırı aşan iş arkada çalışmaya devam etmez.
 - **Slot beklemesi iş slotu tutmaz.** Tarama slotu yoksa koşu `PENDING`'e döner ve iş gecikmeli olarak kuyruğa geri konur (20 sn'den başlayıp 120 sn'ye çıkan aralıkla). Bu, BullMQ deneme hakkı harcamaz ve diğer worker'ların sırasını tıkamaz.
-- **Bekleme tavanı.** Koşu oluşturulduktan 30 dakika sonra hâlâ slot yoksa denetim bugünkü sığ taramayla tamamlanır; zincir ilerler, kayıtta derin taramanın kapasite yüzünden atlandığı görünür.
+- **Bekleme tavanı.** Koşu oluşturulduktan 30 dakika sonra hâlâ slot yoksa denetim bugünkü sığ taramayla tamamlanır; zincir ilerler, kayıtta derin taramanın kapasite yüzünden atlandığı görünür (`deepSkipped: "capacity"`; kapatma anahtarıyla atlandıysa `"kill_switch"`), kanıt rafı bunu yazar.
 - **Bekçiler.** `GET /api/agent-runs/[id]` içindeki tembel bekçi, senkron koşuda worker'ın `deadlineMs` + 60 sn'sini kullanır (yoksa bugünkü 3 dakika) ve süreyi son başlangıç ya da son ertelemeden sayar. Arayüzdeki "takıldı" etiketi de `deadlineMs`'i bilir.
 - **Verim.** Tek süreçte 2 slot ve hedef medyan 60 sn ile saatte yaklaşık 120 site. 90 lead'lik bir partide denetim aşaması yaklaşık 45 dakika sürer (bugün birkaç dakika); bu bilinen bedeldir, slot sayısı ortam değişkeniyle artırılabilir.
 - **Kapatma anahtarı.** `SITE_CAPTURE_DEEP=0` derin yakalamayı kapatır; worker bugünkü davranışına döner.
@@ -68,10 +73,13 @@ Yakalama uzun sürer; `agent-runs` kuyruğunun 10 slotunu ve 3 dakikalık bekçi
 - `null` = bilinmiyor. Hiçbir alan "görmedim" için `false` yazmaz.
 - Her bulgu üç durumdan biri: bulundu (URL + alıntı), bakıldı ve yok (defterde hangi sayfaların açıldığı), bakılamadı (defterde neden).
 - Köprü yalnızca `null` bulguları doldurur; `mergeSiteFacts`'in bugünkü cevabını ezmez. Köprü `bookingChecked`, `menuPageSeen`, `orderPageSeen` alanlarına dokunmaz: "bakıldı ve yok" kararını bugünkü kurallar verir, daha çok sayfa açıldı diye yeni `false` üretilmez.
+- **Tek istisna kapora bulgusudur.** Derin yolda kapora her zaman aşağıdaki cümle kuralıyla karara bağlanır; `mergeSiteFacts`'in kendi kapora cevabı bu kuraldan geçmezse düşer ya da kapsamlı olur. Gerekçe: 40 sitelik ölçümde eski kural, yakalanan sayfalarda kapsamsız genel kapora üretti (7+ kişilik rezervasyon kuralı, otel odası koşulu, sayfa kodundan sızan metin). Sığ yol (`crawlWebsite`) değişmez; aynı lead sığ ve derin denetimde farklı kapora cevabı alabilir, derin olan daha temkinlidir.
 - **Bulgunun kapsamı.** Kapora bulgusu cümle düzeyinde okunur ve şüphede "bilinmiyor" ya da "kapsamlı" tarafına düşer:
   - Cümle olumsuzsa ("kapora alınmaz", "iptal ücreti yok") ya da rezervasyonla ilgili değilse (hediye çeki, sipariş) bulgu üretilmez.
   - Etkinlik / grup sayfasından ya da grup, kişi eşiği ("8 kişi ve üzeri") veya özel gün (Noel, özel etkinlik) ifadesi taşıyan cümleden okunan bulgu `scope: "group_or_event"` taşır.
-  - Genel bulgu yalnızca olumsuz olmayan, kısıt taşımayan cümleden çıkar; SSS sayfasında ayrıca cümlenin rezervasyondan söz etmesi gerekir.
+  - Genel bulgu yalnızca olumsuz olmayan, kısıt taşımayan cümleden çıkar; SSS sayfasında ve ana sayfada ayrıca cümlenin rezervasyondan söz etmesi gerekir.
+  - Otel odası bağlamı (oda, konaklama, gece, giriş / çıkış) taşıyan cümle ve 400 karakterden uzun "cümle" (sayfa kodundan sızan metin) bulgu üretmez.
+  - Bir sayfada kapsamlı tek bir ifade varsa o sayfadan genel bulgu çıkmaz.
   - Oda 1 genel "kapora var" sinyalini yalnızca kapsamı genel olan bulgudan üretir; kapsamlı bulgu kanıt olarak durur ama genel iddiaya dönüşmez.
 - **Bulgunun kaynağı.** Köprünün doldurduğu bulgu `source` taşır: `page`, `network` (üçüncü taraf istek) ya da `pdf`.
 - `SiteFacts` geriye uyumlu kalır: yeni `coverage`, `scope`, `source` alanları isteğe bağlıdır.
