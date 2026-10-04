@@ -50,11 +50,18 @@ import { parseHeadAgentOutput } from "@/lib/integrations/hubspot/writeback";
 import { headAgentCardDecision } from "@/lib/integrations/hubspot/head-agent-card";
 import { resolveRecommendedPackage } from "@/lib/lead-detail/recommended-package";
 import {
-  REASON_LABELS,
   SUPPRESS_WHEN_NO_WEBSITE,
   normalizeWedgeKey,
 } from "@/lib/labels";
 import { painPhraseTexts } from "@/lib/review-analysis/pain-phrases";
+import {
+  SERVER_LOCALE,
+  labelForModule as labelForModuleI18n,
+  formatSegmentLabel,
+  techSignalCopy,
+  glanceCopy,
+  labelForReason,
+} from "./i18n";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -108,6 +115,7 @@ function primaryFirst<T extends HubspotAssociation>(results: T[]): T[] {
 const leadCardSelect = {
   id: true,
   businessName: true,
+  formattedAddress: true,
   leadTemperature: true,
   salesConfidence: true,
   icpFitScore: true,
@@ -122,6 +130,12 @@ const leadCardSelect = {
   inboundReceivedAt: true,
   crmLastSyncedAt: true,
   googleMapsUri: true,
+  account: {
+    select: {
+      locationsCount: true,
+      tier: true,
+    },
+  },
   qualification: {
     select: {
       status: true,
@@ -290,18 +304,31 @@ function actionSheetUrl(leadId: string): string {
  * forces a 401.
  */
 function cardUrlCandidates(request: Request): string[] {
-  const out: string[] = [];
-  if (process.env.HUBSPOT_CARD_URL) out.push(process.env.HUBSPOT_CARD_URL);
+  const bases: string[] = [];
+  if (process.env.HUBSPOT_CARD_URL) bases.push(process.env.HUBSPOT_CARD_URL);
   if (process.env.NEXT_PUBLIC_APP_URL) {
-    out.push(`${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/hubspot/card-data`);
+    bases.push(`${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/hubspot/card-data`);
   }
   try {
     const u = new URL(request.url);
     const fwdHost = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
     const fwdProto = request.headers.get("x-forwarded-proto") ?? "https";
-    if (fwdHost) out.push(`${fwdProto}://${fwdHost}${u.pathname}`);
+    if (fwdHost) bases.push(`${fwdProto}://${fwdHost}${u.pathname}`);
   } catch {
     // request.url not parseable — verifier still tries it raw.
+  }
+
+  let search = "";
+  try { search = new URL(request.url).search; } catch { /* ignore */ }
+
+  if (!search) return bases;
+
+  const searchDecoded = search.replace(/%40/g, "@");
+  const out: string[] = [];
+  for (const base of bases) {
+    out.push(`${base}${search}`);
+    if (searchDecoded !== search) out.push(`${base}${searchDecoded}`);
+    out.push(base);
   }
   return out;
 }
@@ -388,31 +415,31 @@ function buildTechSignals(features: RestaurantFeatures | null): Array<{
   if (!features) return null;
   return [
     {
-      label: "QR menu",
+      label: techSignalCopy.qrMenuLabel,
       present: features.hasQrMenu === true,
       detail: features.detectedMenuTool
-        ? `Detected: ${features.detectedMenuTool}`
+        ? techSignalCopy.qrMenuDetected(features.detectedMenuTool)
         : features.hasQrMenu === true
-          ? "QR menu found on site"
+          ? techSignalCopy.qrMenuPresent
           : features.hasQrMenu == null
-            ? "Not checked — no menu link on the site"
-            : "Not detected — primary sales opportunity",
+            ? techSignalCopy.qrMenuNotChecked
+            : techSignalCopy.qrMenuMissing,
       priority: features.hasQrMenu == null ? "nice_to_have" : "critical",
     },
     {
-      label: "Online reservation",
+      label: techSignalCopy.reservationLabel,
       present: !!features.hasOnlineReservation,
       detail: features.hasOnlineReservation
-        ? "Reservation system found"
-        : "No reservation integration",
+        ? techSignalCopy.reservationPresent
+        : techSignalCopy.reservationMissing,
       priority: "important",
     },
     {
-      label: "Delivery integration",
+      label: techSignalCopy.deliveryLabel,
       present: !!features.hasDeliveryIntegration,
       detail: features.hasDeliveryIntegration
-        ? "Delivery platform link found"
-        : "No delivery platform embed",
+        ? techSignalCopy.deliveryPresent
+        : techSignalCopy.deliveryNone,
       priority: "nice_to_have",
     },
   ];
@@ -447,26 +474,26 @@ function buildGlanceChips(args: {
   const chips: string[] = [];
 
   // Package + review sub-score lead the strip (highest-information chips).
-  if (packageName) chips.push(`Package: ${packageName}`);
+  if (packageName) chips.push(`${glanceCopy.packagePrefix}: ${packageName}`);
   if (reviewLeadScore != null) {
-    chips.push(`Review sub-score ${reviewLeadScore}/100`);
+    chips.push(glanceCopy.reviewScore(reviewLeadScore));
   }
 
-  // Slow site label uses the same 3.5s threshold as the in-app strip.
+  // Slow site chip — 3.5s threshold mirrors the in-app strip.
   if (audit?.loadTimeMs != null && audit.loadTimeMs >= 3500) {
-    chips.push(`Slow site ~${Math.round(audit.loadTimeMs / 1000)}s`);
+    chips.push(glanceCopy.slowSite(Math.round(audit.loadTimeMs / 1000)));
   }
 
-  // Audit-derived wedges (boolean signals). Match the in-app copy verbatim
-  // so chip text stays consistent across HubSpot + Revint.
+  // Audit-derived wedges (boolean signals).
   const wedges: string[] = [];
-  if (audit?.hasWhatsappLink === false) wedges.push("No WhatsApp");
-  if (audit?.hasContactForm === false) wedges.push("No contact form");
-  if (features?.hasQrMenu === true) wedges.push("QR menu detected");
+  if (audit?.hasWhatsappLink === false) wedges.push(glanceCopy.noWhatsapp);
+  if (audit?.hasContactForm === false) wedges.push(glanceCopy.noContactForm);
+  if (features?.hasQrMenu === true) wedges.push(glanceCopy.qrMenuPresent);
   for (const w of wedges) chips.push(w);
 
-  // Gemini scorer reasonCodes, mapped through REASON_LABELS and deduped
-  // against the high-trust audit wedges by normalized text.
+  // Gemini scorer reasonCodes, resolved via `labelForReason` (locale-aware).
+  // Deduped against the high-trust audit wedges by normalized text so the
+  // chip strip never shows the same fact twice under different copy.
   const raw = Array.from(
     new Set(
       Array.isArray(reasonCodes)
@@ -481,12 +508,12 @@ function buildGlanceChips(args: {
   const filtered = raw
     .filter((code) => {
       if (hasNoWebsite && SUPPRESS_WHEN_NO_WEBSITE.has(code)) return false;
-      const labelText = REASON_LABELS[code] ?? code.replace(/_/g, " ");
+      const labelText = labelForReason(code);
       if (wedgeKeys.has(normalizeWedgeKey(labelText))) return false;
       return true;
     })
     .slice(0, 5)
-    .map((code) => REASON_LABELS[code] ?? code.replace(/_/g, " "));
+    .map((code) => labelForReason(code));
   for (const c of filtered) chips.push(c);
 
   // Hard cap so the card stays well under the 1MB ceiling no matter how
@@ -767,6 +794,82 @@ export async function POST(request: Request) {
     headAgentTalkTrack ??
     (haDecision ? null : (nextAction?.openingHook ?? picked?.angle.whenToPitch ?? null));
 
+  // ---- Head-agent extras for the "Önerilen Paket" hero block ---------------
+  // Confidence % + locale-labeled excludedModules (module × reason). Emitted
+  // as a nullable side-object so the card can render `—` when the synthesis
+  // pass didn't run (non-F&B niche, flag off, or the head agent is disabled).
+  // Module id → label mapping lives in `./i18n.ts` so the card never has to
+  // translate an unknown id and both languages share the same vocabulary.
+  const labelForModule = labelForModuleI18n;
+  const headAgentConfidence =
+    typeof headAgent?.confidence === "number" &&
+    Number.isFinite(headAgent.confidence)
+      ? Math.max(0, Math.min(100, Math.round(headAgent.confidence)))
+      : null;
+  const headAgentExcluded = Array.isArray(headAgent?.excludedModules)
+    ? (headAgent.excludedModules as unknown[])
+        .map((m) => {
+          if (!m || typeof m !== "object") return null;
+          const row = m as Record<string, unknown>;
+          const label = labelForModule(row.module);
+          if (!label) return null;
+          const why =
+            typeof row.why === "string" && row.why.trim()
+              ? row.why.trim()
+              : null;
+          return { module: label, why };
+        })
+        .filter(
+          (m): m is { module: string; why: string | null } => m !== null,
+        )
+        .slice(0, 6)
+    : [];
+
+  // Recommended modules — normalised (Turkish label added) + readiness DESC,
+  // capped at 5 so the card stays within the 1MB response ceiling and the SDR
+  // isn't shown an overwhelming list.
+  const headAgentRecommended = Array.isArray(headAgent?.recommendedModules)
+    ? (headAgent.recommendedModules as unknown[])
+        .map((m) => {
+          if (!m || typeof m !== "object") return null;
+          const row = m as Record<string, unknown>;
+          const moduleId =
+            typeof row.module === "string" ? row.module.trim() : "";
+          if (!moduleId) return null;
+          const label = labelForModule(moduleId);
+          const readinessRaw =
+            typeof row.readiness === "number" && Number.isFinite(row.readiness)
+              ? row.readiness
+              : null;
+          const readiness =
+            readinessRaw != null
+              ? Math.max(0, Math.min(100, Math.round(readinessRaw)))
+              : null;
+          const why =
+            typeof row.why === "string" && row.why.trim()
+              ? row.why.trim()
+              : null;
+          return { module: moduleId, label, readiness, why };
+        })
+        .filter(
+          (
+            m,
+          ): m is {
+            module: string;
+            label: string;
+            readiness: number | null;
+            why: string | null;
+          } => m !== null,
+        )
+        .sort((a, b) => (b.readiness ?? -1) - (a.readiness ?? -1))
+        .slice(0, 5)
+    : [];
+
+  const headAgentReasoning =
+    typeof headAgent?.reasoning === "string" && headAgent.reasoning.trim()
+      ? String(headAgent.reasoning).trim()
+      : null;
+
   // ---- At-a-Glance + tech signals + links ----------------------------------
   const audit = lead.websiteAudit;
   const features = asRestaurantFeatures(audit?.rawFeaturesJson ?? null);
@@ -801,6 +904,13 @@ export async function POST(request: Request) {
       businessName: lead.businessName,
     },
     actionSheetUrl: baseActionUrl,
+    // Server locale — kart defensive okur; CARD_LOCALE ile eşleşmeli.
+    locale: SERVER_LOCALE,
+    // Location + locations count — denormalised onto the response so the
+    // card doesn't have to join tables itself.
+    location: lead.formattedAddress ?? null,
+    branchCount: lead.account?.locationsCount ?? null,
+    accountTier: lead.account?.tier ?? null,
     timing: {
       hoursSinceInbound,
       inboundReceivedAt: lead.inboundReceivedAt?.toISOString() ?? null,
@@ -813,6 +923,9 @@ export async function POST(request: Request) {
       stageKey: lead.playbookStageKey,
       stageLabel: stage?.label ?? null,
       subNicheSlug: lead.subNicheSlug,
+      // Server-translated segment label so the card doesn't need a second
+      // translation layer. Falls back to a sensible F&B · xxx format.
+      subNicheLabel: formatSegmentLabel(lead.subNicheSlug ?? null),
       qualificationStatus: lead.qualification?.status ?? null,
       qualified: lead.qualification?.qualified ?? false,
       qualificationRisk: lead.qualification?.qualificationRisk ?? null,
@@ -847,7 +960,10 @@ export async function POST(request: Request) {
           channel: nextAction?.actionKind ?? null,
           evidenceSummary:
             picked && picked.matchedTriggers.length > 0
-              ? truncate(`Signals: ${picked.matchedTriggers.join(", ")}`, MAX_EVIDENCE_CHARS)
+              ? truncate(
+                  `Signals: ${picked.matchedTriggers.join(", ")}`,
+                  MAX_EVIDENCE_CHARS,
+                )
               : null,
           openQuestions: null,
         },
@@ -857,6 +973,19 @@ export async function POST(request: Request) {
       headline: pitchHeadline,
       sentence: truncate(pitchSentence, MAX_HOOK_CHARS),
     },
+    // Head Agent side-object for the "Önerilen Paket" hero + "Head Agent"
+    // decision block. Nullable when the synthesis pass didn't run so the
+    // card can render `—` without inventing values.
+    headAgent: headAgent
+      ? {
+          primaryAngle: headAgentAngle,
+          talkTrack: headAgentTalkTrack,
+          reasoning: headAgentReasoning,
+          confidence: headAgentConfidence,
+          recommendedModules: headAgentRecommended,
+          excludedModules: headAgentExcluded,
+        }
+      : null,
     // Analyst-recommended service package (name + price + why).
     package: recommendedPackage
       ? {
@@ -902,7 +1031,7 @@ export async function POST(request: Request) {
     // new card UI surfaces only sentiment + phrases on the card body.
     reviews: review
       ? {
-          leadScore: null,
+          leadScore: review.leadScore ?? null,
           reviewsAnalyzed: review.reviewsAnalyzedCount ?? null,
           totalReviews: lead.reviewCount ?? null,
           rating: lead.rating ?? null,
