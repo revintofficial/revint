@@ -28,6 +28,19 @@ const HARD_NOISE =
 const SOFT_NOISE =
   /(^|\/)(blog|news|journal|stories|press|media|careers?|jobs|vacancies|recruitment|gift-?cards?|gift-?vouchers?|vouchers?|shop|store|merch|products?|newsletter|subscribe|tags?|category|author|allergens?)(\/|$|\.|-)/i;
 
+/** The same words as the FIRST path segment: a whole shop / blog section, never a candidate. */
+const NOISE_SECTION =
+  /^\/(blog|news|journal|stories|press|media|careers?|jobs|vacancies|recruitment|gift-?cards?|gift-?vouchers?|vouchers?|shop|store|merch|products?|newsletter|subscribe|tags?|category|author|allergens?)(\/|$|\.)/i;
+/** A segment or link text about books (a cookbook, a book shop): "book" here is not a booking. */
+const BOOKS_SEGMENT = /^(books|bookshop|bookstore|cookbook[\w-]*|cookery-book[\w-]*)(\.\w+)?$/i;
+const BOOKS_TEXT = /^(books|our book|cook ?books?|cookery books?)$/i;
+
+/** RES_PATH / RES_TEXT, minus segments and link texts that are about books. */
+function isReservation(path: string, text: string): boolean {
+  if (RES_TEXT.test(text) && !BOOKS_TEXT.test(text)) return true;
+  return path.split("/").some((s) => s !== "" && !BOOKS_SEGMENT.test(s) && RES_PATH.test(`/${s}`));
+}
+
 const EVENTS_PATH =
   /(^|\/)(private-[\w-]+|group-[\w-]+|events?|parties|celebrations?|functions?|weddings?|christmas[\w-]*|feasts?|ozel-[\w-]+|grup-[\w-]+)(\/|$|\.)/i;
 const EVENTS_TEXT = word(
@@ -103,8 +116,10 @@ export function classifyUrl(url: URL, linkText: string | null, home: URL): PageT
     if (NOISE_SUBDOMAIN.test(label)) return null;
   }
 
+  // A shop or blog section stays out whatever its later segments or link text say.
+  if (NOISE_SECTION.test(path)) return null;
   if (EVENTS_PATH.test(path) || EVENTS_TEXT.test(text)) return "events";
-  if (RES_PATH.test(path) || RES_TEXT.test(text)) return "reservation";
+  if (isReservation(path, text)) return "reservation";
   if (MENU_PATH.test(path) || MENU_TEXT.test(text)) return "menu";
   if (ORDER_PATH.test(path) || ORDER_TEXT.test(text)) return "order";
   if (FAQ_PATH.test(path) || FAQ_TEXT.test(text)) return "faq";

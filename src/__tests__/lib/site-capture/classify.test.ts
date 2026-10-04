@@ -83,6 +83,38 @@ describe("classifyUrl: never a candidate", () => {
   });
 });
 
+// Final fix C3: shop / blog sections and "books" are not guest pages.
+describe("classifyUrl: shop and blog sections, books", () => {
+  it.each([
+    ["/store/collections/books-and-music/", null],
+    ["/store/books-recommended-reads/", "Recommended reads"],
+    ["/store/products/dishoom-cookery-book/hardback", "Dishoom cookery book"],
+    ["/shop/menu-gift", "Menu"],
+    ["/news/christmas-party", null],
+    ["/blog/book-a-table-tips", "Book a table"],
+  ])("a URL whose first segment is a shop or blog section is never a candidate: %s", (href, text) => {
+    expect(c(href, text)).toBeNull();
+  });
+
+  it.each([
+    ["/books", "Books"],
+    ["/bookshop", null],
+    ["/bookstore", null],
+    ["/x", "Our book"],
+    ["/x", "Cookbook"],
+  ])("books are not a booking: %s (%s)", (href, text) => {
+    expect(c(href, text)).not.toBe("reservation");
+  });
+
+  it.each(["/book", "/bookings", "/booking", "/book-a-table"])("%s is still a booking page", (href) => {
+    expect(c(href)).toBe("reservation");
+  });
+
+  it("the store locator is not the segment 'store'", () => {
+    expect(c("/store-locator")).toBe("locations");
+  });
+});
+
 describe("classifyUrl: one hop off the site", () => {
   it("a known booking provider page is external", () => {
     expect(c("https://www.sevenrooms.com/reservations/examplebistro", "Book")).toBe("external");
