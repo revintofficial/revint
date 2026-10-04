@@ -68,7 +68,11 @@ Yakalama uzun sürer; `agent-runs` kuyruğunun 10 slotunu ve 3 dakikalık bekçi
 - `null` = bilinmiyor. Hiçbir alan "görmedim" için `false` yazmaz.
 - Her bulgu üç durumdan biri: bulundu (URL + alıntı), bakıldı ve yok (defterde hangi sayfaların açıldığı), bakılamadı (defterde neden).
 - Köprü yalnızca `null` bulguları doldurur; `mergeSiteFacts`'in bugünkü cevabını ezmez. Köprü `bookingChecked`, `menuPageSeen`, `orderPageSeen` alanlarına dokunmaz: "bakıldı ve yok" kararını bugünkü kurallar verir, daha çok sayfa açıldı diye yeni `false` üretilmez.
-- **Bulgunun kapsamı.** Etkinlik / grup / SSS sayfasından ya da grup ifadesinin yanından okunan kapora bulgusu `scope: "group_or_event"` taşır. Oda 1 genel "kapora var" sinyalini yalnızca kapsamı genel olan bulgudan üretir; grup kapsamlı bulgu kanıt olarak durur ama genel iddiaya dönüşmez.
+- **Bulgunun kapsamı.** Kapora bulgusu cümle düzeyinde okunur ve şüphede "bilinmiyor" ya da "kapsamlı" tarafına düşer:
+  - Cümle olumsuzsa ("kapora alınmaz", "iptal ücreti yok") ya da rezervasyonla ilgili değilse (hediye çeki, sipariş) bulgu üretilmez.
+  - Etkinlik / grup sayfasından ya da grup, kişi eşiği ("8 kişi ve üzeri") veya özel gün (Noel, özel etkinlik) ifadesi taşıyan cümleden okunan bulgu `scope: "group_or_event"` taşır.
+  - Genel bulgu yalnızca olumsuz olmayan, kısıt taşımayan cümleden çıkar; SSS sayfasında ayrıca cümlenin rezervasyondan söz etmesi gerekir.
+  - Oda 1 genel "kapora var" sinyalini yalnızca kapsamı genel olan bulgudan üretir; kapsamlı bulgu kanıt olarak durur ama genel iddiaya dönüşmez.
 - **Bulgunun kaynağı.** Köprünün doldurduğu bulgu `source` taşır: `page`, `network` (üçüncü taraf istek) ya da `pdf`.
 - `SiteFacts` geriye uyumlu kalır: yeni `coverage`, `scope`, `source` alanları isteğe bağlıdır.
 - Ham HTML veritabanına yazılmaz; sayfa başına metin 60.000 karakterle sınırlıdır.
