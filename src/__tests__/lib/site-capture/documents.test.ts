@@ -1,7 +1,22 @@
 // src/__tests__/lib/site-capture/documents.test.ts
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/safe-fetch", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/safe-fetch")>()),
+  safeFetchFollow: vi.fn(),
+}));
+vi.mock("@/lib/logger", () => ({
+  logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
+
 import { extractPdfText, fetchPdfText, type PdfDeps } from "@/lib/site-capture/documents";
-import { UrlGuardError } from "@/lib/safe-fetch";
+import { safeFetchFollow, UrlGuardError } from "@/lib/safe-fetch";
+import { logger } from "@/lib/logger";
+
+beforeEach(() => {
+  vi.mocked(safeFetchFollow).mockReset();
+  vi.mocked(logger.warn).mockReset();
+});
 
 const PDF_HEAD = new TextEncoder().encode("%PDF-1.7\n");
 const URL_ = "https://bistro.test/files/menu.pdf";
@@ -67,6 +82,95 @@ describe("fetchPdfText", () => {
       },
     });
     expect(r).toEqual({ ok: false, reason: "unsafe_url", httpStatus: null });
+  });
+
+  it("reports an extractor failure as not_pdf and logs it", async () => {
+    const boom = new Error("pdf.js failed to load");
+    const r = await fetchPdfText(URL_, {
+      deps: {
+        ...deps(PDF_HEAD),
+        extract: async () => {
+          throw boom;
+        },
+      },
+    });
+    expect(r).toEqual({ ok: false, reason: "not_pdf", httpStatus: 200 });
+    expect(logger.warn).toHaveBeenCalledWith("site_capture.pdf_extract_failed", { url: URL_, err: boom });
+  });
+});
+
+describe("fetchPdfText deadline and cancellation", () => {
+  /** A body that sends the PDF head and then never finishes. */
+  function stallingDeps(onCancel?: () => void): PdfDeps {
+    return {
+      fetch: async () => ({
+        response: new Response(
+          new ReadableStream<Uint8Array>({
+            start(controller) {
+              controller.enqueue(PDF_HEAD);
+            },
+            cancel() {
+              onCancel?.();
+            },
+          }),
+          { status: 200 },
+        ),
+        finalUrl: URL_,
+        redirectCount: 0,
+      }),
+      extract: async () => ({ text: "never reached", pageCount: 1 }),
+    };
+  }
+
+  it("ends a body that never finishes with timeout within the deadline", async () => {
+    let cancelled = false;
+    const started = Date.now();
+    const r = await fetchPdfText(URL_, { timeoutMs: 100, deps: stallingDeps(() => (cancelled = true)) });
+    const elapsed = Date.now() - started;
+    expect(r).toEqual({ ok: false, reason: "timeout", httpStatus: 200 });
+    expect(elapsed).toBeLessThan(1_000);
+    await Promise.resolve();
+    expect(cancelled).toBe(true);
+  });
+
+  it("ends with timeout when the request itself never answers", async () => {
+    const r = await fetchPdfText(URL_, {
+      timeoutMs: 50,
+      deps: { fetch: () => new Promise<never>(() => {}) },
+    });
+    expect(r).toEqual({ ok: false, reason: "timeout", httpStatus: null });
+  });
+
+  it("ends with aborted when the caller's signal fires during the body read", async () => {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 30);
+    const r = await fetchPdfText(URL_, { timeoutMs: 5_000, signal: controller.signal, deps: stallingDeps() });
+    expect(r).toEqual({ ok: false, reason: "aborted", httpStatus: 200 });
+  });
+
+  it("returns aborted without fetching when the signal is already aborted", async () => {
+    const fetch = vi.fn<PdfDeps["fetch"]>();
+    const controller = new AbortController();
+    controller.abort();
+    const r = await fetchPdfText(URL_, { signal: controller.signal, deps: { fetch } });
+    expect(r).toEqual({ ok: false, reason: "aborted", httpStatus: null });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("fetchPdfText default fetch", () => {
+  it("passes the timeout and the accept / user-agent headers to safeFetchFollow", async () => {
+    vi.mocked(safeFetchFollow).mockResolvedValue({
+      response: new Response("<html></html>", { status: 200 }),
+      finalUrl: URL_,
+      redirectCount: 0,
+    });
+    const r = await fetchPdfText(URL_, { timeoutMs: 7_000, userAgent: "RevintBot/1.0" });
+    expect(r).toEqual({ ok: false, reason: "not_pdf", httpStatus: 200 });
+    expect(safeFetchFollow).toHaveBeenCalledWith(URL_, {
+      perHopTimeoutMs: 7_000,
+      init: { headers: { accept: "application/pdf,*/*", "user-agent": "RevintBot/1.0" } },
+    });
   });
 });
 
