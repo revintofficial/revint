@@ -15,6 +15,8 @@
  * `crawlWebsiteDeep` (src/lib/site-capture) and stores a SiteCapture row;
  * with no slot the run is deferred (DeferError) or, on the inline path or
  * after thirty minutes of waiting, finishes with the shallow `crawlWebsite`.
+ * A shallow audit of a URL that qualified for the deep capture records why
+ * (`deepSkipped` on the run output and in rawFeaturesJson).
  */
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
@@ -134,6 +136,9 @@ async function runWebsiteVerification(
   return result;
 }
 
+/** "capacity": no capture slot (after the wait cap, or inline); "kill_switch": SITE_CAPTURE_DEEP=0. */
+type DeepSkipped = "capacity" | "kill_switch";
+
 export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   if (!ctx.lead) throw new Error("WEBSITE_AUDITOR requires a lead context");
   const lead = ctx.lead;
@@ -141,13 +146,14 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   // The deep capture needs one of this process's capture slots. Decide
   // before any write, so a deferred run leaves no trace behind (no
   // CRAWLING status, no verification spend).
-  const wantsDeep =
+  const qualifiesForDeep =
     typeof lead.websiteUrl === "string" &&
     lead.websiteUrl.length > 0 &&
-    deepCaptureEnabled() &&
     !detectSocialMediaPlatform(lead.websiteUrl);
+  // Why a qualifying URL got the shallow audit; recorded on the run and the audit row.
+  let deepSkipped: DeepSkipped | null = qualifiesForDeep && !deepCaptureEnabled() ? "kill_switch" : null;
   let releaseSlot: (() => void) | null = null;
-  if (wantsDeep) {
+  if (qualifiesForDeep && !deepSkipped) {
     releaseSlot = tryAcquireCaptureSlot();
     if (!releaseSlot) {
       const waitedMs = ctx.queuedAt ? Date.now() - ctx.queuedAt.getTime() : 0;
@@ -157,11 +163,12 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
       // Inline execution, or the run has waited long enough: finish with
       // today's shallow audit so the chain moves on.
       logger.warn("agent_workers.website_auditor.deep_skipped_capacity", { leadId: lead.id, waitedMs });
+      deepSkipped = "capacity";
     }
   }
 
   try {
-    return await runAudit(ctx, releaseSlot !== null);
+    return await runAudit(ctx, releaseSlot !== null, deepSkipped);
   } finally {
     releaseSlot?.();
   }
@@ -173,7 +180,7 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
  */
 const deadlineAborted = (): AgentWorkerOutput => ({ output: { skipped: true, reason: "deadline_aborted" }, costTokens: 0 });
 
-async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWorkerOutput> {
+async function runAudit(ctx: AgentWorkerContext, deep: boolean, deepSkipped: DeepSkipped | null): Promise<AgentWorkerOutput> {
   if (!ctx.lead) throw new Error("WEBSITE_AUDITOR requires a lead context");
   const lead = ctx.lead;
   const aborted = () => ctx.signal?.aborted === true;
@@ -312,6 +319,7 @@ async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWo
 
     const contactEmails = featuresWithExtras.contactEmails ?? [];
     const socialProfiles = featuresWithExtras.socialProfiles ?? {};
+    const skippedNote = deepSkipped ? { deepSkipped } : {};
 
     const baseFields = {
       url: lead.websiteUrl,
@@ -339,7 +347,7 @@ async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWo
       ctaLinks: features.ctaLinks,
       brokenLinksCount: features.brokenLinksCount,
       structuredDataPresent: features.structuredDataPresent,
-      rawFeaturesJson: JSON.parse(JSON.stringify(features)),
+      rawFeaturesJson: JSON.parse(JSON.stringify({ ...features, ...skippedNote })),
       contactEmails,
       socialProfiles,
     } as const;
@@ -393,6 +401,7 @@ async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWo
         contactEmails,
         socialProfiles,
         ...(features.siteFacts?.coverage ? { coverage: features.siteFacts.coverage } : {}),
+        ...skippedNote,
         ...(verification ? { websiteVerification: verification } : {}),
       },
       costTokens: 0,

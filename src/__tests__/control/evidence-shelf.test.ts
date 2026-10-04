@@ -268,6 +268,42 @@ describe("site drawer: capture coverage", () => {
     expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.conflict).toBe("Site botu engelledi; sayfalar okunamadı.");
   });
 
+  // Final fix B3: a shallow audit says why it was shallow.
+  describe("deep capture skipped", () => {
+    const rowsWith = (raw: Record<string, unknown>) =>
+      drawer(
+        buildShelf(
+          input({
+            runs: [auditRunWith({ reachable: true, url: "https://dishoom.com" })],
+            audit: shelfAuditFromRow({
+              url: "https://dishoom.com",
+              reachable: true,
+              crawlError: null,
+              crawlAttemptedAt: new Date(FINISHED),
+              hasBookingSystem: true,
+              bookingProvider: "SevenRooms",
+              rawFeaturesJson: raw,
+            }),
+          }),
+        ),
+        "site",
+      ).rows;
+
+    it.each([
+      ["capacity", "Derin tarama atlandı: kapasite doluydu"],
+      ["kill_switch", "Derin tarama atlandı: kapalı (SITE_CAPTURE_DEEP=0)"],
+    ])("adds a muted shallow-scope row for %s", (deepSkipped, support) => {
+      const row = rowsWith({ deepSkipped }).find((r) => r.claim.text.startsWith("Kapsam"))!;
+      expect(row.claim).toEqual({ text: "Kapsam: sığ denetim (ana sayfa ve en fazla üç alt sayfa)", muted: true });
+      expect(row.support.text).toBe(support);
+      expect(row.support.muted).toBe(true);
+    });
+
+    it("adds no row without the field", () => {
+      expect(rowsWith({}).some((r) => r.claim.text.startsWith("Kapsam"))).toBe(false);
+    });
+  });
+
   it("states a group-only deposit as group-only, with its source", () => {
     const rows = siteRows({
       hasPrepayment: { value: true, url: "https://dishoom.com/group-feasts", quote: "For groups of 8 or more, we ask for card details", scope: "group_or_event" },

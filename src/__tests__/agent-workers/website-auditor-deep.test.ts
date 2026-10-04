@@ -280,6 +280,54 @@ describe("WEBSITE_AUDITOR: deep capture", () => {
     expect(mocks.leadUpdate).toHaveBeenCalledWith({ where: { id: "lead_1" }, data: { crawlStatus: "NO_WEBSITE" } });
   });
 
+  // Final fix B3: a shallow audit records why it was shallow.
+  describe("deepSkipped", () => {
+    const rawOf = () => mocks.auditUpsert.mock.calls[0][0].create.rawFeaturesJson;
+
+    it("records capacity when the run waited past the cap", async () => {
+      const release = occupyAllSlots();
+      try {
+        const result = await run(ctx({ canDefer: true, deferCount: 9, queuedAt: new Date(Date.now() - 31 * 60_000) }));
+        expect(result.output).toMatchObject({ deepSkipped: "capacity" });
+        expect(rawOf()).toMatchObject({ deepSkipped: "capacity" });
+      } finally {
+        release();
+      }
+    });
+
+    it("records capacity on the inline path without a slot", async () => {
+      const release = occupyAllSlots();
+      try {
+        const result = await run(ctx({ canDefer: false }));
+        expect(result.output).toMatchObject({ deepSkipped: "capacity" });
+        expect(rawOf()).toMatchObject({ deepSkipped: "capacity" });
+      } finally {
+        release();
+      }
+    });
+
+    it("records the kill switch", async () => {
+      process.env.SITE_CAPTURE_DEEP = "0";
+      const result = await run(ctx());
+      expect(result.output).toMatchObject({ deepSkipped: "kill_switch" });
+      expect(rawOf()).toMatchObject({ deepSkipped: "kill_switch" });
+    });
+
+    it("is absent when the deep capture ran", async () => {
+      const result = await run(ctx());
+      expect(result.output).not.toHaveProperty("deepSkipped");
+      expect(rawOf()).not.toHaveProperty("deepSkipped");
+    });
+
+    it("is absent for a social profile, even with the kill switch on", async () => {
+      process.env.SITE_CAPTURE_DEEP = "0";
+      mocks.crawlWebsite.mockResolvedValue(features({ reachable: false, crawlError: "SOCIAL_MEDIA_ONLY", siteFacts: undefined }));
+      const result = await run(ctx({}, { websiteUrl: "https://www.instagram.com/acme" }));
+      expect(result.output).not.toHaveProperty("deepSkipped");
+      expect(rawOf()).not.toHaveProperty("deepSkipped");
+    });
+  });
+
   it("keeps the audit when storing the capture fails", async () => {
     mocks.saveSiteCapture.mockRejectedValue(new Error("db down"));
     const result = await run(ctx());

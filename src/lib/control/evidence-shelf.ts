@@ -56,6 +56,8 @@ export type ShelfAudit = {
   } | null;
   /** Prepayment fact with its scope ("group_or_event" = restricted: groups, private events, seasonal / special days, or stated as uncertain). */
   prepayment?: { scope: string | null; url: string; quote: string | null } | null;
+  /** Why a qualifying URL got the shallow audit: "capacity" | "kill_switch" (absent when the deep capture ran or did not apply). */
+  deepSkipped?: string | null;
 };
 
 /** ReviewAnalysis row, flattened. */
@@ -222,6 +224,11 @@ const COVERAGE_REASON_TEXT: Record<string, string> = {
   unsafe_url: "güvenli olmayan adres",
 };
 
+const DEEP_SKIPPED_TEXT: Record<string, string> = {
+  capacity: "kapasite doluydu",
+  kill_switch: "kapalı (SITE_CAPTURE_DEEP=0)",
+};
+
 function coverageReasonText(reason: string): string {
   return COVERAGE_REASON_TEXT[reason] ?? "okunamadı";
 }
@@ -385,6 +392,11 @@ function siteDrawer(input: ShelfInput): { drawer: Drawer; state: SiteState } {
       cell(`Kapsam: ${c.opened} sayfa açıldı · ${c.skipped} atlandı · ${c.failed} açılamadı`),
       support,
       conflict,
+    ));
+  } else if (audit?.deepSkipped && DEEP_SKIPPED_TEXT[audit.deepSkipped]) {
+    rows.push(row(
+      cell("Kapsam: sığ denetim (ana sayfa ve en fazla üç alt sayfa)", true),
+      cell(`Derin tarama atlandı: ${DEEP_SKIPPED_TEXT[audit.deepSkipped]}`, true),
     ));
   }
   return { drawer: { key: "site", label: DRAWER_LABELS.site, empty: false, rows }, state: { usable: reachable, social: false } };
@@ -635,5 +647,6 @@ export function shelfAuditFromRow(row: {
         : [],
     },
     prepayment: preUrl ? { scope: textOf(pre.scope), url: preUrl, quote: textOf(pre.quote) } : null,
+    deepSkipped: textOf(raw.deepSkipped),
   };
 }
