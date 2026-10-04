@@ -64,6 +64,21 @@ describe("classifyUrl: never a candidate", () => {
     expect(c("/terms", "Booking terms")).toBeNull();
     expect(c("/login", "Menu")).toBeNull();
   });
+
+  it.each([
+    "https://careers.example-bistro.co.uk/",
+    "https://careers.example-bistro.co.uk/chef-de-partie",
+    "https://shop.example-bistro.co.uk/gift-cards",
+    "https://blog.example-bistro.co.uk/menu-launch",
+  ])("a noise subdomain of the venue's own domain: %s", (href) => {
+    expect(c(href)).toBeNull();
+  });
+
+  it("keeps the booking and ordering subdomain rules", () => {
+    expect(c("https://booking.example-bistro.co.uk/")).toBe("reservation");
+    expect(c("https://order.example-bistro.co.uk/")).toBe("order");
+    expect(c("https://delivery.example-bistro.co.uk/")).toBe("order");
+  });
 });
 
 describe("classifyUrl: one hop off the site", () => {

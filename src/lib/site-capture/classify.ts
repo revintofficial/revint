@@ -45,6 +45,9 @@ const ABOUT_TEXT = word("about( us)?|our story|hakkımızda|hikayemiz");
 
 const BOOKING_SUBDOMAIN = /^(book|booking|bookings|reservations?|reserve)$/i;
 const ORDER_SUBDOMAIN = /^(order|orders|ordering|delivery|takeaway)$/i;
+/** A same-site subdomain that is not a guest surface: its pages never take a page slot. */
+const NOISE_SUBDOMAIN =
+  /^(careers|career|jobs|work|recruitment|shop|store|gifts|giftcards|vouchers|blog|news|press|media|investors|corporate|staff|team|intranet|mail|webmail|email|cdn|static|assets|img|images|status|support|help|docs|developers|dev|api|account|accounts|login|auth)$/i;
 
 function pathOf(url: URL): string {
   try {
@@ -79,6 +82,7 @@ export function classifyUrl(url: URL, linkText: string | null, home: URL): PageT
     const label = bare(url.hostname).split(".")[0];
     if (BOOKING_SUBDOMAIN.test(label)) return "reservation";
     if (ORDER_SUBDOMAIN.test(label)) return "order";
+    if (NOISE_SUBDOMAIN.test(label)) return null;
   }
 
   if (EVENTS_PATH.test(path) || EVENTS_TEXT.test(text)) return "events";
