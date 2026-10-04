@@ -175,6 +175,7 @@ export async function GET(
         minPlan: w.minPlan,
         phase1Enabled: w.phase1Enabled,
         estimatedDurationMs: w.estimatedDurationMs,
+        deadlineMs: w.deadlineMs ?? null,
         exportFormats: w.exportFormats ?? [],
         locked: !planMeetsMinimum(ws.plan, w.minPlan),
         used,

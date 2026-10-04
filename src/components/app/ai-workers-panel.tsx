@@ -92,6 +92,8 @@ interface WorkerItem {
   minPlan: Plan;
   phase1Enabled: boolean;
   estimatedDurationMs: number;
+  /** Outer deadline when the worker declares one (deep site audit); otherwise null. */
+  deadlineMs?: number | null;
   exportFormats: string[];
   locked: boolean;
   used: number;
@@ -487,14 +489,17 @@ function WorkerRow({
   const succeededDegraded = latest?.status === "SUCCEEDED_NO_MEMORY";
   const failed = latest?.status === "FAILED";
   const pendingStatus = latest?.status === "PENDING" || latest?.status === "RUNNING";
-  // A run is considered "stuck" if it's been inflight past 2x its
-  // estimated duration (server auto-cancels at 3 minutes). In that
-  // window the UI surfaces a "Force retry" button so the user can
-  // bypass the disable without waiting for the server timeout.
+  // A run is considered "stuck" if it's been inflight past its own
+  // deadline when the worker declares one (the deep site audit runs up
+  // to 5 minutes), otherwise past 2x its estimated duration (the server
+  // auto-cancels those at 3 minutes). In that window the UI surfaces a
+  // "Force retry" button so the user can bypass the disable without
+  // waiting for the server timeout.
   const ageMs = latest && pendingStatus
     ? now - new Date(latest.createdAt).getTime()
     : 0;
-  const stuck = pendingStatus && ageMs > Math.max(worker.estimatedDurationMs * 2, 60_000);
+  const stuckAfterMs = worker.deadlineMs ?? Math.max(worker.estimatedDurationMs * 2, 60_000);
+  const stuck = pendingStatus && ageMs > stuckAfterMs;
   const pending = pendingStatus && !stuck;
   const showSpinner = running || pending;
 
