@@ -84,6 +84,7 @@ Yakalama uzun sürer; `agent-runs` kuyruğunun 10 slotunu ve 3 dakikalık bekçi
 - **Bulgunun kaynağı.** Köprünün doldurduğu bulgu `source` taşır: `page`, `network` (üçüncü taraf istek) ya da `pdf`.
 - `SiteFacts` geriye uyumlu kalır: yeni `coverage`, `scope`, `source` alanları isteğe bağlıdır.
 - Ham HTML veritabanına yazılmaz; sayfa başına metin 60.000 karakterle sınırlıdır.
+- **Sayfa metni, ziyaretçinin gördüğü metindir.** Tarayıcıyla açılan sayfada metin HTML'den türetilmez, tarayıcının gösterdiği metinden alınır; gizli widget durum mesajları, kapalı pencereler ve görünmeyen bloklar okunmaz. Okumadan önce yalnızca tek tıkla açılabilen içerik açılır (`<details>` ve `aria-expanded="false"` ile denetlenen paneller); hiçbir şeye tıklanmaz. Gerekçe: canlıda bir rezervasyon widget'ının gizli şablon metni ("Card details are required to secure your reservation") genel kapora bulgusu olarak okundu. Linkler, gömülü adresler ve JSON-LD HTML'den okunmaya devam eder.
 
 ## Saklama
 
