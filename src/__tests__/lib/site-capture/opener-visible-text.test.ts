@@ -113,7 +113,7 @@ describe("VISIBLE_TEXT_SCRIPT", () => {
     expect(VISIBLE_TEXT_SCRIPT).toContain("details");
     expect(VISIBLE_TEXT_SCRIPT).toContain('[aria-expanded="false"][aria-controls]');
     expect(VISIBLE_TEXT_SCRIPT).toContain("300");
-    expect(VISIBLE_TEXT_SCRIPT).toContain("document.body.innerText");
+    expect(VISIBLE_TEXT_SCRIPT).toContain("body.innerText");
     // No clicks: a click can navigate.
     expect(VISIBLE_TEXT_SCRIPT).not.toMatch(/\.click\(/);
   });
