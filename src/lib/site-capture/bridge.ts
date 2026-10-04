@@ -30,22 +30,33 @@ import { urlKey } from "./url";
  */
 const CARD_GUARANTEE =
   /((no[- ]show|late cancellation|cancellation) (fee|charge)s?\b|card details (are |will be )?(requested|required|needed|taken))/i;
-/** A fee alone (no deposit / card wording): it is charged to whatever card the page asked for. */
-const FEE_ONLY = /(no[- ]show|late cancellation|cancellation) (fee|charge)s?\b/i;
-/** "no" (but not "no-show"), "not", "n't", "never", "without", "cannot", "none", "nor", "free of charge". */
-const NEGATION = /(\bno\b(?![- ]show)|\bnot\b|n['’]t\b|\bnever\b|\bwithout\b|\bcannot\b|\bnone\b|\bnor\b|\bfree of charge\b)/i;
+/**
+ * Negations and "no fee" phrasings: "no" (but not "no-show"), "not", "n't", "never",
+ * "without", "cannot", "none", "nor", "free of charge", "waive(d)", "optional",
+ * "deposit-free", "fee-free", "not required", "no need".
+ */
+const NEGATION =
+  /(\bno\b(?![- ]show)|\bnot\b|n['’]t\b|\bnever\b|\bwithout\b|\bcannot\b|\bnone\b|\bnor\b|\bfree of charge\b|\bwaived?\b|\boptional\b|\bdeposit-free\b|\bfee-free\b|\bnot required\b|\bno need\b)/i;
 /** Gift cards, shop and ordering checkouts take card details too; that is not a booking deposit. */
 const COMMERCE =
   /\b(gifts?|vouchers?|shops?|checkout|basket|merchandise|takeaway|delivery|collection|click\s*(&|and)\s*collect|online order(s|ing)?)\b/i;
-/** Group / private-event wording; a bare "Group" (a company name) is not a restriction. */
+/**
+ * Group / private-event wording. Plural "groups" counts anywhere; a singular
+ * "group" only before a booking noun, so a company name ("the Hawksmoor Group") does not.
+ */
 const GROUP_WORDING =
-  /\b(groups? (of|over|larger|bigger)|for groups|large (groups|parties|tables|bookings)|group (bookings?|dining|reservations?|menus?)|parties|party of|private (dining|hire|events?)|exclusive hire|kalabalık)\b/i;
+  /\b(groups|group (of|over|larger|bigger)|group (bookings?|dining|reservations?|menus?|sizes?|tables?|enquiry|enquiries)|party|parties|(larger|bigger|large|big) (bookings?|tables?|parties|groups|reservations?)|private (dining|hire|events?)|exclusive hire|kalabalık)\b/i;
+/** The statement holds only in some cases ("only on Fridays", "unless", "depending on"). */
+const RESTRICTION_MARKER = /\b(only|solely|except|unless|depending)\b/i;
 const PARTY_NUM =
   "(?:[2-9]|[1-9]\\d|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)";
-/** A party-size threshold: "8+", "eight or more", "tables of 5", "larger than 6", "10 guests". */
+/** A number that is not money (no currency sign before it) and not a time or a percentage. */
+const PARTY_COUNT =
+  `(?<![£$€₺\\d.,])${PARTY_NUM}(?!\\d|\\s*(%|hours?\\b|hrs?\\b|days?\\b|minutes?\\b|mins?\\b|weeks?\\b|months?\\b|am\\b|pm\\b))`;
+/** A party-size threshold: "8+", "eight or more", "tables of 5", "above 8", "for 8", "10 guests". */
 const PARTY_SIZE = new RegExp(
-  `(\\b${PARTY_NUM}(\\s*\\+|\\s+(or more|or above|and above|and over|and more|plus|guests|people|persons|diners|covers|kişi)\\b)` +
-    `|\\b(more than|over|larger than|bigger than|tables? of|bookings of|parties of)\\s+${PARTY_NUM}\\b)`,
+  `(\\b${PARTY_COUNT}(\\s*\\+|\\s+(or more|or larger|or above|and above|and over|and more|plus|guests|people|persons|diners|covers|kişi)\\b)` +
+    `|\\b(more than|over|above|exceeding|larger than|bigger than|tables? of|bookings of|parties of|for|of)\\s+${PARTY_COUNT}\\b)`,
   "i",
 );
 /** Seasonal or special-occasion statements. */
@@ -55,10 +66,15 @@ const OCCASION =
 const BOOKING_WORDING = /\b(book(s|ed|ing|ings)?|reserv(e|ed|ation|ations)|tables?|rezervasyon\w*|masa\w*)\b/i;
 const QUOTE_MAX = 240;
 
-/** Sentences with their terminators; line breaks also end a sentence. */
+/**
+ * Sentences with their terminators. Whitespace (line breaks included) is collapsed
+ * first, as visibleText() does in production: a heading stays fused with the
+ * sentence after it, an unpunctuated question with its answer.
+ */
 function sentencesOf(text: string): string[] {
   return text
-    .split(/(?<=[.!?])\s+|\n+/)
+    .replace(/\s+/g, " ")
+    .split(/(?<=[.!?])\s+/)
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
 }
@@ -150,9 +166,33 @@ function bridgeBooking(pages: CapturedPage[]): SiteFact<string> | null {
   return null;
 }
 
+/** One deposit statement on a page: skipped (null), or general / scoped with its quote. */
+function classifyPrepaymentHit(
+  type: PageType,
+  sentences: string[],
+  i: number,
+): { scope: "general" | "group_or_event"; quote: string } | null {
+  const sentence = sentences[i];
+  if (!PREPAY.test(sentence) && !CARD_GUARANTEE.test(sentence)) return null;
+  // A question is answered by the sentence after it ("Do I need a deposit? No.").
+  const context = sentence.endsWith("?") && i + 1 < sentences.length ? `${sentence} ${sentences[i + 1]}` : sentence;
+  if (NEGATION.test(context) || COMMERCE.test(context)) return null;
+  const restricted =
+    type === "events" ||
+    GROUP_WORDING.test(context) ||
+    PARTY_SIZE.test(context) ||
+    OCCASION.test(context) ||
+    RESTRICTION_MARKER.test(context);
+  if (!restricted && type === "faq" && !BOOKING_WORDING.test(context)) return null;
+  return { scope: restricted ? "group_or_event" : "general", quote: context.slice(0, QUOTE_MAX).trim() };
+}
+
 /**
  * A deposit is "general" only on an unrestricted, un-negated statement about
  * bookings. Anything doubtful is skipped (unknown) or scoped to groups/events.
+ * The decision is per page: one scoped statement makes the whole page scoped
+ * ("Card details are requested for groups over four. A no-show fee ... applies."
+ * in either order). Across pages the first general page wins, else the first scoped one.
  */
 function bridgePrepayment(pages: CapturedPage[]): SiteFact<true> | null {
   let scoped: SiteFact<true> | null = null;
@@ -160,27 +200,18 @@ function bridgePrepayment(pages: CapturedPage[]): SiteFact<true> | null {
     if (p.source === "pdf") continue;
     if (p.type === "external" && !isBookingVendorPage(p)) continue;
     const sentences = sentencesOf(p.text);
-    let pageScoped = false;
+    let pageScoped: string | null = null;
+    let pageGeneral: string | null = null;
     for (let i = 0; i < sentences.length; i++) {
-      const sentence = sentences[i];
-      if (!PREPAY.test(sentence) && !CARD_GUARANTEE.test(sentence)) continue;
-      // A question is answered by the sentence after it ("Do I need a deposit? No.").
-      const context = sentence.endsWith("?") && i + 1 < sentences.length ? `${sentence} ${sentences[i + 1]}` : sentence;
-      if (NEGATION.test(context) || COMMERCE.test(context)) continue;
-      // A fee is charged to the card the page asked for: it is no wider than that request
-      // ("Card details are requested for groups over four. A no-show fee ... applies.").
-      const feeOnly = FEE_ONLY.test(sentence) && !PREPAY.test(sentence) && !/card details/i.test(sentence);
-      const restricted =
-        p.type === "events" ||
-        GROUP_WORDING.test(context) ||
-        PARTY_SIZE.test(context) ||
-        OCCASION.test(context) ||
-        (feeOnly && pageScoped);
-      if (!restricted && p.type === "faq" && !BOOKING_WORDING.test(context)) continue;
-      const quote = context.slice(0, QUOTE_MAX).trim();
-      if (!restricted) return { value: true, url: p.url, quote, source: "page", scope: "general" };
-      pageScoped = true;
-      scoped ??={ value: true, url: p.url, quote, source: "page", scope: "group_or_event" };
+      const hit = classifyPrepaymentHit(p.type, sentences, i);
+      if (!hit) continue;
+      if (hit.scope === "group_or_event") pageScoped ??= hit.quote;
+      else pageGeneral ??= hit.quote;
+    }
+    if (pageScoped !== null) {
+      scoped ??= { value: true, url: p.url, quote: pageScoped, source: "page", scope: "group_or_event" };
+    } else if (pageGeneral !== null) {
+      return { value: true, url: p.url, quote: pageGeneral, source: "page", scope: "general" };
     }
   }
   return scoped;

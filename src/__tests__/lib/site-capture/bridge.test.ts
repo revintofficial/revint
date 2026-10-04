@@ -235,6 +235,69 @@ describe("bridgeSiteFacts: prepayment sentence rule", () => {
     expect(on("faq", "A deposit is required.")).toBeNull();
     expect(on("reservation", "A deposit is required.")?.scope).toBe("general");
   });
+
+  it.each([
+    "Groups require a deposit.",
+    "Deposits only apply to groups.",
+    "Groups above 8 require a deposit.",
+    "Large party bookings require a deposit.",
+    "A deposit is required for larger bookings.",
+    "When booking for 8, a deposit is required.",
+  ])("ordinary groups-only wording scopes the deposit: %s", (text) => {
+    expect(on("reservation", text)?.scope).toBe("group_or_event");
+  });
+
+  it.each([
+    "Group Bookings\nA deposit of £10 per person is required to confirm your booking.",
+    "Group Bookings A deposit of £10 per person is required to confirm your booking.",
+    "Christmas Parties\nA deposit of £20 per person is required to confirm your booking.",
+    "Christmas Parties A deposit of £20 per person is required to confirm your booking.",
+  ])("a heading stays with the sentence after it: %j", (text) => {
+    expect(on("reservation", text)?.scope).toBe("group_or_event");
+  });
+
+  it.each([
+    "Do I need to pay a deposit to book\nNo, we don't take deposits.",
+    "Do I need to pay a deposit to book No, we don't take deposits.",
+  ])("an unpunctuated FAQ question stays with its answer: %j", (text) => {
+    expect(on("faq", text)).toBeNull();
+  });
+
+  it.each(["Cancellation fees are waived.", "Deposit-free booking.", "Pre-payment is optional."])(
+    "a 'no fee' phrasing stays unknown: %s",
+    (text) => {
+      expect(on("reservation", text)).toBeNull();
+    },
+  );
+
+  it.each([
+    "Card details are requested for groups over four. A no-show fee of £10 per person applies.",
+    "A no-show fee of £10 per person applies. Card details are requested for groups over four.",
+  ])("one scoped statement scopes the page in either order: %s", (text) => {
+    expect(on("external", text)?.scope).toBe("group_or_event");
+  });
+
+  it("a page with a groups-only deposit is never general", () => {
+    expect(on("reservation", "Groups of 8+ require a deposit. A no-show fee of £10 per person applies to all bookings.")?.scope).toBe(
+      "group_or_event",
+    );
+  });
+
+  it("a restriction marker scopes the deposit", () => {
+    expect(on("reservation", "A deposit is only required on Fridays and Saturdays.")?.scope).toBe("group_or_event");
+  });
+
+  it("a time period is not a party size", () => {
+    expect(
+      on("reservation", "A deposit of £10 per person is refunded if you cancel more than 48 hours before your booking.")?.scope,
+    ).toBe("general");
+  });
+
+  it("a company name 'Group' still does not scope", () => {
+    expect(on("reservation", "Part of the Hawksmoor Group. A deposit of £10 per person is required to confirm your booking.")?.scope).toBe(
+      "general",
+    );
+  });
 });
 
 describe("bridgeSiteFacts: menu, ordering, PDFs", () => {
