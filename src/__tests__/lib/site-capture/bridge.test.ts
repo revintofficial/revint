@@ -357,6 +357,18 @@ describe("bridgeSiteFacts: prepayment sentence rule", () => {
       "general",
     );
   });
+
+  // The second case is the slow one without a word-start anchor: the run is not directly
+  // followed by the booking noun, so the scan would restart at every letter of it.
+  it.each([
+    "A deposit is required for " + "a".repeat(60_000) + " bookings.",
+    "A deposit is required for " + "a".repeat(60_000) + " and other bookings.",
+  ])("a very long unbroken run of letters before 'bookings' is read in linear time (#%#)", (text) => {
+    const started = performance.now();
+    const fact = on("reservation", text);
+    expect(performance.now() - started).toBeLessThan(500);
+    expect(fact?.scope).not.toBe("general");
+  });
 });
 
 describe("bridgeSiteFacts: menu, ordering, PDFs", () => {

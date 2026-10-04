@@ -71,7 +71,8 @@ const UNQUALIFIED_BEFORE_BOOKING = new Set([
   "all", "any", "every", "each", "your", "our", "the", "a", "an", "online", "table", "new", "standard", "normal",
   "regular", "most", "these", "those", "and", "or", "of", "for", "to", "with", "when", "on", "at", "in", "per",
 ]);
-const WORD_BEFORE_BOOKING = /([\p{L}'’-]+)\s+(bookings?|reservations?)\b/giu;
+/** Anchored at a word start, so a long run of letters is not rescanned from every character. */
+const WORD_BEFORE_BOOKING = /(?<![\p{L}'’-])([\p{L}'’-]+)\s+(bookings?|reservations?)\b/giu;
 /** "bookings in December", "bookings for larger numbers", "bookings of 100" (but not "at the time of booking"). */
 const BOOKING_QUALIFIED_AFTER = /\b(bookings?|reservations?)\s+(for|of|in|during|on|over|above|at)\b(?!\s+the time\b)/i;
 
