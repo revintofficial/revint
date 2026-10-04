@@ -285,8 +285,27 @@ against the fix wave:    compare: 40 site(s) compared
 time per site: median 18 s, p95 50 s (n=40)
 ```
 
-Hold-out: slowest site 39 s (Romance Istanbul; 77 s in `holdout2`). No fact
-changed on the 12 hold-out sites.
+Hold-out: slowest site 39 s (Banana Tree); Romance Istanbul 34 s (77 s in
+`holdout2`). No fact changed on the 12 hold-out sites.
+
+Slower sites against `after2`: Andrew Edmunds 15 → 29 s, Three Uncles 9 → 22 s,
+Gaucho 17 → 29 s. Andrew Edmunds is an effect of the fix: five pages are now
+skipped as duplicates (rendered text identical), each still costs a
+navigation, and their refunded slots let it try five more addresses (12 pages
+opened either way). Three Uncles (1 page `timeout`) and Gaucho (2 pages
+`timeout`) look like run variance: a `timeout` comes from the navigation or the
+HTML read, and a slow rendered-text read never fails a page (it only leaves the
+text null).
+
+A page that renders no text (not drawn yet, content inside an iframe or a
+canvas) is stored with empty text by design: what a visitor cannot read is not
+read. A page whose body is not rendered at all (`display: none` on `<body>` or
+`<html>`, or no layout box) keeps the HTML-derived text instead, since
+`innerText` of an unrendered body would return every hidden string (fix round 1,
+commit `b8ba289`; together with whitespace-separated `aria-controls` parsing and
+the caps on controls and distinct panels). That round changes the result only for
+a page whose body is not rendered or for malformed or abusive markup, so the
+evaluation was not re-run.
 
 ### The three sites checked by hand (`capture-url.ts`)
 
@@ -304,13 +323,22 @@ changed on the 12 hold-out sites.
 | Ritz-Carlton roof | hasPrepayment | `group_or_event` → `-` | the events FAQ answer "Deposits are based on 30 % of the combined food and beverage minimum …" is in an accordion panel (`#accordion-body…`, controlled by a `<button aria-expanded="false">`) hidden by a CSS class, not by `hidden` or an inline `display: none`, so the expansion does not open it. Opening it would need overriding stylesheet `display: none` on `aria-controls` panels; not done. Not scored (truth n/a). |
 | Bills | hasPrepayment | `general` → `-` (prepayment and prepaymentAny: correct → unknown) | "Your credit card details are required to secure your booking. No payment will be taken at this time." on `/bookatable/` sits in the booking form's details popup (`div.find_your_details_popup` inside `#errorformheader`), shown only after a slot is chosen; `innerText` does not contain it. A statement that exists only in hidden markup: an expected kind of loss, not worked around. |
 
-No other fact changed on the 40 sites. Page counts moved a little because the
-duplicate check now compares rendered text: Andrew Edmunds 0 → 5 pages skipped
-as duplicates, Dishoom 2 → 0, Hawksmoor 3 → 1, Lokanta 1 → 0; Seafront went
-from `partial` to `complete` (15 → 20 opened). On the hold-out, Romance
-Istanbul opened 20 pages instead of 6 (44 → 1 duplicates): the duplicate key
-(length and first 500 characters) matched on its HTML-derived texts, not on
-its rendered texts. Seafront's change is the run, not the fix (no fact moved).
+No other fact changed on the 40 sites. Capture changes against `after2` (ledger
+counts from the raw results):
+
+| site | change | cause |
+|---|---|---|
+| Andrew Edmunds | duplicates 0 → 5 | the fix: pages with the same rendered text |
+| Dishoom | duplicates 2 → 0 | the fix: rendered texts differ where the HTML-derived ones matched |
+| Hawksmoor | duplicates 3 → 1 | the fix (same reason) |
+| Lokanta | duplicates 1 → 0 | the fix (same reason) |
+| Bills | duplicates 26 → 25; 2 pages `timeout` (0 before) | duplicates: the fix; timeouts: run variance |
+| Gallada | `complete` → `partial`; opened 4 → 5; `failed: blocked` 12 → 10, plus 1 `skipped: blocked` | run variance: the site answers the crawler with 403s in a different pattern each run (`/private-dining` blocked before, opened now); this time eight refusals came in a row and the breaker stopped page opening with one address left. `/book` and `/reservations` swapped which one was opened and which was the duplicate (concurrency order) |
+| Flatiron | opened 10 → 9: `/about-us/` `nav_error` (opened before) | run variance: `nav_error` comes from a thrown navigation error; the rendered-text read never throws (it returns null) |
+| Seafront | `partial` → `complete`, opened 15 → 20, 9 timeouts → 0 | run variance (no fact moved) |
+| Romance Istanbul (hold-out) | opened 6 → 20, duplicates 44 → 1 | the fix: the duplicate key (length and first 500 characters) matched on its HTML-derived texts, not on its rendered texts |
+| Roof Mezze 360 (hold-out) | opened 6 → 5, duplicates 0 → 1 | the fix: two pages now render the same text |
+| Old Brewery Greenwich (hold-out) | opened 11 → 10, duplicates 0 → 1 | the fix (same reason) |
 
 ### Pass / fail
 
@@ -331,3 +359,10 @@ its rendered texts. Seafront's change is the run, not the fix (no fact moved).
   step a visitor reaches after picking a time.
 - Ritz-Carlton events deposit: lost because a class-hidden accordion is not
   opened (above).
+- Gallada: `complete` → `partial` (the breaker stopped page opening after the
+  site's 403s; run variance, above). No fact changed.
+- Flatiron: `/about-us/` not read this run (`nav_error`; run variance, above).
+  No fact changed.
+- Andrew Edmunds 15 → 29 s (duplicate pages, an effect of the fix), Three
+  Uncles 9 → 22 s and Gaucho 17 → 29 s (page timeouts, run variance); all far
+  inside the 180 s criterion.
