@@ -34,13 +34,16 @@ import type { Browser, BrowserContext, Page, Response } from "playwright";
 import { CRAWLER_USER_AGENT } from "@/lib/crawler";
 import { safeFetchFollow } from "@/lib/safe-fetch";
 import { assertSafeFetchUrl } from "@/lib/url-guard";
+import { readCappedText } from "./body";
 import { recordThirdPartyRequests } from "./requests";
 import type { OpenedPage, PageOpener } from "./types";
 
 const MOBILE_USER_AGENT =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
 const MAX_HTML_CHARS = 1_500_000;
-const MAX_TEXT_FILE_CHARS = 2_000_000;
+/** Byte caps of the HTTP fallbacks: reading stops there, the rest is never buffered. */
+const MAX_HTML_BYTES = 1_500_000;
+const MAX_TEXT_FILE_BYTES = 2_000_000;
 const TEXT_FILE_TIMEOUT_MS = 8_000;
 const BLOCKED_STATUS = new Set([401, 403, 429]);
 const COOKIE_BUTTON =
@@ -263,7 +266,7 @@ async function openViaHttp(url: string, timeoutMs: number, signal?: AbortSignal)
       await response.body?.cancel().catch(() => {});
       return null;
     }
-    const html = (await response.text()).slice(0, MAX_HTML_CHARS);
+    const html = await readCappedText(response, MAX_HTML_BYTES);
     return { finalUrl, status: response.status, html, thirdPartyRequests: [], source: "http", error: null };
   };
   try {
@@ -286,7 +289,7 @@ export async function fetchTextSafe(url: string): Promise<string | null> {
       await response.body?.cancel().catch(() => {});
       return null;
     }
-    return (await response.text()).slice(0, MAX_TEXT_FILE_CHARS);
+    return readCappedText(response, MAX_TEXT_FILE_BYTES);
   };
   try {
     const r = await race(attempt(), TEXT_FILE_TIMEOUT_MS);

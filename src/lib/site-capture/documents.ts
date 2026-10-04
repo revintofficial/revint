@@ -6,6 +6,7 @@
  */
 import { logger } from "@/lib/logger";
 import { safeFetchFollow, UrlGuardError, type SafeFetchResult } from "@/lib/safe-fetch";
+import { readCapped, STOP } from "./body";
 import { cleanText, MAX_TEXT_CHARS } from "./reduce";
 import type { LedgerReason } from "./types";
 
@@ -27,55 +28,6 @@ export async function extractPdfText(bytes: Uint8Array): Promise<{ text: string;
   const pdf = await getDocumentProxy(bytes);
   const { totalPages, text } = await extractText(pdf, { mergePages: true });
   return { text, pageCount: totalPages };
-}
-
-const STOP = Symbol("stop");
-
-/**
- * `"too_large"` = over the limit; `STOP` = the deadline passed or the caller
- * aborted while the body was being read (the reader is cancelled).
- */
-async function readCapped(
-  response: Response,
-  maxBytes: number,
-  stop: Promise<typeof STOP>,
-): Promise<Uint8Array | "too_large" | typeof STOP> {
-  const declared = Number(response.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > maxBytes) {
-    await response.body?.cancel().catch(() => {});
-    return "too_large";
-  }
-  if (!response.body) {
-    const buf = await Promise.race([response.arrayBuffer(), stop]);
-    if (buf === STOP) return STOP;
-    const all = new Uint8Array(buf);
-    return all.byteLength > maxBytes ? "too_large" : all;
-  }
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  for (;;) {
-    const next = await Promise.race([reader.read(), stop]);
-    if (next === STOP) {
-      reader.cancel().catch(() => {});
-      return STOP;
-    }
-    const { done, value } = next;
-    if (done) break;
-    total += value.byteLength;
-    if (total > maxBytes) {
-      await reader.cancel().catch(() => {});
-      return "too_large";
-    }
-    chunks.push(value);
-  }
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const c of chunks) {
-    out.set(c, offset);
-    offset += c.byteLength;
-  }
-  return out;
 }
 
 function looksLikePdf(bytes: Uint8Array): boolean {
