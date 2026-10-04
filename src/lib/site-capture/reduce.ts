@@ -36,15 +36,20 @@ export function reducePage(html: string, pageUrl: string): ReducedPage {
   }
 
   const embeds: string[] = [];
-  $("script[src], iframe[src], iframe[data-src], embed[src]").each((_, el) => {
+  $("script[src], script[data-src], iframe[src], iframe[data-src], iframe[data-lazy-src], embed[src]").each((_, el) => {
     if (embeds.length >= MAX_EMBEDS) return;
-    const raw = ($(el).attr("src") ?? $(el).attr("data-src") ?? "").trim();
-    if (!raw) return;
-    try {
-      const u = new URL(raw, pageUrl);
-      if (/^https?:$/.test(u.protocol) && !embeds.includes(u.href)) embeds.push(u.href);
-    } catch {
-      // malformed src: nothing to record
+    // Lazy-load markup leaves src empty or about:blank and keeps the real address in data-*.
+    for (const attr of ["src", "data-src", "data-lazy-src"]) {
+      const raw = ($(el).attr(attr) ?? "").trim();
+      if (!raw) continue;
+      try {
+        const u = new URL(raw, pageUrl);
+        if (!/^https?:$/.test(u.protocol)) continue;
+        if (!embeds.includes(u.href)) embeds.push(u.href);
+        return;
+      } catch {
+        // malformed address: try the next attribute
+      }
     }
   });
 

@@ -22,6 +22,20 @@ describe("reducePage", () => {
     expect(r.jsonLd).toEqual([{ "@type": "Restaurant", name: "Bistro" }]);
   });
 
+  it("reads the lazy-load address of an iframe when src is empty, blank or missing", () => {
+    const html = `<body>
+      <iframe src="" data-src="https://book.vendor.test/embed"></iframe>
+      <iframe src="about:blank" data-src="https://book.vendor.test/embed2"></iframe>
+      <iframe data-lazy-src="https://book.vendor.test/embed3"></iframe>
+      <iframe src="https://book.vendor.test/real" data-src="https://book.vendor.test/other"></iframe></body>`;
+    expect(reducePage(html, URL_).embeds).toEqual([
+      "https://book.vendor.test/embed",
+      "https://book.vendor.test/embed2",
+      "https://book.vendor.test/embed3",
+      "https://book.vendor.test/real",
+    ]);
+  });
+
   it("caps the text at 60,000 characters", () => {
     const html = `<body><p>${"word ".repeat(20_000)}</p></body>`;
     expect(reducePage(html, URL_).text.length).toBe(MAX_TEXT_CHARS);
