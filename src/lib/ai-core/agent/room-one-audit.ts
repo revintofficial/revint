@@ -94,7 +94,9 @@ export function buildRoomOneAudit(src: RoomOneAuditSource): RoomOneAudit | null 
     hasOnlineReservation: sawBooking ? true : bookingChecked ? false : null,
     bookingProvider: provider,
     acceptsReservations: map?.acceptsReservations ?? null,
-    hasPrepayment: sf?.hasPrepayment ? true : null,
+    // A deposit stated only for groups / private events is evidence, not a
+    // general "this venue takes deposits" signal.
+    hasPrepayment: sf?.hasPrepayment && sf.hasPrepayment.scope !== "group_or_event" ? true : null,
     tableCount: finiteNumber(f.tableCount),
     hasQrMenu: hasQr ? true : sf?.menuPageSeen ? false : null,
     pdfMenu: menuUrl ? isPdf(menuUrl) && !detectedMenuTool : null,

@@ -50,6 +50,13 @@ export interface SiteFact<T> {
   value: T;
   url: string;
   quote: string | null;
+  /** Where a bridged fact was read. Absent on facts read by mergeSiteFacts (always a page). */
+  source?: "page" | "network" | "pdf";
+  /**
+   * "group_or_event": stated only for groups or private events (a group-booking,
+   * events or FAQ page), not for an ordinary booking. Absent = general.
+   */
+  scope?: "general" | "group_or_event";
 }
 export interface SiteFacts {
   pagesVisited: Array<{ kind: SubpageKind; url: string; ok: boolean }>;
@@ -80,6 +87,8 @@ export interface SiteFacts {
    * Context only: it is not a language count (that stays `null`).
    */
   declaredLanguage?: SiteFact<string> | null;
+  /** What the deep capture opened and what it could not. Absent on shallow audits and older rows. */
+  coverage?: import("./site-capture/types").SiteCoverage;
 }
 
 export const RES_TEXT = /\b(reserv\w*|book(ing|ings)?|book a table|rezervasyon)\b/i;
