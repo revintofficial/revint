@@ -83,4 +83,37 @@ describe("saveSiteCapture", () => {
     const [page] = mocks.create.mock.calls[0][0].data.pages.create;
     expect(page.jsonLd).toEqual([{ name: "Bistro" }]);
   });
+
+  it("keeps a literal backslash-u0000 text sequence unchanged", async () => {
+    const literals = ["x\\u0000y", "x\\u0000", "x\\u0000bc"];
+    const withLiterals: SiteCaptureResult = {
+      ...capture,
+      pages: [{ ...capture.pages[0], jsonLd: literals.map((name) => ({ name })), links: literals.map((text) => ({ text, href: "https://bistro.test/" })) }],
+    };
+    await expect(saveSiteCapture({ workspaceId: "ws_1", leadId: "lead_1", capture: withLiterals })).resolves.toBeUndefined();
+    const [page] = mocks.create.mock.calls[0][0].data.pages.create;
+    expect(page.jsonLd).toEqual(literals.map((name) => ({ name })));
+    expect(page.links.map((l: { text: string }) => l.text)).toEqual(literals);
+  });
+
+  it("strips NUL from nested object keys and array elements", async () => {
+    const nested: SiteCaptureResult = {
+      ...capture,
+      pages: [{ ...capture.pages[0], jsonLd: [{ outer: { "na\u0000me": "ok" }, list: ["a\u0000b", ["c\u0000"]] }] }],
+    };
+    await saveSiteCapture({ workspaceId: "ws_1", leadId: "lead_1", capture: nested });
+    const [page] = mocks.create.mock.calls[0][0].data.pages.create;
+    expect(page.jsonLd).toEqual([{ outer: { name: "ok" }, list: ["ab", ["c"]] }]);
+  });
+
+  it("strips NUL from page text and title", async () => {
+    const dirty: SiteCaptureResult = {
+      ...capture,
+      pages: [{ ...capture.pages[0], text: "Wel\u0000come", title: "Bis\u0000tro" }],
+    };
+    await saveSiteCapture({ workspaceId: "ws_1", leadId: "lead_1", capture: dirty });
+    const [page] = mocks.create.mock.calls[0][0].data.pages.create;
+    expect(page.text).toBe("Welcome");
+    expect(page.title).toBe("Bistro");
+  });
 });
