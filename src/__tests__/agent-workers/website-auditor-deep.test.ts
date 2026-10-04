@@ -9,16 +9,21 @@ const mocks = vi.hoisted(() => ({
   crawlWebsiteDeep: vi.fn(),
   saveSiteCapture: vi.fn(),
   leadUpdate: vi.fn(),
+  leadUpdateMany: vi.fn(),
   auditUpsert: vi.fn(),
   warn: vi.fn(),
+  truthLayerOn: vi.fn(() => false),
+  multiVerifyWebsite: vi.fn(),
 }));
 
 vi.mock("@/lib/crawler", () => ({ crawlWebsite: mocks.crawlWebsite }));
 vi.mock("@/lib/site-capture/deep", () => ({ crawlWebsiteDeep: mocks.crawlWebsiteDeep }));
 vi.mock("@/lib/site-capture/store", () => ({ saveSiteCapture: mocks.saveSiteCapture }));
 vi.mock("@/lib/prisma", () => ({
-  prisma: { lead: { update: mocks.leadUpdate, updateMany: vi.fn() }, websiteAudit: { upsert: mocks.auditUpsert } },
+  prisma: { lead: { update: mocks.leadUpdate, updateMany: mocks.leadUpdateMany }, websiteAudit: { upsert: mocks.auditUpsert } },
 }));
+vi.mock("@/lib/feature-flags", () => ({ isTruthLayerFlagEnabled: mocks.truthLayerOn }));
+vi.mock("@/lib/agent-workers/website-multi-verify", () => ({ multiVerifyWebsite: mocks.multiVerifyWebsite }));
 vi.mock("@/lib/logger", () => ({ logger: { info: vi.fn(), warn: mocks.warn, error: vi.fn(), debug: vi.fn() } }));
 
 import { DeferError } from "@/lib/agent-workers/errors";
@@ -108,6 +113,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   delete process.env.SITE_CAPTURE_DEEP;
   mocks.leadUpdate.mockResolvedValue({});
+  mocks.leadUpdateMany.mockResolvedValue({ count: 1 });
+  mocks.truthLayerOn.mockReturnValue(false);
   mocks.auditUpsert.mockResolvedValue({});
   mocks.saveSiteCapture.mockResolvedValue(undefined);
   mocks.crawlWebsite.mockResolvedValue(features({ siteFacts: undefined }));
@@ -233,6 +240,43 @@ describe("WEBSITE_AUDITOR: deep capture", () => {
     expect(mocks.crawlWebsiteDeep).not.toHaveBeenCalled();
     expect(mocks.crawlWebsite).not.toHaveBeenCalled();
     expect(freeSlots()).toBe(2);
+  });
+
+  it("writes nothing when the deadline fires during website verification of a lead without a website", async () => {
+    mocks.truthLayerOn.mockReturnValue(true);
+    const controller = new AbortController();
+    mocks.multiVerifyWebsite.mockImplementation(async () => {
+      controller.abort();
+      return { status: "confirmed_absent", sources: [] };
+    });
+    const result = await run(ctx({ signal: controller.signal }, { websiteUrl: null }));
+    expect(mocks.multiVerifyWebsite).toHaveBeenCalledTimes(1);
+    expect(result.output).toEqual({ skipped: true, reason: "deadline_aborted" });
+    expect(mocks.leadUpdate).not.toHaveBeenCalled();
+    expect(mocks.leadUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("does not start website verification when the signal is already aborted at entry", async () => {
+    mocks.truthLayerOn.mockReturnValue(true);
+    const controller = new AbortController();
+    controller.abort();
+    const result = await run(ctx({ signal: controller.signal }, { websiteUrl: null }));
+    expect(result.output).toEqual({ skipped: true, reason: "deadline_aborted" });
+    expect(mocks.multiVerifyWebsite).not.toHaveBeenCalled();
+    expect(mocks.leadUpdate).not.toHaveBeenCalled();
+    expect(mocks.leadUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("still verifies and writes the verdict and NO_WEBSITE when nothing aborted", async () => {
+    mocks.truthLayerOn.mockReturnValue(true);
+    mocks.multiVerifyWebsite.mockResolvedValue({ status: "confirmed_absent", sources: [] });
+    const result = await run(ctx({ signal: new AbortController().signal }, { websiteUrl: null }));
+    expect(result.output).toMatchObject({ skipped: true, reason: "no_website" });
+    expect(mocks.leadUpdateMany).toHaveBeenCalledWith({
+      where: { id: "lead_1", workspaceId: "ws_1" },
+      data: { websiteVerificationStatus: "confirmed_absent" },
+    });
+    expect(mocks.leadUpdate).toHaveBeenCalledWith({ where: { id: "lead_1" }, data: { crawlStatus: "NO_WEBSITE" } });
   });
 
   it("keeps the audit when storing the capture fails", async () => {

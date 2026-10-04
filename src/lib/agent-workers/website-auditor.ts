@@ -86,6 +86,7 @@ const DEFAULT_VERIFY_RUNNERS: WebsiteMultiVerifyRunners = {
 async function runWebsiteVerification(
   lead: NonNullable<Parameters<AgentWorkerRun>[0]["lead"]>,
   runners: WebsiteMultiVerifyRunners = DEFAULT_VERIFY_RUNNERS,
+  signal?: AbortSignal,
 ): Promise<WebsiteVerificationResult> {
   const workspaceId = lead.workspaceId;
 
@@ -104,6 +105,9 @@ async function runWebsiteVerification(
 
   const result = await multiVerifyWebsite(input, runners);
   const status: WebsiteVerificationStatus = result.status;
+  // The executor's deadline fired during the verification: a retry owns the
+  // lead, so the verdict is not written (the caller returns deadline_aborted).
+  if (signal?.aborted) return result;
 
   // updateMany so we can scope by workspaceId. Per the multi-tenant
   // rule, an `update` keyed solely on `id` would leak across tenants
@@ -189,9 +193,10 @@ async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWo
   const flagEnabled = isTruthLayerFlagEnabled("TRUTH_LAYER_WEBSITE_VERIFY", {
     workspaceId: lead.workspaceId,
   });
+  if (aborted()) return deadlineAborted();
   if (flagEnabled) {
     try {
-      verification = await runWebsiteVerification(lead);
+      verification = await runWebsiteVerification(lead, DEFAULT_VERIFY_RUNNERS, ctx.signal);
     } catch (err) {
       // Verification must not break the auditor. On unexpected
       // failure we log + proceed with the legacy code path.
@@ -202,6 +207,7 @@ async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWo
     }
   }
 
+  if (aborted()) return deadlineAborted();
   if (!lead.websiteUrl) {
     await prisma.lead.update({
       where: { id: lead.id },
