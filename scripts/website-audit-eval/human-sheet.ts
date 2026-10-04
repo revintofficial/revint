@@ -19,6 +19,7 @@ interface LedgerRow {
   url: string;
   finalUrl: string | null;
   type: string;
+  source: string;
   outcome: string;
   reason: string | null;
 }
@@ -29,8 +30,11 @@ interface SiteResult {
   crawlError: string | null;
   ms: number;
   siteFacts: Record<string, unknown> | null;
-  capture: { status: string; ledger: LedgerRow[] } | null;
+  capture: { status: string; ledger: LedgerRow[]; candidateOverflow?: number } | null;
 }
+
+const SOURCE_TEXT: Record<string, string> = { page: "sayfa", network: "ağ isteği", pdf: "PDF" };
+const UNREAD_SHOWN = 25;
 
 const FACTS: Array<[string, string]> = [
   ["bookingProvider", "Rezervasyon sağlayıcısı"],
@@ -70,7 +74,8 @@ function main() {
       asserted++;
       const value = Array.isArray(fact.value) ? fact.value.join(", ") : fact.value === true ? "var" : fact.value;
       const scope = fact.scope === "group_or_event" ? "kısıtlı (grup, etkinlik ya da özel gün)" : "genel";
-      out.push(`| ${label} | ${cell(value)} | ${scope} | ${fact.source ?? "sayfa"} | ${cell(fact.url)} | ${cell(fact.quote).slice(0, 220)} | |`);
+      const source = SOURCE_TEXT[fact.source ?? "page"] ?? fact.source;
+      out.push(`| ${label} | ${cell(value)} | ${scope} | ${source} | ${cell(fact.url)} | ${cell(fact.quote).slice(0, 220)} | |`);
     }
     if (typeof sf.menuPdfUrl === "string") {
       asserted++;
@@ -87,10 +92,18 @@ function main() {
       const landed = e.finalUrl && e.finalUrl !== e.url ? ` → ${e.finalUrl}` : "";
       out.push(`| ${e.type} | ${cell(e.url + landed)} | |`);
     }
-    const unread = ledger.filter((x) => x.outcome !== "opened" && x.reason !== "limit_type" && x.reason !== "duplicate");
+    const notRead = ledger.filter((x) => x.outcome !== "opened" && x.reason !== "limit_type" && x.reason !== "duplicate");
+    // A guessed path (/faq, /book) that the site does not have is not a page the capture missed.
+    const isMissingProbe = (x: LedgerRow) => x.source === "known_path" && x.reason === "http_error";
+    const probes = notRead.filter(isMissingProbe).length;
+    const unread = notRead.filter((x) => !isMissingProbe(x));
     out.push("", "**Okunamayan sayfalar** (önemli bir sayfa kaçmış mı?)", "", "| Tür | Adres | Neden | Önemli mi? |", "|---|---|---|---|");
     if (unread.length === 0) out.push("| (yok) | | | |");
-    for (const e of unread.slice(0, 25)) out.push(`| ${e.type} | ${cell(e.url)} | ${e.reason ?? ""} | |`);
+    for (const e of unread.slice(0, UNREAD_SHOWN)) out.push(`| ${e.type} | ${cell(e.url)} | ${e.reason ?? ""} | |`);
+    if (unread.length > UNREAD_SHOWN) out.push("", `(ilk ${UNREAD_SHOWN} / ${unread.length})`);
+    if (probes > 0) out.push("", `Tahmin edilip denenen ve sitede olmayan ${probes} adres listelenmedi.`);
+    const overflow = r.capture?.candidateOverflow ?? 0;
+    if (overflow > 0) out.push("", `Aday sınırını aşan adres: ${overflow}`);
     out.push("");
   }
 

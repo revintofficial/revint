@@ -112,6 +112,7 @@ async function main() {
         ? {
             status: capture.status,
             sitemapUrlCount: capture.sitemapUrlCount,
+            candidateOverflow: capture.candidateOverflow,
             ledger: capture.ledger,
             pages: capture.pages.map((p) => ({
               url: p.url,

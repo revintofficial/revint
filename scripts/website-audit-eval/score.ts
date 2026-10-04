@@ -72,7 +72,7 @@ function scoreSite(r: Record<string, unknown>, t: Truth): Record<string, Verdict
   v.prepayment = tri(audit.hasPrepayment, t.prepayment);
   // Any scope: Room 1 only asserts a general deposit, but a deposit that is
   // found with its group scope and evidence still counts as found.
-  const anyPrepayment = sf != null && sf.hasPrepayment != null;
+  const anyPrepayment = (sf?.hasPrepayment as { value?: unknown } | null | undefined)?.value === true;
   v.prepaymentAny = t.prepayment === null ? "na" : !anyPrepayment ? "unknown" : t.prepayment ? "correct" : "wrong";
 
   if (t.qrMenuTool === null) v.qrMenuTool = "na";
@@ -174,8 +174,10 @@ function main() {
     const newWrong: string[] = [];
     let missedBefore = 0;
     let missedAfter = 0;
+    let compared = 0;
     for (const [id, t] of Object.entries(truth)) {
       if (!results[id] || !before[id]) continue;
+      compared++;
       const a = scoreSite(before[id], t);
       const b = scoreSite(results[id], t);
       for (const f of fields) {
@@ -185,7 +187,13 @@ function main() {
         if (b[f] === "unknown") missedAfter++;
       }
     }
-    console.log(`\ncompare: ${regressions.length} regression(s), ${newWrong.length} new wrong answer(s), unknown cells ${missedBefore} -> ${missedAfter}`);
+    console.log(`\ncompare: ${compared} site(s) compared`);
+    const onlyIn = (a: Record<string, unknown>, b: Record<string, unknown>) => Object.keys(a).filter((id) => !(id in b));
+    const onlyResults = onlyIn(results, before);
+    const onlyBefore = onlyIn(before, results);
+    if (onlyResults.length > 0) console.log(`  only in ${resultsPath}: ${onlyResults.join(", ")}`);
+    if (onlyBefore.length > 0) console.log(`  only in ${process.argv[compareAt + 1]}: ${onlyBefore.join(", ")}`);
+    console.log(`compare: ${regressions.length} regression(s), ${newWrong.length} new wrong answer(s), unknown cells ${missedBefore} -> ${missedAfter}`);
     for (const line of [...regressions, ...newWrong]) console.log(`  ${line}`);
     if (regressions.length > 0 || newWrong.length > 0) process.exitCode = 1;
   }

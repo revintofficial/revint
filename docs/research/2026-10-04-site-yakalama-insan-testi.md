@@ -12,7 +12,7 @@ Her site için:
 2. **Bulgular** tablosu: her satırda kanıt adresine git, alıntıyı bul. Bulgu sitede öyleyse `D`, değilse `Y`, karar veremediysen `?`. "Kapsam" sütunu `kısıtlı (grup, etkinlik ya da özel gün)` diyorsa, kaporanın gerçekten alıntının söylediği gibi kısıtlı olduğunu (gruplar, etkinlikler, özel günler) kontrol et; her sıradan rezervasyonda isteniyorsa `Y`.
 3. **Sistemin bilmediği** tablosu: boş bırakılan bulgu sitede açıkça varsa (ör. rezervasyon düğmesi OpenTable'a gidiyor) `KAÇAK` yaz ve sayfanın adresini ekle. Bulamadıysan boş bırak.
 4. **Okunan sayfalar**: tür sütunu sayfayla uyuşuyor mu (`menu` gerçekten menü mü)?
-5. **Okunamayan sayfalar**: listede rezervasyon, menü, sipariş, SSS ya da grup sayfası varsa "Önemli mi?" sütununa `evet` yaz.
+5. **Okunamayan sayfalar**: listede rezervasyon, menü, sipariş, SSS ya da grup sayfası varsa "Önemli mi?" sütununa `evet` yaz. Sistemin tahmin edip denediği ama sitede olmayan adresler (ör. `/faq` yoksa) listelenmez, yalnızca sayıları tablonun altında yazar; `limit_total` yakalamanın deneme sınırına ulaşıp durduğunu, `blocked` sitenin tarayıcıyı reddettiğini söyler.
 
 ## B. Uygulama içi test (3 lead, yaklaşık 15 dakika)
 
@@ -37,3 +37,4 @@ Her site için:
 - Metin katmanı olmayan menü PDF'leri okunmaz (`needsOcr`).
 - Tıklayınca açılan rezervasyon pencereleri (modal) yalnızca sayfa yüklenirken istek atıyorsa yakalanır.
 - Toplu keşifte denetim aşaması eskisinden yavaştır (süreç başına 2 eşzamanlı site).
+- Bir otelin oda rezervasyonu koşulları (ilk gece ödemesi, "Hotel may request prepayment") bilerek masa kaporası olarak okunmaz.
