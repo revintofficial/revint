@@ -6,7 +6,10 @@
  * HTML of the homepage and the subpages the crawler would open, so the
  * pages can be re-read offline and trimmed into test fixtures.
  *
- *   npx tsx scripts/website-audit-eval/run-eval.ts <outDir> [--snapshot] [--only id1,id2]
+ *   npx tsx scripts/website-audit-eval/run-eval.ts <outDir> [--deep] [--sites sites-holdout.json] [--snapshot] [--only id1,id2] [--resume]
+ *
+ * --deep runs crawlWebsiteDeep (site capture) instead of crawlWebsite and
+ * keeps the coverage ledger of every site next to its facts.
  *
  * Writes only to <outDir>. Never touches the database or Redis.
  */
@@ -15,6 +18,8 @@ import path from "node:path";
 import { chromium } from "playwright";
 import { closeBrowser, crawlWebsite } from "@/lib/crawler";
 import { pickSubpages } from "@/lib/site-facts";
+import { crawlWebsiteDeep } from "@/lib/site-capture/deep";
+import type { SiteCaptureResult } from "@/lib/site-capture/types";
 
 interface Site {
   id: string;
@@ -57,11 +62,14 @@ async function main() {
   const onlyAt = process.argv.indexOf("--only");
   const only = onlyAt > 0 ? new Set(process.argv[onlyAt + 1].split(",")) : null;
   const doSnap = process.argv.includes("--snapshot");
+  const deep = process.argv.includes("--deep");
+  const sitesAt = process.argv.indexOf("--sites");
+  const sitesFile = sitesAt > 0 ? process.argv[sitesAt + 1] : "sites.json";
   mkdirSync(outDir, { recursive: true });
   const htmlDir = path.join(outDir, "html");
   if (doSnap) mkdirSync(htmlDir, { recursive: true });
 
-  const sites: Site[] = JSON.parse(readFileSync(path.join(__dirname, "sites.json"), "utf8"));
+  const sites: Site[] = JSON.parse(readFileSync(path.join(__dirname, sitesFile), "utf8"));
   // Resume-friendly: keep the records of an earlier (interrupted) run.
   let results: Record<string, unknown> = {};
   try {
@@ -74,7 +82,15 @@ async function main() {
     if (only && !only.has(site.id)) continue;
     if (skipDone && results[site.id]) continue;
     const t0 = Date.now();
-    const f = await crawlWebsite(site.url, "restaurant");
+    let capture: SiteCaptureResult | null = null;
+    let f: Awaited<ReturnType<typeof crawlWebsite>>;
+    if (deep) {
+      const crawled = await crawlWebsiteDeep(site.url, "restaurant");
+      f = crawled.features;
+      capture = crawled.capture;
+    } else {
+      f = await crawlWebsite(site.url, "restaurant");
+    }
     const sf = f.siteFacts ?? null;
     results[site.id] = {
       name: site.name,
@@ -91,6 +107,23 @@ async function main() {
       menuUrl: f.menuUrl,
       siteFacts: sf,
       ms: Date.now() - t0,
+      // Deep runs only: what was opened and what was not (no page text).
+      capture: capture
+        ? {
+            status: capture.status,
+            sitemapUrlCount: capture.sitemapUrlCount,
+            candidateOverflow: capture.candidateOverflow,
+            ledger: capture.ledger,
+            pages: capture.pages.map((p) => ({
+              url: p.url,
+              finalUrl: p.finalUrl,
+              type: p.type,
+              source: p.source,
+              needsOcr: p.needsOcr,
+              thirdPartyRequests: p.thirdPartyRequests,
+            })),
+          }
+        : null,
     };
     console.log(
       `${site.id}\treach=${f.reachable}\tprov=${sf?.bookingProvider?.value ?? f.bookingProvider ?? "-"}\tprepay=${sf?.hasPrepayment ? "Y" : "-"}\tqr=${sf?.qrMenuTool?.value ?? "-"}\tdirect=${sf?.directOrdering ? "Y" : "-"}\tdeliv=${sf?.deliveryPlatforms?.value.join("+") ?? "-"}\tlang=${sf?.languageCount?.value ?? "-"}\tpages=${sf?.pagesVisited.map((p) => p.kind + (p.ok ? "" : "!")).join(",") ?? "-"}`,

@@ -15,7 +15,10 @@ vi.mock("../../lib/logger", () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 vi.mock("../../lib/agent-workers/execute", () => ({ executeAgentRun: mocks.executeAgentRun }));
-vi.mock("../../lib/agent-workers/errors", () => ({ isRetryable: () => false }));
+vi.mock("../../lib/agent-workers/errors", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/agent-workers/errors")>()),
+  isRetryable: () => false,
+}));
 vi.mock("../../lib/control/telemetry", () => ({ recordChainTelemetry: vi.fn() }));
 vi.mock("../../lib/integrations/hubspot/brief-hook", () => ({
   writebackAfterBriefRun: mocks.writebackAfterBriefRun,

@@ -508,6 +508,7 @@ model Workspace {
   emailAccounts        EmailAccount[]
   copilotMessages      CopilotMessage[]
   agentRuns            AgentRun[]
+  siteCaptures         SiteCapture[]
   websiteMockups       WebsiteMockup[]
   semanticMemory       SemanticMemory[]
   plannerSessions      PlannerSession[]
@@ -821,6 +822,7 @@ model Lead {
   assignedTo          User?                @relation("LeadAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
   account             Account?             @relation(fields: [accountId], references: [id], onDelete: SetNull)
   websiteAudit        WebsiteAudit?
+  siteCapture         SiteCapture?
   salesOpportunity    SalesOpportunity?
   watchlistItem       WatchlistItem?
   googleReviews       GoogleReview[]
@@ -1321,6 +1323,61 @@ model WebsiteAudit {
 
   @@index([bookingProvider])
   @@map("website_audits")
+}
+
+// One deep capture per lead (src/lib/site-capture). Replaced on every audit;
+// no history. Raw HTML is never stored. Spec:
+// docs/superpowers/specs/2026-10-03-site-yakalama-design.md
+model SiteCapture {
+  id              String   @id @default(cuid())
+  workspaceId     String   @map("workspace_id")
+  leadId          String   @unique @map("lead_id")
+  rootUrl         String   @map("root_url")
+  // "complete" | "partial" | "blocked" | "failed"
+  status          String
+  startedAt       DateTime @map("started_at")
+  durationMs      Int      @map("duration_ms")
+  pageCount       Int      @default(0) @map("page_count")
+  sitemapUrlCount Int      @default(0) @map("sitemap_url_count")
+  // Addresses found after the 300-candidate cap: counted, not in the ledger.
+  candidateOverflow Int    @default(0) @map("candidate_overflow")
+  // LedgerEntry[]: exactly one result per admitted address.
+  ledger          Json     @default("[]")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lead      Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  pages     SiteCapturePage[]
+
+  @@index([workspaceId])
+  @@map("site_captures")
+}
+
+model SiteCapturePage {
+  id                 String  @id @default(cuid())
+  captureId          String  @map("capture_id")
+  workspaceId        String  @map("workspace_id")
+  url                String
+  finalUrl           String  @map("final_url")
+  // PageType
+  type               String
+  // "browser" | "http" | "pdf"
+  source             String
+  httpStatus         Int?    @map("http_status")
+  title              String?
+  // Visible text, at most 60,000 characters.
+  text               String  @db.Text
+  links              Json    @default("[]")
+  embeds             Json    @default("[]")
+  jsonLd             Json    @default("[]") @map("json_ld")
+  thirdPartyRequests Json    @default("[]") @map("third_party_requests")
+  needsOcr           Boolean @default(false) @map("needs_ocr")
+
+  capture SiteCapture @relation(fields: [captureId], references: [id], onDelete: Cascade)
+
+  @@index([captureId])
+  @@index([workspaceId])
+  @@map("site_capture_pages")
 }
 
 model SalesOpportunity {

@@ -15,24 +15,8 @@ import { requireUser, UnauthorizedError } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { internalError } from "@/lib/api-errors";
-import type { Prisma } from "@/generated/prisma/client";
-
-/**
- * True when the AgentRun was scheduled as an async-apify run, i.e.
- * the executor's `start(ctx)` path persisted `mode: "async-apify"`
- * (and an `apifyRunId`) into `inputsJson`. Async runs use a longer
- * watchdog deadline because their completion is gated on Apify's
- * actor + webhook round-trip rather than our own process staying
- * alive. We treat malformed JSON as "sync" - that keeps the strict
- * 3-minute watchdog as the safe default.
- */
-function isAsyncRun(inputsJson: Prisma.JsonValue | null | undefined): boolean {
-  if (!inputsJson || typeof inputsJson !== "object" || Array.isArray(inputsJson)) {
-    return false;
-  }
-  const obj = inputsJson as Record<string, unknown>;
-  return obj.mode === "async-apify" && typeof obj.apifyRunId === "string";
-}
+import { watchdogVerdict } from "@/lib/agent-workers/deadline";
+import { getWorker } from "@/lib/agent-workers/registry";
 
 export async function GET(
   _request: Request,
@@ -74,7 +58,9 @@ export async function GET(
     // Sync runs (Gemini calls, in-process scrapers, sync Apify):
     //   3 minutes is a comfortable ceiling - the executor's own
     //   outer deadline is 180s and the worker process's lockDuration
-    //   is 240s, so anything older has definitely crashed.
+    //   is 240s, so anything older has definitely crashed. Workers
+    //   that declare deadlineMs in the registry get that deadline plus
+    //   one minute instead.
     //
     // Async-apify runs (mode set in inputsJson by the executor's
     // start() path): up to 10 minutes. Apify's actor timeout is
@@ -84,13 +70,17 @@ export async function GET(
     // would mark genuinely-in-flight runs as FAILED while the
     // webhook is still about to land.
     if (run.status === "PENDING" || run.status === "RUNNING") {
-      const ageMs = Date.now() - new Date(run.createdAt).getTime();
-      const isAsync = isAsyncRun(run.inputsJson);
-      const deadlineMs = isAsync ? 10 * 60 * 1000 : 3 * 60 * 1000;
-      if (ageMs > deadlineMs) {
+      // Sync runs get the worker's own deadline (+60 s) when it declares one,
+      // counted from the latest of creation, start and deferral; see
+      // watchdogVerdict. WEBSITE_AUDITOR's deep capture runs up to 300 s and
+      // may wait for a capture slot before it starts.
+      const verdict = watchdogVerdict(run, getWorker(run.workerKind));
+      const { ageMs, isAsync } = verdict;
+      const deadlineMs = verdict.limitMs;
+      if (verdict.expired) {
         const errorMsg = isAsync
           ? "watchdog: async Apify run exceeded 10-minute deadline without webhook callback"
-          : "watchdog: run exceeded 3-minute deadline without completing";
+          : `watchdog: run exceeded ${Math.round(deadlineMs / 60_000)}-minute deadline without completing`;
         const updated = await prisma.agentRun.update({
           where: { id: run.id },
           data: {

@@ -8,7 +8,9 @@ const nextConfig = {
 
   // Keep the Prisma engine + pg driver out of the webpack bundle so the
   // native binary resolves correctly at runtime.
-  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg"],
+  // unpdf ships a pdf.js build that must be loaded from node_modules, not bundled
+  // (reachable from API routes through website-auditor -> site-capture/documents).
+  serverExternalPackages: ["@prisma/client", "@prisma/adapter-pg", "pg", "unpdf"],
 
   // Intentionally no top-level `env` block. Anything declared there is
   // inlined into the CLIENT bundle at build time. Server secrets must be

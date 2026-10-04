@@ -30,12 +30,14 @@ import {
   resolveWorkerFinalize,
 } from "./registry";
 import { assertWorkerQuota } from "./quota";
-import { RetryableError } from "./errors";
+import { workerDeadlineMsFor } from "./deadline";
+import { DeferError, RetryableError } from "./errors";
 import { EmbeddingError } from "@/lib/ai-core/embed";
 import { apifyQuotaSkipFor } from "@/lib/apify";
 import { getAppBaseUrl } from "@/lib/email/from";
 import type {
   AgentWorkerContext,
+  AgentWorkerOutput,
   ApifyFinalizePayload,
   EventKind,
   MemoryHit,
@@ -81,7 +83,7 @@ function hasPublicWebhookIngress(): boolean {
 
 export async function executeAgentRun(
   runId: string,
-  opts?: { isRetry?: boolean },
+  opts?: { isRetry?: boolean; canDefer?: boolean },
 ): Promise<void> {
   const run = await prisma.agentRun.findUnique({ where: { id: runId } });
   if (!run) {
@@ -118,6 +120,14 @@ export async function executeAgentRun(
   try {
     const workerMeta = getWorker(run.workerKind);
     const ctx = await hydrateContext(run);
+    // Long-running workers (site capture) stop on this signal and may ask to
+    // be deferred instead of waiting for capacity inside a queue slot.
+    const abort = new AbortController();
+    const runInputs = (run.inputsJson ?? {}) as Record<string, unknown>;
+    ctx.signal = abort.signal;
+    ctx.canDefer = opts?.canDefer === true;
+    ctx.deferCount = typeof runInputs.deferCount === "number" ? runInputs.deferCount : 0;
+    ctx.queuedAt = run.createdAt;
 
     // Stale-version guard. When a rep manually overrides a lead's
     // sub-niche, the override API bumps `Lead.subNicheVersion` and
@@ -263,28 +273,33 @@ export async function executeAgentRun(
       return;
     }
 
-    // Outer deadline: 3× the worker's estimated duration, capped at
-    // 180 seconds. This catches the case where the inner Gemini timeout
+    // Outer deadline: the worker's own `deadlineMs`, or 3× its estimated
+    // duration capped at 180 seconds. This catches the case where the inner Gemini timeout
     // fires but the AbortController race resolves with an error that
     // takes longer to propagate, or when an Apify actor hangs past its
     // own declared timeoutSec. Any worker that breaches this deadline
     // throws RetryableError so BullMQ re-queues rather than dropping.
-    const workerDeadlineMs = Math.min(
-      (workerMeta?.estimatedDurationMs ?? 60_000) * 3,
-      180_000,
-    );
-    const deadlinePromise = new Promise<never>((_, reject) =>
-      setTimeout(
-        () =>
-          reject(
-            new RetryableError(
-              `worker_deadline_exceeded: ${run.workerKind} exceeded ${workerDeadlineMs}ms outer deadline`,
-            ),
+    const workerDeadlineMs = workerDeadlineMsFor(workerMeta);
+    let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
+    const deadlinePromise = new Promise<never>((_, reject) => {
+      deadlineTimer = setTimeout(() => {
+        // Stop the work, not just the wait: a worker that honours ctx.signal
+        // closes its browser pages and frees its capture slot here, so the
+        // retry does not run on top of a still-running first attempt.
+        abort.abort();
+        reject(
+          new RetryableError(
+            `worker_deadline_exceeded: ${run.workerKind} exceeded ${workerDeadlineMs}ms outer deadline`,
           ),
-        workerDeadlineMs,
-      ),
-    );
-    const result = await Promise.race([runWorker(run.workerKind, ctx), deadlinePromise]);
+        );
+      }, workerDeadlineMs);
+    });
+    let result: AgentWorkerOutput;
+    try {
+      result = await Promise.race([runWorker(run.workerKind, ctx), deadlinePromise]);
+    } finally {
+      clearTimeout(deadlineTimer);
+    }
 
     // Post-run memory writes. The worker's impl module may export a
     // `memoryWrites` callback; we resolve it lazily (same cache as
@@ -367,6 +382,26 @@ export async function executeAgentRun(
         await safeNotifyOrchestrator(run.plannerSessionId, runId);
       }
       return;
+    }
+
+    if (err instanceof DeferError && opts?.canDefer === true) {
+      // Not a failure: the worker had no capacity. Back to PENDING so the
+      // run reads as queued; the queue worker re-queues the job after
+      // err.delayMs. No orchestrator notify (the step is not terminal) and
+      // no telemetry (nothing ran). Without canDefer (the inline path)
+      // nothing would re-queue it, so it falls through to the generic failure.
+      const existingInputs = (run.inputsJson ?? {}) as Record<string, unknown>;
+      const deferCount = (typeof existingInputs.deferCount === "number" ? existingInputs.deferCount : 0) + 1;
+      await prisma.agentRun.update({
+        where: { id: runId, workspaceId: run.workspaceId },
+        data: {
+          status: "PENDING",
+          startedAt: null,
+          inputsJson: { ...existingInputs, deferredAt: new Date().toISOString(), deferCount } as never,
+        },
+      });
+      logger.info("agent_run.execute.deferred", { runId, kind: run.workerKind, delayMs: err.delayMs, deferCount });
+      throw err;
     }
 
     if (err instanceof RetryableError) {

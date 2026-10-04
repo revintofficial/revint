@@ -179,3 +179,147 @@ describe("buildShelf", () => {
     expect(turkishNumber(42)).toBe("kırk iki");
   });
 });
+
+describe("site drawer: capture coverage", () => {
+  const auditRow = (siteFacts: Record<string, unknown>) =>
+    shelfAuditFromRow({
+      url: "https://dishoom.com",
+      reachable: true,
+      crawlError: null,
+      crawlAttemptedAt: new Date(FINISHED),
+      hasBookingSystem: true,
+      bookingProvider: "SevenRooms",
+      rawFeaturesJson: { siteFacts },
+    });
+  const siteRows = (siteFacts: Record<string, unknown>) =>
+    drawer(
+      buildShelf(input({ runs: [auditRunWith({ reachable: true, url: "https://dishoom.com" })], audit: auditRow(siteFacts) })),
+      "site",
+    ).rows;
+
+  it("shows how many pages were read and which were not, with the reason", () => {
+    const rows = siteRows({
+      coverage: {
+        status: "complete",
+        opened: 9,
+        skipped: 2,
+        failed: 1,
+        durationMs: 31_000,
+        notOpened: [{ url: "https://dishoom.com/faq", type: "faq", reason: "timeout" }],
+      },
+    });
+    const row = rows.find((r) => r.claim.text.startsWith("Kapsam"))!;
+    expect(row.claim.text).toBe("Kapsam: 9 sayfa açıldı · 2 atlandı · 1 açılamadı");
+    expect(row.support.text).toBe("Okunamayan: /faq (zaman aşımı)");
+    expect(row.conflict).toBeNull();
+  });
+
+  it("warns when the capture ran out of budget", () => {
+    const rows = siteRows({
+      coverage: { status: "partial", opened: 12, skipped: 20, failed: 0, durationMs: 150_000, notOpened: [{ url: "https://dishoom.com/group-feasts", type: "events", reason: "budget" }] },
+    });
+    const row = rows.find((r) => r.claim.text.startsWith("Kapsam"))!;
+    expect(row.support.text).toContain("/group-feasts (süre yetmedi)");
+    expect(row.conflict).toBe("Yakalama yarıda kaldı; okunmayan sayfalar var.");
+  });
+
+  it("says so when every discovered page was read", () => {
+    const rows = siteRows({ coverage: { status: "complete", opened: 5, skipped: 0, failed: 0, durationMs: 9_000, notOpened: [] } });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.support.text).toBe("Keşfedilen her sayfa okundu");
+  });
+
+  // Final fix B2: addresses over the candidate cap were never considered.
+  it("never says every page was read when addresses went over the candidate cap, and shows how many", () => {
+    const rows = siteRows({ coverage: { status: "complete", opened: 5, skipped: 0, failed: 0, durationMs: 9_000, notOpened: [], overflow: 120 } });
+    const support = rows.find((r) => r.claim.text.startsWith("Kapsam"))!.support.text;
+    expect(support).not.toContain("Keşfedilen her sayfa okundu");
+    expect(support).toContain(" · 120 adres aday sınırını aştı");
+  });
+
+  it("appends the overflow count to a list of unread pages", () => {
+    const rows = siteRows({
+      coverage: { status: "complete", opened: 9, skipped: 0, failed: 1, durationMs: 31_000, overflow: 7, notOpened: [{ url: "https://dishoom.com/faq", type: "faq", reason: "timeout" }] },
+    });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.support.text).toBe("Okunamayan: /faq (zaman aşımı) · 7 adres aday sınırını aştı");
+  });
+
+  it("never says every page was read when pages were skipped without a listed reason", () => {
+    const rows = siteRows({ coverage: { status: "complete", opened: 9, skipped: 6, failed: 0, durationMs: 20_000, notOpened: [] } });
+    const row = rows.find((r) => r.claim.text.startsWith("Kapsam"))!;
+    expect(row.support.text).toBe("Atlananlar: tür sınırı ya da yinelenen sayfa");
+    expect(row.support.muted).toBeUndefined();
+  });
+
+  it("lists the first four unread pages and counts the rest", () => {
+    const notOpened = ["a", "b", "c", "d", "e", "f"].map((p) => ({ url: `https://dishoom.com/${p}`, type: "other", reason: "timeout" }));
+    const rows = siteRows({ coverage: { status: "complete", opened: 3, skipped: 0, failed: 6, durationMs: 40_000, notOpened } });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.support.text).toBe(
+      "Okunamayan: /a (zaman aşımı) · /b (zaman aşımı) · /c (zaman aşımı) · /d (zaman aşımı) · +2 diğer",
+    );
+  });
+
+  it("flags a failed capture", () => {
+    const rows = siteRows({ coverage: { status: "failed", opened: 0, skipped: 0, failed: 1, durationMs: 5_000, notOpened: [{ url: "https://dishoom.com/", type: "home", reason: "nav_error" }] } });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.conflict).toBe("Yakalama başarısız; sayfalar okunamadı.");
+  });
+
+  it("flags a blocked capture", () => {
+    const rows = siteRows({ coverage: { status: "blocked", opened: 0, skipped: 0, failed: 1, durationMs: 5_000, notOpened: [{ url: "https://dishoom.com/", type: "home", reason: "blocked" }] } });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.conflict).toBe("Site botu engelledi; sayfalar okunamadı.");
+  });
+
+  // Final fix B3: a shallow audit says why it was shallow.
+  describe("deep capture skipped", () => {
+    const rowsWith = (raw: Record<string, unknown>) =>
+      drawer(
+        buildShelf(
+          input({
+            runs: [auditRunWith({ reachable: true, url: "https://dishoom.com" })],
+            audit: shelfAuditFromRow({
+              url: "https://dishoom.com",
+              reachable: true,
+              crawlError: null,
+              crawlAttemptedAt: new Date(FINISHED),
+              hasBookingSystem: true,
+              bookingProvider: "SevenRooms",
+              rawFeaturesJson: raw,
+            }),
+          }),
+        ),
+        "site",
+      ).rows;
+
+    it.each([
+      ["capacity", "Derin tarama atlandı: kapasite doluydu"],
+      ["kill_switch", "Derin tarama atlandı: kapalı (SITE_CAPTURE_DEEP=0)"],
+    ])("adds a muted shallow-scope row for %s", (deepSkipped, support) => {
+      const row = rowsWith({ deepSkipped }).find((r) => r.claim.text.startsWith("Kapsam"))!;
+      expect(row.claim).toEqual({ text: "Kapsam: sığ denetim (ana sayfa ve en fazla üç alt sayfa)", muted: true });
+      expect(row.support.text).toBe(support);
+      expect(row.support.muted).toBe(true);
+    });
+
+    it("adds no row without the field", () => {
+      expect(rowsWith({}).some((r) => r.claim.text.startsWith("Kapsam"))).toBe(false);
+    });
+  });
+
+  it("states a group-only deposit as group-only, with its source", () => {
+    const rows = siteRows({
+      hasPrepayment: { value: true, url: "https://dishoom.com/group-feasts", quote: "For groups of 8 or more, we ask for card details", scope: "group_or_event" },
+    });
+    const row = rows.find((r) => r.claim.text.startsWith("Kapora"))!;
+    expect(row.claim.text).toBe("Kapora: kısıtlı (grup, etkinlik ya da özel gün için)");
+    expect(row.support.text).toContain("https://dishoom.com/group-feasts");
+    expect(row.support.text).toContain("For groups of 8 or more");
+  });
+
+  it("states a general deposit plainly", () => {
+    const rows = siteRows({ hasPrepayment: { value: true, url: "https://dishoom.com/reservations", quote: "A deposit is required" } });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapora"))!.claim.text).toBe("Kapora var");
+  });
+
+  it("adds no rows for an audit without capture data", () => {
+    expect(siteRows({})).toHaveLength(3);
+  });
+});

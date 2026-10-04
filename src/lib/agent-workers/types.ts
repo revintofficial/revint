@@ -184,6 +184,14 @@ export interface AgentWorkerContext {
   workspacePlan: Plan;
   leadId: string | null;
   userId: string | null;
+  /** Aborted by the executor when the outer deadline fires. Long-running workers must stop on it. */
+  signal?: AbortSignal;
+  /** True only inside the BullMQ worker: the run may throw DeferError to be re-queued later. */
+  canDefer?: boolean;
+  /** How many times this run has been deferred so far. */
+  deferCount?: number;
+  /** When the run row was created; bounds the total time a run may wait for capacity. */
+  queuedAt?: Date;
   // Hydrated lead + related records. The base shape (websiteAudit,
   // salesOpportunity, reviewAnalysis) is loaded for every worker so
   // the executor can cache the DB read across dependent workers in
@@ -395,6 +403,11 @@ export interface AgentWorker {
    * Typical wall-clock runtime shown in the UI as a countdown label.
    */
   estimatedDurationMs: number;
+  /**
+   * Outer deadline of one execution in ms. Omitted = min(estimatedDurationMs × 3, 180 s).
+   * Set only for workers that are legitimately long-running in-process.
+   */
+  deadlineMs?: number;
   /**
    * Hide this worker from the lead-detail "AI Workers" panel. Used for
    * workers that:
