@@ -1,0 +1,11 @@
+{
+  "uid": "revint-lead-summary-card",
+  "type": "card",
+  "config": {
+    "name": "Revint · Lead Summary",
+    "description": "SDR sidebar: data confidence warning, lead score, tier, sentiment summary, and action buttons.",
+    "location": "crm.record.sidebar",
+    "entrypoint": "/app/cards/RevintLeadSummaryCard.tsx",
+    "objectTypes": ["contacts", "deals"]
+  }
+}
