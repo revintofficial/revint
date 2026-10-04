@@ -57,6 +57,24 @@ function pathOf(url: URL): string {
   }
 }
 
+const DRINKS_WORD = word(
+  "wines?|drinks?|cocktails?|bar|beverages?|spirits|beers?|whiske?y|champagne|şarap\\p{L}*|içecek\\p{L}*|kokteyl\\p{L}*",
+);
+const FOOD_WORD = word(
+  "food|lunch|dinner|brunch|breakfast|kitchen|[aà][ _-]la[ _-]carte|set[ _-]menus?|tasting|desserts?|kids|sunday|yemek\\p{L}*|kahvaltı\\p{L}*",
+);
+
+/**
+ * A PDF whose file name or link text names drinks and no food (a wine list, a
+ * cocktail card). It is never read as the menu PDF; `menuPdf()` in site-facts
+ * is the shared predicate and stays as it is.
+ */
+export function isDrinksOnlyPdf(linkText: string, url: URL): boolean {
+  const file = pathOf(url).split("/").pop() ?? "";
+  const said = `${linkText} ${file}`;
+  return DRINKS_WORD.test(said) && !FOOD_WORD.test(said);
+}
+
 /** A booking, white-label ordering or digital-menu vendor (delivery marketplaces are not opened). */
 export function isKnownVendorUrl(url: URL): boolean {
   return (

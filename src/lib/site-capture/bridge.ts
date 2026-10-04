@@ -24,6 +24,7 @@ import {
   type VisitedPage,
 } from "@/lib/site-facts";
 import { detectHotelOperator, detectLocations, type SignalPage } from "@/lib/site-signals";
+import { isDrinksOnlyPdf } from "./classify";
 import { summarizeLedger } from "./ledger";
 import type { CapturedPage, PageType, SiteCaptureResult, SiteCoverage } from "./types";
 import { urlKey } from "./url";
@@ -316,14 +317,15 @@ function bridgeDelivery(pages: CapturedPage[]): SiteFact<string[]> | null {
   return names.length > 0 && url ? { value: names, url, quote, source: "page" } : null;
 }
 
+/** A drinks-only PDF (a wine list) is never the menu PDF; the capture does not even fetch one. */
 function bridgeMenuPdf(pages: CapturedPage[]): string | null {
-  const pdf = pages.find((p) => p.source === "pdf" && p.type === "menu");
+  const pdf = pages.find((p) => p.source === "pdf" && p.type === "menu" && !isDrinksOnlyPdf("", new URL(p.url)));
   if (pdf) return pdf.url;
   for (const p of ofTypes(pages, ["menu"])) {
     for (const l of p.links) {
       try {
         const u = new URL(l.href);
-        if (menuPdf({ text: l.text, url: u })) return u.href;
+        if (menuPdf({ text: l.text, url: u }) && !isDrinksOnlyPdf(l.text, u)) return u.href;
       } catch {
         // malformed href
       }

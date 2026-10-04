@@ -328,6 +328,25 @@ describe("captureSite", () => {
     expect(result.ledger.filter((e) => e.source === "pdf_link" && e.reason === "limit_type")).toHaveLength(2);
   });
 
+  // Final fix C2: a wine list is not the menu.
+  it("does not fetch a drinks-only PDF, and still fetches a food or plain menu PDF", async () => {
+    const links = [
+      `<a href="/app/uploads/2017/10/00728_WOLSELEY_OG_Winter_2026_Wine_Menu.pdf">Wine list</a>`,
+      `<a href="/files/drinks.pdf">Drinks</a>`,
+      `<a href="/files/food-and-drinks-menu.pdf">Food and drinks</a>`,
+      `<a href="/files/menu.pdf">Menu</a>`,
+    ].join("");
+    const fetched: string[] = [];
+    const { result } = await run(links, {}, {
+      fetchPdf: async (url) => {
+        fetched.push(new URL(url).pathname);
+        return { ok: true, text: "Starters and mains", pageCount: 1, needsOcr: false };
+      },
+    });
+    expect(fetched).toEqual(["/files/food-and-drinks-menu.pdf", "/files/menu.pdf"]);
+    expect(result.ledger.some((e) => /Wine_Menu|drinks\.pdf/.test(e.url))).toBe(false);
+  });
+
   it("fetches the same menu PDF once whatever its fragment or tracking parameter", async () => {
     const links = [
       `<a href="/files/menu.pdf">Menu</a>`,

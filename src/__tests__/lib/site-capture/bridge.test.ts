@@ -502,6 +502,30 @@ describe("bridgeSiteFacts: menu, ordering, PDFs", () => {
     expect(facts.menuPdfUrl).toBeNull();
   });
 
+  // Final fix C2: a wine list linked from a menu page is not the menu PDF.
+  it("never takes a drinks-only PDF linked from a menu page as the menu PDF", () => {
+    const facts = bridgeSiteFacts(
+      baseFacts(),
+      cap([
+        pg("menu", "/menu/dinner", {
+          links: [
+            { text: "Wine list", href: "https://bistro.test/app/uploads/00728_WOLSELEY_OG_Winter_2026_Wine_Menu.pdf" },
+            { text: "Cocktails", href: "https://bistro.test/files/cocktail-menu.pdf" },
+          ],
+        }),
+      ]),
+    );
+    expect(facts.menuPdfUrl).toBeNull();
+  });
+
+  it("still takes a food menu PDF linked from a menu page", () => {
+    const facts = bridgeSiteFacts(
+      baseFacts(),
+      cap([pg("menu", "/menu", { links: [{ text: "Wine list", href: "https://bistro.test/files/wine.pdf" }, { text: "Dinner menu", href: "https://bistro.test/files/dinner.pdf" }] })]),
+    );
+    expect(facts.menuPdfUrl).toBe("https://bistro.test/files/dinner.pdf");
+  });
+
   it("ignores a PDF that has no text layer", () => {
     const facts = bridgeSiteFacts(baseFacts(), cap([pg("menu", "/files/menu.pdf", { source: "pdf", needsOcr: true, text: "" })]));
     expect(facts.tastingMenu).toBeNull();

@@ -6,7 +6,7 @@
  */
 import { menuPdf } from "@/lib/site-facts";
 import { siteKey } from "@/lib/site-signals";
-import { classifyUrl, isKnownVendorUrl } from "./classify";
+import { classifyUrl, isDrinksOnlyPdf, isKnownVendorUrl } from "./classify";
 import {
   EMPTY_ROBOTS,
   Frontier,
@@ -159,7 +159,8 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
         continue;
       }
       if (/\.pdf$/i.test(u.pathname)) {
-        const isMenu = (page.type === "home" || page.type === "menu") && menuPdf({ text: l.text, url: u });
+        const isMenu =
+          (page.type === "home" || page.type === "menu") && menuPdf({ text: l.text, url: u }) && !isDrinksOnlyPdf(l.text, u);
         const key = urlKey(u.href) ?? u.href;
         if (isMenu && !pdfKeys.has(key)) {
           pdfKeys.add(key);
