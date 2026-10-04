@@ -70,6 +70,8 @@ describe("classifyUrl: never a candidate", () => {
     "https://careers.example-bistro.co.uk/chef-de-partie",
     "https://shop.example-bistro.co.uk/gift-cards",
     "https://blog.example-bistro.co.uk/menu-launch",
+    "https://shop.example-bistro.co.uk/",
+    "https://jobs.example-bistro.co.uk/menu",
   ])("a noise subdomain of the venue's own domain: %s", (href) => {
     expect(c(href)).toBeNull();
   });

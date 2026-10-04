@@ -354,6 +354,14 @@ describe("bridgeSiteFacts: prepayment sentence rule", () => {
     expect(on("reservation", text)).toBeNull();
   });
 
+  // Only a negation skip blocks the page; a hit skipped as non-booking commerce does not,
+  // even when it also carries a negation word and names a group.
+  it("a commerce skip that names a group does not keep the page from a general claim", () => {
+    expect(
+      on("reservation", "Deposits are not taken on gift vouchers for groups. A deposit is required to confirm your booking.")?.scope,
+    ).toBe("general");
+  });
+
   it("a skipped negated group statement leaves another scoped statement on the page", () => {
     expect(
       on(
