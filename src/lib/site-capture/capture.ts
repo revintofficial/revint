@@ -19,7 +19,7 @@ import {
 } from "./discover";
 import type { PdfTextResult } from "./documents";
 import { CoverageLedger } from "./ledger";
-import { MAX_TEXT_CHARS, reducePage } from "./reduce";
+import { cleanText, MAX_TEXT_CHARS, reducePage } from "./reduce";
 import type { Candidate, CapturedPage, LedgerEntry, LedgerReason, PageOpener, SiteCaptureResult } from "./types";
 import { urlKey } from "./url";
 
@@ -52,6 +52,8 @@ export interface CaptureInput {
   /** Where the homepage navigation ended. */
   homeUrl: string;
   homeHtml: string;
+  /** The homepage's rendered text; when present it is the homepage's `text` (else the HTML-derived text). */
+  homeText?: string | null;
   /** Third-party requests the homepage made (recorded by the homepage audit). */
   homeRequests?: string[];
   /** Today's three subpages (pickSubpages targets). */
@@ -72,6 +74,15 @@ const MAX_SITEMAP_URLS = 10_000;
 const REFUSED_STREAK_LIMIT = 8;
 /** Below this length two pages can share their text without being the same page. */
 const MIN_DUPLICATE_TEXT = 200;
+
+/**
+ * A page's text: the text the browser rendered when it was read (whitespace collapsed,
+ * no NUL, capped), else the text `reducePage` derived from the HTML.
+ */
+function pageText(rendered: string | null | undefined, derived: string): string {
+  if (typeof rendered !== "string") return derived;
+  return cleanText(rendered).replace(/\s+/g, " ").trim().slice(0, MAX_TEXT_CHARS);
+}
 
 function textKey(text: string): string {
   return `${text.length}:${text.slice(0, 500)}`;
@@ -176,8 +187,10 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
   };
 
   // The homepage was already opened by the homepage audit.
+  const homeReduced = reducePage(input.homeHtml, input.homeUrl);
   const homePage: CapturedPage = {
-    ...reducePage(input.homeHtml, input.homeUrl),
+    ...homeReduced,
+    text: pageText(input.homeText, homeReduced.text),
     url: input.homeUrl,
     finalUrl: input.homeUrl,
     type: "home",
@@ -270,7 +283,9 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
     }
     const type = c.type;
 
-    const reduced = reducePage(opened.html, opened.finalUrl);
+    const derived = reducePage(opened.html, opened.finalUrl);
+    // Title, links, embeds and JSON-LD come from the HTML; the text is what the browser rendered.
+    const reduced = { ...derived, text: pageText(opened.visibleText, derived.text) };
     const finalKey = urlKey(opened.finalUrl) ?? opened.finalUrl;
     const sameText = reduced.text.length >= MIN_DUPLICATE_TEXT && seenText.has(textKey(reduced.text));
     if (!c.pinned && (seenFinal.has(finalKey) || sameText)) {

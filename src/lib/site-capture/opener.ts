@@ -23,10 +23,10 @@
  *      page made in its whole life (redirect hops included; meta refresh,
  *      script or click navigations included). Too many distinct navigation
  *      URLs count as unsafe.
- *   The HTML is read only after check 2. If the page's URL changed or a new
- *   main-frame navigation request was made while it was being read, the
- *   page is refused. Every refusal returns "unsafe_url" with no HTML and no
- *   third-party requests. The browser may already have sent a request to an
+ *   The HTML, then the rendered text, are read only after check 2. If the
+ *   page's URL changed or a new main-frame navigation request was made while
+ *   they were being read, the page is refused. Every refusal returns
+ *   "unsafe_url" with no HTML and no third-party requests. The browser may already have sent a request to an
  *   internal address by then: that response is discarded, never read.
  *   Sub-frame redirect hops are not re-checked; sub-frame content is not
  *   read (`page.content()` is the main frame only). HTTP fetches go through
@@ -37,6 +37,7 @@ import { CRAWLER_USER_AGENT } from "@/lib/crawler";
 import { safeFetchFollow } from "@/lib/safe-fetch";
 import { assertSafeFetchUrl } from "@/lib/url-guard";
 import { readCappedText } from "./body";
+import { readVisibleText } from "./rendered";
 import { recordThirdPartyRequests } from "./requests";
 import type { OpenedPage, PageOpener } from "./types";
 
@@ -266,10 +267,13 @@ async function openOnce(
     if (!stillSafe) return failure(url, "unsafe_url");
     const content = await race(page.content(), Math.max(left(), 1_000));
     if (content === DEADLINE) return failure(url, "timeout");
+    // The rendered text is read after the HTML (its DOM expansion never reaches the HTML), inside the
+    // same guarded window; a failed or late read leaves it null and the page keeps its HTML text.
+    const visibleText = await readVisibleText(page, Math.max(left(), 1_000));
     // Content from a navigation that started after the check is never returned.
     if (page.url() !== checkedUrl || navigations().total !== log.total) return failure(url, "unsafe_url");
     const html = content.slice(0, MAX_HTML_CHARS);
-    return { finalUrl: checkedUrl, status, html, thirdPartyRequests: requests(), source: "browser", error: null };
+    return { finalUrl: checkedUrl, status, html, thirdPartyRequests: requests(), source: "browser", error: null, visibleText };
   } catch (err) {
     const m = (err instanceof Error ? err.message : String(err)).toLowerCase();
     if (m.includes("timeout")) return failure(url, "timeout");

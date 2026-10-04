@@ -71,7 +71,12 @@ export async function crawlWebsiteDeep(
       // Desktop Chromium was refused. The opener retries with a mobile identity, then plain HTTP.
       const retry = await opener.open(url, { timeoutMs: 20_000, signal: opts.signal });
       if (retry.html && !retry.error) {
-        home = { finalUrl: retry.finalUrl, html: retry.html, thirdPartyRequests: retry.thirdPartyRequests };
+        home = {
+          finalUrl: retry.finalUrl,
+          html: retry.html,
+          thirdPartyRequests: retry.thirdPartyRequests,
+          visibleText: retry.visibleText ?? null,
+        };
         features = {
           ...extractFeatures(retry.html, url, businessType),
           loadTimeMs: features.loadTimeMs,
@@ -90,6 +95,7 @@ export async function crawlWebsiteDeep(
     const capture = await captureSite({
       homeUrl: home.finalUrl,
       homeHtml: home.html,
+      homeText: home.visibleText,
       homeRequests: home.thirdPartyRequests,
       pinned: pick.targets,
       opener,

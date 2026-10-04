@@ -1,7 +1,8 @@
 // src/__tests__/lib/site-capture/bridge.test.ts
 import { describe, expect, it } from "vitest";
 import { buildRoomOneAudit } from "@/lib/ai-core/agent/room-one-audit";
-import { bridgeSiteFacts, coverageOf, visitedFromCapture } from "@/lib/site-capture/bridge";
+import { bridgeSiteFacts, coverageOf, siteFactsFromCapture, visitedFromCapture } from "@/lib/site-capture/bridge";
+import { reducePage } from "@/lib/site-capture/reduce";
 import type { CapturedPage, LedgerEntry, PageType, SiteCaptureResult } from "@/lib/site-capture/types";
 import { mergeSiteFacts, pickSubpages, type SiteFacts } from "@/lib/site-facts";
 
@@ -645,5 +646,46 @@ describe("visitedFromCapture", () => {
       html: null,
       landedUrl: "https://shop.other.test/",
     });
+  });
+});
+
+// Production 2026-10-04 (15grams): a ResDiary widget keeps every state message as hidden markup.
+describe("siteFactsFromCapture: the deposit is read from the text a visitor can see", () => {
+  const RESDIARY_STATES =
+    "Please start a new booking. The restaurant is currently setup in Stripe test mode. Please make sure live mode is enabled " +
+    "before attempting to accept online bookings to avoid bookings being declined. A payment of will be required to hold this " +
+    "booking. Card details are required to secure your reservation. These will be held securely in our PCI-compliant Payment " +
+    "Gateway. Charges may be applied in accordance with our terms and conditions. Unfortunately the transaction for this booking " +
+    "has failed. Money was not taken from your account nor were your card details stored.";
+  const VISIBLE = "Book a Table For larger bookings (7+ people) and private events please get in touch";
+  const BOOK = "https://bistro.test/book-table";
+  const homeHtml = `<html><body><a href="/book-table">Book a table</a></body></html>`;
+  const bookHtml =
+    `<html><head><title>Book a Table</title></head><body><h1>Book a Table</h1>` +
+    `<div class="rd-widget"><div style="display:none">${RESDIARY_STATES}</div></div>` +
+    `<p>For larger bookings (7+ people) and private events please get in touch</p></body></html>`;
+
+  function factsWith(text: string): SiteFacts {
+    const pick = pickSubpages(homeHtml, HOME);
+    expect(pick.targets).toContainEqual({ kind: "reservation", url: BOOK });
+    const capture: SiteCaptureResult = {
+      ...cap([]),
+      pages: [
+        pg("home", "/", { text: "Book a table", html: homeHtml }),
+        pg("reservation", "/book-table", { title: "Book a Table", text, html: bookHtml }),
+      ],
+      ledger: [led("/"), led("/book-table", { type: "reservation" })],
+    };
+    return siteFactsFromCapture({ url: HOME, html: homeHtml }, capture, pick);
+  }
+
+  it("has no deposit when the rendered text is the venue's own sentence, whatever the hidden HTML says", () => {
+    expect(factsWith(VISIBLE).hasPrepayment).toBeNull();
+  });
+
+  it("finds the hidden widget sentence when the text is derived from the HTML (the defect)", () => {
+    const derived = reducePage(bookHtml, BOOK).text;
+    expect(derived).toContain("Card details are required to secure your reservation.");
+    expect(factsWith(derived).hasPrepayment).toMatchObject({ value: true, url: BOOK });
   });
 });

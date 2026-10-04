@@ -113,6 +113,11 @@ export interface OpenedPage {
   thirdPartyRequests: string[];
   source: PageSource;
   error: LedgerReason | null;
+  /**
+   * The text the browser renders (main frame `body.innerText`, capped). `null` or
+   * absent when it could not be read and for the HTTP fallback (nothing is rendered).
+   */
+  visibleText?: string | null;
 }
 
 export interface PageOpener {

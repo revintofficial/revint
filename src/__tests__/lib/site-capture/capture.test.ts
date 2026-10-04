@@ -9,7 +9,9 @@ const HOME = "https://bistro.test/";
 const html = (body: string) => `<html><head><title>Bistro</title></head><body>${body}</body></html>`;
 const LONG = "Welcome to Bistro, a neighbourhood restaurant serving seasonal plates. ".repeat(5);
 
-type Fake = string | { html?: string; status?: number; finalUrl?: string; error?: LedgerReason; requests?: string[] };
+type Fake =
+  | string
+  | { html?: string; status?: number; finalUrl?: string; error?: LedgerReason; requests?: string[]; visibleText?: string | null };
 
 function fakeOpener(pages: Record<string, Fake>, opts: { fallback?: (url: string) => Fake | null; onOpen?: (url: string) => void } = {}) {
   const opened: string[] = [];
@@ -29,6 +31,7 @@ function fakeOpener(pages: Record<string, Fake>, opts: { fallback?: (url: string
         thirdPartyRequests: f.requests ?? [],
         source: "browser",
         error: f.error ?? null,
+        ...(f.visibleText !== undefined ? { visibleText: f.visibleText } : {}),
       };
     },
     async close() {},
@@ -393,5 +396,57 @@ describe("captureSite", () => {
     );
     const byType = Object.fromEntries(result.pages.map((p) => [p.type, p.html !== null]));
     expect(byType).toMatchObject({ home: true, menu: true, locations: true, faq: false });
+  });
+});
+
+describe("captureSite: a page's text is the text the browser renders", () => {
+  const HIDDEN = `<div style="display:none">Card details are required to secure your reservation.</div>`;
+  const VISIBLE = "For larger bookings (7+ people) and private events please get in touch";
+  const bookPage = (visibleText: string | null) => ({
+    html: html(`<h1>Book a table</h1>${HIDDEN}<p>${VISIBLE}</p><a href="/contact">Contact</a>`),
+    visibleText,
+  });
+
+  it("stores the rendered text of an opened page, not the hidden sentence in its HTML", async () => {
+    const { result } = await run(`<a href="/book">Book a table</a>`, { "/book": bookPage(VISIBLE) });
+    const page = result.pages.find((p) => p.type === "reservation");
+    expect(page?.text).toBe(VISIBLE);
+    // Title and links still come from the HTML.
+    expect(page?.title).toBe("Bistro");
+    expect(page?.links.map((l) => l.href)).toContain(`${HOME}contact`);
+  });
+
+  it("collapses whitespace and removes NUL characters in the rendered text", async () => {
+    const { result } = await run(`<a href="/book">Book a table</a>`, {
+      "/book": bookPage("  Book a table\n\n\tFor larger\u0000 bookings  \n"),
+    });
+    expect(result.pages.find((p) => p.type === "reservation")?.text).toBe("Book a table For larger bookings");
+  });
+
+  it("falls back to the text derived from the HTML when there is no rendered text", async () => {
+    const { result } = await run(`<a href="/book">Book a table</a>`, { "/book": bookPage(null) });
+    const text = result.pages.find((p) => p.type === "reservation")?.text ?? "";
+    expect(text).toContain("Card details are required to secure your reservation.");
+    expect(text).toContain(VISIBLE);
+  });
+
+  it("uses homeText as the homepage's text", async () => {
+    const { result } = await run(`<a href="/menu">Menu</a>${HIDDEN}<p>Welcome</p>`, {}, { homeText: "Welcome\n Menu" });
+    expect(result.pages[0]).toMatchObject({ type: "home", text: "Welcome Menu" });
+    // Links still come from the homepage HTML.
+    expect(result.ledger.some((e) => new URL(e.url).pathname === "/menu")).toBe(true);
+  });
+
+  it("treats two pages with the same rendered text as duplicates even when their hidden HTML differs", async () => {
+    const shown = LONG.trim();
+    const { result } = await run(`<a href="/menu">Menu</a><a href="/faq">FAQ</a>`, {
+      "/menu": { html: html(`<p>${shown}</p><div hidden>Menu widget state A</div>`), visibleText: shown },
+      "/faq": { html: html(`<p>${shown}</p><div hidden>FAQ widget state B</div>`), visibleText: shown },
+    });
+    const opened = result.pages.filter((p) => p.type === "menu" || p.type === "faq");
+    expect(opened).toHaveLength(1);
+    expect(result.ledger.filter((e) => e.reason === "duplicate").map((e) => new URL(e.url).pathname)).toContain(
+      opened[0].type === "menu" ? "/faq" : "/menu",
+    );
   });
 });

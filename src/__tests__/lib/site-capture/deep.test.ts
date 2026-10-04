@@ -94,6 +94,33 @@ describe("crawlWebsiteDeep", () => {
     expect(features.siteFacts?.coverage).toBeDefined();
   });
 
+  it("hands the homepage's rendered text to the capture as the homepage's text", async () => {
+    mocks.crawlHomepage.mockResolvedValue({
+      features: feat(),
+      home: {
+        finalUrl: HOME,
+        html: html(`<a href="/menu">Menu</a><div style="display:none">A deposit is required for every booking.</div>`),
+        thirdPartyRequests: [],
+        visibleText: "Menu\nWelcome to Bistro",
+      },
+    });
+
+    const { capture } = await crawlWebsiteDeep(HOME, "restaurant");
+
+    expect(capture?.pages[0]).toMatchObject({ type: "home", text: "Menu Welcome to Bistro" });
+  });
+
+  it("uses the opener's rendered text for a recovered (bot-blocked) homepage", async () => {
+    mocks.crawlHomepage.mockResolvedValue({ features: feat({ reachable: false, crawlError: "BOT_BLOCKED_4XX", httpStatus: 403 }), home: null });
+    mocks.open.mockImplementation(async (url: string) =>
+      url === HOME ? { ...opened(url, "Welcome to Bistro <div hidden>Hidden state</div>"), visibleText: "Welcome to Bistro" } : notFound(url),
+    );
+
+    const { capture } = await crawlWebsiteDeep(HOME, "restaurant");
+
+    expect(capture?.pages[0]).toMatchObject({ type: "home", text: "Welcome to Bistro" });
+  });
+
   it("records a homepage that stays blocked", async () => {
     mocks.crawlHomepage.mockResolvedValue({ features: feat({ reachable: false, crawlError: "BOT_BLOCKED_4XX", httpStatus: 403 }), home: null });
     mocks.open.mockResolvedValue({ finalUrl: HOME, status: 403, html: null, thirdPartyRequests: [], source: "browser", error: "blocked" });

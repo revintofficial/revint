@@ -3,6 +3,7 @@ import { extractFeatures } from "./extractor";
 import { bare, mergeSiteFacts, pickSubpages, type SiteFacts, type VisitedPage } from "./site-facts";
 import { assertSafeFetchUrl } from "./url-guard";
 import { detectSocialMediaPlatform } from "./audit/social-url-gate";
+import { readVisibleText } from "./site-capture/rendered";
 import { recordThirdPartyRequests } from "./site-capture/requests";
 import type { CrawlError, SecurityHeadersResult, WebsiteFeatures } from "@/types";
 
@@ -138,6 +139,8 @@ export const CRAWLER_USER_AGENT =
 
 const NAV_TIMEOUT_MS = 25_000;
 const RETRY_DELAY_MS = 4_000;
+/** The homepage's rendered-text read (deep path); a slower read leaves it null. */
+const HOME_TEXT_TIMEOUT_MS = 5_000;
 
 const SUBPAGE_TIMEOUT_MS = 8_000;
 const SUBPAGE_BUDGET_MS = 20_000;
@@ -191,6 +194,8 @@ export interface HomeSnapshot {
   finalUrl: string;
   html: string;
   thirdPartyRequests: string[];
+  /** The text the browser renders (see site-capture/rendered.ts); `null` when it could not be read. */
+  visibleText: string | null;
 }
 
 interface CrawlOptions {
@@ -391,6 +396,8 @@ async function crawlOnce(url: string, businessType: string | null | undefined, o
     const securityHeaders = extractSecurityHeaders(responseHeaders);
 
     const html = await page.content();
+    // Deep path only: the rendered text, read where the HTML is read. The shallow path makes no extra call.
+    const visibleText = opts.onHome ? await readVisibleText(page, HOME_TEXT_TIMEOUT_MS) : null;
 
     // If the body is empty (e.g. SPA that needs longer hydration) and
     // status is 2xx/3xx, treat as a thin reachable result rather than
@@ -470,7 +477,7 @@ async function crawlOnce(url: string, businessType: string | null | undefined, o
     features.mobileFriendlyGuess = hasViewportMeta;
 
     if (features.reachable) {
-      opts.onHome?.({ finalUrl, html, thirdPartyRequests: homeRequests ? homeRequests() : [] });
+      opts.onHome?.({ finalUrl, html, thirdPartyRequests: homeRequests ? homeRequests() : [], visibleText });
       if (opts.subpages) {
         try {
           features.siteFacts = await collectSiteFacts(page, finalUrl, html);
