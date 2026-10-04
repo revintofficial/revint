@@ -19,18 +19,42 @@ export const EMPTY_ROBOTS: RobotsRules = { sitemaps: [], disallow: [], allow: []
 export const MAX_ROBOTS_RULES = 500;
 export const MAX_ROBOTS_RULE_LENGTH = 512;
 export const MAX_ROBOTS_SITEMAPS = 20;
+export const MAX_ROBOTS_LINES = 50_000;
+export const MAX_ROBOTS_LINE_LENGTH = 2_048;
 
-/** Rules of the `User-agent: *` group, plus every `Sitemap:` line (capped, see above). */
+/** Every line ending: CRLF, a lone CR or LF, and the Unicode line / paragraph separators. */
+const ROBOTS_LINE_BREAK = /\r\n|[\r\n\u2028\u2029]/;
+
+/** A robots.txt field name: letters and hyphens only ("User-agent", "Disallow"). */
+function isFieldName(s: string): boolean {
+  if (s.length === 0) return false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    const letter = (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
+    if (!letter && c !== 45) return false;
+  }
+  return true;
+}
+
+/**
+ * Rules of the `User-agent: *` group, plus every `Sitemap:` line (capped, see above).
+ * Lines are cut with `indexOf` and `trim`, never with a regex anchored at the line end:
+ * a lone `\r` or U+2028 would make such a regex retry from every position.
+ */
 export function parseRobots(txt: string): RobotsRules {
   const rules: RobotsRules = { sitemaps: [], disallow: [], allow: [] };
   let applies = false;
   let inAgentBlock = false;
-  for (const raw of txt.split(/\r?\n/)) {
-    const line = raw.replace(/#.*$/, "").trim();
-    const m = /^([A-Za-z-]+)\s*:\s*(.*)$/.exec(line);
-    if (!m) continue;
-    const key = m[1].toLowerCase();
-    const value = m[2].trim();
+  for (const raw of txt.split(ROBOTS_LINE_BREAK, MAX_ROBOTS_LINES)) {
+    if (raw.length > MAX_ROBOTS_LINE_LENGTH) continue;
+    const hash = raw.indexOf("#");
+    const line = (hash === -1 ? raw : raw.slice(0, hash)).trim();
+    const colon = line.indexOf(":");
+    if (colon === -1) continue;
+    const name = line.slice(0, colon).trim();
+    if (!isFieldName(name)) continue;
+    const key = name.toLowerCase();
+    const value = line.slice(colon + 1).trim();
     if (key === "sitemap") {
       if (value && rules.sitemaps.length < MAX_ROBOTS_SITEMAPS) rules.sitemaps.push(value);
       continue;

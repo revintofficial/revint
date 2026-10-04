@@ -77,6 +77,36 @@ describe("parseRobots / isDisallowed", () => {
     expect(isDisallowed("/exact/more", r)).toBe(false);
   });
 
+  // Review residual of A1: a lone \r or U+2028 made the per-line regexes backtrack.
+  const within100ms = (txt: string) => {
+    const t0 = performance.now();
+    const r = parseRobots(txt);
+    expect(performance.now() - t0).toBeLessThan(100);
+    return r;
+  };
+  it.each([
+    ["comment run before a lone CR", "#".repeat(200_000) + "\rx"],
+    ["spaces before a lone CR", "Disallow:" + " ".repeat(200_000) + "b\rc"],
+    ["comment run before U+2028", "#".repeat(200_000) + "\u2028x"],
+    ["spaces before U+2028", "Disallow:" + " ".repeat(200_000) + "b\u2028c"],
+  ])("parses a hostile line in linear time: %s", (_name, txt) => {
+    within100ms(`User-agent: *\n${txt}`);
+  });
+
+  it("parses a 2 MB robots body made of one line in linear time", () => {
+    expect(within100ms(`User-agent: *\nDisallow: /${"a".repeat(2_000_000)}`).disallow).toEqual([]);
+  });
+
+  it("reads lone-CR and Unicode line endings like LF ones", () => {
+    const lines = ["User-agent: *", "Disallow: /private/", "Allow: /private/menu # ok", "Sitemap: https://bistro.test/s.xml"];
+    const lf = parseRobots(lines.join("\n"));
+    expect(lf.disallow).toEqual(["/private/"]);
+    expect(parseRobots(lines.join("\r"))).toEqual(lf);
+    expect(parseRobots(lines.join("\r\n"))).toEqual(lf);
+    expect(parseRobots(lines.join("\u2028"))).toEqual(lf);
+    expect(parseRobots(lines.join("\u2029"))).toEqual(lf);
+  });
+
   it("keeps at most 500 rules per list, 20 sitemaps, and ignores a rule over 512 characters", () => {
     const lines = ["User-agent: *"];
     for (let i = 0; i < 10_000; i++) lines.push(`Disallow: /d-${i}`, `Allow: /a-${i}`);
