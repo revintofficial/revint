@@ -341,11 +341,27 @@ describe("bridgeSiteFacts: prepayment sentence rule", () => {
     expect(on("reservation", text)?.scope).toBe("general");
   });
 
-  // A negated group statement does not scope the page; the general statement stands.
-  it("a negated group statement leaves the general one", () => {
-    expect(on("reservation", "We have stopped taking deposits for groups. A deposit is required to confirm your booking.")?.scope).toBe(
-      "general",
-    );
+  // The group statement is negated, but the rule cannot tell that apart from an affirmative
+  // group statement with an incidental negation word; unknown is the safe side.
+  it("a negated group statement keeps the page from a general claim", () => {
+    expect(on("reservation", "We have stopped taking deposits for groups. A deposit is required to confirm your booking.")).toBeNull();
+  });
+
+  it.each([
+    "Groups of 8 or more require a deposit, with zero exceptions. A deposit is required to confirm your booking.",
+    "A deposit is required for parties of 8 or more, and is unnecessary for smaller tables. A no-show fee of £10 per person applies.",
+  ])("a group statement with an incidental negation word is never general: %s", (text) => {
+    expect(on("reservation", text)).toBeNull();
+  });
+
+  it("a skipped negated group statement leaves another scoped statement on the page", () => {
+    expect(
+      on(
+        "reservation",
+        "Christmas bookings require a deposit. Please arrive on time. " +
+          "Groups of 8 or more require a deposit, with zero exceptions. A deposit is required to confirm your booking.",
+      ),
+    ).toMatchObject({ value: true, scope: "group_or_event", quote: "Christmas bookings require a deposit. Please arrive on time." });
   });
 
   it("an uncertain deposit statement is not a general claim", () => {

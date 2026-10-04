@@ -188,19 +188,25 @@ function bridgeBooking(pages: CapturedPage[]): SiteFact<string> | null {
   return null;
 }
 
-/** One deposit statement on a page: skipped (null), or general / scoped with its quote. */
+/**
+ * One deposit statement on a page: skipped (null), general / scoped with its quote, or
+ * "negated_restricted": skipped for a negation while naming a restriction. That hit is
+ * never a fact itself (it may be a true negation), but it may equally be an affirmative
+ * group statement with an incidental negation word, so its page can no longer be general.
+ */
 function classifyPrepaymentHit(
   type: PageType,
   sentences: string[],
   i: number,
-): { scope: "general" | "group_or_event"; quote: string } | null {
+): { scope: "general" | "group_or_event"; quote: string } | { scope: "negated_restricted" } | null {
   const sentence = sentences[i];
   if (!PREPAY.test(sentence) && !CARD_GUARANTEE.test(sentence)) return null;
   const question = sentence.endsWith("?");
   // A question is answered by the sentence after it ("Do I need a deposit? No.").
   // Negation, commerce and the FAQ booking-wording check read only this context.
   const context = sentences.slice(i, question ? i + 2 : i + 1).join(" ");
-  if (NEGATION.test(context) || COMMERCE.test(context)) return null;
+  if (COMMERCE.test(context)) return null;
+  const negated = NEGATION.test(context);
   // A restriction is often stated in the next sentence ("… is required. This applies to
   // parties of 8 or more."); after a question, in the two sentences that answer it.
   const scopeContext = sentences.slice(i, question ? i + 3 : i + 2).join(" ");
@@ -211,6 +217,7 @@ function classifyPrepaymentHit(
     OCCASION.test(scopeContext) ||
     RESTRICTION_MARKER.test(scopeContext) ||
     qualifiedBooking(scopeContext);
+  if (negated) return restricted ? { scope: "negated_restricted" } : null;
   if (!restricted && type === "faq" && !BOOKING_WORDING.test(context)) return null;
   return { scope: restricted ? "group_or_event" : "general", quote: (restricted ? scopeContext : context).slice(0, QUOTE_MAX).trim() };
 }
@@ -220,7 +227,8 @@ function classifyPrepaymentHit(
  * bookings. Anything doubtful is skipped (unknown) or scoped to groups/events.
  * The decision is per page: one scoped statement makes the whole page scoped
  * ("Card details are requested for groups over four. A no-show fee ... applies."
- * in either order). Across pages the first general page wins, else the first scoped one.
+ * in either order). A negated statement that names a restriction keeps the page from
+ * being general. Across pages the first general page wins, else the first scoped one.
  */
 function bridgePrepayment(pages: CapturedPage[]): SiteFact<true> | null {
   let scoped: SiteFact<true> | null = null;
@@ -230,15 +238,17 @@ function bridgePrepayment(pages: CapturedPage[]): SiteFact<true> | null {
     const sentences = sentencesOf(p.text);
     let pageScoped: string | null = null;
     let pageGeneral: string | null = null;
+    let pageNoGeneral = false;
     for (let i = 0; i < sentences.length; i++) {
       const hit = classifyPrepaymentHit(p.type, sentences, i);
       if (!hit) continue;
-      if (hit.scope === "group_or_event") pageScoped ??= hit.quote;
+      if (hit.scope === "negated_restricted") pageNoGeneral = true;
+      else if (hit.scope === "group_or_event") pageScoped ??= hit.quote;
       else pageGeneral ??= hit.quote;
     }
     if (pageScoped !== null) {
       scoped ??= { value: true, url: p.url, quote: pageScoped, source: "page", scope: "group_or_event" };
-    } else if (pageGeneral !== null) {
+    } else if (pageGeneral !== null && !pageNoGeneral) {
       return { value: true, url: p.url, quote: pageGeneral, source: "page", scope: "general" };
     }
   }
