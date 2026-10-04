@@ -15,11 +15,11 @@
  * ingestion pipeline that predates AI Core; their migration into
  * chains happens in a follow-up PR.
  */
-import { Worker, type Job, UnrecoverableError } from "bullmq";
+import { Worker, type Job, UnrecoverableError, DelayedError } from "bullmq";
 import IORedis from "ioredis";
 import { logger } from "../lib/logger";
 import { executeAgentRun } from "../lib/agent-workers/execute";
-import { isRetryable } from "../lib/agent-workers/errors";
+import { DeferError, isRetryable } from "../lib/agent-workers/errors";
 import { recordChainTelemetry } from "../lib/control/telemetry";
 import { validateEnvOnBoot } from "../lib/env-check";
 import { startWorkerHeartbeat } from "./heartbeat";
@@ -54,7 +54,7 @@ type AgentRunJob =
   // `agent_run` when `runId` is present.
   | { runId: string };
 
-export async function processJob(job: Job<AgentRunJob>) {
+export async function processJob(job: Job<AgentRunJob>, token?: string) {
   const data = job.data;
 
   // Backward compat: jobs without a `type` field are agent_runs.
@@ -75,8 +75,16 @@ export async function processJob(job: Job<AgentRunJob>) {
     try {
       // Pass isRetry so executeAgentRun can reset a FAILED row (set by a
       // previous attempt's RetryableError) back to RUNNING before re-executing.
-      await executeAgentRun(runId, { isRetry: job.attemptsMade > 0 });
+      await executeAgentRun(runId, { isRetry: job.attemptsMade > 0, canDefer: true });
     } catch (err) {
+      if (err instanceof DeferError) {
+        // No capacity (every site-capture slot is taken). Hand the job back
+        // to the queue for later: it does not hold one of the 10 worker
+        // slots while it waits and it does not spend an attempt. The run row
+        // is already back to PENDING (executeAgentRun did that).
+        await job.moveToDelayed(Date.now() + err.delayMs, token);
+        throw new DelayedError();
+      }
       if (!isRetryable(err)) {
         // Surface as UnrecoverableError so BullMQ stops retrying
         // schema / quota / grounding failures that would just fail
@@ -318,12 +326,12 @@ export function startAgentRunWorker() {
     // jobs/min, comfortably under the 150/min Gemini rate limiter.
     concurrency: 10,
     limiter: { max: 150, duration: 60000 },
-    // Lock duration: how long BullMQ holds the job lock before
-    // assuming the worker is dead. Must be > the longest possible job
-    // duration (180s outer deadline). 240s = 4 min gives 60s buffer.
-    // Without this, a process restart mid-job can cause the job to
-    // be stalled and re-queued while the original is still running,
-    // leading to duplicate execution.
+    // Lock duration: how long BullMQ waits before treating a silent
+    // worker as dead. BullMQ renews the lock every lockDuration / 2
+    // while the process is alive, so a job may run longer than this
+    // (WEBSITE_AUDITOR's deep capture has a 300 s outer deadline); the
+    // value bounds how fast a crashed process is detected, not how
+    // long a job may take.
     lockDuration: 240_000,
     // How often BullMQ checks for stalled jobs. 30s means a dead
     // worker is detected within 30s of its lock expiry.

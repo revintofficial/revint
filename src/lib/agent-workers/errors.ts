@@ -41,6 +41,22 @@ export class PermanentError extends Error {
 }
 
 /**
+ * "Not now": the worker has no capacity (e.g. every site-capture slot is
+ * taken). Not a failure and not a retry: the executor puts the run back to
+ * PENDING and the queue worker re-queues the job after `delayMs` without
+ * spending an attempt. Only thrown when `ctx.canDefer` is true.
+ */
+export class DeferError extends Error {
+  constructor(
+    public readonly delayMs: number,
+    message = "deferred: no capacity",
+  ) {
+    super(message);
+    this.name = "DeferError";
+  }
+}
+
+/**
  * Heuristic classification for unclassified errors. Looks at message
  * + code fields to guess. We err on the side of retrying unknowns -
  * transient dependencies are more common than truly permanent

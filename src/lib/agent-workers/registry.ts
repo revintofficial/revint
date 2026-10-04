@@ -60,7 +60,10 @@ const meta: Partial<Record<AgentWorkerKind, AgentWorkerMeta>> = {
     descriptionTr: "Playwright ile lead'in sitesini tarar; randevu, mobil, hiz, schema ve guvenlik sinyallerini kaydeder.",
     minPlan: "FREE",
     phase1Enabled: true,
-    estimatedDurationMs: 30000,
+    // Deep capture: median well under a minute, capped by a 150 s capture budget.
+    estimatedDurationMs: 60000,
+    // Homepage audit (≤ 60 s with one retry) + capture (150 s) + PDFs and writes.
+    deadlineMs: 300_000,
     implModule: () =>
       import("./website-auditor").then((m) => ({
         run: m.run,
