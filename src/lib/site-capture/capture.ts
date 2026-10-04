@@ -104,6 +104,8 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
   const seenFinal = new Set<string>();
   const seenText = new Set<string>();
   const pdfUrls: string[] = [];
+  // A fragment or a tracking parameter does not make a different PDF.
+  const pdfKeys = new Set<string>();
   // An object, not `let`s: the values are assigned inside closures.
   const state = { stop: null as "budget" | "aborted" | null, keptHtml: 0, attempts: 0, inFlight: 0 };
 
@@ -140,7 +142,12 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
       }
       if (/\.pdf$/i.test(u.pathname)) {
         const isMenu = (page.type === "home" || page.type === "menu") && menuPdf({ text: l.text, url: u });
-        if (isMenu && !pdfUrls.includes(u.href)) pdfUrls.push(u.href);
+        const key = urlKey(u.href) ?? u.href;
+        if (isMenu && !pdfKeys.has(key)) {
+          pdfKeys.add(key);
+          u.hash = "";
+          pdfUrls.push(u.href);
+        }
         continue;
       }
       const type = classifyUrl(u, l.text, home);

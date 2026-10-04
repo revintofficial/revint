@@ -251,6 +251,24 @@ describe("captureSite", () => {
     expect(result.ledger.filter((e) => e.source === "pdf_link" && e.reason === "limit_type")).toHaveLength(2);
   });
 
+  it("fetches the same menu PDF once whatever its fragment or tracking parameter", async () => {
+    const links = [
+      `<a href="/files/menu.pdf">Menu</a>`,
+      `<a href="/files/menu.pdf#page=2">Menu page 2</a>`,
+      `<a href="/files/menu.pdf?utm_source=ig">Our menu</a>`,
+    ].join("");
+    const fetched: string[] = [];
+    const { result } = await run(links, {}, {
+      fetchPdf: async (url) => {
+        fetched.push(url);
+        return { ok: true, text: "Tasting menu 85", pageCount: 1, needsOcr: false };
+      },
+    });
+    expect(fetched).toEqual(["https://bistro.test/files/menu.pdf"]);
+    expect(result.pages.filter((p) => p.source === "pdf")).toHaveLength(1);
+    expect(result.ledger.filter((e) => e.source === "pdf_link")).toHaveLength(1);
+  });
+
   it("keeps going when the opener throws on one page", async () => {
     const f = fakeOpener({ "/faq": html("FAQ") });
     const open = f.opener.open.bind(f.opener);
