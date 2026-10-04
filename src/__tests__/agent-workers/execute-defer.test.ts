@@ -110,6 +110,19 @@ describe("executeAgentRun: deferral", () => {
     expect(mocks.enqueueAdvance).not.toHaveBeenCalled();
     expect(mocks.createTelemetry).not.toHaveBeenCalled();
   });
+
+  it("fails the run on the inline path instead of stranding it in PENDING", async () => {
+    mocks.runWorker.mockRejectedValue(new DeferError(20_000));
+
+    await expect(executeAgentRun("run_1")).resolves.toBeUndefined();
+
+    const last = mocks.updateRun.mock.calls.at(-1)![0];
+    expect(last.where).toEqual({ id: "run_1", workspaceId: "ws_1" });
+    expect(last.data).toMatchObject({ status: "FAILED", errorMsg: "deferred: no capacity" });
+    expect(mocks.updateRun.mock.calls.some(([a]) => a.data.status === "PENDING")).toBe(false);
+    expect(mocks.enqueueAdvance).toHaveBeenCalledWith("session_1");
+    expect(mocks.createTelemetry).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("executeAgentRun: outer deadline", () => {

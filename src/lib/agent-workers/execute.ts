@@ -384,11 +384,12 @@ export async function executeAgentRun(
       return;
     }
 
-    if (err instanceof DeferError) {
+    if (err instanceof DeferError && opts?.canDefer === true) {
       // Not a failure: the worker had no capacity. Back to PENDING so the
       // run reads as queued; the queue worker re-queues the job after
       // err.delayMs. No orchestrator notify (the step is not terminal) and
-      // no telemetry (nothing ran).
+      // no telemetry (nothing ran). Without canDefer (the inline path)
+      // nothing would re-queue it, so it falls through to the generic failure.
       const existingInputs = (run.inputsJson ?? {}) as Record<string, unknown>;
       const deferCount = (typeof existingInputs.deferCount === "number" ? existingInputs.deferCount : 0) + 1;
       await prisma.agentRun.update({
