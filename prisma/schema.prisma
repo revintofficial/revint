@@ -1339,7 +1339,9 @@ model SiteCapture {
   durationMs      Int      @map("duration_ms")
   pageCount       Int      @default(0) @map("page_count")
   sitemapUrlCount Int      @default(0) @map("sitemap_url_count")
-  // LedgerEntry[]: exactly one result per discovered address.
+  // Addresses found after the 300-candidate cap: counted, not in the ledger.
+  candidateOverflow Int    @default(0) @map("candidate_overflow")
+  // LedgerEntry[]: exactly one result per admitted address.
   ledger          Json     @default("[]")
   createdAt       DateTime @default(now()) @map("created_at")
 

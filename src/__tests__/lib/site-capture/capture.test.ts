@@ -127,6 +127,22 @@ describe("captureSite", () => {
     expect(result.ledger.filter((e) => e.outcome === "skipped").every((e) => e.reason === "aborted")).toBe(true);
   });
 
+  // Final fix B2: a page with a thousand links does not produce a thousand ledger entries.
+  it("admits at most 300 candidates and reports the overflow", async () => {
+    const links = Array.from({ length: 1000 }, (_, i) => `<a href="/menu-${i}">Menu ${i}</a>`).join("");
+    const { result, opened } = await run(links, {});
+    // reducePage keeps 400 links of a page: 100 of them, plus the known-path probes, go over the cap.
+    expect(result.candidateOverflow).toBeGreaterThanOrEqual(100);
+    // The homepage plus one result per admitted address.
+    expect(result.ledger.length).toBeLessThanOrEqual(301);
+    expect(missingFromLedger(opened, result.ledger)).toEqual([]);
+  });
+
+  it("reports no overflow on an ordinary site", async () => {
+    const { result } = await run(`<a href="/menu">Menu</a>`, { "/menu": html("Menu") });
+    expect(result.candidateOverflow).toBe(0);
+  });
+
   // Final fix B1: running out of attempts is not running out of time.
   it("names the attempt cap, not the time budget, when it runs out of navigations", async () => {
     const links = Array.from({ length: 100 }, (_, i) => `<a href="/menu-${i}">Menu ${i}</a>`).join("");

@@ -228,6 +228,21 @@ describe("site drawer: capture coverage", () => {
     expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.support.text).toBe("Keşfedilen her sayfa okundu");
   });
 
+  // Final fix B2: addresses over the candidate cap were never considered.
+  it("never says every page was read when addresses went over the candidate cap, and shows how many", () => {
+    const rows = siteRows({ coverage: { status: "complete", opened: 5, skipped: 0, failed: 0, durationMs: 9_000, notOpened: [], overflow: 120 } });
+    const support = rows.find((r) => r.claim.text.startsWith("Kapsam"))!.support.text;
+    expect(support).not.toContain("Keşfedilen her sayfa okundu");
+    expect(support).toContain(" · 120 adres aday sınırını aştı");
+  });
+
+  it("appends the overflow count to a list of unread pages", () => {
+    const rows = siteRows({
+      coverage: { status: "complete", opened: 9, skipped: 0, failed: 1, durationMs: 31_000, overflow: 7, notOpened: [{ url: "https://dishoom.com/faq", type: "faq", reason: "timeout" }] },
+    });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.support.text).toBe("Okunamayan: /faq (zaman aşımı) · 7 adres aday sınırını aştı");
+  });
+
   it("never says every page was read when pages were skipped without a listed reason", () => {
     const rows = siteRows({ coverage: { status: "complete", opened: 9, skipped: 6, failed: 0, durationMs: 20_000, notOpened: [] } });
     const row = rows.find((r) => r.claim.text.startsWith("Kapsam"))!;

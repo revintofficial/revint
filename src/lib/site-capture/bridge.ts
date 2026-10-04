@@ -166,6 +166,7 @@ export function coverageOf(capture: SiteCaptureResult): SiteCoverage {
     skipped: s.skipped,
     failed: s.failed,
     durationMs: capture.durationMs,
+    overflow: capture.candidateOverflow,
     notOpened: failuresFirst.slice(0, NOT_OPENED_MAX).map((e) => ({ url: e.url, type: e.type, reason: e.reason ?? "budget" })),
   };
 }

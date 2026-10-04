@@ -46,6 +46,7 @@ function homeOnlyCapture(url: string, features: WebsiteFeatures, startedAt: numb
       },
     ],
     sitemapUrlCount: 0,
+    candidateOverflow: 0,
   };
 }
 

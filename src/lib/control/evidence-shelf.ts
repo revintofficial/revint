@@ -50,6 +50,8 @@ export type ShelfAudit = {
     opened: number;
     skipped: number;
     failed: number;
+    /** Addresses over the candidate cap (0 on rows written before it was recorded). */
+    overflow?: number;
     notOpened: Array<{ url: string; type: string; reason: string }>;
   } | null;
   /** Prepayment fact with its scope ("group_or_event" = restricted: groups, private events, seasonal / special days, or stated as uncertain). */
@@ -372,9 +374,13 @@ function siteDrawer(input: ShelfInput): { drawer: Drawer; state: SiteState } {
       : c.status === "failed" ? "Yakalama başarısız; sayfalar okunamadı."
       : null;
     // Entries skipped for limit_type / duplicate are counted in `skipped` but left out of `notOpened`.
-    const support = unread ? cell(`Okunamayan: ${unread}`)
-      : c.skipped + c.failed === 0 ? cell("Keşfedilen her sayfa okundu", true)
-      : cell("Atlananlar: tür sınırı ya da yinelenen sayfa");
+    // Addresses over the candidate cap are in neither: they are only counted.
+    const overflow = c.overflow ?? 0;
+    const overflowNote = overflow > 0 ? ` · ${overflow} adres aday sınırını aştı` : "";
+    const support = unread ? cell(`Okunamayan: ${unread}${overflowNote}`)
+      : c.skipped + c.failed > 0 ? cell(`Atlananlar: tür sınırı ya da yinelenen sayfa${overflowNote}`)
+      : overflow === 0 ? cell("Keşfedilen her sayfa okundu", true)
+      : cell(`Aday listesindeki her sayfa okundu${overflowNote}`);
     rows.push(row(
       cell(`Kapsam: ${c.opened} sayfa açıldı · ${c.skipped} atlandı · ${c.failed} açılamadı`),
       support,
@@ -619,6 +625,7 @@ export function shelfAuditFromRow(row: {
       opened: numberOf(cov.opened) ?? 0,
       skipped: numberOf(cov.skipped) ?? 0,
       failed: numberOf(cov.failed) ?? 0,
+      overflow: numberOf(cov.overflow) ?? 0,
       notOpened: Array.isArray(cov.notOpened)
         ? cov.notOpened.flatMap(v => {
             const o = object(v);

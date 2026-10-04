@@ -23,6 +23,7 @@ const capture: SiteCaptureResult = {
   startedAt: "2026-10-04T10:00:00.000Z",
   durationMs: 12_345.6,
   sitemapUrlCount: 7,
+  candidateOverflow: 3,
   ledger: [{ url: "https://bistro.test/", finalUrl: "https://bistro.test/", type: "home", source: "home_link", outcome: "opened", reason: null, httpStatus: 200 }],
   pages: [
     {
@@ -65,6 +66,7 @@ describe("saveSiteCapture", () => {
       durationMs: 12_346,
       pageCount: 1,
       sitemapUrlCount: 7,
+      candidateOverflow: 3,
     });
     expect(data.startedAt).toEqual(new Date("2026-10-04T10:00:00.000Z"));
     expect(data.ledger).toHaveLength(1);

@@ -381,5 +381,6 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
     pages,
     ledger: ledger.entries(),
     sitemapUrlCount,
+    candidateOverflow: frontier.overflow,
   };
 }

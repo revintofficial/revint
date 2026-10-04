@@ -101,6 +101,8 @@ export interface SiteCaptureResult {
   ledger: LedgerEntry[];
   /** How many addresses the sitemap listed (only the first 150 by priority become candidates). */
   sitemapUrlCount: number;
+  /** Addresses found after the candidate cap was reached: counted, not opened, not in the ledger. */
+  candidateOverflow: number;
 }
 
 export interface OpenedPage {
@@ -125,6 +127,8 @@ export interface SiteCoverage {
   skipped: number;
   failed: number;
   durationMs: number;
+  /** `SiteCaptureResult.candidateOverflow`; absent on rows written before it existed (read as 0). */
+  overflow?: number;
   /** Up to 15 addresses that were not read, failures first. */
   notOpened: Array<{ url: string; type: PageType; reason: LedgerReason }>;
 }

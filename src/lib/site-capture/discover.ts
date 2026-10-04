@@ -196,12 +196,18 @@ function rank(c: Candidate): number {
   return (c.pinned ? 0 : 1) * 1_000_000 + (type === -1 ? 99 : type) * 10_000 + c.depth * 100 + SOURCE_RANK[c.source];
 }
 
+/** Candidates a frontier admits over its whole life (pinned pages are always admitted). */
+export const MAX_CANDIDATES = 300;
+
 /** The queue of addresses still to open, with the per-type and total caps. */
 export class Frontier {
   private readonly queue: Candidate[] = [];
   private readonly seen = new Set<string>();
   private readonly taken = new Map<PageType, number>();
   private total = 0;
+  private admitted = 0;
+  /** Distinct addresses refused because `MAX_CANDIDATES` was reached: counted, not queued, not ledgered. */
+  overflow = 0;
 
   /** `maxPages` excludes the homepage (the caller already has it). */
   constructor(private readonly maxPages: number) {}
@@ -211,13 +217,19 @@ export class Frontier {
     if (k) this.seen.add(k);
   }
 
-  /** Queues the candidates not seen before and returns them. */
+  /** Queues the candidates not seen before (up to `MAX_CANDIDATES` in total) and returns them. */
   add(candidates: Candidate[]): Candidate[] {
     const added: Candidate[] = [];
     for (const c of candidates) {
       const k = urlKey(c.url);
       if (!k || this.seen.has(k)) continue;
+      // Marked seen either way, so a repeat of an overflowed address is not counted twice.
       this.seen.add(k);
+      if (!c.pinned && this.admitted >= MAX_CANDIDATES) {
+        this.overflow++;
+        continue;
+      }
+      this.admitted++;
       this.queue.push(c);
       added.push(c);
     }

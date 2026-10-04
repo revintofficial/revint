@@ -4,6 +4,7 @@ import {
   Frontier,
   isDisallowed,
   knownPathCandidates,
+  MAX_CANDIDATES,
   MAX_SITEMAP_CANDIDATES,
   parseRobots,
   parseSitemap,
@@ -205,6 +206,19 @@ describe("Frontier", () => {
     f.add([cand("/a", "faq"), cand("/b", "contact")]);
     f.next();
     expect(f.rest().map((r) => r.reason)).toEqual(["limit_total"]);
+  });
+
+  // Final fix B2: the candidate list is bounded over the frontier's life.
+  it("admits at most 300 candidates, counts the rest once, and always admits a pinned page", () => {
+    const f = new Frontier(39);
+    const added = f.add(Array.from({ length: 1000 }, (_, i) => cand(`/p-${i}`, "other")));
+    expect(added).toHaveLength(MAX_CANDIDATES);
+    expect(f.overflow).toBe(1000 - MAX_CANDIDATES);
+    // A repeat of an overflowed address is not counted twice.
+    expect(f.add([cand("/p-999", "other")])).toEqual([]);
+    expect(f.overflow).toBe(1000 - MAX_CANDIDATES);
+    expect(f.add([cand("/menu", "menu", { pinned: true })])).toHaveLength(1);
+    expect(f.overflow).toBe(1000 - MAX_CANDIDATES);
   });
 
   describe("retype", () => {

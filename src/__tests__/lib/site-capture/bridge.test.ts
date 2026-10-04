@@ -41,6 +41,7 @@ function cap(pages: CapturedPage[], ledger: LedgerEntry[] = []): SiteCaptureResu
     pages: [pg("home", "/"), ...pages],
     ledger,
     sitemapUrlCount: 0,
+    candidateOverflow: 0,
   };
 }
 
@@ -454,11 +455,16 @@ describe("coverageOf", () => {
       skipped: 2,
       failed: 1,
       durationMs: 12_000,
+      overflow: 0,
       notOpened: [
         { url: "https://bistro.test/faq", type: "faq", reason: "timeout" },
         { url: "https://bistro.test/b", type: "menu", reason: "budget" },
       ],
     });
+  });
+
+  it("carries the candidate overflow", () => {
+    expect(coverageOf({ ...cap([], [led("/")]), candidateOverflow: 42 }).overflow).toBe(42);
   });
 
   it("is attached to the bridged facts", () => {

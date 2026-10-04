@@ -67,6 +67,7 @@ const CAPTURE: SiteCaptureResult = {
   pages: [],
   ledger: [],
   sitemapUrlCount: 0,
+  candidateOverflow: 0,
 };
 
 function ctx(overrides: Partial<AgentWorkerContext> = {}, leadOverrides: Record<string, unknown> = {}): AgentWorkerContext {

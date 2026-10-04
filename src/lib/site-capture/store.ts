@@ -53,6 +53,7 @@ export async function saveSiteCapture(args: {
         durationMs: Math.round(capture.durationMs),
         pageCount: capture.pages.length,
         sitemapUrlCount: capture.sitemapUrlCount,
+        candidateOverflow: capture.candidateOverflow,
         ledger: json(capture.ledger),
         pages: {
           create: capture.pages.map((p) => ({
