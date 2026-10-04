@@ -11,6 +11,8 @@
  *   to what is left; the HTTP fallback runs under the same deadline.
  * - After the abort signal fires, in-flight and later `open` calls end
  *   promptly: closing the contexts rejects every pending Playwright call.
+ * - `close()` returns within about two `BROWSER_STEP_TIMEOUT_MS` even when
+ *   the browser hangs; a `newPage()` that hangs fails the page as "nav_error".
  * - SSRF: the context's route handler runs `assertSafeFetchUrl` on the
  *   first URL of each navigation request it is called for (top frame and
  *   sub-frames). Playwright does not call route handlers for redirect hops,
@@ -86,6 +88,17 @@ function race<T>(p: Promise<T>, ms: number, signal?: AbortSignal): Promise<T | t
       },
     );
   });
+}
+
+/**
+ * A hung browser must not hold a capture slot: `newPage()` and every
+ * `close()` get at most this long. A close that runs over is abandoned.
+ */
+export const BROWSER_STEP_TIMEOUT_MS = 5_000;
+
+/** Waits for `p` at most `ms`; a late rejection is swallowed (never unhandled). */
+async function settleWithin(p: Promise<unknown>, ms: number): Promise<void> {
+  await race(p, ms).catch(() => {});
 }
 
 /** Every URL a navigation's response passed through, oldest last (the response's own request first). */
@@ -200,12 +213,25 @@ function failure(url: string, error: OpenedPage["error"], status: number | null 
   return { finalUrl: url, status, html: null, thirdPartyRequests: [], source: "browser", error };
 }
 
-async function openOnce(context: BrowserContext, url: string, timeoutMs: number, homeUrl: string): Promise<OpenedPage> {
+async function openOnce(
+  context: BrowserContext,
+  url: string,
+  timeoutMs: number,
+  homeUrl: string,
+  stepMs: number,
+): Promise<OpenedPage> {
   const deadline = Date.now() + timeoutMs;
   const left = () => deadline - Date.now();
   let page: Page | null = null;
   try {
-    page = await context.newPage();
+    const pending = context.newPage();
+    const opened = await race(pending, stepMs);
+    if (opened === DEADLINE) {
+      // A page that turns up after we gave up is closed, not leaked.
+      pending.then((late) => late.close().catch(() => {}), () => {});
+      return failure(url, "nav_error");
+    }
+    page = opened;
     const requests = recordThirdPartyRequests(page, homeUrl);
     const navigations = recordMainFrameNavigations(page);
     // Leave ~5 s of the page budget for load, cookie banner, scroll and settle.
@@ -252,7 +278,7 @@ async function openOnce(context: BrowserContext, url: string, timeoutMs: number,
     if (m.includes("closed")) return failure(url, "aborted");
     return failure(url, "nav_error");
   } finally {
-    if (page) await page.close().catch(() => {});
+    if (page) await settleWithin(page.close(), stepMs);
   }
 }
 
@@ -299,20 +325,28 @@ export async function fetchTextSafe(url: string): Promise<string | null> {
   }
 }
 
-export async function createPlaywrightOpener(browser: Browser, homeUrl: string, signal?: AbortSignal): Promise<PageOpener> {
+export async function createPlaywrightOpener(
+  browser: Browser,
+  homeUrl: string,
+  signal?: AbortSignal,
+  opts: { stepTimeoutMs?: number } = {},
+): Promise<PageOpener> {
+  const stepMs = opts.stepTimeoutMs ?? BROWSER_STEP_TIMEOUT_MS;
   const desktop = await newContext(browser, false);
   // A promise, so two pages blocked at the same time share one mobile context.
   let mobile: Promise<BrowserContext> | null = null;
   let closed = false;
 
+  /** Returns within about two steps whatever the browser does. */
   const close = async (): Promise<void> => {
     if (closed) return;
     closed = true;
-    await desktop.close().catch(() => {});
-    if (mobile) {
-      const m = await mobile.catch(() => null);
-      await m?.close().catch(() => {});
-    }
+    const closeMobile = async () => {
+      if (!mobile) return;
+      const m = await race(mobile, stepMs).catch(() => null);
+      if (m && m !== DEADLINE) await settleWithin(m.close(), stepMs);
+    };
+    await Promise.all([settleWithin(desktop.close(), stepMs), closeMobile()]);
   };
   // Closing the contexts rejects every in-flight navigation: the work stops, not just the wait.
   signal?.addEventListener("abort", () => void close(), { once: true });
@@ -326,12 +360,12 @@ export async function createPlaywrightOpener(browser: Browser, homeUrl: string, 
       if (closed) return failure(url, "aborted");
       const started = Date.now();
       const left = () => timeoutMs - (Date.now() - started);
-      let result = await openOnce(desktop, url, timeoutMs, homeUrl);
+      let result = await openOnce(desktop, url, timeoutMs, homeUrl, stepMs);
       if (result.error !== "blocked" || closed) return settle(result);
       if (left() > 3_000) {
         try {
           mobile ??= newContext(browser, true);
-          result = await openOnce(await mobile, url, left(), homeUrl);
+          result = await openOnce(await mobile, url, left(), homeUrl, stepMs);
         } catch {
           // the mobile context could not be created; fall through to plain HTTP
         }
