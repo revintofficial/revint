@@ -188,6 +188,22 @@ export class Frontier {
     return c;
   }
 
+  /**
+   * A handed-out candidate turned out to be another type (a link that
+   * redirected to a vendor page): moves its slot from `c.type` to `to` and
+   * sets `c.type = to`, so a later `refund(c)` gives back the right slot.
+   * Refuses (changes nothing, returns false) when `to` is at its cap; a
+   * pinned candidate is exempt from type caps, as in `next()`.
+   */
+  retype(c: Candidate, to: PageType): boolean {
+    if (c.type === to) return true;
+    if (!c.pinned && (this.taken.get(to) ?? 0) >= (TYPE_CAPS[to] ?? 0)) return false;
+    this.taken.set(c.type, Math.max(0, (this.taken.get(c.type) ?? 0) - 1));
+    this.taken.set(to, (this.taken.get(to) ?? 0) + 1);
+    c.type = to;
+    return true;
+  }
+
   /** A page that was not read (failed, duplicate, disallowed) does not use up a slot. */
   refund(c: Candidate): void {
     this.taken.set(c.type, Math.max(0, (this.taken.get(c.type) ?? 0) - 1));

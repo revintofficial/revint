@@ -150,6 +150,49 @@ describe("captureSite", () => {
     });
   });
 
+  it("counts links that redirect to a vendor against the external cap of five", async () => {
+    const links = [
+      ...Array.from({ length: 3 }, (_, i) => `<a href="/book-${i}">Book a table</a>`),
+      ...Array.from({ length: 2 }, (_, i) => `<a href="/menu-${i}">Menu</a>`),
+      ...Array.from({ length: 2 }, (_, i) => `<a href="/order-${i}">Order online</a>`),
+    ].join("");
+    const vendor = (url: string) => {
+      const path = new URL(url).pathname;
+      return /^\/(book|menu|order)-\d$/.test(path)
+        ? { finalUrl: `https://www.sevenrooms.com/reservations${path}`, html: html(`Vendor page ${path}`) }
+        : null;
+    };
+    const { result, opened } = await run(links, {}, {}, { fallback: vendor });
+    expect(result.pages.filter((p) => p.type === "external")).toHaveLength(5);
+    const over = result.ledger.filter((e) => e.reason === "limit_type");
+    expect(over).toHaveLength(2);
+    for (const e of over) {
+      expect(e.outcome).toBe("skipped");
+      expect(e.finalUrl).toMatch(/^https:\/\/www\.sevenrooms\.com\/reservations\//);
+      expect(e.httpStatus).toBe(200);
+    }
+    expect(missingFromLedger(opened, result.ledger)).toEqual([]);
+    const keys = result.ledger.map((e) => urlKey(e.url));
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it("still keeps a pinned page that redirects to a vendor when the external cap is full", async () => {
+    const links = Array.from({ length: 5 }, (_, i) => `<a href="/book-${i}">Book a table</a>`).join("");
+    const vendor = (url: string) => {
+      const path = new URL(url).pathname;
+      return /^\/(book-\d|reserve)$/.test(path)
+        ? { finalUrl: `https://www.sevenrooms.com/reservations${path}`, html: html(`Vendor page ${path}`) }
+        : null;
+    };
+    const { result } = await run(links, {}, { pinned: [{ kind: "reservation", url: `${HOME}reserve` }] }, { fallback: vendor });
+    expect(result.pages.find((p) => p.url === `${HOME}reserve`)).toMatchObject({
+      type: "external",
+      finalUrl: "https://www.sevenrooms.com/reservations/reserve",
+    });
+    expect(result.pages.filter((p) => p.type === "external")).toHaveLength(5);
+    expect(result.ledger.filter((e) => e.reason === "limit_type")).toHaveLength(1);
+  });
+
   it("opens at most six menu pages and lists the rest as over the type limit", async () => {
     const links = Array.from({ length: 10 }, (_, i) => `<a href="/menu-${i}">Menu ${i}</a>`).join("");
     const pages = Object.fromEntries(Array.from({ length: 10 }, (_, i) => [`/menu-${i}`, html(`Menu number ${i}`)]));

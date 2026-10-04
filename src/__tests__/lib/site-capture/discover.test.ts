@@ -155,4 +155,57 @@ describe("Frontier", () => {
     f.next();
     expect(f.rest().map((r) => r.reason)).toEqual(["limit_total"]);
   });
+
+  describe("retype", () => {
+    it("moves the slot to the new type and relabels the candidate", () => {
+      const f = new Frontier(39);
+      f.add([cand("/book", "reservation")]);
+      const c = f.next()!;
+      expect(f.retype(c, "external")).toBe(true);
+      expect(c.type).toBe("external");
+      expect(f.hasType("external")).toBe(true);
+      expect(f.hasType("reservation")).toBe(false);
+    });
+
+    it("refuses at the new type's cap and changes nothing", () => {
+      const f = new Frontier(39);
+      f.add([...Array.from({ length: 5 }, (_, i) => cand(`/v-${i}`, "external")), cand("/book", "reservation")]);
+      // Reservation outranks external, so it is handed out first; then the five vendor pages fill the cap.
+      const c = f.next()!;
+      expect(c.type).toBe("reservation");
+      for (let i = 0; i < 5; i++) expect(f.next()!.type).toBe("external");
+      expect(f.retype(c, "external")).toBe(false);
+      expect(c.type).toBe("reservation");
+      // The reservation slot is still charged: three more fit under its cap of 4, not four.
+      f.add(Array.from({ length: 4 }, (_, i) => cand(`/res-${i}`, "reservation")));
+      const more: Candidate[] = [];
+      for (let n = f.next(); n; n = f.next()) more.push(n);
+      expect(more).toHaveLength(3);
+    });
+
+    it("gives the original type's cap room again after a successful retype", () => {
+      const f = new Frontier(39);
+      f.add(Array.from({ length: 4 }, (_, i) => cand(`/res-${i}`, "reservation")));
+      const taken = [f.next()!, f.next()!, f.next()!, f.next()!];
+      f.add([cand("/res-extra", "reservation")]);
+      expect(f.next()).toBeNull();
+      expect(f.retype(taken[0], "external")).toBe(true);
+      expect(new URL(f.next()!.url).pathname).toBe("/res-extra");
+    });
+
+    it("always lets a pinned candidate through and keeps its refund balanced", () => {
+      const f = new Frontier(39);
+      f.add([...Array.from({ length: 5 }, (_, i) => cand(`/v-${i}`, "external")), cand("/menu", "menu", { pinned: true })]);
+      const pinned = f.next()!;
+      expect(pinned.pinned).toBe(true);
+      const vendors = [f.next()!, f.next()!, f.next()!, f.next()!, f.next()!];
+      expect(f.retype(pinned, "external")).toBe(true);
+      f.refund(pinned);
+      // The refund gave back exactly the pinned page's slot: external is at its cap of 5 again, not below.
+      f.add([cand("/v-extra", "external")]);
+      expect(f.next()).toBeNull();
+      f.refund(vendors[0]);
+      expect(new URL(f.next()!.url).pathname).toBe("/v-extra");
+    });
+  });
 });

@@ -224,7 +224,6 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
       frontier.refund(c);
       return;
     }
-    let type = c.type;
     if (c.type !== "external" && siteKey(landed.hostname) !== siteKey(home.hostname)) {
       // The link left the venue's site. A known vendor page is the one hop we keep.
       if (!isKnownVendorUrl(landed)) {
@@ -232,8 +231,15 @@ export async function captureSite(input: CaptureInput): Promise<SiteCaptureResul
         frontier.refund(c);
         return;
       }
-      type = "external";
+      // It counts against the external cap, not the type it was linked as.
+      // On success `c.type` becomes "external", so later refunds give back that slot.
+      if (!frontier.retype(c, "external")) {
+        record(c, { outcome: "skipped", reason: "limit_type", finalUrl: opened.finalUrl, httpStatus: opened.status });
+        frontier.refund(c);
+        return;
+      }
     }
+    const type = c.type;
 
     const reduced = reducePage(opened.html, opened.finalUrl);
     const finalKey = urlKey(opened.finalUrl) ?? opened.finalUrl;
