@@ -44,6 +44,16 @@ export type ShelfAudit = {
   bookingProvider: string | null;
   hasQrMenu?: boolean | null;
   hasOnlineOrdering?: boolean | null;
+  /** Deep-capture coverage (absent on shallow audits and on rows written before the capture). */
+  coverage?: {
+    status: string;
+    opened: number;
+    skipped: number;
+    failed: number;
+    notOpened: Array<{ url: string; type: string; reason: string }>;
+  } | null;
+  /** Prepayment fact with its scope ("group_or_event" = restricted: groups, private events, seasonal / special days, or stated as uncertain). */
+  prepayment?: { scope: string | null; url: string; quote: string | null } | null;
 };
 
 /** ReviewAnalysis row, flattened. */
@@ -193,6 +203,36 @@ function crawlErrorText(code: string): string {
   return CRAWL_ERROR_TEXT[code] ?? "taranamadı";
 }
 
+const COVERAGE_REASON_TEXT: Record<string, string> = {
+  limit_type: "tür sınırı",
+  limit_total: "sayfa sınırı",
+  budget: "süre yetmedi",
+  aborted: "iptal edildi",
+  duplicate: "yinelenen sayfa",
+  robots_disallow: "robots.txt izin vermiyor",
+  timeout: "zaman aşımı",
+  http_error: "sayfa hata verdi",
+  blocked: "bot engeli",
+  offsite: "başka siteye yönlendi",
+  too_large: "dosya çok büyük",
+  not_pdf: "PDF değil",
+  nav_error: "açılamadı",
+  unsafe_url: "güvenli olmayan adres",
+};
+
+function coverageReasonText(reason: string): string {
+  return COVERAGE_REASON_TEXT[reason] ?? "okunamadı";
+}
+
+function pathLabel(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.pathname}${u.search}` || "/";
+  } catch {
+    return url;
+  }
+}
+
 /** `skipped` is `true` on some paths and the reason string on others (A's contract). */
 function skipReason(output: unknown): string | null {
   const o = object(output);
@@ -315,6 +355,25 @@ function siteDrawer(input: ShelfInput): { drawer: Drawer; state: SiteState } {
     row(cell(qr, audit?.hasQrMenu == null), support),
     row(cell(order, audit?.hasOnlineOrdering == null), support),
   ];
+  if (audit?.prepayment) {
+    const scoped = audit.prepayment.scope === "group_or_event";
+    rows.push(row(
+      cell(scoped ? "Kapora: kısıtlı (grup, etkinlik ya da özel gün için)" : "Kapora var"),
+      cell(`${audit.prepayment.url}${audit.prepayment.quote ? ` · “${clean(audit.prepayment.quote)}”` : ""}`),
+    ));
+  }
+  if (audit?.coverage) {
+    const c = audit.coverage;
+    const unread = c.notOpened.slice(0, 4).map(n => `${pathLabel(n.url)} (${coverageReasonText(n.reason)})`).join(" · ");
+    const conflict = c.status === "partial" ? "Yakalama süre bütçesinde bitmedi; okunmayan sayfalar var."
+      : c.status === "blocked" ? "Site botu engelledi; sayfalar okunamadı."
+      : null;
+    rows.push(row(
+      cell(`Kapsam: ${c.opened} sayfa açıldı · ${c.skipped} atlandı · ${c.failed} açılamadı`),
+      cell(unread ? `Okunamayan: ${unread}` : "Keşfedilen her sayfa okundu", !unread),
+      conflict,
+    ));
+  }
   return { drawer: { key: "site", label: DRAWER_LABELS.site, empty: false, rows }, state: { usable: reachable, social: false } };
 }
 
@@ -535,6 +594,10 @@ export function shelfAuditFromRow(row: {
   if (!row) return null;
   const raw = object(row.rawFeaturesJson);
   const tri = (v: unknown): boolean | null | undefined => (v === true || v === false || v === null ? v : undefined);
+  const facts = object(raw.siteFacts);
+  const cov = object(facts.coverage);
+  const pre = object(facts.hasPrepayment);
+  const preUrl = textOf(pre.url);
   return {
     url: row.url,
     reachable: row.reachable,
@@ -544,5 +607,19 @@ export function shelfAuditFromRow(row: {
     bookingProvider: row.bookingProvider,
     hasQrMenu: tri(raw.hasQrMenu),
     hasOnlineOrdering: tri(raw.hasOnlineOrdering),
+    coverage: numberOf(cov.opened) == null ? null : {
+      status: textOf(cov.status) ?? "complete",
+      opened: numberOf(cov.opened) ?? 0,
+      skipped: numberOf(cov.skipped) ?? 0,
+      failed: numberOf(cov.failed) ?? 0,
+      notOpened: Array.isArray(cov.notOpened)
+        ? cov.notOpened.flatMap(v => {
+            const o = object(v);
+            const url = textOf(o.url);
+            return url ? [{ url, type: textOf(o.type) ?? "other", reason: textOf(o.reason) ?? "budget" }] : [];
+          })
+        : [],
+    },
+    prepayment: preUrl ? { scope: textOf(pre.scope), url: preUrl, quote: textOf(pre.quote) } : null,
   };
 }

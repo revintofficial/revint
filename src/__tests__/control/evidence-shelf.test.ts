@@ -179,3 +179,71 @@ describe("buildShelf", () => {
     expect(turkishNumber(42)).toBe("kırk iki");
   });
 });
+
+describe("site drawer: capture coverage", () => {
+  const auditRow = (siteFacts: Record<string, unknown>) =>
+    shelfAuditFromRow({
+      url: "https://dishoom.com",
+      reachable: true,
+      crawlError: null,
+      crawlAttemptedAt: new Date(FINISHED),
+      hasBookingSystem: true,
+      bookingProvider: "SevenRooms",
+      rawFeaturesJson: { siteFacts },
+    });
+  const siteRows = (siteFacts: Record<string, unknown>) =>
+    drawer(
+      buildShelf(input({ runs: [auditRunWith({ reachable: true, url: "https://dishoom.com" })], audit: auditRow(siteFacts) })),
+      "site",
+    ).rows;
+
+  it("shows how many pages were read and which were not, with the reason", () => {
+    const rows = siteRows({
+      coverage: {
+        status: "complete",
+        opened: 9,
+        skipped: 2,
+        failed: 1,
+        durationMs: 31_000,
+        notOpened: [{ url: "https://dishoom.com/faq", type: "faq", reason: "timeout" }],
+      },
+    });
+    const row = rows.find((r) => r.claim.text.startsWith("Kapsam"))!;
+    expect(row.claim.text).toBe("Kapsam: 9 sayfa açıldı · 2 atlandı · 1 açılamadı");
+    expect(row.support.text).toBe("Okunamayan: /faq (zaman aşımı)");
+    expect(row.conflict).toBeNull();
+  });
+
+  it("warns when the capture ran out of budget", () => {
+    const rows = siteRows({
+      coverage: { status: "partial", opened: 12, skipped: 20, failed: 0, durationMs: 150_000, notOpened: [{ url: "https://dishoom.com/group-feasts", type: "events", reason: "budget" }] },
+    });
+    const row = rows.find((r) => r.claim.text.startsWith("Kapsam"))!;
+    expect(row.support.text).toContain("/group-feasts (süre yetmedi)");
+    expect(row.conflict).toBe("Yakalama süre bütçesinde bitmedi; okunmayan sayfalar var.");
+  });
+
+  it("says so when every discovered page was read", () => {
+    const rows = siteRows({ coverage: { status: "complete", opened: 5, skipped: 0, failed: 0, durationMs: 9_000, notOpened: [] } });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapsam"))!.support.text).toBe("Keşfedilen her sayfa okundu");
+  });
+
+  it("states a group-only deposit as group-only, with its source", () => {
+    const rows = siteRows({
+      hasPrepayment: { value: true, url: "https://dishoom.com/group-feasts", quote: "For groups of 8 or more, we ask for card details", scope: "group_or_event" },
+    });
+    const row = rows.find((r) => r.claim.text.startsWith("Kapora"))!;
+    expect(row.claim.text).toBe("Kapora: kısıtlı (grup, etkinlik ya da özel gün için)");
+    expect(row.support.text).toContain("https://dishoom.com/group-feasts");
+    expect(row.support.text).toContain("For groups of 8 or more");
+  });
+
+  it("states a general deposit plainly", () => {
+    const rows = siteRows({ hasPrepayment: { value: true, url: "https://dishoom.com/reservations", quote: "A deposit is required" } });
+    expect(rows.find((r) => r.claim.text.startsWith("Kapora"))!.claim.text).toBe("Kapora var");
+  });
+
+  it("adds no rows for an audit without capture data", () => {
+    expect(siteRows({})).toHaveLength(3);
+  });
+});
