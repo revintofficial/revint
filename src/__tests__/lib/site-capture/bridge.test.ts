@@ -293,6 +293,65 @@ describe("bridgeSiteFacts: prepayment sentence rule", () => {
     ).toBe("general");
   });
 
+  it.each([
+    "A deposit of £10 per person is required. This applies to parties of 8 or more.",
+    "A deposit of £10 per person is required. This applies to bookings of 8 or more.",
+    "Do I need to pay a deposit? Yes. Groups of 8 or more pay £10 per person.",
+  ])("a restriction in the following sentence scopes the deposit: %s", (text) => {
+    expect(on("reservation", text)?.scope).toBe("group_or_event");
+  });
+
+  it.each([
+    "A deposit is required for all events.",
+    "A deposit is required for all functions.",
+    "A deposit is required for birthday bookings.",
+    "Exclusive use of the restaurant requires a deposit.",
+    "Whole venue hire requires a deposit.",
+    "Bookings for larger numbers require a deposit.",
+    "Deposits are required for corporate bookings.",
+    "A deposit is required for bookings in December.",
+    "During December all bookings require a deposit.",
+    "A deposit is required for Friday and Saturday evening bookings.",
+    "Weekend bookings require a deposit.",
+    "A deposit is required at peak times.",
+    "A deposit is required for bookings of 100 guests.",
+    "Deposits are taken for NYE.",
+    "Deposits apply to hen and stag dos.",
+    "A deposit is required to book the Chef's Table.",
+    "A deposit is required for buffet bookings.",
+  ])("an occasion, event, day or qualified booking scopes the deposit: %s", (text) => {
+    expect(on("reservation", text)?.scope).toBe("group_or_event");
+  });
+
+  it.each([
+    "We have scrapped deposits.",
+    "We have stopped taking deposits.",
+    "There is zero deposit to book.",
+    "Deposits are unnecessary for standard bookings.",
+  ])("a negation without a negation word stays unknown: %s", (text) => {
+    expect(on("reservation", text)).toBeNull();
+  });
+
+  it.each([
+    "A deposit is required for all bookings.",
+    "All online bookings require a deposit.",
+    "A deposit is taken at the time of booking.",
+    "We require a deposit to secure your reservation.",
+  ])("an unqualified booking stays general: %s", (text) => {
+    expect(on("reservation", text)?.scope).toBe("general");
+  });
+
+  // A negated group statement does not scope the page; the general statement stands.
+  it("a negated group statement leaves the general one", () => {
+    expect(on("reservation", "We have stopped taking deposits for groups. A deposit is required to confirm your booking.")?.scope).toBe(
+      "general",
+    );
+  });
+
+  it("an uncertain deposit statement is not a general claim", () => {
+    expect(on("reservation", "A deposit may be required to confirm your booking.")?.scope).toBe("group_or_event");
+  });
+
   it("a company name 'Group' still does not scope", () => {
     expect(on("reservation", "Part of the Hawksmoor Group. A deposit of £10 per person is required to confirm your booking.")?.scope).toBe(
       "general",

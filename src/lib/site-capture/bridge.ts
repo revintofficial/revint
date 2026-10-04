@@ -33,10 +33,11 @@ const CARD_GUARANTEE =
 /**
  * Negations and "no fee" phrasings: "no" (but not "no-show"), "not", "n't", "never",
  * "without", "cannot", "none", "nor", "free of charge", "waive(d)", "optional",
- * "deposit-free", "fee-free", "not required", "no need".
+ * "deposit-free", "fee-free", "not required", "no need", "zero", "scrapped", "stopped",
+ * "no longer", "unnecessary", "don't need", "do not need".
  */
 const NEGATION =
-  /(\bno\b(?![- ]show)|\bnot\b|n['’]t\b|\bnever\b|\bwithout\b|\bcannot\b|\bnone\b|\bnor\b|\bfree of charge\b|\bwaived?\b|\boptional\b|\bdeposit-free\b|\bfee-free\b|\bnot required\b|\bno need\b)/i;
+  /(\bno\b(?![- ]show)|\bnot\b|n['’]t\b|\bnever\b|\bwithout\b|\bcannot\b|\bnone\b|\bnor\b|\bfree of charge\b|\bwaived?\b|\boptional\b|\bdeposit-free\b|\bfee-free\b|\bnot required\b|\bno need\b|\bzero\b|\bscrapped\b|\bstopped\b|\bno longer\b|\bunnecessary\b|\bdon['’]t need\b|\bdo not need\b)/i;
 /** Gift cards, shop and ordering checkouts take card details too; that is not a booking deposit. */
 const COMMERCE =
   /\b(gifts?|vouchers?|shops?|checkout|basket|merchandise|takeaway|delivery|collection|click\s*(&|and)\s*collect|online order(s|ing)?)\b/i;
@@ -46,10 +47,13 @@ const COMMERCE =
  */
 const GROUP_WORDING =
   /\b(groups|group (of|over|larger|bigger)|group (bookings?|dining|reservations?|menus?|sizes?|tables?|enquiry|enquiries)|party|parties|(larger|bigger|large|big) (bookings?|tables?|parties|groups|reservations?)|private (dining|hire|events?)|exclusive hire|kalabalık)\b/i;
-/** The statement holds only in some cases ("only on Fridays", "unless", "depending on"). */
-const RESTRICTION_MARKER = /\b(only|solely|except|unless|depending)\b/i;
+/**
+ * The statement holds only in some cases ("only on Fridays", "unless", "depending on"),
+ * or is uncertain ("may", "might", "can be", "sometimes", "in some cases").
+ */
+const RESTRICTION_MARKER = /\b(only|solely|except|unless|depending|may|might|can be|sometimes|in some cases)\b/i;
 const PARTY_NUM =
-  "(?:[2-9]|[1-9]\\d|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)";
+  "(?:[2-9]|[1-9]\\d|[1-9]\\d\\d|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)";
 /** A number that is not money (no currency sign before it) and not a time or a percentage. */
 const PARTY_COUNT =
   `(?<![£$€₺\\d.,])${PARTY_NUM}(?!\\d|\\s*(%|hours?\\b|hrs?\\b|days?\\b|minutes?\\b|mins?\\b|weeks?\\b|months?\\b|am\\b|pm\\b))`;
@@ -59,9 +63,26 @@ const PARTY_SIZE = new RegExp(
     `|\\b(more than|over|above|exceeding|larger than|bigger than|tables? of|bookings of|parties of|for|of)\\s+${PARTY_COUNT}\\b)`,
   "i",
 );
-/** Seasonal or special-occasion statements. */
+/** Seasonal, special-occasion, event, day and peak-time statements. */
 const OCCASION =
-  /\b(christmas|festive|new year|valentine|mother['’]?s day|father['’]?s day|easter|bank holiday|special (events?|occasions?)|set menus?|tasting|afternoon tea|brunch|sunday roast|experiences?|masterclass(es)?)\b/i;
+  /\b(christmas|festive|new year|valentine|mother['’]?s day|father['’]?s day|easter|bank holidays?|special (events?|occasions?)|set menus?|tasting|afternoon tea|brunch|sunday roast|experiences?|masterclass(es)?|events?|functions?|birthdays?|celebrations?|weddings?|exclusive (use|hire)|venue hire|whole venue|private (room|use)|corporate|larger numbers|hen|stag|nye|new year['’]?s eve|buffet|chef['’]?s table|peak|weekends?|(mon|tues|wednes|thurs|fri|satur|sun)days?|january|february|march|april|may|june|july|august|september|october|november|december|during)\b/i;
+/** Determiners and the like before "booking(s)": "all bookings", "your booking" say nothing restrictive. */
+const UNQUALIFIED_BEFORE_BOOKING = new Set([
+  "all", "any", "every", "each", "your", "our", "the", "a", "an", "online", "table", "new", "standard", "normal",
+  "regular", "most", "these", "those", "and", "or", "of", "for", "to", "with", "when", "on", "at", "in", "per",
+]);
+const WORD_BEFORE_BOOKING = /([\p{L}'’-]+)\s+(bookings?|reservations?)\b/giu;
+/** "bookings in December", "bookings for larger numbers", "bookings of 100" (but not "at the time of booking"). */
+const BOOKING_QUALIFIED_AFTER = /\b(bookings?|reservations?)\s+(for|of|in|during|on|over|above|at)\b(?!\s+the time\b)/i;
+
+/** A qualifier directly before or after "booking(s)" / "reservation(s)" restricts the statement. */
+function qualifiedBooking(context: string): boolean {
+  if (BOOKING_QUALIFIED_AFTER.test(context)) return true;
+  for (const m of context.matchAll(WORD_BEFORE_BOOKING)) {
+    if (!UNQUALIFIED_BEFORE_BOOKING.has(m[1].toLowerCase())) return true;
+  }
+  return false;
+}
 /** An FAQ statement is about bookings only when it says so. */
 const BOOKING_WORDING = /\b(book(s|ed|ing|ings)?|reserv(e|ed|ation|ations)|tables?|rezervasyon\w*|masa\w*)\b/i;
 const QUOTE_MAX = 240;
@@ -174,17 +195,23 @@ function classifyPrepaymentHit(
 ): { scope: "general" | "group_or_event"; quote: string } | null {
   const sentence = sentences[i];
   if (!PREPAY.test(sentence) && !CARD_GUARANTEE.test(sentence)) return null;
+  const question = sentence.endsWith("?");
   // A question is answered by the sentence after it ("Do I need a deposit? No.").
-  const context = sentence.endsWith("?") && i + 1 < sentences.length ? `${sentence} ${sentences[i + 1]}` : sentence;
+  // Negation, commerce and the FAQ booking-wording check read only this context.
+  const context = sentences.slice(i, question ? i + 2 : i + 1).join(" ");
   if (NEGATION.test(context) || COMMERCE.test(context)) return null;
+  // A restriction is often stated in the next sentence ("… is required. This applies to
+  // parties of 8 or more."); after a question, in the two sentences that answer it.
+  const scopeContext = sentences.slice(i, question ? i + 3 : i + 2).join(" ");
   const restricted =
     type === "events" ||
-    GROUP_WORDING.test(context) ||
-    PARTY_SIZE.test(context) ||
-    OCCASION.test(context) ||
-    RESTRICTION_MARKER.test(context);
+    GROUP_WORDING.test(scopeContext) ||
+    PARTY_SIZE.test(scopeContext) ||
+    OCCASION.test(scopeContext) ||
+    RESTRICTION_MARKER.test(scopeContext) ||
+    qualifiedBooking(scopeContext);
   if (!restricted && type === "faq" && !BOOKING_WORDING.test(context)) return null;
-  return { scope: restricted ? "group_or_event" : "general", quote: context.slice(0, QUOTE_MAX).trim() };
+  return { scope: restricted ? "group_or_event" : "general", quote: (restricted ? scopeContext : context).slice(0, QUOTE_MAX).trim() };
 }
 
 /**
