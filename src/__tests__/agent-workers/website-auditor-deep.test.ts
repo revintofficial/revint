@@ -209,6 +209,32 @@ describe("WEBSITE_AUDITOR: deep capture", () => {
     expect(freeSlots()).toBe(2);
   });
 
+  it("writes nothing after the audit row when the deadline fires during its upsert", async () => {
+    const controller = new AbortController();
+    mocks.auditUpsert.mockImplementation(async () => {
+      controller.abort();
+      return {};
+    });
+    const result = await run(ctx({ signal: controller.signal }));
+    expect(result.output).toEqual({ skipped: true, reason: "deadline_aborted" });
+    expect(mocks.auditUpsert).toHaveBeenCalledTimes(1);
+    expect(mocks.saveSiteCapture).not.toHaveBeenCalled();
+    expect(mocks.leadUpdate).toHaveBeenCalledTimes(1); // only the CRAWLING stamp before the crawl
+    expect(mocks.leadUpdate.mock.calls[0][0].data).toEqual({ crawlStatus: "CRAWLING" });
+    expect(freeSlots()).toBe(2);
+  });
+
+  it("neither crawls nor writes when the signal is already aborted at entry", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const result = await run(ctx({ signal: controller.signal }));
+    expect(result.output).toEqual({ skipped: true, reason: "deadline_aborted" });
+    expect(mocks.leadUpdate).not.toHaveBeenCalled();
+    expect(mocks.crawlWebsiteDeep).not.toHaveBeenCalled();
+    expect(mocks.crawlWebsite).not.toHaveBeenCalled();
+    expect(freeSlots()).toBe(2);
+  });
+
   it("keeps the audit when storing the capture fails", async () => {
     mocks.saveSiteCapture.mockRejectedValue(new Error("db down"));
     const result = await run(ctx());

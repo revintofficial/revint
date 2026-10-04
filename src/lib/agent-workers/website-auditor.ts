@@ -163,9 +163,16 @@ export const run: AgentWorkerRun = async (ctx): Promise<AgentWorkerOutput> => {
   }
 };
 
+/**
+ * Once the executor's outer deadline fired, a retry owns this lead: any late
+ * write (CRAWLING, the audit row, the capture, the final status) would race it.
+ */
+const deadlineAborted = (): AgentWorkerOutput => ({ output: { skipped: true, reason: "deadline_aborted" }, costTokens: 0 });
+
 async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWorkerOutput> {
   if (!ctx.lead) throw new Error("WEBSITE_AUDITOR requires a lead context");
   const lead = ctx.lead;
+  const aborted = () => ctx.signal?.aborted === true;
 
   // Truth Layer v1 / T-E — multi-source verification BEFORE the
   // legacy single-URL audit branch. Two cost-control gates:
@@ -210,6 +217,7 @@ async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWo
     };
   }
 
+  if (aborted()) return deadlineAborted();
   await prisma.lead.update({
     where: { id: lead.id },
     data: { crawlStatus: "CRAWLING" },
@@ -226,11 +234,6 @@ async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWo
       capture = crawled.capture;
     } else {
       features = await crawlWebsite(lead.websiteUrl, lead.primaryType ?? undefined);
-    }
-    if (ctx.signal?.aborted) {
-      // The executor's outer deadline fired and a retry owns this lead now.
-      // Writing a late result (or a late FAILED status) would race it.
-      return { output: { skipped: true, reason: "deadline_aborted" }, costTokens: 0 };
     }
     const featuresWithExtras = features as typeof features & {
       contactEmails?: string[];
@@ -275,11 +278,13 @@ async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWo
         contactEmails: [],
         socialProfiles: {},
       } as const;
+      if (aborted()) return deadlineAborted();
       await prisma.websiteAudit.upsert({
         where: { leadId: lead.id },
         create: { leadId: lead.id, ...baseFields },
         update: baseFields,
       });
+      if (aborted()) return deadlineAborted();
       await prisma.lead.update({
         where: { id: lead.id },
         data: { crawlStatus: "NO_WEBSITE", hasWebsite: false },
@@ -333,12 +338,14 @@ async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWo
       socialProfiles,
     } as const;
 
+    if (aborted()) return deadlineAborted();
     await prisma.websiteAudit.upsert({
       where: { leadId: lead.id },
       create: { leadId: lead.id, ...baseFields },
       update: baseFields,
     });
 
+    if (aborted()) return deadlineAborted();
     if (capture) {
       try {
         await saveSiteCapture({ workspaceId: lead.workspaceId, leadId: lead.id, capture });
@@ -351,6 +358,7 @@ async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWo
       }
     }
 
+    if (aborted()) return deadlineAborted();
     await prisma.lead.update({
       where: { id: lead.id },
       data: {
@@ -384,9 +392,7 @@ async function runAudit(ctx: AgentWorkerContext, deep: boolean): Promise<AgentWo
       costTokens: 0,
     };
   } catch (error) {
-    if (ctx.signal?.aborted) {
-      return { output: { skipped: true, reason: "deadline_aborted" }, costTokens: 0 };
-    }
+    if (aborted()) return deadlineAborted();
     await prisma.lead.update({
       where: { id: lead.id },
       data: { crawlStatus: "FAILED" },
