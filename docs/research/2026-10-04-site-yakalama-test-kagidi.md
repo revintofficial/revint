@@ -4,7 +4,7 @@ Her site için: siteyi tarayıcıda aç, her satırı kontrol et, son sütuna `D
 
 ## Romance Istanbul Hotel (romanceistanbulhotel)
 
-Adres: http://www.romanceistanbulhotel.com/ · erişim: var · süre: 77 sn · yakalama: complete
+Adres: http://www.romanceistanbulhotel.com/ · erişim: var · süre: 34 sn · yakalama: complete
 
 **Bulgular** (sistem bunları iddia ediyor)
 
@@ -31,11 +31,25 @@ Adres: http://www.romanceistanbulhotel.com/ · erişim: var · süre: 77 sn · y
 | Tür | Adres | D / Y |
 |---|---|---|
 | home | https://romanceistanbulhotel.com/ | |
-| other | https://romanceistanbulhotel.com/tr/ | |
-| other | https://romanceistanbulhotel.com/ru/ | |
-| other | https://romanceistanbulhotel.com/sitemap.html | |
-| locations | https://romanceistanbulhotel.com/location-sitemap.html | |
-| faq | https://romanceistanbulhotel.com/faq-sitemap.html | |
+| reservation | https://romanceistanbulhotel.com/book → https://romanceistanbulhotel.com/location/book-bazaar/ | |
+| events | https://romanceistanbulhotel.com/special-offers/private-airport-transfer-service/ | |
+| faq | https://romanceistanbulhotel.com/faq/ | |
+| events | https://romanceistanbulhotel.com/tr/ozel-teklifler/ozel-havaalani-transferi/ | |
+| faq | https://romanceistanbulhotel.com/tr/sss/ | |
+| faq | https://romanceistanbulhotel.com/faq/are-pets-allowed-at-the-hotel/ | |
+| locations | https://romanceistanbulhotel.com/location/ | |
+| locations | https://romanceistanbulhotel.com/location/karakoy-design-shops/ | |
+| locations | https://romanceistanbulhotel.com/location/galataport/ | |
+| locations | https://romanceistanbulhotel.com/location/cagaloglu-hamam/ | |
+| locations | https://romanceistanbulhotel.com/location/hodjapasha-culture-centre/ | |
+| locations | https://romanceistanbulhotel.com/location/sirkeci-station/ | |
+| contact | https://romanceistanbulhotel.com/contact/ | |
+| about | https://romanceistanbulhotel.com/our-story/ | |
+| about | https://romanceistanbulhotel.com/our-story/bayezid-ii-4/ | |
+| contact | https://romanceistanbulhotel.com/tr/iletisim/ | |
+| other | https://romanceistanbulhotel.com/our-concept/ | |
+| other | https://romanceistanbulhotel.com/yasmak-hotel-collection/ | |
+| other | https://romanceistanbulhotel.com/rooms/ | |
 
 **Okunamayan sayfalar** (önemli bir sayfa kaçmış mı?)
 
@@ -87,7 +101,7 @@ Tahmin edilip denenen ve sitede olmayan 9 adres listelenmedi.
 
 ## Kybele Hotel (kybelehotel)
 
-Adres: http://www.kybelehotel.com/ · erişim: var · süre: 13 sn · yakalama: complete
+Adres: http://www.kybelehotel.com/ · erişim: var · süre: 17 sn · yakalama: complete
 
 **Bulgular** (sistem bunları iddia ediyor)
 
@@ -120,8 +134,8 @@ Adres: http://www.kybelehotel.com/ · erişim: var · süre: 13 sn · yakalama: 
 | menu | http://www.kybelehotel.com/menu/galeri.php?lang=tr | |
 | menu | http://www.kybelehotel.com/menu/geribildirim.php?lang=tr | |
 | about | http://www.kybelehotel.com/pages/about/ | |
-| other | http://www.kybelehotel.com/pages/gallery/ | |
 | other | http://www.kybelehotel.com/pages/services/ | |
+| other | http://www.kybelehotel.com/pages/gallery/ | |
 | other | http://www.kybelehotel.com/pages/tour/ | |
 
 **Okunamayan sayfalar** (önemli bir sayfa kaçmış mı?)
@@ -134,7 +148,7 @@ Tahmin edilip denenen ve sitede olmayan 6 adres listelenmedi.
 
 ## The Peninsula Istanbul (peninsula)
 
-Adres: https://www.peninsula.com/istanbul · erişim: var · süre: 18 sn · yakalama: partial
+Adres: https://www.peninsula.com/istanbul · erişim: var · süre: 21 sn · yakalama: partial
 
 **Bulgular** (sistem bunları iddia ediyor)
 
@@ -173,14 +187,14 @@ Adres: https://www.peninsula.com/istanbul · erişim: var · süre: 18 sn · yak
 | contact | https://pen10cm.peninsula.com/en/global-pages/contact-us | blocked | |
 | about | https://www.peninsula.com/en/global-pages/about-us | blocked | |
 | other | https://www.peninsula.com/tr-tr/istanbul/5-star-luxury-hotel-bosphorus | blocked | |
-| contact | https://www.peninsula.com/zh-cn/global-pages/contact-us | blocked | |
 | other | https://www.peninsula.com/fr/istanbul/5-star-luxury-hotel-bosphorus | blocked | |
-| contact | https://www.peninsula.com/ja/global-pages/contact-us | blocked | |
+| contact | https://www.peninsula.com/zh-cn/global-pages/contact-us | blocked | |
 | other | https://www.peninsula.com/ja/istanbul/5-star-luxury-hotel-bosphorus | blocked | |
-| contact | https://www.peninsula.com/fr/global-pages/contact-us | blocked | |
+| contact | https://www.peninsula.com/ja/global-pages/contact-us | blocked | |
 | other | https://www.peninsula.com/zh-cn/istanbul/5-star-luxury-hotel-bosphorus | blocked | |
-| contact | https://www.peninsula.com/es/global-pages/contact-us | blocked | |
+| contact | https://www.peninsula.com/fr/global-pages/contact-us | blocked | |
 | other | https://www.peninsula.com/en/global-pages/peninsula-time | blocked | |
+| contact | https://www.peninsula.com/es/global-pages/contact-us | blocked | |
 | other | https://www.peninsula.com/en/istanbul/photos-and-videos | blocked | |
 | other | https://www.peninsula.com/en/istanbul/luxury-hotel-room-suite-types | blocked | |
 | other | https://www.peninsula.com/en/istanbul/special-offers/rooms/bed-and-breakfast-offer | blocked | |
@@ -202,7 +216,7 @@ Tahmin edilip denenen ve sitede olmayan 7 adres listelenmedi.
 
 ## The And Hotel (andhotel)
 
-Adres: https://www.andhotel.com/ · erişim: var · süre: 30 sn · yakalama: complete
+Adres: https://www.andhotel.com/ · erişim: var · süre: 36 sn · yakalama: complete
 
 **Bulgular** (sistem bunları iddia ediyor)
 
@@ -230,8 +244,8 @@ Adres: https://www.andhotel.com/ · erişim: var · süre: 30 sn · yakalama: co
 | Tür | Adres | D / Y |
 |---|---|---|
 | home | https://andhotel.com/ | |
-| other | https://andhotel.com/hotel-policies/ | |
 | contact | https://andhotel.com/contact/ | |
+| other | https://andhotel.com/hotel-policies/ | |
 | other | https://andhotel.com/attractions/ | |
 | other | https://andhotel.com/room/std-room/ | |
 
@@ -287,7 +301,7 @@ Tahmin edilip denenen ve sitede olmayan 10 adres listelenmedi.
 
 ## Luco Restaurant Rooftop Sirkeci (restaurantluco)
 
-Adres: https://restaurantluco.com/ · erişim: var · süre: 19 sn · yakalama: complete
+Adres: https://restaurantluco.com/ · erişim: var · süre: 21 sn · yakalama: complete
 
 **Bulgular** (sistem bunları iddia ediyor)
 
@@ -315,8 +329,8 @@ Adres: https://restaurantluco.com/ · erişim: var · süre: 19 sn · yakalama: 
 | Tür | Adres | D / Y |
 |---|---|---|
 | home | https://restaurantluco.com/ | |
-| reservation | https://restaurantluco.com/contact-us/ | |
 | menu | https://restaurantluco.com/menu/ | |
+| reservation | https://restaurantluco.com/contact-us/ | |
 | external | https://www.quandoo.com.tr/place/luco-rooftop-95533/about → https://www.quandoo.com.tr/important-update | |
 | about | https://restaurantluco.com/about-us/ | |
 | other | https://restaurantluco.com/2023/01/13/hello-world/ | |
@@ -333,7 +347,7 @@ Tahmin edilip denenen ve sitede olmayan 5 adres listelenmedi.
 
 ## Roof Mezze 360 Restaurant (roofmezze360)
 
-Adres: http://roofmezze360.com/ · erişim: var · süre: 10 sn · yakalama: complete
+Adres: http://roofmezze360.com/ · erişim: var · süre: 12 sn · yakalama: complete
 
 **Bulgular** (sistem bunları iddia ediyor)
 
@@ -362,7 +376,6 @@ Adres: http://roofmezze360.com/ · erişim: var · süre: 10 sn · yakalama: com
 |---|---|---|
 | home | https://roofmezze360.com/ | |
 | reservation | https://roofmezze360.com/rezervasyon/ | |
-| other | https://roofmezze360.com/galeri → https://roofmezze360.com/galeri/ | |
 | contact | https://roofmezze360.com/iletisim/ | |
 | other | https://roofmezze360.com/iletisim-copy/ | |
 | other | https://roofmezze360.com/flipbook/flipbook3donline/ | |
@@ -377,7 +390,7 @@ Tahmin edilip denenen ve sitede olmayan 7 adres listelenmedi.
 
 ## Glamour Rooftop Restaurant (glamourroofsirkeci)
 
-Adres: https://glamourroofsirkeci.com/ · erişim: var · süre: 10 sn · yakalama: complete
+Adres: https://glamourroofsirkeci.com/ · erişim: var · süre: 11 sn · yakalama: complete
 
 **Bulgular** (sistem bunları iddia ediyor)
 
@@ -456,8 +469,8 @@ Adres: https://www.sevenhillshotel.com/ · erişim: var · süre: 12 sn · yakal
 |---|---|---|
 | home | https://www.sevenhillshotel.com/ | |
 | faq | https://www.sevenhillshotel.com/faq.html | |
-| contact | https://www.sevenhillshotel.com/Contact.html | |
 | locations | https://www.sevenhillshotel.com/Location.html | |
+| contact | https://www.sevenhillshotel.com/Contact.html | |
 | about | https://www.sevenhillshotel.com/About-Us.html | |
 | other | https://www.sevenhillshotel.com/seven-hills-hotel-rooms-suites-family.html | |
 | other | https://www.sevenhillshotel.com/seven-hills-restaurant.html | |
@@ -473,7 +486,7 @@ Tahmin edilip denenen ve sitede olmayan 6 adres listelenmedi.
 
 ## Banana Tree O2 Arena (bananatree)
 
-Adres: https://bananatree.co.uk/restaurants/o2-arena/?utm_source=google&utm_medium=organic&utm_campaign=google_lpm_bananatree_london_theo2 · erişim: var · süre: 37 sn · yakalama: complete
+Adres: https://bananatree.co.uk/restaurants/o2-arena/?utm_source=google&utm_medium=organic&utm_campaign=google_lpm_bananatree_london_theo2 · erişim: var · süre: 39 sn · yakalama: complete
 
 **Bulgular** (sistem bunları iddia ediyor)
 
@@ -501,29 +514,29 @@ Adres: https://bananatree.co.uk/restaurants/o2-arena/?utm_source=google&utm_medi
 | Tür | Adres | D / Y |
 |---|---|---|
 | home | https://bananatree.co.uk/restaurants/o2-arena?utm_source=google&utm_medium=organic&utm_campaign=google_lpm_bananatree_london_theo2 | |
-| menu | https://bananatree.co.uk/menu | |
 | order | https://bananatree.co.uk/order-online | |
+| menu | https://bananatree.co.uk/menu | |
 | reservation | https://bananatree.co.uk/ | |
+| menu | https://bananatree.co.uk/restaurants/bath/menu | |
 | menu | https://bananatree.co.uk/restaurants/o2-arena/menu | |
 | menu | https://bananatree.co.uk/restaurants/battersea/menu | |
-| menu | https://bananatree.co.uk/restaurants/bath/menu | |
-| events | https://bananatree.co.uk/christmas | |
-| menu | https://bananatree.co.uk/restaurants/cardiff/menu | |
 | menu | https://bananatree.co.uk/restaurants/birmingham-bullring/menu | |
-| events | https://bananatree.co.uk/group-bookings | |
+| menu | https://bananatree.co.uk/restaurants/cardiff/menu | |
+| events | https://bananatree.co.uk/christmas | |
 | faq | https://bananatree.co.uk/faqs | |
+| events | https://bananatree.co.uk/group-bookings | |
 | locations | https://bananatree.co.uk/locations | |
 | locations | https://bananatree.co.uk/restaurants/bath | |
 | locations | https://bananatree.co.uk/restaurants/battersea | |
 | locations | https://bananatree.co.uk/restaurants/birmingham-bullring | |
-| locations | https://bananatree.co.uk/restaurants/cardiff | |
 | contact | https://bananatree.co.uk/get-in-touch | |
+| locations | https://bananatree.co.uk/restaurants/cardiff | |
 | locations | https://bananatree.co.uk/restaurants/chelmsford | |
 | contact | https://bananatree.co.uk/contact | |
 | about | https://bananatree.co.uk/our-story | |
 | other | https://bananatree.co.uk/offers | |
-| other | https://bananatree.co.uk/kids-eat-free | |
 | other | https://bananatree.co.uk/offer/big-flavour-club | |
+| other | https://bananatree.co.uk/kids-eat-free | |
 
 **Okunamayan sayfalar** (önemli bir sayfa kaçmış mı?)
 
@@ -563,13 +576,12 @@ Adres: https://www.oldbrewerygreenwich.com/ · erişim: var · süre: 17 sn · y
 | menu | https://www.oldbrewerygreenwich.com/food-and-drink | |
 | menu | https://www.oldbrewerygreenwich.com/food-and-drink?menu=main-menu | |
 | events | https://www.oldbrewerygreenwich.com/weddings | |
+| events | https://www.oldbrewerygreenwich.com/christmas | |
 | contact | https://www.oldbrewerygreenwich.com/contact | |
 | other | https://www.oldbrewerygreenwich.com/parties-events | |
-| events | https://www.oldbrewerygreenwich.com/christmas | |
 | other | https://www.oldbrewerygreenwich.com/burger-shack | |
 | other | https://www.oldbrewerygreenwich.com/whats-on | |
 | reservation | https://www.oldbrewerygreenwich.com/?booking_type_category=1&booking_type=68f4fe6ce752378e242d729e | |
-| reservation | https://www.oldbrewerygreenwich.com/?booking_type_category=1&booking_type=6a7c9026440370549f1dec5e | |
 
 **Okunamayan sayfalar** (önemli bir sayfa kaçmış mı?)
 

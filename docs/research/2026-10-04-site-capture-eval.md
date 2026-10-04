@@ -238,3 +238,96 @@ Re-run (outputs are not committed):
 `npx tsx scripts/website-audit-eval/run-eval.ts <dir>/before`,
 `npx tsx scripts/website-audit-eval/run-eval.ts <dir>/after --deep`, then
 `npx tsx scripts/website-audit-eval/score.ts <dir>/after/results.json scripts/website-audit-eval/truth.json --rows --compare <dir>/before/results.json`.
+
+## After the visible-text fix
+
+A live audit of 15grams Coffee House stored a general deposit quoting "Card
+details are required to secure your reservation.": a hidden state message of
+the ResDiary widget, not the venue's policy. Since commit `65287b0` a page
+opened in the browser keeps the text the browser renders (`body.innerText`,
+after opening `<details>` and the `hidden` / inline `display: none` panels of
+`aria-expanded="false"` controls) instead of text derived from the HTML.
+Title, links, embeds and JSON-LD still come from the HTML; the HTTP fallback
+and PDFs are unchanged; the shallow path makes no new browser call.
+
+Same 40 sites, same truth file and machine. Deep run `after3`, 2026-10-04
+18:07–18:21 (13 min 48 s wall clock); hold-out `holdout3` 18:21–18:25
+(4 min 9 s), from which the test sheet was regenerated.
+
+| field | before | after the fix wave | after the visible-text fix |
+|---|---|---|---|
+| reachable | 38 / 2 / 0 (0) | 40 / 0 / 0 (0) | 40 / 0 / 0 (0) |
+| bookingProvider | 27 / 0 / 4 (2) | 28 / 0 / 3 (1) | 28 / 0 / 3 (1) |
+| prepayment | 3 / 0 / 5 (2) | 1 / 0 / 7 (4) | **0** / 0 / 8 (5) |
+| prepaymentAny | 3 / 0 / 5 (2) | 5 / 0 / 3 (0) | **4** / 0 / 4 (1) |
+| qrMenuTool | 14 / 0 / 3 (0) | 16 / 0 / 1 (0) | 16 / 0 / 1 (0) |
+| pdfMenu | 7 / 0 / 11 (0) | 7 / 0 / 11 (0) | 7 / 0 / 11 (0) |
+| directOrdering | 15 / 0 / 15 (2) | 18 / 0 / 12 (2) | 18 / 0 / 12 (2) |
+| deliveryPlatforms | 8 / 0 / 27 (2) | 8 / 0 / 27 (2) | 8 / 0 / 27 (2) |
+| languageCount | 6 / 0 / 28 (0) | 6 / 0 / 28 (0) | 6 / 0 / 28 (0) |
+| tastingMenu | 0 / 0 / 33 (1) | 1 / 0 / 32 (0) | 1 / 0 / 32 (0) |
+| multiLocation | 15 / 0 / 19 (5) | 16 / 0 / 18 (4) | 16 / 0 / 18 (4) |
+| hotel | 3 / 0 / 35 (2) | 4 / 0 / 34 (1) | 4 / 0 / 34 (1) |
+
+(correct / wrong / unknown (missed positives))
+
+```
+against before:          compare: 40 site(s) compared
+                         compare: 4 regression(s), 0 new wrong answer(s), unknown cells 185 -> 178
+                           andrewedmunds.prepayment: correct -> unknown
+                           wolseley.prepayment: correct -> unknown
+                           bills.prepayment: correct -> unknown
+                           bills.prepaymentAny: correct -> unknown
+against the fix wave:    compare: 40 site(s) compared
+                         compare: 2 regression(s), 0 new wrong answer(s), unknown cells 176 -> 178
+                           bills.prepayment: correct -> unknown
+                           bills.prepaymentAny: correct -> unknown
+time per site: median 18 s, p95 50 s (n=40)
+```
+
+Hold-out: slowest site 39 s (Romance Istanbul; 77 s in `holdout2`). No fact
+changed on the 12 hold-out sites.
+
+### The three sites checked by hand (`capture-url.ts`)
+
+| site | before (main's code) | after |
+|---|---|---|
+| 15grams | `hasPrepayment` `group_or_event`, "For bookings of 7+: we require at lest 5 days notice for cancellation, deposit and fees will vary … We are still waiting on your bank confirming your transaction." (the widget's hidden terms step; in production the same page gave the general "Card details are required …" while the widget showed its Stripe test-mode states) | `hasPrepayment` `-`; `bookingProvider` ResDiary |
+| Dishoom | `group_or_event` (FAQ, large party deposit) | the same |
+| Lokanta | `group_or_event` ("bookings above 4 people require Credit/Debit card details …") | the same |
+
+### Every fact that changed against the fix wave
+
+| site | field | fix wave → now | why |
+|---|---|---|---|
+| 15grams | hasPrepayment | `group_or_event` → `-` | the quoted terms sit in a step of the ResDiary widget that is not rendered; the venue's visible sentence is "For larger bookings (7+ people) and private events please get in touch". Intended. Not scored (truth n/a). |
+| Ritz-Carlton roof | hasPrepayment | `group_or_event` → `-` | the events FAQ answer "Deposits are based on 30 % of the combined food and beverage minimum …" is in an accordion panel (`#accordion-body…`, controlled by a `<button aria-expanded="false">`) hidden by a CSS class, not by `hidden` or an inline `display: none`, so the expansion does not open it. Opening it would need overriding stylesheet `display: none` on `aria-controls` panels; not done. Not scored (truth n/a). |
+| Bills | hasPrepayment | `general` → `-` (prepayment and prepaymentAny: correct → unknown) | "Your credit card details are required to secure your booking. No payment will be taken at this time." on `/bookatable/` sits in the booking form's details popup (`div.find_your_details_popup` inside `#errorformheader`), shown only after a slot is chosen; `innerText` does not contain it. A statement that exists only in hidden markup: an expected kind of loss, not worked around. |
+
+No other fact changed on the 40 sites. Page counts moved a little because the
+duplicate check now compares rendered text: Andrew Edmunds 0 → 5 pages skipped
+as duplicates, Dishoom 2 → 0, Hawksmoor 3 → 1, Lokanta 1 → 0; Seafront went
+from `partial` to `complete` (15 → 20 opened). On the hold-out, Romance
+Istanbul opened 20 pages instead of 6 (44 → 1 duplicates): the duplicate key
+(length and first 500 characters) matched on its HTML-derived texts, not on
+its rendered texts. Seafront's change is the run, not the fix (no fact moved).
+
+### Pass / fail
+
+| criterion | result | verdict |
+|---|---|---|
+| 0 new wrong answers against `before` | 0 | pass |
+| total wrong ≤ 1 | 0 | pass |
+| unknown cells lower than `before` (185) | 178 | pass |
+| median ≤ 60 s, p95 ≤ 180 s | median 18 s, p95 50 s | pass |
+| 15grams deposit not `general`, ResDiary kept | `-`, ResDiary | pass |
+| Dishoom, Lokanta deposit `group_or_event` | both kept | pass |
+| cells correct in the fix wave and not now | 2 (Bills `prepayment`, `prepaymentAny`) | reported: hidden-markup statement |
+
+### What got worse
+
+- Bills: the only general deposit left in the 40 is lost; `prepayment` is now
+  0 correct. The venue's card requirement is real but only appears in a form
+  step a visitor reaches after picking a time.
+- Ritz-Carlton events deposit: lost because a class-hidden accordion is not
+  opened (above).
