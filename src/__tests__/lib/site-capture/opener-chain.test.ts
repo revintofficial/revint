@@ -1,7 +1,12 @@
 // src/__tests__/lib/site-capture/opener-chain.test.ts
 import { describe, expect, it, vi } from "vitest";
-import type { Response } from "playwright";
-import { checkNavigationChain, redirectChainUrls } from "@/lib/site-capture/opener";
+import type { Page, Response } from "playwright";
+import {
+  checkNavigationChain,
+  checkRecordedNavigations,
+  recordMainFrameNavigations,
+  redirectChainUrls,
+} from "@/lib/site-capture/opener";
 
 /** Refuses loopback and link-local addresses, like assertSafeFetchUrl does for these literals. */
 const guard = vi.fn(async (url: string) => {
@@ -59,5 +64,76 @@ describe("checkNavigationChain", () => {
     await checkNavigationChain("https://www.bistro.test/menu", hops, guard);
     expect(guard).toHaveBeenCalledTimes(2);
     expect(guard.mock.calls.map((c) => c[0]).sort()).toEqual(["https://bistro.test/menu", "https://www.bistro.test/menu"]);
+  });
+});
+
+/** A page whose `request` events can be emitted by hand (navigation flag and frame per request). */
+function fakeNavPage() {
+  const main = { id: "main" };
+  let handler: ((req: unknown) => void) | null = null;
+  const page = {
+    on: (_event: string, cb: (req: unknown) => void) => {
+      handler = cb;
+    },
+    mainFrame: () => main,
+  } as unknown as Page;
+  const emit = (url: string, opts: { nav?: boolean; frame?: unknown } = {}) =>
+    handler?.({ url: () => url, isNavigationRequest: () => opts.nav ?? true, frame: () => opts.frame ?? main });
+  return { page, emit };
+}
+
+describe("recordMainFrameNavigations", () => {
+  it("keeps main-frame navigation requests (redirect hops included) and ignores sub-frames and sub-resources", () => {
+    const { page, emit } = fakeNavPage();
+    const read = recordMainFrameNavigations(page);
+    emit("https://bistro.test/menu");
+    emit("https://bistro.test/script.js", { nav: false });
+    emit("https://widget.test/frame", { frame: { id: "child" } });
+    emit("https://redirector.test/r?to=x");
+    emit("https://bistro.test/menu");
+    expect(read()).toEqual({ urls: ["https://bistro.test/menu", "https://redirector.test/r?to=x"], overflow: false, total: 3 });
+  });
+
+  it("stops growing at the bound and flags the overflow", () => {
+    const { page, emit } = fakeNavPage();
+    const read = recordMainFrameNavigations(page, 3);
+    for (let i = 0; i < 10; i++) emit(`https://loop.test/${i}`);
+    const log = read();
+    expect(log.urls).toHaveLength(3);
+    expect(log.overflow).toBe(true);
+    expect(log.total).toBe(10);
+  });
+});
+
+describe("checkRecordedNavigations", () => {
+  it("refuses a later navigation (meta refresh through a redirector) whose hop is the metadata address", async () => {
+    guard.mockClear();
+    const { page, emit } = fakeNavPage();
+    const read = recordMainFrameNavigations(page);
+    emit("https://bistro.test/");
+    // Later: a meta refresh to a public redirector that answers 302 -> metadata, then lands back on a public page.
+    emit("https://redirector.test/r");
+    emit("http://169.254.169.254/");
+    emit("https://bistro.test/after");
+    expect(await checkRecordedNavigations("https://bistro.test/after", read(), guard)).toBe(false);
+  });
+
+  it("refuses a log that hit the bound without calling the guard", async () => {
+    guard.mockClear();
+    const { page, emit } = fakeNavPage();
+    const read = recordMainFrameNavigations(page, 2);
+    for (let i = 0; i < 5; i++) emit(`https://loop.test/${i}`);
+    expect(await checkRecordedNavigations("https://loop.test/0", read(), guard)).toBe(false);
+    expect(guard).not.toHaveBeenCalled();
+  });
+
+  it("passes a clean later navigation", async () => {
+    guard.mockClear();
+    const { page, emit } = fakeNavPage();
+    const read = recordMainFrameNavigations(page);
+    emit("https://bistro.test/");
+    emit("https://bistro.test/welcome");
+    expect(await checkRecordedNavigations("https://bistro.test/welcome", read(), guard)).toBe(true);
+    expect(guard).toHaveBeenCalledTimes(2);
   });
 });

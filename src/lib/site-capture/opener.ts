@@ -1,8 +1,8 @@
 // src/lib/site-capture/opener.ts
 /**
- * Opens pages for the capture in one browser context per site. Every
- * navigation is checked against the SSRF guard (see below). A page that answers 401 / 403 /
- * 429 is retried with a mobile identity, then with a plain HTTP fetch;
+ * Opens pages for the capture in one browser context per site. Navigations
+ * are checked against the SSRF guard as described below. A page that
+ * answers 401 / 403 / 429 is retried with a mobile identity, then with a plain HTTP fetch;
  * after that it is "blocked" (no proxy).
  *
  * Contract the capture loop relies on (it does not wrap these itself):
@@ -12,13 +12,23 @@
  * - After the abort signal fires, in-flight and later `open` calls end
  *   promptly: closing the contexts rejects every pending Playwright call.
  * - SSRF: the context's route handler runs `assertSafeFetchUrl` on the
- *   first URL of each navigation (top frame and sub-frames). Playwright
- *   does not call route handlers for redirect hops, so after `page.goto`
- *   the landed URL and every hop of the redirect chain are checked too
- *   (`checkNavigationChain`); a failure returns "unsafe_url" with no HTML.
- *   By then the browser may already have sent a request to an internal
- *   address: the response is discarded, never read. HTTP fetches go
- *   through `safeFetchFollow`, which checks every hop before requesting it.
+ *   first URL of each navigation request it is called for (top frame and
+ *   sub-frames). Playwright does not call route handlers for redirect hops,
+ *   so the page's URL is also checked twice more against the guard:
+ *   1. right after `page.goto`, with every hop of its redirect chain, so the
+ *      capture does not settle on an unsafe page;
+ *   2. after the settle steps, with every main-frame navigation request the
+ *      page made in its whole life (redirect hops included; meta refresh,
+ *      script or click navigations included). Too many distinct navigation
+ *      URLs count as unsafe.
+ *   The HTML is read only after check 2. If the page's URL changed or a new
+ *   main-frame navigation request was made while it was being read, the
+ *   page is refused. Every refusal returns "unsafe_url" with no HTML and no
+ *   third-party requests. The browser may already have sent a request to an
+ *   internal address by then: that response is discarded, never read.
+ *   Sub-frame redirect hops are not re-checked; sub-frame content is not
+ *   read (`page.content()` is the main frame only). HTTP fetches go through
+ *   `safeFetchFollow`, which checks every hop before requesting it.
  */
 import type { Browser, BrowserContext, Page, Response } from "playwright";
 import { CRAWLER_USER_AGENT } from "@/lib/crawler";
@@ -105,6 +115,55 @@ export async function checkNavigationChain(
   }
 }
 
+/** More distinct main-frame navigation URLs than this and the page is treated as unsafe. */
+export const MAX_MAIN_FRAME_NAVIGATIONS = 30;
+
+export interface NavigationLog {
+  /** Distinct main-frame navigation request URLs, in order, at most the bound. */
+  urls: string[];
+  /** More distinct URLs than the bound were requested. */
+  overflow: boolean;
+  /** Every main-frame navigation request so far, repeats included (detects a new one). */
+  total: number;
+}
+
+/**
+ * Records every main-frame navigation request of the page for its whole life.
+ * Each redirect hop is its own request, so the log holds the hops too.
+ */
+export function recordMainFrameNavigations(
+  page: Pick<Page, "on" | "mainFrame">,
+  max: number = MAX_MAIN_FRAME_NAVIGATIONS,
+): () => NavigationLog {
+  const seen = new Set<string>();
+  const state = { overflow: false, total: 0 };
+  page.on("request", (req) => {
+    try {
+      if (!req.isNavigationRequest() || req.frame() !== page.mainFrame()) return;
+      state.total++;
+      const u = req.url();
+      if (seen.has(u)) return;
+      if (seen.size >= max) state.overflow = true;
+      else seen.add(u);
+    } catch {
+      // A navigation whose frame is gone cannot be attributed; count it so the page is refused.
+      state.total++;
+      state.overflow = true;
+    }
+  });
+  return () => ({ urls: [...seen], overflow: state.overflow, total: state.total });
+}
+
+/** True when the landed URL and every recorded navigation pass `guard`; an overflowing log fails. */
+export async function checkRecordedNavigations(
+  landedUrl: string,
+  log: Pick<NavigationLog, "urls" | "overflow">,
+  guard: (url: string) => Promise<unknown>,
+): Promise<boolean> {
+  if (log.overflow) return false;
+  return checkNavigationChain(landedUrl, log.urls, guard);
+}
+
 async function newContext(browser: Browser, mobile: boolean): Promise<BrowserContext> {
   const context = await browser.newContext({
     userAgent: mobile ? MOBILE_USER_AGENT : CRAWLER_USER_AGENT,
@@ -145,6 +204,7 @@ async function openOnce(context: BrowserContext, url: string, timeoutMs: number,
   try {
     page = await context.newPage();
     const requests = recordThirdPartyRequests(page, homeUrl);
+    const navigations = recordMainFrameNavigations(page);
     // Leave ~5 s of the page budget for load, cookie banner, scroll and settle.
     const gotoTimeout = timeoutMs > 8_000 ? timeoutMs - 5_000 : timeoutMs;
     const res = await page.goto(url, { waitUntil: "domcontentloaded", timeout: gotoTimeout });
@@ -162,14 +222,25 @@ async function openOnce(context: BrowserContext, url: string, timeoutMs: number,
     // Each settle step only runs while there is time left for it (a Playwright timeout of 0 means "none").
     if (left() > 500) await page.waitForLoadState("load", { timeout: Math.min(2_000, left() - 300) }).catch(() => {});
     if (left() > 1_200) {
-      await page.getByRole("button", { name: COOKIE_BUTTON }).first().click({ timeout: 700 }).catch(() => {});
+      // Only a real <button> outside a form: a link or a submit styled as a button would navigate away.
+      const cookieButton = page.getByRole("button", { name: COOKIE_BUTTON }).and(page.locator("button:not(form button)"));
+      await cookieButton.first().click({ timeout: 700 }).catch(() => {});
     }
     if (left() > 2_500) await race(page.evaluate(SCROLL_SCRIPT), left() - 500).catch(() => {});
     if (left() > 900) await page.waitForTimeout(400);
+
+    // The page may have navigated again while it settled (meta refresh, script, click): check it all again.
+    const checkedUrl = page.url();
+    const log = navigations();
+    const stillSafe = await race(checkRecordedNavigations(checkedUrl, log, assertSafeFetchUrl), Math.max(left(), 1_000));
+    if (stillSafe === DEADLINE) return failure(url, "timeout");
+    if (!stillSafe) return failure(url, "unsafe_url");
     const content = await race(page.content(), Math.max(left(), 1_000));
     if (content === DEADLINE) return failure(url, "timeout");
+    // Content from a navigation that started after the check is never returned.
+    if (page.url() !== checkedUrl || navigations().total !== log.total) return failure(url, "unsafe_url");
     const html = content.slice(0, MAX_HTML_CHARS);
-    return { finalUrl: page.url(), status, html, thirdPartyRequests: requests(), source: "browser", error: null };
+    return { finalUrl: checkedUrl, status, html, thirdPartyRequests: requests(), source: "browser", error: null };
   } catch (err) {
     const m = (err instanceof Error ? err.message : String(err)).toLowerCase();
     if (m.includes("timeout")) return failure(url, "timeout");
