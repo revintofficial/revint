@@ -82,28 +82,28 @@ export interface SiteFacts {
   declaredLanguage?: SiteFact<string> | null;
 }
 
-const RES_TEXT = /\b(reserv\w*|book(ing|ings)?|book a table|rezervasyon)\b/i;
-const RES_PATH = /(^|\/)(reserv[\w-]*|book[\w-]*|rezervasyon)(\/|$|\.)/i;
-const MENU_TEXT = /(^|[^\p{L}])(menu|menus|menü)($|[^\p{L}])/iu;
-const MENU_PATH = /(^|\/)(menu|menus|our-menu|food-menu)(\/|$|\.|-)/i;
+export const RES_TEXT = /\b(reserv\w*|book(ing|ings)?|book a table|rezervasyon)\b/i;
+export const RES_PATH = /(^|\/)(reserv[\w-]*|book[\w-]*|rezervasyon)(\/|$|\.)/i;
+export const MENU_TEXT = /(^|[^\p{L}])(menu|menus|menü)($|[^\p{L}])/iu;
+export const MENU_PATH = /(^|\/)(menu|menus|our-menu|food-menu)(\/|$|\.|-)/i;
 const MENU_FILE = /(menu|menü|food|drinks|brunch|lunch|dinner|carta)/i;
 const NOT_MENU_FILE =
   /(allergen|kcal|calorie|nutrition|privacy|policy|terms|gender|pay-?gap|report|statement|slavery|sustainab|welfare|careers|cv|tipping)/i;
-const ORDER_TEXT = /\border (online|now)\b/i;
-const ORDER_PATH = /(^|\/)(order|order-online|online-order|ordering|order-now)(\/|$|\.)/i;
+export const ORDER_TEXT = /\border (online|now)\b/i;
+export const ORDER_PATH = /(^|\/)(order|order-online|online-order|ordering|order-now)(\/|$|\.)/i;
 /** Food-ordering CTA wording on a link that leaves the site for an ordering vendor. */
 const ORDER_CTA =
   /(\b(order (online|now|here|ahead|food|delivery|takeaway|for collection)|click\s*(&|and)\s*collect|place an order|online sipari[sş]|sipari[sş] ver)\b|^(collection|takeaway|delivery (&|and) collection)$)/i;
-const PREPAY =
+export const PREPAY =
   /((?<!\bno[- ])(?<!\bwithout (a )?)(?<!\bsafe )(?<!\bsecurity )deposit(?!\s+box)|(credit|debit)( or (credit|debit))? card details (are |will be )?(required|needed|taken|held)|card details (to|in order to) secure|(credit|debit) card (details )?(is |are )?required|pre-?pay(ment)?|prepaid booking|kapora|ön ödeme)/i;
-const TASTING = /(tasting menu|d[ée]gustation|omakase|chef'?s table (menu|experience)|\b(?:[5-9]|1\d|2\d)[- ]course\b|tadım menüsü)/i;
+export const TASTING = /(tasting menu|d[ée]gustation|omakase|chef'?s table (menu|experience)|\b(?:[5-9]|1\d|2\d)[- ]course\b|tadım menüsü)/i;
 
-interface Link {
+export interface Link {
   text: string;
   url: URL;
 }
 
-function linksOf(html: string, pageUrl: string): Link[] {
+export function linksOf(html: string, pageUrl: string): Link[] {
   const $ = cheerio.load(html);
   const out: Link[] = [];
   $("a[href]").each((_, el) => {
@@ -140,7 +140,7 @@ function sameSite(a: string, b: string): boolean {
   return siteKey(a) === siteKey(b);
 }
 /** A PDF whose link text or file name says it is a menu (not allergens or policies). */
-function menuPdf(l: Link): boolean {
+export function menuPdf(l: Link): boolean {
   const path = pathOf(l.url);
   if (!/\.pdf$/i.test(path)) return false;
   const file = path.split("/").pop() ?? "";
